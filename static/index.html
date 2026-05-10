@@ -5,13 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="dark" />
     <meta name="theme-color" content="#7c5cff" />
+    <meta name="description" content="DirectJob Scout — a calm job tool. Watch direct career pages, dedupe across aggregators, and triage your queue without the LinkedIn feed." />
+    <link rel="canonical" href="https://khalo.org/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="DirectJob Scout — a calm job tool" />
+    <meta property="og:description" content="Watch direct career pages, dedupe across aggregators, and triage your queue without the LinkedIn feed." />
+    <meta property="og:url" content="https://khalo.org/" />
+    <meta property="og:image" content="https://khalo.org/icons/og-card.png" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:locale:alternate" content="de_DE" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="DirectJob Scout — a calm job tool" />
+    <meta name="twitter:description" content="Watch direct career pages, dedupe across aggregators, and triage your queue without the LinkedIn feed." />
+    <meta name="twitter:image" content="https://khalo.org/icons/og-card.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="icon" type="image/svg+xml" href="/icons/icon.svg" />
     <link rel="apple-touch-icon" href="/icons/icon.svg" />
-    <title>DirectJob Scout</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" />
+    <title>DirectJob Scout — a calm job tool</title>
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
@@ -57,6 +67,7 @@
           <a href="/privacy" data-i18n="auth.legal.privacy">Privacy</a>
           <a href="/terms" data-i18n="auth.legal.terms">Terms</a>
           <a href="/data-retention" data-i18n="auth.legal.dataRetention">Data retention</a>
+          <a href="/impressum" data-i18n="auth.legal.impressum">Impressum</a>
         </p>
       </div>
     </section>
@@ -571,6 +582,13 @@
                 <span data-i18n="applications.reminder">Reminder</span>
                 <input id="applicationReminderAt" type="datetime-local" />
               </label>
+              <label class="field application-replied-field">
+                <span data-i18n="applications.replied">Got a reply?</span>
+                <span class="application-replied-row">
+                  <input id="applicationReplied" type="checkbox" />
+                  <span class="muted small" id="applicationRepliedAt" data-i18n="applications.repliedHint">Tick when the company first wrote back. Drives reply-rate analytics.</span>
+                </span>
+              </label>
               <label class="field wide">
                 <span data-i18n="applications.notes">Notes</span>
                 <textarea id="applicationNotes" rows="3"></textarea>
@@ -601,6 +619,18 @@
               <p id="applicationStatusMessage" class="form-status field wide" role="status" aria-live="polite"></p>
             </form>
             <div id="structuredFitSummary" class="structured-fit muted" hidden></div>
+            <div id="sharePanel" class="share-panel" hidden>
+              <h3 data-i18n="applications.share.title">Public share link</h3>
+              <p class="muted small" data-i18n="applications.share.lead">Lets you share this job's preview page (with a sign-up CTA on it) outside DirectJob Scout. Toggle off any time to disable the URL.</p>
+              <label class="share-toggle">
+                <input id="shareEnabledToggle" type="checkbox" />
+                <span data-i18n="applications.share.toggle">Public preview enabled</span>
+              </label>
+              <p id="shareUrlRow" class="share-url-row" hidden>
+                <code id="shareUrl"></code>
+                <button id="copyShareUrlBtn" type="button" class="btn btn-ghost" data-i18n="applications.share.copy">Copy</button>
+              </p>
+            </div>
             <div id="applicationHistoryPanel" class="application-history" hidden>
               <h3 data-i18n="applications.history.title">History</h3>
               <ol id="applicationHistoryList"></ol>

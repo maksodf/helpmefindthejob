@@ -1,0 +1,23 @@
+# DirectJob Scout — robots.txt
+# Public marketing surfaces are crawlable. The app itself, admin, and APIs are not.
+
+User-agent: *
+Allow: /
+Allow: /privacy
+Allow: /terms
+Allow: /data-retention
+Allow: /impressum
+Allow: /changelog
+Allow: /help
+
+# Block app, admin, and API surfaces from indexing.
+Disallow: /api/
+Disallow: /accept-invite/
+Disallow: /reset-password/
+Disallow: /forgot-password
+Disallow: /admin
+
+# Honour standard meta-robots on dynamic share pages.
+Allow: /share/
+
+Sitemap: https://khalo.org/sitemap.xml

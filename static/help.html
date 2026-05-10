@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="index,follow" />
+    <title>Help — DirectJob Scout</title>
+    <meta name="description" content="Plain-English help for DirectJob Scout: getting started, the bookmarklet, AI modes, billing, GDPR / data control." />
+    <link rel="canonical" href="https://khalo.org/help" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body class="legal-body">
+    <main class="legal-page">
+      <header>
+        <a href="/" class="legal-back">← Back to DirectJob Scout</a>
+        <h1>Help</h1>
+        <p class="muted">Plain-English answers, no support-ticket maze.</p>
+      </header>
+
+      <nav aria-label="On-page navigation" class="muted small" style="margin-bottom: 24px;">
+        Jump to:
+        <a href="#getting-started">Getting started</a> ·
+        <a href="#bookmarklet">Bookmarklet</a> ·
+        <a href="#ai-modes">AI modes</a> ·
+        <a href="#billing">Billing</a> ·
+        <a href="#gdpr">GDPR &amp; data control</a> ·
+        <a href="#troubleshooting">Troubleshooting</a>
+      </nav>
+
+      <section id="getting-started">
+        <h2>Getting started</h2>
+        <ol>
+          <li>Sign in. The first screen you'll land on is your <strong>Jobs</strong> queue — empty at first.</li>
+          <li>Open the <strong>Companies</strong> tab. Add 5–10 companies whose careers pages you want to watch. Each company is a name, a website, and (optionally) a careers-page URL. We auto-detect the careers page if you leave it blank.</li>
+          <li>Click <strong>Find me jobs</strong>. We scan the careers pages you added plus the public aggregators we support, dedupe everything, and surface the queue.</li>
+          <li>Triage the queue with keyboard shortcuts (<kbd>j</kbd>/<kbd>k</kbd> to move, <kbd>a</kbd> to import, <kbd>x</kbd> to dismiss, <kbd>e</kbd> to edit). Press <kbd>?</kbd> for the full list.</li>
+          <li>For roles you import, click <strong>Analyze fit</strong> to get a structured evaluation against your CV.</li>
+        </ol>
+      </section>
+
+      <section id="bookmarklet">
+        <h2>Bookmarklet — capturing from gated platforms</h2>
+        <p>
+          LinkedIn, Indeed, StepStone, and XING actively block server-side fetches, so DirectJob Scout doesn't try to scrape them from our side. Instead, the bookmarklet runs in your own logged-in browser and captures a job's URL + title with one click.
+        </p>
+        <ol>
+          <li>Open <strong>Settings → Bookmarklet</strong>. The card walks you through it.</li>
+          <li>Make sure your bookmark bar is visible. On Chrome / Edge / Safari press <kbd>⌘</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd> (Mac) or <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd> (Windows / Linux).</li>
+          <li>Click and hold the green button on that card, drag it up to the bookmark bar, let go.</li>
+          <li>When you're on a job page anywhere, click the bookmark. We add the job to your queue, return you to the same tab.</li>
+        </ol>
+      </section>
+
+      <section id="ai-modes">
+        <h2>AI modes — your choice, your billing</h2>
+        <p>You pick how the <em>Analyze fit</em> button reaches a model. Three options:</p>
+        <dl>
+          <dt><strong>Manual</strong></dt>
+          <dd>We prepare the prompt and the input. You paste it into your existing ChatGPT / Claude / Gemini browser tab. No API key needed; uses your existing subscription. Free to use within DirectJob Scout.</dd>
+          <dt><strong>Bring-your-own key</strong></dt>
+          <dd>You paste an API key (OpenAI <code>sk-…</code>, Anthropic <code>sk-ant-…</code>, Gemini <code>AIza…</code>, or OpenRouter <code>sk-or-…</code>) once. We auto-detect the provider, save the key encrypted, and call directly. Cost goes to your provider, not us.</dd>
+          <dt><strong>Managed AI</strong> (waitlist)</dt>
+          <dd>We bill, we provide the key, we set quotas. Currently a Stripe waitlist — sign up from <strong>Settings → AI provider</strong>.</dd>
+        </dl>
+        <p>You can switch any time. The system re-prompts for consent when you switch providers, because the data processor changes.</p>
+      </section>
+
+      <section id="billing">
+        <h2>Billing</h2>
+        <p>Two paid plans (operator-managed during the pilot):</p>
+        <ul>
+          <li><strong>Free</strong> — three saved searches, Manual AI mode, 30-day retention. No card.</li>
+          <li><strong>Pro</strong> — unlimited saved searches, Managed AI, 90-day retention, daily digest. Monthly or annual.</li>
+        </ul>
+        <p>
+          Stripe handles the subscription lifecycle — you can self-manage, see invoices, and cancel from the Stripe Customer Portal link inside <strong>Settings → Subscription</strong>. We do not store card data; we store only Stripe customer + subscription IDs.
+        </p>
+      </section>
+
+      <section id="gdpr">
+        <h2>GDPR &amp; data control</h2>
+        <ul>
+          <li><strong>Export everything you own.</strong> Settings → Backup &amp; restore → Export backup. The download is JSON; everything we have on you is in it.</li>
+          <li><strong>Delete individual records.</strong> Companies, discovered jobs, imported jobs are user-deletable from the app. Saved searches, push subscriptions, and AI provider preferences too.</li>
+          <li><strong>Delete the whole account.</strong> Settings → Privacy → Request deletion. We email a confirmation; after a 7-day grace window you can cancel, the account hard-deletes. Backup tarballs are pruned per the configured retention.</li>
+          <li><strong>What we never store:</strong> raw AI provider keys (only env-var names in the UI), payment card data, your browsing outside the app.</li>
+        </ul>
+        <p>The full data inventory and retention windows live on <a href="/data-retention">Data retention</a>. Privacy-first stance lives on <a href="/privacy">Privacy</a>.</p>
+      </section>
+
+      <section id="troubleshooting">
+        <h2>Troubleshooting</h2>
+        <dl>
+          <dt>The queue is empty even after Find me jobs</dt>
+          <dd>Either no companies added (check Companies tab), or quota was hit (check the day counter in the sidebar — defaults are 50 scans/day, 50 AI calls/day). Quotas reset at midnight UTC.</dd>
+          <dt>Bookmarklet does nothing on a LinkedIn page</dt>
+          <dd>LinkedIn changes its DOM frequently. Open the browser console; if you see a JS error, send a screenshot to support — we ship bookmarklet fixes inside the app, you don't have to re-install.</dd>
+          <dt>I switched language but UI didn't change</dt>
+          <dd>The app reloads on locale switch. If you saw old strings momentarily, that's a stale browser cache — a hard refresh (<kbd>⌘</kbd>+<kbd>Shift</kbd>+<kbd>R</kbd>) clears it.</dd>
+          <dt>Login fails with the right password</dt>
+          <dd>Account may have been deactivated, or rate-limited (5 wrong attempts = backoff window). Wait 15 minutes; if still locked, contact <a href="mailto:support@khalo.org">support@khalo.org</a>.</dd>
+        </dl>
+      </section>
+
+      <p class="legal-footer">
+        <a href="/privacy">Privacy</a>
+        <a href="/terms">Terms</a>
+        <a href="/data-retention">Data retention</a>
+        <a href="/impressum">Impressum</a>
+      </p>
+    </main>
+  </body>
+</html>

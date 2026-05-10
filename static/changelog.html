@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="index,follow" />
+    <title>Changelog — DirectJob Scout</title>
+    <meta name="description" content="What we shipped on DirectJob Scout (khalo.org). Real cadence, no marketing spin." />
+    <link rel="canonical" href="https://khalo.org/changelog" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body class="legal-body">
+    <main class="legal-page">
+      <header>
+        <a href="/" class="legal-back">← Back to DirectJob Scout</a>
+        <h1>Changelog</h1>
+        <p class="muted">What we actually shipped, week by week. App version 0.73.0.</p>
+        <p class="muted small">Regenerated from git history. Run <code>./scripts/generate-changelog.sh</code> after each release.</p>
+      </header>
+
+      <section>
+        <h2>0.73 — UI polish &amp; locale-switch hardening · 2026-05-10</h2>
+        <ul>
+          <li>Locale switch: persists in localStorage on boot, no more manual refresh, API errors no longer swallowed silently.</li>
+          <li>Five operator-flagged bugs fixed; new logo replaces the placeholder "D" mark.</li>
+          <li>Bookmarklet copy rewritten in plain language with a numbered 3-step guide.</li>
+          <li>i18n bundle cache-busts on load (translation drift no longer freezes for users on older bundles).</li>
+          <li>Typography scale: 80 ad-hoc <code>px</code> font-sizes consolidated to <code>--text-*</code> custom properties — color/font refactors are now one-line changes.</li>
+          <li><code>prefers-reduced-motion</code> honoured everywhere, including hover transforms and list staggers.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>0.7x — Discovery UX &amp; visual unification</h2>
+        <ul>
+          <li>Skeleton loaders for find-me-jobs results (replaces dead-air "Searching across providers…" text).</li>
+          <li>Empty states gained icons + clear CTAs across queue, saved-searches, companies, briefcase.</li>
+          <li>Status pill + workspace picker visually unified.</li>
+          <li>Find-jobs result rows: title + meta block + right-aligned source pill.</li>
+          <li>Saved-search row polish + focus-visible audit + reduced-motion sweep.</li>
+          <li>Toasts restyled with a coloured side-bar accent and slide-in animation.</li>
+          <li>Application form: form-status pill (saving/success/error) replacing toast-only feedback.</li>
+          <li>Auto-focus find-jobs from queue empty CTA; saved-search Run-now exposed in Cmd-K.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>0.6x — Account security &amp; AI handoff</h2>
+        <ul>
+          <li>Account-security alignment + persona combobox + Manual handoff + Managed AI waitlist.</li>
+          <li>AI provider one-click; sidebar polish; checkbox + font consistency.</li>
+          <li>Queue freshness + friendlier empty state.</li>
+        </ul>
+      </section>
+
+      <p class="muted small">Earlier history: <code>git log --pretty=format:'%ad %s' --date=short</code> in the repo.</p>
+
+      <p class="legal-footer">
+        <a href="/privacy">Privacy</a>
+        <a href="/terms">Terms</a>
+        <a href="/data-retention">Data retention</a>
+        <a href="/impressum">Impressum</a>
+      </p>
+    </main>
+  </body>
+</html>

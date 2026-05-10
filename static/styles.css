@@ -2337,6 +2337,70 @@ details[open] .collapsible-chevron { transform: rotate(180deg); }
   color: var(--accent-text);
 }
 
+.legal-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 32px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+
+.legal-footer a {
+  color: var(--accent-text);
+}
+
+.share-panel {
+  margin-top: 24px;
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.share-panel h3 {
+  margin: 0 0 4px;
+  font-size: var(--text-md);
+}
+.share-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+.share-url-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+.share-url-row code {
+  flex: 1 1 320px;
+  padding: 6px 10px;
+  background: var(--surface-2, var(--surface));
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  word-break: break-all;
+}
+
+.application-replied-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.queue-empty-cta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 12px;
+}
+
 /* Auxiliary auth screens (forgot password / reset / invite accept) */
 .auth-aux {
   max-width: 460px;
