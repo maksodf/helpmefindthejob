@@ -2141,12 +2141,20 @@ async function refreshAuditLog() {
     }
     for (const e of data.events) {
       const li = document.createElement("li");
-      const when = new Date(e.created_at || e.createdAt || "").toLocaleString();
-      li.textContent = `${when} — ${e.kind}`;
-      const detail = e.payload && Object.keys(e.payload).length
-        ? ` (${Object.entries(e.payload).map(([k, v]) => `${k}=${typeof v === "string" ? v : JSON.stringify(v)}`).join(", ")})`
+      li.className = "audit-row";
+      const when = document.createElement("time");
+      when.className = "audit-when muted";
+      when.textContent = relativeTimeFromIso(e.created_at || e.createdAt) || (e.created_at || "");
+      when.title = new Date(e.created_at || e.createdAt || "").toLocaleString();
+      const kind = document.createElement("span");
+      kind.className = `tag audit-kind audit-kind-${(e.kind || "").replace(/[^a-z0-9_]/gi, "_")}`;
+      kind.textContent = e.kind;
+      const detail = document.createElement("span");
+      detail.className = "audit-detail muted";
+      detail.textContent = e.payload && Object.keys(e.payload).length
+        ? Object.entries(e.payload).map(([k, v]) => `${k}=${typeof v === "string" ? v : JSON.stringify(v)}`).join(" · ")
         : "";
-      li.textContent += detail;
+      li.append(when, kind, detail);
       log.append(li);
     }
   } catch (error) {
