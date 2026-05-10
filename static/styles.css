@@ -2486,6 +2486,21 @@ details[open] .collapsible-chevron { transform: rotate(180deg); }
   align-self: flex-start;
 }
 
+.signup-cta {
+  margin-top: 32px;
+  padding: 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  text-align: center;
+}
+.signup-cta h2 {
+  margin: 0 0 4px;
+}
+.signup-cta p {
+  margin: 4px 0;
+}
+
 /* Auxiliary auth screens (forgot password / reset / invite accept) */
 .auth-aux {
   max-width: 460px;
