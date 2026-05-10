@@ -3474,7 +3474,12 @@ async function findJobs(event) {
   const results = $("#findJobsResults");
   const attributions = $("#findJobsAttributions");
   if (status) status.textContent = t("findJobs.searching", "Searching across providers…");
-  if (results) results.replaceChildren();
+  if (results) {
+    results.replaceChildren();
+    // Show 4 skeleton rows so the user feels something is happening
+    // even before the first byte lands.
+    results.append(skeletonRows(4));
+  }
   try {
     const clamped = Math.max(5, Math.min(50, limit));
     const payload = await api("/api/jobs/search", {
@@ -3498,6 +3503,8 @@ async function findJobs(event) {
       status.textContent = `${jobs.length} ${t("queue.toolbar.sort.discovered", "results")} · ${counts}`;
     }
     if (results) {
+      // Clear skeletons before painting the real results.
+      results.replaceChildren();
       if (jobs.length === 0) {
         const empty = document.createElement("p");
         empty.className = "muted";
@@ -3531,6 +3538,7 @@ async function findJobs(event) {
     }
   } catch (error) {
     if (status) status.textContent = `Error: ${error.message}`;
+    if (results) results.replaceChildren();
     showToast(error.message, "error");
   }
 }
