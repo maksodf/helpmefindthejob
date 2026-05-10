@@ -2012,36 +2012,57 @@ details[open] .collapsible-chevron { transform: rotate(180deg); }
   right: 20px;
   bottom: 20px;
   display: grid;
-  gap: 8px;
+  gap: 10px;
   z-index: 70;
-  max-width: 360px;
+  max-width: 380px;
 }
 
 .toast {
   border: 1px solid var(--border);
   background: var(--surface);
-  border-radius: var(--radius);
-  padding: 10px 14px;
-  font-size: 13px;
-  box-shadow: var(--shadow-md);
+  border-radius: 10px;
+  padding: 11px 14px 11px 12px;
+  font-size: var(--text-sm);
+  box-shadow: var(--shadow-lg);
+  display: grid;
+  grid-template-columns: 6px 1fr;
+  gap: 10px;
+  align-items: center;
+  animation: toast-enter 0.22s ease-out;
 }
+.toast::before {
+  content: "";
+  align-self: stretch;
+  border-radius: 3px;
+  background: var(--text-soft);
+}
+
+.toast.error::before { background: var(--danger); }
+.toast.success::before { background: var(--success); }
+.toast.info::before { background: var(--accent); }
 
 .toast.error {
-  border-color: #f0bdbd;
-  background: var(--danger-weak);
-  color: var(--danger);
+  border-color: color-mix(in oklab, var(--danger) 35%, var(--border));
+  color: var(--text);
 }
-
 .toast.success {
-  border-color: #b6eccd;
-  background: var(--success-weak);
-  color: var(--success);
+  border-color: color-mix(in oklab, var(--success) 35%, var(--border));
+  color: var(--text);
+}
+.toast.info {
+  border-color: color-mix(in oklab, var(--accent) 30%, var(--border));
+  color: var(--text);
 }
 
-.toast.info {
-  border-color: rgba(37, 99, 235, 0.35);
-  background: var(--accent-weak);
-  color: var(--accent-text);
+@keyframes toast-enter {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .toast { animation: none; }
+}
+@media (max-width: 480px) {
+  .toast-root { left: 12px; right: 12px; bottom: 12px; max-width: none; }
 }
 
 /* Scan result */
