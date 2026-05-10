@@ -123,10 +123,10 @@ class HttpSeoPageRouteTests(unittest.TestCase):
     def setUp(self) -> None:
         self.tmp = TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
-        # Mirror the shipped config into the test data dir so the
-        # AppState reads it from data_path.parent.
-        config = (ROOT / "data" / "seo-pages.json").read_text(encoding="utf-8")
-        Path(self.tmp.name, "seo-pages.json").write_text(config, encoding="utf-8")
+        # Copy the shipped example into the test data dir so the
+        # AppState reads it from data_path.parent at runtime.
+        template = (ROOT / "deploy" / "seo-pages.json.example").read_text(encoding="utf-8")
+        Path(self.tmp.name, "seo-pages.json").write_text(template, encoding="utf-8")
         self.port = _free_port()
         env = {
             **os.environ,

@@ -2015,7 +2015,10 @@ class AppState:
         """Read the operator-edited SEO-page config (Phase 1 #17). The
         file is re-read on every call so the operator can edit + reload
         without restarting the app. Returns an empty list if the file
-        is missing or malformed (safer than crashing /jobs/<slug>)."""
+        is missing or malformed (safer than crashing /jobs/<slug>).
+
+        Operator path: copy ``deploy/seo-pages.json.example`` to
+        ``<DATA_DIR>/seo-pages.json`` and edit the entries in place."""
 
         path = self.data_path.parent / "seo-pages.json"
         if not path.exists():

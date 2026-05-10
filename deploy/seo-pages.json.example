@@ -1,0 +1,26 @@
+{
+  "_doc": "Operator-edited list of public job-alert SEO pages. Each entry is a discrete URL at /jobs/<slug> that server-renders an HTML landing page targeting a specific role + city search query. Add an entry → restart isn't required (the file is read on every request, no caching beyond the OS page cache). Keep the slug URL-safe (alnum + dash). The page itself does NOT list real jobs — it is a sign-up funnel for the search query, and the user runs the live search after signing up. Do not pad with fake job counts.",
+  "pages": [
+    {
+      "slug": "healthcare-management-berlin",
+      "title": "Healthcare management jobs in Berlin",
+      "role": "Healthcare management",
+      "city": "Berlin",
+      "intro": "Berlin's healthcare-management market is fragmented across statutory insurers, university hospitals, and digital-health employers — most of which under-index on LinkedIn. DirectJob Scout watches their direct career pages plus the major DACH aggregators (StepStone, Bundesagentur, Arbeitnow, Muse) and dedupes the queue."
+    },
+    {
+      "slug": "data-engineer-berlin",
+      "title": "Data engineer jobs in Berlin",
+      "role": "Data engineer",
+      "city": "Berlin",
+      "intro": "Berlin has a deep data-engineer market across SaaS, fintech, and the in-house teams at the German Mittelstand. We track the company sites + the public aggregators daily, dedupe across sources, and let you triage the queue in five minutes a day."
+    },
+    {
+      "slug": "frontend-engineer-remote-dach",
+      "title": "Frontend engineer jobs (remote, DACH)",
+      "role": "Frontend engineer",
+      "city": "Remote (DACH)",
+      "intro": "Remote DACH frontend roles are scattered across employer sites that LinkedIn under-indexes. We watch them daily and surface a single queue you can triage with keyboard shortcuts. No feed, no algorithm, no recruiter messages."
+    }
+  ]
+}
