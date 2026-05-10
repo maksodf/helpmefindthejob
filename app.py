@@ -424,6 +424,7 @@ class AppState:
             "whatsNew": self._whats_new_for(user_id),
             "applicationOutcomes": self.application_outcomes_summary(data_user_id),
             "skillGaps": self.aggregate_skill_gaps(data_user_id),
+            "cvVariants": self.cv_variant_outcomes(data_user_id),
             "applicationStatuses": list(APPLICATION_STATUSES),
         }
 
@@ -1848,6 +1849,50 @@ class AppState:
             results["__account_deletions"] = len(deletions)
         return results
 
+    def cv_variant_outcomes(self, user_id: str, *, min_variants: int = 3) -> dict[str, Any]:
+        """Per-variant reply-rate attribution (Phase 4 #44).
+
+        For each ImportedJob with at least one ``cv_variant`` we count
+        how many variants the user generated (numerator: total tailorings)
+        and how many of those job applications later got a reply
+        attributed to a specific variant. Returns aggregate counts plus
+        a "winner" — the variant index with the highest attributed-reply
+        rate, when at least ``min_variants`` variants exist across the
+        user's queue. Hidden until then because n=1 is meaningless."""
+
+        from collections import Counter
+
+        per_index_total: "Counter[int]" = Counter()
+        per_index_replied: "Counter[int]" = Counter()
+        total_variants = 0
+        for job in self.repository.list_imported_jobs(user_id):
+            for variant in job.cv_variants or []:
+                idx = int(variant.get("index") or 0)
+                if idx <= 0:
+                    continue
+                per_index_total[idx] += 1
+                total_variants += 1
+                if variant.get("attributedReply"):
+                    per_index_replied[idx] += 1
+        ready = total_variants >= min_variants
+        breakdown: list[dict[str, Any]] = []
+        for idx, total in sorted(per_index_total.items()):
+            replied = per_index_replied.get(idx, 0)
+            rate = replied / total if total else 0.0
+            breakdown.append({
+                "index": idx,
+                "tailored": total,
+                "replied": replied,
+                "rate": round(rate, 4),
+            })
+        winner = max(breakdown, key=lambda row: (row["rate"], row["replied"]), default=None)
+        return {
+            "ready": ready,
+            "totalVariants": total_variants,
+            "breakdown": breakdown,
+            "winner": winner if (winner and winner["replied"] > 0) else None,
+        }
+
     def aggregate_skill_gaps(self, user_id: str, *, top_k: int = 3, min_jobs: int = 3) -> dict[str, Any]:
         """Top-K skill gaps across the user's imported queue (Phase 4 #41).
 
@@ -1974,6 +2019,7 @@ class AppState:
             # timestamp. ``replied=true`` stamps now() if not already
             # set; ``replied=false`` clears it. Idempotent: re-sending
             # the same boolean does not overwrite an existing stamp.
+            previous_replied_at = imported.replied_at
             if "replied" in payload:
                 wants = bool(payload.get("replied"))
                 if wants and imported.replied_at is None:
@@ -1989,6 +2035,18 @@ class AppState:
                         imported.replied_at = datetime.fromisoformat(str(raw_replied).replace("Z", "+00:00"))
                     except ValueError:
                         raise ValueError("invalid_replied_at")
+            # CV-variant attribution (#44): on the transition from None
+            # to a real timestamp, mark the most recent variant as the
+            # one that earned the reply. On clearing, undo the flag so
+            # the analytics stay clean if the user toggled by mistake.
+            variants = list(imported.cv_variants or [])
+            if previous_replied_at is None and imported.replied_at is not None and variants:
+                variants[-1] = {**variants[-1], "attributedReply": True}
+                imported.cv_variants = variants
+            elif imported.replied_at is None and previous_replied_at is not None and variants:
+                imported.cv_variants = [
+                    {**v, "attributedReply": False} for v in variants
+                ]
         if "historyNote" in payload:
             history_note = str(payload.get("historyNote") or "").strip() or None
         if "documentsChecklist" in payload:
@@ -3937,12 +3995,34 @@ class Handler(BaseHTTPRequestHandler):
                     imported, provider, runtime_credential, profile,
                 )
                 STATE.quota_store.record_ai_run(user_id)
+                # CV variant attribution (#44): persist a small record
+                # of every successful tailoring run so we can correlate
+                # variants with replies later. Excerpt is bounded so the
+                # JSON payload stays under control.
+                if result.status == "completed" and result.output:
+                    next_index = len(imported.cv_variants or []) + 1
+                    excerpt = (result.output or "")[:400]
+                    imported.cv_variants = list(imported.cv_variants or []) + [{
+                        "index": next_index,
+                        "createdAt": now_utc().isoformat(),
+                        "excerpt": excerpt,
+                        "attributedReply": False,
+                    }]
+                    imported.updated_at = now_utc()
+                    STATE.repository.save_imported_job(imported)
                 STATE.log_analytics(
                     user_id,
                     "cv_tailoring",
-                    {"providerId": result.provider_id, "status": result.status},
+                    {
+                        "providerId": result.provider_id,
+                        "status": result.status,
+                        "variantIndex": len(imported.cv_variants or []),
+                    },
                 )
-                self.send_json({"tailored": asdict(result)})
+                self.send_json({
+                    "tailored": asdict(result),
+                    "variantIndex": len(imported.cv_variants or []) if result.status == "completed" else None,
+                })
                 return
 
             if len(parts) == 4 and parts[:2] == ["api", "discovered-jobs"] and parts[3] == "auto-fit":

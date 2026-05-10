@@ -158,6 +158,12 @@ class ImportedJob:
     # aggregator on the dashboard surfaces the most common gaps across
     # the imported queue so the user can prioritise what to learn.
     gaps: list[str] = field(default_factory=list)
+    # CV-variant attribution (#44). Each entry is one tailor-cv run
+    # result: ``{index, createdAt, excerpt, attributedReply}``. When
+    # the user later flags ``replied=True`` on the application, the
+    # most recent variant on the job is marked as the one that earned
+    # the reply. Empty list when the user never tailored.
+    cv_variants: list[dict[str, Any]] = field(default_factory=list)
     application_history: list[dict[str, Any]] = field(default_factory=list)
     id: str = field(default_factory=lambda: new_id("job"))
     created_at: datetime = field(default_factory=now_utc)
