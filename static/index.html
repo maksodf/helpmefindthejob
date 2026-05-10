@@ -522,6 +522,8 @@
               </div>
               <div class="action-group">
                 <button id="copyBriefBtn" class="btn" type="button" data-i18n="brief.copy">Copy</button>
+                <button id="openInChatGPTBtn" class="btn" type="button" title="Copy the prompt and open ChatGPT in a new tab">↗ ChatGPT</button>
+                <button id="openInClaudeBtn" class="btn" type="button" title="Copy the prompt and open Claude in a new tab">↗ Claude</button>
                 <button id="runAnalysisBriefBtn" class="btn btn-primary" type="button" data-i18n="brief.analyze">Analyze fit</button>
               </div>
             </div>
@@ -686,8 +688,8 @@
             <form id="profileForm" class="provider-grid">
               <label class="field">
                 <span>Persona</span>
-                <input id="profilePersonaSearch" type="search" data-i18n-placeholder="settings.persona.searchPlaceholder" placeholder="Filter personas…" autocomplete="off" />
-                <select id="profilePersona"></select>
+                <input id="profilePersona" list="personaDatalist" data-i18n-placeholder="settings.persona.searchPlaceholder" placeholder="Type to search personas…" autocomplete="off" />
+                <datalist id="personaDatalist"></datalist>
               </label>
               <label class="field">
                 <span>Industry preference</span>
@@ -798,12 +800,12 @@
                 </div>
                 <p class="muted small" data-i18n="settings.ai.mode.byok.desc">Paste a key from OpenAI, Anthropic, Google, or DeepSeek. We auto-detect which one and never persist the raw value.</p>
               </button>
-              <button class="ai-mode" type="button" role="radio" data-ai-mode="managed" aria-checked="false" disabled>
+              <button class="ai-mode" type="button" role="radio" data-ai-mode="managed" aria-checked="false">
                 <div class="ai-mode-head">
-                  <strong data-i18n="settings.ai.mode.managed.title">Managed (coming soon)</strong>
-                  <span class="tag" data-i18n="settings.ai.mode.managed.tag">€5/mo</span>
+                  <strong data-i18n="settings.ai.mode.managed.title">Managed</strong>
+                  <span class="tag" data-i18n="settings.ai.mode.managed.tag">€5/mo · waitlist</span>
                 </div>
-                <p class="muted small" data-i18n="settings.ai.mode.managed.desc">We bring the key. One click to enable, billing through Stripe. Waitlist opens shortly.</p>
+                <p class="muted small" data-i18n="settings.ai.mode.managed.desc">We bring the key. One click to enable; billing through Stripe. Tap to join the waitlist — we'll email you the moment it opens.</p>
               </button>
             </div>
             <div id="aiByokPane" class="ai-byok-pane" hidden>
@@ -858,13 +860,12 @@
             </div>
             <form id="changePasswordForm" class="account-grid" novalidate>
               <label class="field">
-                <span>Current password</span>
+                <span data-i18n="settings.account.current">Current password</span>
                 <input id="currentPassword" type="password" autocomplete="current-password" required />
               </label>
               <label class="field">
-                <span>New password</span>
-                <input id="newPassword" type="password" autocomplete="new-password" minlength="12" required />
-                <span class="hint">12 characters or more.</span>
+                <span data-i18n="settings.account.new">New password</span>
+                <input id="newPassword" type="password" autocomplete="new-password" minlength="12" required data-i18n-placeholder="settings.account.minLength" placeholder="12 characters or more" />
               </label>
               <button class="btn btn-primary" type="submit" data-i18n="settings.account.change">Change password</button>
             </form>
@@ -1000,8 +1001,7 @@
               </label>
               <label class="field">
                 <span data-i18n="admin.testers.password">Initial password</span>
-                <input id="newUserPassword" type="password" autocomplete="new-password" minlength="12" required />
-                <span class="hint">12 characters or more.</span>
+                <input id="newUserPassword" type="password" autocomplete="new-password" minlength="12" required placeholder="12 characters or more" />
               </label>
               <label class="field">
                 <span data-i18n="admin.testers.role">Role</span>

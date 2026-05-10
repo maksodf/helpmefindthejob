@@ -2207,41 +2207,31 @@ function showRecoveryCodes(codes) {
 }
 
 function renderProfile() {
-  const personaSelect = $("#profilePersona");
-  if (!personaSelect) return;
+  // Persona is now a datalist combobox: one input + a <datalist> of
+  // human-readable labels. We translate label↔id at save-time so the
+  // backend keeps using persona ids.
+  const personaInput = $("#profilePersona");
+  const datalist = $("#personaDatalist");
+  if (!personaInput || !datalist) return;
   const personas = Array.isArray(state.personas) ? state.personas : [];
   const profile = state.profile || {};
-  personaSelect.replaceChildren();
-  if (!personas.length) {
-    const fallback = document.createElement("option");
-    fallback.value = "healthcare-management";
-    fallback.textContent = "Healthcare management";
-    personaSelect.append(fallback);
-  }
+  datalist.replaceChildren();
   for (const persona of personas) {
-    const node = document.createElement("option");
-    node.value = persona.id;
-    node.textContent = persona.label;
-    node.dataset.search = `${persona.label} ${persona.description || ""}`.toLowerCase();
-    personaSelect.append(node);
+    const opt = document.createElement("option");
+    opt.value = persona.label;
+    opt.dataset.personaId = persona.id;
+    datalist.append(opt);
   }
-  personaSelect.value = profile.personaId || personas[0]?.id || "healthcare-management";
-
-  // Filter-as-you-type. Hides options whose data-search doesn't match.
-  const search = $("#profilePersonaSearch");
-  if (search && !search.dataset.bound) {
-    search.dataset.bound = "1";
-    search.addEventListener("input", () => {
-      const q = search.value.trim().toLowerCase();
-      let firstVisible = null;
-      for (const opt of personaSelect.options) {
-        const matches = !q || (opt.dataset.search || "").includes(q);
-        opt.hidden = !matches;
-        if (matches && !firstVisible) firstVisible = opt;
-      }
-      if (firstVisible && (personaSelect.options[personaSelect.selectedIndex]?.hidden)) {
-        personaSelect.value = firstVisible.value;
-      }
+  // Show the human-readable label for the currently-selected persona.
+  const current = personas.find((p) => p.id === profile.personaId);
+  personaInput.value = current ? current.label : (personas[0]?.label || "Healthcare management");
+  personaInput.dataset.personaId = current ? current.id : (personas[0]?.id || "healthcare-management");
+  // Update dataset.personaId on every input so saveProfile knows which id to send.
+  if (!personaInput.dataset.bound) {
+    personaInput.dataset.bound = "1";
+    personaInput.addEventListener("input", () => {
+      const match = personas.find((p) => p.label.toLowerCase() === personaInput.value.toLowerCase());
+      if (match) personaInput.dataset.personaId = match.id;
     });
   }
 
@@ -2346,6 +2336,25 @@ function detectProviderFromKey(key) {
       } else if (mode === "byok") {
         if (byokPane) byokPane.hidden = false;
         document.getElementById("aiByokKey")?.focus();
+      } else if (mode === "managed") {
+        // Real Stripe checkout is operator-pending; we collect waitlist
+        // signups via the analytics_events log so we can email when ready.
+        try {
+          const res = await api("/api/managed-ai/waitlist", { method: "POST", body: "{}" });
+          if (res.status === "already_on_waitlist") {
+            showToast(t("settings.ai.managed.alreadyJoined", "You're already on the waitlist — we'll email you when it opens."), "info");
+          } else {
+            showToast(t("settings.ai.managed.joined", "Added to waitlist. Thanks — we'll email you when it opens."), "success");
+          }
+        } catch (error) {
+          showToast(error.message, "error");
+        }
+        // Re-select the previous mode visually since "managed" isn't actually active yet.
+        const currentMode = (state.aiProvider.provider_id && state.aiProvider.provider_id !== "manual") ? "byok" : "manual";
+        document.querySelectorAll(".ai-mode").forEach((el) => {
+          el.setAttribute("aria-checked", String(el.dataset.aiMode === currentMode));
+        });
+        if (byokPane) byokPane.hidden = (currentMode !== "byok");
       }
       return;
     }
@@ -2881,8 +2890,13 @@ function showPersonaSuggestionPrompt(suggestion, message) {
   apply.textContent = t("settings.persona.applySuggestion", "Apply");
   apply.addEventListener("click", async () => {
     try {
-      const select = $("#profilePersona");
-      if (select) select.value = suggestion.personaId;
+      // Update the datalist combobox to show the new persona's label.
+      const personaInput = $("#profilePersona");
+      if (personaInput) {
+        const match = (state.personas || []).find((p) => p.id === suggestion.personaId);
+        personaInput.value = match?.label || suggestion.personaId;
+        personaInput.dataset.personaId = suggestion.personaId;
+      }
       await api("/api/profile", {
         method: "POST",
         body: JSON.stringify({ personaId: suggestion.personaId }),
@@ -2943,9 +2957,11 @@ async function handleCvUpload(event) {
 }
 
 async function saveProfile() {
-  const personaSelect = $("#profilePersona");
-  if (!personaSelect) return;
-  const personaId = personaSelect.value;
+  const personaInput = $("#profilePersona");
+  if (!personaInput) return;
+  const personaId = personaInput.dataset.personaId
+    || (state.personas || []).find((p) => p.label.toLowerCase() === (personaInput.value || "").toLowerCase())?.id
+    || "healthcare-management";
   const yearsRaw = $("#profileYearsExperience").value.trim();
   const body = {
     personaId,
@@ -4083,18 +4099,37 @@ $("#runAnalysisBriefBtn").addEventListener("click", () => {
   if (state.selectedImportedJobId) runAnalysis(state.selectedImportedJobId);
   else showToast("Pick an imported job first.", "info");
 });
-$("#copyBriefBtn").addEventListener("click", async () => {
+async function copyBriefThen(actionFn) {
   const text = $("#briefPrompt").value;
   if (!text) {
-    showToast("No brief to copy yet.", "info");
-    return;
+    showToast(t("brief.empty", "No brief to copy yet."), "info");
+    return false;
   }
   try {
     await navigator.clipboard.writeText(text);
-    showToast("Brief copied to clipboard.", "success");
+    if (actionFn) actionFn();
+    return true;
   } catch {
-    showToast("Could not access the clipboard.", "error");
+    showToast(t("brief.clipboardErr", "Could not access the clipboard."), "error");
+    return false;
   }
+}
+
+$("#copyBriefBtn").addEventListener("click", async () => {
+  const ok = await copyBriefThen();
+  if (ok) showToast(t("brief.copied", "Brief copied to clipboard."), "success");
+});
+
+// Manual-mode handoff: copy the prompt + open the LLM's web UI in a new tab.
+// We can't programmatically prefill the LLM's textarea from a 3rd-party origin
+// (CSP / cross-origin restrictions), but copy-then-open removes 80% of the friction.
+$("#openInChatGPTBtn")?.addEventListener("click", async () => {
+  const ok = await copyBriefThen(() => window.open("https://chat.openai.com/", "_blank", "noopener,noreferrer"));
+  if (ok) showToast(t("brief.openHandoff", "Copied. Paste it into the LLM tab."), "success");
+});
+$("#openInClaudeBtn")?.addEventListener("click", async () => {
+  const ok = await copyBriefThen(() => window.open("https://claude.ai/new", "_blank", "noopener,noreferrer"));
+  if (ok) showToast(t("brief.openHandoff", "Copied. Paste it into the LLM tab."), "success");
 });
 $("#companyFilter").addEventListener("input", (event) => {
   state.companyFilter = event.target.value;

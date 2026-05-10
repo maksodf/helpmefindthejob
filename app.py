@@ -136,7 +136,7 @@ DEFAULT_WATCHLIST_SCHEDULE = {
     "lastRunAt": None,
     "lastRunStatus": "disabled",
 }
-APP_VERSION = "0.53.0"
+APP_VERSION = "0.54.0"
 EXPORT_SCHEMA_VERSION = 1
 SESSION_COOKIE_NAME = "directjob_session"
 APP_ENV = os.environ.get("COMPANY_DISCOVERY_ENV", "development").strip().casefold()
@@ -2202,6 +2202,23 @@ class Handler(BaseHTTPRequestHandler):
                     return
                 events = STATE.repository.list_analytics_events(limit=200)
                 self.send_json({"events": events})
+                return
+            if parsed.path == "/api/managed-ai/waitlist":
+                # Express interest in the operator-side managed AI tier.
+                # We log it via analytics_event so admin can read the list
+                # later. Real Stripe billing wiring is operator-pending.
+                already = [
+                    e for e in STATE.repository.list_analytics_events(user_id=user_id, limit=20)
+                    if (e.get("kind") if isinstance(e, dict) else getattr(e, "kind", None)) == "managed_ai_waitlist"
+                ]
+                if already:
+                    self.send_json({"status": "already_on_waitlist"})
+                    return
+                STATE.log_analytics(
+                    user_id, "managed_ai_waitlist",
+                    {"email": session.user.email, "requestedAt": now_utc().isoformat()},
+                )
+                self.send_json({"status": "added"})
                 return
             if parsed.path == "/api/profile/slack-test":
                 profile = STATE.profile_for(user_id)
