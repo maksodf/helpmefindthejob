@@ -1422,9 +1422,27 @@ function renderApplicationForm() {
   renderApplicationHistory(job);
   if (job.structured_analysis || job.fit_score != null) {
     summary.hidden = false;
-    const fit = job.fit_score != null ? `${Math.round(job.fit_score * 100)}%` : "—";
-    const rec = job.recommendation || "—";
-    summary.textContent = `Fit: ${fit} · Recommendation: ${rec}`;
+    summary.replaceChildren();
+    const fitN = job.fit_score != null ? Math.round(job.fit_score * 100) : null;
+    if (fitN != null) {
+      const ring = document.createElement("div");
+      ring.className = "fit-ring";
+      const tone = fitN >= 70 ? "good" : fitN >= 45 ? "warn" : "low";
+      ring.classList.add(`fit-ring-${tone}`);
+      ring.style.setProperty("--fit-pct", String(fitN));
+      ring.innerHTML = `<svg viewBox="0 0 36 36" aria-hidden="true"><circle class="fit-ring-bg" cx="18" cy="18" r="15" fill="none"/><circle class="fit-ring-fg" cx="18" cy="18" r="15" fill="none" pathLength="100" stroke-dasharray="${fitN} 100" transform="rotate(-90 18 18)"/></svg><span class="fit-ring-num">${fitN}<span>%</span></span>`;
+      summary.append(ring);
+    }
+    const block = document.createElement("div");
+    block.className = "fit-meta";
+    const fitLabel = document.createElement("p");
+    fitLabel.className = "muted small";
+    fitLabel.textContent = t("application.fit.label", "AI fit");
+    const rec = document.createElement("p");
+    rec.className = "fit-rec";
+    rec.textContent = job.recommendation || t("application.fit.noRec", "No recommendation yet — Analyze fit on the Brief view to score.");
+    block.append(fitLabel, rec);
+    summary.append(block);
   } else {
     summary.hidden = true;
   }

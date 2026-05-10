@@ -208,6 +208,8 @@
   "settings.bookmarklet.step2.desc": "Es wird ein Lesezeichen, das du auf jeder Stellenseite klicken kannst.",
   "settings.bookmarklet.step3": "Auf Indeed / LinkedIn / StepStone / Xing — Lesezeichen klicken",
   "settings.bookmarklet.step3.desc": "DirectJob öffnet sich in einem neuen Tab und ergänzt die Rolle in deiner Queue. Fertig.",
+  "application.fit.label": "KI-Fit",
+  "application.fit.noRec": "Noch keine Empfehlung — auf Briefing-Ansicht „Fit analysieren“ klicken.",
   "cmdk.noResults": "Keine Treffer",
   "cmdk.action.toggleTheme": "Theme wechseln",
   "cmdk.action.toggleLocale": "Sprache wechseln",

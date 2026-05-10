@@ -2450,16 +2450,43 @@ details[open] .collapsible-chevron { transform: rotate(180deg); }
 }
 
 .structured-fit {
-  margin-top: 12px;
-  font-size: 13px;
+  margin-top: 14px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface-2);
-  padding: 10px 12px;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
 }
-
-.structured-fit strong {
+.structured-fit strong { color: var(--text); }
+.fit-meta { flex: 1; min-width: 0; }
+.fit-meta .muted { margin: 0 0 2px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
+.fit-rec { margin: 0; color: var(--text); font-size: var(--text-md); }
+.fit-ring {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  flex: none;
+  display: grid;
+  place-items: center;
+}
+.fit-ring svg { width: 56px; height: 56px; }
+.fit-ring-bg { stroke: var(--border-strong); stroke-width: 3; }
+.fit-ring-fg { stroke-width: 3; stroke-linecap: round; transition: stroke-dasharray 0.4s ease; }
+.fit-ring-good .fit-ring-fg { stroke: var(--success); }
+.fit-ring-warn .fit-ring-fg { stroke: var(--warn); }
+.fit-ring-low .fit-ring-fg  { stroke: var(--danger); }
+.fit-ring-num {
+  position: absolute;
+  font-weight: 650;
+  font-size: var(--text-lg);
+  letter-spacing: -0.02em;
   color: var(--text);
+}
+.fit-ring-num span { font-size: 9px; vertical-align: super; margin-left: 1px; color: var(--text-muted); }
+@media (max-width: 480px) {
+  .structured-fit { flex-direction: column; align-items: flex-start; }
 }
 
 .support-grid {
