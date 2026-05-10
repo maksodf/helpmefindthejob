@@ -88,7 +88,7 @@ Each item is one slice. Tick `[x]` when done. Order is rough; some can ship in p
 
 ## Phase 7 — Post-launch growth & iteration
 
-60. [ ] Set up product analytics (privacy-friendly: Plausible.io or self-hosted Umami) for signup funnel + activation
+60. [x] Set up product analytics (privacy-friendly: Plausible.io or self-hosted Umami) for signup funnel + activation — public `GET /api/site-config` returns `{analytics: {scriptUrl, domain}}` from `DIRECTJOB_ANALYTICS_SCRIPT_URL` + `DIRECTJOB_ANALYTICS_DOMAIN` env vars. Frontend boot calls `loadSiteConfig()` (best-effort, swallows network errors) and injects the script tag with `data-domain` only when configured. **Default ships zero third-party requests** — operator opts in by setting the env vars, ideally pointed at a self-hosted Plausible/Umami at `analytics.<their-domain>` so the load is first-party. `docs/cookie-audit.md` updated to document the optional path + the "do not point this at GA / Hotjar" rule. `.env.example` has the new vars commented out. Tests: `tests/test_phase7_analytics_config.py` (2 tests, green) cover unset → nulls, set → values
 61. [ ] A/B test pricing page copy + CTA placement (PostHog or simple flag-driven split)
 62. [ ] SEO content cadence: 1 indexable job-alert page per major role × major city (10 cities × 20 roles = 200 pages)
 63. [ ] LinkedIn / Twitter / Reddit content: weekly "lessons from the queue" posts with anonymized stats
