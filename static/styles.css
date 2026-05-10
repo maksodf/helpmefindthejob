@@ -402,10 +402,26 @@ input:focus-visible,
 select:focus-visible,
 textarea:focus-visible,
 .nav-item:focus-visible,
-.company-item:focus-visible {
+.company-item:focus-visible,
+.settings-tab:focus-visible,
+.segmented-btn:focus-visible,
+.ai-mode:focus-visible,
+.cmdk-launcher:focus-visible,
+.collapsible-summary:focus-visible,
+.cmdk-item:focus-visible,
+a.bookmarklet-link:focus-visible {
   outline: none;
   box-shadow: 0 0 0 3px var(--focus-ring);
   border-color: var(--accent);
+}
+/* Honour reduced-motion: skip subtle hover transforms when requested */
+@media (prefers-reduced-motion: reduce) {
+  .card:hover,
+  .metric-card:hover,
+  .imported-row:hover,
+  .find-jobs-row:hover,
+  .suggestion:hover,
+  .saved-search-row:hover { transform: none; }
 }
 
 .btn:disabled {
@@ -2418,10 +2434,19 @@ details[open] .collapsible-chevron { transform: rotate(180deg); }
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 10px 12px;
+  padding: 12px 14px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
+  background: var(--surface);
+  transition: border-color 0.12s ease, background 0.12s ease;
+}
+.saved-search-row:hover {
+  border-color: var(--border-strong);
   background: var(--surface-2);
+}
+@media (max-width: 480px) {
+  .saved-search-row { flex-direction: column; align-items: stretch; }
+  .saved-search-row .action-group { display: flex; gap: 6px; }
 }
 
 .application-grid {
