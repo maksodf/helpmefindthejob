@@ -1482,7 +1482,20 @@ details[open] .collapsible-chevron { transform: rotate(180deg); }
     var(--surface-2);
   text-align: center;
   color: var(--text-muted);
+  justify-items: center;
 }
+.empty-icon {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--accent-weak);
+  color: var(--accent-text);
+  margin-bottom: 4px;
+}
+.empty-icon svg { width: 26px; height: 26px; }
+.empty .btn { margin-top: 4px; }
 
 .empty p {
   margin: 0;

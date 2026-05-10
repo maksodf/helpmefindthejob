@@ -505,7 +505,7 @@ function renderDashboard() {
     .sort((a, b) => (b.created_at || "").localeCompare(a.created_at || ""))
     .slice(0, 5);
   if (!items.length) {
-    list.append(emptyNode("No activity yet."));
+    list.append(emptyNode(t("dashboard.activity.empty", "No activity yet."), { icon: "list" }));
     return;
   }
   for (const run of items) {
@@ -532,7 +532,18 @@ function renderCompanies() {
     return haystack.includes(state.companyFilter.toLowerCase());
   });
   if (!filtered.length) {
-    list.append(emptyNode(state.companyFilter ? "No companies match." : "No companies yet."));
+    if (state.companyFilter) {
+      list.append(emptyNode(t("companies.empty.filtered", "No companies match your filter."), { icon: "search" }));
+    } else {
+      list.append(emptyNode(
+        t("companies.empty.none", "Build a watchlist of employers you'd love to work for."),
+        {
+          icon: "company",
+          ctaText: t("companies.empty.cta", "Add your first company"),
+          onCta: () => document.getElementById("newCompanyBtn")?.click(),
+        },
+      ));
+    }
     return;
   }
   for (const company of filtered) {
@@ -1063,7 +1074,14 @@ function renderImportedJobs() {
   if (!list) return;
   list.replaceChildren();
   if (!state.importedJobs.length) {
-    list.append(emptyNode("No imported jobs yet. Import a discovered role first."));
+    list.append(emptyNode(
+      t("imported.empty.text", "No imported jobs yet. Open the queue, find one you like, hit Import."),
+      {
+        icon: "briefcase",
+        ctaText: t("imported.empty.cta", "Open queue"),
+        onCta: () => navigate("jobs"),
+      },
+    ));
     return;
   }
   for (const job of state.importedJobs.slice(0, 12)) {
@@ -1160,7 +1178,7 @@ function renderHistory() {
     .sort((a, b) => (b.last_checked_at || "").localeCompare(a.last_checked_at || ""))
     .slice(0, 10);
   if (!scans.length) {
-    list.append(emptyNode("No scan history yet."));
+    list.append(emptyNode(t("history.empty", "No scan history yet."), { icon: "list" }));
     return;
   }
   for (const scan of scans) {
@@ -1226,7 +1244,10 @@ function renderSavedSearches() {
   if (!list) return;
   list.replaceChildren();
   if (!(state.savedSearches || []).length) {
-    list.append(emptyNode("No saved searches yet."));
+    list.append(emptyNode(
+      t("savedSearches.empty.text", "No saved searches yet. Save a query and we'll watch it daily."),
+      { icon: "saved" },
+    ));
     return;
   }
   for (const search of state.savedSearches || []) {
@@ -2522,14 +2543,41 @@ function renderAdminUsers() {
 
 /* ---------- Helpers ---------- */
 
-function emptyNode(text) {
+function emptyNode(text, options) {
+  // Options: { icon: "search" | "briefcase" | "company" | "list",
+  //           ctaText: string, onCta: fn }
+  const opts = options || {};
   const node = document.createElement("div");
   node.className = "empty";
+  if (opts.icon) {
+    const ic = document.createElement("div");
+    ic.className = "empty-icon";
+    ic.innerHTML = EMPTY_ICONS[opts.icon] || "";
+    if (ic.innerHTML) node.append(ic);
+  }
   const p = document.createElement("p");
   p.textContent = text;
   node.append(p);
+  if (opts.ctaText && opts.onCta) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "btn btn-primary";
+    btn.textContent = opts.ctaText;
+    btn.addEventListener("click", opts.onCta);
+    node.append(btn);
+  }
   return node;
 }
+
+// Reusable empty-state SVG icons. Match the queue-empty visual so the
+// app feels consistent across surfaces.
+const EMPTY_ICONS = {
+  search: '<svg viewBox="0 0 48 48" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="22" cy="22" r="12"/><path d="M31 31 L40 40"/></svg>',
+  briefcase: '<svg viewBox="0 0 48 48" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="14" width="32" height="26" rx="3"/><path d="M18 14 V10 a2 2 0 0 1 2-2 h8 a2 2 0 0 1 2 2 v4"/><path d="M8 24 H40"/></svg>',
+  company: '<svg viewBox="0 0 48 48" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M10 40 V14 a2 2 0 0 1 2-2 h14 a2 2 0 0 1 2 2 v26"/><path d="M28 40 V22 a2 2 0 0 1 2-2 h6 a2 2 0 0 1 2 2 v18"/><path d="M16 20 h4 M16 26 h4 M16 32 h4 M32 26 h2 M32 32 h2"/></svg>',
+  list: '<svg viewBox="0 0 48 48" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14 14 H38 M14 22 H38 M14 30 H30"/><circle cx="9" cy="14" r="1.5" fill="currentColor"/><circle cx="9" cy="22" r="1.5" fill="currentColor"/><circle cx="9" cy="30" r="1.5" fill="currentColor"/></svg>',
+  saved: '<svg viewBox="0 0 48 48" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14 8 H34 a2 2 0 0 1 2 2 V40 L24 32 L12 40 V10 a2 2 0 0 1 2-2 z"/></svg>',
+};
 
 function relativeTimeFromIso(iso) {
   // Returns short i18n'd relative-time strings like "just now", "5m ago",
