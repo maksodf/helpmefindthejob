@@ -1,0 +1,15 @@
+{
+  "_doc": "A/B test config for the apex landing + pricing page (Phase 7 #61). Each entry defines an experiment with ≥2 variants. The first variant is the control; the rest are treatments. Server hashes (experimentId | visitor_identity) and assigns deterministically — same visitor → same variant for the lifetime of the experiment. Operator copies this file to <DATA_DIR>/experiments.json to enable. Variant slugs must be alnum or - or _.",
+  "experiments": [
+    {
+      "id": "pricing_card_emphasis",
+      "description": "Test whether emphasising the annual price (€40/year) vs the monthly price (€5/month) on the pricing card moves checkout conversion.",
+      "variants": ["control_monthly_first", "treatment_annual_first"]
+    },
+    {
+      "id": "hero_cta_label",
+      "description": "Test 'Sign up — free' vs 'Try DirectJob Scout free' on the hero CTA.",
+      "variants": ["control_signup_free", "treatment_try_free"]
+    }
+  ]
+}

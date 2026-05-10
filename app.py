@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import mimetypes
 import os
@@ -2010,6 +2011,77 @@ class AppState:
             "breakdown": breakdown,
             "winner": winner if (winner and winner["replied"] > 0) else None,
         }
+
+    def assign_variant(
+        self, *, experiment_id: str, identity: str, variants: tuple[str, ...] | list[str],
+    ) -> str:
+        """Deterministic A/B (or A/B/n) variant assignment (Phase 7 #61).
+
+        Hash the ``experiment_id`` together with the visitor's stable
+        identity (anonymous localStorage UUID for logged-out, user_id
+        for logged-in), modulo the number of variants. Same identity →
+        same variant for the lifetime of the experiment, which is the
+        only correctness property an A/B test needs.
+
+        Variants must be a non-empty list of slugs. The first slug is
+        the control; the rest are treatments. Caller decides which to
+        render."""
+
+        if not variants:
+            raise ValueError("variants_required")
+        if not experiment_id:
+            raise ValueError("experiment_id_required")
+        if not identity:
+            raise ValueError("identity_required")
+        # SHA-256 of "<experiment_id>|<identity>" → integer → modulo.
+        # The experiment_id in the prefix means a single visitor gets
+        # different variants across different experiments (rather than
+        # all the same — a "consistently lucky" visitor would skew our
+        # results otherwise).
+        digest = hashlib.sha256(
+            f"{experiment_id}|{identity}".encode("utf-8")
+        ).digest()
+        bucket = int.from_bytes(digest[:8], "big") % len(variants)
+        return variants[bucket]
+
+    def experiment_config(self) -> list[dict[str, Any]]:
+        """Read the operator-edited experiments config. Same pattern as
+        ``list_seo_pages``: live re-read, malformed → empty, validated
+        slugs only. Each entry: ``{id, description, variants: [slug, ...]}``."""
+
+        path = self.data_path.parent / "experiments.json"
+        if not path.exists():
+            return []
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return []
+        entries = payload.get("experiments") if isinstance(payload, dict) else None
+        if not isinstance(entries, list):
+            return []
+        result: list[dict[str, Any]] = []
+        for entry in entries:
+            if not isinstance(entry, dict):
+                continue
+            exp_id = str(entry.get("id") or "").strip()
+            variants = entry.get("variants")
+            if not exp_id or not all(c.isalnum() or c in "-_" for c in exp_id):
+                continue
+            if not isinstance(variants, list) or not variants:
+                continue
+            cleaned_variants: list[str] = []
+            for v in variants:
+                v = str(v).strip()
+                if v and all(c.isalnum() or c in "-_" for c in v):
+                    cleaned_variants.append(v)
+            if not cleaned_variants:
+                continue
+            result.append({
+                "id": exp_id,
+                "description": str(entry.get("description") or "").strip(),
+                "variants": cleaned_variants,
+            })
+        return result
 
     def list_seo_pages(self) -> list[dict[str, Any]]:
         """Read the operator-edited SEO-page config (Phase 1 #17). The
