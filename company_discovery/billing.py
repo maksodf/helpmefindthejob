@@ -45,6 +45,14 @@ class Plan:
     monthly_price_eur: int
     seats_included: int
     features: tuple[str, ...]
+    # Tier limits (#24, #25). ``None`` for an integer limit means
+    # "unlimited"; an empty tuple for ``ai_modes_allowed`` means "no AI
+    # at all" (we don't ship that today). The operator finalises these
+    # numbers when the pricing model decision lands (#21).
+    saved_search_limit: int | None = None
+    ai_modes_allowed: tuple[str, ...] = ("manual", "byok", "managed")
+    retention_days_max: int = 365
+    daily_digest_enabled: bool = True
 
 
 PLANS: tuple[Plan, ...] = (
@@ -54,6 +62,10 @@ PLANS: tuple[Plan, ...] = (
         monthly_price_eur=0,
         seats_included=5,
         features=("Up to 5 testers", "ConsoleTransport email", "Manual restore drill"),
+        saved_search_limit=3,
+        ai_modes_allowed=("manual",),
+        retention_days_max=30,
+        daily_digest_enabled=False,
     ),
     Plan(
         id="team",
@@ -61,6 +73,10 @@ PLANS: tuple[Plan, ...] = (
         monthly_price_eur=79,
         seats_included=15,
         features=("Up to 15 testers", "SMTP email", "Daily backups + monitoring", "Standard SLA"),
+        saved_search_limit=None,
+        ai_modes_allowed=("manual", "byok", "managed"),
+        retention_days_max=90,
+        daily_digest_enabled=True,
     ),
     Plan(
         id="org",
@@ -68,6 +84,10 @@ PLANS: tuple[Plan, ...] = (
         monthly_price_eur=249,
         seats_included=60,
         features=("Up to 60 testers", "Per-domain quotas", "Priority support", "Stripe + invoice"),
+        saved_search_limit=None,
+        ai_modes_allowed=("manual", "byok", "managed"),
+        retention_days_max=180,
+        daily_digest_enabled=True,
     ),
 )
 
@@ -369,6 +389,17 @@ def plans_payload() -> list[dict[str, object]]:
             "monthlyPriceEur": plan.monthly_price_eur,
             "seatsIncluded": plan.seats_included,
             "features": list(plan.features),
+            "savedSearchLimit": plan.saved_search_limit,
+            "aiModesAllowed": list(plan.ai_modes_allowed),
+            "retentionDaysMax": plan.retention_days_max,
+            "dailyDigestEnabled": plan.daily_digest_enabled,
         }
         for plan in PLANS
     ]
+
+
+def find_plan(plan_id: str) -> Plan | None:
+    for plan in PLANS:
+        if plan.id == plan_id:
+            return plan
+    return None

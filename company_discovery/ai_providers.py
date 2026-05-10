@@ -97,6 +97,17 @@ PROVIDER_OPTIONS: list[AIProviderOption] = [
         secret_hint="Reference a user-controlled env var or local command.",
         notes="Escape hatch for future or organization-specific AI providers.",
     ),
+    AIProviderOption(
+        id="managed",
+        label="Managed AI (operator-provided)",
+        invocation_modes=["api"],
+        secret_hint="No credential needed — uses the operator's server-side key.",
+        notes=(
+            "Server-side dispatch via the operator's DIRECTJOB_MANAGED_AI_KEY. "
+            "Plan-gated (Pro+ only). Operator chooses the upstream provider via "
+            "DIRECTJOB_MANAGED_AI_PROVIDER (openai / anthropic / google_gemini / etc)."
+        ),
+    ),
 ]
 
 

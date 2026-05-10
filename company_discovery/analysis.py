@@ -475,6 +475,39 @@ def _dispatch_provider(
             prompt=prompt,
             error="No AI execution provider selected.",
         )
+    # Managed AI (#26): rebind to the operator's upstream provider +
+    # key before the actual dispatch. Operator config:
+    #   DIRECTJOB_MANAGED_AI_PROVIDER  e.g. "openai" (default)
+    #   DIRECTJOB_MANAGED_AI_KEY       the operator's API key
+    #   DIRECTJOB_MANAGED_AI_MODEL     optional; falls back to a sane default
+    #   DIRECTJOB_MANAGED_AI_BASE_URL  optional; for OpenAI-compatible gateways
+    if provider.provider_id == "managed":
+        upstream = (os.environ.get("DIRECTJOB_MANAGED_AI_PROVIDER") or "openai").strip().lower()
+        if upstream not in {"openai", "anthropic", "google_gemini", "deepseek", "openrouter"}:
+            return AnalysisExecutionResult(
+                status="configuration_error",
+                provider_id="managed",
+                invocation_mode=provider.invocation_mode,
+                prompt=prompt,
+                error="DIRECTJOB_MANAGED_AI_PROVIDER must be one of: openai, anthropic, google_gemini, deepseek, openrouter.",
+            )
+        if not (os.environ.get("DIRECTJOB_MANAGED_AI_KEY") or "").strip():
+            return AnalysisExecutionResult(
+                status="configuration_error",
+                provider_id="managed",
+                invocation_mode=provider.invocation_mode,
+                prompt=prompt,
+                error="Managed AI is enabled in the picker but DIRECTJOB_MANAGED_AI_KEY is not set on the server.",
+            )
+        provider = AIProviderConfig(
+            provider_id=upstream,
+            invocation_mode="api",
+            model=(os.environ.get("DIRECTJOB_MANAGED_AI_MODEL") or provider.model or "").strip(),
+            credential_reference="DIRECTJOB_MANAGED_AI_KEY",
+            base_url=(os.environ.get("DIRECTJOB_MANAGED_AI_BASE_URL") or "").strip(),
+            command="",
+            notes="managed",
+        )
     if provider.invocation_mode == "local_http" and provider.provider_id == "ollama":
         return _execute_ollama(prompt, provider)
     if provider.invocation_mode == "api" and provider.provider_id in {"openai", "deepseek", "openrouter", "custom"}:

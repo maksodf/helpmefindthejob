@@ -32,10 +32,12 @@ from company_discovery.analysis import (
 from company_discovery.ai_providers import AIProviderConfig, provider_options_payload, validate_provider_config
 from company_discovery.auth import AuthSession, AuthStore, AuthUser, hash_password
 from company_discovery.billing import (
+    Plan,
     StripeBillingBackend,
     Subscription,
     apply_stripe_event,
     build_backend as build_billing_backend,
+    find_plan,
     plans_payload,
     verify_stripe_webhook_signature,
 )
@@ -430,6 +432,7 @@ class AppState:
             "applicationOutcomes": self.application_outcomes_summary(data_user_id),
             "skillGaps": self.aggregate_skill_gaps(data_user_id),
             "cvVariants": self.cv_variant_outcomes(data_user_id),
+            "planLimits": self.plan_limits(),
             "applicationStatuses": list(APPLICATION_STATUSES),
         }
 
@@ -757,6 +760,18 @@ class AppState:
         errors = validate_provider_config(config)
         if errors:
             raise ValueError(errors[0]["code"])
+        # Tier limit (#25): refuse to set an invocation_mode the active
+        # plan doesn't include. Manual is always allowed; api / cli /
+        # local_http are gated by ``ai_modes_allowed``. Map our
+        # invocation modes onto the three tier slugs (manual / byok /
+        # managed).
+        mode_slug = "manual"
+        if config.invocation_mode in ("api", "cli", "local_http"):
+            mode_slug = "managed" if config.provider_id == "managed" else "byok"
+        try:
+            self.assert_ai_mode_allowed(mode_slug)
+        except ValueError:
+            raise ValueError("plan_ai_mode_locked")
         self.ai_providers[user_id] = config
         self.ai_config_path.parent.mkdir(parents=True, exist_ok=True)
         self.ai_config_path.write_text(
@@ -1968,6 +1983,65 @@ class AppState:
             results["__drip_day7"] = drip["day7"]
         return results
 
+    def current_plan(self) -> Plan | None:
+        """Return the workspace's active plan as a Plan object, or None
+        when ``Subscription.plan_id`` doesn't match any plan in the
+        ``PLANS`` tuple (e.g. operator misconfigured, or a legacy
+        plan id that's been removed). Callers must guard accordingly."""
+
+        sub = self.get_subscription()
+        return find_plan(sub.plan_id)
+
+    def plan_limits(self) -> dict[str, Any]:
+        """Snapshot of the active plan's tier limits — exactly the
+        attributes ``Plan`` carries beyond label / price. ``None`` for
+        ``savedSearchLimit`` means unlimited; the empty tuple for
+        ``aiModesAllowed`` is currently never produced by any shipped
+        plan but the enforcer treats it as "no AI at all" defensively."""
+
+        plan = self.current_plan()
+        if plan is None:
+            # Fall through to the most permissive shape so a misconfig
+            # doesn't accidentally lock a paying user out.
+            return {
+                "savedSearchLimit": None,
+                "aiModesAllowed": ("manual", "byok", "managed"),
+                "retentionDaysMax": 365,
+                "dailyDigestEnabled": True,
+            }
+        return {
+            "savedSearchLimit": plan.saved_search_limit,
+            "aiModesAllowed": tuple(plan.ai_modes_allowed),
+            "retentionDaysMax": plan.retention_days_max,
+            "dailyDigestEnabled": plan.daily_digest_enabled,
+        }
+
+    def assert_can_add_saved_search(self, user_id: str) -> None:
+        """Raise ``ValueError`` with code ``plan_saved_search_limit`` when
+        the active plan caps saved-search count and the user has hit it.
+        Called from the saved-search create endpoint before insertion."""
+
+        limits = self.plan_limits()
+        cap = limits["savedSearchLimit"]
+        if cap is None:
+            return
+        existing = len(self.repository.list_saved_searches(self.effective_user_id(user_id)))
+        if existing >= cap:
+            raise ValueError("plan_saved_search_limit")
+
+    def assert_ai_mode_allowed(self, mode: str) -> None:
+        """Raise ``ValueError(plan_ai_mode_locked)`` when the requested
+        invocation mode isn't included in the active plan's
+        ``ai_modes_allowed``. Empty mode string falls through (the
+        manual default isn't gated)."""
+
+        wanted = (mode or "").strip().lower()
+        if not wanted or wanted == "manual":
+            return  # manual is always allowed; empty = no AI
+        limits = self.plan_limits()
+        if wanted not in limits["aiModesAllowed"]:
+            raise ValueError("plan_ai_mode_locked")
+
     def cv_variant_outcomes(self, user_id: str, *, min_variants: int = 3) -> dict[str, Any]:
         """Per-variant reply-rate attribution (Phase 4 #44).
 
@@ -2352,6 +2426,11 @@ class AppState:
         existing = self.repository.saved_searches.get(existing_id) if existing_id else None
         if existing is not None and existing.user_id != user_id:
             raise KeyError(existing_id)
+        # Tier limit (#24): refuse to *create* a new search past the
+        # plan cap. Edits to an existing one are unaffected so the user
+        # can keep curating the searches they already have.
+        if existing is None:
+            self.assert_can_add_saved_search(user_id)
         record = existing or SavedSearch(user_id=user_id, name=name)
         record.name = name
         record.target_roles = list(target_roles)
@@ -3807,7 +3886,19 @@ class Handler(BaseHTTPRequestHandler):
                 })
                 return
             if parsed.path == "/api/saved-searches":
-                record = STATE.save_saved_search(data_user_id, payload)
+                try:
+                    record = STATE.save_saved_search(data_user_id, payload)
+                except ValueError as error:
+                    code = str(error)
+                    if code == "plan_saved_search_limit":
+                        self.send_error_json(
+                            HTTPStatus.PAYMENT_REQUIRED,
+                            code,
+                            "Your plan caps the number of saved searches. Upgrade or delete one before adding another.",
+                        )
+                    else:
+                        self.send_error_json(HTTPStatus.BAD_REQUEST, code, code)
+                    return
                 self.send_json({"savedSearch": record, "savedSearches": STATE._saved_searches_with_alerts(user_id)})
                 return
             if parsed.path == "/api/push/subscribe":
@@ -4154,7 +4245,19 @@ class Handler(BaseHTTPRequestHandler):
                 return
 
             if parsed.path == "/api/ai-provider":
-                config = STATE.update_ai_provider(user_id, payload)
+                try:
+                    config = STATE.update_ai_provider(user_id, payload)
+                except ValueError as error:
+                    code = str(error)
+                    if code == "plan_ai_mode_locked":
+                        self.send_error_json(
+                            HTTPStatus.PAYMENT_REQUIRED,
+                            code,
+                            "Your plan does not include this AI mode. Manual handoff stays available; upgrade to unlock bring-your-own-key or Managed AI.",
+                        )
+                    else:
+                        self.send_error_json(HTTPStatus.BAD_REQUEST, code, code)
+                    return
                 self.send_json({"aiProvider": config.public_dict(), "bootstrap": STATE.bootstrap(user_id)})
                 return
 
