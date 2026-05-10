@@ -1633,37 +1633,52 @@ details[open] .collapsible-chevron { transform: rotate(180deg); }
   justify-self: center;
 }
 
-/* Suggestion list */
+/* Suggestion list — grid of curated companies / starter templates */
 .suggestion-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
 }
 
 .suggestion {
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 12px;
-  background: var(--surface-2);
+  padding: 14px;
+  background: var(--surface);
   display: grid;
   gap: 4px;
+  transition: border-color 0.12s ease, transform 0.12s ease, box-shadow 0.12s ease;
+}
+.suggestion:hover {
+  border-color: var(--border-strong);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
 }
 
 .suggestion strong {
-  font-size: 13px;
+  font-size: var(--text-md);
+  font-weight: 600;
+  letter-spacing: -0.005em;
 }
 
 .suggestion span {
-  font-size: 12px;
+  font-size: var(--text-xs);
   color: var(--text-muted);
+}
+
+.suggestion .btn {
+  margin-top: 8px;
+  justify-self: start;
 }
 
 .suggestion-score {
   display: inline-block;
   margin-top: 6px;
-  font-size: 11px;
+  font-size: var(--text-xxs);
   color: var(--accent-text);
   font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .suggestion .btn {
