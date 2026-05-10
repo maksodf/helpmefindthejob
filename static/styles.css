@@ -308,7 +308,7 @@ a {
 
 .btn:hover {
   background: var(--surface-2);
-  border-color: #b9c0c9;
+  border-color: var(--border-strong);
 }
 
 .btn:focus-visible,
@@ -328,14 +328,15 @@ textarea:focus-visible,
 }
 
 .btn-primary {
-  background: var(--accent);
-  border-color: var(--accent);
+  background: linear-gradient(180deg, var(--accent), color-mix(in oklab, var(--accent) 84%, #000));
+  border-color: color-mix(in oklab, var(--accent) 80%, #000);
   color: #fff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
 }
 
 .btn-primary:hover {
-  background: #1e54d3;
-  border-color: #1e54d3;
+  filter: brightness(1.06);
+  border-color: color-mix(in oklab, var(--accent) 60%, #000);
 }
 
 .btn-danger {
@@ -377,11 +378,21 @@ input,
 select,
 textarea {
   width: 100%;
-  min-height: 36px;
-  padding: 8px 10px;
+  min-height: 38px;
+  padding: 8px 12px;
   border: 1px solid var(--border-strong);
   border-radius: var(--radius);
   background: var(--surface);
+  transition: border-color 0.12s ease, box-shadow 0.12s ease;
+}
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-soft);
+}
+input:hover:not(:focus),
+select:hover:not(:focus),
+textarea:hover:not(:focus) {
+  border-color: color-mix(in oklab, var(--text-muted) 50%, var(--border-strong));
 }
 
 textarea {
@@ -476,13 +487,19 @@ textarea {
   flex: none;
   display: grid;
   place-items: center;
-  border-radius: 9px;
-  background: linear-gradient(180deg, #2c63ea, #1d4ed8);
+  border-radius: 10px;
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
   color: #fff;
-  font-weight: 700;
-  font-size: 18px;
-  letter-spacing: -0.02em;
-  box-shadow: var(--shadow-md);
+  box-shadow: 0 2px 6px rgba(29, 78, 216, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  transition: transform 0.15s ease;
+}
+.brand-mark svg {
+  width: 22px;
+  height: 22px;
+  display: block;
+}
+.brand-mark:hover {
+  transform: translateY(-1px);
 }
 
 .auth-form {
@@ -582,10 +599,16 @@ textarea {
 .nav-item[aria-current="page"] {
   background: var(--accent-weak);
   color: var(--accent-text);
+  border-color: color-mix(in oklab, var(--accent) 30%, transparent);
+  box-shadow: inset 2px 0 0 var(--accent);
 }
 
 .nav-item[aria-current="page"] svg {
   color: var(--accent-text);
+}
+
+.nav-item {
+  transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
 }
 
 .nav-pill {
@@ -712,8 +735,12 @@ textarea {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: 18px 18px 20px;
+  padding: 20px 20px 22px;
   box-shadow: var(--shadow-sm);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.card:hover {
+  border-color: var(--border-strong);
 }
 
 .card + .card {
@@ -792,10 +819,15 @@ textarea {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: 14px 16px;
+  padding: 16px 18px;
   display: grid;
-  gap: 4px;
+  gap: 6px;
   box-shadow: var(--shadow-sm);
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+.metric-card:hover {
+  transform: translateY(-1px);
+  border-color: var(--border-strong);
 }
 
 .metric-label {
@@ -807,10 +839,14 @@ textarea {
 }
 
 .metric-card strong {
-  font-size: 28px;
-  font-weight: 600;
-  letter-spacing: -0.02em;
+  font-size: 32px;
+  font-weight: 650;
+  letter-spacing: -0.025em;
   line-height: 1;
+  background: linear-gradient(180deg, var(--text), color-mix(in oklab, var(--text) 70%, var(--text-muted)));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 .metric-hint {
@@ -956,10 +992,12 @@ textarea {
 .empty {
   display: grid;
   gap: 10px;
-  padding: 24px;
+  padding: 32px 24px;
   border: 1px dashed var(--border-strong);
-  border-radius: var(--radius);
-  background: var(--surface-2);
+  border-radius: var(--radius-lg);
+  background:
+    radial-gradient(400px 200px at 50% 0%, var(--accent-weak), transparent 80%),
+    var(--surface-2);
   text-align: center;
   color: var(--text-muted);
 }
@@ -1278,14 +1316,17 @@ textarea {
 }
 
 .tag {
-  display: inline-block;
-  padding: 1px 7px;
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 9px;
   border-radius: 999px;
   font-size: 11px;
   font-weight: 600;
+  letter-spacing: 0.01em;
   background: var(--surface-2);
   color: var(--text-muted);
   border: 1px solid var(--border);
+  line-height: 1.5;
 }
 
 .tag.admin {
