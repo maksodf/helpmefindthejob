@@ -1,0 +1,38 @@
+{
+  "_doc": "Source-of-truth input for scripts/generate-seo-pages.py. Operator edits the cities + roles arrays then re-runs the script to regenerate deploy/seo-pages.json.example. Cross-product = pages = cities × roles. Slugs must be alnum or dash; labels are free text. The intro_template uses {role} and {city} placeholders.",
+  "intro_template": "DirectJob Scout watches direct career pages plus the major aggregators (Indeed, StepStone, Arbeitnow, Bundesagentur, Muse) for {role} roles in {city}. We dedupe across sources and let you triage one keyboard-driven queue. No feed, no algorithm, no recruiter messages.",
+  "cities": [
+    {"slug": "berlin", "label": "Berlin"},
+    {"slug": "munich", "label": "Munich"},
+    {"slug": "hamburg", "label": "Hamburg"},
+    {"slug": "frankfurt", "label": "Frankfurt"},
+    {"slug": "cologne", "label": "Cologne"},
+    {"slug": "stuttgart", "label": "Stuttgart"},
+    {"slug": "dusseldorf", "label": "Düsseldorf"},
+    {"slug": "leipzig", "label": "Leipzig"},
+    {"slug": "vienna", "label": "Vienna"},
+    {"slug": "zurich", "label": "Zürich"}
+  ],
+  "roles": [
+    {"slug": "backend-engineer", "label": "Backend engineer"},
+    {"slug": "frontend-engineer", "label": "Frontend engineer"},
+    {"slug": "fullstack-engineer", "label": "Fullstack engineer"},
+    {"slug": "data-engineer", "label": "Data engineer"},
+    {"slug": "data-scientist", "label": "Data scientist"},
+    {"slug": "machine-learning-engineer", "label": "Machine learning engineer"},
+    {"slug": "site-reliability-engineer", "label": "Site reliability engineer"},
+    {"slug": "devops-engineer", "label": "DevOps engineer"},
+    {"slug": "product-manager", "label": "Product manager"},
+    {"slug": "product-designer", "label": "Product designer"},
+    {"slug": "ux-researcher", "label": "UX researcher"},
+    {"slug": "engineering-manager", "label": "Engineering manager"},
+    {"slug": "marketing-manager", "label": "Marketing manager"},
+    {"slug": "growth-marketer", "label": "Growth marketer"},
+    {"slug": "content-marketing", "label": "Content marketing"},
+    {"slug": "sales-engineer", "label": "Sales engineer"},
+    {"slug": "account-executive", "label": "Account executive"},
+    {"slug": "customer-success-manager", "label": "Customer success manager"},
+    {"slug": "healthcare-management", "label": "Healthcare management"},
+    {"slug": "financial-analyst", "label": "Financial analyst"}
+  ]
+}
