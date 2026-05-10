@@ -448,8 +448,13 @@ function renderAuth() {
     showOnly("authGate");
   }
   $("#sidebarUser").hidden = !state.auth.authenticated;
-  $("#sidebarUserEmail").textContent = state.auth.user?.email || "";
+  const email = state.auth.user?.email || "";
+  $("#sidebarUserEmail").textContent = email;
   $("#sidebarUserRole").textContent = isAdmin() ? "Admin" : "Tester";
+  // First letter of the local-part as the avatar initial.
+  const initial = (email.split("@")[0] || "·").trim().charAt(0).toUpperCase() || "·";
+  const av = document.getElementById("sidebarUserAvatar");
+  if (av) av.textContent = initial;
   $$(".admin-only").forEach((el) => {
     el.hidden = !isAdmin();
   });

@@ -773,17 +773,34 @@ input[type="radio"] {
 .user-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  padding: 6px 0;
+}
+
+.user-avatar {
+  width: 30px;
+  height: 30px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), color-mix(in oklab, var(--accent) 70%, #000));
+  color: #fff;
+  font-weight: 650;
+  font-size: var(--text-sm);
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
 }
 
 .user-info {
   display: grid;
   flex: 1;
   min-width: 0;
+  gap: 1px;
 }
 
 .user-email {
-  font-size: 13px;
+  font-size: var(--text-sm);
   font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
@@ -791,9 +808,10 @@ input[type="radio"] {
 }
 
 .user-role {
-  font-size: 11px;
+  font-size: var(--text-xxs);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
+  color: var(--text-soft);
 }
 
 /* Main content */
