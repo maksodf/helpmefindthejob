@@ -36,6 +36,11 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://khalo.org/status</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.4</priority>
+  </url>
+  <url>
     <loc>https://khalo.org/jobs/healthcare-management-berlin</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>

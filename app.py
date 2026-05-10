@@ -3406,6 +3406,8 @@ class Handler(BaseHTTPRequestHandler):
                 price_to_plan = {
                     os.environ.get("DIRECTJOB_STRIPE_PRICE_TEAM", ""): "team",
                     os.environ.get("DIRECTJOB_STRIPE_PRICE_ORG", ""): "org",
+                    os.environ.get("DIRECTJOB_STRIPE_PRICE_PRO_MONTHLY", ""): "pro_monthly",
+                    os.environ.get("DIRECTJOB_STRIPE_PRICE_PRO_ANNUAL", ""): "pro_annual",
                 }
                 resolver = lambda price_id: price_to_plan.get(price_id) or ""
                 current = STATE.get_subscription()

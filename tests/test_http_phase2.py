@@ -276,7 +276,10 @@ class HttpPhase2Tests(unittest.TestCase):
         code, payload, _, _ = self.admin.request("/api/billing")
         self.assertEqual(code, 200)
         self.assertEqual(payload["subscription"]["plan_id"], "pilot")
-        self.assertEqual(len(payload["plans"]), 3)
+        # Phase 2 #21 expanded the plan catalogue to include the B2C
+        # single-user plans (free / pro_monthly / pro_annual) alongside
+        # the original B2B multi-seat plans (pilot / team / org).
+        self.assertEqual(len(payload["plans"]), 6)
         # Admin updates to team
         code, payload, _, _ = self.admin.request(
             "/api/admin/billing",

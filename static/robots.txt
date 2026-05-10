@@ -10,6 +10,7 @@ Allow: /impressum
 Allow: /changelog
 Allow: /help
 Allow: /jobs/
+Allow: /status
 
 # Block app, admin, and API surfaces from indexing.
 Disallow: /api/

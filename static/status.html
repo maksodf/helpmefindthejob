@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="index,follow" />
+    <title>Status — DirectJob Scout</title>
+    <meta name="description" content="Live status of DirectJob Scout. Polled directly from the running app. No third-party uptime vendor." />
+    <link rel="canonical" href="https://khalo.org/status" />
+    <link rel="stylesheet" href="/styles.css" />
+    <style>
+      .status-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 12px;
+        margin: 16px 0;
+      }
+      .status-card {
+        padding: 14px 16px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+      }
+      .status-card .label {
+        font-size: var(--text-xs);
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+      .status-card .value {
+        margin-top: 4px;
+        font-size: 20px;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+      }
+      .status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 4px 12px;
+        border-radius: 999px;
+        font-size: var(--text-xs);
+      }
+      .status-pill.ok { background: rgba(82, 203, 122, 0.18); color: #66d68a; }
+      .status-pill.warn { background: rgba(245, 158, 11, 0.18); color: #f59e0b; }
+      .status-pill.bad { background: rgba(249, 115, 115, 0.18); color: #f97373; }
+      .status-pill::before {
+        content: "";
+        width: 8px; height: 8px;
+        border-radius: 50%;
+        background: currentColor;
+      }
+    </style>
+  </head>
+  <body class="legal-body">
+    <main class="legal-page">
+      <header>
+        <a href="/" class="legal-back">← Back to DirectJob Scout</a>
+        <h1>Status</h1>
+        <p class="muted">Polled directly from the running app every 30 seconds. No third-party uptime vendor.</p>
+      </header>
+
+      <section>
+        <p>
+          Overall: <span id="overallPill" class="status-pill warn">Loading…</span>
+          <span id="lastChecked" class="muted small"></span>
+        </p>
+        <div class="status-grid">
+          <div class="status-card">
+            <div class="label">App</div>
+            <div id="appStatus" class="value">—</div>
+          </div>
+          <div class="status-card">
+            <div class="label">Version</div>
+            <div id="appVersion" class="value">—</div>
+          </div>
+          <div class="status-card">
+            <div class="label">Storage</div>
+            <div id="appStorage" class="value">—</div>
+          </div>
+          <div class="status-card">
+            <div class="label">Response time</div>
+            <div id="appLatency" class="value">—</div>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>How this page works</h2>
+        <p>
+          This page calls <code>/api/health</code> on the same origin every 30 seconds (and once on load). It
+          renders the response inline. If the call fails — network error, 5xx response, or timeout — the overall
+          pill goes red. There is no external monitor; the page reflects exactly what an end-user would see when
+          they hit the app right now.
+        </p>
+        <p class="muted small">
+          For external uptime tracking (page-level monitoring even when the whole droplet is down), a Better
+          Uptime / UptimeRobot monitor pointed at the same <code>/api/health</code> endpoint complements this
+          self-hosted view. See <code>docs/operator-launch-runbook.md</code> § 50.
+        </p>
+      </section>
+
+      <p class="legal-footer">
+        <a href="/privacy">Privacy</a>
+        <a href="/terms">Terms</a>
+        <a href="/data-retention">Data retention</a>
+        <a href="/impressum">Impressum</a>
+      </p>
+    </main>
+
+    <script>
+      const REFRESH_MS = 30000;
+      const TIMEOUT_MS = 5000;
+      const overall = document.getElementById("overallPill");
+      const lastChecked = document.getElementById("lastChecked");
+      const appStatus = document.getElementById("appStatus");
+      const appVersion = document.getElementById("appVersion");
+      const appStorage = document.getElementById("appStorage");
+      const appLatency = document.getElementById("appLatency");
+
+      function setOverall(state, text) {
+        overall.classList.remove("ok", "warn", "bad");
+        overall.classList.add(state);
+        overall.textContent = text;
+      }
+
+      async function tick() {
+        const start = performance.now();
+        let ok = false;
+        let payload = null;
+        try {
+          const ctrl = new AbortController();
+          const id = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
+          const resp = await fetch("/api/health", { signal: ctrl.signal, cache: "no-store" });
+          clearTimeout(id);
+          if (resp.ok) {
+            payload = await resp.json();
+            ok = payload && payload.status === "ok";
+          }
+        } catch (_) {
+          ok = false;
+        }
+        const latency = Math.round(performance.now() - start);
+        lastChecked.textContent = `Checked ${new Date().toLocaleTimeString()}`;
+        if (ok && payload) {
+          setOverall("ok", "Operational");
+          appStatus.textContent = payload.status;
+          appVersion.textContent = payload.version || "—";
+          appStorage.textContent = payload.storage || "—";
+          appLatency.textContent = `${latency} ms`;
+        } else {
+          setOverall("bad", "Degraded");
+          appStatus.textContent = "unreachable";
+          appLatency.textContent = `${latency} ms (timeout/error)`;
+        }
+      }
+
+      tick();
+      setInterval(tick, REFRESH_MS);
+    </script>
+  </body>
+</html>

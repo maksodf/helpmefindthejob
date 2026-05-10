@@ -56,6 +56,58 @@ class Plan:
 
 
 PLANS: tuple[Plan, ...] = (
+    # ----- B2C single-user plans (#21) ---------------------------------
+    Plan(
+        id="free",
+        label="Free",
+        monthly_price_eur=0,
+        seats_included=1,
+        features=(
+            "3 saved searches",
+            "Manual AI handoff",
+            "30-day retention",
+            "Bookmarklet + 6 aggregators",
+        ),
+        saved_search_limit=3,
+        ai_modes_allowed=("manual",),
+        retention_days_max=30,
+        daily_digest_enabled=False,
+    ),
+    Plan(
+        id="pro_monthly",
+        label="Pro",
+        monthly_price_eur=5,
+        seats_included=1,
+        features=(
+            "Unlimited saved searches",
+            "Manual + BYOK + Managed AI",
+            "90-day retention",
+            "Daily digest",
+            "Push notifications",
+        ),
+        saved_search_limit=None,
+        ai_modes_allowed=("manual", "byok", "managed"),
+        retention_days_max=90,
+        daily_digest_enabled=True,
+    ),
+    Plan(
+        id="pro_annual",
+        label="Pro (annual)",
+        monthly_price_eur=4,  # ~€40 / year billed annually = €3.33/mo equivalent; rounded to display
+        seats_included=1,
+        features=(
+            "All Pro features",
+            "8 months for 12 (annual)",
+            "Cancel any time via Stripe portal",
+        ),
+        saved_search_limit=None,
+        ai_modes_allowed=("manual", "byok", "managed"),
+        retention_days_max=90,
+        daily_digest_enabled=True,
+    ),
+    # ----- B2B multi-seat plans ----------------------------------------
+    # Kept alongside the single-user plans so a multi-seat sales motion
+    # can co-exist if it later emerges; not exclusive.
     Plan(
         id="pilot",
         label="Pilot",
@@ -301,6 +353,8 @@ class StripeBillingBackend:
         self.price_lookup = {
             "team": os.environ.get("DIRECTJOB_STRIPE_PRICE_TEAM", ""),
             "org": os.environ.get("DIRECTJOB_STRIPE_PRICE_ORG", ""),
+            "pro_monthly": os.environ.get("DIRECTJOB_STRIPE_PRICE_PRO_MONTHLY", ""),
+            "pro_annual": os.environ.get("DIRECTJOB_STRIPE_PRICE_PRO_ANNUAL", ""),
         }
         self._transport: StripeTransport = transport or _default_stripe_transport
 

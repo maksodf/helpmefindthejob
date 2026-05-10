@@ -288,10 +288,13 @@ class BillingTests(unittest.TestCase):
             self.assertEqual(again.seats, 5)
             self.assertEqual(again.customer_email, "x@example.com")
 
-    def test_plans_payload_lists_three_tiers(self) -> None:
+    def test_plans_payload_lists_all_tiers(self) -> None:
+        # Phase 2 #21 added the B2C single-user plans alongside the
+        # original B2B multi-seat plans. Both motions co-exist; the
+        # operator picks which Stripe Prices to wire via env.
         plans = plans_payload()
         ids = {p["id"] for p in plans}
-        self.assertEqual(ids, {"pilot", "team", "org"})
+        self.assertEqual(ids, {"free", "pro_monthly", "pro_annual", "pilot", "team", "org"})
 
     def test_stripe_backend_load_falls_back_to_local_cache(self) -> None:
         with TemporaryDirectory() as tmp:
