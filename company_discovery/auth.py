@@ -289,7 +289,14 @@ class AuthStore:
     def bootstrap_admin_from_env(self, email: str | None, password: str | None) -> AuthUser | None:
         if self.has_users() or not email or not password:
             return None
-        return self.create_user(email, password, role="admin")
+        user = self.create_user(email, password, role="admin")
+        # The bootstrap admin owns the mailbox by definition (the env-
+        # var values were typed by the operator), so flag the account
+        # email-verified directly. Without this the admin can't sign in
+        # when DIRECTJOB_REQUIRE_EMAIL_VERIFICATION=true (the env var
+        # would otherwise lock out the very account it bootstraps).
+        self.mark_email_verified(user.id)
+        return user
 
     def authenticate(self, email: str, password: str) -> AuthUser | None:
         normalized = _normalize_email(email)

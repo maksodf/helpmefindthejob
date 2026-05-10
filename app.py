@@ -312,6 +312,7 @@ class AppState:
         self._reset_requests: dict[str, list[float]] = {}
         self._register_request_lock = Lock()
         self._register_requests: dict[str, list[float]] = {}
+        self._demo_seed_lock = Lock()
         self.ai_providers = self._load_ai_providers()
         self.token_store = TokenStore(self.token_path, SECRET_KEY)
         self.quota_store = QuotaStore(self.quota_path)
@@ -1116,8 +1117,20 @@ class AppState:
         the empty-state CTA on the queue view so first-time users land
         on a populated screen instead of a blank page. Existing demo
         rows are not duplicated — repeated calls are no-ops once the
-        five samples exist for the user."""
+        five samples exist for the user.
 
+        Holds ``_demo_seed_lock`` over the entire check-then-write so
+        a burst of parallel calls (the user double-clicking, or a bot
+        spamming the endpoint) doesn't race past the dedup check and
+        produce 5×N rows. A single global lock is fine here because
+        seeding is rare + bounded."""
+
+        from company_discovery.models import DiscoveredJob
+
+        with self._demo_seed_lock:
+            return self._seed_demo_data_locked(user_id)
+
+    def _seed_demo_data_locked(self, user_id: str) -> list[dict[str, Any]]:
         from company_discovery.models import DiscoveredJob
 
         existing_demo_urls = {
