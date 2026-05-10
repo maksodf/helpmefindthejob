@@ -50,30 +50,50 @@ class AutoFitPromptTests(unittest.TestCase):
 
 class ParseAutoFitOutputTests(unittest.TestCase):
     def test_well_formed_output(self) -> None:
-        score, reason = parse_auto_fit_output(
+        score, reason, gaps = parse_auto_fit_output(
             "SCORE: 78\nREASON: strong overlap with backend Python at marketplace scale"
         )
         self.assertEqual(score, 0.78)
         self.assertIn("backend", reason)
+        self.assertEqual(gaps, [])
 
     def test_clamps_above_100(self) -> None:
-        score, _ = parse_auto_fit_output("SCORE: 150\nREASON: ignored")
+        score, _, _ = parse_auto_fit_output("SCORE: 150\nREASON: ignored")
         self.assertEqual(score, 1.0)
 
     def test_no_score_returns_none(self) -> None:
-        score, reason = parse_auto_fit_output("the model rambled instead")
+        score, reason, gaps = parse_auto_fit_output("the model rambled instead")
         self.assertIsNone(score)
         self.assertIsNone(reason)
+        self.assertEqual(gaps, [])
 
     def test_handles_dash_separator(self) -> None:
-        score, reason = parse_auto_fit_output("score - 42\nreason - some reason")
+        score, reason, _ = parse_auto_fit_output("score - 42\nreason - some reason")
         self.assertEqual(score, 0.42)
         self.assertEqual(reason, "some reason")
 
     def test_truncates_very_long_reason(self) -> None:
         long = "x" * 500
-        _, reason = parse_auto_fit_output(f"SCORE: 50\nREASON: {long}")
+        _, reason, _ = parse_auto_fit_output(f"SCORE: 50\nREASON: {long}")
         self.assertLessEqual(len(reason or ""), 280)
+
+    def test_extracts_gaps(self) -> None:
+        _, _, gaps = parse_auto_fit_output(
+            "SCORE: 65\nREASON: solid Python\nGAPS: Kubernetes, Terraform, dbt"
+        )
+        self.assertEqual(gaps, ["Kubernetes", "Terraform", "dbt"])
+
+    def test_caps_gaps_at_three(self) -> None:
+        _, _, gaps = parse_auto_fit_output(
+            "SCORE: 65\nREASON: ok\nGAPS: a, b, c, d, e, f"
+        )
+        self.assertEqual(gaps, ["a", "b", "c"])
+
+    def test_empty_gaps_line_is_empty_list(self) -> None:
+        _, _, gaps = parse_auto_fit_output(
+            "SCORE: 92\nREASON: very strong fit\nGAPS:"
+        )
+        self.assertEqual(gaps, [])
 
 
 class CvTailoringPromptTests(unittest.TestCase):

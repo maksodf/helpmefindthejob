@@ -730,6 +730,7 @@ class CompanyDiscoveryService:
             company_name=company.name,
             location=discovered.location,
             description=discovered.raw_description,
+            gaps=list(discovered.gaps or []),
         )
         self.repository.save_imported_job(imported)
         discovered.imported_job_id = imported.id

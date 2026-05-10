@@ -245,6 +245,7 @@ function absorbBootstrap(bootstrap) {
   applyTheme(state.profile.theme || "dark");
   state.applicationStatuses = bootstrap.applicationStatuses || ["saved", "interested", "applied", "interview", "rejected", "archived"];
   state.applicationOutcomes = bootstrap.applicationOutcomes || null;
+  state.skillGaps = bootstrap.skillGaps || null;
   state.onboarding = bootstrap.onboarding || { steps: [], progress: { completed: 0, total: 0 }, firstRunWizard: false };
   // Open the first-run wizard when the server says we should AND it
   // isn't already on screen. After the user dismisses or finishes, the
@@ -436,6 +437,7 @@ function navigate(view) {
 
 function render() {
   renderDashboard();
+  renderSkillGapsCard();
   renderReplyRateCard();
   renderOnboarding();
   renderTemplates();
@@ -483,6 +485,39 @@ function renderAuth() {
   $("#authMessage").textContent = "";
   setStatus(state.auth.authenticated ? "Ready" : "Sign in");
   if (state.auth.authenticated) navigate(state.view);
+}
+
+function renderSkillGapsCard() {
+  const card = $("#skillGapsCard");
+  if (!card) return;
+  const summary = state.skillGaps;
+  if (!summary || !summary.ready || !summary.top || summary.top.length === 0) {
+    card.hidden = true;
+    return;
+  }
+  card.hidden = false;
+  const list = $("#skillGapsList");
+  if (!list) return;
+  list.replaceChildren();
+  for (const entry of summary.top) {
+    const li = document.createElement("li");
+    const headline = document.createElement("p");
+    headline.className = "skill-gaps-headline";
+    const skill = document.createElement("strong");
+    skill.textContent = entry.skill;
+    const count = document.createElement("span");
+    count.className = "muted small";
+    count.textContent = ` · ${t("dashboard.skillGaps.unlocks", "{n} more role(s)").replace("{n}", String(entry.jobs))}`;
+    headline.append(skill, count);
+    li.append(headline);
+    if (entry.examples && entry.examples.length) {
+      const ex = document.createElement("p");
+      ex.className = "muted small skill-gaps-examples";
+      ex.textContent = `${t("dashboard.skillGaps.examples", "e.g.")} ${entry.examples.join(", ")}`;
+      li.append(ex);
+    }
+    list.append(li);
+  }
 }
 
 function renderReplyRateCard() {
@@ -1605,6 +1640,25 @@ function renderApplicationForm() {
     rec.className = "fit-rec";
     rec.textContent = job.recommendation || t("application.fit.noRec", "No recommendation yet — Analyze fit on the Brief view to score.");
     block.append(fitLabel, rec);
+    if (job.gaps && job.gaps.length) {
+      const gapsBlock = document.createElement("ul");
+      gapsBlock.className = "fit-gaps";
+      const aggregated = state.skillGaps?.top || [];
+      const lookup = new Map(aggregated.map((row) => [String(row.skill).toLowerCase(), row.jobs]));
+      const tplBefore = t("application.fit.gapBefore", "Add ");
+      const tplAfter = t("application.fit.gapAfter", " to your CV → unlocks {n} more role(s) in your queue");
+      for (const gap of job.gaps) {
+        const li = document.createElement("li");
+        const overlap = lookup.get(String(gap).toLowerCase()) || 1;
+        const beforeText = document.createTextNode(tplBefore);
+        const skillStrong = document.createElement("strong");
+        skillStrong.textContent = String(gap);
+        const afterText = document.createTextNode(tplAfter.replace("{n}", String(overlap)));
+        li.append(beforeText, skillStrong, afterText);
+        gapsBlock.append(li);
+      }
+      block.append(gapsBlock);
+    }
     summary.append(block);
   } else {
     summary.hidden = true;

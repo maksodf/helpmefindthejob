@@ -423,6 +423,7 @@ class AppState:
             },
             "whatsNew": self._whats_new_for(user_id),
             "applicationOutcomes": self.application_outcomes_summary(data_user_id),
+            "skillGaps": self.aggregate_skill_gaps(data_user_id),
             "applicationStatuses": list(APPLICATION_STATUSES),
         }
 
@@ -1846,6 +1847,43 @@ class AppState:
         if deletions:
             results["__account_deletions"] = len(deletions)
         return results
+
+    def aggregate_skill_gaps(self, user_id: str, *, top_k: int = 3, min_jobs: int = 3) -> dict[str, Any]:
+        """Top-K skill gaps across the user's imported queue (Phase 4 #41).
+
+        Returns ``{ready, top: [{skill, jobs, examples}, ...]}``. ``ready``
+        is True when at least ``min_jobs`` imported jobs carry gaps —
+        otherwise the dashboard card hides because the signal is too thin.
+        ``examples`` is up to two job titles per gap so the user can recognise
+        which roles drive the recommendation."""
+
+        from collections import Counter
+
+        counter: "Counter[str]" = Counter()
+        examples: dict[str, list[str]] = {}
+        jobs_with_gaps = 0
+        for job in self.repository.list_imported_jobs(user_id):
+            if not job.gaps:
+                continue
+            jobs_with_gaps += 1
+            for gap in job.gaps:
+                key = gap.strip().lower()
+                if not key:
+                    continue
+                counter[key] += 1
+                examples.setdefault(key, [])
+                if len(examples[key]) < 2 and job.title:
+                    examples[key].append(job.title)
+        ready = jobs_with_gaps >= min_jobs
+        top: list[dict[str, Any]] = []
+        for key, jobs in counter.most_common(top_k):
+            # Use the first-seen casing of the gap as the display label.
+            display = next(
+                (g for job in self.repository.list_imported_jobs(user_id) for g in (job.gaps or []) if g.strip().lower() == key),
+                key,
+            )
+            top.append({"skill": display, "jobs": jobs, "examples": examples[key]})
+        return {"ready": ready, "jobsWithGaps": jobs_with_gaps, "top": top}
 
     def application_outcomes_summary(self, user_id: str, *, threshold: int = 5) -> dict[str, Any]:
         """Reply-rate analytics for the dashboard. We only surface it to
@@ -3913,12 +3951,14 @@ class Handler(BaseHTTPRequestHandler):
                 )
                 STATE.quota_store.record_ai_run(user_id)
                 if result.status == "completed":
-                    score, reason = parse_auto_fit_output(result.output)
+                    score, reason, gaps = parse_auto_fit_output(result.output)
                     if score is not None:
                         discovered.auto_fit_score = score
                         discovered.auto_fit_reason = reason
                         discovered.auto_fit_at = now_utc()
                         discovered.auto_fit_provider_id = result.provider_id
+                        if gaps:
+                            discovered.gaps = gaps
                         STATE.repository.save_discovered_job(discovered)
                         STATE.maybe_notify_slack(user_id, discovered)
                 STATE.log_analytics(
@@ -3963,12 +4003,14 @@ class Handler(BaseHTTPRequestHandler):
                     res = execute_auto_fit(job, company_name, provider, runtime_credential, profile)
                     STATE.quota_store.record_ai_run(user_id)
                     if res.status == "completed":
-                        score, reason = parse_auto_fit_output(res.output)
+                        score, reason, gaps = parse_auto_fit_output(res.output)
                         if score is not None:
                             job.auto_fit_score = score
                             job.auto_fit_reason = reason
                             job.auto_fit_at = now_utc()
                             job.auto_fit_provider_id = res.provider_id
+                            if gaps:
+                                job.gaps = gaps
                             STATE.repository.save_discovered_job(job)
                             STATE.maybe_notify_slack(user_id, job)
                     outcomes.append({

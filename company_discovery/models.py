@@ -84,6 +84,11 @@ class DiscoveredJob:
     # source. Replaces the old "drop the duplicate" behaviour with "this job was
     # also seen at these other places."
     also_seen_at: dict[str, dict[str, Any]] = field(default_factory=dict)
+    # Skill-gap atlas: 1-3 skills the auto-fit LLM extracted from the JD that
+    # are missing from the candidate's CV. Populated by the auto-fit prompt
+    # extension; empty when auto-fit hasn't been run or didn't return a GAPS
+    # line. Copied through to ImportedJob.gaps on import.
+    gaps: list[str] = field(default_factory=list)
     id: str = field(default_factory=lambda: new_id("discovered_job"))
     discovered_at: datetime = field(default_factory=now_utc)
     created_at: datetime = field(default_factory=now_utc)
@@ -149,6 +154,10 @@ class ImportedJob:
     # immediately return 404. Default is False so nothing is
     # accidentally public.
     share_enabled: bool = False
+    # Skill-gap atlas: copied from the discovered job on import. The
+    # aggregator on the dashboard surfaces the most common gaps across
+    # the imported queue so the user can prioritise what to learn.
+    gaps: list[str] = field(default_factory=list)
     application_history: list[dict[str, Any]] = field(default_factory=list)
     id: str = field(default_factory=lambda: new_id("job"))
     created_at: datetime = field(default_factory=now_utc)

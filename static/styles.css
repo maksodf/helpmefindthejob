@@ -2423,6 +2423,41 @@ details[open] .collapsible-chevron { transform: rotate(180deg); }
   margin: 0;
 }
 
+.skill-gaps-card .skill-gaps-list {
+  list-style: decimal inside;
+  padding: 0;
+  margin: 8px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.skill-gaps-card .skill-gaps-list li {
+  padding: 8px 12px;
+  background: var(--surface-2, var(--surface));
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.skill-gaps-card .skill-gaps-headline {
+  margin: 0;
+}
+.skill-gaps-card .skill-gaps-examples {
+  margin: 4px 0 0;
+}
+
+.fit-gaps {
+  list-style: disc inside;
+  padding: 0;
+  margin: 8px 0 0;
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+.fit-gaps li {
+  margin: 2px 0;
+}
+.fit-gaps strong {
+  color: var(--text);
+}
+
 /* Auxiliary auth screens (forgot password / reset / invite accept) */
 .auth-aux {
   max-width: 460px;

@@ -186,9 +186,10 @@ def build_auto_fit_prompt(
     persona_label, profile_block = _candidate_profile_block(profile)
     prompt = f"""You are scoring a job posting for a {persona_label} candidate.
 
-Output exactly two lines, no headers, no other text:
+Output exactly three lines, no headers, no other text:
 SCORE: <integer 0-100>
 REASON: <one short sentence, max 25 words>
+GAPS: <up to three short skill phrases, comma-separated, that the JD demands but the candidate's CV does not show. Use empty string when no clear gaps>
 
 Candidate target profile:
 {profile_block}
@@ -325,18 +326,22 @@ def execute_cv_query_expansion(
 
 _AUTO_FIT_SCORE_RE = re.compile(r"score\s*[:\-]\s*(\d{1,3})", re.IGNORECASE)
 _AUTO_FIT_REASON_RE = re.compile(r"reason\s*[:\-]\s*(.+)$", re.IGNORECASE | re.MULTILINE)
+_AUTO_FIT_GAPS_RE = re.compile(r"gaps\s*[:\-]\s*(.+)$", re.IGNORECASE | re.MULTILINE)
 
 
-def parse_auto_fit_output(output: str) -> tuple[float | None, str | None]:
-    """Extract ``(score 0-1, reason)`` from the AI output.
+def parse_auto_fit_output(output: str) -> tuple[float | None, str | None, list[str]]:
+    """Extract ``(score 0-1, reason, gaps)`` from the AI output.
 
-    Returns ``(None, None)`` when the model didn't follow the format.
-    """
+    Returns ``(None, None, [])`` when the model didn't follow the format.
+    The ``gaps`` list is empty when the model omitted the GAPS line or
+    when the line was literally empty (the prompt allows the empty
+    answer when no clear gaps exist)."""
 
     if not output:
-        return None, None
+        return None, None, []
     score_match = _AUTO_FIT_SCORE_RE.search(output)
     reason_match = _AUTO_FIT_REASON_RE.search(output)
+    gaps_match = _AUTO_FIT_GAPS_RE.search(output)
     score = None
     if score_match:
         try:
@@ -348,7 +353,19 @@ def parse_auto_fit_output(output: str) -> tuple[float | None, str | None]:
     reason = reason_match.group(1).strip() if reason_match else None
     if reason and len(reason) > 280:
         reason = reason[:277] + "…"
-    return score, reason
+    gaps: list[str] = []
+    if gaps_match:
+        raw = gaps_match.group(1).strip()
+        # Strip a wrapping pair of quotes if the model added them
+        if len(raw) >= 2 and raw[0] in '"\'' and raw[-1] == raw[0]:
+            raw = raw[1:-1]
+        for chunk in raw.split(","):
+            cleaned = chunk.strip().strip(".").strip()
+            if cleaned and len(cleaned) <= 60:
+                gaps.append(cleaned)
+            if len(gaps) >= 3:
+                break
+    return score, reason, gaps
 
 
 def execute_auto_fit(
