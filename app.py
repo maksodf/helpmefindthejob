@@ -127,6 +127,8 @@ SCHEDULER_PATH = DATA_ROOT / "scheduler.sqlite3"
 EMAIL_OUTBOX_PATH = DATA_ROOT / "email_outbox.log"
 PASSWORD_RESET_REQUEST_LIMIT = 5  # per-IP per 10 minutes
 PASSWORD_RESET_REQUEST_WINDOW = 600
+REGISTER_REQUEST_LIMIT = 3  # per-IP per 10 minutes
+REGISTER_REQUEST_WINDOW = 600
 APP_PUBLIC_URL = os.environ.get("DIRECTJOB_PUBLIC_URL") or ""
 LOCAL_USER_ID = "local-user"
 MAX_JSON_BODY_BYTES = 5_000_000
@@ -272,7 +274,21 @@ class AppState:
         self.quota_path = Path(quota_path or (self.data_path.parent / "quotas.sqlite3"))
         self.scheduler_path = Path(scheduler_path or (self.data_path.parent / "scheduler.sqlite3"))
         self._audit_lock = Lock()
-        self.repository = SqliteCompanyDiscoveryRepository(self.data_path)
+        # Authenticated encryption for at-rest secrets (cv_text, TOTP).
+        # Falls back to HKDF(SECRET_KEY) when DIRECTJOB_DATA_KEY is unset
+        # — same threat model as the legacy XOR path, with proper AEAD
+        # so DB compromise no longer reveals plaintext.
+        try:
+            from company_discovery.crypto_kit import EncryptionAtRest
+            self.encryption_at_rest: "EncryptionAtRest | None" = EncryptionAtRest.from_secret_key(SECRET_KEY)
+        except Exception:
+            # cryptography import failed (e.g. minimal sandbox). Fall
+            # back to plain storage — production deploys must have
+            # the dep available; this is a tests-only safety net.
+            self.encryption_at_rest = None
+        self.repository = SqliteCompanyDiscoveryRepository(
+            self.data_path, crypto=self.encryption_at_rest,
+        )
         self.auth_store = AuthStore(self.auth_path, SECRET_KEY)
         self.auth_store.bootstrap_admin_from_env(ADMIN_EMAIL, ADMIN_PASSWORD)
         validate_production_config(self.auth_store)
@@ -287,6 +303,8 @@ class AppState:
         self._login_attempts: dict[str, list[float]] = {}
         self._reset_request_lock = Lock()
         self._reset_requests: dict[str, list[float]] = {}
+        self._register_request_lock = Lock()
+        self._register_requests: dict[str, list[float]] = {}
         self.ai_providers = self._load_ai_providers()
         self.token_store = TokenStore(self.token_path, SECRET_KEY)
         self.quota_store = QuotaStore(self.quota_path)
@@ -403,7 +421,33 @@ class AppState:
                 "progress": checklist_progress(steps),
                 "firstRunWizard": first_run_wizard,
             },
+            "whatsNew": self._whats_new_for(user_id),
             "applicationStatuses": list(APPLICATION_STATUSES),
+        }
+
+    def _whats_new_for(self, user_id: str, *, threshold_days: int = 7) -> dict[str, Any] | None:
+        """Returns a payload for the 'what's new' toast when the user
+        has been away long enough to warrant one. None when they've
+        been active recently.
+
+        The frontend shows the toast once per page load and links to
+        ``/changelog`` so the user can read the actual release notes."""
+
+        try:
+            user = self.auth_store.get_user(user_id)
+        except Exception:  # noqa: BLE001 - user gone is not a toast condition
+            return None
+        last = user.last_active_at or user.last_login_at
+        if last is None:
+            return None
+        gap = now_utc() - last
+        if gap.total_seconds() < threshold_days * 86_400:
+            return None
+        return {
+            "appVersion": APP_VERSION,
+            "daysAway": int(gap.total_seconds() // 86_400),
+            "message": f"Welcome back. We shipped a few things while you were away.",
+            "link": "/changelog",
         }
 
     def workspace_id_for_owner(self, owner_user_id: str) -> str:
@@ -991,7 +1035,29 @@ class AppState:
             status="account_deletion_pending",
         )
         saved = self.repository.save_support_ticket(ticket)
+        # Mint a one-time confirmation token. The user must click the link
+        # in the email to actually schedule the deletion (7-day grace).
+        token = self.auth_store.start_account_deletion(user.id)
+        confirm_url = self.public_url_for(f"/account/deletion-confirm?token={token}")
         self.log_analytics(user.id, "account_deletion_requested", {"ticketId": saved.id})
+        try:
+            self.email_transport.send(
+                Email(
+                    to=user.email,
+                    subject="[DirectJob Scout] Confirm account deletion",
+                    text=(
+                        "Hi,\n\n"
+                        "We received a request to delete your DirectJob Scout account.\n\n"
+                        "If this was you, click the link below within the next 7 days to schedule the deletion. "
+                        "After confirming, we wait another 7 days before erasing your data — you can cancel any time during that grace window from Settings → Privacy.\n\n"
+                        f"Confirm deletion: {confirm_url}\n\n"
+                        "If you did not request this, ignore this email — nothing will happen."
+                    ),
+                    from_address=email_from_address(),
+                )
+            )
+        except Exception:  # noqa: BLE001 - email best-effort
+            pass
         try:
             self.email_transport.send(
                 Email(
@@ -999,7 +1065,7 @@ class AppState:
                     subject="[DirectJob Scout] Account deletion request",
                     text=(
                         f"User: {user.email}\nUser id: {user.id}\nReason: {ticket.body}\n"
-                        "Process via Admin → Tester accounts → Delete user."
+                        "User has been emailed a confirmation link. After they click it, the hard-delete fires 7 days later via the retention purge sweep."
                     ),
                     from_address=email_from_address(),
                 )
@@ -1007,6 +1073,146 @@ class AppState:
         except Exception:  # noqa: BLE001 - email best-effort
             pass
         return saved
+
+    def confirm_account_deletion(self, token: str) -> dict[str, Any]:
+        user_id, scheduled_at = self.auth_store.confirm_account_deletion(token)
+        self.log_analytics(user_id, "account_deletion_confirmed", {"scheduledAt": scheduled_at.isoformat()})
+        return {"userId": user_id, "scheduledAt": scheduled_at.isoformat()}
+
+    def cancel_account_deletion(self, user: AuthUser) -> dict[str, Any]:
+        cleared = self.auth_store.cancel_account_deletion(user.id)
+        if cleared:
+            self.log_analytics(user.id, "account_deletion_cancelled", {})
+        return {"cleared": cleared}
+
+    def get_account_deletion_state(self, user: AuthUser) -> dict[str, Any]:
+        return self.auth_store.get_deletion_state(user.id)
+
+    def seed_demo_data(self, user_id: str) -> list[dict[str, Any]]:
+        """Seed five sample matched roles into the user's queue. Used by
+        the empty-state CTA on the queue view so first-time users land
+        on a populated screen instead of a blank page. Existing demo
+        rows are not duplicated — repeated calls are no-ops once the
+        five samples exist for the user."""
+
+        from company_discovery.models import DiscoveredJob
+
+        existing_demo_urls = {
+            job.source_url
+            for job in self.repository.list_discovered_jobs(user_id)
+            if (job.structured_data or {}).get("is_demo")
+        }
+        samples: tuple[tuple[str, str, str, str, str, float, float, str], ...] = (
+            (
+                "Senior Backend Engineer", "Acme Health (Demo)", "https://demo.khalo.org/acme-health",
+                "Berlin", "https://demo.khalo.org/jobs/senior-backend", 0.92, 0.88,
+                "High overlap on Python + healthcare-management keywords; remote-friendly.",
+            ),
+            (
+                "Frontend Engineer", "Sample SaaS (Demo)", "https://demo.khalo.org/sample-saas",
+                "Remote — DACH", "https://demo.khalo.org/jobs/frontend", 0.85, 0.82,
+                "Demo lead — TypeScript + design-system fit. Remote.",
+            ),
+            (
+                "DevOps Engineer", "Demo Insurance (Demo)", "https://demo.khalo.org/demo-insurance",
+                "München", "https://demo.khalo.org/jobs/devops", 0.78, 0.75,
+                "Demo lead — Kubernetes / Terraform / SRE focus. Hybrid.",
+            ),
+            (
+                "Data Engineer", "Mock Analytics (Demo)", "https://demo.khalo.org/mock-analytics",
+                "Hamburg", "https://demo.khalo.org/jobs/data", 0.88, 0.84,
+                "Demo lead — dbt + Snowflake + CDC; bilingual EN/DE team.",
+            ),
+            (
+                "Product Manager", "Test Tech (Demo)", "https://demo.khalo.org/test-tech",
+                "Berlin", "https://demo.khalo.org/jobs/product", 0.74, 0.71,
+                "Demo lead — early-stage SaaS; PM-of-one with engineering background.",
+            ),
+        )
+        # Ensure each demo company exists (one per role) so the standard
+        # import flow — which requires a `company_id` — works for these
+        # rows. Idempotent: companies are looked up by name first.
+        existing_companies = {c.name: c for c in self.repository.list_companies(user_id)}
+        created: list[dict[str, Any]] = []
+        for title, company_name, company_site, location, url, confidence, fit, reason in samples:
+            if url in existing_demo_urls:
+                continue
+            company = existing_companies.get(company_name)
+            if company is None:
+                company = self.service.create_company(
+                    user_id=user_id,
+                    name=company_name,
+                    website_url=company_site,
+                    sector="Demo",
+                    notes="Sample company seeded for the empty-queue walkthrough. Safe to delete.",
+                    watch_enabled=False,
+                )
+                existing_companies[company_name] = company
+            job = DiscoveredJob(
+                user_id=user_id,
+                company_id=company.id,
+                source_url=url,
+                title=title,
+                location=location,
+                confidence_score=confidence,
+                auto_fit_score=fit,
+                auto_fit_reason=reason,
+                structured_data={"is_demo": True, "company_name": company_name},
+            )
+            self.repository.save_discovered_job(job)
+            created.append({"id": job.id, "title": title, "company_name": company_name})
+        self.log_analytics(user_id, "demo_data_seeded", {"count": len(created)})
+        return created
+
+    def send_welcome_email(self, user: AuthUser) -> None:
+        """Best-effort welcome email triggered on first sign-up. Hits
+        the configured email transport (console in dev, SMTP in prod).
+        Failures are swallowed by the caller — no welcome email should
+        ever block a working account from being created."""
+
+        public_url = self.public_url_for("/")
+        help_url = self.public_url_for("/help")
+        bookmarklet_url = self.public_url_for("/")  # bookmarklet card lives in Settings → Bookmarklet
+        body = (
+            f"Welcome to DirectJob Scout.\n\n"
+            "You signed in for the first time — here are three quick wins to make the product useful in 5 minutes:\n\n"
+            "1. Add 5–10 companies whose careers pages you want to watch (Companies tab → Add).\n"
+            "2. Set up a saved search for your role + city. We watch Indeed, StepStone, Arbeitnow, Muse, "
+            "Bundesagentur and more daily.\n"
+            "3. Install the bookmarklet so you can capture jobs from LinkedIn / Indeed in one click. "
+            "Settings → Bookmarklet has a 3-step guide.\n\n"
+            f"Help docs: {help_url}\n"
+            f"Open the app: {public_url}\n\n"
+            "Reply to this email if anything is unclear. We read every message."
+        )
+        self.email_transport.send(
+            Email(
+                to=user.email,
+                subject="[DirectJob Scout] Welcome — three quick wins",
+                text=body,
+                from_address=email_from_address(),
+            )
+        )
+        self.log_analytics(user.id, "welcome_email_sent", {})
+
+    def purge_due_account_deletions(self) -> list[dict[str, Any]]:
+        """Hard-delete any account whose grace window has elapsed.
+        Called from the retention purge cron and on app startup. Returns a
+        list of summaries (one per deleted account) so callers can log."""
+
+        results: list[dict[str, Any]] = []
+        for user_id in self.auth_store.due_account_deletions():
+            try:
+                target = self.auth_store.get_user(user_id)
+            except Exception:  # noqa: BLE001 - already gone
+                continue
+            try:
+                summary = self.delete_user_account(actor=target, target_id=user_id)
+                summary["trigger"] = "grace_expired"
+                results.append(summary)
+            except Exception as error:  # noqa: BLE001 - never block the sweep
+                results.append({"userId": user_id, "status": "error", "error": str(error)})
+        return results
 
     def delete_user_account(self, *, actor: AuthUser, target_id: str) -> dict[str, Any]:
         target = self.auth_store.get_user(target_id)
@@ -1438,6 +1644,17 @@ class AppState:
         with self._reset_request_lock:
             self._reset_requests.setdefault(client_id, []).append(time.time())
 
+    def register_allowed(self, client_id: str) -> bool:
+        now = time.time()
+        with self._register_request_lock:
+            attempts = [t for t in self._register_requests.get(client_id, []) if now - t < REGISTER_REQUEST_WINDOW]
+            self._register_requests[client_id] = attempts
+            return len(attempts) < REGISTER_REQUEST_LIMIT
+
+    def record_register_request(self, client_id: str) -> None:
+        with self._register_request_lock:
+            self._register_requests.setdefault(client_id, []).append(time.time())
+
     def public_url_for(self, path: str) -> str:
         if APP_PUBLIC_URL:
             return APP_PUBLIC_URL.rstrip("/") + path
@@ -1599,6 +1816,9 @@ class AppState:
         ``profile.retention_days`` overrides the default. Imported jobs
         are kept regardless. Returns total deleted by user.
 
+        Also fires the account-deletion grace sweep so accounts whose
+        7-day grace has elapsed get hard-deleted in the same cron tick.
+
         Idempotent: safe to call repeatedly."""
 
         from datetime import timedelta
@@ -1621,7 +1841,22 @@ class AppState:
                     user.id, "retention_purge",
                     {"removed": removed, "days": days, "cutoff": cutoff.isoformat()},
                 )
+        deletions = self.purge_due_account_deletions()
+        if deletions:
+            results["__account_deletions"] = len(deletions)
         return results
+
+    def set_share_enabled(self, user_id: str, imported_job_id: str, enabled: bool) -> ImportedJob:
+        imported = self.repository.imported_jobs.get(imported_job_id)
+        if imported is None or imported.user_id != user_id:
+            raise KeyError(imported_job_id)
+        imported.share_enabled = bool(enabled)
+        imported.updated_at = now_utc()
+        self.repository.save_imported_job(imported)
+        self.log_analytics(
+            user_id, "share_link_toggled", {"importedJobId": imported_job_id, "enabled": bool(enabled)},
+        )
+        return imported
 
     def update_application_state(
         self,
@@ -1668,6 +1903,26 @@ class AppState:
                     imported.reminder_at = datetime.fromisoformat(str(raw_reminder).replace("Z", "+00:00"))
                 except ValueError:
                     raise ValueError("invalid_reminder_at")
+        if "replied" in payload or "repliedAt" in payload or "replied_at" in payload:
+            # Accept either a boolean checkbox (`replied`) or a literal
+            # timestamp. ``replied=true`` stamps now() if not already
+            # set; ``replied=false`` clears it. Idempotent: re-sending
+            # the same boolean does not overwrite an existing stamp.
+            if "replied" in payload:
+                wants = bool(payload.get("replied"))
+                if wants and imported.replied_at is None:
+                    imported.replied_at = now_utc()
+                elif not wants:
+                    imported.replied_at = None
+            else:
+                raw_replied = payload.get("repliedAt", payload.get("replied_at"))
+                if not raw_replied:
+                    imported.replied_at = None
+                else:
+                    try:
+                        imported.replied_at = datetime.fromisoformat(str(raw_replied).replace("Z", "+00:00"))
+                    except ValueError:
+                        raise ValueError("invalid_replied_at")
         if "historyNote" in payload:
             history_note = str(payload.get("historyNote") or "").strip() or None
         if "documentsChecklist" in payload:
@@ -2148,11 +2403,58 @@ class Handler(BaseHTTPRequestHandler):
                     }
                 )
                 return
+            if parsed.path.startswith("/share/job/"):
+                job_id = parsed.path[len("/share/job/"):].strip("/")
+                imported = STATE.repository.imported_jobs.get(job_id)
+                if imported is None or not imported.share_enabled:
+                    self._send_share_not_found_page()
+                    return
+                self._send_share_job_page(imported)
+                return
+            if parsed.path == "/account/deletion-confirm":
+                from urllib.parse import parse_qs as _parse_qs
+                qs = _parse_qs(parsed.query or "")
+                raw_token = (qs.get("token", [""])[0] or "").strip()
+                if not raw_token:
+                    self._send_account_deletion_page(
+                        title="Invalid link",
+                        message="This confirmation link is missing its token. If you arrived here by clicking an email, the link may have wrapped — copy and paste the entire URL into the address bar.",
+                        ok=False,
+                    )
+                    return
+                try:
+                    result = STATE.confirm_account_deletion(raw_token)
+                except ValueError as error:
+                    self._send_account_deletion_page(
+                        title="Link expired",
+                        message=(
+                            "This confirmation link is invalid or has already been used. "
+                            "If you still want to delete your account, sign in and request deletion again from "
+                            "Settings → Privacy."
+                        ),
+                        ok=False,
+                    )
+                    _ = error  # error code already surfaced via the page text
+                    return
+                scheduled_iso = result["scheduledAt"]
+                self._send_account_deletion_page(
+                    title="Deletion scheduled",
+                    message=(
+                        "We have scheduled your account for permanent deletion in 7 days "
+                        f"(on {scheduled_iso[:10]}). Sign in and visit Settings → Privacy "
+                        "to cancel any time during the grace window."
+                    ),
+                    ok=True,
+                )
+                return
             if parsed.path.startswith("/api/"):
                 session = self.require_auth()
                 if session is None:
                     return
                 user_id = session.user.id
+            if parsed.path == "/api/account/deletion-status":
+                self.send_json(STATE.get_account_deletion_state(session.user))
+                return
             if parsed.path == "/api/bootstrap":
                 self.send_json(STATE.bootstrap(user_id))
                 return
@@ -2552,6 +2854,16 @@ class Handler(BaseHTTPRequestHandler):
                 if not STATE.registration_open():
                     self.send_error_json(HTTPStatus.FORBIDDEN, "registration_closed", "Registration is closed")
                     return
+                # Rate-limit registration except for the first-account
+                # bootstrap path (no users yet → admin gets created). Without
+                # this an attacker could spam-create accounts and pump the
+                # outbound email transport.
+                if STATE.auth_store.has_users():
+                    client_id = self.client_address[0] if self.client_address else "unknown"
+                    if not STATE.register_allowed(client_id):
+                        self.send_error_json(HTTPStatus.TOO_MANY_REQUESTS, "rate_limited", "Too many registration attempts. Try again later.")
+                        return
+                    STATE.record_register_request(client_id)
                 role = "admin" if not STATE.auth_store.has_users() else "member"
                 user = STATE.auth_store.create_user(payload.get("email", ""), payload.get("password", ""), role=role)
                 # Stamp the very first sign-in (register doesn't go through authenticate()).
@@ -2562,6 +2874,14 @@ class Handler(BaseHTTPRequestHandler):
                 )
                 STATE.auth_store.connection.commit()
                 user = STATE.auth_store.get_user(user.id)
+                # Welcome email — best-effort. Skipped for the first-
+                # account bootstrap (admin) since the operator already
+                # knows what they signed up for.
+                if role != "admin":
+                    try:
+                        STATE.send_welcome_email(user)
+                    except Exception:  # noqa: BLE001 - email failure must not block sign-in
+                        pass
                 session = STATE.auth_store.create_session(user)
                 max_age = int((session.expires_at - now_utc()).total_seconds())
                 self.send_json(
@@ -3230,7 +3550,14 @@ class Handler(BaseHTTPRequestHandler):
                     user=session.user,
                     reason=str(payload.get("reason") or ""),
                 )
-                self.send_json({"ticket": ticket}, HTTPStatus.CREATED)
+                self.send_json({"ticket": ticket, "emailSent": True}, HTTPStatus.CREATED)
+                return
+            if parsed.path == "/api/account/deletion-cancel":
+                self.send_json(STATE.cancel_account_deletion(session.user))
+                return
+            if parsed.path == "/api/demo-data/seed":
+                created = STATE.seed_demo_data(STATE.effective_user_id(user_id))
+                self.send_json({"seeded": created, "bootstrap": STATE.bootstrap(user_id)}, HTTPStatus.CREATED)
                 return
             if parsed.path == "/api/analytics/event":
                 kind = str(payload.get("kind") or "").strip()
@@ -3267,6 +3594,15 @@ class Handler(BaseHTTPRequestHandler):
                     self.send_error_json(HTTPStatus.BAD_REQUEST, str(error), str(error))
                     return
                 self.send_json({"job": job, "bootstrap": STATE.bootstrap(user_id)})
+                return
+            if len(parts) == 4 and parts[:2] == ["api", "imported-jobs"] and parts[3] == "share":
+                try:
+                    job = STATE.set_share_enabled(data_user_id, parts[2], bool(payload.get("enabled")))
+                except KeyError:
+                    self.send_error_json(HTTPStatus.NOT_FOUND, "not_found", "Imported job not found")
+                    return
+                share_url = STATE.public_url_for(f"/share/job/{job.id}") if job.share_enabled else None
+                self.send_json({"job": job, "shareUrl": share_url, "bootstrap": STATE.bootstrap(user_id)})
                 return
 
             if parsed.path == "/api/ai-provider":
@@ -3747,6 +4083,137 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Cache-Control", "no-store")
         if filename:
             self.send_header("Content-Disposition", f'attachment; filename="{filename}"')
+        self.end_headers()
+        self.wfile.write(encoded)
+
+    def _send_share_not_found_page(self) -> None:
+        body = (
+            "<!doctype html>\n"
+            "<html lang=\"en\">\n"
+            "<head>\n"
+            "  <meta charset=\"utf-8\" />\n"
+            "  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n"
+            "  <meta name=\"robots\" content=\"noindex,nofollow\" />\n"
+            "  <title>Job not available — DirectJob Scout</title>\n"
+            "  <link rel=\"stylesheet\" href=\"/styles.css\" />\n"
+            "</head>\n"
+            "<body class=\"legal-body\">\n"
+            "  <main class=\"legal-page\">\n"
+            "    <a href=\"/\" class=\"legal-back\">← DirectJob Scout</a>\n"
+            "    <h1>Job not available</h1>\n"
+            "    <p>This job's share link has been disabled by its owner, or the link is wrong. "
+            "If you arrived here by mistake, head to <a href=\"/\">khalo.org</a>.</p>\n"
+            "  </main>\n"
+            "</body>\n"
+            "</html>\n"
+        )
+        encoded = body.encode("utf-8")
+        self.send_response(HTTPStatus.NOT_FOUND)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(encoded)))
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        self.wfile.write(encoded)
+
+    def _send_share_job_page(self, imported: ImportedJob) -> None:
+        from html import escape as _escape
+
+        title = imported.title or "Job opening"
+        company = imported.company_name or "—"
+        location = imported.location or ""
+        signup_url = STATE.public_url_for("/")
+        canonical = STATE.public_url_for(f"/share/job/{imported.id}")
+        description = (imported.description or "").strip() or (
+            f"{title} at {company}" + (f" — {location}" if location else "") + "."
+        )
+        og_description = description[:280]
+        body = (
+            "<!doctype html>\n"
+            "<html lang=\"en\">\n"
+            "<head>\n"
+            "  <meta charset=\"utf-8\" />\n"
+            "  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n"
+            "  <meta name=\"robots\" content=\"index,follow\" />\n"
+            f"  <title>{_escape(title)} at {_escape(company)} — DirectJob Scout</title>\n"
+            f"  <meta name=\"description\" content=\"{_escape(og_description)}\" />\n"
+            f"  <link rel=\"canonical\" href=\"{_escape(canonical)}\" />\n"
+            "  <meta property=\"og:type\" content=\"article\" />\n"
+            f"  <meta property=\"og:title\" content=\"{_escape(title)} at {_escape(company)}\" />\n"
+            f"  <meta property=\"og:description\" content=\"{_escape(og_description)}\" />\n"
+            f"  <meta property=\"og:url\" content=\"{_escape(canonical)}\" />\n"
+            "  <link rel=\"stylesheet\" href=\"/styles.css\" />\n"
+            "</head>\n"
+            "<body class=\"legal-body\">\n"
+            "  <main class=\"legal-page\">\n"
+            "    <a href=\"/\" class=\"legal-back\">← DirectJob Scout</a>\n"
+            f"    <h1>{_escape(title)}</h1>\n"
+            f"    <p class=\"muted\"><strong>{_escape(company)}</strong>"
+            + (f" · {_escape(location)}" if location else "")
+            + "</p>\n"
+            "    <section>\n"
+            f"      <p>{_escape(description)}</p>\n"
+            "    </section>\n"
+            "    <section>\n"
+            "      <h2>Want jobs like this in your inbox?</h2>\n"
+            "      <p>DirectJob Scout watches direct career pages plus the major aggregators "
+            "(Indeed, StepStone, Arbeitnow, Bundesagentur, Muse) and dedupes the queue. "
+            "No LinkedIn feed, no algorithm, no surveillance.</p>\n"
+            f"      <p><a class=\"btn btn-primary\" href=\"{_escape(signup_url)}\">Sign up — it's free</a></p>\n"
+            "    </section>\n"
+            f"    <p class=\"muted small\">Original job listing: <a rel=\"noopener nofollow\" target=\"_blank\" href=\"{_escape(imported.source_url)}\">{_escape(imported.source_url)}</a></p>\n"
+            "    <p class=\"legal-footer\">\n"
+            "      <a href=\"/privacy\">Privacy</a>\n"
+            "      <a href=\"/terms\">Terms</a>\n"
+            "      <a href=\"/data-retention\">Data retention</a>\n"
+            "      <a href=\"/impressum\">Impressum</a>\n"
+            "    </p>\n"
+            "  </main>\n"
+            "</body>\n"
+            "</html>\n"
+        )
+        encoded = body.encode("utf-8")
+        self.send_response(HTTPStatus.OK)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(encoded)))
+        # Public, indexable, but cache lightly so an owner-disable
+        # propagates within minutes.
+        self.send_header("Cache-Control", "public, max-age=300")
+        self.end_headers()
+        self.wfile.write(encoded)
+
+    def _send_account_deletion_page(self, *, title: str, message: str, ok: bool) -> None:
+        """Render the small server-side confirmation page reached from the
+        account-deletion email link. Server-rendered (not SPA) because the
+        user may not have an active session when they click."""
+
+        accent = "#7c5cff" if ok else "#f97373"
+        from html import escape as _escape
+
+        body = (
+            "<!doctype html>\n"
+            "<html lang=\"en\">\n"
+            "<head>\n"
+            "  <meta charset=\"utf-8\" />\n"
+            "  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n"
+            "  <meta name=\"robots\" content=\"noindex,nofollow\" />\n"
+            f"  <title>{_escape(title)} — DirectJob Scout</title>\n"
+            "  <link rel=\"stylesheet\" href=\"/styles.css\" />\n"
+            "</head>\n"
+            "<body class=\"legal-body\">\n"
+            "  <main class=\"legal-page\">\n"
+            "    <a href=\"/\" class=\"legal-back\">← Back to DirectJob Scout</a>\n"
+            f"    <h1 style=\"color: {accent}\">{_escape(title)}</h1>\n"
+            f"    <p>{_escape(message)}</p>\n"
+            "    <p class=\"muted small\">If something is wrong, contact <a href=\"mailto:support@khalo.org\">support@khalo.org</a>.</p>\n"
+            "  </main>\n"
+            "</body>\n"
+            "</html>\n"
+        )
+        encoded = body.encode("utf-8")
+        self.send_response(HTTPStatus.OK if ok else HTTPStatus.GONE)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(encoded)))
+        self.send_header("Cache-Control", "no-store")
         self.end_headers()
         self.wfile.write(encoded)
 

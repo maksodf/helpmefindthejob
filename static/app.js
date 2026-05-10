@@ -387,6 +387,14 @@ async function load() {
   const payload = await api("/api/bootstrap");
   absorbBootstrap(payload);
   render();
+  if (payload?.whatsNew) {
+    const seenKey = `directjob.whatsNew.${payload.whatsNew.appVersion}`;
+    if (!localStorage.getItem(seenKey)) {
+      const tpl = t("whatsNew.toast", "Welcome back — see what shipped while you were away.");
+      showToast(tpl, "info", 8000);
+      localStorage.setItem(seenKey, "1");
+    }
+  }
   if (isAdmin()) {
     try {
       await loadAdminUsers();
@@ -834,6 +842,8 @@ function renderJobs() {
     sub.textContent = t("queue.empty.sub", "We watch Indeed, StepStone, Arbeitnow, Muse, Bundesagentur and more. Set up a saved search and we'll keep checking daily.");
     wrap.append(icon, title, sub);
     if (state.queueFilter !== "imported") {
+      const ctaRow = document.createElement("div");
+      ctaRow.className = "queue-empty-cta-row";
       const cta = document.createElement("button");
       cta.type = "button";
       cta.className = "btn btn-primary";
@@ -850,7 +860,25 @@ function renderJobs() {
           }
         }, 60);
       });
-      wrap.append(cta);
+      const demo = document.createElement("button");
+      demo.type = "button";
+      demo.className = "btn";
+      demo.textContent = t("queue.empty.demo", "Try with sample jobs");
+      demo.addEventListener("click", async () => {
+        demo.disabled = true;
+        try {
+          const payload = await api("/api/demo-data/seed", { method: "POST", body: JSON.stringify({}) });
+          absorbBootstrap(payload.bootstrap);
+          render();
+          showToast(t("queue.empty.demoSeeded", "Sample jobs added. Triage with j/k/a/x or scroll down."), "success");
+        } catch (error) {
+          showToast(error.message, "error");
+        } finally {
+          demo.disabled = false;
+        }
+      });
+      ctaRow.append(cta, demo);
+      wrap.append(ctaRow);
     }
     list.append(wrap);
     return;
@@ -1391,6 +1419,26 @@ function renderSavedSearches() {
   }
 }
 
+function renderSharePanel(job) {
+  const panel = $("#sharePanel");
+  const toggle = $("#shareEnabledToggle");
+  const urlRow = $("#shareUrlRow");
+  const urlEl = $("#shareUrl");
+  if (!panel || !toggle || !urlRow || !urlEl) return;
+  panel.hidden = !job;
+  if (!job) return;
+  toggle.checked = Boolean(job.share_enabled);
+  if (job.share_enabled) {
+    const url = `${location.origin}/share/job/${job.id}`;
+    urlEl.textContent = url;
+    urlRow.hidden = false;
+  } else {
+    urlEl.textContent = "";
+    urlRow.hidden = true;
+  }
+  toggle.dataset.jobId = job.id;
+}
+
 function renderApplicationHistory(job) {
   const panel = $("#applicationHistoryPanel");
   const list = $("#applicationHistoryList");
@@ -1485,6 +1533,18 @@ function renderApplicationForm() {
       reminderEl.value = "";
     }
   }
+  const repliedEl = $("#applicationReplied");
+  const repliedHint = $("#applicationRepliedAt");
+  if (repliedEl) {
+    repliedEl.checked = Boolean(job.replied_at);
+    if (repliedHint) {
+      if (job.replied_at) {
+        repliedHint.textContent = `${t("applications.repliedOn", "Replied on")} ${String(job.replied_at).slice(0, 10)}`;
+      } else {
+        repliedHint.textContent = t("applications.repliedHint", "Tick when the company first wrote back. Drives reply-rate analytics.");
+      }
+    }
+  }
   const noteEl = $("#applicationHistoryNote");
   if (noteEl) noteEl.value = "";
   $("#applicationNextAction").value = job.next_action || "";
@@ -1495,6 +1555,7 @@ function renderApplicationForm() {
     .join("\n");
   $("#applicationChecklist").value = checklistText;
   renderApplicationHistory(job);
+  renderSharePanel(job);
   if (job.structured_analysis || job.fit_score != null) {
     summary.hidden = false;
     summary.replaceChildren();
@@ -3819,6 +3880,7 @@ async function handleApplicationSave(event) {
         nextAction: $("#applicationNextAction").value,
         interviewStage: $("#applicationInterviewStage")?.value || null,
         reminderAt: reminderRaw ? reminderRaw + ":00" : null,
+        replied: $("#applicationReplied")?.checked || false,
         historyNote: $("#applicationHistoryNote")?.value || "",
         documentsChecklist: checklist,
       }),
@@ -4372,6 +4434,46 @@ $$(".segmented-btn").forEach((btn) => {
 
 $("#saveCurrentSearchBtn")?.addEventListener("click", saveCurrentSearch);
 $("#applicationForm")?.addEventListener("submit", handleApplicationSave);
+$("#shareEnabledToggle")?.addEventListener("change", async (event) => {
+  const toggle = event.target;
+  const jobId = toggle.dataset.jobId;
+  if (!jobId) return;
+  const enabled = Boolean(toggle.checked);
+  toggle.disabled = true;
+  try {
+    const payload = await api(`/api/imported-jobs/${encodeURIComponent(jobId)}/share`, {
+      method: "POST",
+      body: JSON.stringify({ enabled }),
+    });
+    absorbBootstrap(payload.bootstrap);
+    const job = state.importedJobs.find((j) => j.id === jobId);
+    if (job) {
+      job.share_enabled = payload.job?.share_enabled ?? enabled;
+      renderSharePanel(job);
+    }
+    showToast(
+      enabled
+        ? t("applications.share.enabled", "Share link enabled.")
+        : t("applications.share.disabled", "Share link disabled."),
+      "success",
+    );
+  } catch (error) {
+    toggle.checked = !enabled;
+    showToast(error.message, "error");
+  } finally {
+    toggle.disabled = false;
+  }
+});
+$("#copyShareUrlBtn")?.addEventListener("click", async () => {
+  const url = $("#shareUrl")?.textContent || "";
+  if (!url) return;
+  try {
+    await navigator.clipboard.writeText(url);
+    showToast(t("applications.share.copied", "Share URL copied."), "success");
+  } catch (error) {
+    showToast(error.message || "Could not copy.", "error");
+  }
+});
 $("#supportForm")?.addEventListener("submit", handleSupport);
 $("#digestPreviewBtn")?.addEventListener("click", digestPreview);
 $("#digestSendBtn")?.addEventListener("click", digestSend);

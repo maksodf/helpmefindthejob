@@ -8,6 +8,7 @@ from pathlib import Path
 from threading import RLock
 from typing import Any
 
+from .crypto_kit import EncryptionAtRest, is_aead_blob
 from .models import (
     AnalyticsEvent,
     CareerPageScan,
@@ -41,7 +42,12 @@ def _drop_none(data: dict[str, Any]) -> dict[str, Any]:
 
 
 class SqliteCompanyDiscoveryRepository(InMemoryCompanyDiscoveryRepository):
-    def __init__(self, path: str | Path) -> None:
+    def __init__(
+        self,
+        path: str | Path,
+        *,
+        crypto: EncryptionAtRest | None = None,
+    ) -> None:
         super().__init__()
         self.path = Path(path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -49,6 +55,12 @@ class SqliteCompanyDiscoveryRepository(InMemoryCompanyDiscoveryRepository):
         self._connection = sqlite3.connect(self.path, check_same_thread=False)
         self._connection.execute("PRAGMA journal_mode=WAL")
         self._connection.execute("PRAGMA foreign_keys=ON")
+        # Encryption-at-rest for ``profile.cv_text``. When ``crypto`` is
+        # None (e.g. tests, in-memory dev) the plain JSON path is used.
+        # When set, new writes are AEAD-encrypted with the user_id as
+        # AAD and existing legacy plain values are migrated lazily on
+        # next save.
+        self._crypto = crypto
         self._create_schema()
         self._load()
 
@@ -126,8 +138,16 @@ class SqliteCompanyDiscoveryRepository(InMemoryCompanyDiscoveryRepository):
     def save_user_profile(self, profile: UserProfile) -> UserProfile:
         with self._lock:
             result = super().save_user_profile(profile)
+            payload = asdict(profile)
+            cv = payload.get("cv_text")
+            if self._crypto and cv and not is_aead_blob(cv):
+                # Encrypt before persisting; in-memory ``profile.cv_text``
+                # stays plaintext so the rest of the app sees no change.
+                payload["cv_text"] = self._crypto.encrypt(
+                    cv, aad=profile.user_id.encode("utf-8"),
+                )
             self._upsert(
-                "user_profiles", profile.user_id, profile.user_id, None, asdict(profile),
+                "user_profiles", profile.user_id, profile.user_id, None, payload,
             )
             return result
 
@@ -366,6 +386,21 @@ class SqliteCompanyDiscoveryRepository(InMemoryCompanyDiscoveryRepository):
             self.support_tickets[item.id] = item
 
         for payload in self._load_payloads("user_profiles"):
+            cv = payload.get("cv_text")
+            if cv and is_aead_blob(cv):
+                # Encrypted blob → decrypt back to plaintext for the
+                # in-memory model. If the master key has rotated and
+                # the blob no longer decrypts, drop the value rather
+                # than crash the load — the user can re-paste their CV.
+                if self._crypto is None:
+                    payload["cv_text"] = None
+                else:
+                    try:
+                        payload["cv_text"] = self._crypto.decrypt(
+                            cv, aad=payload["user_id"].encode("utf-8"),
+                        )
+                    except ValueError:
+                        payload["cv_text"] = None
             profile = UserProfile(
                 **_drop_none(
                     {

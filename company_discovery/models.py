@@ -137,6 +137,18 @@ class ImportedJob:
     next_action: str | None = None
     interview_stage: str | None = None
     reminder_at: datetime | None = None
+    # Reply-rate analytics: set to ``now()`` the first time the user
+    # confirms the company replied to their application. Distinct from
+    # ``application_status`` transitions (which can happen on
+    # auto-rejection emails); ``replied_at`` is the user-confirmed
+    # signal that someone actually wrote back.
+    replied_at: datetime | None = None
+    # Public share toggle: when True the job is reachable at
+    # ``/share/job/<id>`` for SEO + sign-up funnel. Owner can
+    # toggle off any time; toggling off makes the share URL
+    # immediately return 404. Default is False so nothing is
+    # accidentally public.
+    share_enabled: bool = False
     application_history: list[dict[str, Any]] = field(default_factory=list)
     id: str = field(default_factory=lambda: new_id("job"))
     created_at: datetime = field(default_factory=now_utc)

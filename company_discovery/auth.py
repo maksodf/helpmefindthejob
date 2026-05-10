@@ -8,6 +8,7 @@ import sqlite3
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from typing import Any
 
 
 PBKDF2_ITERATIONS = 240_000
@@ -175,6 +176,14 @@ class AuthStore:
         self._add_column_if_missing("users", "totp_secret", "TEXT")
         self._add_column_if_missing("users", "totp_enabled", "INTEGER NOT NULL DEFAULT 0")
         self._add_column_if_missing("users", "recovery_codes", "TEXT")
+        # Account deletion grace flow: when a user requests deletion we store
+        # the HMAC-SHA256 hash of a one-time confirmation token they receive
+        # by email. On confirmation we set ``deletion_scheduled_at`` to
+        # ``now() + 7 days``. The retention purge sweep deletes the account
+        # once that timestamp is in the past. The user can cancel during
+        # the grace window which clears both columns.
+        self._add_column_if_missing("users", "deletion_token_hash", "TEXT")
+        self._add_column_if_missing("users", "deletion_scheduled_at", "TEXT")
         self.connection.execute(
             """
             CREATE TABLE IF NOT EXISTS sessions (
@@ -470,6 +479,89 @@ class AuthStore:
         )
         self.connection.commit()
         return True
+
+    # --- Account deletion grace flow -----------------------------------
+
+    def start_account_deletion(self, user_id: str) -> str:
+        """Mint a one-time confirmation token, store its hash, return the
+        raw token for emailing. Calling twice replaces the previous token."""
+
+        token = secrets.token_urlsafe(32)
+        token_hash = _hash_token(self.secret_key, token)
+        self.connection.execute(
+            "UPDATE users SET deletion_token_hash = ?, deletion_scheduled_at = NULL WHERE id = ?",
+            (token_hash, user_id),
+        )
+        self.connection.commit()
+        return token
+
+    def confirm_account_deletion(self, token: str, *, grace_days: int = 7) -> tuple[str, datetime]:
+        """Verify the confirmation token and schedule the hard delete.
+        Returns ``(user_id, scheduled_at)``. Raises ``ValueError`` with
+        ``"invalid_or_expired_token"`` when the token doesn't match."""
+
+        token_hash = _hash_token(self.secret_key, (token or "").strip())
+        row = self.connection.execute(
+            "SELECT id FROM users WHERE deletion_token_hash = ? AND active = 1",
+            (token_hash,),
+        ).fetchone()
+        if not row:
+            raise ValueError("invalid_or_expired_token")
+        user_id = str(row[0])
+        scheduled_at = now_utc() + timedelta(days=grace_days)
+        # Burn the token on confirmation; only one redemption is allowed.
+        self.connection.execute(
+            "UPDATE users SET deletion_token_hash = NULL, deletion_scheduled_at = ? WHERE id = ?",
+            (scheduled_at.isoformat(), user_id),
+        )
+        self.connection.commit()
+        return user_id, scheduled_at
+
+    def cancel_account_deletion(self, user_id: str) -> bool:
+        """Clear deletion state for ``user_id``. Returns True when an
+        active request was cleared, False when nothing was pending."""
+
+        row = self.connection.execute(
+            "SELECT deletion_token_hash, deletion_scheduled_at FROM users WHERE id = ?",
+            (user_id,),
+        ).fetchone()
+        if not row or (not row[0] and not row[1]):
+            return False
+        self.connection.execute(
+            "UPDATE users SET deletion_token_hash = NULL, deletion_scheduled_at = NULL WHERE id = ?",
+            (user_id,),
+        )
+        self.connection.commit()
+        return True
+
+    def get_deletion_state(self, user_id: str) -> dict[str, Any]:
+        """Return the deletion state for the account. Shape:
+        ``{"pending": bool, "scheduledAt": iso|None}``. ``pending`` is
+        True when either an unconfirmed request or a scheduled delete is
+        in flight."""
+
+        row = self.connection.execute(
+            "SELECT deletion_token_hash, deletion_scheduled_at FROM users WHERE id = ?",
+            (user_id,),
+        ).fetchone()
+        if not row:
+            return {"pending": False, "scheduledAt": None}
+        token_hash, scheduled_at = row[0], row[1]
+        return {
+            "pending": bool(token_hash) or bool(scheduled_at),
+            "scheduledAt": scheduled_at,
+        }
+
+    def due_account_deletions(self, *, now: datetime | None = None) -> list[str]:
+        """Return user_ids whose ``deletion_scheduled_at`` is in the past.
+        Caller is responsible for performing the cascade delete."""
+
+        threshold = (now or now_utc()).isoformat()
+        rows = self.connection.execute(
+            "SELECT id FROM users WHERE deletion_scheduled_at IS NOT NULL AND deletion_scheduled_at <= ?",
+            (threshold,),
+        ).fetchall()
+        return [str(r[0]) for r in rows]
 
     def issue_2fa_challenge(self, user_id: str, *, ttl_seconds: int = 300) -> str:
         """Mint a short-lived bearer token the client must send back with
