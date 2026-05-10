@@ -40,7 +40,7 @@ Each item is one slice. Tick `[x]` when done. Order is rough; some can ship in p
 24. [ ] Free tier limits enforced server-side: 3 saved searches max, Manual AI mode only, 30-day retention
 25. [ ] Pro tier unlocks: unlimited saved searches, Managed AI, 90-day retention, daily digest
 26. [ ] Managed AI flow live (operator-side: Stripe Price + server-side LLM key + per-user quota counters)
-27. [ ] In-app billing UI: current plan + "Upgrade" / "Manage subscription" buttons
+27. [x] In-app billing UI: current plan + "Upgrade" / "Manage subscription" buttons — current-plan summary already rendered (existing `renderBilling`). Added "Manage subscription" button in `Settings → Subscription` that POSTs to `/api/billing/portal` (#22) and `window.location.assign`s the Stripe Customer Portal URL. Button hidden until `subscription.customer_id` is set (i.e. the user has completed at least one Stripe checkout) — otherwise the portal call would 400. i18n parity (en + de). "Upgrade" CTA deferred until the pricing-model decision (#21) lands — the existing admin checkout path is workspace-multi-seat-shaped and doesn't yet have a Free→Pro single-user counterpart
 28. [ ] Receipt / invoice emails (Stripe handles by default — verify they fire)
 29. [ ] EU VAT MOSS / OSS handling — Stripe Tax enabled, operator registers if revenue threshold approached
 
