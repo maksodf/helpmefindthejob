@@ -1175,6 +1175,25 @@ details[open] .collapsible-chevron { transform: rotate(180deg); }
   .ai-modes { grid-template-columns: 1fr; }
 }
 
+/* Application form: collapsible "extras" group */
+.application-extras {
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  background: var(--surface-2);
+}
+.application-extras summary {
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 13px;
+  padding: 6px 0;
+  list-style: none;
+}
+.application-extras summary::-webkit-details-marker { display: none; }
+.application-extras summary::before { content: "▸ "; transition: transform 0.2s; display: inline-block; }
+.application-extras[open] summary::before { transform: rotate(90deg); }
+.application-extras .field { margin-top: 10px; }
+
 /* Topbar cmd-K launcher button */
 .cmdk-launcher {
   display: inline-flex;

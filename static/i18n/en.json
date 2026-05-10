@@ -240,6 +240,7 @@
   "brief.copied": "Brief copied to clipboard.",
   "brief.clipboardErr": "Could not access the clipboard.",
   "brief.openHandoff": "Copied. Paste it into the LLM tab.",
+  "applications.extras.summary": "More — checklist, history note",
   "settings.totp.heading": "Two-factor authentication",
   "settings.totp.lead": "Protect your account with a 6-digit code from an authenticator app (Aegis, 1Password, Google Authenticator).",
   "settings.totp.enabled": "Enabled",

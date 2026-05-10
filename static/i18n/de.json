@@ -240,6 +240,7 @@
   "brief.copied": "Briefing in die Zwischenablage kopiert.",
   "brief.clipboardErr": "Zwischenablage nicht erreichbar.",
   "brief.openHandoff": "Kopiert. Im LLM-Tab einfügen.",
+  "applications.extras.summary": "Mehr — Checkliste, Verlaufsnotiz",
   "settings.totp.heading": "Zwei-Faktor-Authentifizierung",
   "settings.totp.lead": "Schütze dein Konto mit einem 6-stelligen Code aus einer Authenticator-App (Aegis, 1Password, Google Authenticator).",
   "settings.totp.enabled": "Aktiviert",

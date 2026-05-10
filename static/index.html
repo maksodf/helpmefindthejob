@@ -575,10 +575,6 @@
                 <textarea id="applicationNotes" rows="3"></textarea>
               </label>
               <label class="field wide">
-                <span data-i18n="applications.historyNote">Add history note (optional)</span>
-                <input id="applicationHistoryNote" placeholder="e.g. Recruiter emailed; phone screen Thursday" />
-              </label>
-              <label class="field wide">
                 <span data-i18n="applications.coverLetterDraft">Cover letter draft</span>
                 <div class="cover-letter-toolbar">
                   <button id="prepareCoverLetterBtn" class="btn" type="button" title="Show the cover-letter prompt for manual handoff" data-i18n="applications.coverLetter.prompt">Cover-letter prompt</button>
@@ -589,10 +585,17 @@
                 </div>
                 <textarea id="applicationCoverLetter" rows="6" placeholder="Click 'Draft cover letter' to generate one with your AI provider, or paste your own."></textarea>
               </label>
-              <label class="field wide">
-                <span data-i18n="applications.documentsChecklist">Documents checklist</span>
-                <textarea id="applicationChecklist" rows="3" placeholder="One item per line; prefix with [x] for done"></textarea>
-              </label>
+              <details class="application-extras field wide">
+                <summary data-i18n="applications.extras.summary">More — checklist, history note</summary>
+                <label class="field">
+                  <span data-i18n="applications.historyNote">Add history note (optional)</span>
+                  <input id="applicationHistoryNote" placeholder="e.g. Recruiter emailed; phone screen Thursday" />
+                </label>
+                <label class="field">
+                  <span data-i18n="applications.documentsChecklist">Documents checklist</span>
+                  <textarea id="applicationChecklist" rows="3" placeholder="One item per line; prefix with [x] for done"></textarea>
+                </label>
+              </details>
               <button class="btn btn-primary" type="submit" data-i18n="applications.save">Save application</button>
             </form>
             <div id="structuredFitSummary" class="structured-fit muted" hidden></div>
