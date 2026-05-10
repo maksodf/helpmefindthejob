@@ -107,6 +107,11 @@ function setStatus(text, mode = "") {
   if (!el) return;
   el.textContent = text;
   el.className = `status-pill ${mode}`.trim();
+  // Only surface the pill when something is actually wrong or in flight.
+  // "Ready" was confusing users — it stayed visible after a Settings
+  // fetch landed, then disappeared/changed when navigating to Jobs and
+  // looked like the page itself was offline.
+  el.hidden = !mode || mode === "" || /^(Ready|Bereit|Sign in|Anmelden)$/i.test(text);
 }
 
 function showToast(message, kind = "info", timeout = 4500) {
@@ -886,11 +891,18 @@ function renderJobs() {
       }
     }
     node.querySelector(".job-source").textContent = `${t("queue.from", "From")} ${shortUrl(job.source_url)}`;
+    // Confidence_score measures how much METADATA the source supplied
+    // (title + url + description + location). For aggregator-fetched
+    // jobs it's almost always 55% — uninformative. Hide it unless the
+    // value crosses a meaningful threshold (≥75 = full structured data).
     const score = Math.round((job.confidence_score || 0) * 100);
     const conf = node.querySelector(".confidence");
-    conf.textContent = `${score}% confidence`;
-    if (score < 40) conf.classList.add("bad");
-    else if (score < 65) conf.classList.add("low");
+    if (score >= 75) {
+      conf.textContent = `${score}% data`;
+      conf.title = t("queue.confidenceHint", "How complete the source's posting was (title + description + location).");
+    } else {
+      conf.hidden = true;
+    }
 
     if (job.auto_fit_score != null) {
       const fit = Math.round(job.auto_fit_score * 100);
@@ -1200,7 +1212,44 @@ function renderBrief() {
     $("#briefMeta").textContent = state.selectedImportedJobId ? "Click an imported job to prepare its brief" : "No brief prepared yet";
     $("#briefPrompt").value = "";
   }
+  syncBriefActionsEnabled();
 }
+
+function syncBriefActionsEnabled() {
+  const text = ($("#briefPrompt")?.value || "").trim();
+  const has = text.length > 0;
+  for (const id of ["copyBriefBtn", "openInChatGPTBtn", "openInClaudeBtn"]) {
+    const btn = document.getElementById(id);
+    if (!btn) continue;
+    btn.disabled = !has;
+    if (!has) {
+      btn.dataset.disabledReason = "1";
+      btn.title = t("brief.disabledTitle", "Pick an imported job below to prepare a brief first.");
+    } else if (btn.dataset.disabledReason) {
+      btn.title = btn.dataset.originalTitle || "";
+      delete btn.dataset.disabledReason;
+    }
+  }
+}
+
+// Auto-sync the brief buttons when the textarea changes for any reason.
+(function bootBriefAutoSync() {
+  const ta = document.getElementById("briefPrompt");
+  if (!ta) return;
+  ta.addEventListener("input", syncBriefActionsEnabled);
+  // Stash original tooltips so we can restore after a disabled cycle.
+  for (const id of ["copyBriefBtn", "openInChatGPTBtn", "openInClaudeBtn"]) {
+    const btn = document.getElementById(id);
+    if (btn) btn.dataset.originalTitle = btn.title || "";
+  }
+  // MutationObserver covers programmatic .value = … assignments which
+  // don't trigger the "input" event.
+  let last = ta.value;
+  setInterval(() => {
+    if (ta.value !== last) { last = ta.value; syncBriefActionsEnabled(); }
+  }, 400);
+  syncBriefActionsEnabled();
+})();
 
 function renderHistory() {
   const list = $("#scanHistory");
