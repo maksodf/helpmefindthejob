@@ -635,23 +635,23 @@
           <section class="card" aria-label="Bookmarklet" data-tab="notifications">
             <div class="card-heading">
               <div>
-                <h2 data-i18n="settings.bookmarklet.heading">Capture from Indeed / LinkedIn / StepStone / Xing</h2>
-                <p class="muted" data-i18n="settings.bookmarklet.lead">A tiny browser bookmark sends a job page straight to your queue. Your browser does the read — we never scrape those sites.</p>
+                <h2 data-i18n="settings.bookmarklet.heading">Save jobs from Indeed, LinkedIn, StepStone & Xing in one click</h2>
+                <p class="muted" data-i18n="settings.bookmarklet.lead">You see a great role on Indeed (or LinkedIn, StepStone, Xing). Instead of copy-pasting the link, you click one button in your bookmark bar — and the job is in your DirectJob queue. We install the button below; you click it once on each job. No login, no copy-paste, no re-typing.</p>
               </div>
             </div>
             <ol class="bookmarklet-steps">
               <li>
                 <span class="step-num">1</span>
                 <div>
-                  <strong data-i18n="settings.bookmarklet.step1">Show the bookmark bar</strong>
-                  <p class="muted small" data-i18n="settings.bookmarklet.step1.desc">If hidden: <kbd>⌘+Shift+B</kbd> on Mac, <kbd>Ctrl+Shift+B</kbd> on Windows / Linux.</p>
+                  <strong data-i18n="settings.bookmarklet.step1">Make sure your bookmark bar is showing</strong>
+                  <p class="muted small" data-i18n="settings.bookmarklet.step1.desc">If you don't see a row of bookmarks under the address bar, press <kbd>⌘+Shift+B</kbd> on Mac, or <kbd>Ctrl+Shift+B</kbd> on Windows / Linux.</p>
                 </div>
               </li>
               <li>
                 <span class="step-num">2</span>
                 <div>
-                  <strong data-i18n="settings.bookmarklet.step2">Drag this button up to your bookmark bar</strong>
-                  <p class="muted small" data-i18n="settings.bookmarklet.step2.desc">It becomes a saved bookmark you can click on any job page.</p>
+                  <strong data-i18n="settings.bookmarklet.step2">Drag this button onto the bookmark bar (one-time setup)</strong>
+                  <p class="muted small" data-i18n="settings.bookmarklet.step2.desc">It becomes a normal-looking bookmark — but instead of opening a website, it grabs the current job page and sends it to your queue.</p>
                   <a id="bookmarkletLink" class="btn btn-primary bookmarklet-link" href="javascript:void(0)" data-i18n="settings.bookmarklet.dragMe">↗ Send to DirectJob</a>
                   <span id="bookmarkletStatus" class="muted small"></span>
                 </div>
@@ -659,8 +659,8 @@
               <li>
                 <span class="step-num">3</span>
                 <div>
-                  <strong data-i18n="settings.bookmarklet.step3">On Indeed / LinkedIn / StepStone / Xing — click the bookmark</strong>
-                  <p class="muted small" data-i18n="settings.bookmarklet.step3.desc">DirectJob opens in a new tab and adds the role to your queue. Done.</p>
+                  <strong data-i18n="settings.bookmarklet.step3">From now on: see a job you like → click "Send to DirectJob"</strong>
+                  <p class="muted small" data-i18n="settings.bookmarklet.step3.desc">Works on any Indeed / LinkedIn / StepStone / Xing job page. The role appears in your queue with the title, the link back, and a tag showing where it came from. You can then score it with AI, draft a cover letter, or apply later.</p>
                 </div>
               </li>
             </ol>
@@ -801,31 +801,31 @@
           <section class="card" aria-label="AI Provider" data-tab="security">
             <div class="card-heading">
               <div>
-                <h2 data-i18n="settings.ai.heading">AI Brief & cover letters</h2>
-                <p class="muted" data-i18n="settings.ai.lead">DirectJob writes job briefs + tailored cover letters for you. Pick how you want to power it.</p>
+                <h2 data-i18n="settings.ai.heading">AI brief & cover letters — pick how it runs</h2>
+                <p class="muted" data-i18n="settings.ai.lead">DirectJob can write a job-fit summary and a tailored cover letter for any role you import. Three ways to power that — pick whichever matches how you already use AI.</p>
               </div>
             </div>
             <div class="ai-modes" role="radiogroup" aria-label="AI mode">
               <button class="ai-mode" type="button" role="radio" data-ai-mode="manual" aria-checked="true">
                 <div class="ai-mode-head">
                   <strong data-i18n="settings.ai.mode.manual.title">Manual</strong>
-                  <span class="tag" data-i18n="settings.ai.mode.free">Free</span>
+                  <span class="tag" data-i18n="settings.ai.mode.free">Free · no setup</span>
                 </div>
-                <p class="muted small" data-i18n="settings.ai.mode.manual.desc">We prepare the prompt; you copy it into ChatGPT / Claude / your own LLM. Zero setup.</p>
+                <p class="muted small" data-i18n="settings.ai.mode.manual.desc">We prepare the perfect prompt for each job — you copy it once into ChatGPT, Claude, or any AI tool you already use, paste the answer back. Best when you have a ChatGPT Plus or Claude Pro subscription you're already paying for.</p>
               </button>
               <button class="ai-mode" type="button" role="radio" data-ai-mode="byok" aria-checked="false">
                 <div class="ai-mode-head">
                   <strong data-i18n="settings.ai.mode.byok.title">Bring your own key</strong>
                   <span class="tag" data-i18n="settings.ai.mode.byok.tag">~$2/mo at typical use</span>
                 </div>
-                <p class="muted small" data-i18n="settings.ai.mode.byok.desc">Paste a key from OpenAI, Anthropic, Google, or DeepSeek. We auto-detect which one and never persist the raw value.</p>
+                <p class="muted small" data-i18n="settings.ai.mode.byok.desc">Paste an API key from OpenAI, Anthropic, Google, or DeepSeek. From then on every "Auto-fit" / "Draft cover letter" runs automatically — no more copy-paste. We never store your key. Best if you already have an API account, or want to batch-score 30 jobs at once.</p>
               </button>
               <button class="ai-mode" type="button" role="radio" data-ai-mode="managed" aria-checked="false">
                 <div class="ai-mode-head">
                   <strong data-i18n="settings.ai.mode.managed.title">Managed</strong>
                   <span class="tag" data-i18n="settings.ai.mode.managed.tag">€5/mo · waitlist</span>
                 </div>
-                <p class="muted small" data-i18n="settings.ai.mode.managed.desc">We bring the key. One click to enable; billing through Stripe. Tap to join the waitlist — we'll email you the moment it opens.</p>
+                <p class="muted small" data-i18n="settings.ai.mode.managed.desc">We provide the AI for you — no key, no setup, all included in your DirectJob subscription. One click to enable when it opens. Best if you don't already have an AI account and don't want to deal with API keys. Tap to join the waitlist; we'll email you the moment it's live.</p>
               </button>
             </div>
             <div id="aiByokPane" class="ai-byok-pane" hidden>
