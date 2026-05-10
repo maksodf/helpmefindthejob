@@ -373,11 +373,14 @@
             </section>
           </div>
 
-          <section class="card" aria-label="Add company">
-            <div class="card-heading">
-              <h2 data-i18n="companies.add.heading">Add a company</h2>
-              <p class="muted" data-i18n="companies.add.lead">Healthcare-management focus by default. Add anything else you care about.</p>
-            </div>
+          <details class="card collapsible">
+            <summary class="collapsible-summary">
+              <div>
+                <h2 data-i18n="companies.add.heading">Add a company</h2>
+                <p class="muted small" data-i18n="companies.add.lead">Healthcare-management focus by default. Add anything else you care about.</p>
+              </div>
+              <span class="collapsible-chevron" aria-hidden="true">▾</span>
+            </summary>
             <form id="companyForm" class="form-grid" novalidate>
               <label class="field">
                 <span data-i18n="companies.add.name">Name</span>
@@ -419,17 +422,18 @@
               </label>
               <button class="btn btn-primary" type="submit" data-i18n="companies.add.submit">Add company</button>
             </form>
-          </section>
+          </details>
 
-          <section class="card" aria-label="Watchlist starter templates">
-            <div class="card-heading">
+          <details class="card collapsible">
+            <summary class="collapsible-summary">
               <div>
                 <h2 data-i18n="companies.templates.heading">Starter templates</h2>
-                <p class="muted" data-i18n="companies.templates.lead">One-click reviewed lists of healthcare employers.</p>
+                <p class="muted small" data-i18n="companies.templates.lead">One-click reviewed lists of healthcare employers.</p>
               </div>
-            </div>
+              <span class="collapsible-chevron" aria-hidden="true">▾</span>
+            </summary>
             <div id="templateList" class="suggestion-list"></div>
-          </section>
+          </details>
 
           <section class="card" aria-label="Saved searches">
             <div class="card-heading">
@@ -442,14 +446,14 @@
             <div id="savedSearchList" class="saved-search-list"></div>
           </section>
 
-          <section class="card" aria-label="Suggested companies">
-            <div class="card-heading">
+          <details class="card collapsible">
+            <summary class="collapsible-summary">
               <div>
                 <h2 data-i18n="companies.suggestions.heading">Suggestions</h2>
-                <p class="muted" data-i18n="companies.suggestions.lead">A small curated set of healthcare employers, ranked by your focus.</p>
+                <p class="muted small" data-i18n="companies.suggestions.lead">A small curated set of healthcare employers, ranked by your focus.</p>
               </div>
-              <button id="suggestBtn" class="btn" type="button" data-i18n="companies.suggestions.refresh">Refresh suggestions</button>
-            </div>
+              <button id="suggestBtn" class="btn btn-small" type="button" data-i18n="companies.suggestions.refresh">Refresh</button>
+            </summary>
             <div class="suggest-inputs">
               <label class="field">
                 <span data-i18n="companies.suggestions.targetRoles">Target roles</span>
@@ -465,7 +469,7 @@
               </label>
             </div>
             <div id="suggestionsList" class="suggestion-list"></div>
-          </section>
+          </details>
         </section>
 
         <!-- Discovered Jobs -->
@@ -503,17 +507,8 @@
           </section>
         </section>
 
-        <!-- AI Brief -->
+        <!-- Briefcase: imported jobs + AI brief + application tracking -->
         <section id="view-brief" class="view" data-view="brief" aria-labelledby="viewTitle" hidden>
-          <section class="card" aria-label="AI provider summary">
-            <div class="card-heading">
-              <h2 data-i18n="brief.providerHeading">How AI will run</h2>
-              <button id="briefOpenSettings" class="btn" type="button" data-i18n="brief.providerEdit">Edit AI Provider</button>
-            </div>
-            <p class="muted" data-i18n="brief.providerLead">DirectJob Scout never stores your AI keys. It uses your own subscription. Pick a provider in Settings.</p>
-            <p id="briefProviderSummary" class="provider-summary"></p>
-          </section>
-
           <section class="card" aria-label="Selected job brief">
             <div class="card-heading">
               <div>

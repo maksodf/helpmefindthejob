@@ -3925,7 +3925,12 @@ $("#quickScanWatchlistBtn").addEventListener("click", scanWatchlist);
 $("#saveScheduleBtn").addEventListener("click", saveSchedule);
 $("#quickSeedDemoBtn").addEventListener("click", seedDemo);
 $("#extractHtmlBtn").addEventListener("click", extractManualHtml);
-$("#suggestBtn").addEventListener("click", suggestCompanies);
+$("#suggestBtn").addEventListener("click", (event) => {
+  // Sits inside <summary> of a collapsible — stop the toggle.
+  event.preventDefault();
+  event.stopPropagation();
+  suggestCompanies();
+});
 $("#saveProviderBtn").addEventListener("click", saveProvider);
 $("#saveProfileBtn")?.addEventListener("click", saveProfile);
 $("#cvUploadBtn")?.addEventListener("click", () => $("#cvUploadInput")?.click());
@@ -4094,7 +4099,7 @@ $("#quickAddCompanyBtn").addEventListener("click", () => {
   navigate("companies");
   document.querySelector("#companyForm input[name='name']")?.focus();
 });
-$("#briefOpenSettings").addEventListener("click", () => navigate("settings"));
+$("#briefOpenSettings")?.addEventListener("click", () => navigate("settings"));
 $("#runAnalysisBriefBtn").addEventListener("click", () => {
   if (state.selectedImportedJobId) runAnalysis(state.selectedImportedJobId);
   else showToast("Pick an imported job first.", "info");
