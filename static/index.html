@@ -1009,10 +1009,14 @@
 
           <section class="card" aria-label="Subscription" data-tab="workspace">
             <div class="card-heading">
-              <h2>Subscription</h2>
-              <p class="muted">Read-only on this view. Admins can change plan + seats from the Admin panel.</p>
+              <h2 data-i18n="settings.subscription.heading">Subscription</h2>
+              <p class="muted small" data-i18n="settings.subscription.lead">Self-serve via the Stripe Customer Portal — see invoices, update card, cancel.</p>
             </div>
             <div id="billingSummary" class="muted">Loading…</div>
+            <div class="subscription-actions">
+              <button id="manageSubscriptionBtn" type="button" class="btn btn-primary" data-i18n="settings.subscription.manage" hidden>Manage subscription</button>
+              <p id="subscriptionMessage" class="muted small" role="status" aria-live="polite"></p>
+            </div>
           </section>
 
           <section class="card" aria-label="Support" data-tab="workspace">

@@ -1731,6 +1731,32 @@ function renderBilling() {
   } else if (summary) {
     summary.textContent = "Subscription details load when you open Settings.";
   }
+  // Manage-subscription button: only shows when there's a real
+  // Stripe customer to redirect (i.e. the user has completed at
+  // least one checkout). Otherwise the portal call would 400.
+  const manageBtn = $("#manageSubscriptionBtn");
+  if (manageBtn) {
+    const customerId = state.subscription?.customer_id;
+    manageBtn.hidden = !customerId;
+  }
+}
+
+async function manageSubscription() {
+  const message = $("#subscriptionMessage");
+  if (message) message.textContent = t("settings.subscription.opening", "Opening Stripe portal…");
+  try {
+    const payload = await api("/api/billing/portal", {
+      method: "POST", body: JSON.stringify({}),
+    });
+    const url = payload?.portal?.url;
+    if (url) {
+      window.location.assign(url);
+    } else if (message) {
+      message.textContent = t("settings.subscription.noUrl", "Portal session opened but returned no URL. Try again.");
+    }
+  } catch (error) {
+    if (message) message.textContent = error.message;
+  }
 }
 
 function renderQuotaSummary() {
@@ -4581,6 +4607,7 @@ $$(".segmented-btn").forEach((btn) => {
 
 $("#saveCurrentSearchBtn")?.addEventListener("click", saveCurrentSearch);
 $("#applicationForm")?.addEventListener("submit", handleApplicationSave);
+$("#manageSubscriptionBtn")?.addEventListener("click", manageSubscription);
 $("#shareEnabledToggle")?.addEventListener("change", async (event) => {
   const toggle = event.target;
   const jobId = toggle.dataset.jobId;

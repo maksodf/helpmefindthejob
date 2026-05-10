@@ -2476,6 +2476,16 @@ details[open] .collapsible-chevron { transform: rotate(180deg); }
   margin-left: 4px;
 }
 
+.subscription-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+.subscription-actions .btn {
+  align-self: flex-start;
+}
+
 /* Auxiliary auth screens (forgot password / reset / invite accept) */
 .auth-aux {
   max-width: 460px;
