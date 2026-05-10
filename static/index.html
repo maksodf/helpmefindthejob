@@ -635,14 +635,34 @@
             <div class="card-heading">
               <div>
                 <h2 data-i18n="settings.bookmarklet.heading">Capture from Indeed / LinkedIn / StepStone / Xing</h2>
-                <p class="muted" data-i18n="settings.bookmarklet.lead">Drag the link below to your bookmark bar. When you're on a job page on those platforms, click it to send the job to your DirectJob queue. Your browser does the read; we never scrape those sites.</p>
+                <p class="muted" data-i18n="settings.bookmarklet.lead">A tiny browser bookmark sends a job page straight to your queue. Your browser does the read — we never scrape those sites.</p>
               </div>
             </div>
-            <div class="ops-actions">
-              <a id="bookmarkletLink" class="btn btn-primary bookmarklet-link" href="javascript:void(0)" data-i18n="settings.bookmarklet.dragMe">Send to DirectJob</a>
-              <span id="bookmarkletStatus" class="muted small"></span>
-            </div>
-            <p class="muted small" data-i18n="settings.bookmarklet.howto">After dragging, visit any Indeed, LinkedIn, StepStone, or Xing job page and click the bookmark. The page opens DirectJob in a new tab and adds the job to your queue.</p>
+            <ol class="bookmarklet-steps">
+              <li>
+                <span class="step-num">1</span>
+                <div>
+                  <strong data-i18n="settings.bookmarklet.step1">Show the bookmark bar</strong>
+                  <p class="muted small" data-i18n="settings.bookmarklet.step1.desc">If hidden: <kbd>⌘+Shift+B</kbd> on Mac, <kbd>Ctrl+Shift+B</kbd> on Windows / Linux.</p>
+                </div>
+              </li>
+              <li>
+                <span class="step-num">2</span>
+                <div>
+                  <strong data-i18n="settings.bookmarklet.step2">Drag this button up to your bookmark bar</strong>
+                  <p class="muted small" data-i18n="settings.bookmarklet.step2.desc">It becomes a saved bookmark you can click on any job page.</p>
+                  <a id="bookmarkletLink" class="btn btn-primary bookmarklet-link" href="javascript:void(0)" data-i18n="settings.bookmarklet.dragMe">↗ Send to DirectJob</a>
+                  <span id="bookmarkletStatus" class="muted small"></span>
+                </div>
+              </li>
+              <li>
+                <span class="step-num">3</span>
+                <div>
+                  <strong data-i18n="settings.bookmarklet.step3">On Indeed / LinkedIn / StepStone / Xing — click the bookmark</strong>
+                  <p class="muted small" data-i18n="settings.bookmarklet.step3.desc">DirectJob opens in a new tab and adds the role to your queue. Done.</p>
+                </div>
+              </li>
+            </ol>
           </section>
 
           <section class="card" aria-label="Notifications" data-tab="notifications">

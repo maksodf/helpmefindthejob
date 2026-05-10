@@ -126,10 +126,54 @@
 .bookmarklet-link {
   cursor: grab;
   user-select: none;
+  margin-top: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none;
+  box-shadow: 0 4px 12px color-mix(in oklab, var(--accent) 35%, transparent);
 }
+.bookmarklet-link:active { cursor: grabbing; }
+.bookmarklet-link:hover { transform: translateY(-1px); }
 
-.bookmarklet-link:active {
-  cursor: grabbing;
+.bookmarklet-steps {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 0;
+  display: grid;
+  gap: 16px;
+}
+.bookmarklet-steps li {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: 12px;
+  align-items: start;
+}
+.bookmarklet-steps .step-num {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--accent-weak);
+  color: var(--accent-text);
+  font-weight: 600;
+  font-size: var(--text-sm);
+}
+.bookmarklet-steps strong {
+  display: block;
+  font-weight: 600;
+  font-size: var(--text-md);
+  margin-bottom: 2px;
+}
+.bookmarklet-steps p { margin: 0 0 4px; }
+.bookmarklet-steps kbd {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 1px 6px;
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  background: var(--surface-2);
 }
 
 .queue-source-filters {
