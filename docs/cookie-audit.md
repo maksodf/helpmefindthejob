@@ -43,14 +43,25 @@ No marketing, retargeting, profiling, or fingerprinting storage exists.
 
 If Inter ends up needed for visual fidelity on a later marketing pass, self-host the .woff2 files under `/static/fonts/` and serve via `@font-face` from same-origin. Do **not** re-introduce the CDN link.
 
+## Optional analytics (operator-controlled)
+
+Phase 7 #60 added a `DIRECTJOB_ANALYTICS_SCRIPT_URL` env var. When unset, behaviour is unchanged — no third-party script loads, no cookies, no consent banner needed.
+
+When set, the static surface fetches `/api/site-config` and injects the configured script tag. Two operating modes:
+
+- **Self-hosted Plausible / Umami** at `analytics.<your-domain>` — first-party from the user's perspective; still no cookies (Plausible is cookie-less by design); no consent banner required. **Preferred**, and aligns with the privacy-first stance.
+- **Cloud Plausible** at `plausible.io` — Plausible is cookie-less and privacy-friendly, but the script load is technically a third-party request to `plausible.io`. Acceptable under § 25 TTDSG because no cookies / fingerprinting / personal data leave the browser via Plausible. Document on the privacy page if used.
+
+Do **not** set this to Google Analytics, Hotjar, Mixpanel, or any tracker that sets cookies or fingerprints — those would invalidate the "no consent banner needed" conclusion above and require a re-audit.
+
 ## Re-audit triggers
 
 Re-run this audit when any of the following ships:
 
-- A third-party script tag (e.g. Stripe.js, Plausible, Sentry browser SDK).
-- An analytics tool, even self-hosted (Plausible/Umami add cookies in some configs).
+- A third-party script tag (e.g. Stripe.js, Sentry browser SDK).
 - An external font / icon CDN.
 - Any iframe whose `src` is off-origin.
 - A `localStorage` key that persists data not directly tied to a user-requested feature.
+- A switch from self-hosted analytics to a third-party tracker that sets cookies.
 
 When you re-audit: update the table above and the date at the top, and either re-confirm "no banner" or add one. The banner module path is reserved at `static/cookie-banner.js` — it does not exist today and should remain absent unless re-audit demands it.

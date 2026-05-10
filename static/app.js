@@ -312,8 +312,37 @@ function showOnly(viewId) {
   }
 }
 
+async function loadSiteConfig() {
+  // Best-effort, no-auth. Sole responsibility: inject the optional
+  // analytics script when the operator has set DIRECTJOB_ANALYTICS_*
+  // env vars. Safe to fail silently — analytics is operator-opt-in.
+  try {
+    const response = await fetch("/api/site-config", { credentials: "same-origin" });
+    if (!response.ok) return;
+    const cfg = await response.json();
+    const scriptUrl = cfg?.analytics?.scriptUrl;
+    const domain = cfg?.analytics?.domain;
+    if (!scriptUrl) return;
+    if (document.querySelector(`script[data-analytics-script="1"]`)) return;
+    const script = document.createElement("script");
+    script.defer = true;
+    script.src = String(scriptUrl);
+    script.dataset.analyticsScript = "1";
+    if (domain) {
+      // Plausible reads the domain from data-domain; Umami uses
+      // data-website-id. We surface both — operator includes the
+      // attributes their tool needs.
+      script.setAttribute("data-domain", String(domain));
+    }
+    document.head.appendChild(script);
+  } catch (_) {
+    // network failure on a public endpoint is not user-facing
+  }
+}
+
 async function init() {
   const path = window.location.pathname || "/";
+  loadSiteConfig();
   if (path === "/accept-invite") {
     await initAcceptInvite();
     return;

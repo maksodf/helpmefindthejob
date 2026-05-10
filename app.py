@@ -2428,6 +2428,22 @@ class Handler(BaseHTTPRequestHandler):
                 detailed = (qs.get("detailed", ["0"])[0] or "0").lower() in ("1", "true", "yes")
                 self.send_json(STATE.health(session.user.id if session else None, detailed=detailed))
                 return
+            if parsed.path == "/api/site-config":
+                # Public, no-auth endpoint that surfaces the operator-set
+                # site-wide config the frontend needs at boot. Today this
+                # is just the optional analytics script URL — when set,
+                # the frontend injects the script. When not set, we ship
+                # zero third-party requests, which is the documented
+                # default (see docs/cookie-audit.md).
+                analytics_url = (os.environ.get("DIRECTJOB_ANALYTICS_SCRIPT_URL") or "").strip()
+                analytics_domain = (os.environ.get("DIRECTJOB_ANALYTICS_DOMAIN") or "").strip()
+                self.send_json({
+                    "analytics": {
+                        "scriptUrl": analytics_url or None,
+                        "domain": analytics_domain or None,
+                    }
+                })
+                return
             if parsed.path == "/api/auth/status":
                 session = self.current_session()
                 self.send_json(
