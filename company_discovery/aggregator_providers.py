@@ -132,8 +132,12 @@ class ArbeitnowProvider:
             tags = " ".join(tag_list) if isinstance(tag_list, list) else ""
             if not _matches([title, company, description, tags], tokens):
                 continue
-            if location_token and location_token not in (loc or "").casefold() and "remote" not in (loc or "").casefold():
-                # only filter by location when present; remote roles always allowed
+            if location_token and location_token not in (loc or "").casefold():
+                # Strict substring match. The previous "or remote in
+                # text" escape hatch leaked remote-anywhere jobs into
+                # specific-location searches (a Berlin search returned
+                # remote-EU roles); see also JobAggregationEngine's
+                # remote-only-provider skip.
                 continue
             posted_iso = item.get("created_at")
             posted = None
@@ -228,6 +232,9 @@ class RemotiveProvider:
         label="Remotive",
         url="https://remotive.com/",
     )
+    # Engine skips this provider when the user's saved search names
+    # a specific (non-remote) location.
+    remote_only: bool = True
     fetcher: object = field(default_factory=_StdlibFetcher)
 
     def search(self, *, query: str, location: str | None, limit: int = 25,
@@ -283,6 +290,9 @@ class WeWorkRemotelyProvider:
         label="We Work Remotely",
         url="https://weworkremotely.com/",
     )
+    # Remote-only feed; engine skips this provider on specific-location
+    # searches — see JobAggregationEngine.search.
+    remote_only: bool = True
     fetcher: object = field(default_factory=_StdlibFetcher)
 
     def search(self, *, query: str, location: str | None, limit: int = 25,
@@ -395,7 +405,10 @@ class HackerNewsHiringProvider:
                 continue
             if not _matches([text], tokens):
                 continue
-            if location_token and location_token not in text.casefold() and "remote" not in text.casefold():
+            if location_token and location_token not in text.casefold():
+                # Strict — same fix as ArbeitnowProvider. The previous
+                # "remote in text" OR-clause leaked remote-anywhere
+                # listings into specific-location searches.
                 continue
             # First line is usually "<Company> | <Role> | <Location>" pipe-delimited.
             first_line = text.split("\n", 1)[0]

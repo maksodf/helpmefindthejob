@@ -73,10 +73,18 @@ class JobAggregatorProvider(Protocol):
 
     Returning ``[]`` is preferred over raising on network errors so a
     single misbehaving provider never sinks the rest of the run.
+
+    ``remote_only`` flags providers whose entire feed is remote-only
+    (Remotive, We Work Remotely). The engine skips them when the
+    user's saved search specifies a non-remote location, so a
+    "Berlin" search no longer leaks remote-anywhere jobs into the
+    queue. Default False keeps backwards-compatibility for providers
+    that already handle location internally.
     """
 
     name: str
     attribution: ProviderAttribution | None
+    remote_only: bool
 
     def search(
         self,
@@ -87,6 +95,16 @@ class JobAggregatorProvider(Protocol):
         persona_id: str | None = None,
     ) -> list[AggregatedJob]:
         ...
+
+
+def _user_wants_remote(location: str | None) -> bool:
+    """Return True when the user's search would accept remote-only
+    feeds — empty location, or location text that explicitly mentions
+    remote (e.g. 'Remote', 'Remote — DACH', 'remote (EU)')."""
+
+    if not location:
+        return True
+    return "remote" in location.casefold()
 
 
 def canonical_query(query: str, location: str | None) -> str:
@@ -368,7 +386,22 @@ class JobAggregationEngine:
         all_jobs: list[AggregatedJob] = []
         outcomes: list[AggregationOutcome] = []
         query_hash = canonical_query(query, location)
+        accepts_remote = _user_wants_remote(location)
         for provider in self.providers:
+            # Skip remote-only feeds (Remotive / WeWorkRemotely) when
+            # the user's saved search names a specific city/region. A
+            # "Berlin" search should not return remote-anywhere jobs —
+            # those bleed into the queue and break reply-rate +
+            # skill-gap analytics. The user opts into remote feeds by
+            # leaving location empty or putting "remote" in it.
+            if not accepts_remote and getattr(provider, "remote_only", False):
+                outcomes.append(AggregationOutcome(
+                    provider=provider.name,
+                    job_count=0,
+                    cached=False,
+                    error="skipped_remote_only_for_location_search",
+                ))
+                continue
             cached = False
             jobs: list[AggregatedJob] = []
             error: str | None = None
