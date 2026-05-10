@@ -1574,6 +1574,189 @@ async function wizardDismiss() {
   if (dialog?.open) dialog.close();
 }
 
+// Command palette (cmd-K on Mac, ctrl-K on Windows/Linux). Single
+// search bar that lets you switch view, jump to a job, or open a
+// company without lifting your hands off the keyboard.
+const cmdK = {
+  open() {
+    const dialog = document.getElementById("cmdkDialog");
+    if (!dialog || dialog.open) return;
+    document.getElementById("cmdkKbdHint").textContent = "Esc";
+    document.getElementById("cmdkInput").value = "";
+    cmdK.activeIndex = 0;
+    cmdK.render("");
+    dialog.showModal();
+    setTimeout(() => document.getElementById("cmdkInput")?.focus(), 0);
+  },
+  close() {
+    const dialog = document.getElementById("cmdkDialog");
+    if (dialog?.open) dialog.close();
+  },
+  activeIndex: 0,
+  visibleItems: [],
+  buildItems(query) {
+    const q = query.trim().toLowerCase();
+    const matches = (text) => !q || (text || "").toLowerCase().includes(q);
+    const items = [];
+    // Views
+    const views = [
+      { view: "jobs", label: t("nav.queue", "Jobs") },
+      { view: "dashboard", label: t("nav.dashboard", "Today") },
+      { view: "brief", label: t("nav.brief", "Briefcase") },
+      { view: "companies", label: t("nav.companies", "Companies") },
+      { view: "settings", label: t("nav.settings", "Settings") },
+    ];
+    if (isAdmin()) views.push({ view: "admin", label: t("nav.admin", "Admin") });
+    views.forEach((v) => {
+      if (matches(v.label)) items.push({ kind: "view", label: v.label, meta: t("cmdk.go", "Go to view"), action: () => navigate(v.view) });
+    });
+    // Common actions
+    const actions = [
+      { label: t("cmdk.action.toggleTheme", "Toggle theme"), action: () => {
+          const next = (state.theme === "dark") ? "light" : "dark";
+          state.theme = next; applyTheme(next);
+          api("/api/profile", { method: "POST", body: JSON.stringify({ theme: next }) }).catch(() => {});
+        } },
+      { label: t("cmdk.action.toggleLocale", "Switch language"), action: () => {
+          const next = (state.locale === "de") ? "en" : "de";
+          loadLocale(next);
+          api("/api/profile", { method: "POST", body: JSON.stringify({ locale: next }) }).catch(() => {});
+        } },
+      { label: t("cmdk.action.signOut", "Sign out"), action: () => document.getElementById("logoutBtn")?.click() },
+    ];
+    actions.forEach((a) => { if (matches(a.label)) items.push({ kind: "action", label: a.label, meta: t("cmdk.do", "Action"), action: a.action }); });
+    // Open jobs (top 30 matches)
+    let jobMatches = 0;
+    for (const job of state.discoveredJobs || []) {
+      if (jobMatches >= 30) break;
+      const company = (state.companies || []).find((c) => c.id === job.company_id);
+      const label = `${job.title}${company ? " · " + company.name : ""}`;
+      if (!matches(label)) continue;
+      items.push({
+        kind: "job", label, meta: t("cmdk.openJob", "Open job"),
+        action: () => {
+          if (job.source_url) window.open(job.source_url, "_blank", "noopener,noreferrer");
+        },
+      });
+      jobMatches += 1;
+    }
+    // Companies (top 20 matches)
+    let companyMatches = 0;
+    for (const co of state.companies || []) {
+      if (companyMatches >= 20) break;
+      if (!matches(co.name)) continue;
+      items.push({
+        kind: "company", label: co.name, meta: t("cmdk.openCompany", "Watchlist"),
+        action: () => { state.selectedCompanyId = co.id; navigate("companies"); },
+      });
+      companyMatches += 1;
+    }
+    return items;
+  },
+  render(query) {
+    const list = document.getElementById("cmdkResults");
+    if (!list) return;
+    list.replaceChildren();
+    cmdK.visibleItems = cmdK.buildItems(query);
+    if (!cmdK.visibleItems.length) {
+      const empty = document.createElement("li");
+      empty.className = "cmdk-section";
+      empty.textContent = t("cmdk.noResults", "No matches");
+      list.append(empty);
+      return;
+    }
+    cmdK.activeIndex = Math.min(cmdK.activeIndex, cmdK.visibleItems.length - 1);
+    cmdK.visibleItems.forEach((item, idx) => {
+      const li = document.createElement("li");
+      li.className = "cmdk-item" + (idx === cmdK.activeIndex ? " active" : "");
+      li.setAttribute("role", "option");
+      const label = document.createElement("span");
+      label.textContent = item.label;
+      const meta = document.createElement("span");
+      meta.className = "cmdk-item-meta";
+      meta.textContent = item.meta;
+      li.append(label, meta);
+      li.addEventListener("mousedown", (e) => {
+        e.preventDefault();
+        cmdK.activeIndex = idx;
+        cmdK.execute();
+      });
+      list.append(li);
+    });
+  },
+  execute() {
+    const item = cmdK.visibleItems[cmdK.activeIndex];
+    if (!item) return;
+    cmdK.close();
+    try { item.action(); } catch (_) {}
+  },
+};
+
+document.addEventListener("keydown", (event) => {
+  // Open cmd-K on Cmd+K (mac) or Ctrl+K (win/linux). Escape closes.
+  if ((event.metaKey || event.ctrlKey) && !event.shiftKey && !event.altKey && event.key.toLowerCase() === "k") {
+    event.preventDefault();
+    cmdK.open();
+    return;
+  }
+  const dialog = document.getElementById("cmdkDialog");
+  if (!dialog || !dialog.open) return;
+  if (event.key === "Escape") {
+    event.preventDefault();
+    cmdK.close();
+  } else if (event.key === "ArrowDown") {
+    event.preventDefault();
+    cmdK.activeIndex = (cmdK.activeIndex + 1) % Math.max(1, cmdK.visibleItems.length);
+    cmdK.render(document.getElementById("cmdkInput").value);
+  } else if (event.key === "ArrowUp") {
+    event.preventDefault();
+    cmdK.activeIndex = (cmdK.activeIndex - 1 + cmdK.visibleItems.length) % Math.max(1, cmdK.visibleItems.length);
+    cmdK.render(document.getElementById("cmdkInput").value);
+  } else if (event.key === "Enter") {
+    event.preventDefault();
+    cmdK.execute();
+  }
+});
+
+(function bootCmdKInputHandler() {
+  const input = document.getElementById("cmdkInput");
+  input?.addEventListener("input", (e) => {
+    cmdK.activeIndex = 0;
+    cmdK.render(e.target.value);
+  });
+})();
+
+// Settings tabs — show only cards with data-tab matching the active tab.
+// Cards without a data-tab attr stay always-visible (e.g. workspace
+// section header inside #view-settings if added later).
+function setSettingsTab(tabId) {
+  const tabs = document.querySelectorAll("#settingsTabs .settings-tab");
+  if (!tabs.length) return;
+  const known = new Set(Array.from(tabs).map((t) => t.dataset.tab));
+  if (!known.has(tabId)) tabId = "profile";
+  tabs.forEach((t) => t.setAttribute("aria-selected", String(t.dataset.tab === tabId)));
+  const view = document.getElementById("view-settings");
+  if (!view) return;
+  view.querySelectorAll(":scope > .card").forEach((card) => {
+    const cardTab = card.dataset.tab;
+    card.hidden = Boolean(cardTab) && cardTab !== tabId;
+  });
+  try { localStorage.setItem("dj_settings_tab", tabId); } catch (_) {}
+}
+
+(function bootSettingsTabs() {
+  document.addEventListener("click", (event) => {
+    const tab = event.target.closest("#settingsTabs .settings-tab");
+    if (!tab) return;
+    setSettingsTab(tab.dataset.tab);
+  });
+  // Restore last-selected tab on load.
+  let saved = "profile";
+  try { saved = localStorage.getItem("dj_settings_tab") || "profile"; } catch (_) {}
+  // Defer until DOM ready so the cards exist.
+  queueMicrotask(() => setSettingsTab(saved));
+})();
+
 // Keyboard shortcuts for the queue. Vim-style j/k to move focus,
 // a to apply (opens source URL), e to import, x to dismiss, i to mark imported.
 // Disabled while typing in inputs/textareas/contenteditable.

@@ -592,7 +592,13 @@
 
         <!-- Settings -->
         <section id="view-settings" class="view" data-view="settings" aria-labelledby="viewTitle" hidden>
-          <section class="card" aria-label="Language">
+          <nav class="settings-tabs" id="settingsTabs" role="tablist" aria-label="Settings sections">
+            <button class="settings-tab" type="button" role="tab" data-tab="profile" aria-selected="true" data-i18n="settings.tab.profile">Profile</button>
+            <button class="settings-tab" type="button" role="tab" data-tab="notifications" aria-selected="false" data-i18n="settings.tab.notifications">Notifications</button>
+            <button class="settings-tab" type="button" role="tab" data-tab="security" aria-selected="false" data-i18n="settings.tab.security">Security</button>
+            <button class="settings-tab" type="button" role="tab" data-tab="workspace" aria-selected="false" data-i18n="settings.tab.workspace">Workspace</button>
+          </nav>
+          <section class="card" aria-label="Language" data-tab="profile">
             <div class="card-heading">
               <div>
                 <h2 data-i18n="settings.locale.heading">Language</h2>
@@ -608,7 +614,7 @@
             </label>
           </section>
 
-          <section class="card" aria-label="Bookmarklet">
+          <section class="card" aria-label="Bookmarklet" data-tab="notifications">
             <div class="card-heading">
               <div>
                 <h2 data-i18n="settings.bookmarklet.heading">Capture from Indeed / LinkedIn / StepStone / Xing</h2>
@@ -622,7 +628,7 @@
             <p class="muted small" data-i18n="settings.bookmarklet.howto">After dragging, visit any Indeed, LinkedIn, StepStone, or Xing job page and click the bookmark. The page opens DirectJob in a new tab and adds the job to your queue.</p>
           </section>
 
-          <section class="card" aria-label="Notifications">
+          <section class="card" aria-label="Notifications" data-tab="notifications">
             <div class="card-heading">
               <div>
                 <h2 data-i18n="settings.push.heading">Browser notifications</h2>
@@ -636,7 +642,7 @@
             </div>
           </section>
 
-          <section class="card" aria-label="Theme">
+          <section class="card" aria-label="Theme" data-tab="profile">
             <div class="card-heading">
               <div>
                 <h2 data-i18n="settings.theme.heading">Theme</h2>
@@ -653,7 +659,7 @@
             </label>
           </section>
 
-          <section class="card" aria-label="Persona &amp; profile">
+          <section class="card" aria-label="Persona &amp; profile" data-tab="profile">
             <div class="card-heading">
               <div>
                 <h2>Persona &amp; profile</h2>
@@ -710,7 +716,7 @@
             <p id="profileMessage" class="muted small" role="status" aria-live="polite"></p>
           </section>
 
-          <section class="card" aria-label="Notifications" id="notificationsCard">
+          <section class="card" aria-label="Notifications" id="notificationsCard" data-tab="notifications">
             <div class="card-heading">
               <div>
                 <h2 data-i18n="settings.notify.heading">Notifications</h2>
@@ -731,7 +737,7 @@
             </form>
           </section>
 
-          <section class="card" aria-label="Privacy & audit" id="privacyAuditCard">
+          <section class="card" aria-label="Privacy & audit" id="privacyAuditCard" data-tab="security">
             <div class="card-heading">
               <div>
                 <h2 data-i18n="settings.privacy.heading">Privacy & audit log</h2>
@@ -743,7 +749,7 @@
             <ul id="auditLog" class="audit-log"></ul>
           </section>
 
-          <section class="card" aria-label="Two-factor authentication" id="twoFactorCard">
+          <section class="card" aria-label="Two-factor authentication" id="twoFactorCard" data-tab="security">
             <div class="card-heading">
               <div>
                 <h2 data-i18n="settings.totp.heading">Two-factor authentication</h2>
@@ -754,7 +760,7 @@
             <div id="totpControls" class="totp-controls"></div>
           </section>
 
-          <section class="card" aria-label="AI Provider">
+          <section class="card" aria-label="AI Provider" data-tab="security">
             <div class="card-heading">
               <div>
                 <h2 data-i18n="settings.ai.heading">AI Provider</h2>
@@ -795,7 +801,7 @@
             <p class="provider-hint muted" id="providerHint">Pick a provider to see what this mode expects.</p>
           </section>
 
-          <section class="card" aria-label="Account security">
+          <section class="card" aria-label="Account security" data-tab="security">
             <div class="card-heading">
               <h2 data-i18n="settings.account.heading">Account security</h2>
               <p class="muted" data-i18n="settings.account.lead">Changing your password signs you out on every device.</p>
@@ -815,7 +821,7 @@
             <p id="accountMessage" class="muted small" role="alert" aria-live="polite"></p>
           </section>
 
-          <section class="card" aria-label="Workspace backup">
+          <section class="card" aria-label="Workspace backup" data-tab="workspace">
             <div class="card-heading">
               <h2 data-i18n="settings.backup.heading">Backup &amp; restore</h2>
             </div>
@@ -828,7 +834,7 @@
             <pre id="opsResult" class="code-block" hidden></pre>
           </section>
 
-          <section class="card" aria-label="Exports and digests">
+          <section class="card" aria-label="Exports and digests" data-tab="workspace">
             <div class="card-heading">
               <h2 data-i18n="settings.exports.heading">Exports &amp; digests</h2>
               <p class="muted" data-i18n="settings.exports.lead">CSV / Markdown for offline review; weekly digest by email.</p>
@@ -844,7 +850,7 @@
             <pre id="digestResult" class="code-block" hidden></pre>
           </section>
 
-          <section class="card" aria-label="Privacy controls">
+          <section class="card" aria-label="Privacy controls" data-tab="security">
             <div class="card-heading">
               <h2>Privacy</h2>
               <p class="muted">Product analytics is opt-in and never leaves your server.</p>
@@ -868,7 +874,7 @@
             </details>
           </section>
 
-          <section class="card" aria-label="Subscription">
+          <section class="card" aria-label="Subscription" data-tab="workspace">
             <div class="card-heading">
               <h2>Subscription</h2>
               <p class="muted">Read-only on this view. Admins can change plan + seats from the Admin panel.</p>
@@ -876,7 +882,7 @@
             <div id="billingSummary" class="muted">Loading…</div>
           </section>
 
-          <section class="card" aria-label="Support">
+          <section class="card" aria-label="Support" data-tab="workspace">
             <div class="card-heading">
               <h2>Support</h2>
               <p class="muted">Submit a ticket. Admins see it in the Admin → Support panel.</p>
@@ -899,7 +905,7 @@
             <p id="supportMessage" class="muted small" role="status"></p>
           </section>
 
-          <section class="card" aria-label="Scan history">
+          <section class="card" aria-label="Scan history" data-tab="workspace">
             <div class="card-heading">
               <h2>Scan history</h2>
               <p class="muted">The most recent ten checks.</p>
@@ -907,7 +913,7 @@
             <div id="scanHistory" class="history-list"></div>
           </section>
 
-          <section class="card" aria-label="Usage and quotas">
+          <section class="card" aria-label="Usage and quotas" data-tab="workspace">
             <div class="card-heading">
               <h2>Your usage today</h2>
               <p class="muted">Quotas reset at the start of each UTC day.</p>
@@ -915,7 +921,7 @@
             <div id="quotaSummary" class="muted">No usage yet.</div>
           </section>
 
-          <section class="card" aria-label="Legal">
+          <section class="card" aria-label="Legal" data-tab="workspace">
             <div class="card-heading">
               <h2>Legal</h2>
             </div>
@@ -1087,6 +1093,22 @@
       <option>Healthcare IT</option>
       <option>Healthcare consulting</option>
     </datalist>
+
+    <dialog id="cmdkDialog" class="cmdk-dialog" aria-label="Command palette">
+      <div class="cmdk">
+        <div class="cmdk-input-row">
+          <svg class="cmdk-icon" viewBox="0 0 20 20" aria-hidden="true"><circle cx="9" cy="9" r="6" fill="none" stroke="currentColor" stroke-width="2"/><path d="M14 14l4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          <input id="cmdkInput" type="text" data-i18n-placeholder="cmdk.placeholder" placeholder="Search jobs, companies, settings…" autocomplete="off" spellcheck="false" />
+          <kbd class="cmdk-kbd" id="cmdkKbdHint">Esc</kbd>
+        </div>
+        <ul id="cmdkResults" class="cmdk-results" role="listbox"></ul>
+        <div class="cmdk-foot muted small">
+          <span><kbd>↑</kbd><kbd>↓</kbd> <span data-i18n="cmdk.foot.move">move</span></span>
+          <span><kbd>↵</kbd> <span data-i18n="cmdk.foot.select">select</span></span>
+          <span><kbd>Esc</kbd> <span data-i18n="cmdk.foot.close">close</span></span>
+        </div>
+      </div>
+    </dialog>
 
     <dialog id="firstRunWizard" class="wizard-dialog" aria-labelledby="wizardTitle">
       <form method="dialog" class="wizard">
