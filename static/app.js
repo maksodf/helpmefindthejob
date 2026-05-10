@@ -1,6 +1,16 @@
 "use strict";
 
 const $ = (selector) => document.querySelector(selector);
+
+// Null-safe textContent setter. Use whenever an element might be
+// absent (test fixtures, stale-HTML / fresh-JS deploy mismatches,
+// view-conditional partials). Replaces the unguarded
+// ``$("#x").textContent = y`` pattern that throws "Cannot set
+// properties of null" when ``#x`` is missing.
+const setText = (selector, text) => {
+  const el = typeof selector === "string" ? document.querySelector(selector) : selector;
+  if (el) el.textContent = text == null ? "" : String(text);
+};
 const $$ = (selector) => Array.from(document.querySelectorAll(selector));
 
 const VIEW_TITLES = {
@@ -466,31 +476,34 @@ function navigate(view) {
 /* ---------- Render ---------- */
 
 function render() {
-  renderDashboard();
-  renderSkillGapsCard();
-  renderReplyRateCard();
-  renderOnboarding();
-  renderTemplates();
-  renderSavedSearches();
-  renderCompanies();
-  renderDetail();
-  renderJobs();
-  renderProvider();
-  renderProfile();
-  renderTotpCard();
-  renderNotifySettings();
-  renderPrivacyAudit();
-  renderWorkspacePicker();
-  renderHistory();
-  renderImportedJobs();
-  renderBriefSummary();
-  renderApplicationForm();
-  renderQuotaSummary();
-  renderAdminUsers();
-  renderBilling();
-  $("#navCompanyCount").textContent = state.companies.length;
+  // Wrap each renderer in try/catch so a single bad selector never
+  // poisons the wider save-success path. Before this guard, a missing
+  // element in any renderer threw "Cannot set properties of null"
+  // up through saveProfile's catch and surfaced as the user's
+  // form-status error message — even though the save itself had
+  // already succeeded server-side.
+  const renderers = [
+    renderDashboard, renderSkillGapsCard, renderReplyRateCard,
+    renderOnboarding, renderTemplates, renderSavedSearches,
+    renderCompanies, renderDetail, renderJobs, renderProvider,
+    renderProfile, renderTotpCard, renderNotifySettings,
+    renderPrivacyAudit, renderWorkspacePicker, renderHistory,
+    renderImportedJobs, renderBriefSummary, renderApplicationForm,
+    renderQuotaSummary, renderAdminUsers, renderBilling,
+  ];
+  for (const fn of renderers) {
+    try {
+      fn();
+    } catch (err) {
+      // Log to console for diagnosis; never bubble. The user's save
+      // already succeeded server-side and most renderers are
+      // independent — one failure must not break the rest.
+      console.error(`render: ${fn.name} failed`, err);
+    }
+  }
+  setText("#navCompanyCount", state.companies.length);
   const newCount = state.discoveredJobs.filter((j) => !j.imported_job_id).length;
-  $("#navJobCount").textContent = newCount;
+  setText("#navJobCount", newCount);
   scheduleRunPolling();
 }
 
@@ -2626,7 +2639,7 @@ function renderProfile() {
 function renderProvider() {
   const providerSelect = $("#providerId");
   const modeSelect = $("#invocationMode");
-  if (!providerSelect) return;
+  if (!providerSelect || !modeSelect) return;
   const selectedId = state.aiProvider.provider_id || "manual";
   const selectedProvider = state.aiProviderOptions.find((o) => o.id === selectedId) || state.aiProviderOptions[0];
 
@@ -3367,23 +3380,29 @@ async function saveProfile() {
   const personaId = personaInput.dataset.personaId
     || (state.personas || []).find((p) => p.label.toLowerCase() === (personaInput.value || "").toLowerCase())?.id
     || "healthcare-management";
-  const yearsRaw = $("#profileYearsExperience").value.trim();
+  // Read every field through optional chaining + ?? "" so a missing
+  // input element doesn't throw "Cannot read properties of null".
+  // The form is dynamic — i18n / persona variants can hide rows —
+  // and saveProfile shouldn't be the place that crashes when a row
+  // isn't rendered.
+  const fieldValue = (sel) => ($(sel)?.value ?? "");
+  const yearsRaw = fieldValue("#profileYearsExperience").trim();
   const body = {
     personaId,
-    industry: $("#profileIndustry").value.trim(),
-    targetRoles: $("#profileTargetRoles").value
+    industry: fieldValue("#profileIndustry").trim(),
+    targetRoles: fieldValue("#profileTargetRoles")
       .split(",")
       .map((s) => s.trim())
       .filter(Boolean),
-    location: $("#profileLocation").value.trim(),
-    seniority: $("#profileSeniority").value.trim(),
+    location: fieldValue("#profileLocation").trim(),
+    seniority: fieldValue("#profileSeniority").trim(),
     yearsExperience: yearsRaw === "" ? null : Number(yearsRaw),
-    languages: $("#profileLanguages").value
+    languages: fieldValue("#profileLanguages")
       .split(",")
       .map((s) => s.trim())
       .filter(Boolean),
-    cvText: $("#profileCvText").value,
-    notes: $("#profileNotes").value.trim(),
+    cvText: fieldValue("#profileCvText"),
+    notes: fieldValue("#profileNotes").trim(),
   };
   setFormStatus("profileMessage", "saving", t("form.saving", "Saving…"));
   try {
