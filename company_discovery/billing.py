@@ -81,6 +81,7 @@ class Subscription:
     cancelled_at: str | None = None
     notes: str | None = None
     customer_email: str | None = None
+    customer_id: str | None = None  # Stripe customer id; required for the customer-portal redirect
     last_event: str | None = None
 
     def to_dict(self) -> dict[str, object]:
@@ -167,11 +168,15 @@ def apply_stripe_event(
         cancelled_at=current.cancelled_at,
         notes=current.notes,
         customer_email=current.customer_email,
+        customer_id=current.customer_id,
         last_event=event_type,
     )
     customer_email = obj.get("customer_email") or obj.get("customer_details", {}).get("email") if isinstance(obj.get("customer_details"), dict) else obj.get("customer_email")
     if customer_email and isinstance(customer_email, str):
         next_state.customer_email = customer_email
+    customer_id = obj.get("customer")
+    if customer_id and isinstance(customer_id, str):
+        next_state.customer_id = customer_id
 
     if event_type == "checkout.session.completed":
         next_state.status = "active"
@@ -322,6 +327,29 @@ class StripeBillingBackend:
             "planId": plan_id,
             "priceId": price_id,
             "expiresAt": response.get("expires_at"),
+        }
+
+    def create_portal_session(self, *, customer_id: str, return_url: str) -> dict[str, object]:
+        """Mint a Stripe Customer Portal session so users can self-manage
+        their subscription (see invoices, update card, cancel) without
+        the operator having to handle support tickets. The portal is
+        the canonical answer to the 24h SLA on billing changes."""
+
+        if not self.api_key:
+            raise RuntimeError("billing_backend_unconfigured: set DIRECTJOB_STRIPE_API_KEY")
+        if not customer_id:
+            raise ValueError("missing_customer_id")
+        if not return_url:
+            raise ValueError("missing_return_url")
+        form = {
+            "customer": customer_id,
+            "return_url": return_url,
+        }
+        response = self._transport("POST", "https://api.stripe.com/v1/billing_portal/sessions", form)
+        return {
+            "id": response.get("id"),
+            "url": response.get("url"),
+            "returnUrl": return_url,
         }
 
 

@@ -2401,6 +2401,28 @@ details[open] .collapsible-chevron { transform: rotate(180deg); }
   margin-top: 12px;
 }
 
+.reply-rate-card .reply-rate-body {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 24px;
+}
+.reply-rate-card .reply-rate-figure {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 96px;
+}
+.reply-rate-card .reply-rate-figure strong {
+  font-size: 32px;
+  letter-spacing: -0.02em;
+  color: var(--accent-text);
+}
+.reply-rate-card #replyRateInsight {
+  flex: 1 1 320px;
+  margin: 0;
+}
+
 /* Auxiliary auth screens (forgot password / reset / invite accept) */
 .auth-aux {
   max-width: 460px;

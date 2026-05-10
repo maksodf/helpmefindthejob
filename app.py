@@ -422,6 +422,7 @@ class AppState:
                 "firstRunWizard": first_run_wizard,
             },
             "whatsNew": self._whats_new_for(user_id),
+            "applicationOutcomes": self.application_outcomes_summary(data_user_id),
             "applicationStatuses": list(APPLICATION_STATUSES),
         }
 
@@ -1846,6 +1847,33 @@ class AppState:
             results["__account_deletions"] = len(deletions)
         return results
 
+    def application_outcomes_summary(self, user_id: str, *, threshold: int = 5) -> dict[str, Any]:
+        """Reply-rate analytics for the dashboard. We only surface it to
+        the user once they have ``threshold`` applications in flight —
+        below that the rate is too noisy to interpret. ``ready=False``
+        below the threshold so the frontend can hide the card.
+
+        An "application" is any imported job that has been moved off
+        the default ``saved`` status. ``replied`` is the user-confirmed
+        ``replied_at`` flag (Phase 4 #42)."""
+
+        applied_statuses = {"interested", "applied", "interview", "rejected", "archived"}
+        total_applications = 0
+        replied = 0
+        for job in self.repository.list_imported_jobs(user_id):
+            if job.application_status in applied_statuses:
+                total_applications += 1
+                if job.replied_at is not None:
+                    replied += 1
+        rate = (replied / total_applications) if total_applications else 0.0
+        return {
+            "totalApplications": total_applications,
+            "replied": replied,
+            "replyRate": round(rate, 4),
+            "threshold": threshold,
+            "ready": total_applications >= threshold,
+        }
+
     def set_share_enabled(self, user_id: str, imported_job_id: str, enabled: bool) -> ImportedJob:
         imported = self.repository.imported_jobs.get(imported_job_id)
         if imported is None or imported.user_id != user_id:
@@ -2454,6 +2482,9 @@ class Handler(BaseHTTPRequestHandler):
                 user_id = session.user.id
             if parsed.path == "/api/account/deletion-status":
                 self.send_json(STATE.get_account_deletion_state(session.user))
+                return
+            if parsed.path == "/api/applications/outcomes":
+                self.send_json(STATE.application_outcomes_summary(STATE.effective_user_id(user_id)))
                 return
             if parsed.path == "/api/bootstrap":
                 self.send_json(STATE.bootstrap(user_id))
@@ -3558,6 +3589,42 @@ class Handler(BaseHTTPRequestHandler):
             if parsed.path == "/api/demo-data/seed":
                 created = STATE.seed_demo_data(STATE.effective_user_id(user_id))
                 self.send_json({"seeded": created, "bootstrap": STATE.bootstrap(user_id)}, HTTPStatus.CREATED)
+                return
+            if parsed.path == "/api/billing/portal":
+                if not isinstance(STATE.billing_backend, StripeBillingBackend):
+                    self.send_error_json(
+                        HTTPStatus.BAD_REQUEST,
+                        "stripe_disabled",
+                        "Stripe backend not active. Self-managed billing is unavailable on the manual backend.",
+                    )
+                    return
+                subscription = STATE.get_subscription()
+                customer_id = subscription.customer_id or ""
+                if not customer_id:
+                    self.send_error_json(
+                        HTTPStatus.BAD_REQUEST,
+                        "no_customer",
+                        "No Stripe customer linked yet. Complete a checkout first.",
+                    )
+                    return
+                return_url = STATE.public_url_for("/?billing=portal-return")
+                try:
+                    result = STATE.billing_backend.create_portal_session(
+                        customer_id=customer_id, return_url=return_url,
+                    )
+                except ValueError as error:
+                    code = str(error)
+                    self.send_error_json(HTTPStatus.BAD_REQUEST, code, code)
+                    return
+                except RuntimeError as error:
+                    raw_code = str(error).split(":", 1)[0].strip() or "billing_backend_error"
+                    self.send_error_json(
+                        HTTPStatus.SERVICE_UNAVAILABLE, raw_code,
+                        "Stripe portal call failed. Operator has been notified.",
+                    )
+                    return
+                STATE.log_analytics(user_id, "billing_portal_opened", {"sessionId": result.get("id")})
+                self.send_json({"portal": result})
                 return
             if parsed.path == "/api/analytics/event":
                 kind = str(payload.get("kind") or "").strip()

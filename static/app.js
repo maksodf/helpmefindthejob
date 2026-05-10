@@ -244,6 +244,7 @@ function absorbBootstrap(bootstrap) {
   }
   applyTheme(state.profile.theme || "dark");
   state.applicationStatuses = bootstrap.applicationStatuses || ["saved", "interested", "applied", "interview", "rejected", "archived"];
+  state.applicationOutcomes = bootstrap.applicationOutcomes || null;
   state.onboarding = bootstrap.onboarding || { steps: [], progress: { completed: 0, total: 0 }, firstRunWizard: false };
   // Open the first-run wizard when the server says we should AND it
   // isn't already on screen. After the user dismisses or finishes, the
@@ -435,6 +436,7 @@ function navigate(view) {
 
 function render() {
   renderDashboard();
+  renderReplyRateCard();
   renderOnboarding();
   renderTemplates();
   renderSavedSearches();
@@ -481,6 +483,31 @@ function renderAuth() {
   $("#authMessage").textContent = "";
   setStatus(state.auth.authenticated ? "Ready" : "Sign in");
   if (state.auth.authenticated) navigate(state.view);
+}
+
+function renderReplyRateCard() {
+  const card = $("#replyRateCard");
+  if (!card) return;
+  const summary = state.applicationOutcomes;
+  if (!summary || !summary.ready) {
+    card.hidden = true;
+    return;
+  }
+  card.hidden = false;
+  const pct = Math.round((summary.replyRate || 0) * 100);
+  $("#replyRatePct").textContent = `${pct}%`;
+  $("#replyRateDenominator").textContent = t("dashboard.replyRate.denom", "{r} of {n} applications").replace("{r}", String(summary.replied)).replace("{n}", String(summary.totalApplications));
+  let insight;
+  if (pct >= 25) {
+    insight = t("dashboard.replyRate.insightHigh", "Strong rate. The roles + CV combination is landing.");
+  } else if (pct >= 10) {
+    insight = t("dashboard.replyRate.insightMid", "Solid for outbound. Keep the volume up.");
+  } else if (pct > 0) {
+    insight = t("dashboard.replyRate.insightLow", "Below typical. Consider tightening fit or rewording the cover letter.");
+  } else {
+    insight = t("dashboard.replyRate.insightZero", "No replies yet across {n} applications. Try a different angle.").replace("{n}", String(summary.totalApplications));
+  }
+  $("#replyRateInsight").textContent = insight;
 }
 
 function renderDashboard() {
