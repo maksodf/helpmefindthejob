@@ -774,13 +774,32 @@ function renderJobs() {
   if (state.queueFilter === "imported") jobs = jobs.filter((j) => j.imported_job_id);
   jobs = jobs.filter(jobMatchesSourceFilter);
   if (!jobs.length) {
-    const message =
+    const wrap = document.createElement("div");
+    wrap.className = "empty queue-empty";
+    const icon = document.createElement("div");
+    icon.className = "queue-empty-icon";
+    icon.innerHTML = '<svg viewBox="0 0 48 48" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="22" cy="22" r="12"/><path d="M31 31 L40 40"/><circle cx="22" cy="22" r="3.5" fill="currentColor" stroke="none" opacity="0.6"/></svg>';
+    const title = document.createElement("p");
+    title.className = "queue-empty-title";
+    title.textContent =
       state.queueFilter === "new"
-        ? "No new roles. Run Check for new roles or add more companies."
+        ? t("queue.empty.new", "Nothing new yet. Want us to look further?")
         : state.queueFilter === "imported"
-        ? "No imported roles yet. Import a role from the New tab."
-        : "No roles discovered yet. Run a scan from a company.";
-    list.append(emptyNode(message));
+        ? t("queue.empty.imported", "No saved roles yet — pick one from the queue.")
+        : t("queue.empty.all", "Your queue is empty. Tell us what you want.");
+    const sub = document.createElement("p");
+    sub.className = "muted";
+    sub.textContent = t("queue.empty.sub", "We watch Indeed, StepStone, Arbeitnow, Muse, Bundesagentur and more. Set up a saved search and we'll keep checking daily.");
+    wrap.append(icon, title, sub);
+    if (state.queueFilter !== "imported") {
+      const cta = document.createElement("button");
+      cta.type = "button";
+      cta.className = "btn btn-primary";
+      cta.textContent = t("queue.empty.cta", "Find me jobs");
+      cta.addEventListener("click", () => navigate("dashboard"));
+      wrap.append(cta);
+    }
+    list.append(wrap);
     return;
   }
   if (state.queueSort === "fit") {
@@ -807,8 +826,24 @@ function renderJobs() {
     const main = node.querySelector(".job-main");
     if (main) main.prepend(checkbox);
     node.querySelector("h3").textContent = job.title;
-    node.querySelector(".job-sub").textContent = [company?.name, job.location].filter(Boolean).join(" · ") || "Direct company source";
-    node.querySelector(".job-source").textContent = `From ${shortUrl(job.source_url)}`;
+    const subParts = [company?.name, job.location].filter(Boolean);
+    const freshIso = jobEffectiveFreshness(job);
+    const freshRel = relativeTimeFromIso(freshIso);
+    if (freshRel) subParts.push(freshRel);
+    node.querySelector(".job-sub").textContent = subParts.join(" · ") || "Direct company source";
+    // "New" dot if the freshness is within the last 24 hours.
+    if (freshIso) {
+      const ms = Date.now() - new Date(freshIso).getTime();
+      if (ms < 24 * 3600 * 1000 && ms >= 0) {
+        const titleEl = node.querySelector("h3");
+        const dot = document.createElement("span");
+        dot.className = "fresh-dot";
+        dot.title = t("queue.freshTooltip", "New since yesterday");
+        dot.setAttribute("aria-label", "New");
+        titleEl.prepend(dot);
+      }
+    }
+    node.querySelector(".job-source").textContent = `${t("queue.from", "From")} ${shortUrl(job.source_url)}`;
     const score = Math.round((job.confidence_score || 0) * 100);
     const conf = node.querySelector(".confidence");
     conf.textContent = `${score}% confidence`;
@@ -1262,7 +1297,6 @@ function renderApplicationHistory(job) {
   panel.hidden = false;
   // Vertical timeline: marker + status pill + stage + relative time + note.
   list.classList.add("timeline");
-  const now = Date.now();
   for (const entry of history.slice().reverse()) {
     const li = document.createElement("li");
     li.className = "timeline-item";
@@ -1293,17 +1327,8 @@ function renderApplicationHistory(job) {
     if (entry.at) {
       const ts = new Date(entry.at);
       when.dateTime = ts.toISOString();
-      const deltaMs = now - ts.getTime();
-      const days = Math.floor(deltaMs / 86_400_000);
-      const hours = Math.floor(deltaMs / 3_600_000);
-      const minutes = Math.floor(deltaMs / 60_000);
-      let rel;
-      if (days >= 1) rel = t("timeline.daysAgo", "{n}d ago").replace("{n}", String(days));
-      else if (hours >= 1) rel = t("timeline.hoursAgo", "{n}h ago").replace("{n}", String(hours));
-      else if (minutes >= 1) rel = t("timeline.minutesAgo", "{n}m ago").replace("{n}", String(minutes));
-      else rel = t("timeline.justNow", "just now");
       when.title = ts.toLocaleString();
-      when.textContent = rel;
+      when.textContent = relativeTimeFromIso(entry.at);
     }
     head.append(when);
     body.append(head);
@@ -2410,6 +2435,37 @@ function emptyNode(text) {
   p.textContent = text;
   node.append(p);
   return node;
+}
+
+function relativeTimeFromIso(iso) {
+  // Returns short i18n'd relative-time strings like "just now", "5m ago",
+  // "2h ago", "3d ago". Empty string when iso is missing/invalid.
+  if (!iso) return "";
+  let ts;
+  try { ts = new Date(iso); } catch (_) { return ""; }
+  if (Number.isNaN(ts.getTime())) return "";
+  const deltaMs = Date.now() - ts.getTime();
+  const minutes = Math.floor(deltaMs / 60_000);
+  const hours = Math.floor(deltaMs / 3_600_000);
+  const days = Math.floor(deltaMs / 86_400_000);
+  if (days >= 1) return t("timeline.daysAgo", "{n}d ago").replace("{n}", String(days));
+  if (hours >= 1) return t("timeline.hoursAgo", "{n}h ago").replace("{n}", String(hours));
+  if (minutes >= 1) return t("timeline.minutesAgo", "{n}m ago").replace("{n}", String(minutes));
+  return t("timeline.justNow", "just now");
+}
+
+function jobEffectiveFreshness(job) {
+  // Prefer also_seen_at re-sightings (max), else discovered_at.
+  const candidates = [];
+  if (job?.discovered_at) candidates.push(job.discovered_at);
+  for (const entry of Object.values(job?.also_seen_at || {})) {
+    if (entry && typeof entry === "object") {
+      const seen = entry.seen_at || entry.found_at || entry.at;
+      if (seen) candidates.push(seen);
+    }
+  }
+  if (!candidates.length) return null;
+  return candidates.sort().slice(-1)[0];
 }
 
 function skeletonRows(count = 3) {
