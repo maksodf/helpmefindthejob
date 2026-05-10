@@ -262,6 +262,7 @@
   "dashboard.activity.empty": "No activity yet.",
   "history.empty": "No scan history yet.",
   "history.unknownCompany": "Unknown company",
+  "settings.locale.switching": "Switching language…",
   "settings.totp.heading": "Two-factor authentication",
   "settings.totp.lead": "Protect your account with a 6-digit code from an authenticator app (Aegis, 1Password, Google Authenticator).",
   "settings.totp.enabled": "Enabled",

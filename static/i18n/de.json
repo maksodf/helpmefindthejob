@@ -262,6 +262,7 @@
   "dashboard.activity.empty": "Noch keine Aktivität.",
   "history.empty": "Noch kein Scan-Verlauf.",
   "history.unknownCompany": "Unbekanntes Unternehmen",
+  "settings.locale.switching": "Sprache wird gewechselt …",
   "settings.totp.heading": "Zwei-Faktor-Authentifizierung",
   "settings.totp.lead": "Schütze dein Konto mit einem 6-stelligen Code aus einer Authenticator-App (Aegis, 1Password, Google Authenticator).",
   "settings.totp.enabled": "Aktiviert",

@@ -1716,10 +1716,12 @@ const cmdK = {
           state.theme = next; applyTheme(next);
           api("/api/profile", { method: "POST", body: JSON.stringify({ theme: next }) }).catch(() => {});
         } },
-      { label: t("cmdk.action.toggleLocale", "Switch language"), action: () => {
+      { label: t("cmdk.action.toggleLocale", "Switch language"), action: async () => {
           const next = (state.locale === "de") ? "en" : "de";
-          loadLocale(next);
-          api("/api/profile", { method: "POST", body: JSON.stringify({ locale: next }) }).catch(() => {});
+          try { await api("/api/profile", { method: "POST", body: JSON.stringify({ locale: next }) }); } catch (_) {}
+          try { localStorage.setItem("dj_locale", next); } catch (_) {}
+          showToast(t("settings.locale.switching", "Switching language…"), "info", 800);
+          setTimeout(() => location.reload(), 220);
         } },
       { label: t("cmdk.action.signOut", "Sign out"), action: () => document.getElementById("logoutBtn")?.click() },
     ];
@@ -4132,12 +4134,17 @@ $("#queueSortSelect")?.addEventListener("change", (event) => {
 });
 $("#localeSelect")?.addEventListener("change", async (event) => {
   const value = event.target.value;
-  await loadLocale(value);
+  // Persist the choice first (silent if it fails) so the reload picks up
+  // the new locale from the bootstrap. Then full reload — the SPA holds
+  // a lot of pre-rendered text that won't pick up new translations
+  // mid-session, and a reload is the cleanest way to re-render everything.
   try {
     await api("/api/profile", { method: "POST", body: JSON.stringify({ locale: value }) });
-  } catch (error) {
-    showToast(error.message, "error");
-  }
+  } catch (_) {}
+  try { localStorage.setItem("dj_locale", value); } catch (_) {}
+  // Visible feedback then refresh.
+  showToast(t("settings.locale.switching", "Switching language…"), "info", 800);
+  setTimeout(() => location.reload(), 220);
 });
 function urlBase64ToUint8Array(base64) {
   const padding = "=".repeat((4 - base64.length % 4) % 4);
