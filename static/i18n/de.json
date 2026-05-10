@@ -261,6 +261,7 @@
   "savedSearches.empty.text": "Noch keine gespeicherten Suchen. Speichere eine Suche, wir prüfen sie täglich.",
   "dashboard.activity.empty": "Noch keine Aktivität.",
   "history.empty": "Noch kein Scan-Verlauf.",
+  "history.unknownCompany": "Unbekanntes Unternehmen",
   "settings.totp.heading": "Zwei-Faktor-Authentifizierung",
   "settings.totp.lead": "Schütze dein Konto mit einem 6-stelligen Code aus einer Authenticator-App (Aegis, 1Password, Google Authenticator).",
   "settings.totp.enabled": "Aktiviert",

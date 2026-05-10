@@ -516,9 +516,24 @@ function renderDashboard() {
     const isWarn = run.status === "completed_with_errors";
     if (isError) node.classList.add("error");
     else if (isWarn) node.classList.add("warn");
-    node.querySelector(".activity-text").textContent = `${company?.name || "Unknown company"} — ${status}`;
+    const textEl = node.querySelector(".activity-text");
+    textEl.replaceChildren();
+    const co = document.createElement("strong");
+    co.textContent = company?.name || t("history.unknownCompany", "Unknown company");
+    const sep = document.createElement("span");
+    sep.className = "muted";
+    sep.textContent = " · ";
+    const statusSpan = document.createElement("span");
+    statusSpan.textContent = status;
+    textEl.append(co, sep, statusSpan);
     const ts = run.finished_at || run.created_at;
-    node.querySelector(".activity-time").textContent = ts ? new Date(ts).toLocaleString() : "";
+    const timeEl = node.querySelector(".activity-time");
+    if (ts) {
+      timeEl.textContent = relativeTimeFromIso(ts) || new Date(ts).toLocaleString();
+      timeEl.title = new Date(ts).toLocaleString();
+    } else {
+      timeEl.textContent = "";
+    }
     list.append(node);
   }
 }

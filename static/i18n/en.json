@@ -261,6 +261,7 @@
   "savedSearches.empty.text": "No saved searches yet. Save a query and we'll watch it daily.",
   "dashboard.activity.empty": "No activity yet.",
   "history.empty": "No scan history yet.",
+  "history.unknownCompany": "Unknown company",
   "settings.totp.heading": "Two-factor authentication",
   "settings.totp.lead": "Protect your account with a 6-digit code from an authenticator app (Aegis, 1Password, Google Authenticator).",
   "settings.totp.enabled": "Enabled",

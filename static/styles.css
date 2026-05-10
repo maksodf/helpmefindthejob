@@ -1806,10 +1806,17 @@ details[open] .collapsible-chevron { transform: rotate(180deg); }
 .activity-item {
   display: grid;
   grid-template-columns: 18px 1fr auto;
-  gap: 8px;
+  gap: 10px;
   align-items: center;
-  padding: 8px 0;
-  font-size: 13px;
+  padding: 10px 12px;
+  font-size: var(--text-sm);
+  border-radius: var(--radius);
+  border: 1px solid transparent;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+.activity-item:hover {
+  background: var(--surface-2);
+  border-color: var(--border);
 }
 
 .activity-dot {
@@ -1818,18 +1825,25 @@ details[open] .collapsible-chevron { transform: rotate(180deg); }
   margin: 0 auto;
   border-radius: 999px;
   background: var(--success);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--success) 22%, transparent);
 }
 
 .activity-item.warn .activity-dot {
   background: var(--warn);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--warn) 22%, transparent);
 }
 
 .activity-item.error .activity-dot {
   background: var(--danger);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--danger) 22%, transparent);
 }
 
+.activity-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.activity-text strong { font-weight: 600; color: var(--text); }
+
 .activity-time {
-  font-size: 12px;
+  font-size: var(--text-xs);
+  white-space: nowrap;
 }
 
 /* Brief view */
