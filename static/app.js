@@ -1534,7 +1534,11 @@ async function loadLocale(locale) {
     return;
   }
   try {
-    const response = await fetch(`/i18n/${target}.json`, { cache: "force-cache" });
+    // Cache-bust so a re-deploy with new copy doesn't get masked by the
+    // browser's cached i18n bundle. The version is the running app's
+    // /api/health version (refreshed once per session via state.appVersion).
+    const cacheBust = state.appVersion ? `?v=${encodeURIComponent(state.appVersion)}` : `?t=${Date.now()}`;
+    const response = await fetch(`/i18n/${target}.json${cacheBust}`);
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     state.translations = await response.json();
     state.locale = target;

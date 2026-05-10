@@ -1190,16 +1190,28 @@ details[open] .collapsible-chevron { transform: rotate(180deg); }
   grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
   gap: 16px;
   margin-bottom: 16px;
-  align-items: start;
+  align-items: stretch;
 }
 
 .watchlist {
-  align-self: start;
   position: sticky;
   top: 24px;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+}
+.watchlist .company-list {
+  flex: 1;
+  min-height: 240px;
 }
 .companies-layout .company-detail {
-  align-self: start;
+  align-self: stretch;
+}
+/* Tighter empty state for the Companies detail surface so the right
+   card doesn't tower over the watchlist when nothing is selected. */
+.company-detail #companyEmptyState.empty {
+  padding: 20px 16px;
+  margin: 0;
 }
 
 .company-list {
