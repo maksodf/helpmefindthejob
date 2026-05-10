@@ -2674,6 +2674,27 @@ class Handler(BaseHTTPRequestHandler):
                     return
                 self._send_share_job_page(imported)
                 return
+            if parsed.path.startswith("/r/"):
+                # Referral landing (#46). Stash the code in a Set-Cookie
+                # so the registration form can read it via /api/site-config
+                # equivalent (we expose it on /api/auth/status). Then
+                # redirect the visitor to the home page so they can sign
+                # up. Code is sanitised to URL-safe characters only —
+                # anything else falls through to the static handler 404.
+                code = parsed.path[len("/r/"):].strip("/").split("/", 1)[0]
+                if not code or not all(c.isalnum() or c in "-_" for c in code) or len(code) > 32:
+                    self.send_error_json(HTTPStatus.NOT_FOUND, "not_found", "Unknown referral code")
+                    return
+                self.send_response(HTTPStatus.SEE_OTHER)
+                self.send_header("Location", "/?ref=" + code)
+                # Short-lived cookie so the SPA can pick it up on the
+                # registration form and forward it to /api/auth/register.
+                self.send_header(
+                    "Set-Cookie",
+                    f"directjob_ref={code}; Max-Age=2592000; Path=/; SameSite=Lax",
+                )
+                self.end_headers()
+                return
             if parsed.path == "/account/verify-email":
                 from urllib.parse import parse_qs as _parse_qs
                 qs = _parse_qs(parsed.query or "")
@@ -2749,6 +2770,15 @@ class Handler(BaseHTTPRequestHandler):
                 return
             if parsed.path == "/api/applications/outcomes":
                 self.send_json(STATE.application_outcomes_summary(STATE.effective_user_id(user_id)))
+                return
+            if parsed.path == "/api/account/referral":
+                code = STATE.auth_store.ensure_referral_code(session.user.id)
+                count = STATE.auth_store.count_referrals(session.user.id)
+                self.send_json({
+                    "code": code,
+                    "url": STATE.public_url_for(f"/r/{code}"),
+                    "referredCount": count,
+                })
                 return
             if parsed.path == "/api/bootstrap":
                 self.send_json(STATE.bootstrap(user_id))
@@ -3190,6 +3220,16 @@ class Handler(BaseHTTPRequestHandler):
                     (login_at.isoformat(), login_at.isoformat(), user.id),
                 )
                 STATE.auth_store.connection.commit()
+                # Referral capture (#46): if the form supplied a referrer
+                # code we stamp it on the new user. record_referral is
+                # tolerant of bad codes (no-op on bad / self / inactive
+                # referrer) so sign-up is never blocked by a typo.
+                referrer_code = str(payload.get("referrerCode") or "").strip()
+                if referrer_code and not is_bootstrap:
+                    STATE.auth_store.record_referral(user.id, referrer_code)
+                # Mint the new user's own referral code so the dashboard
+                # can show their share URL immediately.
+                STATE.auth_store.ensure_referral_code(user.id)
                 if is_bootstrap:
                     # Bootstrap admin owns the mailbox already; flag the
                     # account verified directly. Skip the verify email.

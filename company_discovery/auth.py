@@ -206,6 +206,16 @@ class AuthStore:
         # is already populated, making it safe to re-run.
         self._add_column_if_missing("users", "drip_day3_sent_at", "TEXT")
         self._add_column_if_missing("users", "drip_day7_sent_at", "TEXT")
+        # Referral program (#46). Each user gets a short, URL-safe
+        # ``referral_code`` on first save; ``referred_by`` records the
+        # code that brought them in. Reward grant (1 month Pro for
+        # both sides) is deferred to when the Pro plan exists
+        # (gated by tracker #21).
+        self._add_column_if_missing("users", "referral_code", "TEXT")
+        self._add_column_if_missing("users", "referred_by", "TEXT")
+        self.connection.execute(
+            "CREATE INDEX IF NOT EXISTS idx_users_referral_code ON users(referral_code)"
+        )
         self.connection.execute(
             """
             CREATE TABLE IF NOT EXISTS sessions (
@@ -573,6 +583,75 @@ class AuthStore:
         )
         self.connection.commit()
         return user_id
+
+    # --- Referral program ----------------------------------------------
+
+    def ensure_referral_code(self, user_id: str) -> str:
+        """Return the user's referral code, minting one on first call.
+        Codes are 10 URL-safe characters, collision-checked against the
+        existing index. Idempotent: subsequent calls return the same
+        code unless the row has been wiped."""
+
+        row = self.connection.execute(
+            "SELECT referral_code FROM users WHERE id = ?", (user_id,),
+        ).fetchone()
+        if row and row[0]:
+            return str(row[0])
+        # Mint up to 5 candidates before giving up — at 64**10 slot
+        # density a collision is astronomically unlikely.
+        for _ in range(5):
+            candidate = secrets.token_urlsafe(8)[:10]
+            existing = self.connection.execute(
+                "SELECT 1 FROM users WHERE referral_code = ?", (candidate,),
+            ).fetchone()
+            if not existing:
+                self.connection.execute(
+                    "UPDATE users SET referral_code = ? WHERE id = ?",
+                    (candidate, user_id),
+                )
+                self.connection.commit()
+                return candidate
+        raise RuntimeError("referral_code_collision")
+
+    def find_user_by_referral_code(self, code: str) -> AuthUser | None:
+        cleaned = (code or "").strip()
+        if not cleaned:
+            return None
+        row = self.connection.execute(
+            "SELECT id, email, role, active, created_at, last_login_at, last_active_at "
+            "FROM users WHERE referral_code = ?",
+            (cleaned,),
+        ).fetchone()
+        return self._user_from_row(row) if row else None
+
+    def record_referral(self, user_id: str, referrer_code: str) -> None:
+        """Stamp ``users.referred_by`` for a new sign-up. Validates the
+        referrer code refers to an active user and isn't the user's
+        own code (self-referral attempt). No-op when validation fails
+        — sign-up should not be blocked by a bad referral code."""
+
+        if not referrer_code:
+            return
+        referrer = self.find_user_by_referral_code(referrer_code)
+        if referrer is None or not referrer.active or referrer.id == user_id:
+            return
+        self.connection.execute(
+            "UPDATE users SET referred_by = ? WHERE id = ?",
+            (referrer_code, user_id),
+        )
+        self.connection.commit()
+
+    def count_referrals(self, user_id: str) -> int:
+        row = self.connection.execute(
+            "SELECT referral_code FROM users WHERE id = ?", (user_id,),
+        ).fetchone()
+        if not row or not row[0]:
+            return 0
+        count_row = self.connection.execute(
+            "SELECT COUNT(*) FROM users WHERE referred_by = ? AND active = 1",
+            (row[0],),
+        ).fetchone()
+        return int(count_row[0]) if count_row else 0
 
     def users_due_for_drip(
         self,
