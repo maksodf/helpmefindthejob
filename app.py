@@ -2011,6 +2011,47 @@ class AppState:
             "winner": winner if (winner and winner["replied"] > 0) else None,
         }
 
+    def list_seo_pages(self) -> list[dict[str, Any]]:
+        """Read the operator-edited SEO-page config (Phase 1 #17). The
+        file is re-read on every call so the operator can edit + reload
+        without restarting the app. Returns an empty list if the file
+        is missing or malformed (safer than crashing /jobs/<slug>)."""
+
+        path = self.data_path.parent / "seo-pages.json"
+        if not path.exists():
+            return []
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return []
+        pages = payload.get("pages") if isinstance(payload, dict) else None
+        if not isinstance(pages, list):
+            return []
+        result = []
+        for entry in pages:
+            if not isinstance(entry, dict):
+                continue
+            slug = str(entry.get("slug") or "").strip()
+            if not slug or not all(c.isalnum() or c == "-" for c in slug):
+                continue
+            result.append({
+                "slug": slug,
+                "title": str(entry.get("title") or "").strip(),
+                "role": str(entry.get("role") or "").strip(),
+                "city": str(entry.get("city") or "").strip(),
+                "intro": str(entry.get("intro") or "").strip(),
+            })
+        return result
+
+    def find_seo_page(self, slug: str) -> dict[str, Any] | None:
+        cleaned = (slug or "").strip()
+        if not cleaned:
+            return None
+        for page in self.list_seo_pages():
+            if page["slug"] == cleaned:
+                return page
+        return None
+
     def aggregate_skill_gaps(self, user_id: str, *, top_k: int = 3, min_jobs: int = 3) -> dict[str, Any]:
         """Top-K skill gaps across the user's imported queue (Phase 4 #41).
 
@@ -2673,6 +2714,17 @@ class Handler(BaseHTTPRequestHandler):
                     self._send_share_not_found_page()
                     return
                 self._send_share_job_page(imported)
+                return
+            if parsed.path.startswith("/jobs/"):
+                slug = parsed.path[len("/jobs/"):].strip("/").split("/", 1)[0]
+                if not slug or not all(c.isalnum() or c == "-" for c in slug) or len(slug) > 80:
+                    self._send_seo_page_not_found()
+                    return
+                page = STATE.find_seo_page(slug)
+                if page is None:
+                    self._send_seo_page_not_found()
+                    return
+                self._send_seo_page(page)
                 return
             if parsed.path.startswith("/r/"):
                 # Referral landing (#46). Stash the code in a Set-Cookie
@@ -4530,6 +4582,108 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Cache-Control", "no-store")
         if filename:
             self.send_header("Content-Disposition", f'attachment; filename="{filename}"')
+        self.end_headers()
+        self.wfile.write(encoded)
+
+    def _send_seo_page_not_found(self) -> None:
+        body = (
+            "<!doctype html>\n"
+            "<html lang=\"en\">\n"
+            "<head>\n"
+            "  <meta charset=\"utf-8\" />\n"
+            "  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n"
+            "  <meta name=\"robots\" content=\"noindex,nofollow\" />\n"
+            "  <title>Job alert not found — DirectJob Scout</title>\n"
+            "  <link rel=\"stylesheet\" href=\"/styles.css\" />\n"
+            "</head>\n"
+            "<body class=\"legal-body\">\n"
+            "  <main class=\"legal-page\">\n"
+            "    <a href=\"/\" class=\"legal-back\">← DirectJob Scout</a>\n"
+            "    <h1>Job alert not found</h1>\n"
+            "    <p>This job-alert page does not exist. Head to "
+            "<a href=\"/\">khalo.org</a> to set up your own saved search — we watch the "
+            "company pages + the major aggregators daily.</p>\n"
+            "  </main>\n"
+            "</body>\n"
+            "</html>\n"
+        )
+        encoded = body.encode("utf-8")
+        self.send_response(HTTPStatus.NOT_FOUND)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(encoded)))
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        self.wfile.write(encoded)
+
+    def _send_seo_page(self, page: dict[str, Any]) -> None:
+        from html import escape as _escape
+
+        title = page["title"] or f"{page['role']} jobs in {page['city']}"
+        intro = page["intro"] or (
+            f"DirectJob Scout watches direct career pages and the major aggregators for "
+            f"{page['role']} roles in {page['city']}."
+        )
+        canonical = STATE.public_url_for(f"/jobs/{page['slug']}")
+        signup_url = STATE.public_url_for("/")
+        og_description = intro[:280]
+        body = (
+            "<!doctype html>\n"
+            "<html lang=\"en\">\n"
+            "<head>\n"
+            "  <meta charset=\"utf-8\" />\n"
+            "  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n"
+            "  <meta name=\"robots\" content=\"index,follow\" />\n"
+            f"  <title>{_escape(title)} — DirectJob Scout</title>\n"
+            f"  <meta name=\"description\" content=\"{_escape(og_description)}\" />\n"
+            f"  <link rel=\"canonical\" href=\"{_escape(canonical)}\" />\n"
+            "  <meta property=\"og:type\" content=\"article\" />\n"
+            f"  <meta property=\"og:title\" content=\"{_escape(title)}\" />\n"
+            f"  <meta property=\"og:description\" content=\"{_escape(og_description)}\" />\n"
+            f"  <meta property=\"og:url\" content=\"{_escape(canonical)}\" />\n"
+            "  <link rel=\"stylesheet\" href=\"/styles.css\" />\n"
+            "</head>\n"
+            "<body class=\"legal-body\">\n"
+            "  <main class=\"legal-page\">\n"
+            "    <a href=\"/\" class=\"legal-back\">← DirectJob Scout</a>\n"
+            f"    <h1>{_escape(title)}</h1>\n"
+            f"    <p>{_escape(intro)}</p>\n"
+            "    <section>\n"
+            "      <h2>How it works</h2>\n"
+            "      <ol>\n"
+            f"        <li>Sign up — free.</li>\n"
+            f"        <li>Set up a saved search for <strong>{_escape(page['role'])}</strong> "
+            f"in <strong>{_escape(page['city'])}</strong>.</li>\n"
+            "        <li>We dedupe across the company sites + the major aggregators daily. "
+            "Triage the queue with keyboard shortcuts in five minutes.</li>\n"
+            "      </ol>\n"
+            "    </section>\n"
+            "    <section>\n"
+            "      <h2>Why not just LinkedIn?</h2>\n"
+            "      <p>LinkedIn under-indexes mid-market and German employer sites; their search is "
+            "tuned for engagement, not coverage. We watch the company pages directly and supplement "
+            "with the public aggregators (Indeed, StepStone, Arbeitnow, Bundesagentur, Muse).</p>\n"
+            "    </section>\n"
+            "    <section>\n"
+            f"      <p><a class=\"btn btn-primary\" href=\"{_escape(signup_url)}\">"
+            "Sign up — start your saved search</a></p>\n"
+            "    </section>\n"
+            "    <p class=\"legal-footer\">\n"
+            "      <a href=\"/privacy\">Privacy</a>\n"
+            "      <a href=\"/terms\">Terms</a>\n"
+            "      <a href=\"/data-retention\">Data retention</a>\n"
+            "      <a href=\"/impressum\">Impressum</a>\n"
+            "    </p>\n"
+            "  </main>\n"
+            "</body>\n"
+            "</html>\n"
+        )
+        encoded = body.encode("utf-8")
+        self.send_response(HTTPStatus.OK)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(encoded)))
+        # Long cache — these pages change rarely, and Google treats
+        # cache-friendly responses as a positive signal.
+        self.send_header("Cache-Control", "public, max-age=3600")
         self.end_headers()
         self.wfile.write(encoded)
 

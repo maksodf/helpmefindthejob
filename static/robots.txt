@@ -9,6 +9,7 @@ Allow: /data-retention
 Allow: /impressum
 Allow: /changelog
 Allow: /help
+Allow: /jobs/
 
 # Block app, admin, and API surfaces from indexing.
 Disallow: /api/
