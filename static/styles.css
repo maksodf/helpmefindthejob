@@ -1203,6 +1203,18 @@ details[open] .collapsible-chevron { transform: rotate(180deg); }
   .ai-modes { grid-template-columns: 1fr; }
 }
 
+/* View transition — subtle fade+slide when switching nav items */
+.view {
+  animation: view-enter 0.22s ease-out;
+}
+@keyframes view-enter {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .view { animation: none; }
+}
+
 /* Application form: collapsible "extras" group */
 .application-extras {
   border: 1px dashed var(--border-strong);
