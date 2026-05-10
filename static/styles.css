@@ -807,6 +807,96 @@ textarea {
   content: "−";
 }
 
+/* Hero card on Today */
+.hero-card {
+  background:
+    radial-gradient(800px 200px at 100% 0%, var(--accent-weak), transparent 70%),
+    var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 28px 28px 22px;
+  margin-bottom: 16px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 16px 24px;
+  box-shadow: var(--shadow-sm);
+}
+.hero-primary { display: grid; gap: 6px; }
+.hero-label {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-weight: 500;
+  letter-spacing: 0.005em;
+}
+.hero-number {
+  font-size: 56px;
+  line-height: 1;
+  letter-spacing: -0.035em;
+  font-weight: 700;
+  background: linear-gradient(180deg, var(--text), color-mix(in oklab, var(--accent) 80%, var(--text)));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.hero-hint { font-size: 13px; }
+.hero-actions { align-self: end; }
+.hero-secondary {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  padding-top: 16px;
+  margin-top: 4px;
+  border-top: 1px solid var(--border);
+}
+.hero-stat { display: grid; gap: 4px; }
+.hero-stat-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.hero-stat strong { font-size: 20px; font-weight: 600; letter-spacing: -0.015em; }
+@media (max-width: 768px) {
+  .hero-card { grid-template-columns: 1fr; padding: 22px 18px 18px; }
+  .hero-number { font-size: 44px; }
+  .hero-actions { justify-self: start; }
+  .hero-actions .btn { width: 100%; }
+  .hero-secondary { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 480px) {
+  .hero-secondary { grid-template-columns: 1fr 1fr; }
+}
+
+/* Collapsible cards (using native <details>) */
+.card.collapsible { padding: 0; }
+.card.collapsible[open] { padding-bottom: 18px; }
+.collapsible-summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 18px;
+  border-radius: var(--radius-lg);
+  user-select: none;
+}
+.collapsible-summary::-webkit-details-marker { display: none; }
+.collapsible-summary h2 { margin: 0; font-size: 16px; }
+.collapsible-summary p { margin: 2px 0 0; }
+.collapsible-summary:hover { background: var(--surface-2); }
+.collapsible-chevron {
+  font-size: 14px;
+  color: var(--text-muted);
+  transition: transform 0.2s ease;
+}
+details[open] .collapsible-chevron { transform: rotate(180deg); }
+.card.collapsible[open] > :not(.collapsible-summary) {
+  padding: 0 18px;
+}
+
 /* Metrics */
 .metric-grid {
   display: grid;

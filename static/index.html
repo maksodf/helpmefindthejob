@@ -183,28 +183,31 @@
 
         <!-- Dashboard / Today -->
         <section id="view-dashboard" class="view" data-view="dashboard" aria-labelledby="viewTitle">
-          <div class="metric-grid">
-            <article class="metric-card">
-              <span class="metric-label" data-i18n="dashboard.metric.companies">Companies to watch</span>
-              <strong id="metricWatched">0</strong>
-              <span class="metric-hint muted" id="metricWatchedHint">No companies yet</span>
-            </article>
-            <article class="metric-card">
-              <span class="metric-label" data-i18n="dashboard.metric.jobs">New roles found</span>
-              <strong id="metricJobs">0</strong>
-              <span class="metric-hint muted" id="metricJobsHint">Awaiting first scan</span>
-            </article>
-            <article class="metric-card">
-              <span class="metric-label" data-i18n="dashboard.metric.setup">Need career page</span>
-              <strong id="metricSetup">0</strong>
-              <span class="metric-hint muted" id="metricSetupHint">All set up</span>
-            </article>
-            <article class="metric-card">
-              <span class="metric-label" data-i18n="dashboard.metric.lastRun">Last run</span>
-              <strong id="metricRun">—</strong>
-              <span class="metric-hint muted" id="metricRunHint">No scan recorded</span>
-            </article>
-          </div>
+          <article class="hero-card">
+            <div class="hero-primary">
+              <span class="hero-label" data-i18n="dashboard.hero.label">New roles waiting for you</span>
+              <strong id="metricJobs" class="hero-number">0</strong>
+              <span class="hero-hint muted" id="metricJobsHint" data-i18n="dashboard.hero.empty">Awaiting first scan</span>
+            </div>
+            <div class="hero-actions">
+              <button class="btn btn-primary" type="button" data-i18n="dashboard.hero.openQueue" onclick="navigate('jobs')">Open queue</button>
+            </div>
+            <div class="hero-secondary">
+              <div class="hero-stat">
+                <span class="hero-stat-label" data-i18n="dashboard.metric.companies">Companies</span>
+                <strong id="metricWatched">0</strong>
+              </div>
+              <div class="hero-stat">
+                <span class="hero-stat-label" data-i18n="dashboard.metric.setup">Need career page</span>
+                <strong id="metricSetup">0</strong>
+              </div>
+              <div class="hero-stat">
+                <span class="hero-stat-label" data-i18n="dashboard.metric.lastRun">Last run</span>
+                <strong id="metricRun">—</strong>
+                <span class="muted small" id="metricRunHint"></span>
+              </div>
+            </div>
+          </article>
 
           <section class="card find-jobs" aria-label="Find me jobs">
             <div class="card-heading">
@@ -245,21 +248,25 @@
             </div>
           </section>
 
-          <section class="card" aria-label="Onboarding checklist">
-            <div class="card-heading">
+          <details class="card collapsible" id="onboardingCard">
+            <summary class="collapsible-summary">
               <div>
                 <h2 data-i18n="dashboard.onboarding.heading">Onboarding checklist</h2>
-                <p class="muted" id="onboardingProgress">0 of 7 complete</p>
+                <p class="muted small" id="onboardingProgress">0 of 7 complete</p>
               </div>
-            </div>
+              <span class="collapsible-chevron" aria-hidden="true">▾</span>
+            </summary>
             <ul id="onboardingList" class="onboarding-list"></ul>
-          </section>
+          </details>
 
-          <section class="card" aria-label="Discovery Run Controls">
-            <div class="card-heading">
-              <h2 data-i18n="dashboard.schedule.heading">Discovery Run Controls</h2>
-              <p class="muted" id="scheduleStatus">Manual scans only</p>
-            </div>
+          <details class="card collapsible">
+            <summary class="collapsible-summary">
+              <div>
+                <h2 data-i18n="dashboard.schedule.heading">Discovery Run Controls</h2>
+                <p class="muted small" id="scheduleStatus">Manual scans only</p>
+              </div>
+              <span class="collapsible-chevron" aria-hidden="true">▾</span>
+            </summary>
             <div class="schedule-row">
               <label class="check-row">
                 <input id="scheduleEnabled" type="checkbox" />
@@ -271,14 +278,18 @@
               </label>
               <button id="saveScheduleBtn" class="btn" type="button" data-i18n="dashboard.schedule.save">Save schedule</button>
             </div>
-          </section>
+          </details>
 
-          <section class="card" aria-label="Recent activity">
-            <div class="card-heading">
-              <h2 data-i18n="dashboard.activity.heading">Recent activity</h2>
-            </div>
+          <details class="card collapsible">
+            <summary class="collapsible-summary">
+              <div>
+                <h2 data-i18n="dashboard.activity.heading">Recent activity</h2>
+                <p class="muted small" data-i18n="dashboard.activity.lead">Scan results, imports, AI calls — last 50 events.</p>
+              </div>
+              <span class="collapsible-chevron" aria-hidden="true">▾</span>
+            </summary>
             <div id="recentActivity" class="activity-list"></div>
-          </section>
+          </details>
         </section>
 
         <!-- Companies -->
