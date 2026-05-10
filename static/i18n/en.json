@@ -198,6 +198,7 @@
   "cmdk.do": "Action",
   "cmdk.openJob": "Open job",
   "cmdk.openCompany": "Watchlist",
+  "cmdk.runSearch": "Run saved search",
   "cmdk.noResults": "No matches",
   "cmdk.action.toggleTheme": "Toggle theme",
   "cmdk.action.toggleLocale": "Switch language",

@@ -807,7 +807,18 @@ function renderJobs() {
       cta.type = "button";
       cta.className = "btn btn-primary";
       cta.textContent = t("queue.empty.cta", "Find me jobs");
-      cta.addEventListener("click", () => navigate("dashboard"));
+      cta.addEventListener("click", () => {
+        navigate("dashboard");
+        // Auto-focus the search input + scroll it into view so the
+        // user lands ready to type, not hunting for the field.
+        setTimeout(() => {
+          const input = document.getElementById("findJobsQuery");
+          if (input) {
+            input.scrollIntoView({ block: "center", behavior: "smooth" });
+            input.focus();
+          }
+        }, 60);
+      });
       wrap.append(cta);
     }
     list.append(wrap);
@@ -1696,6 +1707,15 @@ const cmdK = {
         action: () => { state.selectedCompanyId = co.id; navigate("companies"); },
       });
       companyMatches += 1;
+    }
+    // Saved searches: Run-now action for each.
+    for (const search of state.savedSearches || []) {
+      const label = search.label || `${search.role || ""} ${search.location ? "@ " + search.location : ""}`.trim();
+      if (!matches(label)) continue;
+      items.push({
+        kind: "savedSearch", label: `▶ ${label}`, meta: t("cmdk.runSearch", "Run saved search"),
+        action: () => runSavedSearchNow(search.id),
+      });
     }
     return items;
   },
