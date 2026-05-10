@@ -206,6 +206,7 @@
   "dashboard.hero.empty": "Erster Scan ausstehend",
   "dashboard.hero.openQueue": "Queue öffnen",
   "dashboard.activity.lead": "Scan-Ergebnisse, Imports, KI-Aufrufe — letzte 50 Ereignisse.",
+  "topbar.cmdkHint": "Suchen",
   "settings.totp.heading": "Zwei-Faktor-Authentifizierung",
   "settings.totp.lead": "Schütze dein Konto mit einem 6-stelligen Code aus einer Authenticator-App (Aegis, 1Password, Google Authenticator).",
   "settings.totp.enabled": "Aktiviert",

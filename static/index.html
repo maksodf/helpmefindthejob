@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="dark" />
-    <meta name="theme-color" content="#0b0d12" />
+    <meta name="theme-color" content="#7c5cff" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="icon" type="image/svg+xml" href="/icons/icon.svg" />
     <link rel="apple-touch-icon" href="/icons/icon.svg" />
@@ -177,6 +177,11 @@
             <p id="viewSubtitle" class="muted">Your watched companies, recent runs, and what to do next.</p>
           </div>
           <div class="topbar-meta">
+            <button id="cmdkLauncher" class="cmdk-launcher" type="button" aria-label="Open command palette">
+              <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="9" cy="9" r="6" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M14 14l4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+              <span class="cmdk-launcher-text" data-i18n="topbar.cmdkHint">Search</span>
+              <kbd class="cmdk-launcher-kbd" id="cmdkLauncherKbd">⌘K</kbd>
+            </button>
             <span class="status-pill" id="networkState" role="status" aria-live="polite" data-i18n="status.ready">Ready</span>
           </div>
         </header>

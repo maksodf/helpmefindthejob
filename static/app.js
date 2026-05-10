@@ -1724,6 +1724,14 @@ document.addEventListener("keydown", (event) => {
     cmdK.activeIndex = 0;
     cmdK.render(e.target.value);
   });
+  // Topbar launcher button — also opens the palette.
+  document.getElementById("cmdkLauncher")?.addEventListener("click", () => cmdK.open());
+  // Adapt the kbd hint on Windows/Linux (Ctrl) vs Mac (Cmd).
+  const isMac = /Mac|iPad|iPhone|iPod/.test(navigator.userAgent || "");
+  const kbd = document.getElementById("cmdkLauncherKbd");
+  const hintKbd = document.getElementById("cmdkKbdHint");
+  if (kbd) kbd.textContent = isMac ? "⌘K" : "Ctrl+K";
+  if (hintKbd) hintKbd.textContent = "Esc";
 })();
 
 // Settings tabs — show only cards with data-tab matching the active tab.

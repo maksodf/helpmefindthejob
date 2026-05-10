@@ -206,6 +206,7 @@
   "dashboard.hero.empty": "Awaiting first scan",
   "dashboard.hero.openQueue": "Open queue",
   "dashboard.activity.lead": "Scan results, imports, AI calls — last 50 events.",
+  "topbar.cmdkHint": "Search",
   "settings.totp.heading": "Two-factor authentication",
   "settings.totp.lead": "Protect your account with a 6-digit code from an authenticator app (Aegis, 1Password, Google Authenticator).",
   "settings.totp.enabled": "Enabled",
