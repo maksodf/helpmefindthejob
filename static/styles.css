@@ -1211,8 +1211,79 @@ details[open] .collapsible-chevron { transform: rotate(180deg); }
   from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: none; }
 }
+
+/* List-item stagger — first ~10 items fade up with a small delay each */
+.jobs-list .job-item,
+.company-list .company-item,
+.imported-list .imported-row {
+  animation: list-row-enter 0.32s ease-out backwards;
+}
+.jobs-list .job-item:nth-child(1),
+.company-list .company-item:nth-child(1),
+.imported-list .imported-row:nth-child(1) { animation-delay: 0ms; }
+.jobs-list .job-item:nth-child(2),
+.company-list .company-item:nth-child(2),
+.imported-list .imported-row:nth-child(2) { animation-delay: 30ms; }
+.jobs-list .job-item:nth-child(3),
+.company-list .company-item:nth-child(3),
+.imported-list .imported-row:nth-child(3) { animation-delay: 60ms; }
+.jobs-list .job-item:nth-child(4),
+.company-list .company-item:nth-child(4),
+.imported-list .imported-row:nth-child(4) { animation-delay: 90ms; }
+.jobs-list .job-item:nth-child(5),
+.company-list .company-item:nth-child(5),
+.imported-list .imported-row:nth-child(5) { animation-delay: 120ms; }
+.jobs-list .job-item:nth-child(6),
+.company-list .company-item:nth-child(6),
+.imported-list .imported-row:nth-child(6) { animation-delay: 150ms; }
+.jobs-list .job-item:nth-child(7),
+.company-list .company-item:nth-child(7),
+.imported-list .imported-row:nth-child(7) { animation-delay: 180ms; }
+.jobs-list .job-item:nth-child(8),
+.company-list .company-item:nth-child(8),
+.imported-list .imported-row:nth-child(8) { animation-delay: 210ms; }
+.jobs-list .job-item:nth-child(n + 9),
+.company-list .company-item:nth-child(n + 9),
+.imported-list .imported-row:nth-child(n + 9) { animation-delay: 240ms; }
+
+@keyframes list-row-enter {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .view { animation: none; }
+  .view,
+  .jobs-list .job-item,
+  .company-list .company-item,
+  .imported-list .imported-row { animation: none; }
+}
+
+/* Inline form-status message — sits below a form, replaces toast for
+   permanent results. .is-error → red, .is-success → green, default muted. */
+.form-status {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  margin: 8px 0 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 20px;
+}
+.form-status::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-soft);
+}
+.form-status.is-saving::before { background: var(--accent); animation: form-status-pulse 1.2s ease-in-out infinite; }
+.form-status.is-success { color: var(--success); }
+.form-status.is-success::before { background: var(--success); }
+.form-status.is-error { color: var(--danger); }
+.form-status.is-error::before { background: var(--danger); }
+@keyframes form-status-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.4); opacity: 0.55; }
 }
 
 /* Application form: collapsible "extras" group */

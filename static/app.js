@@ -2563,6 +2563,16 @@ function renderAdminUsers() {
 
 /* ---------- Helpers ---------- */
 
+function setFormStatus(elementOrId, state, text) {
+  // state: "saving" | "success" | "error" | "" (clear)
+  const el = typeof elementOrId === "string" ? document.getElementById(elementOrId) : elementOrId;
+  if (!el) return;
+  el.classList.remove("is-saving", "is-success", "is-error");
+  if (state) el.classList.add(`is-${state}`, "form-status");
+  if (!el.classList.contains("form-status")) el.classList.add("form-status");
+  el.textContent = text || "";
+}
+
 function emptyNode(text, options) {
   // Options: { icon: "search" | "briefcase" | "company" | "list",
   //           ctaText: string, onCta: fn }
@@ -3048,8 +3058,7 @@ async function saveProfile() {
     cvText: $("#profileCvText").value,
     notes: $("#profileNotes").value.trim(),
   };
-  const messageEl = $("#profileMessage");
-  if (messageEl) messageEl.textContent = "Saving…";
+  setFormStatus("profileMessage", "saving", t("form.saving", "Saving…"));
   try {
     const payload = await api("/api/profile", {
       method: "POST",
@@ -3057,11 +3066,10 @@ async function saveProfile() {
     });
     state.profile = payload.profile || state.profile;
     if (payload.bootstrap) absorbBootstrap(payload.bootstrap);
-    if (messageEl) messageEl.textContent = "Profile saved.";
-    showToast(t("toast.profileSaved", "Profile saved."), "success");
+    setFormStatus("profileMessage", "success", t("form.saved", "Saved."));
     render();
   } catch (error) {
-    if (messageEl) messageEl.textContent = `Error: ${error.message}`;
+    setFormStatus("profileMessage", "error", error.message);
     showToast(error.message, "error");
   }
 }
@@ -3315,6 +3323,7 @@ async function logout() {
 
 async function changePassword(event) {
   event.preventDefault();
+  setFormStatus("accountMessage", "saving", t("form.saving", "Saving…"));
   try {
     await api("/api/auth/change-password", {
       method: "POST",
@@ -3327,9 +3336,9 @@ async function changePassword(event) {
     $("#newPassword").value = "";
     clearAuthenticatedState();
     renderAuth();
-    $("#authMessage").textContent = "Password changed. Sign in with the new password.";
+    $("#authMessage").textContent = t("auth.passwordChanged", "Password changed. Sign in with the new password.");
   } catch (error) {
-    $("#accountMessage").textContent = error.message;
+    setFormStatus("accountMessage", "error", error.message);
   }
 }
 
