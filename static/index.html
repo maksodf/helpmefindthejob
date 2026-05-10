@@ -687,7 +687,7 @@
               <label class="field">
                 <span>Persona</span>
                 <input id="profilePersonaSearch" type="search" data-i18n-placeholder="settings.persona.searchPlaceholder" placeholder="Filter personas…" autocomplete="off" />
-                <select id="profilePersona" size="6"></select>
+                <select id="profilePersona"></select>
               </label>
               <label class="field">
                 <span>Industry preference</span>
@@ -779,42 +779,76 @@
           <section class="card" aria-label="AI Provider" data-tab="security">
             <div class="card-heading">
               <div>
-                <h2 data-i18n="settings.ai.heading">AI Provider</h2>
-                <p class="muted" data-i18n="settings.ai.lead">Bring your own AI subscription. We never persist raw keys.</p>
+                <h2 data-i18n="settings.ai.heading">AI Brief & cover letters</h2>
+                <p class="muted" data-i18n="settings.ai.lead">DirectJob writes job briefs + tailored cover letters for you. Pick how you want to power it.</p>
               </div>
-              <button id="saveProviderBtn" class="btn btn-primary" type="button" data-i18n="settings.ai.save">Save provider</button>
             </div>
-            <form id="providerForm" class="provider-grid">
+            <div class="ai-modes" role="radiogroup" aria-label="AI mode">
+              <button class="ai-mode" type="button" role="radio" data-ai-mode="manual" aria-checked="true">
+                <div class="ai-mode-head">
+                  <strong data-i18n="settings.ai.mode.manual.title">Manual</strong>
+                  <span class="tag" data-i18n="settings.ai.mode.free">Free</span>
+                </div>
+                <p class="muted small" data-i18n="settings.ai.mode.manual.desc">We prepare the prompt; you copy it into ChatGPT / Claude / your own LLM. Zero setup.</p>
+              </button>
+              <button class="ai-mode" type="button" role="radio" data-ai-mode="byok" aria-checked="false">
+                <div class="ai-mode-head">
+                  <strong data-i18n="settings.ai.mode.byok.title">Bring your own key</strong>
+                  <span class="tag" data-i18n="settings.ai.mode.byok.tag">~$2/mo at typical use</span>
+                </div>
+                <p class="muted small" data-i18n="settings.ai.mode.byok.desc">Paste a key from OpenAI, Anthropic, Google, or DeepSeek. We auto-detect which one and never persist the raw value.</p>
+              </button>
+              <button class="ai-mode" type="button" role="radio" data-ai-mode="managed" aria-checked="false" disabled>
+                <div class="ai-mode-head">
+                  <strong data-i18n="settings.ai.mode.managed.title">Managed (coming soon)</strong>
+                  <span class="tag" data-i18n="settings.ai.mode.managed.tag">€5/mo</span>
+                </div>
+                <p class="muted small" data-i18n="settings.ai.mode.managed.desc">We bring the key. One click to enable, billing through Stripe. Waitlist opens shortly.</p>
+              </button>
+            </div>
+            <div id="aiByokPane" class="ai-byok-pane" hidden>
               <label class="field">
-                <span>Provider</span>
-                <select id="providerId"></select>
+                <span data-i18n="settings.ai.byok.label">API key</span>
+                <input id="aiByokKey" type="password" autocomplete="off" data-i18n-placeholder="settings.ai.byok.placeholder" placeholder="sk-… (OpenAI), sk-ant-… (Anthropic), AIza… (Google)" />
+                <span class="hint" id="aiByokHint" data-i18n="settings.ai.byok.hint">We detect the provider from the key's prefix. Keys are passed straight through and never logged.</span>
               </label>
-              <label class="field">
-                <span>Mode</span>
-                <select id="invocationMode"></select>
-              </label>
-              <label class="field">
-                <span>Model</span>
-                <input id="providerModel" placeholder="model name" />
-              </label>
-              <label class="field">
-                <span>Credential reference (env var name)</span>
-                <input id="credentialReference" placeholder="OPENAI_API_KEY (no raw secrets)" />
-              </label>
-              <label class="field">
-                <span>Base URL</span>
-                <input id="providerBaseUrl" placeholder="optional" />
-              </label>
-              <label class="field">
-                <span>CLI command</span>
-                <input id="providerCommand" placeholder="optional" />
-              </label>
-              <label class="field wide">
-                <span>Notes</span>
-                <input id="providerNotes" />
-              </label>
-            </form>
-            <p class="provider-hint muted" id="providerHint">Pick a provider to see what this mode expects.</p>
+              <button id="aiByokSaveBtn" class="btn btn-primary" type="button" data-i18n="settings.ai.byok.save">Save key</button>
+            </div>
+            <details class="ai-advanced">
+              <summary data-i18n="settings.ai.advanced">Advanced (CLI, custom endpoints, env-var refs)</summary>
+              <form id="providerForm" class="provider-grid">
+                <label class="field">
+                  <span>Provider</span>
+                  <select id="providerId"></select>
+                </label>
+                <label class="field">
+                  <span>Mode</span>
+                  <select id="invocationMode"></select>
+                </label>
+                <label class="field">
+                  <span>Model</span>
+                  <input id="providerModel" placeholder="model name" />
+                </label>
+                <label class="field">
+                  <span>Credential reference (env var name)</span>
+                  <input id="credentialReference" placeholder="OPENAI_API_KEY (no raw secrets)" />
+                </label>
+                <label class="field">
+                  <span>Base URL</span>
+                  <input id="providerBaseUrl" placeholder="optional" />
+                </label>
+                <label class="field">
+                  <span>CLI command</span>
+                  <input id="providerCommand" placeholder="optional" />
+                </label>
+                <label class="field wide">
+                  <span>Notes</span>
+                  <input id="providerNotes" />
+                </label>
+                <button id="saveProviderBtn" class="btn" type="button" data-i18n="settings.ai.save">Save provider</button>
+              </form>
+              <p class="provider-hint muted" id="providerHint">Pick a provider to see what this mode expects.</p>
+            </details>
           </section>
 
           <section class="card" aria-label="Account security" data-tab="security">

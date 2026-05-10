@@ -2298,7 +2298,92 @@ function renderProvider() {
   $("#providerHint").textContent = selectedProvider
     ? `${selectedProvider.secret_hint} ${selectedProvider.notes} Session keys are sent only with Run AI.`
     : "Bring your own AI subscription. Raw secrets are not stored.";
+
+  // Sync the simplified mode-picker to current provider state.
+  // Manual = no provider configured. BYOK = provider is set with api/local mode.
+  const aiMode = (state.aiProvider.provider_id && state.aiProvider.provider_id !== "manual") ? "byok" : "manual";
+  document.querySelectorAll(".ai-mode").forEach((el) => {
+    el.setAttribute("aria-checked", String(el.dataset.aiMode === aiMode));
+  });
+  const byokPane = document.getElementById("aiByokPane");
+  if (byokPane) byokPane.hidden = (aiMode !== "byok");
 }
+
+// Auto-detect provider id + sensible model from a pasted API key.
+function detectProviderFromKey(key) {
+  const k = (key || "").trim();
+  if (!k) return null;
+  if (k.startsWith("sk-ant-")) return { providerId: "anthropic", invocationMode: "api", model: "claude-sonnet-4-5", credRef: "ANTHROPIC_API_KEY" };
+  if (k.startsWith("sk-or-")) return { providerId: "openrouter", invocationMode: "api", model: "anthropic/claude-3.5-sonnet", credRef: "OPENROUTER_API_KEY" };
+  if (k.startsWith("sk-proj-") || k.startsWith("sk-")) return { providerId: "openai", invocationMode: "api", model: "gpt-4o-mini", credRef: "OPENAI_API_KEY" };
+  if (k.startsWith("AIza")) return { providerId: "google_gemini", invocationMode: "api", model: "gemini-2.0-flash-exp", credRef: "GEMINI_API_KEY" };
+  return null;
+}
+
+(function bootAiModePicker() {
+  document.addEventListener("click", async (event) => {
+    const modeBtn = event.target.closest(".ai-mode");
+    if (modeBtn && !modeBtn.disabled) {
+      const mode = modeBtn.dataset.aiMode;
+      document.querySelectorAll(".ai-mode").forEach((el) => {
+        el.setAttribute("aria-checked", String(el === modeBtn));
+      });
+      const byokPane = document.getElementById("aiByokPane");
+      if (mode === "manual") {
+        if (byokPane) byokPane.hidden = true;
+        try {
+          await api("/api/ai-provider", {
+            method: "POST",
+            body: JSON.stringify({ providerId: "manual", invocationMode: "manual" }),
+          });
+          showToast(t("settings.ai.savedManual", "Set to manual mode."), "success");
+          state.aiProvider.provider_id = "manual";
+          state.aiProvider.invocation_mode = "manual";
+          renderProvider();
+        } catch (error) {
+          showToast(error.message, "error");
+        }
+      } else if (mode === "byok") {
+        if (byokPane) byokPane.hidden = false;
+        document.getElementById("aiByokKey")?.focus();
+      }
+      return;
+    }
+    if (event.target?.id === "aiByokSaveBtn") {
+      event.preventDefault();
+      const keyInput = document.getElementById("aiByokKey");
+      const key = (keyInput?.value || "").trim();
+      const detected = detectProviderFromKey(key);
+      if (!detected) {
+        showToast(t("settings.ai.byok.unrecognised", "Unrecognised key shape. Use OpenAI (sk-…), Anthropic (sk-ant-…), Google (AIza…) or OpenRouter (sk-or-…)."), "error");
+        return;
+      }
+      try {
+        await api("/api/ai-provider", {
+          method: "POST",
+          body: JSON.stringify({
+            providerId: detected.providerId,
+            invocationMode: detected.invocationMode,
+            model: detected.model,
+            credentialReference: detected.credRef,
+          }),
+        });
+        state.aiProvider.provider_id = detected.providerId;
+        state.aiProvider.invocation_mode = detected.invocationMode;
+        state.aiProvider.model = detected.model;
+        state.aiProvider.credential_reference = detected.credRef;
+        // Stash the raw key in the in-memory session-credential store
+        // so subsequent AI calls in this tab use it without re-prompting.
+        state.sessionAiKey = key;
+        if (keyInput) keyInput.value = "";
+        renderProvider();
+        showToast(t("settings.ai.byok.connected", "Connected. Provider: {label}").replace("{label}", detected.providerId), "success");
+      } catch (error) {
+        showToast(error.message, "error");
+      }
+    }
+  });
+})();
 
 function makeTag(text, kind) {
   const span = document.createElement("span");
@@ -3327,12 +3412,17 @@ async function findJobs(event) {
   if (status) status.textContent = t("findJobs.searching", "Searching across providers…");
   if (results) results.replaceChildren();
   try {
+    const clamped = Math.max(5, Math.min(50, limit));
     const payload = await api("/api/jobs/search", {
       method: "POST",
       body: JSON.stringify({
         query,
         location: location || null,
-        limitPerProvider: Math.max(5, Math.min(50, limit)),
+        limitPerProvider: clamped,
+        // Total cap should track what the user asked for, not the
+        // server's default of 50 — otherwise raising "Per provider"
+        // above ~7 (with 6+ providers) silently hits the cap.
+        cap: Math.min(200, clamped * 7),
       }),
     });
     const jobs = payload.jobs || [];

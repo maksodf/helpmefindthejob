@@ -434,12 +434,22 @@ textarea {
   user-select: none;
 }
 
-.check-row input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
-  min-height: 18px;
+/* Checkboxes — single canonical size everywhere */
+input[type="checkbox"],
+input[type="radio"] {
+  width: 16px;
+  height: 16px;
+  min-height: 16px;
+  min-width: 16px;
   margin: 0;
   accent-color: var(--accent);
+  cursor: pointer;
+  flex: none;
+}
+.check-row input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  min-height: 16px;
 }
 
 .filter-input {
@@ -549,7 +559,8 @@ textarea {
 .sidebar {
   display: flex;
   flex-direction: column;
-  background: var(--surface);
+  background:
+    linear-gradient(180deg, color-mix(in oklab, var(--accent) 4%, var(--surface)), var(--surface) 30%);
   border-right: 1px solid var(--border);
   padding: 20px 14px;
   position: sticky;
@@ -561,18 +572,21 @@ textarea {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 0 6px 18px;
-  margin-bottom: 6px;
+  padding: 0 6px 16px;
+  margin-bottom: 8px;
   border-bottom: 1px solid var(--border);
 }
 
 .sidebar-title strong {
   display: block;
   font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
 }
 
 .sidebar-title .muted {
-  font-size: 12px;
+  font-size: 11.5px;
+  letter-spacing: 0.005em;
 }
 
 .nav {
@@ -586,21 +600,24 @@ textarea {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px 10px;
+  padding: 9px 12px;
   border: 1px solid transparent;
-  border-radius: var(--radius);
+  border-radius: 9px;
   background: transparent;
-  color: var(--text);
+  color: var(--text-muted);
   text-align: left;
-  font-size: 14px;
+  font-size: 13.5px;
+  font-weight: 500;
   cursor: pointer;
+  transition: background 0.14s ease, color 0.14s ease, transform 0.14s ease;
 }
 
 .nav-item svg {
-  width: 18px;
-  height: 18px;
-  color: var(--text-muted);
+  width: 17px;
+  height: 17px;
+  color: var(--text-soft);
   flex: none;
+  transition: color 0.14s ease;
 }
 
 .nav-item span {
@@ -608,22 +625,22 @@ textarea {
 }
 
 .nav-item:hover {
-  background: var(--surface-2);
+  background: color-mix(in oklab, var(--accent) 7%, transparent);
+  color: var(--text);
 }
+.nav-item:hover svg { color: var(--text); }
 
 .nav-item[aria-current="page"] {
-  background: var(--accent-weak);
-  color: var(--accent-text);
-  border-color: color-mix(in oklab, var(--accent) 30%, transparent);
-  box-shadow: inset 2px 0 0 var(--accent);
+  background: linear-gradient(180deg, color-mix(in oklab, var(--accent) 18%, transparent), color-mix(in oklab, var(--accent) 12%, transparent));
+  color: var(--text);
+  border-color: color-mix(in oklab, var(--accent) 35%, transparent);
+  box-shadow:
+    inset 2px 0 0 var(--accent),
+    0 1px 0 color-mix(in oklab, var(--accent) 12%, transparent);
 }
 
 .nav-item[aria-current="page"] svg {
   color: var(--accent-text);
-}
-
-.nav-item {
-  transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
 }
 
 .nav-pill {
@@ -1091,6 +1108,71 @@ details[open] .collapsible-chevron { transform: rotate(180deg); }
 
 .company-meta {
   font-size: 12px;
+}
+
+/* AI Provider mode picker — three large radio cards */
+.ai-modes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.ai-mode {
+  text-align: left;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  cursor: pointer;
+  display: grid;
+  gap: 6px;
+  transition: border-color 0.12s ease, background 0.12s ease, box-shadow 0.12s ease;
+}
+.ai-mode:hover:not(:disabled) {
+  border-color: var(--border-strong);
+}
+.ai-mode[aria-checked="true"] {
+  border-color: var(--accent);
+  background: var(--accent-weak);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent) 30%, transparent);
+}
+.ai-mode:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.ai-mode-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.ai-mode-head strong { font-size: 14px; font-weight: 600; }
+.ai-mode p { margin: 0; font-size: 12.5px; line-height: 1.45; }
+
+.ai-byok-pane {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 16px;
+}
+.ai-byok-pane .btn { justify-self: start; }
+
+.ai-advanced summary {
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 13px;
+  padding: 8px 0;
+  list-style: none;
+}
+.ai-advanced summary::-webkit-details-marker { display: none; }
+.ai-advanced summary::before { content: "▸ "; transition: transform 0.2s; display: inline-block; }
+.ai-advanced[open] summary::before { transform: rotate(90deg); }
+
+@media (max-width: 768px) {
+  .ai-modes { grid-template-columns: 1fr; }
 }
 
 /* Topbar cmd-K launcher button */
