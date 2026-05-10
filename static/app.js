@@ -233,8 +233,14 @@ function absorbBootstrap(bootstrap) {
   state.workspaces = bootstrap.workspaces || state.workspaces || [];
   state.activeWorkspaceId = bootstrap.activeWorkspaceId || null;
   state.profile = bootstrap.profile || { personaId: "healthcare-management", targetRoles: [], languages: [], cvText: "", locale: "en", theme: "dark" };
-  if (state.profile.locale && state.profile.locale !== state.locale) {
-    loadLocale(state.profile.locale);
+  // localStorage is authoritative for the user's most-recent choice.
+  // If it disagrees with the server (e.g., server save was slow), the
+  // local pick wins so the user doesn't see their language flip back.
+  let storedLocale = "";
+  try { storedLocale = localStorage.getItem("dj_locale") || ""; } catch (_) {}
+  const targetLocale = storedLocale || state.profile.locale || "en";
+  if (targetLocale && targetLocale !== state.locale) {
+    loadLocale(targetLocale);
   }
   applyTheme(state.profile.theme || "dark");
   state.applicationStatuses = bootstrap.applicationStatuses || ["saved", "interested", "applied", "interview", "rejected", "archived"];
@@ -1767,10 +1773,14 @@ const cmdK = {
         } },
       { label: t("cmdk.action.toggleLocale", "Switch language"), action: async () => {
           const next = (state.locale === "de") ? "en" : "de";
-          try { await api("/api/profile", { method: "POST", body: JSON.stringify({ locale: next }) }); } catch (_) {}
-          try { localStorage.setItem("dj_locale", next); } catch (_) {}
-          showToast(t("settings.locale.switching", "Switching language…"), "info", 800);
-          setTimeout(() => location.reload(), 220);
+          try {
+            await api("/api/profile", { method: "POST", body: JSON.stringify({ locale: next }) });
+            try { localStorage.setItem("dj_locale", next); } catch (_) {}
+            showToast(t("settings.locale.switching", "Switching language…"), "info", 800);
+            setTimeout(() => location.reload(), 220);
+          } catch (error) {
+            showToast(error.message, "error");
+          }
         } },
       { label: t("cmdk.action.signOut", "Sign out"), action: () => document.getElementById("logoutBtn")?.click() },
     ];
@@ -4183,17 +4193,23 @@ $("#queueSortSelect")?.addEventListener("change", (event) => {
 });
 $("#localeSelect")?.addEventListener("change", async (event) => {
   const value = event.target.value;
-  // Persist the choice first (silent if it fails) so the reload picks up
-  // the new locale from the bootstrap. Then full reload — the SPA holds
-  // a lot of pre-rendered text that won't pick up new translations
-  // mid-session, and a reload is the cleanest way to re-render everything.
+  const previous = state.locale;
+  const sel = event.target;
+  // Disable while in flight so a quick second click doesn't double-fire.
+  sel.disabled = true;
   try {
+    // Save server-side FIRST and don't swallow errors. If this fails the
+    // localStorage write below would lie to the next boot — server's stale
+    // value would win on the bootstrap re-render and the language flip back.
     await api("/api/profile", { method: "POST", body: JSON.stringify({ locale: value }) });
-  } catch (_) {}
-  try { localStorage.setItem("dj_locale", value); } catch (_) {}
-  // Visible feedback then refresh.
-  showToast(t("settings.locale.switching", "Switching language…"), "info", 800);
-  setTimeout(() => location.reload(), 220);
+    try { localStorage.setItem("dj_locale", value); } catch (_) {}
+    showToast(t("settings.locale.switching", "Switching language…"), "info", 800);
+    setTimeout(() => location.reload(), 220);
+  } catch (error) {
+    sel.value = previous;
+    sel.disabled = false;
+    showToast(error.message, "error");
+  }
 });
 function urlBase64ToUint8Array(base64) {
   const padding = "=".repeat((4 - base64.length % 4) % 4);
