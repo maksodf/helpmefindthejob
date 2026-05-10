@@ -487,6 +487,18 @@ textarea {
   background: var(--surface);
   transition: border-color 0.12s ease, box-shadow 0.12s ease;
 }
+/* Native <select> needs extra right padding so its option text doesn't
+   collide with the OS-rendered dropdown chevron. */
+select {
+  padding-right: 30px;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'><path d='M1 1l5 5 5-5' stroke='%239aa1b5' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
+select::-ms-expand { display: none; }
 input::placeholder,
 textarea::placeholder {
   color: var(--text-soft);
@@ -723,6 +735,9 @@ input[type="radio"] {
 
 .nav-item span {
   flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .nav-item:hover {
@@ -1142,6 +1157,15 @@ details[open] .collapsible-chevron { transform: rotate(180deg); }
   grid-column: span 2;
 }
 
+/* Always span the entire grid row (column-count-agnostic). Use for
+   textareas, full notes, or layout helpers that need their own row. */
+.form-row-full {
+  grid-column: 1 / -1;
+}
+#personaSuggestionHost:empty {
+  display: none;
+}
+
 .detail-form .wide {
   grid-column: span 4;
 }
@@ -1166,12 +1190,16 @@ details[open] .collapsible-chevron { transform: rotate(180deg); }
   grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
   gap: 16px;
   margin-bottom: 16px;
+  align-items: start;
 }
 
 .watchlist {
   align-self: start;
   position: sticky;
   top: 24px;
+}
+.companies-layout .company-detail {
+  align-self: start;
 }
 
 .company-list {
