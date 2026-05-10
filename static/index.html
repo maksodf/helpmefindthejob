@@ -221,20 +221,20 @@
                 <p class="muted" data-i18n="findJobs.lead">Tell us what you want. We search Arbeitnow, Remotive, We Work Remotely, The Muse, and Hacker News “Who is hiring?” at once and show one ranked queue.</p>
               </div>
             </div>
-            <form id="findJobsForm" class="form-grid">
-              <label class="field wide">
+            <form id="findJobsForm" class="find-jobs-form">
+              <label class="field find-jobs-query">
                 <span data-i18n="findJobs.query">What roles do you want?</span>
                 <input id="findJobsQuery" type="text" placeholder="e.g. healthcare policy consulting, junior data engineer" />
               </label>
-              <label class="field">
+              <label class="field find-jobs-location">
                 <span data-i18n="findJobs.location">Location</span>
                 <input id="findJobsLocation" type="text" placeholder="Berlin / remote / global" />
               </label>
-              <label class="field">
-                <span data-i18n="findJobs.limit">Per provider</span>
+              <label class="field find-jobs-limit">
+                <span data-i18n="findJobs.limit">How many</span>
                 <input id="findJobsLimit" type="number" min="5" max="50" value="15" />
               </label>
-              <button id="findJobsSubmit" class="btn btn-primary" type="submit" data-i18n="findJobs.submit">Search now</button>
+              <button id="findJobsSubmit" class="btn btn-primary find-jobs-submit" type="submit" data-i18n="findJobs.submit">Search now</button>
             </form>
             <p id="findJobsStatus" class="muted small" role="status" aria-live="polite"></p>
             <div id="findJobsResults" class="find-jobs-results"></div>
