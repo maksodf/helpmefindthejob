@@ -16,6 +16,7 @@ dist/
 .env.production
 .env.*.local
 !.env.example
+.deploy-env.local
 
 # Production data — sqlite DBs hold user accounts, hashed passwords, scan history.
 # These live on the droplet and in WAL-aware snapshots, never in git.
