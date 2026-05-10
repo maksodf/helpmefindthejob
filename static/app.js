@@ -3567,22 +3567,27 @@ async function findJobs(event) {
         results.append(empty);
       } else {
         for (const job of jobs.slice(0, 50)) {
-          const row = document.createElement("div");
+          const row = document.createElement("article");
           row.className = "find-jobs-row";
+          const main = document.createElement("div");
+          main.className = "find-jobs-main";
           const title = document.createElement("a");
           title.href = job.sourceUrl;
           title.target = "_blank";
           title.rel = "noopener";
           title.textContent = job.title || "(untitled)";
           title.className = "find-jobs-title";
-          const meta = document.createElement("span");
-          meta.className = "muted small";
-          const locStr = job.location ? ` · ${job.location}` : "";
-          meta.textContent = `${job.companyName || "?"}${locStr}`;
+          const subParts = [job.companyName || "?", job.location].filter(Boolean);
+          const fresh = relativeTimeFromIso(job.postedAt || job.posted_at);
+          if (fresh) subParts.push(fresh);
+          const meta = document.createElement("p");
+          meta.className = "find-jobs-meta muted small";
+          meta.textContent = subParts.join(" · ");
+          main.append(title, meta);
           const sourceTag = document.createElement("span");
-          sourceTag.className = "tag";
+          sourceTag.className = "tag find-jobs-source";
           sourceTag.textContent = job.source;
-          row.append(title, document.createElement("br"), meta, document.createTextNode(" "), sourceTag);
+          row.append(main, sourceTag);
           results.append(row);
         }
       }

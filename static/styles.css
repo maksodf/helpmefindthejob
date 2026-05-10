@@ -88,6 +88,18 @@
   .find-jobs-submit { grid-column: span 2; }
 }
 
+/* Find-jobs result rows: title + meta on the left, source tag on the right */
+.find-jobs-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.find-jobs-main { min-width: 0; flex: 1; }
+.find-jobs-meta { margin: 2px 0 0; }
+.find-jobs-source { flex: none; text-transform: uppercase; letter-spacing: 0.04em; font-size: var(--text-xxs); }
+.find-jobs-row:hover { border-color: var(--border-strong); }
+
 .find-jobs-results {
   display: flex;
   flex-direction: column;
@@ -96,10 +108,11 @@
 }
 
 .find-jobs-row {
-  padding: 10px 12px;
+  padding: 12px 14px;
   border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius);
   background: var(--surface);
+  transition: border-color 0.12s ease, background 0.12s ease;
 }
 
 .find-jobs-title {
