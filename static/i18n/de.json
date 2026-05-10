@@ -1,8 +1,8 @@
 {
   "nav.dashboard": "Übersicht",
   "nav.companies": "Unternehmen",
-  "nav.queue": "Gefundene Stellen",
-  "nav.brief": "KI-Briefing",
+  "nav.queue": "Stellen",
+  "nav.brief": "Mappe",
   "nav.applications": "Bewerbungen",
   "nav.settings": "Einstellungen",
   "nav.admin": "Admin",
@@ -185,6 +185,7 @@
   "queue.bulk.imported": "{n} importiert.",
   "queue.bulk.imported.partial": "{ok} von {total} importiert. {err} übersprungen.",
   "queue.bulk.nothingToImport": "Nichts Neues zu importieren — alle ausgewählten Zeilen sind bereits importiert.",
+  "kbd.help": "j/k = Bewegen · a = Öffnen · e = Importieren · x = Verwerfen",
   "settings.totp.heading": "Zwei-Faktor-Authentifizierung",
   "settings.totp.lead": "Schütze dein Konto mit einem 6-stelligen Code aus einer Authenticator-App (Aegis, 1Password, Google Authenticator).",
   "settings.totp.enabled": "Aktiviert",

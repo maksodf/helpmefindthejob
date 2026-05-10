@@ -125,23 +125,23 @@
           <button id="inviteWorkspaceBtn" class="btn btn-ghost btn-small" type="button" data-i18n="workspaces.invite">Invite member</button>
         </div>
         <nav class="nav" id="sidebarNav">
-          <button class="nav-item" type="button" data-view="dashboard" aria-current="page">
+          <button class="nav-item" type="button" data-view="jobs" aria-current="page">
+            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 6a2 2 0 0 1 2-2h3l1 2h6a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" fill="currentColor"/></svg>
+            <span data-i18n="nav.queue">Jobs</span>
+            <span class="nav-pill" id="navJobCount">0</span>
+          </button>
+          <button class="nav-item" type="button" data-view="dashboard">
             <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 10l7-6 7 6v8a1 1 0 0 1-1 1h-4v-5h-4v5H4a1 1 0 0 1-1-1z" fill="currentColor"/></svg>
             <span data-i18n="nav.dashboard">Today</span>
+          </button>
+          <button class="nav-item" type="button" data-view="brief">
+            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 3h7l4 4v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zm6 1.5V8h3.5L11 4.5z M6 11h8v1.5H6z M6 14h8v1.5H6z" fill="currentColor"/></svg>
+            <span data-i18n="nav.brief">Briefcase</span>
           </button>
           <button class="nav-item" type="button" data-view="companies">
             <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v12H3z M14 8a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v9h-4z M5 7h2v2H5z M5 11h2v2H5z M9 7h2v2H9z M9 11h2v2H9z" fill="currentColor"/></svg>
             <span data-i18n="nav.companies">Companies</span>
             <span class="nav-pill" id="navCompanyCount">0</span>
-          </button>
-          <button class="nav-item" type="button" data-view="jobs">
-            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 6a2 2 0 0 1 2-2h3l1 2h6a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" fill="currentColor"/></svg>
-            <span data-i18n="nav.queue">Discovered jobs</span>
-            <span class="nav-pill" id="navJobCount">0</span>
-          </button>
-          <button class="nav-item" type="button" data-view="brief">
-            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 3h7l4 4v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zm6 1.5V8h3.5L11 4.5z M6 11h8v1.5H6z M6 14h8v1.5H6z" fill="currentColor"/></svg>
-            <span data-i18n="nav.brief">AI Brief</span>
           </button>
           <button class="nav-item" type="button" data-view="settings">
             <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 6a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm0 2a2 2 0 1 1 0 4 2 2 0 0 1 0-4z M9 1.6V3a7 7 0 0 0-2.5 1l-1-1L4 4.5l1 1A7 7 0 0 0 4 8H2.6V12H4a7 7 0 0 0 1 2.5l-1 1 1.5 1.5 1-1A7 7 0 0 0 9 17v1.4h2V17a7 7 0 0 0 2.5-1l1 1 1.5-1.5-1-1a7 7 0 0 0 1-2.5h1.4V8H17a7 7 0 0 0-1-2.5l1-1L15.5 3l-1 1A7 7 0 0 0 11 3V1.6z" fill="currentColor"/></svg>

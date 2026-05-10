@@ -69,7 +69,7 @@ function translateScanStatus(code) {
 }
 
 const state = {
-  view: "dashboard",
+  view: "jobs",
   companies: [],
   discoveredJobs: [],
   importedJobs: [],
@@ -388,8 +388,8 @@ async function load() {
 /* ---------- Routing ---------- */
 
 function navigate(view) {
-  if (!VIEW_TITLES[view]) view = "dashboard";
-  if (view === "admin" && !isAdmin()) view = "dashboard";
+  if (!VIEW_TITLES[view]) view = "jobs";
+  if (view === "admin" && !isAdmin()) view = "jobs";
   state.view = view;
   $$(".view").forEach((el) => {
     el.hidden = el.dataset.view !== view;
@@ -1574,6 +1574,69 @@ async function wizardDismiss() {
   if (dialog?.open) dialog.close();
 }
 
+// Keyboard shortcuts for the queue. Vim-style j/k to move focus,
+// a to apply (opens source URL), e to import, x to dismiss, i to mark imported.
+// Disabled while typing in inputs/textareas/contenteditable.
+(function bootKeyboardShortcuts() {
+  let focusedIndex = -1;
+
+  function visibleQueueRows() {
+    return Array.from(document.querySelectorAll("#jobsQueue .job-item"));
+  }
+
+  function setFocusedIndex(i) {
+    const rows = visibleQueueRows();
+    if (!rows.length) return;
+    focusedIndex = (i + rows.length) % rows.length;
+    rows.forEach((row, idx) => row.classList.toggle("kbd-focused", idx === focusedIndex));
+    rows[focusedIndex].scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }
+
+  function getJobAt(idx) {
+    const rows = visibleQueueRows();
+    if (idx < 0 || idx >= rows.length) return null;
+    const titleEl = rows[idx].querySelector("h3");
+    if (!titleEl) return null;
+    const title = titleEl.textContent;
+    return (state.discoveredJobs || []).find((j) => j.title === title) || null;
+  }
+
+  document.addEventListener("keydown", (event) => {
+    if (state.view !== "jobs") return;
+    const target = event.target;
+    if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.tagName === "SELECT" || target.isContentEditable)) {
+      return;
+    }
+    if (event.metaKey || event.ctrlKey || event.altKey) return;
+    const key = event.key.toLowerCase();
+    if (key === "j") {
+      event.preventDefault();
+      setFocusedIndex(focusedIndex < 0 ? 0 : focusedIndex + 1);
+    } else if (key === "k") {
+      event.preventDefault();
+      setFocusedIndex(focusedIndex < 0 ? 0 : focusedIndex - 1);
+    } else if (key === "x") {
+      const job = getJobAt(focusedIndex);
+      if (job) { event.preventDefault(); dismissJob(job); }
+    } else if (key === "a") {
+      const job = getJobAt(focusedIndex);
+      if (job?.source_url) {
+        event.preventDefault();
+        window.open(job.source_url, "_blank", "noopener,noreferrer");
+      }
+    } else if (key === "e") {
+      const job = getJobAt(focusedIndex);
+      if (job && !job.imported_job_id) {
+        event.preventDefault();
+        importJob(job.id);
+      }
+    } else if (key === "?") {
+      event.preventDefault();
+      showToast(t("kbd.help", "j/k = move · a = open · e = import · x = dismiss"), "info", 6000);
+    }
+  });
+})();
+
 (function bootWizardHandlers() {
   document.getElementById("wizardCvUploadBtn")?.addEventListener("click", () => {
     document.getElementById("wizardCvFile")?.click();
@@ -2156,6 +2219,32 @@ function emptyNode(text) {
   p.textContent = text;
   node.append(p);
   return node;
+}
+
+function skeletonRows(count = 3) {
+  // Vertical stack of placeholder rows that look like real list items
+  // while data fetches. Use sparingly — empty-state still wins for "no
+  // results", skeletons are only for "loading first time".
+  const wrap = document.createDocumentFragment();
+  for (let i = 0; i < count; i += 1) {
+    const row = document.createElement("div");
+    row.className = "skeleton-row";
+    const title = document.createElement("span");
+    title.className = "skeleton title";
+    const sub = document.createElement("span");
+    sub.className = "skeleton sub";
+    const tagsRow = document.createElement("div");
+    tagsRow.style.display = "flex";
+    tagsRow.style.gap = "6px";
+    for (let j = 0; j < 3; j += 1) {
+      const t = document.createElement("span");
+      t.className = "skeleton tag";
+      tagsRow.append(t);
+    }
+    row.append(title, sub, tagsRow);
+    wrap.append(row);
+  }
+  return wrap;
 }
 
 function shortUrl(value) {
