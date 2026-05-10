@@ -49,8 +49,8 @@
         </form>
         <button id="showForgotPasswordBtn" type="button" class="btn btn-ghost" style="margin-top: 8px;" data-i18n="auth.forgotLink">Forgot password?</button>
         <form id="registerForm" class="auth-form" novalidate hidden>
-          <h2 data-i18n="auth.createFirstHeading">Create the first account</h2>
-          <p class="muted" data-i18n="auth.createFirstLead">This screen only appears on a new install.</p>
+          <h2 id="registerHeading" data-i18n="auth.createFirstHeading">Create the first account</h2>
+          <p id="registerLead" class="muted" data-i18n="auth.createFirstLead">This screen only appears on a new install.</p>
           <label class="field">
             <span data-i18n="auth.email">Email</span>
             <input id="registerEmail" type="email" autocomplete="email" />
@@ -60,6 +60,16 @@
             <input id="registerPassword" type="password" autocomplete="new-password" minlength="12" />
             <span class="hint">12 characters or more.</span>
           </label>
+          <div id="registerConsent" class="auth-consent" hidden>
+            <label class="auth-consent-row">
+              <input id="registerTos" type="checkbox" />
+              <span><span data-i18n="auth.consent.tos">I have read and accept the Terms.</span> <a href="/terms" target="_blank" rel="noopener">↗</a></span>
+            </label>
+            <label class="auth-consent-row">
+              <input id="registerPrivacy" type="checkbox" />
+              <span><span data-i18n="auth.consent.privacy">I have read and accept the Privacy policy.</span> <a href="/privacy" target="_blank" rel="noopener">↗</a></span>
+            </label>
+          </div>
           <button class="btn" type="submit" data-i18n="auth.createFirstSubmit">Create account</button>
         </form>
         <p id="authMessage" class="auth-message" role="alert" aria-live="polite"></p>

@@ -184,6 +184,14 @@ class AuthStore:
         # the grace window which clears both columns.
         self._add_column_if_missing("users", "deletion_token_hash", "TEXT")
         self._add_column_if_missing("users", "deletion_scheduled_at", "TEXT")
+        # DSGVO consent capture (#30). When a user signs up via the
+        # public form they must tick "I have read the Terms" and "…
+        # the Privacy policy". We persist the timestamp of agreement
+        # so the operator can later prove informed consent in case of
+        # a complaint. NULL on accounts created before consent was
+        # required (e.g. the first-account bootstrap admin).
+        self._add_column_if_missing("users", "tos_accepted_at", "TEXT")
+        self._add_column_if_missing("users", "privacy_accepted_at", "TEXT")
         self.connection.execute(
             """
             CREATE TABLE IF NOT EXISTS sessions (
@@ -516,6 +524,31 @@ class AuthStore:
         )
         self.connection.commit()
         return user_id, scheduled_at
+
+    def record_consent(self, user_id: str, *, tos: bool, privacy: bool) -> None:
+        """Stamp the consent columns. Either flag may already be set
+        from a previous sign-up — we overwrite anyway because the user
+        re-confirmed by submitting the form again."""
+
+        now = now_utc().isoformat()
+        if tos:
+            self.connection.execute(
+                "UPDATE users SET tos_accepted_at = ? WHERE id = ?", (now, user_id),
+            )
+        if privacy:
+            self.connection.execute(
+                "UPDATE users SET privacy_accepted_at = ? WHERE id = ?", (now, user_id),
+            )
+        self.connection.commit()
+
+    def get_consent(self, user_id: str) -> dict[str, str | None]:
+        row = self.connection.execute(
+            "SELECT tos_accepted_at, privacy_accepted_at FROM users WHERE id = ?",
+            (user_id,),
+        ).fetchone()
+        if not row:
+            return {"tosAcceptedAt": None, "privacyAcceptedAt": None}
+        return {"tosAcceptedAt": row[0], "privacyAcceptedAt": row[1]}
 
     def cancel_account_deletion(self, user_id: str) -> bool:
         """Clear deletion state for ``user_id``. Returns True when an

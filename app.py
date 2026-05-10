@@ -2504,11 +2504,16 @@ class Handler(BaseHTTPRequestHandler):
                 return
             if parsed.path == "/api/auth/status":
                 session = self.current_session()
+                # ``hasUsers`` lets the frontend decide whether the
+                # registration form is the first-account-bootstrap (no
+                # consent needed — the operator wrote the policy) or a
+                # public sign-up (consent checkboxes required).
                 self.send_json(
                     {
                         "authenticated": session is not None,
                         "user": make_user_payload(session.user, session.csrf_token) if session else None,
                         "registrationOpen": STATE.registration_open(),
+                        "hasUsers": STATE.auth_store.has_users(),
                     }
                 )
                 return
@@ -3001,13 +3006,28 @@ class Handler(BaseHTTPRequestHandler):
                 # bootstrap path (no users yet → admin gets created). Without
                 # this an attacker could spam-create accounts and pump the
                 # outbound email transport.
-                if STATE.auth_store.has_users():
+                is_bootstrap = not STATE.auth_store.has_users()
+                if not is_bootstrap:
                     client_id = self.client_address[0] if self.client_address else "unknown"
                     if not STATE.register_allowed(client_id):
                         self.send_error_json(HTTPStatus.TOO_MANY_REQUESTS, "rate_limited", "Too many registration attempts. Try again later.")
                         return
                     STATE.record_register_request(client_id)
-                role = "admin" if not STATE.auth_store.has_users() else "member"
+                    # DSGVO consent (#30). Public sign-ups must tick
+                    # both the Terms and the Privacy boxes — otherwise
+                    # the account creation is refused. The bootstrap
+                    # admin path is exempt because the operator IS the
+                    # one writing the policy.
+                    tos_ok = bool(payload.get("tosAccepted"))
+                    privacy_ok = bool(payload.get("privacyAccepted"))
+                    if not tos_ok or not privacy_ok:
+                        self.send_error_json(
+                            HTTPStatus.BAD_REQUEST,
+                            "consent_required",
+                            "Accept the Terms and the Privacy policy to create an account.",
+                        )
+                        return
+                role = "admin" if is_bootstrap else "member"
                 user = STATE.auth_store.create_user(payload.get("email", ""), payload.get("password", ""), role=role)
                 # Stamp the very first sign-in (register doesn't go through authenticate()).
                 login_at = now_utc()
@@ -3016,6 +3036,8 @@ class Handler(BaseHTTPRequestHandler):
                     (login_at.isoformat(), login_at.isoformat(), user.id),
                 )
                 STATE.auth_store.connection.commit()
+                if not is_bootstrap:
+                    STATE.auth_store.record_consent(user.id, tos=True, privacy=True)
                 user = STATE.auth_store.get_user(user.id)
                 # Welcome email — best-effort. Skipped for the first-
                 # account bootstrap (admin) since the operator already

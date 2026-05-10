@@ -2458,6 +2458,24 @@ details[open] .collapsible-chevron { transform: rotate(180deg); }
   color: var(--text);
 }
 
+.auth-consent {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 0;
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+.auth-consent-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+.auth-consent-row a {
+  color: var(--accent-text);
+  margin-left: 4px;
+}
+
 /* Auxiliary auth screens (forgot password / reset / invite accept) */
 .auth-aux {
   max-width: 460px;

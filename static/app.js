@@ -361,6 +361,7 @@ async function init() {
       authenticated: Boolean(payload.authenticated),
       user: payload.user,
       registrationOpen: Boolean(payload.registrationOpen),
+      hasUsers: Boolean(payload.hasUsers),
     };
     renderAuth();
     if (state.auth.authenticated) {
@@ -511,6 +512,24 @@ function renderAuth() {
     el.hidden = !isAdmin();
   });
   $("#registerForm").hidden = !state.auth.registrationOpen;
+  // Public sign-up (users already exist) requires DSGVO consent
+  // checkboxes; the bootstrap path (no users yet) hides them and
+  // uses the original "Create the first account" copy.
+  const isPublicSignup = state.auth.registrationOpen && state.auth.hasUsers;
+  const consent = $("#registerConsent");
+  if (consent) consent.hidden = !isPublicSignup;
+  const heading = $("#registerHeading");
+  const lead = $("#registerLead");
+  if (heading) {
+    heading.textContent = isPublicSignup
+      ? t("auth.createPublicHeading", "Create your account")
+      : t("auth.createFirstHeading", "Create the first account");
+  }
+  if (lead) {
+    lead.textContent = isPublicSignup
+      ? t("auth.createPublicLead", "Free to start. No tracker, no recruiter feed.")
+      : t("auth.createFirstLead", "This screen only appears on a new install.");
+  }
   $("#authMessage").textContent = "";
   setStatus(state.auth.authenticated ? "Ready" : "Sign in");
   if (state.auth.authenticated) navigate(state.view);
@@ -3575,13 +3594,31 @@ async function login(event) {
 async function register(event) {
   event.preventDefault();
   $("#authMessage").textContent = "";
+  // Public sign-up requires DSGVO consent. The bootstrap path
+  // (no users yet) skips the checkboxes — the operator IS the
+  // one writing the policy.
+  const consentVisible = !$("#registerConsent")?.hidden;
+  const tosAccepted = Boolean($("#registerTos")?.checked);
+  const privacyAccepted = Boolean($("#registerPrivacy")?.checked);
+  if (consentVisible && (!tosAccepted || !privacyAccepted)) {
+    $("#authMessage").textContent = t(
+      "auth.consent.required",
+      "Tick both boxes to accept the Terms and the Privacy policy.",
+    );
+    return;
+  }
   try {
+    const body = {
+      email: $("#registerEmail").value,
+      password: $("#registerPassword").value,
+    };
+    if (consentVisible) {
+      body.tosAccepted = true;
+      body.privacyAccepted = true;
+    }
     const payload = await api("/api/auth/register", {
       method: "POST",
-      body: JSON.stringify({
-        email: $("#registerEmail").value,
-        password: $("#registerPassword").value,
-      }),
+      body: JSON.stringify(body),
     });
     state.auth = { authenticated: true, user: payload.user, registrationOpen: false };
     absorbBootstrap(payload.bootstrap);
