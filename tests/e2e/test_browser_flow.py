@@ -76,6 +76,29 @@ class BrowserFlowTests(unittest.TestCase):
     def _shot(self, page, name: str) -> None:
         page.screenshot(path=str(self.screenshots / f"{name}.png"), full_page=True)
 
+    def _dismiss_wizard_if_open(self, page) -> None:
+        """The first-run wizard auto-opens for empty new accounts and
+        intercepts pointer events. These specs predate the wizard, so
+        we dismiss it before any nav click. If the wizard isn't open
+        (e.g. user has data, or admin path post-fix) this is a no-op."""
+
+        dialog = page.locator("#firstRunWizard")
+        try:
+            if dialog.is_visible(timeout=500):
+                dismiss = page.locator("#wizardDismiss")
+                if dismiss.is_visible(timeout=500):
+                    dismiss.click()
+                else:
+                    page.keyboard.press("Escape")
+                # Give the dialog the next tick to flip to closed.
+                page.wait_for_timeout(100)
+        except Exception:
+            # is_visible can race with the dialog's open transition;
+            # if anything throws we just continue — worst case the
+            # next click finds an open dialog and we'll see it on
+            # the next test run.
+            pass
+
     def test_01_first_account_then_admin_creates_tester(self) -> None:
         context, page = self._page()
         try:
@@ -85,6 +108,7 @@ class BrowserFlowTests(unittest.TestCase):
             self._fill(page, "#registerPassword", self.admin_password)
             self._click(page, "#registerForm button[type='submit']")
             page.locator("#sidebarUserEmail").wait_for(state="visible")
+            self._dismiss_wizard_if_open(page)
             self.assertEqual(page.locator("#sidebarUserEmail").inner_text(), self.admin_email)
             page.locator(".nav-item[data-view='admin']").wait_for(state="visible")
             self._shot(page, "01_admin_today_desktop")
@@ -110,6 +134,7 @@ class BrowserFlowTests(unittest.TestCase):
             self._fill(page, "#loginPassword", self.tester_password)
             self._click(page, "#loginForm button[type='submit']")
             page.locator("#sidebarUserEmail").wait_for(state="visible")
+            self._dismiss_wizard_if_open(page)
             # Admin nav item must be hidden for testers
             self.assertEqual(page.locator(".nav-item[data-view='admin']").is_hidden(), True)
             # Direct API call should be 403
@@ -127,6 +152,7 @@ class BrowserFlowTests(unittest.TestCase):
             self._fill(page, "#loginPassword", self.tester_password)
             self._click(page, "#loginForm button[type='submit']")
             page.locator("#sidebarUserEmail").wait_for(state="visible")
+            self._dismiss_wizard_if_open(page)
 
             # Go to Companies and add a manual entry
             page.locator(".nav-item[data-view='companies']").click()
@@ -187,6 +213,7 @@ class BrowserFlowTests(unittest.TestCase):
             self._fill(page, "#loginPassword", self.admin_password)
             self._click(page, "#loginForm button[type='submit']")
             page.locator("#sidebarUserEmail").wait_for(state="visible")
+            self._dismiss_wizard_if_open(page)
             page.locator(".nav-item[data-view='admin']").click()
             page.locator("#view-admin:not([hidden])").wait_for()
             page.locator("#readinessList").wait_for(state="visible")
@@ -203,6 +230,7 @@ class BrowserFlowTests(unittest.TestCase):
             self._fill(page, "#loginPassword", self.admin_password)
             self._click(page, "#loginForm button[type='submit']")
             page.locator("#sidebarUserEmail").wait_for(state="visible")
+            self._dismiss_wizard_if_open(page)
             page.locator(".nav-item[data-view='admin']").click()
             page.locator("#view-admin:not([hidden])").wait_for()
             page.locator("#testEmailForm").wait_for(state="visible")
@@ -221,6 +249,7 @@ class BrowserFlowTests(unittest.TestCase):
             self._fill(page, "#loginPassword", self.tester_password)
             self._click(page, "#loginForm button[type='submit']")
             page.locator("#sidebarUserEmail").wait_for(state="visible")
+            self._dismiss_wizard_if_open(page)
             page.locator(".nav-item[data-view='settings']").click()
             page.locator("#view-settings:not([hidden])").wait_for()
             page.locator("#deletionForm").wait_for(state="attached")
@@ -240,6 +269,7 @@ class BrowserFlowTests(unittest.TestCase):
             self._fill(page, "#loginEmail", self.tester_email)
             self._fill(page, "#loginPassword", self.tester_password)
             self._click(page, "#loginForm button[type='submit']")
+            self._dismiss_wizard_if_open(page)
             # On mobile the sidebar collapses to a top tab bar; the user-info
             # block is hidden by design. Wait on the today nav button instead.
             page.locator(".nav-item[data-view='dashboard']").wait_for(state="visible")

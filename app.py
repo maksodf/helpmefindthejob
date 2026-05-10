@@ -1404,6 +1404,42 @@ class AppState:
     def registration_open(self) -> bool:
         return ALLOW_REGISTRATION or not self.auth_store.has_users()
 
+    def claim_login_slot(self, client_id: str) -> bool:
+        """Atomically GC the window, check the cap, and claim a slot.
+        Returns True (slot taken — the caller may attempt auth) or
+        False (over cap — caller returns 429 and does NOT auth).
+
+        Replaces the previous check-then-record pattern where 50
+        parallel callers could each see < cap and slip through. With
+        the atomic claim, only ``cap`` callers ever leave the lock
+        with True per window.
+
+        Successful logins should call :meth:`refund_login_slot` to put
+        the slot back so the cap counts failures only — same semantics
+        as the old ``record_login_failure``-on-failure pattern."""
+
+        now = time.time()
+        with self._login_lock:
+            attempts = [item for item in self._login_attempts.get(client_id, []) if now - item < 600]
+            if len(attempts) >= 10:
+                self._login_attempts[client_id] = attempts
+                return False
+            attempts.append(now)
+            self._login_attempts[client_id] = attempts
+            return True
+
+    def refund_login_slot(self, client_id: str) -> None:
+        """Pop the most recent slot we claimed in ``claim_login_slot``.
+        Called on successful auth so the limit counts failures only."""
+
+        with self._login_lock:
+            attempts = self._login_attempts.get(client_id)
+            if attempts:
+                attempts.pop()
+
+    # Backwards-compatible wrappers — kept so any external callers
+    # / tests that exercise the old API don't break. New code should
+    # use ``claim_login_slot`` + ``refund_login_slot`` instead.
     def login_allowed(self, client_id: str) -> bool:
         now = time.time()
         with self._login_lock:
@@ -1779,6 +1815,37 @@ class AppState:
             self.quota_store.record_scan_finished(user_id)
 
     # Invitation + password reset helpers
+    def claim_password_reset_slot(self, client_id: str) -> bool:
+        """Atomic check-and-claim. Same shape as :meth:`claim_login_slot`
+        but no refund concept — every reset request consumes a slot
+        regardless of whether the email actually existed (we always
+        return 202 to avoid leaking which addresses are registered)."""
+
+        now = time.time()
+        with self._reset_request_lock:
+            attempts = [t for t in self._reset_requests.get(client_id, []) if now - t < PASSWORD_RESET_REQUEST_WINDOW]
+            if len(attempts) >= PASSWORD_RESET_REQUEST_LIMIT:
+                self._reset_requests[client_id] = attempts
+                return False
+            attempts.append(now)
+            self._reset_requests[client_id] = attempts
+            return True
+
+    def claim_register_slot(self, client_id: str) -> bool:
+        """Atomic check-and-claim for public registration. Bootstrap
+        admin path bypasses this (it's gated by ``has_users()`` upstream)."""
+
+        now = time.time()
+        with self._register_request_lock:
+            attempts = [t for t in self._register_requests.get(client_id, []) if now - t < REGISTER_REQUEST_WINDOW]
+            if len(attempts) >= REGISTER_REQUEST_LIMIT:
+                self._register_requests[client_id] = attempts
+                return False
+            attempts.append(now)
+            self._register_requests[client_id] = attempts
+            return True
+
+    # Backwards-compatible wrappers (same intent as the login pair).
     def password_reset_allowed(self, client_id: str) -> bool:
         now = time.time()
         with self._reset_request_lock:
@@ -3352,14 +3419,19 @@ class Handler(BaseHTTPRequestHandler):
 
             if parsed.path == "/api/auth/login":
                 client_id = self.client_address[0] if self.client_address else "unknown"
-                if not STATE.login_allowed(client_id):
+                # Atomically claim a slot — under burst this strictly
+                # caps the number of in-flight failures at the limit
+                # (vs the old check-then-record pattern that let a
+                # handful of attempts slip past). Refund on success so
+                # the cap counts failures only.
+                if not STATE.claim_login_slot(client_id):
                     self.send_error_json(HTTPStatus.TOO_MANY_REQUESTS, "rate_limited", "Too many failed login attempts")
                     return
                 user = STATE.auth_store.authenticate(payload.get("email", ""), payload.get("password", ""))
                 if user is None:
-                    STATE.record_login_failure(client_id)
                     self.send_error_json(HTTPStatus.UNAUTHORIZED, "invalid_login", "Invalid email or password")
                     return
+                STATE.refund_login_slot(client_id)
                 STATE.clear_login_failures(client_id)
                 if REQUIRE_EMAIL_VERIFICATION and not STATE.auth_store.is_email_verified(user.id):
                     self.send_error_json(
@@ -3412,10 +3484,10 @@ class Handler(BaseHTTPRequestHandler):
                 is_bootstrap = not STATE.auth_store.has_users()
                 if not is_bootstrap:
                     client_id = self.client_address[0] if self.client_address else "unknown"
-                    if not STATE.register_allowed(client_id):
+                    # Atomic claim — strict cap under burst.
+                    if not STATE.claim_register_slot(client_id):
                         self.send_error_json(HTTPStatus.TOO_MANY_REQUESTS, "rate_limited", "Too many registration attempts. Try again later.")
                         return
-                    STATE.record_register_request(client_id)
                     # DSGVO consent (#30). Public sign-ups must tick
                     # both the Terms and the Privacy boxes — otherwise
                     # the account creation is refused. The bootstrap
@@ -3486,10 +3558,9 @@ class Handler(BaseHTTPRequestHandler):
 
             if parsed.path == "/api/auth/forgot-password":
                 client_id = self.client_address[0] if self.client_address else "unknown"
-                if not STATE.password_reset_allowed(client_id):
+                if not STATE.claim_password_reset_slot(client_id):
                     self.send_error_json(HTTPStatus.TOO_MANY_REQUESTS, "rate_limited", "Too many reset requests. Try again later.")
                     return
-                STATE.record_password_reset_request(client_id)
                 STATE.request_password_reset(payload.get("email", ""))
                 # Always return 202 to avoid leaking which emails exist.
                 self.send_json({"status": "sent_if_known"}, HTTPStatus.ACCEPTED)
@@ -3500,10 +3571,9 @@ class Handler(BaseHTTPRequestHandler):
                 # Always returns 202 to avoid revealing which addresses
                 # already have an account.
                 client_id = self.client_address[0] if self.client_address else "unknown"
-                if not STATE.password_reset_allowed(client_id):
+                if not STATE.claim_password_reset_slot(client_id):
                     self.send_error_json(HTTPStatus.TOO_MANY_REQUESTS, "rate_limited", "Too many requests. Try again later.")
                     return
-                STATE.record_password_reset_request(client_id)
                 email = str(payload.get("email") or "").strip().lower()
                 if email:
                     for candidate in STATE.auth_store.list_users():

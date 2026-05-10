@@ -5,6 +5,7 @@ import hmac
 import os
 import secrets
 import sqlite3
+import threading
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -134,6 +135,20 @@ class AuthSession:
 
 
 class AuthStore:
+    """Auth state on SQLite. Threading model: each thread gets its own
+    sqlite3.Connection via the ``connection`` property + thread-local
+    storage. Sharing one connection across threads (the previous
+    design) caused cursor-state races under burst — sqlite3 raised
+    ``ProgrammingError("bad parameter or other API misuse")`` when
+    two threads ran ``.execute(...).fetchone()`` interleaved on the
+    same connection. WAL mode + a 5s busy_timeout per-connection
+    handle the actual on-disk concurrency; per-thread Python
+    connections handle the in-process Cursor-state isolation.
+
+    Schema setup runs once in __init__ on the main thread's connection;
+    subsequent threads see the migrated schema via WAL — sqlite
+    auto-syncs readers with the latest committed write."""
+
     def __init__(
         self,
         path: str | Path,
@@ -147,10 +162,26 @@ class AuthStore:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self.secret_key = secret_key
         self.session_ttl = timedelta(days=session_ttl_days)
-        self.connection = sqlite3.connect(self.path, check_same_thread=False)
-        self.connection.execute("PRAGMA journal_mode=WAL")
-        self.connection.execute("PRAGMA foreign_keys=ON")
+        self._local = threading.local()
+        # Eagerly run schema setup on this (the constructing) thread's
+        # connection. The property lazily creates per-thread handles
+        # for any other threads that touch the store later.
         self._create_schema()
+
+    @property
+    def connection(self) -> sqlite3.Connection:
+        conn = getattr(self._local, "conn", None)
+        if conn is None:
+            conn = sqlite3.connect(self.path, check_same_thread=False)
+            conn.execute("PRAGMA journal_mode=WAL")
+            conn.execute("PRAGMA foreign_keys=ON")
+            # Wait up to 5s for a write lock instead of failing
+            # immediately when another thread holds it. With <100
+            # active users the contention window is sub-millisecond
+            # in practice; 5s is a generous ceiling.
+            conn.execute("PRAGMA busy_timeout=5000")
+            self._local.conn = conn
+        return conn
 
     def _create_schema(self) -> None:
         self.connection.execute(
@@ -249,7 +280,14 @@ class AuthStore:
             self.connection.execute("UPDATE users SET role = 'admin', active = 1 WHERE id = ?", (first[0],))
 
     def close(self) -> None:
-        self.connection.close()
+        # Closes the calling thread's connection only. Other threads'
+        # connections are GC'd at thread death. For the typical
+        # request-pool topology this is fine — threads outlive the
+        # store; in tests there's only one thread.
+        conn = getattr(self._local, "conn", None)
+        if conn is not None:
+            conn.close()
+            self._local.conn = None
 
     def has_users(self) -> bool:
         row = self.connection.execute("SELECT 1 FROM users LIMIT 1").fetchone()
