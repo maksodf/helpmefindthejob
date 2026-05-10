@@ -1171,6 +1171,84 @@ class AppState:
         self.log_analytics(user_id, "demo_data_seeded", {"count": len(created)})
         return created
 
+    def run_onboarding_drip(self) -> dict[str, int]:
+        """Send the day-3 + day-7 onboarding emails for any user whose
+        creation timestamp lands in the right window and who hasn't yet
+        received that drip step. Idempotent — the per-step columns mean
+        re-running the sweep is a no-op once everyone is up to date."""
+
+        sent = {"day3": 0, "day7": 0}
+        # Day-3 window is [3d, 7d) so users only get the day-3 email once
+        # and don't get spammed if the sweep runs late.
+        for user in self.auth_store.users_due_for_drip(
+            column="drip_day3_sent_at", min_age_days=3, max_age_days=14,
+        ):
+            try:
+                self._send_drip_day3(user)
+                self.auth_store.mark_drip_sent(user.id, "drip_day3_sent_at")
+                self.log_analytics(user.id, "drip_day3_sent", {})
+                sent["day3"] += 1
+            except Exception:  # noqa: BLE001 - email best-effort
+                continue
+        # Day-7 window is [7d, 30d) — bound the upper end so the cron
+        # doesn't email someone who signed up six months ago and never
+        # came back.
+        for user in self.auth_store.users_due_for_drip(
+            column="drip_day7_sent_at", min_age_days=7, max_age_days=30,
+        ):
+            try:
+                self._send_drip_day7(user)
+                self.auth_store.mark_drip_sent(user.id, "drip_day7_sent_at")
+                self.log_analytics(user.id, "drip_day7_sent", {})
+                sent["day7"] += 1
+            except Exception:  # noqa: BLE001
+                continue
+        return sent
+
+    def _send_drip_day3(self, user: AuthUser) -> None:
+        public_url = self.public_url_for("/")
+        help_url = self.public_url_for("/help#bookmarklet")
+        body = (
+            f"Hi,\n\n"
+            "Three days in. The bookmarklet is the highest-leverage thing you can install: "
+            "one click on a LinkedIn / Indeed / StepStone / XING job page captures it into your "
+            "queue, even though those platforms block server-side scraping.\n\n"
+            f"Setup walkthrough (3 steps): {help_url}\n"
+            f"Open the app: {public_url}\n\n"
+            "If something is unclear, reply to this email — we read every message.\n"
+        )
+        self.email_transport.send(
+            Email(
+                to=user.email,
+                subject="[DirectJob Scout] Day 3 — install the bookmarklet",
+                text=body,
+                from_address=email_from_address(),
+            )
+        )
+
+    def _send_drip_day7(self, user: AuthUser) -> None:
+        public_url = self.public_url_for("/")
+        help_url = self.public_url_for("/help")
+        body = (
+            "Hi,\n\n"
+            "One week in. Two questions:\n\n"
+            "1. Did you find any roles worth applying to? If yes, did you tick the \"Got a reply?\" "
+            "checkbox on the application form when companies wrote back? That's what populates "
+            "your reply-rate card on the dashboard.\n\n"
+            "2. What's been frustrating? Reply to this email with one sentence — it goes straight "
+            "to the operator, not a support ticket queue.\n\n"
+            f"Open the app: {public_url}\n"
+            f"Help docs: {help_url}\n"
+        )
+        self.email_transport.send(
+            Email(
+                to=user.email,
+                subject="[DirectJob Scout] Day 7 — any luck?",
+                text=body,
+                from_address=email_from_address(),
+            )
+        )
+
     def send_email_verification(self, user: AuthUser) -> None:
         """Mint a fresh verification token and email the confirm link.
         Best-effort — a transport failure must not block sign-up; the
@@ -1883,6 +1961,10 @@ class AppState:
         deletions = self.purge_due_account_deletions()
         if deletions:
             results["__account_deletions"] = len(deletions)
+        drip = self.run_onboarding_drip()
+        if drip["day3"] or drip["day7"]:
+            results["__drip_day3"] = drip["day3"]
+            results["__drip_day7"] = drip["day7"]
         return results
 
     def cv_variant_outcomes(self, user_id: str, *, min_variants: int = 3) -> dict[str, Any]:

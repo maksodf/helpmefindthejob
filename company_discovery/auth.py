@@ -201,6 +201,11 @@ class AuthStore:
         # unverified accounts can sign in.
         self._add_column_if_missing("users", "email_verified_at", "TEXT")
         self._add_column_if_missing("users", "email_verification_token_hash", "TEXT")
+        # Onboarding email drip (#37). NULL until the corresponding day-N
+        # email is sent. The hourly drip sweep skips users whose column
+        # is already populated, making it safe to re-run.
+        self._add_column_if_missing("users", "drip_day3_sent_at", "TEXT")
+        self._add_column_if_missing("users", "drip_day7_sent_at", "TEXT")
         self.connection.execute(
             """
             CREATE TABLE IF NOT EXISTS sessions (
@@ -568,6 +573,46 @@ class AuthStore:
         )
         self.connection.commit()
         return user_id
+
+    def users_due_for_drip(
+        self,
+        *,
+        column: str,
+        min_age_days: int,
+        max_age_days: int | None = None,
+        now: datetime | None = None,
+    ) -> list[AuthUser]:
+        """Return users whose ``created_at`` falls in the window
+        ``[now - max_age_days, now - min_age_days]`` AND whose ``column``
+        is still NULL. Used by the onboarding-drip cron to find which
+        accounts are due for the day-3 / day-7 email."""
+
+        if column not in {"drip_day3_sent_at", "drip_day7_sent_at"}:
+            raise ValueError("invalid_drip_column")
+        threshold_min = (now or now_utc()) - timedelta(days=min_age_days)
+        threshold_max = (
+            (now or now_utc()) - timedelta(days=max_age_days)
+            if max_age_days is not None else None
+        )
+        params: list[Any] = [threshold_min.isoformat()]
+        sql = (
+            f"SELECT id, email, role, active, created_at, last_login_at, last_active_at "
+            f"FROM users WHERE {column} IS NULL AND active = 1 AND created_at <= ?"
+        )
+        if threshold_max is not None:
+            sql += " AND created_at >= ?"
+            params.append(threshold_max.isoformat())
+        rows = self.connection.execute(sql, params).fetchall()
+        return [self._user_from_row(row) for row in rows]
+
+    def mark_drip_sent(self, user_id: str, column: str) -> None:
+        if column not in {"drip_day3_sent_at", "drip_day7_sent_at"}:
+            raise ValueError("invalid_drip_column")
+        self.connection.execute(
+            f"UPDATE users SET {column} = ? WHERE id = ?",
+            (now_utc().isoformat(), user_id),
+        )
+        self.connection.commit()
 
     def is_email_verified(self, user_id: str) -> bool:
         row = self.connection.execute(
