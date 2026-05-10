@@ -3691,6 +3691,7 @@ async function handleApplicationSave(event) {
       }
       return { label: line, complete: false };
     });
+  setFormStatus("applicationStatusMessage", "saving", t("form.saving", "Saving…"));
   try {
     const reminderRaw = $("#applicationReminderAt")?.value || "";
     const payload = await api(`/api/imported-jobs/${encodeURIComponent(state.selectedImportedJobId)}/application`, {
@@ -3707,9 +3708,10 @@ async function handleApplicationSave(event) {
       }),
     });
     absorbBootstrap(payload.bootstrap);
-    showToast(t("toast.applicationSaved", "Application saved."), "success");
+    setFormStatus("applicationStatusMessage", "success", t("toast.applicationSaved", "Application saved."));
     render();
   } catch (error) {
+    setFormStatus("applicationStatusMessage", "error", error.message);
     showToast(error.message, "error");
   }
 }
