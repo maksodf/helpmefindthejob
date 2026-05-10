@@ -1,0 +1,54 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+build/
+dist/
+
+# Local environment + secrets — never commit
+.env
+.env.local
+.env.production
+.env.*.local
+!.env.example
+
+# Production data — sqlite DBs hold user accounts, hashed passwords, scan history.
+# These live on the droplet and in WAL-aware snapshots, never in git.
+data/
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
+*.bak
+
+# Backups directory (snapshots produced by pre-deploy-snapshot.sh)
+backups/
+
+# Email outbox + AI provider local config (per-host)
+email_outbox.log
+ai_providers.json
+admin_audit.log
+
+# OS / editor noise
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*~
+
+# Personal notes / drafts that happen to live in the repo dir
+.obsidian/
+.claude/
+*.pdf
+!docs/**/*.pdf
+
+# Node (in case any tooling adds it later)
+node_modules/
+
+# Test artifacts
+.tox/
+.nox/

@@ -1,0 +1,3788 @@
+from __future__ import annotations
+
+import argparse
+import json
+import mimetypes
+import os
+import re
+import secrets
+import time
+from dataclasses import asdict, fields, is_dataclass
+from datetime import datetime, timezone
+from http.cookies import SimpleCookie
+from http import HTTPStatus
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
+from threading import Lock, Thread
+from typing import Any
+from urllib.parse import unquote, urlparse
+
+from company_discovery.analysis import (
+    build_auto_fit_prompt,
+    build_cover_letter_brief_prompt,
+    build_cv_tailoring_prompt,
+    build_job_decision_brief_prompt,
+    execute_auto_fit,
+    execute_cover_letter_brief,
+    execute_cv_tailoring,
+    execute_job_decision_brief,
+    parse_auto_fit_output,
+)
+from company_discovery.ai_providers import AIProviderConfig, provider_options_payload, validate_provider_config
+from company_discovery.auth import AuthSession, AuthStore, AuthUser, hash_password
+from company_discovery.billing import (
+    StripeBillingBackend,
+    Subscription,
+    apply_stripe_event,
+    build_backend as build_billing_backend,
+    plans_payload,
+    verify_stripe_webhook_signature,
+)
+from company_discovery.digests import build_digest
+from company_discovery.aggregators import (
+    AggregatorResultCache,
+    JobAggregationEngine,
+    canonical_query,
+    rank_aggregated,
+)
+from company_discovery.aggregator_providers import default_no_auth_providers
+from company_discovery.discovery_providers import (
+    BraveSearchProvider,
+    CuratedSearchProvider,
+    DiscoveryEngine,
+    DuckDuckGoSearchProvider,
+    GreenhouseFeedProvider,
+    LeverFeedProvider,
+    MockSearchProvider,
+)
+from company_discovery.email_transport import Email, EmailTransport, build_transport, email_from_address
+from company_discovery.exports import (
+    discovered_jobs_to_csv,
+    discovered_jobs_to_markdown,
+    imported_jobs_to_csv,
+    imported_jobs_to_markdown,
+)
+from company_discovery.http_fetcher import HTTPFetcher
+from company_discovery.models import (
+    APPLICATION_STATUSES,
+    AnalyticsEvent,
+    CareerPageScan,
+    Company,
+    CompanyDiscoveryRun,
+    DiscoveredJob,
+    ImportedJob,
+    PushSubscription,
+    SavedSearch,
+    SupportTicket,
+    UserProfile,
+    WORKSPACE_ROLES,
+    WorkspaceMembership,
+    new_id,
+    now_utc,
+)
+from company_discovery.push_transport import (
+    PushPayload,
+    PushUnavailableError,
+    is_push_configured,
+    send_push,
+    vapid_public_key,
+)
+from company_discovery.personas import (
+    DEFAULT_PERSONA_ID,
+    PERSONAS,
+    get_persona,
+    list_personas_summary,
+)
+from company_discovery.onboarding import build_checklist, checklist_progress
+from company_discovery.cv_extract import CvExtractError, extract_text as extract_cv_text
+from company_discovery.persona_ranking import rank_candidates
+from company_discovery.saved_search_alerts import (
+    alert_summary_for_search,
+    matches_for_search,
+    saved_search_matches_job,
+    unseen_matches_for_search,
+)
+from company_discovery.quotas import QuotaError, QuotaStore
+from company_discovery.readiness import build_report as build_readiness_report
+from company_discovery.scheduler import DurableScheduler
+from company_discovery.slack_notify import post_high_fit_notification
+from company_discovery.service import CompanyDiscoveryService, ScanConfig
+from company_discovery.sqlite_repository import SqliteCompanyDiscoveryRepository
+from company_discovery.structured_analysis import parse_freeform
+from company_discovery.tokens import TokenStore
+from company_discovery.watchlist_templates import get_template, list_templates
+
+
+ROOT = Path(__file__).parent
+STATIC_ROOT = ROOT / "static"
+DATA_ROOT = Path(os.environ.get("COMPANY_DISCOVERY_DATA_DIR", str(ROOT / "data")))
+DATA_PATH = DATA_ROOT / "company_discovery.sqlite3"
+AUTH_PATH = DATA_ROOT / "auth.sqlite3"
+AI_CONFIG_PATH = DATA_ROOT / "ai_provider.json"
+WATCHLIST_SCHEDULE_PATH = DATA_ROOT / "watchlist_schedule.json"
+ADMIN_AUDIT_PATH = DATA_ROOT / "admin_audit.log"
+TOKEN_PATH = DATA_ROOT / "tokens.sqlite3"
+QUOTA_PATH = DATA_ROOT / "quotas.sqlite3"
+SCHEDULER_PATH = DATA_ROOT / "scheduler.sqlite3"
+EMAIL_OUTBOX_PATH = DATA_ROOT / "email_outbox.log"
+PASSWORD_RESET_REQUEST_LIMIT = 5  # per-IP per 10 minutes
+PASSWORD_RESET_REQUEST_WINDOW = 600
+APP_PUBLIC_URL = os.environ.get("DIRECTJOB_PUBLIC_URL") or ""
+LOCAL_USER_ID = "local-user"
+MAX_JSON_BODY_BYTES = 5_000_000
+DEFAULT_WATCHLIST_SCHEDULE = {
+    "enabled": False,
+    "intervalMinutes": 360,
+    "lastRunAt": None,
+    "lastRunStatus": "disabled",
+}
+APP_VERSION = "0.45.0"
+EXPORT_SCHEMA_VERSION = 1
+SESSION_COOKIE_NAME = "directjob_session"
+APP_ENV = os.environ.get("COMPANY_DISCOVERY_ENV", "development").strip().casefold()
+COOKIE_SECURE = os.environ.get("DIRECTJOB_COOKIE_SECURE", "true" if APP_ENV == "production" else "false").strip().casefold() == "true"
+ALLOW_REGISTRATION = os.environ.get("DIRECTJOB_ALLOW_REGISTRATION", "false").strip().casefold() == "true"
+SECRET_KEY = os.environ.get("DIRECTJOB_SECRET_KEY") or ("dev-" + secrets.token_urlsafe(48))
+ADMIN_EMAIL = os.environ.get("DIRECTJOB_ADMIN_EMAIL")
+ADMIN_PASSWORD = os.environ.get("DIRECTJOB_ADMIN_PASSWORD")
+
+
+def jsonable(value: Any) -> Any:
+    if isinstance(value, datetime):
+        return value.isoformat()
+    if is_dataclass(value):
+        return {key: jsonable(item) for key, item in asdict(value).items()}
+    if isinstance(value, list):
+        return [jsonable(item) for item in value]
+    if isinstance(value, dict):
+        return {key: jsonable(item) for key, item in value.items()}
+    return value
+
+
+def to_snake_case_payload(payload: dict[str, Any]) -> dict[str, Any]:
+    mapping = {
+        "websiteUrl": "website_url",
+        "careerPageUrl": "career_page_url",
+        "relevanceScore": "relevance_score",
+        "relevanceReason": "relevance_reason",
+        "watchEnabled": "watch_enabled",
+    }
+    return {mapping.get(key, key): value for key, value in payload.items()}
+
+
+def dataclass_from_payload(model: type[Any], payload: dict[str, Any]) -> Any:
+    data = {field.name: payload[field.name] for field in fields(model) if field.name in payload}
+    for key, value in list(data.items()):
+        if key.endswith("_at") and isinstance(value, str):
+            data[key] = datetime.fromisoformat(value)
+    return model(**data)
+
+
+def _ai_consent_satisfied(profile, provider) -> bool:
+    """The user must have granted consent for the *current* provider id
+    before we send their CV / structured profile to a third-party LLM.
+    Manual mode + Ollama-local don't transmit anything off-host, so they
+    bypass the gate."""
+
+    if provider is None or provider.provider_id == "manual":
+        return True
+    if provider.invocation_mode == "local_http":
+        return True  # Ollama runs in the user's own container.
+    consent_at = getattr(profile, "ai_consent_at", None)
+    consent_pid = getattr(profile, "ai_consent_provider_id", None)
+    if not consent_at:
+        return False
+    # Switching providers requires re-consent (different data processor).
+    return not consent_pid or consent_pid == provider.provider_id
+
+
+def make_user_payload(user: AuthUser, csrf_token: str) -> dict[str, Any]:
+    return {
+        "id": user.id,
+        "email": user.email,
+        "role": user.role,
+        "active": user.active,
+        "isAdmin": user.is_admin,
+        "csrfToken": csrf_token,
+        "totpEnabled": STATE.auth_store.has_totp_enabled(user.id) if STATE else False,
+    }
+
+
+def make_admin_user_payload(user: AuthUser) -> dict[str, Any]:
+    return {
+        "id": user.id,
+        "email": user.email,
+        "role": user.role,
+        "active": user.active,
+        "isAdmin": user.is_admin,
+        "createdAt": user.created_at,
+        "lastLoginAt": user.last_login_at,
+        "lastActiveAt": user.last_active_at,
+    }
+
+
+def session_cookie_header(token: str, max_age: int) -> str:
+    parts = [
+        f"{SESSION_COOKIE_NAME}={token}",
+        "Path=/",
+        f"Max-Age={max_age}",
+        "HttpOnly",
+        "SameSite=Lax",
+    ]
+    if COOKIE_SECURE:
+        parts.append("Secure")
+    return "; ".join(parts)
+
+
+def validate_production_config(auth_store: AuthStore) -> None:
+    if APP_ENV != "production":
+        return
+    errors = []
+    if len(SECRET_KEY) < 32 or SECRET_KEY.startswith("dev-"):
+        errors.append("DIRECTJOB_SECRET_KEY must be set to a stable random value with at least 32 characters.")
+    if not auth_store.has_users() and (not ADMIN_EMAIL or not ADMIN_PASSWORD):
+        errors.append("DIRECTJOB_ADMIN_EMAIL and DIRECTJOB_ADMIN_PASSWORD are required for first production startup.")
+    if not COOKIE_SECURE:
+        errors.append("DIRECTJOB_COOKIE_SECURE must stay true in production behind HTTPS.")
+    if errors:
+        raise RuntimeError("production_config_error: " + " ".join(errors))
+
+
+class AppState:
+    def __init__(
+        self,
+        data_path: Path = DATA_PATH,
+        auth_path: Path = AUTH_PATH,
+        ai_config_path: Path = AI_CONFIG_PATH,
+        schedule_path: Path = WATCHLIST_SCHEDULE_PATH,
+        admin_audit_path: Path = ADMIN_AUDIT_PATH,
+        token_path: Path | None = None,
+        quota_path: Path | None = None,
+        scheduler_path: Path | None = None,
+        *,
+        start_scheduler: bool = True,
+        email_transport: EmailTransport | None = None,
+    ) -> None:
+        self.data_path = Path(data_path)
+        self.auth_path = Path(auth_path)
+        self.ai_config_path = Path(ai_config_path)
+        self.schedule_path = Path(schedule_path)
+        self.admin_audit_path = Path(admin_audit_path)
+        self.token_path = Path(token_path or (self.data_path.parent / "tokens.sqlite3"))
+        self.quota_path = Path(quota_path or (self.data_path.parent / "quotas.sqlite3"))
+        self.scheduler_path = Path(scheduler_path or (self.data_path.parent / "scheduler.sqlite3"))
+        self._audit_lock = Lock()
+        self.repository = SqliteCompanyDiscoveryRepository(self.data_path)
+        self.auth_store = AuthStore(self.auth_path, SECRET_KEY)
+        self.auth_store.bootstrap_admin_from_env(ADMIN_EMAIL, ADMIN_PASSWORD)
+        validate_production_config(self.auth_store)
+        self.service = CompanyDiscoveryService(
+            self.repository,
+            HTTPFetcher(),
+            ScanConfig(max_pages_per_scan=5, request_delay_seconds=0.25),
+        )
+        self._active_lock = Lock()
+        self._active_company_scans: set[tuple[str, str]] = set()
+        self._login_lock = Lock()
+        self._login_attempts: dict[str, list[float]] = {}
+        self._reset_request_lock = Lock()
+        self._reset_requests: dict[str, list[float]] = {}
+        self.ai_providers = self._load_ai_providers()
+        self.token_store = TokenStore(self.token_path, SECRET_KEY)
+        self.quota_store = QuotaStore(self.quota_path)
+        self.email_transport: EmailTransport = email_transport or build_transport(
+            outbox_path=self.data_path.parent / "email_outbox.log",
+        )
+        self.scheduler = DurableScheduler(
+            self.scheduler_path,
+            handler=lambda user_id, trigger: self.run_user_daily(user_id, trigger=trigger),
+        )
+        self.billing_backend = build_billing_backend(data_dir=self.data_path.parent)
+        providers: list = [CuratedSearchProvider()]
+        if os.environ.get("DIRECTJOB_DUCKDUCKGO_DISABLED", "").strip().lower() not in ("1", "true", "yes"):
+            providers.append(DuckDuckGoSearchProvider())
+        brave_key = os.environ.get("DIRECTJOB_BRAVE_API_KEY", "").strip()
+        if brave_key:
+            providers.append(BraveSearchProvider(api_key=brave_key))
+        self.discovery_engine = DiscoveryEngine(providers=providers)
+        # Aggregator (job-level) rail — separate engine because it returns
+        # AggregatedJob rows rather than DiscoveryResult companies.
+        self.aggregator_cache = AggregatorResultCache(
+            self.data_path.parent / "aggregator_cache.sqlite3",
+            ttl_seconds=int(os.environ.get("DIRECTJOB_AGGREGATOR_TTL_SECONDS", "3600") or "3600"),
+        )
+        aggregator_providers = list(default_no_auth_providers())
+        # Future: signup providers (Adzuna, EURES, Bundesagentur) plug in here.
+        self.aggregator_engine = JobAggregationEngine(
+            providers=aggregator_providers,
+            cache=self.aggregator_cache,
+        )
+        # one-shot migration: pull legacy JSON schedules into the durable scheduler
+        legacy = self._load_watchlist_schedules()
+        for user_id, item in legacy.items():
+            self.scheduler.upsert(
+                user_id,
+                enabled=bool(item.get("enabled")),
+                interval_minutes=int(item.get("intervalMinutes") or 360),
+            )
+        if start_scheduler:
+            self.scheduler.start()
+            # Daily retention purge — fire-and-forget thread, idempotent.
+            # Wakes once an hour, only runs if 24h has elapsed since last run.
+            import threading
+
+            self._retention_last_run = now_utc()
+            def _retention_loop():
+                import time as _time
+
+                while True:
+                    _time.sleep(3600)
+                    try:
+                        if (now_utc() - self._retention_last_run).total_seconds() >= 86_400:
+                            self.run_retention_purge()
+                            self._retention_last_run = now_utc()
+                    except Exception:
+                        # Purge failures shouldn't take down the loop; the
+                        # next hourly tick will try again.
+                        continue
+
+            t = threading.Thread(target=_retention_loop, name="RetentionPurge", daemon=True)
+            t.start()
+
+    def bootstrap(self, user_id: str) -> dict[str, Any]:
+        # READ data is scoped to the active workspace owner; the session
+        # user's own profile (CV, persona, locale) stays per-user.
+        data_user_id = self.effective_user_id(user_id)
+        companies = self.repository.list_companies(data_user_id)
+        discovered_jobs = self.repository.list_discovered_jobs(data_user_id)
+        imported_jobs = self.repository.list_imported_jobs(data_user_id)
+        ai_provider = self.ai_provider_for(user_id)
+        schedule = self.schedule_for(user_id)
+        profile = self.profile_for(user_id)
+        saved_searches_raw = self.repository.list_saved_searches(data_user_id)
+        steps = build_checklist(
+            companies=companies,
+            discovered_jobs=discovered_jobs,
+            imported_jobs=imported_jobs,
+            ai_provider=ai_provider,
+            schedule_enabled=bool(schedule.get("enabled")),
+            saved_searches=saved_searches_raw,
+            profile=profile,
+        )
+        from company_discovery.onboarding import needs_first_run_wizard
+
+        first_run_wizard = needs_first_run_wizard(
+            saved_searches=saved_searches_raw,
+            companies=companies,
+            profile=profile,
+            discovered_jobs=discovered_jobs,
+            imported_jobs=imported_jobs,
+            dismissed=bool(getattr(profile, "onboarding_dismissed", False)),
+        )
+        active_ws = profile.active_workspace_id or self.workspace_id_for_owner(user_id)
+        return {
+            "companies": companies,
+            "discoveredJobs": discovered_jobs,
+            "importedJobs": imported_jobs,
+            "scans": self.repository.list_scans(data_user_id),
+            "discoveryRuns": self.repository.list_discovery_runs(data_user_id),
+            "summary": self.repository.watchlist_summary(data_user_id),
+            "aiProvider": ai_provider.public_dict(),
+            "aiProviderOptions": provider_options_payload(),
+            "watchlistSchedule": schedule,
+            "quotas": self.quota_store.usage(user_id),
+            "savedSearches": self._saved_searches_with_alerts(data_user_id),
+            "watchlistTemplates": list_templates(profile.persona_id),
+            "billingPlans": plans_payload(),
+            "personas": list_personas_summary(),
+            "profile": self._profile_payload(profile),
+            "workspaces": self.list_user_workspaces(user_id),
+            "activeWorkspaceId": active_ws,
+            "onboarding": {
+                "steps": [step.__dict__ for step in steps],
+                "progress": checklist_progress(steps),
+                "firstRunWizard": first_run_wizard,
+            },
+            "applicationStatuses": list(APPLICATION_STATUSES),
+        }
+
+    def workspace_id_for_owner(self, owner_user_id: str) -> str:
+        """Deterministic workspace id derived from the owner's user id.
+
+        Stable across restarts so existing user_id-keyed rows can be
+        treated as belonging to ``ws_<owner>`` without backfill.
+        """
+
+        suffix = owner_user_id.split("_", 1)[-1] if owner_user_id.startswith("user_") else owner_user_id
+        return f"ws_{suffix}"
+
+    def ensure_owner_membership(self, user_id: str, label: str | None = None) -> WorkspaceMembership:
+        workspace_id = self.workspace_id_for_owner(user_id)
+        existing = self.repository.find_workspace_membership(user_id, workspace_id)
+        if existing is not None:
+            return existing
+        if label is None:
+            try:
+                user = self.auth_store.get_user(user_id)
+                label = user.email
+            except KeyError:
+                label = "Workspace"
+        membership = WorkspaceMembership(
+            user_id=user_id,
+            workspace_id=workspace_id,
+            workspace_owner_id=user_id,
+            role="owner",
+            label=label,
+        )
+        return self.repository.save_workspace_membership(membership)
+
+    def list_user_workspaces(self, user_id: str) -> list[dict[str, Any]]:
+        memberships = self.repository.list_workspace_memberships(user_id)
+        if not memberships:
+            self.ensure_owner_membership(user_id)
+            memberships = self.repository.list_workspace_memberships(user_id)
+        results: list[dict[str, Any]] = []
+        for m in memberships:
+            results.append({
+                "id": m.workspace_id,
+                "ownerUserId": m.workspace_owner_id,
+                "role": m.role,
+                "label": m.label or "Workspace",
+            })
+        return results
+
+    def effective_user_id(self, session_user_id: str) -> str:
+        """Return the user-id whose data we should READ for this session.
+
+        Reads ``UserProfile.active_workspace_id`` and looks up the
+        workspace owner. Falls back to ``session_user_id`` when the
+        active workspace is not set, points to a workspace the user is
+        not a member of, or is the user's own workspace anyway.
+
+        Writes still go to ``session_user_id`` until cross-workspace
+        write routing ships in a follow-up.
+        """
+
+        profile = self.repository.get_user_profile(session_user_id)
+        active = profile.active_workspace_id if profile else None
+        if not active:
+            return session_user_id
+        own_ws = self.workspace_id_for_owner(session_user_id)
+        if active == own_ws:
+            return session_user_id
+        membership = self.repository.find_workspace_membership(session_user_id, active)
+        if membership is None:
+            return session_user_id
+        return membership.workspace_owner_id
+
+    def resolve_workspace_owner(self, session_user_id: str, workspace_id: str | None) -> str:
+        """Validate the user is a member of ``workspace_id`` and return the owner user id.
+
+        Falls back to the user's own workspace when ``workspace_id`` is
+        falsy. Raises ``ValueError("workspace_forbidden")`` when the
+        user is not a member of the requested workspace — caller maps
+        that to HTTP 403.
+        """
+
+        own_workspace = self.workspace_id_for_owner(session_user_id)
+        target = (workspace_id or own_workspace).strip()
+        membership = self.repository.find_workspace_membership(session_user_id, target)
+        if membership is None:
+            if target == own_workspace:
+                self.ensure_owner_membership(session_user_id)
+                return session_user_id
+            raise ValueError("workspace_forbidden")
+        return membership.workspace_owner_id
+
+    def profile_for(self, user_id: str) -> UserProfile:
+        existing = self.repository.get_user_profile(user_id)
+        if existing is not None:
+            return existing
+        return UserProfile(user_id=user_id, persona_id=DEFAULT_PERSONA_ID)
+
+    def update_profile(self, user_id: str, payload: dict[str, Any]) -> UserProfile:
+        existing = self.repository.get_user_profile(user_id) or UserProfile(
+            user_id=user_id, persona_id=DEFAULT_PERSONA_ID
+        )
+        previous_persona = existing.persona_id
+        persona_id = str(payload.get("personaId") or payload.get("persona_id") or existing.persona_id or DEFAULT_PERSONA_ID)
+        if persona_id not in PERSONAS:
+            raise ValueError("unknown_persona")
+        existing.persona_id = persona_id
+        # When the user switches personas, the LLM-derived auto_fit_score
+        # on existing queue rows was for the old persona — keeping it
+        # would mislead. Clear scores on jobs they haven't imported yet
+        # so the queue prompts them to re-fit against the new persona.
+        if previous_persona and previous_persona != persona_id:
+            cleared = 0
+            for job in list(self.repository.discovered_jobs.values()):
+                if job.user_id != user_id:
+                    continue
+                if job.imported_job_id:
+                    continue
+                if job.auto_fit_score is None:
+                    continue
+                job.auto_fit_score = None
+                job.auto_fit_reason = None
+                job.auto_fit_at = None
+                job.auto_fit_provider_id = None
+                self.repository.save_discovered_job(job)
+                cleared += 1
+            if cleared:
+                self.log_analytics(
+                    user_id, "persona_changed_rescore",
+                    {"from": previous_persona, "to": persona_id, "cleared": cleared},
+                )
+
+        target_roles = payload.get("targetRoles") if "targetRoles" in payload else payload.get("target_roles")
+        if isinstance(target_roles, str):
+            target_roles = [item.strip() for item in target_roles.split(",") if item.strip()]
+        if target_roles is not None:
+            existing.target_roles = [str(item).strip() for item in target_roles if str(item).strip()][:25]
+
+        if "industry" in payload:
+            existing.industry = (str(payload.get("industry") or "").strip() or None)
+        if "location" in payload:
+            existing.location = (str(payload.get("location") or "").strip() or None)
+        if "seniority" in payload:
+            existing.seniority = (str(payload.get("seniority") or "").strip() or None)
+        if "yearsExperience" in payload or "years_experience" in payload:
+            raw_years = payload.get("yearsExperience", payload.get("years_experience"))
+            if raw_years in (None, ""):
+                existing.years_experience = None
+            else:
+                try:
+                    existing.years_experience = max(0, min(60, int(raw_years)))
+                except (TypeError, ValueError):
+                    raise ValueError("invalid_years_experience")
+        languages = payload.get("languages")
+        if isinstance(languages, str):
+            languages = [item.strip() for item in languages.split(",") if item.strip()]
+        if languages is not None:
+            existing.languages = [str(item).strip() for item in languages if str(item).strip()][:10]
+        if "cvText" in payload or "cv_text" in payload:
+            cv_text = payload.get("cvText", payload.get("cv_text")) or ""
+            cv_text = str(cv_text)
+            if len(cv_text) > 60_000:
+                raise ValueError("cv_too_long")
+            existing.cv_text = cv_text.strip() or None
+        if "notes" in payload:
+            existing.notes = (str(payload.get("notes") or "").strip() or None)
+        if "locale" in payload:
+            from company_discovery.models import SUPPORTED_LOCALES
+
+            raw_locale = str(payload.get("locale") or "en").strip().lower()
+            if raw_locale not in SUPPORTED_LOCALES:
+                raise ValueError("unsupported_locale")
+            existing.locale = raw_locale
+        if "theme" in payload:
+            from company_discovery.models import SUPPORTED_THEMES
+
+            raw_theme = str(payload.get("theme") or "dark").strip().lower()
+            if raw_theme not in SUPPORTED_THEMES:
+                raise ValueError("unsupported_theme")
+            existing.theme = raw_theme
+        if "hiddenSources" in payload or "hidden_sources" in payload:
+            raw = payload.get("hiddenSources", payload.get("hidden_sources")) or []
+            if not isinstance(raw, list):
+                raise ValueError("invalid_hidden_sources")
+            existing.hidden_sources = [str(s).strip() for s in raw if str(s).strip()][:50]
+        if "dismissedTerms" in payload or "dismissed_terms" in payload:
+            raw = payload.get("dismissedTerms", payload.get("dismissed_terms")) or []
+            if not isinstance(raw, list):
+                raise ValueError("invalid_dismissed_terms")
+            cleaned = [str(s).strip() for s in raw if str(s).strip()][-50:]
+            existing.dismissed_terms = cleaned
+        if "addDismissedTerms" in payload:
+            extras = payload.get("addDismissedTerms") or []
+            if not isinstance(extras, list):
+                raise ValueError("invalid_dismissed_terms")
+            current = list(existing.dismissed_terms or [])
+            for term in extras:
+                term = str(term).strip()
+                if term and term.casefold() not in {c.casefold() for c in current}:
+                    current.append(term)
+            existing.dismissed_terms = current[-50:]
+        if "slackWebhookUrl" in payload or "slack_webhook_url" in payload:
+            raw = payload.get("slackWebhookUrl", payload.get("slack_webhook_url"))
+            url = "" if raw is None else str(raw).strip()
+            # Hard length cap; keep a permissive prefix check (Slack /
+            # Discord / Mattermost-compatible webhooks all start with
+            # https:// and can be quite long).
+            if url and (len(url) > 1024 or not url.startswith("https://")):
+                raise ValueError("invalid_slack_webhook_url")
+            existing.slack_webhook_url = url
+        if "slackFitThreshold" in payload or "slack_fit_threshold" in payload:
+            raw = payload.get("slackFitThreshold", payload.get("slack_fit_threshold"))
+            try:
+                t = float(raw) if raw is not None else 0.70
+            except (TypeError, ValueError):
+                raise ValueError("invalid_slack_fit_threshold")
+            existing.slack_fit_threshold = max(0.0, min(1.0, t))
+        if "retentionDays" in payload or "retention_days" in payload:
+            raw = payload.get("retentionDays", payload.get("retention_days"))
+            try:
+                days = int(raw) if raw is not None else 90
+            except (TypeError, ValueError):
+                raise ValueError("invalid_retention_days")
+            existing.retention_days = max(0, min(3650, days))
+        if "onboardingDismissed" in payload or "onboarding_dismissed" in payload:
+            existing.onboarding_dismissed = bool(
+                payload.get("onboardingDismissed", payload.get("onboarding_dismissed"))
+            )
+        if "aiConsent" in payload:
+            # First-AI-call consent. Stores the timestamp + the provider id
+            # the user consented to. Switching provider in Settings clears
+            # the consent so the modal re-prompts (handled in update_ai_provider).
+            consent = payload.get("aiConsent") or {}
+            if not isinstance(consent, dict):
+                raise ValueError("invalid_ai_consent")
+            if consent.get("granted"):
+                existing.ai_consent_at = now_utc()
+                existing.ai_consent_provider_id = (
+                    str(consent.get("providerId") or consent.get("provider_id") or "").strip() or None
+                )
+                self.log_analytics(user_id, "ai_consent_granted", {"providerId": existing.ai_consent_provider_id})
+            else:
+                existing.ai_consent_at = None
+                existing.ai_consent_provider_id = None
+                self.log_analytics(user_id, "ai_consent_revoked", {})
+
+        return self.repository.save_user_profile(existing)
+
+    def _saved_searches_with_alerts(self, user_id: str) -> list[dict[str, Any]]:
+        searches = self.repository.list_saved_searches(user_id)
+        if not searches:
+            return []
+        jobs = self.repository.list_discovered_jobs(user_id)
+        companies_by_id = {c.id: c for c in self.repository.list_companies(user_id)}
+        results: list[dict[str, Any]] = []
+        for search in searches:
+            payload = asdict(search)
+            payload["alerts"] = alert_summary_for_search(search, jobs, companies_by_id)
+            results.append(payload)
+        return results
+
+    def _profile_payload(self, profile: UserProfile) -> dict[str, Any]:
+        return {
+            "personaId": profile.persona_id,
+            "targetRoles": list(profile.target_roles or []),
+            "industry": profile.industry,
+            "location": profile.location,
+            "seniority": profile.seniority,
+            "yearsExperience": profile.years_experience,
+            "languages": list(profile.languages or []),
+            "cvText": profile.cv_text or "",
+            "cvLength": len(profile.cv_text or ""),
+            "notes": profile.notes,
+            "locale": profile.locale or "en",
+            "theme": profile.theme or "dark",
+            "hiddenSources": list(profile.hidden_sources or []),
+            "dismissedTerms": list(profile.dismissed_terms or []),
+            "activeWorkspaceId": profile.active_workspace_id,
+            "onboardingDismissed": bool(getattr(profile, "onboarding_dismissed", False)),
+            "retentionDays": int(getattr(profile, "retention_days", 90) or 0),
+            "slackWebhookConfigured": bool(getattr(profile, "slack_webhook_url", "") or ""),
+            "slackFitThreshold": float(getattr(profile, "slack_fit_threshold", 0.70) or 0.0),
+            "aiConsentAt": profile.ai_consent_at.isoformat() if getattr(profile, "ai_consent_at", None) else None,
+            "aiConsentProviderId": getattr(profile, "ai_consent_provider_id", None),
+            "updatedAt": profile.updated_at.isoformat() if profile.updated_at else None,
+        }
+
+    def ai_provider_for(self, user_id: str) -> AIProviderConfig:
+        return self.ai_providers.get(user_id) or AIProviderConfig()
+
+    def update_ai_provider(self, user_id: str, payload: dict[str, Any]) -> AIProviderConfig:
+        config = AIProviderConfig(
+            provider_id=payload.get("providerId") or payload.get("provider_id") or "manual",
+            invocation_mode=payload.get("invocationMode") or payload.get("invocation_mode") or "manual",
+            model=payload.get("model") or "",
+            credential_reference=payload.get("credentialReference") or payload.get("credential_reference") or "",
+            base_url=payload.get("baseUrl") or payload.get("base_url") or "",
+            command=payload.get("command") or "",
+            notes=payload.get("notes") or "",
+        )
+        errors = validate_provider_config(config)
+        if errors:
+            raise ValueError(errors[0]["code"])
+        self.ai_providers[user_id] = config
+        self.ai_config_path.parent.mkdir(parents=True, exist_ok=True)
+        self.ai_config_path.write_text(
+            json.dumps({"users": {key: value.public_dict() for key, value in self.ai_providers.items()}}, indent=2),
+            encoding="utf-8",
+        )
+        return config
+
+    def _load_ai_providers(self) -> dict[str, AIProviderConfig]:
+        if not self.ai_config_path.exists():
+            return {}
+        try:
+            payload = json.loads(self.ai_config_path.read_text(encoding="utf-8"))
+            if isinstance(payload.get("users"), dict):
+                configs = {}
+                for user_id, item in payload["users"].items():
+                    config = self._provider_from_payload(item)
+                    if not validate_provider_config(config):
+                        configs[user_id] = config
+                return configs
+            config = self._provider_from_payload(payload)
+            if validate_provider_config(config):
+                return {}
+            return {LOCAL_USER_ID: config}
+        except (OSError, json.JSONDecodeError):
+            return {}
+
+    def _provider_from_payload(self, payload: dict[str, Any]) -> AIProviderConfig:
+        return AIProviderConfig(
+            provider_id=payload.get("provider_id") or payload.get("providerId") or "manual",
+            invocation_mode=payload.get("invocation_mode") or payload.get("invocationMode") or "manual",
+            model=payload.get("model") or "",
+            credential_reference=payload.get("credential_reference") or payload.get("credentialReference") or "",
+            base_url=payload.get("base_url") or payload.get("baseUrl") or "",
+            command=payload.get("command") or "",
+            notes=payload.get("notes") or "",
+        )
+
+    def update_watchlist_schedule(self, user_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+        interval = int(payload.get("intervalMinutes") or payload.get("interval_minutes") or 360)
+        record = self.scheduler.upsert(user_id, enabled=bool(payload.get("enabled")), interval_minutes=interval)
+        return self._schedule_payload(record)
+
+    def schedule_for(self, user_id: str) -> dict[str, Any]:
+        return self._schedule_payload(self.scheduler.get(user_id))
+
+    def _schedule_payload(self, record) -> dict[str, Any]:
+        public = record.public_dict()
+        return {**DEFAULT_WATCHLIST_SCHEDULE, **public}
+
+    def _load_watchlist_schedules(self) -> dict[str, dict[str, Any]]:
+        if not self.schedule_path.exists():
+            return {}
+        try:
+            payload = json.loads(self.schedule_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return {}
+        if isinstance(payload.get("users"), dict):
+            return {
+                user_id: self._normalize_schedule(item)
+                for user_id, item in payload["users"].items()
+                if isinstance(item, dict)
+            }
+        if isinstance(payload, dict) and "intervalMinutes" in payload:
+            return {LOCAL_USER_ID: self._normalize_schedule(payload)}
+        return {}
+
+    def _normalize_schedule(self, payload: dict[str, Any]) -> dict[str, Any]:
+        interval = int(payload.get("intervalMinutes") or DEFAULT_WATCHLIST_SCHEDULE["intervalMinutes"])
+        return {
+            **DEFAULT_WATCHLIST_SCHEDULE,
+            **payload,
+            "enabled": bool(payload.get("enabled")),
+            "intervalMinutes": min(max(interval, 15), 10_080),
+        }
+
+    def _save_watchlist_schedules(self) -> None:
+        self.schedule_path.parent.mkdir(parents=True, exist_ok=True)
+        self.schedule_path.write_text(json.dumps({"users": self.watchlist_schedules}, indent=2), encoding="utf-8")
+
+    def record_admin_action(
+        self,
+        *,
+        actor: AuthUser,
+        target: AuthUser | None,
+        action: str,
+        details: dict[str, Any] | None = None,
+    ) -> None:
+        entry = {
+            "at": now_utc().isoformat(),
+            "action": action,
+            "actorId": actor.id,
+            "actorEmail": actor.email,
+            "targetId": target.id if target else None,
+            "targetEmail": target.email if target else None,
+            "details": details or {},
+        }
+        with self._audit_lock:
+            self.admin_audit_path.parent.mkdir(parents=True, exist_ok=True)
+            with self.admin_audit_path.open("a", encoding="utf-8") as handle:
+                handle.write(json.dumps(entry, ensure_ascii=False) + "\n")
+
+    def health(self, user_id: str | None = None, *, detailed: bool = False) -> dict[str, Any]:
+        scheduler_due = sum(1 for record in self.scheduler.all() if record.enabled)
+        payload: dict[str, Any] = {
+            "status": "ok",
+            "version": APP_VERSION,
+            "environment": APP_ENV,
+            "storage": "sqlite",
+            "registrationOpen": self.registration_open(),
+            "schedulerActiveJobs": scheduler_due,
+        }
+        if user_id:
+            payload["schedulerEnabled"] = bool(self.schedule_for(user_id).get("enabled"))
+            payload["counts"] = {
+                "companies": len(self.repository.list_companies(user_id)),
+                "discoveredJobs": len(self.repository.list_discovered_jobs(user_id)),
+                "importedJobs": len(self.repository.list_imported_jobs(user_id)),
+                "scans": len(self.repository.list_scans(user_id)),
+            }
+            payload["quotas"] = self.quota_store.usage(user_id)
+        if detailed:
+            payload["subsystems"] = self._health_subsystems()
+        return payload
+
+    def _health_subsystems(self) -> dict[str, Any]:
+        """Subsystem signals for ops monitoring.
+
+        Visible in ``/api/health?detailed=1`` and inside the admin
+        readiness panel. Each entry is either ``{"configured": bool,
+        "details": "…"}`` or a primitive count, never a secret.
+        """
+
+        backup_remote = os.environ.get("DIRECTJOB_BACKUP_REMOTE", "").strip()
+        backup_backend = os.environ.get("DIRECTJOB_BACKUP_BACKEND", "").strip() or "local"
+        push_configured = is_push_configured()
+        brave_configured = bool(os.environ.get("DIRECTJOB_BRAVE_API_KEY", "").strip())
+        stripe_active = (os.environ.get("DIRECTJOB_BILLING_BACKEND", "").strip() == "stripe"
+                         and bool(os.environ.get("DIRECTJOB_STRIPE_API_KEY", "").strip()))
+        webhook_configured = bool(os.environ.get("DIRECTJOB_STRIPE_WEBHOOK_SECRET", "").strip())
+        # Subscription / membership counts (cheap; in-memory).
+        push_subs = sum(1 for _ in self.repository.push_subscriptions.values())
+        memberships = sum(1 for _ in self.repository.workspace_memberships.values())
+        # Latest backup file mtime (best-effort; backups dir may not exist).
+        last_backup = None
+        try:
+            backup_dir = Path("/var/backups/directjob")
+            archives = sorted(backup_dir.glob("directjob-scout-*.tar.gz"))
+            if archives:
+                last_backup = datetime.fromtimestamp(archives[-1].stat().st_mtime, tz=timezone.utc).isoformat()
+        except (OSError, ValueError):
+            last_backup = None
+        return {
+            "push": {"configured": push_configured, "subscriptions": push_subs},
+            "discoveryProviders": {
+                "duckduckgo": True,  # always-on, no key
+                "brave": brave_configured,
+                "curated": True,
+            },
+            "billing": {"backend": backup_backend if False else (os.environ.get("DIRECTJOB_BILLING_BACKEND") or "manual"),
+                        "stripeActive": stripe_active,
+                        "webhookConfigured": webhook_configured},
+            "backup": {"backend": backup_backend, "remoteConfigured": bool(backup_remote),
+                       "lastArchiveAt": last_backup},
+            "workspaces": {"membershipsTotal": memberships},
+            "i18n": {"locales": ["en", "de"]},
+            "legalReviewed": os.environ.get("DIRECTJOB_LEGAL_REVIEWED", "false").strip().lower() == "true",
+        }
+
+    def admin_metrics(self) -> dict[str, Any]:
+        users = self.auth_store.list_users()
+        scheduler_state = [record.public_dict() | {"userId": record.user_id} for record in self.scheduler.all()]
+        recent_tickets = self.repository.list_support_tickets()[:5]
+        return {
+            "users": {
+                "total": len(users),
+                "active": sum(1 for user in users if user.active),
+                "admins": sum(1 for user in users if user.role == "admin" and user.active),
+            },
+            "quotas": self.quota_store.admin_metrics(),
+            "scheduler": scheduler_state,
+            "openInvitations": [
+                {
+                    "id": token.id,
+                    "email": token.email,
+                    "role": token.role,
+                    "createdBy": token.created_by,
+                    "createdAt": token.created_at.isoformat(),
+                    "expiresAt": token.expires_at.isoformat(),
+                }
+                for token in self.token_store.list_active("invitation")
+            ],
+            "recentTickets": [
+                {
+                    "id": ticket.id,
+                    "subject": ticket.subject,
+                    "status": ticket.status,
+                    "createdAt": ticket.created_at.isoformat(),
+                }
+                for ticket in recent_tickets
+            ],
+            "appVersion": APP_VERSION,
+            "environment": APP_ENV,
+            "emailBackend": self.email_status()["backend"],
+        }
+
+    def readiness_report(self) -> dict[str, Any]:
+        active_jobs = sum(1 for record in self.scheduler.all() if record.enabled)
+        report = build_readiness_report(
+            app_version=APP_VERSION,
+            environment=APP_ENV,
+            data_dir=self.data_path.parent,
+            audit_path=self.admin_audit_path,
+            scheduler_path=self.scheduler_path,
+            active_scheduler_jobs=active_jobs,
+        )
+        return report.to_dict()
+
+    def email_status(self) -> dict[str, Any]:
+        from company_discovery.email_transport import ConsoleTransport, SmtpTransport
+
+        transport = self.email_transport
+        kind = "console"
+        host = None
+        port = None
+        if isinstance(transport, SmtpTransport):
+            kind = "smtp"
+            host = transport.host
+            port = transport.port
+        elif isinstance(transport, ConsoleTransport):
+            kind = "console"
+        outbox_count = 0
+        outbox_path = self.data_path.parent / "email_outbox.log"
+        if outbox_path.exists():
+            try:
+                outbox_count = sum(1 for line in outbox_path.read_text(encoding="utf-8").splitlines() if line.strip())
+            except OSError:
+                outbox_count = 0
+        return {
+            "backend": kind,
+            "host": host,
+            "port": port,
+            "fromAddress": email_from_address(),
+            "publicUrl": APP_PUBLIC_URL or None,
+            "outboxEntries": outbox_count,
+        }
+
+    def send_test_email(self, *, actor: AuthUser, target: str) -> dict[str, Any]:
+        target = (target or actor.email).strip().casefold()
+        if "@" not in target:
+            raise ValueError("invalid_email")
+        body = (
+            "DirectJob Scout test email.\n\n"
+            f"Triggered by: {actor.email}\n"
+            f"At: {now_utc().isoformat()}\n"
+            "If you can read this, your email path is configured correctly. "
+            "This message never contains tokens or secrets."
+        )
+        try:
+            self.email_transport.send(
+                Email(
+                    to=target,
+                    subject="DirectJob Scout test email",
+                    text=body,
+                    from_address=email_from_address(),
+                )
+            )
+        except Exception as error:  # noqa: BLE001 - test-email path is best-effort
+            return {"status": "failed", "error": "smtp_failure"}
+        self.record_admin_action(
+            actor=actor,
+            target=None,
+            action="send_test_email",
+            details={"target": target},
+        )
+        return {"status": "sent", "target": target, "backend": self.email_status()["backend"]}
+
+    def request_account_deletion(self, *, user: AuthUser, reason: str | None = None) -> SupportTicket:
+        ticket = SupportTicket(
+            user_id=user.id,
+            subject="Account deletion request",
+            body=(reason or "User requested account deletion via the app.").strip(),
+            contact_email=user.email,
+            status="account_deletion_pending",
+        )
+        saved = self.repository.save_support_ticket(ticket)
+        self.log_analytics(user.id, "account_deletion_requested", {"ticketId": saved.id})
+        try:
+            self.email_transport.send(
+                Email(
+                    to=email_from_address(),
+                    subject="[DirectJob Scout] Account deletion request",
+                    text=(
+                        f"User: {user.email}\nUser id: {user.id}\nReason: {ticket.body}\n"
+                        "Process via Admin → Tester accounts → Delete user."
+                    ),
+                    from_address=email_from_address(),
+                )
+            )
+        except Exception:  # noqa: BLE001 - email best-effort
+            pass
+        return saved
+
+    def delete_user_account(self, *, actor: AuthUser, target_id: str) -> dict[str, Any]:
+        target = self.auth_store.get_user(target_id)
+        if target.role == "admin" and target.active and self.auth_store.count_active_admins() <= 1:
+            raise ValueError("last_admin_required")
+        for company in list(self.repository.list_companies(target_id)):
+            self.repository.delete_company(target_id, company.id)
+        for kind in ("imported_jobs", "discovered_jobs", "scans", "discovery_runs",
+                     "saved_searches", "support_tickets", "analytics_events"):
+            store = getattr(self.repository, kind, {})
+            for record_id in [k for k, item in list(store.items()) if getattr(item, "user_id", None) == target_id]:
+                store.pop(record_id, None)
+        if hasattr(self.repository, "_connection"):
+            for table in (
+                "companies", "discovery_runs", "scans", "discovered_jobs",
+                "imported_jobs", "saved_searches", "analytics_events", "support_tickets",
+            ):
+                self.repository._connection.execute(f"DELETE FROM {table} WHERE user_id = ?", (target_id,))
+            self.repository._connection.commit()
+        self.auth_store.delete_user_sessions(target_id)
+        self.auth_store.connection.execute("DELETE FROM users WHERE id = ?", (target_id,))
+        self.auth_store.connection.commit()
+        self.scheduler._connection.execute("DELETE FROM schedules WHERE user_id = ?", (target_id,))
+        self.scheduler._connection.commit()
+        self.quota_store.connection.execute("DELETE FROM user_counters WHERE user_id = ?", (target_id,))
+        self.quota_store.connection.commit()
+        self.token_store.revoke_all_for(target.email)
+        if target_id in self.ai_providers:
+            del self.ai_providers[target_id]
+            self.ai_config_path.parent.mkdir(parents=True, exist_ok=True)
+            self.ai_config_path.write_text(
+                json.dumps({"users": {key: value.public_dict() for key, value in self.ai_providers.items()}}, indent=2),
+                encoding="utf-8",
+            )
+        self.record_admin_action(
+            actor=actor,
+            target=target,
+            action="delete_user",
+            details={"email": target.email},
+        )
+        return {"status": "deleted", "userId": target_id, "email": target.email}
+
+    def registration_open(self) -> bool:
+        return ALLOW_REGISTRATION or not self.auth_store.has_users()
+
+    def login_allowed(self, client_id: str) -> bool:
+        now = time.time()
+        with self._login_lock:
+            attempts = [item for item in self._login_attempts.get(client_id, []) if now - item < 600]
+            self._login_attempts[client_id] = attempts
+            return len(attempts) < 10
+
+    def record_login_failure(self, client_id: str) -> None:
+        with self._login_lock:
+            self._login_attempts.setdefault(client_id, []).append(time.time())
+
+    def clear_login_failures(self, client_id: str) -> None:
+        with self._login_lock:
+            self._login_attempts.pop(client_id, None)
+
+    def export_data(self, user_id: str) -> dict[str, Any]:
+        return {
+            "schemaVersion": EXPORT_SCHEMA_VERSION,
+            "exportedAt": now_utc().isoformat(),
+            "appVersion": APP_VERSION,
+            "companies": self.repository.list_companies(user_id),
+            "discoveredJobs": self.repository.list_discovered_jobs(user_id),
+            "importedJobs": self.repository.list_imported_jobs(user_id),
+            "scans": self.repository.list_scans(user_id),
+            "discoveryRuns": self.repository.list_discovery_runs(user_id),
+            "watchlistSchedule": self.schedule_for(user_id),
+            "aiProvider": self.ai_provider_for(user_id).public_dict(),
+        }
+
+    def import_data(self, user_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+        if int(payload.get("schemaVersion") or 0) != EXPORT_SCHEMA_VERSION:
+            raise ValueError("unsupported_export_schema")
+        company_id_map = {item.get("id"): new_id("company") for item in payload.get("companies") or []}
+        run_id_map = {item.get("id"): new_id("run") for item in payload.get("discoveryRuns") or []}
+        scan_id_map = {item.get("id"): new_id("scan") for item in payload.get("scans") or []}
+        discovered_id_map = {item.get("id"): new_id("discovered_job") for item in payload.get("discoveredJobs") or []}
+        imported_id_map = {item.get("id"): new_id("job") for item in payload.get("importedJobs") or []}
+        imported_counts = {
+            "companies": 0,
+            "discoveredJobs": 0,
+            "importedJobs": 0,
+            "scans": 0,
+            "discoveryRuns": 0,
+        }
+        for item in payload.get("companies") or []:
+            item = {**item, "id": company_id_map.get(item.get("id"), new_id("company")), "user_id": user_id}
+            self.repository.save_company(dataclass_from_payload(Company, item))
+            imported_counts["companies"] += 1
+        for item in payload.get("discoveryRuns") or []:
+            item = {
+                **item,
+                "id": run_id_map.get(item.get("id"), new_id("run")),
+                "user_id": user_id,
+                "company_id": company_id_map.get(item.get("company_id")),
+            }
+            self.repository.save_discovery_run(dataclass_from_payload(CompanyDiscoveryRun, item))
+            imported_counts["discoveryRuns"] += 1
+        for item in payload.get("scans") or []:
+            item = {
+                **item,
+                "id": scan_id_map.get(item.get("id"), new_id("scan")),
+                "user_id": user_id,
+                "company_id": company_id_map.get(item.get("company_id"), item.get("company_id")),
+            }
+            self.repository.save_scan(dataclass_from_payload(CareerPageScan, item))
+            imported_counts["scans"] += 1
+        for item in payload.get("discoveredJobs") or []:
+            item = {
+                **item,
+                "id": discovered_id_map.get(item.get("id"), new_id("discovered_job")),
+                "user_id": user_id,
+                "company_id": company_id_map.get(item.get("company_id"), item.get("company_id")),
+                "imported_job_id": imported_id_map.get(item.get("imported_job_id")),
+            }
+            self.repository.save_discovered_job(dataclass_from_payload(DiscoveredJob, item))
+            imported_counts["discoveredJobs"] += 1
+        for item in payload.get("importedJobs") or []:
+            item = {
+                **item,
+                "id": imported_id_map.get(item.get("id"), new_id("job")),
+                "user_id": user_id,
+                "company_id": company_id_map.get(item.get("company_id"), item.get("company_id")),
+                "discovered_job_id": discovered_id_map.get(item.get("discovered_job_id"), item.get("discovered_job_id")),
+            }
+            self.repository.save_imported_job(dataclass_from_payload(ImportedJob, item))
+            imported_counts["importedJobs"] += 1
+        if isinstance(payload.get("watchlistSchedule"), dict):
+            schedule = payload["watchlistSchedule"]
+            self.scheduler.upsert(
+                user_id,
+                enabled=bool(schedule.get("enabled")),
+                interval_minutes=int(schedule.get("intervalMinutes") or 360),
+            )
+        if isinstance(payload.get("aiProvider"), dict):
+            self.update_ai_provider(user_id, payload["aiProvider"])
+        return {"status": "imported", "counts": imported_counts}
+
+    def run_watchlist_scan(self, user_id: str, trigger: str = "manual") -> dict[str, Any]:
+        companies = self.repository.list_companies(user_id)
+        watched = [company for company in companies if company.watch_enabled]
+        runs: list[CompanyDiscoveryRun] = []
+        skipped: list[dict[str, Any]] = []
+        for company in watched:
+            if not company.career_page_url:
+                skipped.append({"companyId": company.id, "name": company.name, "reason": "missing_career_page"})
+                continue
+            hostname = urlparse(company.career_page_url).hostname or ""
+            if hostname == "demo.example" or hostname.endswith(".example"):
+                skipped.append({"companyId": company.id, "name": company.name, "reason": "demo_fixture_not_scanned"})
+                continue
+            try:
+                runs.append(self.start_scan(user_id, company.id, company.career_page_url))
+            except QuotaError as error:
+                skipped.append({"companyId": company.id, "name": company.name, "reason": error.code})
+        status = "queued" if runs else "nothing_to_scan"
+        if trigger == "scheduled":
+            # The DurableScheduler records the run on its own; we just return.
+            self.scheduler.record_run(user_id, status=status, trigger=trigger, success=bool(runs) or status == "nothing_to_scan")
+        # Auto-push: notify the user about new saved-search matches found
+        # by this batch. Cheap (in-memory diff against profile.last_push_notified_at).
+        try:
+            self.notify_new_matches(user_id)
+        except Exception:  # noqa: BLE001 — push side-effects must never break a scan
+            pass
+        return {"status": status, "runs": runs, "skipped": skipped, "schedule": self.schedule_for(user_id)}
+
+    def run_saved_search(self, user_id: str, search_id: str, *, cap: int = 25) -> dict[str, Any]:
+        """Run a SavedSearch through the aggregator pipeline.
+
+        Top-N AggregatedJob results land as DiscoveredJob rows on the
+        user's queue (with ``company_id=None`` because aggregator hits
+        rarely match a known company in the watchlist). Existing
+        dedup/merge semantics apply, so re-running the same query
+        only adds new postings + records additional sources on
+        existing rows via ``also_seen_at``.
+
+        Returns ``{newJobs, mergedSources, candidates, query}`` so the
+        UI can show "X new + Y already known" toasts and the scheduler
+        can record the run.
+        """
+
+        search = self.repository.saved_searches.get(search_id)
+        if search is None or search.user_id != user_id:
+            raise KeyError(search_id)
+        # Build a free-text query from name + roles. Persona/CV expansion is
+        # Phase 2a's job; here we use the raw saved search payload so the
+        # behaviour is predictable and offline-tunable.
+        query_parts = [search.name] if search.name and search.name != "Untitled search" else []
+        query_parts.extend(search.target_roles or [])
+        query_parts.extend(search.sectors or [])
+        query = " ".join(p.strip() for p in query_parts if p and p.strip())
+        location = search.location
+        agg_jobs, outcomes = self.aggregator_engine.search(
+            query=query or (search.industry or ""),
+            location=location,
+            limit_per_provider=cap,
+        )
+        new_jobs: list[DiscoveredJob] = []
+        merged_sources: list[dict[str, str]] = []
+        for job in agg_jobs:
+            host = (urlparse(job.source_url).hostname or "").lower() or job.source
+            candidate = DiscoveredJob(
+                user_id=user_id,
+                source_url=job.source_url,
+                title=job.title[:160] or f"Listing on {host}",
+                raw_snippet=(job.title or "")[:160] or None,
+                raw_description=(job.description or "")[:2000] or None,
+                location=job.location,
+                confidence_score=0.55,
+                structured_data={"captured_via": job.source, "host": host},
+            )
+            duplicate = self.repository.find_duplicate_discovered_job(candidate)
+            if duplicate:
+                existing = dict(duplicate.also_seen_at or {})
+                existing[host] = {
+                    "url": job.source_url,
+                    "found_at": now_utc().isoformat(),
+                    "source_label": job.source,
+                }
+                duplicate.also_seen_at = existing
+                self.repository.save_discovered_job(duplicate)
+                merged_sources.append({"discoveredJobId": duplicate.id, "sourceHost": host})
+            else:
+                saved = self.repository.save_discovered_job(candidate)
+                new_jobs.append(saved)
+        # Mark the search as run so the digest delta calculation is
+        # consistent with manual run-now triggers.
+        search.last_seen_at = now_utc()
+        search.updated_at = now_utc()
+        self.repository.save_saved_search(search)
+        self.log_analytics(user_id, "saved_search_run", {
+            "searchId": search.id,
+            "query": query[:120],
+            "location": location,
+            "newJobs": len(new_jobs),
+            "mergedSources": len(merged_sources),
+            "candidates": len(agg_jobs),
+        })
+        return {
+            "searchId": search.id,
+            "query": query,
+            "location": location,
+            "newJobs": len(new_jobs),
+            "mergedSources": len(merged_sources),
+            "candidates": len(agg_jobs),
+            "providerOutcomes": [
+                {"provider": o.provider, "jobCount": o.job_count, "cached": o.cached, "error": o.error}
+                for o in outcomes
+            ],
+        }
+
+    def notify_new_matches(self, user_id: str, *, max_pushes: int = 5) -> dict[str, Any]:
+        """Push to all of ``user_id``'s subscriptions for any unseen saved-search match.
+
+        Idempotent: relies on ``UserProfile.last_push_notified_at`` so the
+        same match isn't pushed twice across scans. Returns a small
+        summary so callers (and tests) can assert on what fired.
+        """
+
+        if not is_push_configured():
+            return {"status": "push_unavailable", "sent": 0}
+        subs = self.repository.list_push_subscriptions(user_id)
+        if not subs:
+            return {"status": "no_subscriptions", "sent": 0}
+        profile = self.profile_for(user_id)
+        threshold = profile.last_push_notified_at
+        searches = self.repository.list_saved_searches(user_id)
+        if not searches:
+            return {"status": "no_saved_searches", "sent": 0}
+        jobs = self.repository.list_discovered_jobs(user_id)
+        companies_by_id = {c.id: c for c in self.repository.list_companies(user_id)}
+        candidates: list[tuple[DiscoveredJob, str]] = []
+        seen_job_ids: set[str] = set()
+        for search in searches:
+            for job in jobs:
+                if job.id in seen_job_ids or job.imported_job_id:
+                    continue
+                if threshold and job.discovered_at <= threshold:
+                    continue
+                company = companies_by_id.get(job.company_id)
+                sector = company.sector if company else None
+                if saved_search_matches_job(search, job, sector):
+                    candidates.append((job, search.name))
+                    seen_job_ids.add(job.id)
+        # Newest first, capped.
+        candidates.sort(key=lambda pair: pair[0].discovered_at, reverse=True)
+        candidates = candidates[:max_pushes]
+        sent = 0
+        for job, search_name in candidates:
+            company = companies_by_id.get(job.company_id)
+            company_name = company.name if company else "Direct company"
+            push_payload = PushPayload(
+                title=f"New match: {job.title}",
+                body=f"{company_name} · matches saved search “{search_name}”",
+                url=f"/?queue=highlight",
+            )
+            for sub in subs:
+                try:
+                    send_push(sub, push_payload)
+                    sent += 1
+                except PushUnavailableError:
+                    return {"status": "push_unavailable", "sent": sent}
+                except Exception:  # noqa: BLE001 — stale subscription, just skip
+                    continue
+        if candidates:
+            profile.last_push_notified_at = now_utc()
+            self.repository.save_user_profile(profile)
+        return {"status": "ok", "sent": sent, "candidates": len(candidates)}
+
+    def seed_demo(self, user_id: str) -> dict[str, Any]:
+        company = next(
+            (item for item in self.repository.list_companies(user_id) if item.name == "Demo Klinikgruppe"),
+            None,
+        )
+        if company is None:
+            company = self.service.create_company(
+                user_id=user_id,
+                name="Demo Klinikgruppe",
+                website_url="https://demo.example",
+                career_page_url="https://demo.example/karriere",
+                sector="Hospital / clinic group",
+                notes="Demo fixture for pilot walkthroughs. No live website was scanned.",
+                watch_enabled=True,
+            )
+        job = DiscoveredJob(
+            user_id=user_id,
+            company_id=company.id,
+            source_url="https://demo.example/jobs/junior-healthcare-project-manager",
+            title="Junior Healthcare Project Manager",
+            location="Berlin",
+            raw_snippet="Junior Healthcare Project Manager",
+            raw_description=(
+                "Coordinate digital health and process-improvement projects with clinical, operations, "
+                "and quality teams. Suitable for a junior healthcare-management profile."
+            ),
+            structured_data={"source": "local_demo_fixture"},
+            confidence_score=0.9,
+        )
+        duplicate = self.repository.find_duplicate_discovered_job(job)
+        saved_job = duplicate or self.repository.save_discovered_job(job)
+        run = self.repository.save_discovery_run(
+            CompanyDiscoveryRun(
+                user_id=user_id,
+                company_id=company.id,
+                query=company.career_page_url,
+                source_type="demo_fixture",
+                status="completed",
+                finished_at=now_utc(),
+                pages_checked=1,
+                jobs_found=0 if duplicate else 1,
+                errors=[],
+            )
+        )
+        self.repository.save_scan(
+            CareerPageScan(
+                user_id=user_id,
+                company_id=company.id,
+                career_page_url=company.career_page_url or "",
+                status="completed",
+                checked_robots=True,
+                robots_allowed=True,
+                pages_checked=1,
+                jobs_found=0 if duplicate else 1,
+                errors=[],
+                source_urls=[company.career_page_url or ""],
+            )
+        )
+        return {"company": company, "job": saved_job, "run": run}
+
+    def start_scan(self, user_id: str, company_id: str, career_page_url: str | None) -> CompanyDiscoveryRun:
+        self.repository.get_company(user_id, company_id)
+        self.quota_store.can_start_scan(user_id, target_url=career_page_url)
+        active_key = (user_id, company_id)
+        with self._active_lock:
+            if active_key in self._active_company_scans:
+                run = CompanyDiscoveryRun(
+                    user_id=user_id,
+                    company_id=company_id,
+                    query=career_page_url,
+                    source_type="career_page_scan",
+                    status="already_running",
+                    finished_at=now_utc(),
+                    errors=[{"code": "scan_already_running"}],
+                )
+                return self.repository.save_discovery_run(run)
+            self._active_company_scans.add(active_key)
+
+        self.quota_store.record_scan_started(user_id, target_url=career_page_url)
+        run = self.repository.save_discovery_run(
+            CompanyDiscoveryRun(
+                user_id=user_id,
+                company_id=company_id,
+                query=career_page_url,
+                source_type="career_page_scan",
+                status="queued",
+            )
+        )
+        thread = Thread(target=self._run_scan, args=(user_id, run, company_id, career_page_url), daemon=True)
+        thread.start()
+        return run
+
+    def _run_scan(self, user_id: str, run: CompanyDiscoveryRun, company_id: str, career_page_url: str | None) -> None:
+        try:
+            self.service.scan_company_career_page(user_id, company_id, career_page_url, run)
+        except Exception as error:  # noqa: BLE001 - background boundary
+            run.status = "failed"
+            run.errors = [{"code": "scan_failed", "message": str(error)}]
+            run.finished_at = now_utc()
+            self.repository.save_discovery_run(run)
+        finally:
+            with self._active_lock:
+                self._active_company_scans.discard((user_id, company_id))
+            self.quota_store.record_scan_finished(user_id)
+
+    # Invitation + password reset helpers
+    def password_reset_allowed(self, client_id: str) -> bool:
+        now = time.time()
+        with self._reset_request_lock:
+            attempts = [t for t in self._reset_requests.get(client_id, []) if now - t < PASSWORD_RESET_REQUEST_WINDOW]
+            self._reset_requests[client_id] = attempts
+            return len(attempts) < PASSWORD_RESET_REQUEST_LIMIT
+
+    def record_password_reset_request(self, client_id: str) -> None:
+        with self._reset_request_lock:
+            self._reset_requests.setdefault(client_id, []).append(time.time())
+
+    def public_url_for(self, path: str) -> str:
+        if APP_PUBLIC_URL:
+            return APP_PUBLIC_URL.rstrip("/") + path
+        return path
+
+    def send_invitation(self, *, actor: AuthUser, email: str, role: str) -> dict[str, Any]:
+        normalized = email.strip().casefold()
+        if not normalized or "@" not in normalized:
+            raise ValueError("invalid_email")
+        if role not in {"admin", "member"}:
+            raise ValueError("invalid_role")
+        # Revoke any prior invitation for this address so we never have two pending
+        self.token_store.revoke_all_for(normalized, kind="invitation")
+        issued = self.token_store.issue(
+            kind="invitation",
+            email=normalized,
+            role=role,
+            created_by=actor.id,
+        )
+        accept_url = self.public_url_for(f"/accept-invite?token={issued.raw_token}")
+        message = (
+            f"You have been invited to DirectJob Scout as a {role}.\n\n"
+            f"Accept your invitation here:\n{accept_url}\n\n"
+            "If the link does not open, paste it into your browser. "
+            "The invite expires in 48 hours and can be used once."
+        )
+        self.email_transport.send(
+            Email(
+                to=normalized,
+                subject="Your DirectJob Scout invitation",
+                text=message,
+                from_address=email_from_address(),
+            )
+        )
+        self.record_admin_action(
+            actor=actor,
+            target=None,
+            action="send_invite",
+            details={"email": normalized, "role": role, "tokenId": issued.record.id},
+        )
+        return {
+            "status": "sent",
+            "tokenId": issued.record.id,
+            "email": normalized,
+            "role": role,
+            "expiresAt": issued.record.expires_at.isoformat(),
+            "acceptUrl": accept_url,
+        }
+
+    def accept_invitation(self, *, raw_token: str, password: str) -> AuthUser:
+        if len(password) < 12:
+            raise ValueError("password_too_short")
+        record = self.token_store.consume("invitation", raw_token)
+        if record is None:
+            raise ValueError("invalid_token")
+        try:
+            user = self.auth_store.create_user(record.email, password, role=record.role)
+        except ValueError as error:
+            if str(error) != "email_already_exists":
+                raise
+            # Password reset semantics for an already-existing email
+            existing = self.auth_store.authenticate(record.email, password)
+            if existing is None:
+                # Force-reset the password to the new one (admin path)
+                target_id = self.auth_store.connection.execute(
+                    "SELECT id FROM users WHERE email = ?", (record.email,),
+                ).fetchone()[0]
+                self.auth_store.update_user(target_id, password=password, role=record.role, active=True)
+                user = self.auth_store.get_user(target_id)
+            else:
+                user = existing
+        return user
+
+    def request_password_reset(self, email: str) -> str | None:
+        normalized = email.strip().casefold()
+        if not normalized or "@" not in normalized:
+            return None
+        # Always revoke prior reset tokens
+        self.token_store.revoke_all_for(normalized, kind="password_reset")
+        try:
+            self.auth_store.connection.execute(
+                "SELECT 1 FROM users WHERE email = ?", (normalized,)
+            ).fetchone()
+        except Exception:
+            return None
+        row = self.auth_store.connection.execute(
+            "SELECT id FROM users WHERE email = ?", (normalized,)
+        ).fetchone()
+        if row is None:
+            # Do not leak existence; pretend success
+            return None
+        from datetime import timedelta as _td
+        issued = self.token_store.issue(
+            kind="password_reset",
+            email=normalized,
+            ttl=_td(hours=1),
+        )
+        reset_url = self.public_url_for(f"/reset-password?token={issued.raw_token}")
+        message = (
+            "We received a request to reset your DirectJob Scout password.\n\n"
+            f"If this was you, follow this link within 1 hour:\n{reset_url}\n\n"
+            "If you did not request this, you can ignore this email."
+        )
+        self.email_transport.send(
+            Email(
+                to=normalized,
+                subject="Reset your DirectJob Scout password",
+                text=message,
+                from_address=email_from_address(),
+            )
+        )
+        return reset_url
+
+    # --- Phase 2/3 helpers ---
+
+    def maybe_notify_slack(self, user_id: str, job) -> None:
+        """Fire-and-forget Slack notification when ``job.auto_fit_score``
+        crosses the user's threshold. No-op if disabled. Tracks notified
+        ids on the profile so re-scoring doesn't double-ping."""
+
+        profile = self.profile_for(user_id)
+        url = (getattr(profile, "slack_webhook_url", "") or "").strip()
+        if not url:
+            return
+        score = job.auto_fit_score or 0.0
+        threshold = float(getattr(profile, "slack_fit_threshold", 0.70) or 0.0)
+        if score < threshold:
+            return
+        notified = list(getattr(profile, "slack_notified_job_ids", []) or [])
+        if job.id in notified:
+            return
+        company = self.repository.companies.get(job.company_id)
+        company_name = company.name if company else (
+            (job.also_seen_at and next(iter(job.also_seen_at), "")) or ""
+        )
+        public_url = os.environ.get("DIRECTJOB_PUBLIC_URL") or "https://app.khalo.org"
+        result = post_high_fit_notification(
+            webhook_url=url,
+            job_title=job.title or "",
+            company_name=company_name,
+            location=job.location,
+            fit_score=score,
+            fit_reason=job.auto_fit_reason,
+            job_url=job.source_url,
+            public_url=public_url,
+        )
+        # Track notified ids only on success — failed pings should retry later.
+        if result.get("status") == "ok":
+            notified.append(job.id)
+            profile.slack_notified_job_ids = notified[-200:]
+            self.repository.save_user_profile(profile)
+            self.log_analytics(
+                user_id, "slack_notified",
+                {"discoveredJobId": job.id, "score": score},
+            )
+
+    def run_retention_purge(self, *, default_days: int = 90) -> dict[str, int]:
+        """Sweep every user's old discovered jobs. Per-user
+        ``profile.retention_days`` overrides the default. Imported jobs
+        are kept regardless. Returns total deleted by user.
+
+        Idempotent: safe to call repeatedly."""
+
+        from datetime import timedelta
+
+        results: dict[str, int] = {}
+        for user in self.auth_store.list_users():
+            profile = self.profile_for(user.id)
+            days = int(getattr(profile, "retention_days", 0) or 0)
+            if days <= 0:
+                days = default_days
+            if days <= 0:
+                continue
+            cutoff = now_utc() - timedelta(days=days)
+            removed = self.repository.purge_discovered_jobs_older_than(
+                user.id, cutoff=cutoff, keep_imported=True
+            )
+            if removed:
+                results[user.id] = removed
+                self.log_analytics(
+                    user.id, "retention_purge",
+                    {"removed": removed, "days": days, "cutoff": cutoff.isoformat()},
+                )
+        return results
+
+    def update_application_state(
+        self,
+        user_id: str,
+        imported_job_id: str,
+        payload: dict[str, Any],
+    ) -> ImportedJob:
+        imported = self.repository.imported_jobs.get(imported_job_id)
+        if imported is None or imported.user_id != user_id:
+            raise KeyError(imported_job_id)
+        previous_status = imported.application_status
+        previous_stage = imported.interview_stage
+        history_note = None
+        if "applicationStatus" in payload:
+            status = payload["applicationStatus"]
+            if status not in APPLICATION_STATUSES:
+                raise ValueError("invalid_application_status")
+            imported.application_status = status
+        for src, dst in (
+            ("applicationNotes", "application_notes"),
+            ("coverLetterDraft", "cover_letter_draft"),
+            ("nextAction", "next_action"),
+        ):
+            if src in payload:
+                value = payload[src]
+                setattr(imported, dst, str(value) if value is not None else None)
+        if "interviewStage" in payload or "interview_stage" in payload:
+            from company_discovery.models import INTERVIEW_STAGES
+
+            raw_stage = payload.get("interviewStage", payload.get("interview_stage"))
+            if raw_stage in (None, ""):
+                imported.interview_stage = None
+            else:
+                stage = str(raw_stage)
+                if stage not in INTERVIEW_STAGES:
+                    raise ValueError("invalid_interview_stage")
+                imported.interview_stage = stage
+        if "reminderAt" in payload or "reminder_at" in payload:
+            raw_reminder = payload.get("reminderAt", payload.get("reminder_at"))
+            if not raw_reminder:
+                imported.reminder_at = None
+            else:
+                try:
+                    imported.reminder_at = datetime.fromisoformat(str(raw_reminder).replace("Z", "+00:00"))
+                except ValueError:
+                    raise ValueError("invalid_reminder_at")
+        if "historyNote" in payload:
+            history_note = str(payload.get("historyNote") or "").strip() or None
+        if "documentsChecklist" in payload:
+            checklist = payload["documentsChecklist"]
+            if not isinstance(checklist, list):
+                raise ValueError("invalid_documents_checklist")
+            cleaned: list[dict[str, Any]] = []
+            for item in checklist:
+                if not isinstance(item, dict):
+                    continue
+                cleaned.append(
+                    {
+                        "label": str(item.get("label") or "").strip(),
+                        "complete": bool(item.get("complete")),
+                    }
+                )
+            imported.documents_checklist = cleaned
+        if (
+            previous_status != imported.application_status
+            or previous_stage != imported.interview_stage
+            or history_note
+        ):
+            imported.application_history = list(imported.application_history or [])
+            imported.application_history.append(
+                {
+                    "at": now_utc().isoformat(),
+                    "status": imported.application_status,
+                    "stage": imported.interview_stage,
+                    "note": history_note,
+                }
+            )
+            # Cap the timeline so it doesn't grow unbounded.
+            if len(imported.application_history) > 50:
+                imported.application_history = imported.application_history[-50:]
+        return self.repository.save_imported_job(imported)
+
+    def apply_watchlist_template(self, user_id: str, template_id: str) -> dict[str, Any]:
+        template = get_template(template_id)
+        if template is None:
+            raise ValueError("unknown_template")
+        added: list[Company] = []
+        skipped: list[dict[str, str]] = []
+        existing = self.repository.list_companies(user_id)
+        existing_hosts = {urlparse(c.website_url).hostname or "" for c in existing}
+        for entry in template.companies:
+            host = urlparse(entry.website_url).hostname or ""
+            if host and host in existing_hosts:
+                skipped.append({"name": entry.name, "reason": "already_in_watchlist"})
+                continue
+            company = self.service.create_company(
+                user_id=user_id,
+                name=entry.name,
+                website_url=entry.website_url,
+                career_page_url=entry.career_page_url,
+                sector=entry.sector,
+                notes=f"Added from template '{template.label}'.",
+                watch_enabled=True,
+            )
+            added.append(company)
+        self.log_analytics(user_id, "watchlist_template_applied", {"templateId": template_id, "added": len(added)})
+        return {"added": added, "skipped": skipped, "templateId": template_id}
+
+    def save_saved_search(self, user_id: str, payload: dict[str, Any]) -> SavedSearch:
+        name = str(payload.get("name") or "").strip() or "Untitled search"
+        target_roles = payload.get("targetRoles") or payload.get("target_roles") or []
+        if isinstance(target_roles, str):
+            target_roles = [item.strip() for item in target_roles.split(",") if item.strip()]
+        existing_id = payload.get("id")
+        existing = self.repository.saved_searches.get(existing_id) if existing_id else None
+        if existing is not None and existing.user_id != user_id:
+            raise KeyError(existing_id)
+        record = existing or SavedSearch(user_id=user_id, name=name)
+        record.name = name
+        record.target_roles = list(target_roles)
+        record.industry = str(payload.get("industry") or "Healthcare")
+        record.location = payload.get("location")
+        sectors = payload.get("sectors") or []
+        if isinstance(sectors, str):
+            sectors = [item.strip() for item in sectors.split(",") if item.strip()]
+        record.sectors = list(sectors)
+        record.notes = payload.get("notes")
+        return self.repository.save_saved_search(record)
+
+    def delete_saved_search(self, user_id: str, search_id: str) -> None:
+        self.repository.delete_saved_search(user_id, search_id)
+
+    def discover_companies(
+        self,
+        *,
+        target_roles: list[str],
+        industry: str,
+        location: str | None,
+        limit: int = 12,
+        persona_id: str | None = None,
+    ) -> list[dict[str, Any]]:
+        results = self.discovery_engine.discover(
+            target_roles=target_roles,
+            industry=industry,
+            location=location,
+            limit=limit,
+            persona_id=persona_id,
+        )
+        items = [
+            {
+                "name": item.name,
+                "website_url": item.website_url,
+                "career_page_url": item.career_page_url,
+                "sector": item.sector,
+                "location_hint": item.location_hint,
+                "relevanceScore": item.relevance_score,
+                "relevanceReason": item.relevance_reason,
+                "source": item.source,
+                "type": "company",
+            }
+            for item in results
+        ]
+        return rank_candidates(
+            items,
+            target_roles=target_roles,
+            industry=industry,
+            location=location,
+            persona_id=persona_id,
+        )
+
+    def inbound_token_for_user(self, user_id: str) -> str:
+        """Stable per-user token used as the local-part of inbound email
+        addresses (e.g. ``u-{token}@inbox.khalo.org``).
+
+        Derived as HMAC-SHA256 over the user-id + the server secret so it
+        survives restarts and can be re-derived if a user loses their
+        bookmarklet/email setup. The token has no read scope on the
+        account — it's only usable to *land* a job in that user's queue.
+        """
+
+        import hashlib as _hashlib
+        import hmac as _hmac
+
+        secret = os.environ.get("DIRECTJOB_SECRET_KEY", "dev-secret").encode("utf-8")
+        digest = _hmac.new(secret, user_id.encode("utf-8"), _hashlib.sha256).hexdigest()
+        return digest[:24]
+
+    def repository_user_by_token(self, token: str) -> str | None:
+        """Reverse-lookup helper for inbound-email routing.
+
+        Iterates users + compares the derived token with constant-time
+        equality. Caller passes the local-part captured from the
+        recipient address.
+        """
+
+        import hmac as _hmac
+
+        if not token:
+            return None
+        for user in self.auth_store.list_users():
+            if _hmac.compare_digest(self.inbound_token_for_user(user.id), token):
+                return user.id
+        return None
+
+    def run_user_daily(self, user_id: str, trigger: str = "scheduled") -> dict[str, Any]:
+        """Combined daily run: watchlist scans + saved-search aggregator runs + email digest.
+
+        Replaces the watchlist-only path that previously fronted the
+        DurableScheduler. The new pipeline:
+
+        1. Run all watched companies (existing ``run_watchlist_scan``).
+        2. Run every saved search through ``run_saved_search`` so
+           cross-aggregator results land in the queue.
+        3. Send the user's daily digest (no-op when no email transport).
+        4. Fire push notifications for any unseen new matches.
+
+        Returns a small summary the scheduler logs back into its
+        per-user run history.
+        """
+
+        scan_result = self.run_watchlist_scan(user_id, trigger=trigger)
+        searches = self.repository.list_saved_searches(user_id)
+        per_search: list[dict[str, Any]] = []
+        for search in searches:
+            try:
+                per_search.append(self.run_saved_search(user_id, search.id))
+            except Exception as exc:  # noqa: BLE001 - scheduler must keep running
+                per_search.append({
+                    "searchId": search.id,
+                    "error": f"{type(exc).__name__}: {exc}"[:200],
+                })
+        digest_text = ""
+        try:
+            user = self.auth_store.get_user(user_id)
+            digest_text = self.send_user_digest(user=user)
+        except KeyError:
+            digest_text = ""
+        except Exception as exc:  # noqa: BLE001
+            digest_text = f"digest_failed: {type(exc).__name__}"
+        try:
+            self.notify_new_matches(user_id)
+        except Exception:  # noqa: BLE001
+            pass
+        return {
+            "trigger": trigger,
+            "scan": scan_result,
+            "savedSearchRuns": per_search,
+            "digestSent": bool(digest_text and not digest_text.startswith("digest_failed")),
+        }
+
+    def build_user_digest(self, user_id: str, *, email: str) -> str:
+        companies = self.repository.list_companies(user_id)
+        discovered = self.repository.list_discovered_jobs(user_id)
+        return build_digest(user_email=email, companies=companies, discovered_jobs=discovered)
+
+    def send_user_digest(self, *, user: AuthUser) -> str:
+        text = self.build_user_digest(user.id, email=user.email)
+        self.email_transport.send(
+            Email(
+                to=user.email,
+                subject="Your DirectJob Scout digest",
+                text=text,
+                from_address=email_from_address(),
+            )
+        )
+        return text
+
+    def get_subscription(self) -> Subscription:
+        return self.billing_backend.load()
+
+    def update_subscription(
+        self,
+        *,
+        actor: AuthUser,
+        plan_id: str | None = None,
+        status: str | None = None,
+        seats: int | None = None,
+        notes: str | None = None,
+        customer_email: str | None = None,
+    ) -> Subscription:
+        sub = self.billing_backend.load()
+        if plan_id and not any(p["id"] == plan_id for p in plans_payload()):
+            raise ValueError("unknown_plan")
+        if status and status not in {"active", "trialing", "past_due", "cancelled"}:
+            raise ValueError("invalid_status")
+        if plan_id:
+            sub.plan_id = plan_id
+        if status:
+            sub.status = status
+            if status == "cancelled" and not sub.cancelled_at:
+                sub.cancelled_at = now_utc().isoformat()
+        if seats is not None:
+            sub.seats = max(1, int(seats))
+        if notes is not None:
+            sub.notes = notes
+        if customer_email is not None:
+            sub.customer_email = customer_email
+        sub.last_event = now_utc().isoformat()
+        result = self.billing_backend.save(sub)
+        self.record_admin_action(
+            actor=actor,
+            target=None,
+            action="update_billing",
+            details={"plan": result.plan_id, "status": result.status, "seats": result.seats},
+        )
+        return result
+
+    def log_analytics(self, user_id: str, kind: str, payload: dict[str, Any] | None = None) -> AnalyticsEvent:
+        event = AnalyticsEvent(user_id=user_id, kind=kind, payload=payload or {})
+        return self.repository.save_analytics_event(event)
+
+    def submit_support_ticket(
+        self,
+        *,
+        user: AuthUser,
+        subject: str,
+        body: str,
+        contact_email: str | None = None,
+    ) -> SupportTicket:
+        ticket = SupportTicket(
+            user_id=user.id,
+            subject=subject.strip() or "Support request",
+            body=body.strip(),
+            contact_email=(contact_email or user.email).strip().casefold(),
+        )
+        saved = self.repository.save_support_ticket(ticket)
+        # Mirror to email so admins see it even without opening the app.
+        try:
+            self.email_transport.send(
+                Email(
+                    to=email_from_address(),
+                    subject=f"[DirectJob Scout support] {saved.subject}",
+                    text=(
+                        f"From: {saved.contact_email}\n"
+                        f"User id: {user.id}\n\n"
+                        f"{saved.body}\n"
+                    ),
+                    from_address=email_from_address(),
+                )
+            )
+        except Exception:  # noqa: BLE001 - never let email failure drop the ticket
+            pass
+        return saved
+
+    def complete_password_reset(self, *, raw_token: str, password: str) -> AuthUser:
+        if len(password) < 12:
+            raise ValueError("password_too_short")
+        record = self.token_store.consume("password_reset", raw_token)
+        if record is None:
+            raise ValueError("invalid_token")
+        row = self.auth_store.connection.execute(
+            "SELECT id FROM users WHERE email = ?", (record.email,)
+        ).fetchone()
+        if row is None:
+            raise ValueError("invalid_token")
+        return self.auth_store.update_user(row[0], password=password)
+
+
+STATE = AppState()
+
+
+class Handler(BaseHTTPRequestHandler):
+    server_version = f"DirectJobScout/{APP_VERSION}"
+
+    def end_headers(self) -> None:
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("X-Frame-Options", "DENY")
+        self.send_header("Referrer-Policy", "same-origin")
+        self.send_header("Permissions-Policy", "geolocation=(), microphone=(), camera=()")
+        self.send_header(
+            "Content-Security-Policy",
+            "default-src 'self'; "
+            "script-src 'self'; "
+            "worker-src 'self'; "
+            "manifest-src 'self'; "
+            "style-src 'self' https://fonts.googleapis.com; "
+            "font-src 'self' https://fonts.gstatic.com; "
+            "img-src 'self' data:; "
+            "connect-src 'self'; "
+            "base-uri 'none'; "
+            "frame-ancestors 'none'",
+        )
+        super().end_headers()
+
+    def current_session(self) -> AuthSession | None:
+        cookie_header = self.headers.get("Cookie", "")
+        cookie = SimpleCookie()
+        cookie.load(cookie_header)
+        morsel = cookie.get(SESSION_COOKIE_NAME)
+        return STATE.auth_store.get_session(morsel.value if morsel else None)
+
+    def require_auth(self) -> AuthSession | None:
+        session = self.current_session()
+        if session is None:
+            self.send_error_json(HTTPStatus.UNAUTHORIZED, "unauthorized", "Sign in required")
+            return None
+        return session
+
+    def require_csrf(self, session: AuthSession) -> bool:
+        if self.headers.get("X-CSRF-Token") != session.csrf_token:
+            self.send_error_json(HTTPStatus.FORBIDDEN, "csrf_failed", "Invalid CSRF token")
+            return False
+        return True
+
+    def require_admin(self, session: AuthSession) -> bool:
+        if not session.user.is_admin:
+            self.send_error_json(HTTPStatus.FORBIDDEN, "admin_required", "Admin access required")
+            return False
+        return True
+
+    def do_GET(self) -> None:
+        try:
+            parsed = urlparse(self.path)
+            if parsed.path == "/capture":
+                # Bookmarklet landing page. Reads ?u=&t=, persists a captured
+                # job for the signed-in user, then redirects to /?captured=1.
+                from urllib.parse import parse_qs as _parse_qs
+
+                session = self.current_session()
+                if session is None:
+                    # Send to login first; the bookmarklet user might be in
+                    # a different browser session.
+                    self.send_response(HTTPStatus.SEE_OTHER)
+                    self.send_header("Location", "/?capture=needs_login")
+                    self.end_headers()
+                    return
+                qs = _parse_qs(parsed.query or "")
+                target_url = (qs.get("u", [""])[0] or "").strip()
+                title = (qs.get("t", [""])[0] or "").strip()
+                if not target_url or not target_url.startswith(("http://", "https://")):
+                    self.send_response(HTTPStatus.SEE_OTHER)
+                    self.send_header("Location", "/?capture=bad_url")
+                    self.end_headers()
+                    return
+                host = (urlparse(target_url).hostname or "").lower()
+                source_label = "bookmarklet:other"
+                for needle, label in (
+                    ("indeed.", "bookmarklet:indeed"),
+                    ("linkedin.com", "bookmarklet:linkedin"),
+                    ("stepstone.", "bookmarklet:stepstone"),
+                    ("xing.com", "bookmarklet:xing"),
+                ):
+                    if needle in host:
+                        source_label = label
+                        break
+                user_id = session.user.id
+                data_user_id = STATE.effective_user_id(user_id)
+                from company_discovery.models import DiscoveredJob
+
+                candidate = DiscoveredJob(
+                    user_id=data_user_id,
+                    source_url=target_url,
+                    title=(title or f"Captured from {host}")[:160],
+                    raw_snippet=title[:160] or None,
+                    confidence_score=0.5,
+                    structured_data={"captured_via": source_label, "host": host},
+                )
+                duplicate = STATE.repository.find_duplicate_discovered_job(candidate)
+                if duplicate:
+                    existing = dict(duplicate.also_seen_at or {})
+                    existing[host] = {
+                        "url": target_url,
+                        "found_at": now_utc().isoformat(),
+                        "source_label": source_label,
+                    }
+                    duplicate.also_seen_at = existing
+                    STATE.repository.save_discovered_job(duplicate)
+                    captured_status = "merged"
+                else:
+                    STATE.repository.save_discovered_job(candidate)
+                    captured_status = "captured"
+                STATE.log_analytics(user_id, "captured_job", {
+                    "host": host, "source": source_label, "status": captured_status,
+                })
+                self.send_response(HTTPStatus.SEE_OTHER)
+                self.send_header("Location", f"/?capture={captured_status}")
+                self.end_headers()
+                return
+            if parsed.path == "/api/health":
+                session = self.current_session()
+                from urllib.parse import parse_qs
+                qs = parse_qs(parsed.query or "")
+                detailed = (qs.get("detailed", ["0"])[0] or "0").lower() in ("1", "true", "yes")
+                self.send_json(STATE.health(session.user.id if session else None, detailed=detailed))
+                return
+            if parsed.path == "/api/auth/status":
+                session = self.current_session()
+                self.send_json(
+                    {
+                        "authenticated": session is not None,
+                        "user": make_user_payload(session.user, session.csrf_token) if session else None,
+                        "registrationOpen": STATE.registration_open(),
+                    }
+                )
+                return
+            if parsed.path.startswith("/api/auth/accept-invite/"):
+                raw_token = parsed.path.split("/api/auth/accept-invite/", 1)[1]
+                record = STATE.token_store.lookup("invitation", unquote(raw_token))
+                if record is None:
+                    self.send_error_json(HTTPStatus.GONE, "invalid_token", "Invitation is expired or already used")
+                    return
+                self.send_json(
+                    {
+                        "invitation": {
+                            "email": record.email,
+                            "role": record.role,
+                            "expiresAt": record.expires_at.isoformat(),
+                        }
+                    }
+                )
+                return
+            if parsed.path.startswith("/api/auth/reset-password/"):
+                raw_token = parsed.path.split("/api/auth/reset-password/", 1)[1]
+                record = STATE.token_store.lookup("password_reset", unquote(raw_token))
+                if record is None:
+                    self.send_error_json(HTTPStatus.GONE, "invalid_token", "Reset link is expired or already used")
+                    return
+                self.send_json(
+                    {
+                        "reset": {
+                            "email": record.email,
+                            "expiresAt": record.expires_at.isoformat(),
+                        }
+                    }
+                )
+                return
+            if parsed.path.startswith("/api/"):
+                session = self.require_auth()
+                if session is None:
+                    return
+                user_id = session.user.id
+            if parsed.path == "/api/bootstrap":
+                self.send_json(STATE.bootstrap(user_id))
+                return
+            if parsed.path == "/api/admin/users":
+                if not self.require_admin(session):
+                    return
+                users = [make_admin_user_payload(user) for user in STATE.auth_store.list_users()]
+                self.send_json({"users": users})
+                return
+            if parsed.path == "/api/admin/metrics":
+                if not self.require_admin(session):
+                    return
+                self.send_json(STATE.admin_metrics())
+                return
+            if parsed.path == "/api/admin/readiness":
+                if not self.require_admin(session):
+                    return
+                self.send_json(STATE.readiness_report())
+                return
+            if parsed.path == "/api/admin/email/status":
+                if not self.require_admin(session):
+                    return
+                self.send_json(STATE.email_status())
+                return
+            if parsed.path == "/api/admin/invitations":
+                if not self.require_admin(session):
+                    return
+                tokens = STATE.token_store.list_active("invitation")
+                self.send_json(
+                    {
+                        "invitations": [
+                            {
+                                "id": token.id,
+                                "email": token.email,
+                                "role": token.role,
+                                "createdBy": token.created_by,
+                                "createdAt": token.created_at.isoformat(),
+                                "expiresAt": token.expires_at.isoformat(),
+                            }
+                            for token in tokens
+                        ]
+                    }
+                )
+                return
+            if parsed.path == "/api/admin/analytics":
+                if not self.require_admin(session):
+                    return
+                events = STATE.repository.list_analytics_events(limit=200)
+                self.send_json({"events": events})
+                return
+            if parsed.path == "/api/profile/slack-test":
+                profile = STATE.profile_for(user_id)
+                url = (profile.slack_webhook_url or "").strip()
+                if not url:
+                    self.send_error_json(HTTPStatus.BAD_REQUEST, "no_webhook", "Set a Slack webhook URL first.")
+                    return
+                public_url = os.environ.get("DIRECTJOB_PUBLIC_URL") or "https://app.khalo.org"
+                result = post_high_fit_notification(
+                    webhook_url=url,
+                    job_title="Test notification",
+                    company_name="DirectJob Scout",
+                    location=None,
+                    fit_score=0.95,
+                    fit_reason="This is a test from your Settings page.",
+                    job_url=None,
+                    public_url=public_url,
+                )
+                STATE.log_analytics(user_id, "slack_test", {"status": result.get("status")})
+                self.send_json({"result": result})
+                return
+            if parsed.path == "/api/admin/retention-purge":
+                if not self.require_admin(session):
+                    return
+                results = STATE.run_retention_purge()
+                self.send_json({"removedByUser": results, "total": sum(results.values())})
+                return
+            if parsed.path == "/api/audit-log":
+                # User-facing audit log: only surface their own events, and
+                # only the privacy-relevant kinds (auth, AI, exports,
+                # consent changes). Cap at 50 most recent.
+                relevant = {
+                    "ai_analyze", "cv_tailoring", "cover_letter_draft", "auto_fit", "auto_fit_batch",
+                    "totp_enabled", "totp_disabled",
+                    "cv_uploaded", "ai_consent_granted", "ai_consent_revoked",
+                    "saved_search_run", "captured_job", "inbound_email",
+                    "account_deletion_requested",
+                }
+                rows = STATE.repository.list_analytics_events(user_id=user_id, limit=200)
+                visible = [r for r in rows if (r.get("kind") if isinstance(r, dict) else r.kind) in relevant][:50]
+                self.send_json({"events": visible})
+                return
+            if parsed.path == "/api/admin/support":
+                if not self.require_admin(session):
+                    return
+                tickets = STATE.repository.list_support_tickets()
+                self.send_json({"tickets": tickets})
+                return
+            if parsed.path == "/api/saved-searches":
+                self.send_json({"savedSearches": STATE._saved_searches_with_alerts(user_id)})
+                return
+            if parsed.path == "/api/billing":
+                self.send_json({"subscription": STATE.get_subscription().to_dict(), "plans": plans_payload()})
+                return
+            if parsed.path == "/api/watchlist-templates":
+                profile = STATE.profile_for(user_id)
+                self.send_json({"templates": list_templates(profile.persona_id)})
+                return
+            if parsed.path == "/api/personas":
+                self.send_json({"personas": list_personas_summary()})
+                return
+            if parsed.path == "/api/workspaces":
+                self.send_json({"workspaces": STATE.list_user_workspaces(user_id)})
+                return
+            if parsed.path == "/api/push/key":
+                self.send_json({
+                    "configured": is_push_configured(),
+                    "publicKey": vapid_public_key() or "",
+                })
+                return
+            if parsed.path == "/api/push/subscriptions":
+                subs = STATE.repository.list_push_subscriptions(user_id)
+                self.send_json({"subscriptions": [
+                    {"id": s.id, "endpoint": s.endpoint, "userAgent": s.user_agent, "createdAt": s.created_at.isoformat()}
+                    for s in subs
+                ]})
+                return
+            if parsed.path == "/api/profile":
+                profile = STATE.profile_for(user_id)
+                self.send_json({"profile": STATE._profile_payload(profile)})
+                return
+            if parsed.path == "/api/digest/preview":
+                self.send_json({"digest": STATE.build_user_digest(user_id, email=session.user.email)})
+                return
+            if parsed.path == "/api/exports/imported.csv":
+                csv_body = imported_jobs_to_csv(STATE.repository.list_imported_jobs(user_id))
+                self.send_text(csv_body, content_type="text/csv", filename="imported-jobs.csv")
+                return
+            if parsed.path == "/api/exports/imported.md":
+                md_body = imported_jobs_to_markdown(STATE.repository.list_imported_jobs(user_id))
+                self.send_text(md_body, content_type="text/markdown", filename="imported-jobs.md")
+                return
+            if parsed.path == "/api/exports/discovered.csv":
+                csv_body = discovered_jobs_to_csv(STATE.repository.list_discovered_jobs(user_id))
+                self.send_text(csv_body, content_type="text/csv", filename="discovered-jobs.csv")
+                return
+            if parsed.path == "/api/exports/discovered.md":
+                md_body = discovered_jobs_to_markdown(STATE.repository.list_discovered_jobs(user_id))
+                self.send_text(md_body, content_type="text/markdown", filename="discovered-jobs.md")
+                return
+            if parsed.path == "/api/data/export":
+                self.send_json(STATE.export_data(user_id))
+                return
+            if parsed.path.startswith("/api/admin/users/") and parsed.path.endswith("/export"):
+                if not self.require_admin(session):
+                    return
+                target_id = parsed.path[len("/api/admin/users/"):-len("/export")]
+                try:
+                    target = STATE.auth_store.get_user(target_id)
+                except KeyError:
+                    self.send_error_json(HTTPStatus.NOT_FOUND, "not_found", "User not found")
+                    return
+                payload = STATE.export_data(target_id)
+                payload["targetUser"] = {
+                    "id": target.id,
+                    "email": target.email,
+                    "role": target.role,
+                    "active": target.active,
+                }
+                STATE.record_admin_action(
+                    actor=session.user,
+                    target=target,
+                    action="export_user_data",
+                    details={"email": target.email},
+                )
+                self.send_json(payload)
+                return
+            if parsed.path == "/api/companies":
+                self.send_json({"companies": STATE.repository.list_companies(user_id)})
+                return
+            if parsed.path == "/api/discovered-jobs":
+                self.send_json({"discoveredJobs": STATE.repository.list_discovered_jobs(user_id)})
+                return
+            if parsed.path == "/api/summary":
+                self.send_json({"summary": STATE.repository.watchlist_summary(user_id)})
+                return
+            self.serve_static(parsed.path)
+        except Exception as error:  # noqa: BLE001 - top-level HTTP boundary
+            self.send_error_json(HTTPStatus.INTERNAL_SERVER_ERROR, "internal_error", str(error))
+
+    def do_HEAD(self) -> None:
+        try:
+            parsed = urlparse(self.path)
+            if parsed.path == "/api/health":
+                self.send_json(STATE.health(None), include_body=False)
+                return
+            if parsed.path.startswith("/api/"):
+                self.send_error_json(HTTPStatus.NOT_FOUND, "not_found", "Unknown endpoint", include_body=False)
+                return
+            self.serve_static(parsed.path, include_body=False)
+        except Exception as error:  # noqa: BLE001 - top-level HTTP boundary
+            self.send_error_json(HTTPStatus.INTERNAL_SERVER_ERROR, "internal_error", str(error), include_body=False)
+
+    def do_POST(self) -> None:
+        try:
+            parsed = urlparse(self.path)
+            parts = [unquote(part) for part in parsed.path.strip("/").split("/") if part]
+
+            # Stripe webhook needs raw bytes for signature verification, so it
+            # must run before we json.loads the body.
+            if parsed.path == "/api/inbound/email":
+                # Inbound webhook from Resend / Postmark / Mailgun for
+                # email-forward ingest. The webhook secret + per-user
+                # token route the message to the right account.
+                #
+                # Activation steps for the operator:
+                #   1. Wire MX for inbox.khalo.org to the inbound
+                #      provider (Resend supports this).
+                #   2. Set DIRECTJOB_INBOUND_EMAIL_SECRET in prod env.
+                #   3. Configure the provider's webhook to POST here.
+                length = int(self.headers.get("Content-Length", "0"))
+                if length <= 0 or length > MAX_JSON_BODY_BYTES:
+                    self.send_error_json(HTTPStatus.BAD_REQUEST, "bad_body", "Webhook body required")
+                    return
+                raw = self.rfile.read(length)
+                expected_secret = os.environ.get("DIRECTJOB_INBOUND_EMAIL_SECRET", "").strip()
+                if not expected_secret:
+                    self.send_error_json(HTTPStatus.SERVICE_UNAVAILABLE, "inbound_email_unconfigured",
+                                         "Inbound email is not configured. Set DIRECTJOB_INBOUND_EMAIL_SECRET.")
+                    return
+                provided_secret = self.headers.get("X-DirectJob-Inbound-Secret", "")
+                # Constant-time comparison to avoid timing attacks.
+                import hmac as _hmac
+
+                if not _hmac.compare_digest(expected_secret, provided_secret):
+                    self.send_error_json(HTTPStatus.UNAUTHORIZED, "bad_inbound_secret", "Invalid inbound secret")
+                    return
+                try:
+                    event = json.loads(raw.decode("utf-8"))
+                except (UnicodeDecodeError, json.JSONDecodeError):
+                    self.send_error_json(HTTPStatus.BAD_REQUEST, "bad_json", "Inbound body is not valid JSON")
+                    return
+                # Resend / Postmark / Mailgun all expose roughly the
+                # same shape; we read defensively.
+                to_field = event.get("to") or event.get("ToFull") or event.get("recipient") or ""
+                to_addresses = [to_field] if isinstance(to_field, str) else (
+                    [t.get("Email") if isinstance(t, dict) else str(t) for t in to_field]
+                )
+                token = ""
+                for addr in to_addresses:
+                    m = re.match(r"^u-([A-Za-z0-9_-]{8,})@", str(addr or ""))
+                    if m:
+                        token = m.group(1)
+                        break
+                target_user_id: str | None = None
+                if token:
+                    profile_user = self.repository_user_by_token(token)  # type: ignore[attr-defined]
+                    target_user_id = profile_user
+                if target_user_id is None:
+                    self.send_error_json(HTTPStatus.NOT_FOUND, "no_user", "Could not resolve recipient token to a user")
+                    return
+                from company_discovery.email_ingest import parse_email_to_jobs
+                from company_discovery.models import DiscoveredJob
+
+                jobs = parse_email_to_jobs(
+                    sender=str(event.get("from") or event.get("From") or ""),
+                    subject=str(event.get("subject") or event.get("Subject") or ""),
+                    text_body=str(event.get("text") or event.get("TextBody") or ""),
+                    html_body=str(event.get("html") or event.get("HtmlBody") or ""),
+                )
+                new_count = 0
+                merged_count = 0
+                for ingested in jobs:
+                    candidate = DiscoveredJob(
+                        user_id=target_user_id,
+                        source_url=ingested.url,
+                        title=ingested.title[:160] or "Captured listing",
+                        confidence_score=0.5,
+                        location=ingested.location,
+                        structured_data={"captured_via": ingested.source, "company_hint": ingested.company},
+                    )
+                    duplicate = STATE.repository.find_duplicate_discovered_job(candidate)
+                    if duplicate:
+                        host = (urlparse(ingested.url).hostname or "").lower()
+                        merged = dict(duplicate.also_seen_at or {})
+                        merged[host] = {
+                            "url": ingested.url,
+                            "found_at": now_utc().isoformat(),
+                            "source_label": ingested.source,
+                        }
+                        duplicate.also_seen_at = merged
+                        STATE.repository.save_discovered_job(duplicate)
+                        merged_count += 1
+                    else:
+                        STATE.repository.save_discovered_job(candidate)
+                        new_count += 1
+                STATE.log_analytics(target_user_id, "inbound_email", {
+                    "newJobs": new_count, "merged": merged_count, "candidates": len(jobs),
+                })
+                self.send_json({"status": "ok", "newJobs": new_count, "mergedSources": merged_count, "candidates": len(jobs)})
+                return
+
+            if parsed.path == "/api/billing/webhook":
+                length = int(self.headers.get("Content-Length", "0"))
+                if length <= 0 or length > MAX_JSON_BODY_BYTES:
+                    self.send_error_json(HTTPStatus.BAD_REQUEST, "bad_body", "Webhook body required")
+                    return
+                raw = self.rfile.read(length)
+                signature_header = self.headers.get("Stripe-Signature", "")
+                secret = os.environ.get("DIRECTJOB_STRIPE_WEBHOOK_SECRET", "").strip()
+                if not secret:
+                    self.send_error_json(HTTPStatus.SERVICE_UNAVAILABLE, "webhook_unconfigured", "DIRECTJOB_STRIPE_WEBHOOK_SECRET not set.")
+                    return
+                if not verify_stripe_webhook_signature(raw, signature_header, secret):
+                    self.send_error_json(HTTPStatus.BAD_REQUEST, "bad_signature", "Webhook signature verification failed.")
+                    return
+                try:
+                    event = json.loads(raw.decode("utf-8"))
+                except (UnicodeDecodeError, json.JSONDecodeError):
+                    self.send_error_json(HTTPStatus.BAD_REQUEST, "bad_json", "Webhook body is not valid JSON.")
+                    return
+                price_to_plan = {
+                    os.environ.get("DIRECTJOB_STRIPE_PRICE_TEAM", ""): "team",
+                    os.environ.get("DIRECTJOB_STRIPE_PRICE_ORG", ""): "org",
+                }
+                resolver = lambda price_id: price_to_plan.get(price_id) or ""
+                current = STATE.get_subscription()
+                next_state = apply_stripe_event(event, current, plan_resolver=resolver)
+                if next_state is not current:
+                    STATE.billing_backend.save(next_state)
+                self.send_json({"status": "ok", "appliedType": event.get("type")})
+                return
+
+            payload = self.read_json_body()
+
+            if parsed.path == "/api/auth/login":
+                client_id = self.client_address[0] if self.client_address else "unknown"
+                if not STATE.login_allowed(client_id):
+                    self.send_error_json(HTTPStatus.TOO_MANY_REQUESTS, "rate_limited", "Too many failed login attempts")
+                    return
+                user = STATE.auth_store.authenticate(payload.get("email", ""), payload.get("password", ""))
+                if user is None:
+                    STATE.record_login_failure(client_id)
+                    self.send_error_json(HTTPStatus.UNAUTHORIZED, "invalid_login", "Invalid email or password")
+                    return
+                STATE.clear_login_failures(client_id)
+                if STATE.auth_store.has_totp_enabled(user.id):
+                    challenge = STATE.auth_store.issue_2fa_challenge(user.id)
+                    self.send_json({"requires2fa": True, "challengeToken": challenge})
+                    return
+                session = STATE.auth_store.create_session(user)
+                max_age = int((session.expires_at - now_utc()).total_seconds())
+                self.send_json(
+                    {"user": make_user_payload(user, session.csrf_token), "bootstrap": STATE.bootstrap(user.id)},
+                    headers={"Set-Cookie": session_cookie_header(session.token, max_age)},
+                )
+                return
+
+            if parsed.path == "/api/auth/2fa-verify":
+                challenge_token = str(payload.get("challengeToken") or "").strip()
+                code = str(payload.get("code") or "").strip()
+                user_id = STATE.auth_store.consume_2fa_challenge(challenge_token)
+                if not user_id:
+                    self.send_error_json(HTTPStatus.UNAUTHORIZED, "invalid_challenge", "Challenge expired or invalid")
+                    return
+                # Try TOTP first, then recovery codes (which look different — usually 10 hex chars).
+                ok = STATE.auth_store.verify_user_totp(user_id, code) or STATE.auth_store.consume_recovery_code(user_id, code)
+                if not ok:
+                    self.send_error_json(HTTPStatus.UNAUTHORIZED, "invalid_2fa_code", "Invalid 2FA code")
+                    return
+                user = STATE.auth_store.get_user(user_id)
+                session = STATE.auth_store.create_session(user)
+                max_age = int((session.expires_at - now_utc()).total_seconds())
+                self.send_json(
+                    {"user": make_user_payload(user, session.csrf_token), "bootstrap": STATE.bootstrap(user.id)},
+                    headers={"Set-Cookie": session_cookie_header(session.token, max_age)},
+                )
+                return
+
+            if parsed.path == "/api/auth/register":
+                if not STATE.registration_open():
+                    self.send_error_json(HTTPStatus.FORBIDDEN, "registration_closed", "Registration is closed")
+                    return
+                role = "admin" if not STATE.auth_store.has_users() else "member"
+                user = STATE.auth_store.create_user(payload.get("email", ""), payload.get("password", ""), role=role)
+                # Stamp the very first sign-in (register doesn't go through authenticate()).
+                login_at = now_utc()
+                STATE.auth_store.connection.execute(
+                    "UPDATE users SET last_login_at = ?, last_active_at = ? WHERE id = ?",
+                    (login_at.isoformat(), login_at.isoformat(), user.id),
+                )
+                STATE.auth_store.connection.commit()
+                user = STATE.auth_store.get_user(user.id)
+                session = STATE.auth_store.create_session(user)
+                max_age = int((session.expires_at - now_utc()).total_seconds())
+                self.send_json(
+                    {"user": make_user_payload(user, session.csrf_token), "bootstrap": STATE.bootstrap(user.id)},
+                    HTTPStatus.CREATED,
+                    headers={"Set-Cookie": session_cookie_header(session.token, max_age)},
+                )
+                return
+
+            if parsed.path == "/api/auth/logout":
+                session = self.current_session()
+                if session:
+                    STATE.auth_store.delete_session(session.token)
+                self.send_json(
+                    {"status": "signed_out"},
+                    headers={"Set-Cookie": session_cookie_header("", 0)},
+                )
+                return
+
+            if parsed.path == "/api/auth/forgot-password":
+                client_id = self.client_address[0] if self.client_address else "unknown"
+                if not STATE.password_reset_allowed(client_id):
+                    self.send_error_json(HTTPStatus.TOO_MANY_REQUESTS, "rate_limited", "Too many reset requests. Try again later.")
+                    return
+                STATE.record_password_reset_request(client_id)
+                STATE.request_password_reset(payload.get("email", ""))
+                # Always return 202 to avoid leaking which emails exist.
+                self.send_json({"status": "sent_if_known"}, HTTPStatus.ACCEPTED)
+                return
+
+            if parsed.path.startswith("/api/auth/reset-password/"):
+                raw_token = parsed.path.split("/api/auth/reset-password/", 1)[1]
+                new_password = str(payload.get("newPassword") or "")
+                try:
+                    STATE.complete_password_reset(raw_token=unquote(raw_token), password=new_password)
+                except ValueError as error:
+                    code = str(error)
+                    status = HTTPStatus.GONE if code == "invalid_token" else HTTPStatus.BAD_REQUEST
+                    self.send_error_json(status, code, code)
+                    return
+                self.send_json({"status": "password_reset"})
+                return
+
+            if parsed.path.startswith("/api/auth/accept-invite/"):
+                raw_token = parsed.path.split("/api/auth/accept-invite/", 1)[1]
+                new_password = str(payload.get("newPassword") or "")
+                try:
+                    user = STATE.accept_invitation(raw_token=unquote(raw_token), password=new_password)
+                except ValueError as error:
+                    code = str(error)
+                    status = HTTPStatus.GONE if code == "invalid_token" else HTTPStatus.BAD_REQUEST
+                    self.send_error_json(status, code, code)
+                    return
+                session = STATE.auth_store.create_session(user)
+                max_age = int((session.expires_at - now_utc()).total_seconds())
+                self.send_json(
+                    {
+                        "user": make_user_payload(user, session.csrf_token),
+                        "bootstrap": STATE.bootstrap(user.id),
+                    },
+                    HTTPStatus.CREATED,
+                    headers={"Set-Cookie": session_cookie_header(session.token, max_age)},
+                )
+                return
+
+            if parsed.path.startswith("/api/"):
+                session = self.require_auth()
+                if session is None or not self.require_csrf(session):
+                    return
+                user_id = session.user.id
+                data_user_id = STATE.effective_user_id(user_id)
+
+            if parsed.path == "/api/auth/change-password":
+                current_password = str(payload.get("currentPassword") or "")
+                new_password = str(payload.get("newPassword") or "")
+                if STATE.auth_store.authenticate(session.user.email, current_password) is None:
+                    self.send_error_json(HTTPStatus.FORBIDDEN, "invalid_current_password", "Current password is incorrect")
+                    return
+                STATE.auth_store.update_user(user_id, password=new_password)
+                self.send_json(
+                    {"status": "password_changed"},
+                    headers={"Set-Cookie": session_cookie_header("", 0)},
+                )
+                return
+
+            if parsed.path == "/api/auth/totp/enroll":
+                if STATE.auth_store.has_totp_enabled(user_id):
+                    self.send_error_json(HTTPStatus.CONFLICT, "totp_already_enabled", "2FA is already enabled. Disable it first to re-enroll.")
+                    return
+                enrollment = STATE.auth_store.start_totp_enrollment(user_id)
+                self.send_json(enrollment)
+                return
+
+            if parsed.path == "/api/auth/totp/confirm":
+                code = str(payload.get("code") or "").strip()
+                try:
+                    recovery_codes = STATE.auth_store.confirm_totp_enrollment(user_id, code)
+                except ValueError as error:
+                    self.send_error_json(HTTPStatus.BAD_REQUEST, str(error), str(error))
+                    return
+                STATE.log_analytics(user_id, "totp_enabled", {})
+                self.send_json({"status": "enabled", "recoveryCodes": recovery_codes})
+                return
+
+            if parsed.path == "/api/auth/totp/disable":
+                password = str(payload.get("password") or "")
+                try:
+                    STATE.auth_store.disable_totp(user_id, password)
+                except ValueError as error:
+                    self.send_error_json(HTTPStatus.FORBIDDEN, str(error), str(error))
+                    return
+                STATE.log_analytics(user_id, "totp_disabled", {})
+                self.send_json({"status": "disabled"})
+                return
+
+            if parsed.path == "/api/admin/users":
+                if not self.require_admin(session):
+                    return
+                user = STATE.auth_store.create_user(
+                    payload.get("email", ""),
+                    payload.get("password", ""),
+                    role=payload.get("role") or "member",
+                )
+                STATE.record_admin_action(
+                    actor=session.user,
+                    target=user,
+                    action="create_user",
+                    details={"role": user.role},
+                )
+                self.send_json(
+                    {"user": make_admin_user_payload(user), "users": [make_admin_user_payload(item) for item in STATE.auth_store.list_users()]},
+                    HTTPStatus.CREATED,
+                )
+                return
+
+            if parsed.path == "/api/admin/invitations":
+                if not self.require_admin(session):
+                    return
+                try:
+                    result = STATE.send_invitation(
+                        actor=session.user,
+                        email=str(payload.get("email") or ""),
+                        role=str(payload.get("role") or "member"),
+                    )
+                except ValueError as error:
+                    self.send_error_json(HTTPStatus.BAD_REQUEST, str(error), str(error))
+                    return
+                self.send_json(result, HTTPStatus.CREATED)
+                return
+
+            if parsed.path == "/api/companies":
+                company = STATE.service.create_company(
+                    user_id=data_user_id,
+                    name=payload["name"],
+                    website_url=payload["websiteUrl"],
+                    career_page_url=payload.get("careerPageUrl") or None,
+                    sector=payload.get("sector") or None,
+                    notes=payload.get("notes") or None,
+                    watch_enabled=bool(payload.get("watchEnabled", True)),
+                )
+                self.send_json({"company": company, "bootstrap": STATE.bootstrap(user_id)}, HTTPStatus.CREATED)
+                return
+
+            if parsed.path == "/api/suggest-companies":
+                profile = STATE.profile_for(user_id)
+                persona_id = str(payload.get("personaId") or profile.persona_id or DEFAULT_PERSONA_ID)
+                persona = get_persona(persona_id)
+                target_roles = payload.get("targetRoles") or list(profile.target_roles or persona.default_target_roles)
+                industry = payload.get("industry") or profile.industry or persona.default_industry
+                location = payload.get("location") or profile.location or None
+                suggestions = STATE.service.suggest_relevant_companies(
+                    target_roles=target_roles,
+                    industry=industry,
+                    location=location,
+                    persona_id=persona.id,
+                )
+                ranked = rank_candidates(
+                    suggestions,
+                    target_roles=target_roles,
+                    industry=industry,
+                    location=location,
+                    persona_id=persona.id,
+                )
+                self.send_json({"suggestions": ranked, "personaId": persona.id})
+                return
+            if parsed.path == "/api/captured-jobs":
+                # Bookmarklet ingest. Phase 3 — bridges Indeed / LinkedIn /
+                # StepStone / Xing into the queue without server-side scraping
+                # (the user's own browser does the read; we only persist the URL +
+                # title they were already looking at).
+                target_url = str(payload.get("url") or "").strip()
+                title = str(payload.get("title") or "").strip()
+                description = str(payload.get("description") or "").strip()
+                if not target_url or not target_url.startswith(("http://", "https://")):
+                    self.send_error_json(HTTPStatus.BAD_REQUEST, "bad_url", "Valid http(s) URL required")
+                    return
+                host = (urlparse(target_url).hostname or "").lower()
+                source_label = "bookmarklet:other"
+                for needle, label in (
+                    ("indeed.", "bookmarklet:indeed"),
+                    ("linkedin.com", "bookmarklet:linkedin"),
+                    ("stepstone.", "bookmarklet:stepstone"),
+                    ("xing.com", "bookmarklet:xing"),
+                ):
+                    if needle in host:
+                        source_label = label
+                        break
+                if not title:
+                    title = f"Captured from {host}"
+                # Persist as a DiscoveredJob with NO company_id (aggregator-style).
+                # Dedup against any existing rows the user already has via the
+                # standard dedup engine.
+                from company_discovery.models import DiscoveredJob
+
+                candidate = DiscoveredJob(
+                    user_id=data_user_id,
+                    source_url=target_url,
+                    title=title[:160],
+                    raw_snippet=title[:160],
+                    raw_description=description[:2000] or None,
+                    confidence_score=0.5,
+                    structured_data={"captured_via": source_label, "host": host},
+                )
+                duplicate = STATE.repository.find_duplicate_discovered_job(candidate)
+                if duplicate:
+                    existing = dict(duplicate.also_seen_at or {})
+                    existing[host] = {
+                        "url": target_url,
+                        "found_at": now_utc().isoformat(),
+                        "source_label": source_label,
+                    }
+                    duplicate.also_seen_at = existing
+                    STATE.repository.save_discovered_job(duplicate)
+                    saved = duplicate
+                    status_code = "merged"
+                else:
+                    saved = STATE.repository.save_discovered_job(candidate)
+                    status_code = "captured"
+                STATE.log_analytics(user_id, "captured_job", {
+                    "host": host,
+                    "source": source_label,
+                    "status": status_code,
+                })
+                self.send_json({
+                    "status": status_code,
+                    "discoveredJobId": saved.id,
+                    "source": source_label,
+                })
+                return
+
+            if parsed.path == "/api/jobs/search":
+                # Cross-aggregator job search. Phase 1 surface — Phase 2
+                # promotes this to a saved-query / digest spine.
+                profile = STATE.profile_for(user_id)
+                query = str(payload.get("query") or "").strip()
+                if not query:
+                    persona = get_persona(profile.persona_id)
+                    query = " ".join(profile.target_roles or list(persona.default_target_roles))
+                location = payload.get("location") or profile.location or None
+                limit_per_provider = int(payload.get("limitPerProvider") or 25)
+                limit_per_provider = max(1, min(100, limit_per_provider))
+                jobs, outcomes = STATE.aggregator_engine.search(
+                    query=query,
+                    location=location,
+                    limit_per_provider=limit_per_provider,
+                    persona_id=profile.persona_id,
+                )
+                # Rank by persona-keyword match + freshness + source-priority.
+                # Persona keywords come from the user's profile + the raw query
+                # so a tech persona searching "policy" doesn't drown in healthcare
+                # results, and vice versa.
+                persona = get_persona(profile.persona_id)
+                keyword_tokens: list[str] = []
+                # Raw query words first (highest signal — what the user just typed).
+                keyword_tokens.extend(re.findall(r"\w+", query.casefold()))
+                # Then persona's preferred terms.
+                for role in persona.default_target_roles:
+                    keyword_tokens.extend(re.findall(r"\w+", role.casefold()))
+                cap = int(payload.get("cap") or 50)
+                cap = max(5, min(200, cap))
+                ranked = rank_aggregated(
+                    jobs,
+                    keyword_tokens=keyword_tokens,
+                    location=location,
+                    cap=cap,
+                    dismissed_terms=list(profile.dismissed_terms or []),
+                )
+                attributions = [
+                    {"name": a.name, "label": a.label, "url": a.url}
+                    for a in STATE.aggregator_engine.attributions()
+                ]
+                STATE.log_analytics(user_id, "jobs_search", {
+                    "query": query[:120],
+                    "location": location,
+                    "providerCount": len(outcomes),
+                    "jobCount": len(jobs),
+                })
+                self.send_json({
+                    "query": query,
+                    "location": location,
+                    "totalCandidates": len(jobs),
+                    "jobs": [
+                        {
+                            "title": j.title,
+                            "companyName": j.company_name,
+                            "source": j.source,
+                            "sourceUrl": j.source_url,
+                            "location": j.location,
+                            "description": j.description,
+                            "postedAt": j.posted_at.isoformat() if j.posted_at else None,
+                            "salaryHint": j.salary_hint,
+                            "score": score,
+                        }
+                        for j, score in ranked
+                    ],
+                    "outcomes": [
+                        {
+                            "provider": o.provider,
+                            "jobCount": o.job_count,
+                            "cached": o.cached,
+                            "error": o.error,
+                        }
+                        for o in outcomes
+                    ],
+                    "attributions": attributions,
+                })
+                return
+
+            if parsed.path == "/api/discover-companies":
+                profile = STATE.profile_for(user_id)
+                persona_id = str(payload.get("personaId") or profile.persona_id or DEFAULT_PERSONA_ID)
+                persona = get_persona(persona_id)
+                target_roles = payload.get("targetRoles") or list(profile.target_roles or persona.default_target_roles)
+                industry = payload.get("industry") or profile.industry or persona.default_industry
+                location = payload.get("location") or profile.location or None
+                results = STATE.discover_companies(
+                    target_roles=target_roles,
+                    industry=industry,
+                    location=location,
+                    limit=int(payload.get("limit") or 12),
+                    persona_id=persona.id,
+                )
+                self.send_json({"results": results, "personaId": persona.id})
+                return
+            if parsed.path == "/api/profile":
+                try:
+                    profile = STATE.update_profile(user_id, payload)
+                except ValueError as error:
+                    self.send_error_json(HTTPStatus.BAD_REQUEST, str(error), str(error))
+                    return
+                self.send_json({"profile": STATE._profile_payload(profile), "bootstrap": STATE.bootstrap(user_id)})
+                return
+            if parsed.path == "/api/profile/cv-upload":
+                import base64
+                import binascii
+
+                filename = str(payload.get("filename") or "").strip()
+                content_b64 = str(payload.get("contentBase64") or payload.get("content_base64") or "")
+                if not filename or not content_b64:
+                    self.send_error_json(HTTPStatus.BAD_REQUEST, "missing_fields", "filename and contentBase64 required")
+                    return
+                try:
+                    blob = base64.b64decode(content_b64, validate=True)
+                except binascii.Error:
+                    self.send_error_json(HTTPStatus.BAD_REQUEST, "invalid_base64", "Could not decode upload")
+                    return
+                try:
+                    text = extract_cv_text(filename, blob)
+                except CvExtractError as error:
+                    self.send_error_json(HTTPStatus.BAD_REQUEST, str(error), str(error))
+                    return
+                try:
+                    profile = STATE.update_profile(user_id, {"cvText": text})
+                except ValueError as error:
+                    self.send_error_json(HTTPStatus.BAD_REQUEST, str(error), str(error))
+                    return
+                STATE.log_analytics(user_id, "cv_uploaded", {"filename": filename, "chars": len(text)})
+                from company_discovery.personas import PERSONAS, suggest_persona_from_text
+                ranked = suggest_persona_from_text(text, top_k=3)
+                personaSuggestions = [
+                    {
+                        "personaId": pid,
+                        "label": PERSONAS[pid].label if pid in PERSONAS else pid,
+                        "score": score,
+                    }
+                    for pid, score in ranked
+                ]
+                self.send_json({
+                    "profile": STATE._profile_payload(profile),
+                    "bootstrap": STATE.bootstrap(user_id),
+                    "extractedChars": len(text),
+                    "personaSuggestions": personaSuggestions,
+                })
+                return
+            if parsed.path == "/api/profile/persona-suggest":
+                # Used by the UI when the user wants to re-evaluate the
+                # persona suggestion without re-uploading their CV.
+                profile = STATE.repository.get_user_profile(user_id)
+                cv_text = (profile.cv_text or "") if profile else ""
+                from company_discovery.personas import PERSONAS, suggest_persona_from_text
+                ranked = suggest_persona_from_text(cv_text, top_k=5)
+                self.send_json({
+                    "personaSuggestions": [
+                        {
+                            "personaId": pid,
+                            "label": PERSONAS[pid].label if pid in PERSONAS else pid,
+                            "score": score,
+                        }
+                        for pid, score in ranked
+                    ],
+                })
+                return
+            if parsed.path == "/api/saved-searches":
+                record = STATE.save_saved_search(data_user_id, payload)
+                self.send_json({"savedSearch": record, "savedSearches": STATE._saved_searches_with_alerts(user_id)})
+                return
+            if parsed.path == "/api/push/subscribe":
+                endpoint = str(payload.get("endpoint") or "").strip()
+                keys = payload.get("keys") or {}
+                p256dh = str(keys.get("p256dh") or "").strip()
+                auth_key = str(keys.get("auth") or "").strip()
+                if not endpoint or not p256dh or not auth_key:
+                    self.send_error_json(HTTPStatus.BAD_REQUEST, "missing_keys", "endpoint + keys.p256dh + keys.auth required")
+                    return
+                existing = STATE.repository.find_push_subscription(endpoint)
+                if existing is not None:
+                    if existing.user_id != user_id:
+                        self.send_error_json(HTTPStatus.FORBIDDEN, "endpoint_owned_by_other", "Subscription belongs to another user")
+                        return
+                    existing.p256dh = p256dh
+                    existing.auth = auth_key
+                    existing.user_agent = self.headers.get("User-Agent", "")[:200]
+                    STATE.repository.save_push_subscription(existing)
+                    sub_id = existing.id
+                else:
+                    sub = PushSubscription(
+                        user_id=user_id,
+                        endpoint=endpoint,
+                        p256dh=p256dh,
+                        auth=auth_key,
+                        user_agent=self.headers.get("User-Agent", "")[:200],
+                    )
+                    STATE.repository.save_push_subscription(sub)
+                    sub_id = sub.id
+                self.send_json({"status": "ok", "subscriptionId": sub_id})
+                return
+            if parsed.path == "/api/push/unsubscribe":
+                endpoint = str(payload.get("endpoint") or "").strip()
+                if not endpoint:
+                    self.send_error_json(HTTPStatus.BAD_REQUEST, "missing_endpoint", "endpoint required")
+                    return
+                existing = STATE.repository.find_push_subscription(endpoint)
+                if existing is not None and existing.user_id == user_id:
+                    STATE.repository.delete_push_subscription(existing.id)
+                self.send_json({"status": "ok"})
+                return
+            if parsed.path == "/api/push/test":
+                if not is_push_configured():
+                    self.send_error_json(
+                        HTTPStatus.SERVICE_UNAVAILABLE,
+                        "push_unavailable",
+                        "Push is not configured. Set DIRECTJOB_VAPID_PUBLIC_KEY and DIRECTJOB_VAPID_PRIVATE_KEY.",
+                    )
+                    return
+                subs = STATE.repository.list_push_subscriptions(user_id)
+                if not subs:
+                    self.send_error_json(HTTPStatus.NOT_FOUND, "no_subscriptions", "No push subscriptions for this user.")
+                    return
+                payload_obj = PushPayload(
+                    title=str(payload.get("title") or "DirectJob Scout"),
+                    body=str(payload.get("body") or "Test notification."),
+                    url="/",
+                )
+                outcomes: list[dict[str, Any]] = []
+                for sub in subs:
+                    try:
+                        send_push(sub, payload_obj)
+                        outcomes.append({"id": sub.id, "status": "sent"})
+                    except PushUnavailableError as error:
+                        outcomes.append({"id": sub.id, "status": "unavailable", "error": str(error)})
+                    except Exception as error:  # noqa: BLE001 — push service may 404/410
+                        outcomes.append({"id": sub.id, "status": "error", "error": str(error)[:200]})
+                self.send_json({"outcomes": outcomes})
+                return
+            if parsed.path == "/api/workspaces/active":
+                workspace_id = str(payload.get("workspaceId") or payload.get("workspace_id") or "").strip()
+                if not workspace_id:
+                    self.send_error_json(HTTPStatus.BAD_REQUEST, "missing_workspace", "workspaceId is required")
+                    return
+                try:
+                    STATE.resolve_workspace_owner(user_id, workspace_id)
+                except ValueError:
+                    self.send_error_json(HTTPStatus.FORBIDDEN, "workspace_forbidden", "You are not a member of that workspace.")
+                    return
+                profile = STATE.profile_for(user_id)
+                profile.active_workspace_id = workspace_id
+                STATE.repository.save_user_profile(profile)
+                self.send_json({
+                    "profile": STATE._profile_payload(profile),
+                    "bootstrap": STATE.bootstrap(user_id),
+                })
+                return
+
+            if len(parts) == 4 and parts[:2] == ["api", "workspaces"] and parts[3] == "invite":
+                workspace_id = parts[2]
+                inviter_membership = STATE.repository.find_workspace_membership(user_id, workspace_id)
+                if inviter_membership is None or inviter_membership.role not in ("owner", "admin"):
+                    self.send_error_json(HTTPStatus.FORBIDDEN, "workspace_forbidden", "Only workspace owners or admins can invite.")
+                    return
+                invitee_email = str(payload.get("email") or "").strip().lower()
+                if not invitee_email or "@" not in invitee_email:
+                    self.send_error_json(HTTPStatus.BAD_REQUEST, "invalid_email", "email is required")
+                    return
+                # v2 invite: target user must already exist on the platform.
+                target_user = next(
+                    (u for u in STATE.auth_store.list_users() if u.email == invitee_email),
+                    None,
+                )
+                if target_user is None:
+                    self.send_error_json(
+                        HTTPStatus.NOT_FOUND,
+                        "user_not_found",
+                        "Invitee must already have an account. Send them a regular signup invite first.",
+                    )
+                    return
+                existing = STATE.repository.find_workspace_membership(target_user.id, workspace_id)
+                if existing is not None:
+                    self.send_json({"status": "already_member", "membershipId": existing.id})
+                    return
+                membership = WorkspaceMembership(
+                    user_id=target_user.id,
+                    workspace_id=workspace_id,
+                    workspace_owner_id=inviter_membership.workspace_owner_id,
+                    role="member",
+                    label=inviter_membership.label,
+                )
+                STATE.repository.save_workspace_membership(membership)
+                STATE.log_analytics(
+                    user_id,
+                    "workspace_invite",
+                    {"workspaceId": workspace_id, "email": invitee_email},
+                )
+                self.send_json({
+                    "status": "added",
+                    "membershipId": membership.id,
+                    "userId": target_user.id,
+                })
+                return
+
+            if len(parts) == 4 and parts[:2] == ["api", "saved-searches"] and parts[3] == "run-now":
+                try:
+                    result = STATE.run_saved_search(data_user_id, parts[2])
+                except KeyError:
+                    self.send_error_json(HTTPStatus.NOT_FOUND, "not_found", "Saved search not found")
+                    return
+                self.send_json({
+                    "result": result,
+                    "savedSearches": STATE._saved_searches_with_alerts(data_user_id),
+                    "bootstrap": STATE.bootstrap(user_id),
+                })
+                return
+            if len(parts) == 4 and parts[:2] == ["api", "saved-searches"] and parts[3] == "matches":
+                search = STATE.repository.saved_searches.get(parts[2])
+                if not search or search.user_id != user_id:
+                    self.send_error_json(HTTPStatus.NOT_FOUND, "not_found", "Saved search not found")
+                    return
+                jobs = STATE.repository.list_discovered_jobs(user_id)
+                companies_by_id = {c.id: c for c in STATE.repository.list_companies(user_id)}
+                only_unseen = bool(payload.get("unseenOnly"))
+                if only_unseen:
+                    matches = unseen_matches_for_search(search, jobs, companies_by_id)
+                else:
+                    matches = matches_for_search(search, jobs, companies_by_id)
+                self.send_json({
+                    "matches": [asdict(job) for job in matches],
+                    "alerts": alert_summary_for_search(search, jobs, companies_by_id),
+                })
+                return
+            if len(parts) == 4 and parts[:2] == ["api", "saved-searches"] and parts[3] == "mark-seen":
+                search = STATE.repository.saved_searches.get(parts[2])
+                if not search or search.user_id != user_id:
+                    self.send_error_json(HTTPStatus.NOT_FOUND, "not_found", "Saved search not found")
+                    return
+                search.last_seen_at = now_utc()
+                STATE.repository.save_saved_search(search)
+                self.send_json({
+                    "savedSearch": asdict(search),
+                    "savedSearches": STATE._saved_searches_with_alerts(user_id),
+                })
+                return
+            if parsed.path == "/api/digest/send":
+                text = STATE.send_user_digest(user=session.user)
+                self.send_json({"status": "sent", "preview": text})
+                return
+            if parsed.path == "/api/admin/billing":
+                if not self.require_admin(session):
+                    return
+                try:
+                    sub = STATE.update_subscription(
+                        actor=session.user,
+                        plan_id=payload.get("planId"),
+                        status=payload.get("status"),
+                        seats=payload.get("seats"),
+                        notes=payload.get("notes"),
+                        customer_email=payload.get("customerEmail"),
+                    )
+                except ValueError as error:
+                    self.send_error_json(HTTPStatus.BAD_REQUEST, str(error), str(error))
+                    return
+                self.send_json({"subscription": sub.to_dict()})
+                return
+            if parsed.path == "/api/admin/email/test":
+                if not self.require_admin(session):
+                    return
+                target = str(payload.get("target") or session.user.email)
+                try:
+                    result = STATE.send_test_email(actor=session.user, target=target)
+                except ValueError as error:
+                    self.send_error_json(HTTPStatus.BAD_REQUEST, str(error), str(error))
+                    return
+                self.send_json(result)
+                return
+            if parsed.path == "/api/admin/billing/checkout":
+                if not self.require_admin(session):
+                    return
+                if not isinstance(STATE.billing_backend, StripeBillingBackend):
+                    self.send_error_json(
+                        HTTPStatus.BAD_REQUEST,
+                        "stripe_disabled",
+                        "Stripe backend not active. Set DIRECTJOB_BILLING_BACKEND=stripe and credentials.",
+                    )
+                    return
+                plan_id = str(payload.get("planId") or "")
+                if not plan_id:
+                    self.send_error_json(HTTPStatus.BAD_REQUEST, "missing_plan", "planId is required")
+                    return
+                try:
+                    result = STATE.billing_backend.create_checkout_session(
+                        plan_id=plan_id,
+                        customer_email=payload.get("customerEmail") or session.user.email,
+                    )
+                except ValueError as error:
+                    code = str(error)
+                    self.send_error_json(HTTPStatus.BAD_REQUEST, code, code)
+                    return
+                except RuntimeError as error:
+                    # Strip raw Stripe error detail before surfacing it to the admin —
+                    # the upstream message can include verbose request/response context.
+                    raw_code = str(error).split(":", 1)[0].strip() or "billing_backend_error"
+                    self.send_error_json(
+                        HTTPStatus.SERVICE_UNAVAILABLE,
+                        raw_code,
+                        "Stripe call failed. Check the configured Stripe credentials and product/price IDs.",
+                    )
+                    return
+                STATE.record_admin_action(
+                    actor=session.user,
+                    target=None,
+                    action="create_checkout_session",
+                    details={"planId": plan_id, "sessionId": result.get("id")},
+                )
+                self.send_json({"checkout": result})
+                return
+            if parsed.path == "/api/account/deletion-request":
+                ticket = STATE.request_account_deletion(
+                    user=session.user,
+                    reason=str(payload.get("reason") or ""),
+                )
+                self.send_json({"ticket": ticket}, HTTPStatus.CREATED)
+                return
+            if parsed.path == "/api/analytics/event":
+                kind = str(payload.get("kind") or "").strip()
+                if not kind:
+                    self.send_error_json(HTTPStatus.BAD_REQUEST, "missing_kind", "Event kind is required")
+                    return
+                event = STATE.log_analytics(user_id, kind, payload.get("payload") or {})
+                self.send_json({"event": event}, HTTPStatus.CREATED)
+                return
+            if parsed.path == "/api/support":
+                ticket = STATE.submit_support_ticket(
+                    user=session.user,
+                    subject=str(payload.get("subject") or ""),
+                    body=str(payload.get("body") or ""),
+                    contact_email=payload.get("contactEmail"),
+                )
+                self.send_json({"ticket": ticket}, HTTPStatus.CREATED)
+                return
+            if len(parts) == 4 and parts[:2] == ["api", "watchlist-templates"] and parts[3] == "apply":
+                try:
+                    result = STATE.apply_watchlist_template(data_user_id, parts[2])
+                except ValueError as error:
+                    self.send_error_json(HTTPStatus.BAD_REQUEST, str(error), str(error))
+                    return
+                self.send_json({"result": result, "bootstrap": STATE.bootstrap(user_id)})
+                return
+            if len(parts) == 4 and parts[:2] == ["api", "imported-jobs"] and parts[3] == "application":
+                try:
+                    job = STATE.update_application_state(data_user_id, parts[2], payload)
+                except KeyError:
+                    self.send_error_json(HTTPStatus.NOT_FOUND, "not_found", "Imported job not found")
+                    return
+                except ValueError as error:
+                    self.send_error_json(HTTPStatus.BAD_REQUEST, str(error), str(error))
+                    return
+                self.send_json({"job": job, "bootstrap": STATE.bootstrap(user_id)})
+                return
+
+            if parsed.path == "/api/ai-provider":
+                config = STATE.update_ai_provider(user_id, payload)
+                self.send_json({"aiProvider": config.public_dict(), "bootstrap": STATE.bootstrap(user_id)})
+                return
+
+            if parsed.path == "/api/watchlist/scan":
+                result = STATE.run_watchlist_scan(user_id, trigger="manual")
+                self.send_json({"result": result, "bootstrap": STATE.bootstrap(user_id)})
+                return
+
+            if parsed.path == "/api/watchlist/schedule":
+                schedule = STATE.update_watchlist_schedule(user_id, payload)
+                self.send_json({"watchlistSchedule": schedule, "bootstrap": STATE.bootstrap(user_id)})
+                return
+
+            if parsed.path == "/api/demo/seed":
+                demo = STATE.seed_demo(user_id)
+                self.send_json({"demo": demo, "bootstrap": STATE.bootstrap(user_id)}, HTTPStatus.CREATED)
+                return
+
+            if parsed.path == "/api/data/import":
+                result = STATE.import_data(user_id, payload)
+                self.send_json({"result": result, "bootstrap": STATE.bootstrap(user_id)})
+                return
+
+            if len(parts) == 4 and parts[:2] == ["api", "companies"] and parts[3] == "find-career-page":
+                result = STATE.service.find_company_career_page(data_user_id, parts[2])
+                self.send_json({"result": result, "bootstrap": STATE.bootstrap(user_id)})
+                return
+
+            if len(parts) == 4 and parts[:2] == ["api", "companies"] and parts[3] == "scan":
+                career_page_url = payload.get("careerPageUrl") or None
+                if career_page_url:
+                    STATE.service.update_company(data_user_id, parts[2], career_page_url=career_page_url)
+                run = STATE.start_scan(data_user_id, parts[2], career_page_url)
+                self.send_json({"run": run, "bootstrap": STATE.bootstrap(user_id)})
+                return
+
+            if len(parts) == 4 and parts[:2] == ["api", "companies"] and parts[3] == "extract-html":
+                company = STATE.repository.get_company(data_user_id, parts[2])
+                page_url = payload.get("pageUrl") or company.career_page_url or company.website_url
+                jobs = STATE.service.extract_direct_jobs_from_company_site(
+                    company,
+                    page_url,
+                    payload.get("html", ""),
+                )
+                saved = []
+                errors = []
+                for job in jobs:
+                    duplicate = STATE.repository.find_duplicate_discovered_job(job)
+                    if duplicate:
+                        errors.append(
+                            {
+                                "code": "duplicate_discovered_job",
+                                "sourceUrl": job.source_url,
+                                "duplicateId": duplicate.id,
+                            }
+                        )
+                    else:
+                        saved.append(STATE.repository.save_discovered_job(job))
+                self.send_json({"jobs": saved, "errors": errors, "bootstrap": STATE.bootstrap(user_id)})
+                return
+
+            if len(parts) == 4 and parts[:2] == ["api", "discovered-jobs"] and parts[3] == "import":
+                imported = STATE.service.import_discovered_job(data_user_id, parts[2])
+                self.send_json({"job": imported, "bootstrap": STATE.bootstrap(user_id)})
+                return
+
+            if parsed.path == "/api/discovered-jobs/bulk-import":
+                # Multi-select import. Accepts ``{"ids": ["...", ...]}``.
+                # Reports per-id ``{"id": ..., "status": "imported" | "error", ...}``
+                # so the client can show a partial-success toast.
+                ids = payload.get("ids") or []
+                if not isinstance(ids, list):
+                    self.send_error_json(HTTPStatus.BAD_REQUEST, "invalid_ids", "ids must be a list")
+                    return
+                ids = [str(x) for x in ids if str(x).strip()][:100]
+                outcomes: list[dict[str, Any]] = []
+                imported_count = 0
+                for did in ids:
+                    try:
+                        imported = STATE.service.import_discovered_job(data_user_id, did)
+                        outcomes.append({"id": did, "status": "imported", "importedJobId": imported.id})
+                        imported_count += 1
+                    except KeyError:
+                        outcomes.append({"id": did, "status": "error", "code": "not_found"})
+                    except ValueError as error:
+                        outcomes.append({"id": did, "status": "error", "code": str(error)})
+                STATE.log_analytics(
+                    user_id, "bulk_import",
+                    {"requested": len(ids), "imported": imported_count},
+                )
+                self.send_json({
+                    "outcomes": outcomes,
+                    "imported": imported_count,
+                    "bootstrap": STATE.bootstrap(user_id),
+                })
+                return
+
+            if len(parts) == 4 and parts[:2] == ["api", "imported-jobs"] and parts[3] == "prepare-brief":
+                imported = STATE.repository.imported_jobs[parts[2]]
+                if imported.user_id != data_user_id:
+                    raise KeyError(parts[2])
+                profile = STATE.profile_for(user_id)
+                brief = build_job_decision_brief_prompt(
+                    imported, STATE.ai_provider_for(user_id), profile,
+                )
+                imported.analysis_status = "brief_ready"
+                STATE.repository.save_imported_job(imported)
+                self.send_json({"brief": brief, "bootstrap": STATE.bootstrap(user_id)})
+                return
+
+            if len(parts) == 4 and parts[:2] == ["api", "imported-jobs"] and parts[3] == "prepare-cover-letter":
+                imported = STATE.repository.imported_jobs[parts[2]]
+                if imported.user_id != data_user_id:
+                    raise KeyError(parts[2])
+                profile = STATE.profile_for(user_id)
+                brief = build_cover_letter_brief_prompt(
+                    imported, STATE.ai_provider_for(user_id), profile,
+                )
+                self.send_json({"brief": brief})
+                return
+
+            if len(parts) == 4 and parts[:2] == ["api", "imported-jobs"] and parts[3] == "analyze":
+                imported = STATE.repository.imported_jobs[parts[2]]
+                if imported.user_id != data_user_id:
+                    raise KeyError(parts[2])
+                runtime_credential = str(payload.get("credentialValue") or payload.get("runtimeCredential") or "")
+                if len(runtime_credential) > 4096:
+                    self.send_error_json(HTTPStatus.BAD_REQUEST, "bad_request", "Credential value is too long")
+                    return
+                STATE.quota_store.can_run_ai(user_id)
+                profile = STATE.profile_for(user_id)
+                provider = STATE.ai_provider_for(user_id)
+                if not _ai_consent_satisfied(profile, provider):
+                    self.send_error_json(HTTPStatus.PRECONDITION_FAILED, "ai_consent_required", "Confirm consent in Settings before running AI on your CV.")
+                    return
+                result = execute_job_decision_brief(
+                    imported, provider, runtime_credential, profile,
+                )
+                STATE.quota_store.record_ai_run(user_id)
+                imported.analysis_status = result.status
+                imported.analysis_output = result.output or None
+                imported.analysis_error = result.error or None
+                imported.analysis_provider_id = result.provider_id
+                imported.analyzed_at = now_utc()
+                if result.output:
+                    structured = parse_freeform(result.output)
+                    structured_dict = structured.to_dict()
+                    imported.structured_analysis = structured_dict
+                    imported.fit_score = structured.fit_score
+                    imported.recommendation = structured.recommendation
+                STATE.repository.save_imported_job(imported)
+                STATE.log_analytics(user_id, "ai_analyze", {"providerId": imported.analysis_provider_id, "status": result.status})
+                self.send_json({"analysis": asdict(result), "bootstrap": STATE.bootstrap(user_id)})
+                return
+
+            if len(parts) == 4 and parts[:2] == ["api", "imported-jobs"] and parts[3] == "draft-cover-letter":
+                imported = STATE.repository.imported_jobs[parts[2]]
+                if imported.user_id != data_user_id:
+                    raise KeyError(parts[2])
+                runtime_credential = str(payload.get("credentialValue") or payload.get("runtimeCredential") or "")
+                if len(runtime_credential) > 4096:
+                    self.send_error_json(HTTPStatus.BAD_REQUEST, "bad_request", "Credential value is too long")
+                    return
+                STATE.quota_store.can_run_ai(user_id)
+                profile = STATE.profile_for(user_id)
+                provider = STATE.ai_provider_for(user_id)
+                if not _ai_consent_satisfied(profile, provider):
+                    self.send_error_json(HTTPStatus.PRECONDITION_FAILED, "ai_consent_required", "Confirm consent in Settings before running AI on your CV.")
+                    return
+                result = execute_cover_letter_brief(
+                    imported, provider, runtime_credential, profile,
+                )
+                STATE.quota_store.record_ai_run(user_id)
+                if result.status == "completed" and result.output:
+                    imported.cover_letter_draft = result.output
+                    STATE.repository.save_imported_job(imported)
+                STATE.log_analytics(
+                    user_id,
+                    "cover_letter_draft",
+                    {"providerId": result.provider_id, "status": result.status},
+                )
+                self.send_json({"draft": asdict(result), "bootstrap": STATE.bootstrap(user_id)})
+                return
+
+            if len(parts) == 4 and parts[:2] == ["api", "imported-jobs"] and parts[3] == "tailor-cv":
+                imported = STATE.repository.imported_jobs[parts[2]]
+                if imported.user_id != data_user_id:
+                    raise KeyError(parts[2])
+                runtime_credential = str(payload.get("credentialValue") or payload.get("runtimeCredential") or "")
+                if len(runtime_credential) > 4096:
+                    self.send_error_json(HTTPStatus.BAD_REQUEST, "bad_request", "Credential value is too long")
+                    return
+                STATE.quota_store.can_run_ai(user_id)
+                profile = STATE.profile_for(user_id)
+                if not (profile.cv_text or "").strip():
+                    self.send_error_json(
+                        HTTPStatus.BAD_REQUEST,
+                        "missing_cv",
+                        "Add a CV in Settings → Persona & profile before tailoring.",
+                    )
+                    return
+                provider = STATE.ai_provider_for(user_id)
+                if not _ai_consent_satisfied(profile, provider):
+                    self.send_error_json(HTTPStatus.PRECONDITION_FAILED, "ai_consent_required", "Confirm consent in Settings before running AI on your CV.")
+                    return
+                result = execute_cv_tailoring(
+                    imported, provider, runtime_credential, profile,
+                )
+                STATE.quota_store.record_ai_run(user_id)
+                STATE.log_analytics(
+                    user_id,
+                    "cv_tailoring",
+                    {"providerId": result.provider_id, "status": result.status},
+                )
+                self.send_json({"tailored": asdict(result)})
+                return
+
+            if len(parts) == 4 and parts[:2] == ["api", "discovered-jobs"] and parts[3] == "auto-fit":
+                discovered = STATE.repository.discovered_jobs.get(parts[2])
+                if not discovered or discovered.user_id != data_user_id:
+                    raise KeyError(parts[2])
+                runtime_credential = str(payload.get("credentialValue") or payload.get("runtimeCredential") or "")
+                STATE.quota_store.can_run_ai(user_id)
+                profile = STATE.profile_for(user_id)
+                provider = STATE.ai_provider_for(user_id)
+                if not _ai_consent_satisfied(profile, provider):
+                    self.send_error_json(HTTPStatus.PRECONDITION_FAILED, "ai_consent_required", "Confirm consent in Settings before running AI on your CV.")
+                    return
+                company = STATE.repository.companies.get(discovered.company_id)
+                company_name = company.name if company else "Unknown company"
+                result = execute_auto_fit(
+                    discovered,
+                    company_name,
+                    provider,
+                    runtime_credential,
+                    profile,
+                )
+                STATE.quota_store.record_ai_run(user_id)
+                if result.status == "completed":
+                    score, reason = parse_auto_fit_output(result.output)
+                    if score is not None:
+                        discovered.auto_fit_score = score
+                        discovered.auto_fit_reason = reason
+                        discovered.auto_fit_at = now_utc()
+                        discovered.auto_fit_provider_id = result.provider_id
+                        STATE.repository.save_discovered_job(discovered)
+                        STATE.maybe_notify_slack(user_id, discovered)
+                STATE.log_analytics(
+                    user_id,
+                    "auto_fit",
+                    {
+                        "providerId": result.provider_id,
+                        "status": result.status,
+                        "score": discovered.auto_fit_score,
+                    },
+                )
+                self.send_json({
+                    "result": asdict(result),
+                    "discoveredJob": asdict(discovered),
+                    "bootstrap": STATE.bootstrap(user_id),
+                })
+                return
+
+            if parsed.path == "/api/discovered-jobs/auto-fit-all":
+                runtime_credential = str(payload.get("credentialValue") or payload.get("runtimeCredential") or "")
+                limit = int(payload.get("limit") or 10)
+                limit = max(1, min(25, limit))
+                profile = STATE.profile_for(user_id)
+                provider = STATE.ai_provider_for(user_id)
+                if not _ai_consent_satisfied(profile, provider):
+                    self.send_error_json(HTTPStatus.PRECONDITION_FAILED, "ai_consent_required", "Confirm consent in Settings before running AI on your CV.")
+                    return
+                companies_by_id = {c.id: c for c in STATE.repository.list_companies(user_id)}
+                jobs = [
+                    j for j in STATE.repository.list_discovered_jobs(user_id)
+                    if not j.imported_job_id and j.auto_fit_score is None
+                ][:limit]
+                outcomes: list[dict[str, Any]] = []
+                for job in jobs:
+                    try:
+                        STATE.quota_store.can_run_ai(user_id)
+                    except QuotaError as error:
+                        outcomes.append({"discoveredJobId": job.id, "status": "quota_exhausted", "code": error.code})
+                        break
+                    company = companies_by_id.get(job.company_id)
+                    company_name = company.name if company else "Unknown company"
+                    res = execute_auto_fit(job, company_name, provider, runtime_credential, profile)
+                    STATE.quota_store.record_ai_run(user_id)
+                    if res.status == "completed":
+                        score, reason = parse_auto_fit_output(res.output)
+                        if score is not None:
+                            job.auto_fit_score = score
+                            job.auto_fit_reason = reason
+                            job.auto_fit_at = now_utc()
+                            job.auto_fit_provider_id = res.provider_id
+                            STATE.repository.save_discovered_job(job)
+                            STATE.maybe_notify_slack(user_id, job)
+                    outcomes.append({
+                        "discoveredJobId": job.id,
+                        "status": res.status,
+                        "score": job.auto_fit_score,
+                        "error": res.error or None,
+                    })
+                STATE.log_analytics(
+                    user_id,
+                    "auto_fit_batch",
+                    {"requested": len(jobs), "completed": sum(1 for o in outcomes if o["status"] == "completed")},
+                )
+                self.send_json({"outcomes": outcomes, "bootstrap": STATE.bootstrap(user_id)})
+                return
+
+            self.send_error_json(HTTPStatus.NOT_FOUND, "not_found", "Unknown endpoint")
+        except QuotaError as error:
+            self.send_error_json(HTTPStatus.TOO_MANY_REQUESTS, error.code, error.message)
+        except (KeyError, ValueError) as error:
+            self.send_error_json(HTTPStatus.BAD_REQUEST, "bad_request", f"Missing or invalid field: {error}")
+        except Exception as error:  # noqa: BLE001 - top-level HTTP boundary
+            self.send_error_json(HTTPStatus.INTERNAL_SERVER_ERROR, "internal_error", str(error))
+
+    def do_PATCH(self) -> None:
+        try:
+            parsed = urlparse(self.path)
+            parts = [unquote(part) for part in parsed.path.strip("/").split("/") if part]
+            session = self.require_auth()
+            if session is None or not self.require_csrf(session):
+                return
+            user_id = session.user.id
+            data_user_id = STATE.effective_user_id(user_id)
+            if len(parts) == 4 and parts[:3] == ["api", "admin", "users"]:
+                if not self.require_admin(session):
+                    return
+                payload = self.read_json_body()
+                target_id = parts[3]
+                target_before = STATE.auth_store.get_user(target_id)
+                if target_id == session.user.id and (
+                    ("role" in payload and payload.get("role") != target_before.role)
+                    or ("active" in payload and bool(payload.get("active")) != target_before.active)
+                ):
+                    self.send_error_json(
+                        HTTPStatus.FORBIDDEN,
+                        "self_modify_forbidden",
+                        "Admins cannot change their own role or active status",
+                    )
+                    return
+                update: dict[str, Any] = {}
+                if "role" in payload:
+                    update["role"] = payload["role"]
+                if "active" in payload:
+                    update["active"] = bool(payload["active"])
+                if payload.get("password"):
+                    update["password"] = payload["password"]
+                user = STATE.auth_store.update_user(target_id, **update)
+                if "role" in update and update["role"] != target_before.role:
+                    STATE.record_admin_action(
+                        actor=session.user,
+                        target=user,
+                        action="update_role",
+                        details={"from": target_before.role, "to": user.role},
+                    )
+                if "active" in update and bool(update["active"]) != target_before.active:
+                    STATE.record_admin_action(
+                        actor=session.user,
+                        target=user,
+                        action="update_active",
+                        details={"from": target_before.active, "to": user.active},
+                    )
+                if "password" in update:
+                    STATE.record_admin_action(
+                        actor=session.user,
+                        target=user,
+                        action="reset_password",
+                    )
+                self.send_json(
+                    {"user": make_admin_user_payload(user), "users": [make_admin_user_payload(item) for item in STATE.auth_store.list_users()]}
+                )
+                return
+            if len(parts) == 3 and parts[:2] == ["api", "companies"]:
+                payload = to_snake_case_payload(self.read_json_body())
+                company = STATE.service.update_company(data_user_id, parts[2], **payload)
+                self.send_json({"company": company, "bootstrap": STATE.bootstrap(user_id)})
+                return
+            self.send_error_json(HTTPStatus.NOT_FOUND, "not_found", "Unknown endpoint")
+        except (KeyError, ValueError) as error:
+            self.send_error_json(HTTPStatus.BAD_REQUEST, "bad_request", f"Missing or invalid field: {error}")
+        except Exception as error:  # noqa: BLE001 - top-level HTTP boundary
+            self.send_error_json(HTTPStatus.INTERNAL_SERVER_ERROR, "internal_error", str(error))
+
+    def do_DELETE(self) -> None:
+        try:
+            parsed = urlparse(self.path)
+            parts = [unquote(part) for part in parsed.path.strip("/").split("/") if part]
+            session = self.require_auth()
+            if session is None or not self.require_csrf(session):
+                return
+            user_id = session.user.id
+            data_user_id = STATE.effective_user_id(user_id)
+            if len(parts) == 3 and parts[:2] == ["api", "companies"]:
+                STATE.repository.delete_company(data_user_id, parts[2])
+                self.send_json({"bootstrap": STATE.bootstrap(user_id)})
+                return
+            if len(parts) == 3 and parts[:2] == ["api", "saved-searches"]:
+                try:
+                    STATE.delete_saved_search(data_user_id, parts[2])
+                except KeyError:
+                    self.send_error_json(HTTPStatus.NOT_FOUND, "not_found", "Saved search not found")
+                    return
+                self.send_json({"savedSearches": STATE._saved_searches_with_alerts(user_id)})
+                return
+            if len(parts) == 4 and parts[:3] == ["api", "admin", "users"]:
+                if not self.require_admin(session):
+                    return
+                target_id = parts[3]
+                if target_id == session.user.id:
+                    self.send_error_json(HTTPStatus.FORBIDDEN, "self_modify_forbidden", "Admins cannot delete themselves")
+                    return
+                try:
+                    result = STATE.delete_user_account(actor=session.user, target_id=target_id)
+                except KeyError:
+                    self.send_error_json(HTTPStatus.NOT_FOUND, "not_found", "User not found")
+                    return
+                except ValueError as error:
+                    self.send_error_json(HTTPStatus.FORBIDDEN, str(error), str(error))
+                    return
+                self.send_json(result | {"users": [make_admin_user_payload(item) for item in STATE.auth_store.list_users()]})
+                return
+            self.send_error_json(HTTPStatus.NOT_FOUND, "not_found", "Unknown endpoint")
+        except KeyError as error:
+            self.send_error_json(HTTPStatus.BAD_REQUEST, "bad_request", f"Missing or invalid field: {error}")
+        except Exception as error:  # noqa: BLE001 - top-level HTTP boundary
+            self.send_error_json(HTTPStatus.INTERNAL_SERVER_ERROR, "internal_error", str(error))
+
+    def read_json_body(self) -> dict[str, Any]:
+        length = int(self.headers.get("Content-Length", "0"))
+        if length == 0:
+            return {}
+        if length > MAX_JSON_BODY_BYTES:
+            raise ValueError("request body too large")
+        raw = self.rfile.read(length)
+        return json.loads(raw.decode("utf-8"))
+
+    def send_json(
+        self,
+        payload: dict[str, Any],
+        status: HTTPStatus = HTTPStatus.OK,
+        headers: dict[str, str] | None = None,
+        include_body: bool = True,
+    ) -> None:
+        body = json.dumps(jsonable(payload), ensure_ascii=False).encode("utf-8")
+        self.send_response(status)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Cache-Control", "no-store")
+        for key, value in (headers or {}).items():
+            self.send_header(key, value)
+        self.end_headers()
+        if include_body:
+            self.wfile.write(body)
+
+    def send_error_json(self, status: HTTPStatus, code: str, message: str, include_body: bool = True) -> None:
+        self.send_json({"error": {"code": code, "message": message}}, status, include_body=include_body)
+
+    def send_text(
+        self,
+        body: str,
+        *,
+        content_type: str,
+        filename: str | None = None,
+        status: HTTPStatus = HTTPStatus.OK,
+    ) -> None:
+        encoded = body.encode("utf-8")
+        self.send_response(status)
+        self.send_header("Content-Type", f"{content_type}; charset=utf-8")
+        self.send_header("Content-Length", str(len(encoded)))
+        self.send_header("Cache-Control", "no-store")
+        if filename:
+            self.send_header("Content-Disposition", f'attachment; filename="{filename}"')
+        self.end_headers()
+        self.wfile.write(encoded)
+
+    def serve_static(self, request_path: str, include_body: bool = True) -> None:
+        spa_routes = {"/accept-invite", "/reset-password", "/forgot-password"}
+        if request_path in {"", "/"}:
+            path = "/index.html"
+        elif request_path in spa_routes:
+            path = "/index.html"
+        else:
+            path = request_path
+        candidate = (STATIC_ROOT / path.lstrip("/")).resolve()
+        if (
+            not str(candidate).startswith(str(STATIC_ROOT.resolve()))
+            or not candidate.exists()
+            or candidate.is_dir()
+        ):
+            # Try a `.html` fallback so /privacy serves /privacy.html.
+            html_candidate = (STATIC_ROOT / (path.lstrip("/") + ".html")).resolve()
+            if (
+                str(html_candidate).startswith(str(STATIC_ROOT.resolve()))
+                and html_candidate.exists()
+                and not html_candidate.is_dir()
+            ):
+                candidate = html_candidate
+            else:
+                self.send_error_json(HTTPStatus.NOT_FOUND, "not_found", "File not found")
+                return
+        content = candidate.read_bytes()
+        self.send_response(HTTPStatus.OK)
+        guessed = mimetypes.guess_type(candidate.name)[0]
+        if guessed is None and candidate.suffix.lower() == ".webmanifest":
+            guessed = "application/manifest+json"
+        self.send_header("Content-Type", guessed or "application/octet-stream")
+        self.send_header("Content-Length", str(len(content)))
+        self.end_headers()
+        if include_body:
+            self.wfile.write(content)
+
+    def log_message(self, format: str, *args: Any) -> None:
+        return
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--host", default=os.environ.get("COMPANY_DISCOVERY_HOST", "127.0.0.1"))
+    parser.add_argument("--port", type=int, default=int(os.environ.get("COMPANY_DISCOVERY_PORT", "8765")))
+    args = parser.parse_args()
+    server = ThreadingHTTPServer((args.host, args.port), Handler)
+    visible_host = "127.0.0.1" if args.host in {"0.0.0.0", ""} else args.host
+    print(f"Company Discovery app running at http://{visible_host}:{args.port}")
+    server.serve_forever()
+
+
+if __name__ == "__main__":
+    main()

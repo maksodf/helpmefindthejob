@@ -1,0 +1,21 @@
+{
+  "name": "DirectJob Scout",
+  "short_name": "DirectJob",
+  "description": "Healthcare-management and multi-persona job-search assistant.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#0b0d12",
+  "background_color": "#0b0d12",
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "business"],
+  "lang": "en"
+}

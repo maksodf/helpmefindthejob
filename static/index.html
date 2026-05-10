@@ -1,0 +1,1192 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#0b0d12" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" type="image/svg+xml" href="/icons/icon.svg" />
+    <link rel="apple-touch-icon" href="/icons/icon.svg" />
+    <title>DirectJob Scout</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#mainContent">Skip to main content</a>
+
+    <section id="authGate" class="auth-gate" hidden>
+      <div class="auth-card">
+        <div class="auth-brand">
+          <span class="brand-mark" aria-hidden="true">D</span>
+          <div>
+            <h1>DirectJob Scout</h1>
+            <p data-i18n="auth.signInLead">Sign in to continue.</p>
+          </div>
+        </div>
+        <form id="loginForm" class="auth-form" novalidate>
+          <label class="field">
+            <span data-i18n="auth.email">Email</span>
+            <input id="loginEmail" type="email" autocomplete="email" required />
+          </label>
+          <label class="field">
+            <span data-i18n="auth.password">Password</span>
+            <input id="loginPassword" type="password" autocomplete="current-password" required />
+          </label>
+          <button class="btn btn-primary" type="submit" data-i18n="auth.signIn">Sign in</button>
+        </form>
+        <button id="showForgotPasswordBtn" type="button" class="btn btn-ghost" style="margin-top: 8px;" data-i18n="auth.forgotLink">Forgot password?</button>
+        <form id="registerForm" class="auth-form" novalidate hidden>
+          <h2 data-i18n="auth.createFirstHeading">Create the first account</h2>
+          <p class="muted" data-i18n="auth.createFirstLead">This screen only appears on a new install.</p>
+          <label class="field">
+            <span data-i18n="auth.email">Email</span>
+            <input id="registerEmail" type="email" autocomplete="email" />
+          </label>
+          <label class="field">
+            <span data-i18n="auth.password">Password</span>
+            <input id="registerPassword" type="password" autocomplete="new-password" minlength="12" />
+            <span class="hint">12 characters or more.</span>
+          </label>
+          <button class="btn" type="submit" data-i18n="auth.createFirstSubmit">Create account</button>
+        </form>
+        <p id="authMessage" class="auth-message" role="alert" aria-live="polite"></p>
+        <p class="legal-links">
+          <a href="/privacy" data-i18n="auth.legal.privacy">Privacy</a>
+          <a href="/terms" data-i18n="auth.legal.terms">Terms</a>
+          <a href="/data-retention" data-i18n="auth.legal.dataRetention">Data retention</a>
+        </p>
+      </div>
+    </section>
+
+    <section id="forgotPasswordView" class="auth-aux" aria-labelledby="forgotPasswordTitle" hidden>
+      <h1 id="forgotPasswordTitle" data-i18n="auth.forgotHeading">Forgot your password?</h1>
+      <p data-i18n="auth.forgotLead">Enter the email associated with your account. If a matching account exists, we'll send a reset link that expires in one hour.</p>
+      <form id="forgotPasswordForm" novalidate>
+        <label class="field">
+          <span data-i18n="auth.email">Email</span>
+          <input id="forgotEmail" type="email" autocomplete="email" required />
+        </label>
+        <div class="action-group">
+          <button class="btn btn-primary" type="submit" data-i18n="auth.forgotSubmit">Send reset link</button>
+          <button type="button" class="btn" id="forgotPasswordBack" data-i18n="auth.forgotBack">Back to sign in</button>
+        </div>
+      </form>
+      <p id="forgotPasswordMessage" class="auth-meta" role="status" aria-live="polite"></p>
+    </section>
+
+    <section id="resetPasswordView" class="auth-aux" aria-labelledby="resetPasswordTitle" hidden>
+      <h1 id="resetPasswordTitle" data-i18n="auth.resetHeading">Set a new password</h1>
+      <p id="resetPasswordTarget" class="auth-meta" data-i18n="auth.resetVerifying">Verifying reset link…</p>
+      <form id="resetPasswordForm" novalidate hidden>
+        <label class="field">
+          <span data-i18n="auth.resetNew">New password</span>
+          <input id="resetPasswordValue" type="password" autocomplete="new-password" minlength="12" required />
+          <span class="hint">12 characters or more.</span>
+        </label>
+        <div class="action-group">
+          <button class="btn btn-primary" type="submit" data-i18n="auth.resetSubmit">Set password</button>
+          <button type="button" class="btn" id="resetPasswordBack" data-i18n="auth.cancel">Cancel</button>
+        </div>
+      </form>
+      <p id="resetPasswordMessage" class="auth-meta" role="status" aria-live="polite"></p>
+    </section>
+
+    <section id="acceptInviteView" class="auth-aux" aria-labelledby="acceptInviteTitle" hidden>
+      <h1 id="acceptInviteTitle" data-i18n="auth.acceptHeading">Accept your invitation</h1>
+      <p id="acceptInviteTarget" class="auth-meta" data-i18n="auth.acceptVerifying">Verifying invitation…</p>
+      <form id="acceptInviteForm" novalidate hidden>
+        <label class="field">
+          <span data-i18n="auth.acceptChoosePassword">Choose a password</span>
+          <input id="acceptInvitePassword" type="password" autocomplete="new-password" minlength="12" required />
+          <span class="hint">12 characters or more.</span>
+        </label>
+        <div class="action-group">
+          <button class="btn btn-primary" type="submit" data-i18n="auth.activate">Activate account</button>
+        </div>
+      </form>
+      <p id="acceptInviteMessage" class="auth-meta" role="status" aria-live="polite"></p>
+    </section>
+
+    <div id="appShell" class="shell" hidden>
+      <aside class="sidebar" aria-label="Primary navigation">
+        <div class="sidebar-header">
+          <span class="brand-mark" aria-hidden="true">D</span>
+          <div class="sidebar-title">
+            <strong>DirectJob Scout</strong>
+            <span class="muted" data-i18n="brand.tagline">Career-page agent</span>
+          </div>
+        </div>
+        <div class="workspace-picker" id="workspacePickerWrap" hidden>
+          <label class="muted small" for="workspaceSelect" data-i18n="workspaces.label">Workspace</label>
+          <select id="workspaceSelect" class="workspace-select"></select>
+          <button id="inviteWorkspaceBtn" class="btn btn-ghost btn-small" type="button" data-i18n="workspaces.invite">Invite member</button>
+        </div>
+        <nav class="nav" id="sidebarNav">
+          <button class="nav-item" type="button" data-view="dashboard" aria-current="page">
+            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 10l7-6 7 6v8a1 1 0 0 1-1 1h-4v-5h-4v5H4a1 1 0 0 1-1-1z" fill="currentColor"/></svg>
+            <span data-i18n="nav.dashboard">Today</span>
+          </button>
+          <button class="nav-item" type="button" data-view="companies">
+            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v12H3z M14 8a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v9h-4z M5 7h2v2H5z M5 11h2v2H5z M9 7h2v2H9z M9 11h2v2H9z" fill="currentColor"/></svg>
+            <span data-i18n="nav.companies">Companies</span>
+            <span class="nav-pill" id="navCompanyCount">0</span>
+          </button>
+          <button class="nav-item" type="button" data-view="jobs">
+            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 6a2 2 0 0 1 2-2h3l1 2h6a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" fill="currentColor"/></svg>
+            <span data-i18n="nav.queue">Discovered jobs</span>
+            <span class="nav-pill" id="navJobCount">0</span>
+          </button>
+          <button class="nav-item" type="button" data-view="brief">
+            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 3h7l4 4v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zm6 1.5V8h3.5L11 4.5z M6 11h8v1.5H6z M6 14h8v1.5H6z" fill="currentColor"/></svg>
+            <span data-i18n="nav.brief">AI Brief</span>
+          </button>
+          <button class="nav-item" type="button" data-view="settings">
+            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 6a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm0 2a2 2 0 1 1 0 4 2 2 0 0 1 0-4z M9 1.6V3a7 7 0 0 0-2.5 1l-1-1L4 4.5l1 1A7 7 0 0 0 4 8H2.6V12H4a7 7 0 0 0 1 2.5l-1 1 1.5 1.5 1-1A7 7 0 0 0 9 17v1.4h2V17a7 7 0 0 0 2.5-1l1 1 1.5-1.5-1-1a7 7 0 0 0 1-2.5h1.4V8H17a7 7 0 0 0-1-2.5l1-1L15.5 3l-1 1A7 7 0 0 0 11 3V1.6z" fill="currentColor"/></svg>
+            <span data-i18n="nav.settings">Settings</span>
+          </button>
+          <button class="nav-item admin-only" type="button" data-view="admin" hidden>
+            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2a4 4 0 0 1 4 4v1h1a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1V6a4 4 0 0 1 4-4zm0 2a2 2 0 0 0-2 2v1h4V6a2 2 0 0 0-2-2zm0 7a2 2 0 0 0-1 3.7V16h2v-1.3A2 2 0 0 0 10 11z" fill="currentColor"/></svg>
+            <span data-i18n="nav.admin">Admin</span>
+          </button>
+        </nav>
+        <div class="sidebar-footer">
+          <button id="installAppBtn" class="btn btn-ghost install-btn" type="button" hidden title="Install DirectJob Scout as an app">
+            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v8m0 0l-3-3m3 3l3-3M5 15h10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+            <span data-i18n="nav.installApp">Install app</span>
+          </button>
+          <div class="user-row" id="sidebarUser" hidden>
+            <div class="user-info">
+              <span class="user-email" id="sidebarUserEmail"></span>
+              <span class="user-role muted" id="sidebarUserRole"></span>
+            </div>
+            <button id="logoutBtn" class="btn btn-ghost" type="button" title="Sign out">
+              <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M11 3h6a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1h-6v-2h5V5h-5z M9 6l1.4 1.4L8.8 9H15v2H8.8l1.6 1.6L9 14l-4-4z" fill="currentColor"/></svg>
+              <span data-i18n="nav.signOut">Sign out</span>
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      <main id="mainContent" class="main" tabindex="-1">
+        <header class="topbar">
+          <div class="topbar-title">
+            <h1 id="viewTitle">Today</h1>
+            <p id="viewSubtitle" class="muted">Your watched companies, recent runs, and what to do next.</p>
+          </div>
+          <div class="topbar-meta">
+            <span class="status-pill" id="networkState" role="status" aria-live="polite" data-i18n="status.ready">Ready</span>
+          </div>
+        </header>
+
+        <!-- Dashboard / Today -->
+        <section id="view-dashboard" class="view" data-view="dashboard" aria-labelledby="viewTitle">
+          <div class="metric-grid">
+            <article class="metric-card">
+              <span class="metric-label" data-i18n="dashboard.metric.companies">Companies to watch</span>
+              <strong id="metricWatched">0</strong>
+              <span class="metric-hint muted" id="metricWatchedHint">No companies yet</span>
+            </article>
+            <article class="metric-card">
+              <span class="metric-label" data-i18n="dashboard.metric.jobs">New roles found</span>
+              <strong id="metricJobs">0</strong>
+              <span class="metric-hint muted" id="metricJobsHint">Awaiting first scan</span>
+            </article>
+            <article class="metric-card">
+              <span class="metric-label" data-i18n="dashboard.metric.setup">Need career page</span>
+              <strong id="metricSetup">0</strong>
+              <span class="metric-hint muted" id="metricSetupHint">All set up</span>
+            </article>
+            <article class="metric-card">
+              <span class="metric-label" data-i18n="dashboard.metric.lastRun">Last run</span>
+              <strong id="metricRun">—</strong>
+              <span class="metric-hint muted" id="metricRunHint">No scan recorded</span>
+            </article>
+          </div>
+
+          <section class="card find-jobs" aria-label="Find me jobs">
+            <div class="card-heading">
+              <div>
+                <h2 data-i18n="findJobs.heading">Find me jobs</h2>
+                <p class="muted" data-i18n="findJobs.lead">Tell us what you want. We search Arbeitnow, Remotive, We Work Remotely, The Muse, and Hacker News “Who is hiring?” at once and show one ranked queue.</p>
+              </div>
+            </div>
+            <form id="findJobsForm" class="form-grid">
+              <label class="field wide">
+                <span data-i18n="findJobs.query">What roles do you want?</span>
+                <input id="findJobsQuery" type="text" placeholder="e.g. healthcare policy consulting, junior data engineer" />
+              </label>
+              <label class="field">
+                <span data-i18n="findJobs.location">Location</span>
+                <input id="findJobsLocation" type="text" placeholder="Berlin / remote / global" />
+              </label>
+              <label class="field">
+                <span data-i18n="findJobs.limit">Per provider</span>
+                <input id="findJobsLimit" type="number" min="5" max="50" value="15" />
+              </label>
+              <button id="findJobsSubmit" class="btn btn-primary" type="submit" data-i18n="findJobs.submit">Search now</button>
+            </form>
+            <p id="findJobsStatus" class="muted small" role="status" aria-live="polite"></p>
+            <div id="findJobsResults" class="find-jobs-results"></div>
+            <p id="findJobsAttributions" class="muted small attribution-row"></p>
+          </section>
+
+          <section class="card next-step" aria-label="What to do next">
+            <div class="card-heading">
+              <h2 data-i18n="dashboard.nextStep.heading">Next step</h2>
+            </div>
+            <p id="nextStepText" class="next-step-text">Add a company to start watching.</p>
+            <div class="card-actions">
+              <button id="quickAddCompanyBtn" class="btn btn-primary" type="button" data-i18n="dashboard.nextStep.add">Add a company</button>
+              <button id="quickSeedDemoBtn" class="btn" type="button" data-i18n="dashboard.nextStep.demo">Try a demo company</button>
+              <button id="quickScanWatchlistBtn" class="btn" type="button" data-i18n="dashboard.nextStep.scan">Check for new roles</button>
+            </div>
+          </section>
+
+          <section class="card" aria-label="Onboarding checklist">
+            <div class="card-heading">
+              <div>
+                <h2 data-i18n="dashboard.onboarding.heading">Onboarding checklist</h2>
+                <p class="muted" id="onboardingProgress">0 of 7 complete</p>
+              </div>
+            </div>
+            <ul id="onboardingList" class="onboarding-list"></ul>
+          </section>
+
+          <section class="card" aria-label="Discovery Run Controls">
+            <div class="card-heading">
+              <h2 data-i18n="dashboard.schedule.heading">Discovery Run Controls</h2>
+              <p class="muted" id="scheduleStatus">Manual scans only</p>
+            </div>
+            <div class="schedule-row">
+              <label class="check-row">
+                <input id="scheduleEnabled" type="checkbox" />
+                <span data-i18n="dashboard.schedule.runAuto">Run automatic scans</span>
+              </label>
+              <label class="field inline">
+                <span data-i18n="dashboard.schedule.every">Every (minutes)</span>
+                <input id="scheduleInterval" type="number" min="15" max="10080" step="15" value="360" />
+              </label>
+              <button id="saveScheduleBtn" class="btn" type="button" data-i18n="dashboard.schedule.save">Save schedule</button>
+            </div>
+          </section>
+
+          <section class="card" aria-label="Recent activity">
+            <div class="card-heading">
+              <h2 data-i18n="dashboard.activity.heading">Recent activity</h2>
+            </div>
+            <div id="recentActivity" class="activity-list"></div>
+          </section>
+        </section>
+
+        <!-- Companies -->
+        <section id="view-companies" class="view" data-view="companies" aria-labelledby="viewTitle" hidden>
+          <div class="companies-layout">
+            <aside class="card watchlist" aria-label="Company watchlist">
+              <div class="card-heading">
+                <h2 data-i18n="companies.watchlist.heading">Companies to watch</h2>
+                <button id="newCompanyBtn" class="btn btn-primary btn-small" type="button" data-i18n="companies.watchlist.add">+ Add</button>
+              </div>
+              <input id="companyFilter" class="filter-input" type="search" placeholder="Filter watchlist" />
+              <div id="companyList" class="company-list"></div>
+            </aside>
+
+            <section class="card company-detail" aria-label="Company detail">
+              <div class="card-heading">
+                <div>
+                  <h2 id="detailName" data-i18n="companies.detail.placeholder">Select a company</h2>
+                  <p id="detailMeta" class="muted" data-i18n="companies.detail.placeholderSub">Pick a company on the left to see details.</p>
+                </div>
+                <div class="action-group">
+                  <button id="findCareerBtn" class="btn" type="button" data-i18n="companies.detail.findCareer">Find career page</button>
+                  <button id="scanBtn" class="btn btn-primary" type="button" data-i18n="companies.detail.scan">Check for new roles</button>
+                </div>
+              </div>
+
+              <div id="companyEmptyState" class="empty">
+                <p data-i18n="companies.detail.empty">No company selected.</p>
+                <button id="emptyAddCompanyBtn" class="btn" type="button" data-i18n="companies.detail.addFirst">Add your first company</button>
+              </div>
+
+              <form id="detailForm" class="detail-form" hidden>
+                <label class="field">
+                  <span data-i18n="companies.detail.website">Website</span>
+                  <input id="detailWebsite" type="url" autocomplete="url" />
+                </label>
+                <label class="field">
+                  <span data-i18n="companies.detail.career">Career page</span>
+                  <input id="detailCareer" type="url" />
+                </label>
+                <label class="field">
+                  <span data-i18n="companies.detail.sector">Sector</span>
+                  <input id="detailSector" list="sectorList" />
+                </label>
+                <label class="check-row">
+                  <input id="detailWatch" type="checkbox" />
+                  <span data-i18n="companies.detail.watch">Keep watching this company</span>
+                </label>
+                <label class="field wide">
+                  <span data-i18n="companies.detail.notes">Notes</span>
+                  <textarea id="detailNotes" rows="2"></textarea>
+                </label>
+                <div class="detail-actions">
+                  <button id="saveDetailBtn" class="btn btn-primary" type="button" data-i18n="companies.detail.save">Save changes</button>
+                  <button id="deleteCompanyBtn" class="btn btn-danger" type="button" data-i18n="companies.detail.delete">Delete company</button>
+                </div>
+              </form>
+
+              <div id="scanResult" class="scan-result muted"></div>
+
+              <details class="card-section manual-html">
+                <summary data-i18n="companies.manualHtml.summary">Paste jobs manually</summary>
+                <p class="muted" data-i18n="companies.manualHtml.lead">Use this when a career page can't be checked safely or needs login. Copy the page's HTML or job links and paste below.</p>
+                <div class="manual-grid">
+                  <label class="field">
+                    <span data-i18n="companies.manualHtml.url">Page URL</span>
+                    <input id="manualPageUrl" type="url" placeholder="https://company.example/jobs" />
+                  </label>
+                  <label class="field">
+                    <span data-i18n="companies.manualHtml.html">HTML snippet</span>
+                    <textarea id="manualHtml" rows="6" placeholder="&lt;html&gt;...&lt;/html&gt;"></textarea>
+                  </label>
+                  <button id="extractHtmlBtn" class="btn" type="button" data-i18n="companies.manualHtml.extract">Extract roles</button>
+                </div>
+              </details>
+            </section>
+          </div>
+
+          <section class="card" aria-label="Add company">
+            <div class="card-heading">
+              <h2 data-i18n="companies.add.heading">Add a company</h2>
+              <p class="muted" data-i18n="companies.add.lead">Healthcare-management focus by default. Add anything else you care about.</p>
+            </div>
+            <form id="companyForm" class="form-grid" novalidate>
+              <label class="field">
+                <span data-i18n="companies.add.name">Name</span>
+                <input required name="name" autocomplete="organization" placeholder="Charité" />
+              </label>
+              <label class="field">
+                <span data-i18n="companies.add.website">Website</span>
+                <input required name="websiteUrl" type="url" placeholder="https://example.org" />
+              </label>
+              <label class="field">
+                <span data-i18n="companies.add.career">Career page (optional)</span>
+                <input name="careerPageUrl" type="url" placeholder="https://example.org/karriere" />
+              </label>
+              <label class="field">
+                <span>Sector</span>
+                <select name="sector">
+                  <option value="">Uncategorized</option>
+                  <option>Hospital / clinic group</option>
+                  <option>University hospital</option>
+                  <option>Statutory health insurer</option>
+                  <option>Private health insurer</option>
+                  <option>Public health institution</option>
+                  <option>Research institute</option>
+                  <option>Healthcare association</option>
+                  <option>Pharma</option>
+                  <option>MedTech</option>
+                  <option>Digital Health</option>
+                  <option>Healthcare IT</option>
+                  <option>Healthcare consulting</option>
+                </select>
+              </label>
+              <label class="field wide">
+                <span data-i18n="companies.add.notes">Notes</span>
+                <input name="notes" placeholder="Why this company is worth watching" />
+              </label>
+              <label class="check-row">
+                <input name="watchEnabled" type="checkbox" checked />
+                <span data-i18n="companies.add.watch">Watch for new roles</span>
+              </label>
+              <button class="btn btn-primary" type="submit" data-i18n="companies.add.submit">Add company</button>
+            </form>
+          </section>
+
+          <section class="card" aria-label="Watchlist starter templates">
+            <div class="card-heading">
+              <div>
+                <h2 data-i18n="companies.templates.heading">Starter templates</h2>
+                <p class="muted" data-i18n="companies.templates.lead">One-click reviewed lists of healthcare employers.</p>
+              </div>
+            </div>
+            <div id="templateList" class="suggestion-list"></div>
+          </section>
+
+          <section class="card" aria-label="Saved searches">
+            <div class="card-heading">
+              <div>
+                <h2 data-i18n="companies.savedSearches.heading">Saved searches</h2>
+                <p class="muted" data-i18n="companies.savedSearches.lead">Reuse persona/role/location combinations.</p>
+              </div>
+              <button id="saveCurrentSearchBtn" class="btn" type="button" data-i18n="companies.savedSearches.save">Save current</button>
+            </div>
+            <div id="savedSearchList" class="saved-search-list"></div>
+          </section>
+
+          <section class="card" aria-label="Suggested companies">
+            <div class="card-heading">
+              <div>
+                <h2 data-i18n="companies.suggestions.heading">Suggestions</h2>
+                <p class="muted" data-i18n="companies.suggestions.lead">A small curated set of healthcare employers, ranked by your focus.</p>
+              </div>
+              <button id="suggestBtn" class="btn" type="button" data-i18n="companies.suggestions.refresh">Refresh suggestions</button>
+            </div>
+            <div class="suggest-inputs">
+              <label class="field">
+                <span data-i18n="companies.suggestions.targetRoles">Target roles</span>
+                <input id="targetRoles" value="Digital Health Project Management, Market Access, Public Health" />
+              </label>
+              <label class="field">
+                <span data-i18n="companies.suggestions.industry">Industry</span>
+                <input id="targetIndustry" value="Healthcare" />
+              </label>
+              <label class="field">
+                <span data-i18n="companies.suggestions.location">Location</span>
+                <input id="targetLocation" value="Berlin / remote" />
+              </label>
+            </div>
+            <div id="suggestionsList" class="suggestion-list"></div>
+          </section>
+        </section>
+
+        <!-- Discovered Jobs -->
+        <section id="view-jobs" class="view" data-view="jobs" aria-labelledby="viewTitle" hidden>
+          <section class="card" aria-label="Discovered jobs">
+            <div class="card-heading">
+              <h2 data-i18n="queue.heading">Roles found on company sites</h2>
+              <div class="segmented" role="tablist" aria-label="Filter">
+                <button class="segmented-btn active" type="button" data-filter="all" role="tab" aria-selected="true" data-i18n="queue.filter.all">All</button>
+                <button class="segmented-btn" type="button" data-filter="new" role="tab" aria-selected="false" data-i18n="queue.filter.new">New</button>
+                <button class="segmented-btn" type="button" data-filter="imported" role="tab" aria-selected="false" data-i18n="queue.filter.imported">Imported</button>
+              </div>
+            </div>
+            <p class="muted" data-i18n="queue.lead">Review before importing. Each role links back to the company's own career page.</p>
+            <div class="queue-toolbar">
+              <label class="field inline">
+                <span data-i18n="queue.toolbar.sortBy">Sort by</span>
+                <select id="queueSortSelect">
+                  <option value="discovered" data-i18n="queue.toolbar.sort.discovered">Newest first</option>
+                  <option value="fit" data-i18n="queue.toolbar.sort.fit">Auto-fit score</option>
+                </select>
+              </label>
+              <label class="field inline">
+                <span data-i18n="queue.toolbar.batch">Batch size</span>
+                <input id="autoFitLimit" type="number" min="1" max="25" value="10" />
+              </label>
+              <button id="autoFitAllBtn" class="btn btn-primary" type="button" data-i18n="queue.toolbar.autoFitAll">Auto-fit unscored</button>
+              <span id="autoFitStatus" class="muted small"></span>
+            </div>
+            <div class="queue-source-filters" id="queueSourceFilters" role="group" aria-label="Filter by source">
+              <span class="muted small" data-i18n="queue.toolbar.sources">Sources:</span>
+            </div>
+            <div id="queueBulkBar" class="queue-bulk-bar" hidden></div>
+            <div id="jobsQueue" class="jobs-list"></div>
+          </section>
+        </section>
+
+        <!-- AI Brief -->
+        <section id="view-brief" class="view" data-view="brief" aria-labelledby="viewTitle" hidden>
+          <section class="card" aria-label="AI provider summary">
+            <div class="card-heading">
+              <h2 data-i18n="brief.providerHeading">How AI will run</h2>
+              <button id="briefOpenSettings" class="btn" type="button" data-i18n="brief.providerEdit">Edit AI Provider</button>
+            </div>
+            <p class="muted" data-i18n="brief.providerLead">DirectJob Scout never stores your AI keys. It uses your own subscription. Pick a provider in Settings.</p>
+            <p id="briefProviderSummary" class="provider-summary"></p>
+          </section>
+
+          <section class="card" aria-label="Selected job brief">
+            <div class="card-heading">
+              <div>
+                <h2 id="briefMeta" data-i18n="brief.briefHeading">No brief prepared yet</h2>
+                <p class="muted" data-i18n="brief.briefLead">Pick an imported job to prepare a provider-neutral brief.</p>
+              </div>
+              <div class="action-group">
+                <button id="copyBriefBtn" class="btn" type="button" data-i18n="brief.copy">Copy</button>
+                <button id="runAnalysisBriefBtn" class="btn btn-primary" type="button" data-i18n="brief.analyze">Analyze fit</button>
+              </div>
+            </div>
+            <label class="field">
+              <span data-i18n="brief.runtimeKey">Session API key (optional, not saved)</span>
+              <input id="providerRuntimeKey" type="password" autocomplete="off" placeholder="Used only for one Run AI request" />
+            </label>
+            <textarea id="briefPrompt" class="brief-textarea" rows="14" readonly placeholder="Import a job, then click Brief on the role to see a provider-neutral brief here."></textarea>
+            <p class="muted small" data-i18n="brief.handoffNote">The brief is sent only when you click Analyze fit. Manual handoff always works.</p>
+          </section>
+
+          <section class="card" aria-label="Imported jobs">
+            <div class="card-heading">
+              <h2 data-i18n="brief.importedHeading">Imported jobs</h2>
+            </div>
+            <div id="importedJobsList" class="imported-list"></div>
+          </section>
+
+          <section class="card" aria-label="Application preparation">
+            <div class="card-heading">
+              <div>
+                <h2 data-i18n="applications.heading">Application preparation</h2>
+                <p class="muted" id="applicationContextLabel" data-i18n="applications.lead">Pick an imported job to update its status and notes.</p>
+              </div>
+            </div>
+            <form id="applicationForm" class="application-grid" novalidate hidden>
+              <label class="field">
+                <span data-i18n="applications.status">Status</span>
+                <select id="applicationStatus"></select>
+              </label>
+              <label class="field">
+                <span data-i18n="applications.interviewStage">Interview stage</span>
+                <select id="applicationInterviewStage">
+                  <option value="">—</option>
+                  <option value="screening">Screening</option>
+                  <option value="phone">Phone</option>
+                  <option value="take_home">Take-home</option>
+                  <option value="technical">Technical</option>
+                  <option value="onsite">Onsite</option>
+                  <option value="panel">Panel</option>
+                  <option value="offer">Offer</option>
+                </select>
+              </label>
+              <label class="field">
+                <span data-i18n="applications.nextAction">Next action</span>
+                <input id="applicationNextAction" placeholder="e.g. follow up Friday" />
+              </label>
+              <label class="field">
+                <span data-i18n="applications.reminder">Reminder</span>
+                <input id="applicationReminderAt" type="datetime-local" />
+              </label>
+              <label class="field wide">
+                <span data-i18n="applications.notes">Notes</span>
+                <textarea id="applicationNotes" rows="3"></textarea>
+              </label>
+              <label class="field wide">
+                <span data-i18n="applications.historyNote">Add history note (optional)</span>
+                <input id="applicationHistoryNote" placeholder="e.g. Recruiter emailed; phone screen Thursday" />
+              </label>
+              <label class="field wide">
+                <span data-i18n="applications.coverLetterDraft">Cover letter draft</span>
+                <div class="cover-letter-toolbar">
+                  <button id="prepareCoverLetterBtn" class="btn" type="button" title="Show the cover-letter prompt for manual handoff" data-i18n="applications.coverLetter.prompt">Cover-letter prompt</button>
+                  <button id="draftCoverLetterBtn" class="btn btn-primary" type="button" title="Run the configured AI provider to draft a tailored cover letter" data-i18n="applications.coverLetter.draft">Draft cover letter</button>
+                  <button id="tailorCvBtn" class="btn" type="button" title="Rewrite your CV for this specific job using the configured AI provider" data-i18n="applications.coverLetter.tailor">Tailor CV</button>
+                  <span id="coverLetterStatus" class="muted small"></span>
+                  <span id="tailorCvStatus" class="muted small"></span>
+                </div>
+                <textarea id="applicationCoverLetter" rows="6" placeholder="Click 'Draft cover letter' to generate one with your AI provider, or paste your own."></textarea>
+              </label>
+              <label class="field wide">
+                <span data-i18n="applications.documentsChecklist">Documents checklist</span>
+                <textarea id="applicationChecklist" rows="3" placeholder="One item per line; prefix with [x] for done"></textarea>
+              </label>
+              <button class="btn btn-primary" type="submit" data-i18n="applications.save">Save application</button>
+            </form>
+            <div id="structuredFitSummary" class="structured-fit muted" hidden></div>
+            <div id="applicationHistoryPanel" class="application-history" hidden>
+              <h3 data-i18n="applications.history.title">History</h3>
+              <ol id="applicationHistoryList"></ol>
+            </div>
+          </section>
+        </section>
+
+        <!-- Settings -->
+        <section id="view-settings" class="view" data-view="settings" aria-labelledby="viewTitle" hidden>
+          <section class="card" aria-label="Language">
+            <div class="card-heading">
+              <div>
+                <h2 data-i18n="settings.locale.heading">Language</h2>
+                <p class="muted" data-i18n="settings.locale.lead">Choose the language for the interface.</p>
+              </div>
+            </div>
+            <label class="field">
+              <span data-i18n="settings.locale.label">Language</span>
+              <select id="localeSelect">
+                <option value="en" data-i18n="settings.locale.en">English</option>
+                <option value="de" data-i18n="settings.locale.de">Deutsch</option>
+              </select>
+            </label>
+          </section>
+
+          <section class="card" aria-label="Bookmarklet">
+            <div class="card-heading">
+              <div>
+                <h2 data-i18n="settings.bookmarklet.heading">Capture from Indeed / LinkedIn / StepStone / Xing</h2>
+                <p class="muted" data-i18n="settings.bookmarklet.lead">Drag the link below to your bookmark bar. When you're on a job page on those platforms, click it to send the job to your DirectJob queue. Your browser does the read; we never scrape those sites.</p>
+              </div>
+            </div>
+            <div class="ops-actions">
+              <a id="bookmarkletLink" class="btn btn-primary bookmarklet-link" href="javascript:void(0)" data-i18n="settings.bookmarklet.dragMe">Send to DirectJob</a>
+              <span id="bookmarkletStatus" class="muted small"></span>
+            </div>
+            <p class="muted small" data-i18n="settings.bookmarklet.howto">After dragging, visit any Indeed, LinkedIn, StepStone, or Xing job page and click the bookmark. The page opens DirectJob in a new tab and adds the job to your queue.</p>
+          </section>
+
+          <section class="card" aria-label="Notifications">
+            <div class="card-heading">
+              <div>
+                <h2 data-i18n="settings.push.heading">Browser notifications</h2>
+                <p class="muted" data-i18n="settings.push.lead">Get notified in your browser when new matches arrive on your saved searches.</p>
+              </div>
+            </div>
+            <div class="ops-actions">
+              <button id="enablePushBtn" class="btn btn-primary" type="button" data-i18n="settings.push.enable">Enable notifications</button>
+              <button id="testPushBtn" class="btn" type="button" data-i18n="settings.push.test">Send test</button>
+              <span id="pushStatus" class="muted small"></span>
+            </div>
+          </section>
+
+          <section class="card" aria-label="Theme">
+            <div class="card-heading">
+              <div>
+                <h2 data-i18n="settings.theme.heading">Theme</h2>
+                <p class="muted" data-i18n="settings.theme.lead">Switch between dark and light mode.</p>
+              </div>
+            </div>
+            <label class="field">
+              <span data-i18n="settings.theme.heading">Theme</span>
+              <select id="themeSelect">
+                <option value="dark" data-i18n="settings.theme.dark">Dark</option>
+                <option value="light" data-i18n="settings.theme.light">Light</option>
+                <option value="system" data-i18n="settings.theme.system">System</option>
+              </select>
+            </label>
+          </section>
+
+          <section class="card" aria-label="Persona &amp; profile">
+            <div class="card-heading">
+              <div>
+                <h2>Persona &amp; profile</h2>
+                <p class="muted">Choose your persona and paste your CV. The AI Brief and cover-letter drafts use this context.</p>
+              </div>
+              <button id="saveProfileBtn" class="btn btn-primary" type="button">Save profile</button>
+            </div>
+            <form id="profileForm" class="provider-grid">
+              <label class="field">
+                <span>Persona</span>
+                <input id="profilePersonaSearch" type="search" data-i18n-placeholder="settings.persona.searchPlaceholder" placeholder="Filter personas…" autocomplete="off" />
+                <select id="profilePersona" size="6"></select>
+              </label>
+              <label class="field">
+                <span>Industry preference</span>
+                <input id="profileIndustry" placeholder="e.g. Healthcare, B2B SaaS, Fintech" />
+              </label>
+              <label class="field wide">
+                <span>Target roles (comma-separated)</span>
+                <input id="profileTargetRoles" placeholder="e.g. project management, digital health" />
+              </label>
+              <label class="field">
+                <span>Preferred location</span>
+                <input id="profileLocation" placeholder="e.g. Berlin, remote" />
+              </label>
+              <label class="field">
+                <span>Seniority target</span>
+                <input id="profileSeniority" placeholder="e.g. junior, senior, early-career" />
+              </label>
+              <label class="field">
+                <span>Years of experience</span>
+                <input id="profileYearsExperience" type="number" min="0" max="60" />
+              </label>
+              <label class="field">
+                <span>Languages (comma-separated)</span>
+                <input id="profileLanguages" placeholder="e.g. German (C1), English (C2)" />
+              </label>
+              <div id="personaSuggestionHost"></div>
+              <label class="field wide">
+                <span>Resume / CV</span>
+                <div class="cv-upload-toolbar">
+                  <input id="cvUploadInput" type="file" accept=".docx,.txt,.pdf" hidden />
+                  <button id="cvUploadBtn" class="btn" type="button">Upload .docx / .pdf / .txt</button>
+                  <span id="cvUploadStatus" class="muted small"></span>
+                </div>
+                <textarea id="profileCvText" rows="10" placeholder="Upload a .docx or .txt CV, or paste plain text. PDF upload is not supported yet."></textarea>
+                <span id="profileCvHint" class="hint">No CV pasted yet. The AI Brief still works without it but is less personalised.</span>
+              </label>
+              <label class="field wide">
+                <span>Notes for the AI (optional)</span>
+                <input id="profileNotes" placeholder="Anything else the AI should know — e.g. visa status, certifications" />
+              </label>
+            </form>
+            <p id="profileMessage" class="muted small" role="status" aria-live="polite"></p>
+          </section>
+
+          <section class="card" aria-label="Notifications" id="notificationsCard">
+            <div class="card-heading">
+              <div>
+                <h2 data-i18n="settings.notify.heading">Notifications</h2>
+                <p class="muted" data-i18n="settings.notify.lead">Get a Slack ping when a discovered job scores above your fit threshold.</p>
+              </div>
+              <button id="slackTestBtn" class="btn" type="button" data-i18n="settings.notify.test">Send test</button>
+            </div>
+            <form id="notifyForm" class="provider-grid">
+              <label class="field wide">
+                <span data-i18n="settings.notify.webhook">Slack incoming-webhook URL</span>
+                <input id="slackWebhookUrl" type="url" placeholder="https://hooks.slack.com/services/…" autocomplete="off" />
+              </label>
+              <label class="field">
+                <span data-i18n="settings.notify.threshold">Fit threshold (0–100)</span>
+                <input id="slackFitThreshold" type="number" min="0" max="100" step="1" />
+              </label>
+              <button id="saveNotifyBtn" class="btn btn-primary" type="button" data-i18n="settings.notify.save">Save</button>
+            </form>
+          </section>
+
+          <section class="card" aria-label="Privacy & audit" id="privacyAuditCard">
+            <div class="card-heading">
+              <div>
+                <h2 data-i18n="settings.privacy.heading">Privacy & audit log</h2>
+                <p class="muted" data-i18n="settings.privacy.lead">Review what AI calls happened on your account, manage CV→LLM consent, and export your data.</p>
+              </div>
+              <button id="refreshAuditBtn" class="btn" type="button" data-i18n="settings.privacy.refresh">Refresh</button>
+            </div>
+            <div id="aiConsentBanner" class="ai-consent-banner" hidden></div>
+            <ul id="auditLog" class="audit-log"></ul>
+          </section>
+
+          <section class="card" aria-label="Two-factor authentication" id="twoFactorCard">
+            <div class="card-heading">
+              <div>
+                <h2 data-i18n="settings.totp.heading">Two-factor authentication</h2>
+                <p class="muted" data-i18n="settings.totp.lead">Protect your account with a 6-digit code from an authenticator app (Aegis, 1Password, Google Authenticator).</p>
+              </div>
+              <span id="totpStatus" class="muted small"></span>
+            </div>
+            <div id="totpControls" class="totp-controls"></div>
+          </section>
+
+          <section class="card" aria-label="AI Provider">
+            <div class="card-heading">
+              <div>
+                <h2 data-i18n="settings.ai.heading">AI Provider</h2>
+                <p class="muted" data-i18n="settings.ai.lead">Bring your own AI subscription. We never persist raw keys.</p>
+              </div>
+              <button id="saveProviderBtn" class="btn btn-primary" type="button" data-i18n="settings.ai.save">Save provider</button>
+            </div>
+            <form id="providerForm" class="provider-grid">
+              <label class="field">
+                <span>Provider</span>
+                <select id="providerId"></select>
+              </label>
+              <label class="field">
+                <span>Mode</span>
+                <select id="invocationMode"></select>
+              </label>
+              <label class="field">
+                <span>Model</span>
+                <input id="providerModel" placeholder="model name" />
+              </label>
+              <label class="field">
+                <span>Credential reference (env var name)</span>
+                <input id="credentialReference" placeholder="OPENAI_API_KEY (no raw secrets)" />
+              </label>
+              <label class="field">
+                <span>Base URL</span>
+                <input id="providerBaseUrl" placeholder="optional" />
+              </label>
+              <label class="field">
+                <span>CLI command</span>
+                <input id="providerCommand" placeholder="optional" />
+              </label>
+              <label class="field wide">
+                <span>Notes</span>
+                <input id="providerNotes" />
+              </label>
+            </form>
+            <p class="provider-hint muted" id="providerHint">Pick a provider to see what this mode expects.</p>
+          </section>
+
+          <section class="card" aria-label="Account security">
+            <div class="card-heading">
+              <h2 data-i18n="settings.account.heading">Account security</h2>
+              <p class="muted" data-i18n="settings.account.lead">Changing your password signs you out on every device.</p>
+            </div>
+            <form id="changePasswordForm" class="account-grid" novalidate>
+              <label class="field">
+                <span>Current password</span>
+                <input id="currentPassword" type="password" autocomplete="current-password" required />
+              </label>
+              <label class="field">
+                <span>New password</span>
+                <input id="newPassword" type="password" autocomplete="new-password" minlength="12" required />
+                <span class="hint">12 characters or more.</span>
+              </label>
+              <button class="btn btn-primary" type="submit" data-i18n="settings.account.change">Change password</button>
+            </form>
+            <p id="accountMessage" class="muted small" role="alert" aria-live="polite"></p>
+          </section>
+
+          <section class="card" aria-label="Workspace backup">
+            <div class="card-heading">
+              <h2 data-i18n="settings.backup.heading">Backup &amp; restore</h2>
+            </div>
+            <div class="ops-actions">
+              <button id="exportDataBtn" class="btn" type="button" data-i18n="settings.backup.export">Export backup</button>
+              <button id="importDataBtn" class="btn" type="button" data-i18n="settings.backup.import">Import backup</button>
+              <button id="healthBtn" class="btn btn-ghost" type="button" data-i18n="settings.backup.health">Run health check</button>
+              <input id="importFile" type="file" accept="application/json,.json" hidden />
+            </div>
+            <pre id="opsResult" class="code-block" hidden></pre>
+          </section>
+
+          <section class="card" aria-label="Exports and digests">
+            <div class="card-heading">
+              <h2 data-i18n="settings.exports.heading">Exports &amp; digests</h2>
+              <p class="muted" data-i18n="settings.exports.lead">CSV / Markdown for offline review; weekly digest by email.</p>
+            </div>
+            <div class="ops-actions">
+              <a id="exportImportedCsvBtn" class="btn" href="/api/exports/imported.csv" download>Imported CSV</a>
+              <a id="exportImportedMdBtn" class="btn" href="/api/exports/imported.md" download>Imported Markdown</a>
+              <a id="exportDiscoveredCsvBtn" class="btn" href="/api/exports/discovered.csv" download>Discovered CSV</a>
+              <a id="exportDiscoveredMdBtn" class="btn" href="/api/exports/discovered.md" download>Discovered Markdown</a>
+              <button id="digestPreviewBtn" class="btn" type="button">Preview digest</button>
+              <button id="digestSendBtn" class="btn" type="button">Send digest now</button>
+            </div>
+            <pre id="digestResult" class="code-block" hidden></pre>
+          </section>
+
+          <section class="card" aria-label="Privacy controls">
+            <div class="card-heading">
+              <h2>Privacy</h2>
+              <p class="muted">Product analytics is opt-in and never leaves your server.</p>
+            </div>
+            <label class="check-row">
+              <input id="analyticsToggle" type="checkbox" checked />
+              <span>Allow product analytics on this device</span>
+            </label>
+            <p class="muted small">Disabling it stops the in-app `analytics_event` calls. Server-side rows for past events stay until your admin clears them.</p>
+            <details class="card-section">
+              <summary>Request account deletion</summary>
+              <p class="muted">Sends a deletion request to the workspace admin. Your data is removed when the admin confirms via the Admin panel.</p>
+              <form id="deletionForm" novalidate>
+                <label class="field">
+                  <span>Reason (optional)</span>
+                  <textarea id="deletionReason" rows="3"></textarea>
+                </label>
+                <button class="btn btn-danger" type="submit">Request deletion</button>
+              </form>
+              <p id="deletionMessage" class="muted small" role="status"></p>
+            </details>
+          </section>
+
+          <section class="card" aria-label="Subscription">
+            <div class="card-heading">
+              <h2>Subscription</h2>
+              <p class="muted">Read-only on this view. Admins can change plan + seats from the Admin panel.</p>
+            </div>
+            <div id="billingSummary" class="muted">Loading…</div>
+          </section>
+
+          <section class="card" aria-label="Support">
+            <div class="card-heading">
+              <h2>Support</h2>
+              <p class="muted">Submit a ticket. Admins see it in the Admin → Support panel.</p>
+            </div>
+            <form id="supportForm" class="support-grid" novalidate>
+              <label class="field">
+                <span>Subject</span>
+                <input id="supportSubject" required />
+              </label>
+              <label class="field wide">
+                <span>Body</span>
+                <textarea id="supportBody" rows="4" required></textarea>
+              </label>
+              <label class="field">
+                <span>Reply email (optional)</span>
+                <input id="supportContactEmail" type="email" autocomplete="email" />
+              </label>
+              <button class="btn btn-primary" type="submit">Submit</button>
+            </form>
+            <p id="supportMessage" class="muted small" role="status"></p>
+          </section>
+
+          <section class="card" aria-label="Scan history">
+            <div class="card-heading">
+              <h2>Scan history</h2>
+              <p class="muted">The most recent ten checks.</p>
+            </div>
+            <div id="scanHistory" class="history-list"></div>
+          </section>
+
+          <section class="card" aria-label="Usage and quotas">
+            <div class="card-heading">
+              <h2>Your usage today</h2>
+              <p class="muted">Quotas reset at the start of each UTC day.</p>
+            </div>
+            <div id="quotaSummary" class="muted">No usage yet.</div>
+          </section>
+
+          <section class="card" aria-label="Legal">
+            <div class="card-heading">
+              <h2>Legal</h2>
+            </div>
+            <p class="muted">
+              See <a href="/privacy">Privacy</a>, <a href="/terms">Terms</a>,
+              and <a href="/data-retention">Data retention</a>. These pages
+              describe what the product stores and for how long.
+            </p>
+          </section>
+        </section>
+
+        <!-- Admin -->
+        <section id="view-admin" class="view admin-only" data-view="admin" aria-labelledby="viewTitle" hidden>
+          <section class="card" aria-label="Tester accounts">
+            <div class="card-heading">
+              <div>
+                <h2 data-i18n="admin.testers.heading">Tester accounts</h2>
+                <p class="muted" data-i18n="admin.testers.lead">Give testers their email, password, and the app URL. They never need server access.</p>
+              </div>
+              <button id="refreshUsersBtn" class="btn btn-ghost" type="button" data-i18n="admin.refresh">Refresh</button>
+            </div>
+            <form id="adminCreateUserForm" class="admin-create-grid" novalidate>
+              <label class="field">
+                <span data-i18n="admin.testers.email">Email</span>
+                <input id="newUserEmail" type="email" autocomplete="off" required />
+              </label>
+              <label class="field">
+                <span data-i18n="admin.testers.password">Initial password</span>
+                <input id="newUserPassword" type="password" autocomplete="new-password" minlength="12" required />
+                <span class="hint">12 characters or more.</span>
+              </label>
+              <label class="field">
+                <span data-i18n="admin.testers.role">Role</span>
+                <select id="newUserRole">
+                  <option value="member" data-i18n="admin.testers.member">Tester</option>
+                  <option value="admin" data-i18n="admin.testers.admin">Admin</option>
+                </select>
+              </label>
+              <button class="btn btn-primary" type="submit" data-i18n="admin.testers.create">Create tester</button>
+            </form>
+            <div id="adminUsersList" class="admin-users-list"></div>
+          </section>
+
+          <section class="card" aria-label="Email invitations">
+            <div class="card-heading">
+              <div>
+                <h2 data-i18n="admin.invite.heading">Send invitation</h2>
+                <p class="muted" data-i18n="admin.invite.lead">Email a single-use link that lets the recipient choose their own password. Expires in 48 hours.</p>
+              </div>
+            </div>
+            <form id="adminInviteForm" class="admin-create-grid" novalidate>
+              <label class="field">
+                <span data-i18n="admin.testers.email">Email</span>
+                <input id="inviteEmail" type="email" autocomplete="off" required />
+              </label>
+              <label class="field">
+                <span data-i18n="admin.testers.role">Role</span>
+                <select id="inviteRole">
+                  <option value="member" data-i18n="admin.testers.member">Tester</option>
+                  <option value="admin" data-i18n="admin.testers.admin">Admin</option>
+                </select>
+              </label>
+              <button class="btn btn-primary" type="submit" data-i18n="admin.invite.send">Send invite</button>
+            </form>
+            <p class="muted small" data-i18n="admin.invite.outboxNote">If SMTP is not configured, the invite link is written to the email outbox file shown in Settings.</p>
+            <div id="invitationList" class="invitation-list"></div>
+          </section>
+
+          <section class="card" aria-label="Production readiness">
+            <div class="card-heading">
+              <div>
+                <h2 data-i18n="admin.readiness.heading">Production readiness</h2>
+                <p class="muted" data-i18n="admin.readiness.lead">Live signal-by-signal status. Refresh after env changes.</p>
+              </div>
+              <button id="refreshReadinessBtn" class="btn btn-ghost" type="button" data-i18n="admin.refresh">Refresh</button>
+            </div>
+            <ul id="readinessList" class="readiness-list"></ul>
+          </section>
+
+          <section class="card" aria-label="Email operations">
+            <div class="card-heading">
+              <div>
+                <h2 data-i18n="admin.email.heading">Email backend</h2>
+                <p class="muted" id="emailBackendSummary">Loading…</p>
+              </div>
+              <button id="refreshEmailStatusBtn" class="btn btn-ghost" type="button" data-i18n="admin.refresh">Refresh</button>
+            </div>
+            <form id="testEmailForm" class="admin-create-grid" novalidate>
+              <label class="field">
+                <span data-i18n="admin.email.testTarget">Send test email to</span>
+                <input id="testEmailTarget" type="email" placeholder="ops@example.com" />
+              </label>
+              <button class="btn btn-primary" type="submit" data-i18n="admin.email.test">Send test email</button>
+            </form>
+            <p id="testEmailMessage" class="muted small" role="status"></p>
+          </section>
+
+          <section class="card" aria-label="Workspace metrics">
+            <div class="card-heading">
+              <h2 data-i18n="admin.metrics.heading">Workspace metrics</h2>
+              <button id="refreshMetricsBtn" class="btn btn-ghost" type="button" data-i18n="admin.refresh">Refresh</button>
+            </div>
+            <pre id="metricsResult" class="code-block" hidden></pre>
+          </section>
+
+          <section class="card" aria-label="Subscription admin">
+            <div class="card-heading">
+              <h2 data-i18n="admin.subscription.heading">Subscription</h2>
+              <p class="muted" data-i18n="admin.subscription.lead">Set the active plan, seat count, and status. Stripe wiring is BLOCKED until credentials.</p>
+            </div>
+            <form id="adminBillingForm" class="admin-create-grid" novalidate>
+              <label class="field">
+                <span data-i18n="admin.subscription.plan">Plan</span>
+                <select id="adminBillingPlan"></select>
+              </label>
+              <label class="field">
+                <span data-i18n="admin.subscription.status">Status</span>
+                <select id="adminBillingStatus">
+                  <option value="active" data-i18n="admin.subscription.statusActive">Active</option>
+                  <option value="trialing" data-i18n="admin.subscription.statusTrialing">Trialing</option>
+                  <option value="past_due" data-i18n="admin.subscription.statusPastDue">Past due</option>
+                  <option value="cancelled" data-i18n="admin.subscription.statusCancelled">Cancelled</option>
+                </select>
+              </label>
+              <label class="field">
+                <span data-i18n="admin.subscription.seats">Seats</span>
+                <input id="adminBillingSeats" type="number" min="1" max="500" value="5" />
+              </label>
+              <button class="btn btn-primary" type="submit" data-i18n="admin.subscription.save">Save</button>
+            </form>
+            <p id="adminBillingNote" class="muted small"></p>
+          </section>
+
+          <section class="card" aria-label="Support tickets admin">
+            <div class="card-heading">
+              <h2 data-i18n="admin.support.heading">Support tickets</h2>
+              <button id="refreshSupportBtn" class="btn btn-ghost" type="button" data-i18n="admin.refresh">Refresh</button>
+            </div>
+            <div id="adminTicketList" class="ticket-list"></div>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <div id="confirmDialog" class="dialog-backdrop" role="dialog" aria-modal="true" aria-labelledby="confirmTitle" hidden>
+      <div class="dialog">
+        <h2 id="confirmTitle">Confirm</h2>
+        <p id="confirmBody"></p>
+        <div class="dialog-actions">
+          <button id="confirmCancel" class="btn" type="button">Cancel</button>
+          <button id="confirmOk" class="btn btn-danger" type="button">Confirm</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="toastRoot" class="toast-root" aria-live="polite" aria-atomic="false"></div>
+
+    <datalist id="sectorList">
+      <option>Hospital / clinic group</option>
+      <option>University hospital</option>
+      <option>Statutory health insurer</option>
+      <option>Private health insurer</option>
+      <option>Public health institution</option>
+      <option>Research institute</option>
+      <option>Healthcare association</option>
+      <option>Pharma</option>
+      <option>MedTech</option>
+      <option>Digital Health</option>
+      <option>Healthcare IT</option>
+      <option>Healthcare consulting</option>
+    </datalist>
+
+    <dialog id="firstRunWizard" class="wizard-dialog" aria-labelledby="wizardTitle">
+      <form method="dialog" class="wizard">
+        <header class="wizard-header">
+          <h2 id="wizardTitle" data-i18n="wizard.title">Set up your job search in 30 seconds</h2>
+          <p class="muted" data-i18n="wizard.lead">Three quick steps so we can find roles for you across Indeed, StepStone, Arbeitnow, Muse, and more.</p>
+        </header>
+        <ol class="wizard-steps">
+          <li id="wizardStep1" class="wizard-step active">
+            <h3 data-i18n="wizard.step1.title">1. Add your CV</h3>
+            <p class="muted" data-i18n="wizard.step1.lead">Optional — paste plain text or upload a file. We'll auto-suggest the best persona.</p>
+            <div class="cv-upload-toolbar">
+              <input id="wizardCvFile" type="file" accept=".docx,.txt,.pdf" hidden />
+              <button id="wizardCvUploadBtn" class="btn" type="button" data-i18n="wizard.step1.upload">Upload .docx / .pdf / .txt</button>
+              <span id="wizardCvStatus" class="muted small"></span>
+            </div>
+            <textarea id="wizardCvText" rows="6" data-i18n-placeholder="wizard.step1.placeholder" placeholder="…or paste your CV here"></textarea>
+            <div class="wizard-actions">
+              <button id="wizardSkipCv" class="btn btn-ghost" type="button" data-i18n="wizard.skip">Skip</button>
+              <button id="wizardCvNext" class="btn btn-primary" type="button" data-i18n="wizard.next">Next</button>
+            </div>
+          </li>
+          <li id="wizardStep2" class="wizard-step">
+            <h3 data-i18n="wizard.step2.title">2. Confirm your persona</h3>
+            <p class="muted" id="wizardPersonaHint" data-i18n="wizard.step2.lead">Pick what best describes the role you want. We pre-selected the closest match.</p>
+            <select id="wizardPersona"></select>
+            <div class="wizard-actions">
+              <button id="wizardBackPersona" class="btn btn-ghost" type="button" data-i18n="wizard.back">Back</button>
+              <button id="wizardPersonaNext" class="btn btn-primary" type="button" data-i18n="wizard.next">Next</button>
+            </div>
+          </li>
+          <li id="wizardStep3" class="wizard-step">
+            <h3 data-i18n="wizard.step3.title">3. Tell us what you're looking for</h3>
+            <p class="muted" data-i18n="wizard.step3.lead">A role keyword + a city. We watch the major aggregators daily and email you matches.</p>
+            <label class="field">
+              <span data-i18n="wizard.step3.role">Role keyword</span>
+              <input id="wizardRole" placeholder="e.g. data analyst" />
+            </label>
+            <label class="field">
+              <span data-i18n="wizard.step3.location">City / region</span>
+              <input id="wizardLocation" placeholder="e.g. Berlin" />
+            </label>
+            <div class="wizard-actions">
+              <button id="wizardBackSearch" class="btn btn-ghost" type="button" data-i18n="wizard.back">Back</button>
+              <button id="wizardFinish" class="btn btn-primary" type="button" data-i18n="wizard.finish">Save & run</button>
+            </div>
+          </li>
+        </ol>
+        <footer class="wizard-footer">
+          <button id="wizardDismiss" class="btn btn-ghost" type="button" data-i18n="wizard.dismiss">Set up later</button>
+        </footer>
+      </form>
+    </dialog>
+
+    <template id="companyTemplate">
+      <button class="company-item" type="button">
+        <span class="company-status" aria-hidden="true"></span>
+        <span class="company-text">
+          <span class="company-title"></span>
+          <span class="company-meta muted"></span>
+        </span>
+      </button>
+    </template>
+
+    <template id="jobTemplate">
+      <article class="job-item">
+        <div class="job-main">
+          <h3></h3>
+          <p class="job-sub muted"></p>
+          <div class="job-tags">
+            <span class="job-source"></span>
+            <span class="confidence"></span>
+          </div>
+        </div>
+        <div class="job-actions">
+          <button class="btn btn-primary import-btn" type="button">Import</button>
+          <button class="btn brief-btn" type="button">Brief</button>
+          <button class="btn analyze-btn" type="button">Analyze</button>
+        </div>
+      </article>
+    </template>
+
+    <template id="historyTemplate">
+      <article class="history-item">
+        <div>
+          <strong></strong>
+          <p class="muted"></p>
+        </div>
+        <pre class="code-block"></pre>
+      </article>
+    </template>
+
+    <template id="activityTemplate">
+      <div class="activity-item">
+        <span class="activity-dot" aria-hidden="true"></span>
+        <span class="activity-text"></span>
+        <span class="activity-time muted"></span>
+      </div>
+    </template>
+
+    <script src="/app.js" defer></script>
+  </body>
+</html>

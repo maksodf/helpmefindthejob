@@ -1,0 +1,4 @@
+# Runtime dependencies pinned for reproducible production builds.
+# Keep this list as small as possible — the app uses stdlib for most things.
+pypdf==5.1.0
+pywebpush==1.14.0
