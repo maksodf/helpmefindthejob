@@ -192,6 +192,15 @@ class AuthStore:
         # required (e.g. the first-account bootstrap admin).
         self._add_column_if_missing("users", "tos_accepted_at", "TEXT")
         self._add_column_if_missing("users", "privacy_accepted_at", "TEXT")
+        # Email verification (#31). On public sign-up we mint a single-
+        # use token, stash its HMAC, and email a confirm link. When the
+        # user clicks it, ``email_verified_at`` is stamped. The bootstrap
+        # admin path is auto-verified because the operator owns the
+        # mailbox already. Operator-side gate
+        # ``DIRECTJOB_REQUIRE_EMAIL_VERIFICATION`` decides whether
+        # unverified accounts can sign in.
+        self._add_column_if_missing("users", "email_verified_at", "TEXT")
+        self._add_column_if_missing("users", "email_verification_token_hash", "TEXT")
         self.connection.execute(
             """
             CREATE TABLE IF NOT EXISTS sessions (
@@ -524,6 +533,58 @@ class AuthStore:
         )
         self.connection.commit()
         return user_id, scheduled_at
+
+    # --- Email verification --------------------------------------------
+
+    def start_email_verification(self, user_id: str) -> str:
+        """Mint a single-use email-verification token. Calling twice
+        replaces the previous token (resend support)."""
+
+        token = secrets.token_urlsafe(32)
+        token_hash = _hash_token(self.secret_key, token)
+        self.connection.execute(
+            "UPDATE users SET email_verification_token_hash = ? WHERE id = ?",
+            (token_hash, user_id),
+        )
+        self.connection.commit()
+        return token
+
+    def confirm_email_verification(self, token: str) -> str:
+        """Verify the token, stamp ``email_verified_at = now()``, burn
+        the token. Returns the verified user_id. Raises ``ValueError``
+        with ``invalid_or_expired_token`` if the token doesn't match."""
+
+        token_hash = _hash_token(self.secret_key, (token or "").strip())
+        row = self.connection.execute(
+            "SELECT id FROM users WHERE email_verification_token_hash = ? AND active = 1",
+            (token_hash,),
+        ).fetchone()
+        if not row:
+            raise ValueError("invalid_or_expired_token")
+        user_id = str(row[0])
+        self.connection.execute(
+            "UPDATE users SET email_verified_at = ?, email_verification_token_hash = NULL WHERE id = ?",
+            (now_utc().isoformat(), user_id),
+        )
+        self.connection.commit()
+        return user_id
+
+    def is_email_verified(self, user_id: str) -> bool:
+        row = self.connection.execute(
+            "SELECT email_verified_at FROM users WHERE id = ?", (user_id,),
+        ).fetchone()
+        return bool(row and row[0])
+
+    def mark_email_verified(self, user_id: str) -> None:
+        """Bootstrap-only short-circuit: stamp the verified-at timestamp
+        without minting a token. Used for the first-account admin who
+        owns the mailbox already."""
+
+        self.connection.execute(
+            "UPDATE users SET email_verified_at = ?, email_verification_token_hash = NULL WHERE id = ?",
+            (now_utc().isoformat(), user_id),
+        )
+        self.connection.commit()
 
     def record_consent(self, user_id: str, *, tos: bool, privacy: bool) -> None:
         """Stamp the consent columns. Either flag may already be set

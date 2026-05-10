@@ -129,6 +129,10 @@ PASSWORD_RESET_REQUEST_LIMIT = 5  # per-IP per 10 minutes
 PASSWORD_RESET_REQUEST_WINDOW = 600
 REGISTER_REQUEST_LIMIT = 3  # per-IP per 10 minutes
 REGISTER_REQUEST_WINDOW = 600
+REQUIRE_EMAIL_VERIFICATION = (
+    (os.environ.get("DIRECTJOB_REQUIRE_EMAIL_VERIFICATION") or "").strip().casefold()
+    in ("true", "1", "yes")
+)
 APP_PUBLIC_URL = os.environ.get("DIRECTJOB_PUBLIC_URL") or ""
 LOCAL_USER_ID = "local-user"
 MAX_JSON_BODY_BYTES = 5_000_000
@@ -1166,6 +1170,38 @@ class AppState:
             created.append({"id": job.id, "title": title, "company_name": company_name})
         self.log_analytics(user_id, "demo_data_seeded", {"count": len(created)})
         return created
+
+    def send_email_verification(self, user: AuthUser) -> None:
+        """Mint a fresh verification token and email the confirm link.
+        Best-effort — a transport failure must not block sign-up; the
+        user can request a resend from the auth gate."""
+
+        token = self.auth_store.start_email_verification(user.id)
+        confirm_url = self.public_url_for(f"/account/verify-email?token={token}")
+        body = (
+            "Hi,\n\n"
+            "Welcome to DirectJob Scout. Click the link below to verify your email address — "
+            "this proves you own the inbox and unlocks the full app.\n\n"
+            f"Verify your email: {confirm_url}\n\n"
+            "If you did not sign up, ignore this email; the account stays unverified and unusable until someone clicks the link.\n"
+        )
+        try:
+            self.email_transport.send(
+                Email(
+                    to=user.email,
+                    subject="[DirectJob Scout] Verify your email",
+                    text=body,
+                    from_address=email_from_address(),
+                )
+            )
+        except Exception:  # noqa: BLE001 - best-effort
+            pass
+        self.log_analytics(user.id, "email_verification_sent", {})
+
+    def confirm_email_verification(self, token: str) -> dict[str, Any]:
+        user_id = self.auth_store.confirm_email_verification(token)
+        self.log_analytics(user_id, "email_verification_confirmed", {})
+        return {"userId": user_id}
 
     def send_welcome_email(self, user: AuthUser) -> None:
         """Best-effort welcome email triggered on first sign-up. Hits
@@ -2556,6 +2592,35 @@ class Handler(BaseHTTPRequestHandler):
                     return
                 self._send_share_job_page(imported)
                 return
+            if parsed.path == "/account/verify-email":
+                from urllib.parse import parse_qs as _parse_qs
+                qs = _parse_qs(parsed.query or "")
+                raw_token = (qs.get("token", [""])[0] or "").strip()
+                if not raw_token:
+                    self._send_account_deletion_page(
+                        title="Invalid link",
+                        message="This verification link is missing its token. Copy and paste the entire URL from the email.",
+                        ok=False,
+                    )
+                    return
+                try:
+                    STATE.confirm_email_verification(raw_token)
+                except ValueError:
+                    self._send_account_deletion_page(
+                        title="Link expired",
+                        message=(
+                            "This verification link is invalid or has already been used. "
+                            "Sign in and request a new one from the auth gate."
+                        ),
+                        ok=False,
+                    )
+                    return
+                self._send_account_deletion_page(
+                    title="Email verified",
+                    message="Your email is verified. You can sign in now.",
+                    ok=True,
+                )
+                return
             if parsed.path == "/account/deletion-confirm":
                 from urllib.parse import parse_qs as _parse_qs
                 qs = _parse_qs(parsed.query or "")
@@ -2965,6 +3030,13 @@ class Handler(BaseHTTPRequestHandler):
                     self.send_error_json(HTTPStatus.UNAUTHORIZED, "invalid_login", "Invalid email or password")
                     return
                 STATE.clear_login_failures(client_id)
+                if REQUIRE_EMAIL_VERIFICATION and not STATE.auth_store.is_email_verified(user.id):
+                    self.send_error_json(
+                        HTTPStatus.FORBIDDEN,
+                        "email_unverified",
+                        "Verify your email before signing in. Check your inbox or request a new link.",
+                    )
+                    return
                 if STATE.auth_store.has_totp_enabled(user.id):
                     challenge = STATE.auth_store.issue_2fa_challenge(user.id)
                     self.send_json({"requires2fa": True, "challengeToken": challenge})
@@ -3036,17 +3108,22 @@ class Handler(BaseHTTPRequestHandler):
                     (login_at.isoformat(), login_at.isoformat(), user.id),
                 )
                 STATE.auth_store.connection.commit()
-                if not is_bootstrap:
+                if is_bootstrap:
+                    # Bootstrap admin owns the mailbox already; flag the
+                    # account verified directly. Skip the verify email.
+                    STATE.auth_store.mark_email_verified(user.id)
+                else:
                     STATE.auth_store.record_consent(user.id, tos=True, privacy=True)
-                user = STATE.auth_store.get_user(user.id)
-                # Welcome email — best-effort. Skipped for the first-
-                # account bootstrap (admin) since the operator already
-                # knows what they signed up for.
-                if role != "admin":
+                    # Email verification + welcome are both best-effort.
+                    try:
+                        STATE.send_email_verification(user)
+                    except Exception:  # noqa: BLE001
+                        pass
                     try:
                         STATE.send_welcome_email(user)
                     except Exception:  # noqa: BLE001 - email failure must not block sign-in
                         pass
+                user = STATE.auth_store.get_user(user.id)
                 session = STATE.auth_store.create_session(user)
                 max_age = int((session.expires_at - now_utc()).total_seconds())
                 self.send_json(
@@ -3074,6 +3151,27 @@ class Handler(BaseHTTPRequestHandler):
                 STATE.record_password_reset_request(client_id)
                 STATE.request_password_reset(payload.get("email", ""))
                 # Always return 202 to avoid leaking which emails exist.
+                self.send_json({"status": "sent_if_known"}, HTTPStatus.ACCEPTED)
+                return
+            if parsed.path == "/api/auth/verify-email/resend":
+                # Public, rate-limited (re-using the password-reset
+                # bucket so the two flows can't combine into a flood).
+                # Always returns 202 to avoid revealing which addresses
+                # already have an account.
+                client_id = self.client_address[0] if self.client_address else "unknown"
+                if not STATE.password_reset_allowed(client_id):
+                    self.send_error_json(HTTPStatus.TOO_MANY_REQUESTS, "rate_limited", "Too many requests. Try again later.")
+                    return
+                STATE.record_password_reset_request(client_id)
+                email = str(payload.get("email") or "").strip().lower()
+                if email:
+                    for candidate in STATE.auth_store.list_users():
+                        if candidate.email.lower() == email and not STATE.auth_store.is_email_verified(candidate.id):
+                            try:
+                                STATE.send_email_verification(candidate)
+                            except Exception:  # noqa: BLE001
+                                pass
+                            break
                 self.send_json({"status": "sent_if_known"}, HTTPStatus.ACCEPTED)
                 return
 
