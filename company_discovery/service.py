@@ -618,6 +618,19 @@ class CompanyDiscoveryService:
             source_urls.extend(detail_urls)
             errors.extend(detail_errors)
 
+        # Strict job-type filter: if the user has set a job_type_filter
+        # (via /find on a known role bucket), drop scan results that
+        # don't match the role + location. The user opted into a focused
+        # queue; surfacing off-topic jobs would defeat that.
+        profile = self.repository.get_user_profile(user_id)
+        if profile is not None and getattr(profile, "job_type_filter", ""):
+            from company_discovery.job_type_filter import filter_jobs as _filter_jobs_by_type
+            discovered = _filter_jobs_by_type(
+                discovered,
+                job_type=profile.job_type_filter,
+                location=getattr(profile, "job_type_location_filter", "") or None,
+            )
+
         saved_jobs = []
         merged_sources: list[dict[str, str]] = []
         for job in discovered:

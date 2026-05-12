@@ -188,18 +188,27 @@ def _build_registry() -> dict[str, Command]:
         Command(
             name="find_jobs",
             label="Run a one-off job search",
-            description="Search aggregators now for a role + location.",
+            description=(
+                "Search aggregators now for a role + location. When the "
+                "role matches a supported job type (bartender, barista, "
+                "café worker, waiter, Pflegehelfer) the results are "
+                "strictly filtered to that role."
+            ),
             slash_aliases=["/find", "/find-jobs"],
             keywords=[
                 r"\bfind (?:me )?(?:a )?(?:\w+ )?(?:job|jobs|role|roles|position|positions)\b",
                 r"\bsearch (?:for )?(?:\w+ )?(?:job|jobs|role|roles|position|positions)\b",
                 r"\bshow (?:me )?(?:\w+ )?(?:jobs|roles)\b",
+                # German triggers
+                r"\b(?:suche|finde)\b.*\b(?:job|stelle|arbeit|stellen)\b",
+                # Common role mentions that imply "find jobs"
+                r"\b(?:bartender|barkeeper|barista|kellner|pflegehelfer|pflegeassistent)\b",
             ],
             params=[
                 CommandParam("query", "What role do you want?",
                               validator=_validate_string),
                 CommandParam("location",
-                              "Where? (city / 'remote')",
+                              "Where? (city / 'remote' / 'anywhere')",
                               required=False),
             ],
             confirmation_template=(
@@ -429,6 +438,81 @@ def keyword_route(message: str) -> str | None:
             if re.search(pat, lc):
                 return cmd.name
     return None
+
+
+# Patterns that mean "in/at <location>" — covers EN + DE phrasing.
+# Captures the location text up to the next punctuation / EOL / "for".
+_LOCATION_PATTERNS: tuple[re.Pattern[str], ...] = (
+    re.compile(r"\b(?:in|at|around|near)\s+([A-Za-zÄÖÜäöüß ,.\-]+?)"
+                r"(?:[.!?;:\n]|$|\bfor\b)",
+                re.IGNORECASE),
+    # German equivalents
+    re.compile(r"\b(?:in|bei)\s+([A-Za-zÄÖÜäöüß ,.\-]+?)"
+                r"(?:[.!?;:\n]|$|\bfür\b)",
+                re.IGNORECASE),
+)
+
+
+def extract_keyword_args(command_name: str, message: str) -> dict[str, str]:
+    """Best-effort args extraction when the keyword router fired.
+
+    The keyword router only knows the command id; this helper digs out
+    role + location from the user's natural-language message so the
+    server doesn't ask "what role?" right after the user said "find me
+    bartender jobs in Berlin". Used for the `find_jobs` command.
+
+    Returns an empty dict for commands we don't recognise here, or
+    when nothing could be extracted. Each value is the raw extracted
+    text — validators run later.
+    """
+    from company_discovery.job_type_filter import identify_bucket, TAXONOMY
+
+    if not message:
+        return {}
+    out: dict[str, str] = {}
+
+    if command_name == "find_jobs":
+        # Role — match against the taxonomy first; if found, prefer the
+        # canonical English label since that's what the search engine
+        # ranks against.
+        bucket_key = identify_bucket(message)
+        if bucket_key:
+            out["query"] = TAXONOMY[bucket_key].label_en
+
+        # Special tokens take precedence over the generic "in X" pattern,
+        # so "Pflegehelfer in Deutschland gesucht" canonicalises to
+        # Germany even though the regex would have grabbed
+        # "Deutschland gesucht".
+        lc = message.lower()
+        for tok, canonical in (
+            ("in germany", "Germany"),
+            ("in deutschland", "Germany"),
+            ("anywhere", "anywhere"),
+            ("überall", "anywhere"),
+            ("ueberall", "anywhere"),
+        ):
+            if tok in lc:
+                out["location"] = canonical
+                break
+
+        # Generic "in <city>" / "bei <city>" capture when no special
+        # token fired.
+        if "location" not in out:
+            for pat in _LOCATION_PATTERNS:
+                m = pat.search(message)
+                if m:
+                    loc = m.group(1).strip().rstrip(",").strip()
+                    # Trim trailing German verbs that the stop-word
+                    # regex didn't catch (e.g. "Berlin gesucht").
+                    loc = re.sub(
+                        r"\s+(?:gesucht|gesuchten|jetzt|now|m/w/d|\(m/w/d\))\b.*$",
+                        "", loc, flags=re.IGNORECASE,
+                    ).strip()
+                    if loc and len(loc) <= 80:
+                        out["location"] = loc
+                    break
+
+    return out
 
 
 def build_ai_router_prompt(message: str, history: list[dict[str, str]]) -> str:

@@ -213,3 +213,38 @@ regression sweep caught one more bug (#25) at the end.
 
 Real-LLM probe is operator-runnable; excluded from automated
 regression because it requires a real API key + external network.
+
+---
+
+## Phase V — Strict job-type filter + autonomous E2E verifier (Round 16, 2026-05-12)
+
+User asked for two related deliverables: a NEW product feature that
+strictly filters search by job type (e.g. "find me bartender jobs in
+Berlin" returns only bar roles), and an AUTONOMOUS verifier agent
+that runs the full A-to-Z flow and proves nothing is broken.
+
+124. [x] **Strict job-type taxonomy** — `company_discovery/job_type_filter.py` ships an EN+DE synonym registry: bartender / Barkeeper / Schankkellner; barista / café staff; café_worker / Café-Mitarbeiter; pflegehelfer / Pflegeassistent / nursing assistant; waiter / Kellner. Each bucket holds the strict allow-list. `identify_bucket(text)` resolves a free-text role to a canonical key (longest-synonym wins); `job_matches_bucket(title, description, key)` is the word-boundary regex used to filter aggregator results.
+125. [x] **`find_jobs` handler applies the strict filter** — when the user's query resolves to a known bucket, aggregator results are filtered to the bucket's synonyms BEFORE ranking. The user-facing reply states "Strict role filter applied — only this job type." When no bucket matches, behaviour is unchanged.
+126. [x] **Watchlist auto-discovery honours the filter** — `service.scan_career_page` reads `profile.job_type_filter` + `profile.job_type_location_filter` and filters scan results before they hit the queue. Saved-search runs (`run_saved_search`) also honour these fields. User's most recent /find on a known role sets the profile-level filter automatically.
+127. [x] **Natural-language extraction for the keyword router** — `extract_keyword_args(command_name, message)` pulls role + location from messages like "find bartender jobs in Berlin" / "Pflegehelfer in Deutschland gesucht" / "barista anywhere". Pre-fills the pending command so the user doesn't get re-asked.
+128. [x] **Profile fields persist the filter** — `UserProfile.job_type_filter` + `job_type_location_filter` (both empty by default). `dataclass_from_payload` handles missing fields on old rows, so no migration is needed.
+129. [x] **37 unit tests** — `tests/test_job_type_filter.py` covers synonym matching (EN+DE), word-boundary safety (no false positives), location normalization (Germany / Deutschland / anywhere / city), dict-shape filter for HTTP payloads, and keyword arg extraction for find_jobs.
+130. [x] **Autonomous E2E verifier** — `tests/e2e/full_user_flow_agent.py` + `scripts/run-full-user-flow-agent.sh` — boots app, downloads a real JPEG from picsum.photos, registers, uploads the photo, drives the CV Builder through every section with DACH-norm dates (DD.MM.YYYY), navigates Chromium to /api/cv/print, strips the on-page toolbar (matches what the user gets via `window.print()` → "Save as PDF"), captures the PDF, saves it to `/Users/fouad./Desktop/directjob-scout-verification-CV.pdf`, parses the PDF with pypdf and asserts: non-empty, contains user's name, DACH dates present (≥2 TT.MM.JJJJ tokens), section order Summary→Experience→Education→Skills, photo embedded as data URI in source HTML, no AI-invented company names, no print-page chrome leaks. Then tests the new chat filter for `find bartender jobs in Berlin` AND `Pflegehelfer in Deutschland gesucht` — asserts each routes correctly, extracts the canonical role label, the canonical location, and the reply announces "Strict role filter applied".
+131. [x] **22/22 PASS on first complete run** — PDF physically present at `/Users/fouad./Desktop/directjob-scout-verification-CV.pdf` (63,650 bytes); inspection confirms clean output, no toolbar leaks, all DACH-norm fields present.
+
+### Final regression sweep — Round 16 / Phase V closeout
+
+| Suite | Cases | Result |
+|---|---:|---:|
+| Unit tests | 735 | 735 / 735 |
+| Multi-domain | 12 | 12 / 12 |
+| CV Builder API e2e | 28 | 28 / 28 |
+| CV Builder UI smoke | 6 | 6 / 6 |
+| Mobile smoke | 5 | 5 / 5 |
+| Chat UI smoke | 10 | 10 / 10 |
+| Chaos API | 71 | 71 / 71 |
+| Chaos UI XSS | 14 | 14 / 14 |
+| Promise verifier | 8 | 8 / 8 |
+| Synthetic 3-persona | 3 | 3 / 3 |
+| **Full user flow (autonomous)** | **22** | **22 / 22** |
+| **TOTAL live checks** | **914** | **914 / 914** |

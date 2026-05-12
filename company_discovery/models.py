@@ -315,6 +315,16 @@ class UserProfile:
     # consent banner persists this on first AI invocation.
     ai_consent_at: datetime | None = None
     ai_consent_provider_id: str | None = None
+    # Strict job-type filter — set by the chat router when the user runs
+    # /find against a known role bucket. Watchlist auto-discovery scans
+    # honour this filter so the queue stays focused. Key is one of the
+    # taxonomy buckets in company_discovery.job_type_filter.TAXONOMY
+    # (e.g. "bartender", "pflegehelfer"). Empty string = no filter.
+    job_type_filter: str = ""
+    # Companion location filter for the job-type. Empty / "anywhere" =
+    # no location filter. Used by both the chat search and the
+    # watchlist scan to keep results in one country / city.
+    job_type_location_filter: str = ""
     id: str = field(default_factory=lambda: new_id("profile"))
     created_at: datetime = field(default_factory=now_utc)
     updated_at: datetime = field(default_factory=now_utc)

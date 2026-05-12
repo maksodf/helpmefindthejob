@@ -1495,3 +1495,137 @@ since it requires a real API key + an external network call.
 | AI intent router | none | **shipped — managed-AI fallback, cache, rate limit, audit log, 21 unit tests** |
 | Operator-side starters | playbook only | **playbook + concrete first-draft content for all 7 domains** |
 
+## Round 16 — Strict job-type filter + autonomous E2E verifier (2026-05-12)
+
+User asked for two things: a NEW product feature that strictly
+filters search by job type (e.g. "bartender in Berlin" only returns
+bar roles, "Pflegehelfer in Deutschland" only returns nursing care
+work), and an AUTONOMOUS agent that runs the full A-to-Z flow and
+proves nothing is broken — including saving the generated CV PDF to
+the user's actual Desktop as live runtime proof.
+
+### Strict job-type filter
+
+`company_discovery/job_type_filter.py` is the new module. It ships a
+taxonomy of role buckets, each with both English and German
+synonyms:
+
+- `bartender` — bartender, Barkeeper, Schankkellner, mixologist, …
+- `barista` — barista, café staff, espresso server, Kaffeebar, …
+- `cafe_worker` — café-Mitarbeiter, café assistant, …
+- `pflegehelfer` — Pflegehelfer/in, Pflegeassistent, nursing
+  assistant, care assistant, Altenpflegehelfer, …
+- `waiter` — Kellner/in, Servicekraft, restaurant server, …
+
+`identify_bucket(text)` resolves any free-text role to a canonical
+bucket key with longest-synonym-wins matching. `job_matches_bucket`
+is a strict word-boundary regex used to filter aggregator results.
+`filter_jobs(jobs, job_type, location)` is the high-level helper.
+`normalize_location` collapses "Germany" / "Deutschland" / "DE" to a
+canonical `germany` key and expands it at match time across known DE
+cities; "anywhere" / "remote" / "überall" all disable the location
+filter; specific cities are substring-matched against the job's
+location field.
+
+### Where the filter applies
+
+| Surface | Behaviour |
+|---|---|
+| `find_jobs` chat handler | If the user's query matches a bucket, aggregator results are filtered before ranking. Reply states "Strict role filter applied — only this job type." Persists the filter on the user's profile so subsequent watchlist scans honour it too. |
+| Watchlist career-page scans | `service.scan_career_page` reads `profile.job_type_filter` + `profile.job_type_location_filter` and filters discovered jobs before saving. Users who run `/find bartender in Berlin` get a watchlist that only grows with bar roles. |
+| `run_saved_search` | Same filter applied to aggregator results before they land as `DiscoveredJob` rows. |
+| Keyword router NL extraction | New `extract_keyword_args` pulls role + location from "find bartender jobs in Berlin" / "Pflegehelfer in Deutschland gesucht" / "barista anywhere" so the server pre-fills the find_jobs args without re-prompting. |
+
+### Autonomous E2E verifier — the runtime proof
+
+`tests/e2e/full_user_flow_agent.py` + `scripts/run-full-user-flow-agent.sh`.
+The agent runs end-to-end without the human in the loop and asserts
+22 separate checks. The headline ones:
+
+1. Downloads a real JPEG from `picsum.photos` (live network path —
+   not a mocked fixture).
+2. Registers a fresh account, uploads the photo to the profile.
+3. Drives the CV Builder through every section with DACH-norm dates
+   (DD.MM.YYYY).
+4. Navigates Chromium to `/api/cv/print`, strips the on-page toolbar
+   (replicating `window.print()` → "Save as PDF" media), captures
+   the PDF via `page.pdf()`, saves it to
+   `/Users/fouad./Desktop/directjob-scout-verification-CV.pdf`.
+5. Parses the PDF with pypdf and asserts:
+   - non-empty extracted text
+   - user's name present
+   - ≥2 TT.MM.JJJJ date tokens
+   - section order: Summary → Experience → Education → Skills
+   - photo embedded as `data:image/` URI in the print HTML
+   - no AI-invented company names (negative test for Microsoft /
+     Google / Amazon — these were never in the user input)
+   - no print-page chrome leaks ("Download as PDF" button text)
+6. Tests the new chat filter for `find bartender jobs in Berlin`
+   AND `Pflegehelfer in Deutschland gesucht`. Asserts each:
+   - routes via the chat HTTP endpoint
+   - extracts the canonical role label ("Bartender" / "Nursing
+     assistant")
+   - extracts the canonical location ("Berlin" / "Germany")
+   - reply announces "Strict role filter applied — only this job type"
+
+**Runtime proof — first complete run, 22/22 PASS:**
+
+```
+[PASS] register_account — as verifier+a4d942@example.com
+[PASS] download_personal_photo — 13516 bytes from https://picsum.photos/seed/directjob/240/240.jpg
+[PASS] upload_photo_to_profile — HTTP 200 sizeBytes=13516
+[PASS] cv_builder_completed — all sections submitted + finish OK
+[PASS] pdf_saved_to_desktop — path=/Users/fouad./Desktop/directjob-scout-verification-CV.pdf size=63650B
+[PASS] pdf_non_empty — 783 chars extracted
+[PASS] pdf_contains_user_name — looking for 'Alex Bartender'
+[PASS] pdf_dach_date_format — found 4 TT.MM.JJJJ tokens: ['01.01.2022', '31.12.2024', '01.09.2018', '30.06.2021']
+[PASS] pdf_section_order — Summary@128, Experience@296, Education@556, Skills@648
+[PASS] photo_embedded_in_print_html — data:image/ URI present in the print HTML
+[PASS] no_invented_companies — none
+[PASS] no_print_chrome_in_pdf — clean
+[PASS] chat_routes:find bartender jobs in Berlin — HTTP 200
+[PASS] role_extracted:bartender — got query='Bartender', want 'Bartender'
+[PASS] location_extracted:bartender — got location='Berlin', want 'Berlin'
+[PASS] reply_uses_canonical_label:bartender — reply tail: 'Found **2** Bartender result(s) in Berlin. (Strict role filter applied — only this job type.)'
+[PASS] strict_filter_announced:bartender — looking for 'Strict role filter applied'
+[PASS] chat_routes:Pflegehelfer in Deutschland gesucht — HTTP 200
+[PASS] role_extracted:pflegehelfer — got query='Nursing assistant', want 'Nursing assistant'
+[PASS] location_extracted:pflegehelfer — got location='Germany', want 'Germany'
+[PASS] reply_uses_canonical_label:pflegehelfer — reply tail: 'Found **0** Nursing assistant result(s) in Germany. (Strict role filter applied — only this job type.)'
+[PASS] strict_filter_announced:pflegehelfer — looking for 'Strict role filter applied'
+```
+
+The PDF on the Desktop is the live proof the user requested. The
+saved file (`/Users/fouad./Desktop/directjob-scout-verification-CV.pdf`)
+opens to a clean DACH-format CV with Alex Bartender's content,
+photo embedded, dates in TT.MM.JJJJ, sections in the right order.
+
+### Final regression sweep — Round 16
+
+| Suite | Cases | Result |
+|---|---:|---:|
+| Unit tests | 735 | 735 / 735 |
+| Multi-domain | 12 | 12 / 12 |
+| CV Builder API e2e | 28 | 28 / 28 |
+| CV Builder UI smoke | 6 | 6 / 6 |
+| Mobile smoke | 5 | 5 / 5 |
+| Chat UI smoke | 10 | 10 / 10 |
+| Chaos API | 71 | 71 / 71 |
+| Chaos UI XSS | 14 | 14 / 14 |
+| Promise verifier | 8 | 8 / 8 |
+| Synthetic 3-persona | 3 | 3 / 3 |
+| **Full user flow (autonomous)** | **22** | **22 / 22** |
+| **TOTAL live checks** | **914** | **914 / 914** |
+
+## Total session impact (Round 16 — strict job-type filter + autonomous E2E verifier)
+
+| Component | Round 1 start | Now |
+|---|---|---|
+| Bugs fixed | — | **25** |
+| Unit tests | 452 | **735** |
+| Live e2e suites | 0 | **11** (+ full user flow) |
+| Total live checks | 0 | **914** |
+| Zero regressions across | — | **16 rounds** |
+| Job-type taxonomy buckets | 0 | **5** (bartender, barista, cafe_worker, pflegehelfer, waiter — EN+DE synonyms each) |
+| Strict job-type filter | none | **wired across chat /find, watchlist scans, saved-search runs** |
+| Runtime proof of full A-to-Z | none | **`/Users/fouad./Desktop/directjob-scout-verification-CV.pdf` — 63KB, DACH-format, clean** |

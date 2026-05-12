@@ -37,6 +37,7 @@ from company_discovery.chat_router import (
     ChatTurn,
     PendingCommand,
     build_ai_router_prompt,
+    extract_keyword_args,
     fill_param_from_message,
     is_confirmation_no,
     is_confirmation_yes,
@@ -176,7 +177,7 @@ DEFAULT_WATCHLIST_SCHEDULE = {
     "lastRunAt": None,
     "lastRunStatus": "disabled",
 }
-APP_VERSION = "0.73.0"
+APP_VERSION = "0.74.0"
 EXPORT_SCHEMA_VERSION = 1
 SESSION_COOKIE_NAME = "directjob_session"
 APP_ENV = os.environ.get("COMPANY_DISCOVERY_ENV", "development").strip().casefold()
@@ -1646,6 +1647,17 @@ class AppState:
             location=location,
             limit_per_provider=cap,
         )
+        # Strict job-type filter applies to saved-search runs too —
+        # if the user's profile has a job_type_filter set, the queue
+        # only grows with jobs matching that role + location.
+        profile = self.profile_for(user_id)
+        if profile.job_type_filter:
+            from company_discovery.job_type_filter import filter_jobs as _filter_jobs_by_type
+            agg_jobs = _filter_jobs_by_type(
+                agg_jobs,
+                job_type=profile.job_type_filter,
+                location=profile.job_type_location_filter or None,
+            )
         new_jobs: list[DiscoveredJob] = []
         merged_sources: list[dict[str, str]] = []
         for job in agg_jobs:
@@ -2732,13 +2744,31 @@ class AppState:
     def chat_handler_find_jobs(self, user_id: str, args: dict) -> dict:
         from company_discovery.aggregators import rank_aggregated
         from company_discovery.personas import get_persona
+        from company_discovery.job_type_filter import (
+            filter_jobs as filter_jobs_by_type,
+            identify_bucket,
+            TAXONOMY,
+            normalize_location,
+        )
         profile = self.profile_for(user_id)
         query = args["query"]
         location = args.get("location") or profile.location or None
+        # Strict job-type filter: if the user's query matches a known
+        # role bucket (bartender, Pflegehelfer, barista, …) we apply a
+        # hard allow-list against the aggregator results. Aggregator
+        # search is still useful — it surfaces the candidate set — but
+        # the strict filter keeps only the roles actually requested.
+        bucket_key = identify_bucket(query)
         jobs, outcomes = self.aggregator_engine.search(
             query=query, location=location,
             limit_per_provider=10, persona_id=profile.persona_id,
         )
+        if bucket_key:
+            jobs = filter_jobs_by_type(jobs, job_type=bucket_key, location=location)
+        elif normalize_location(location):
+            # No taxonomy hit but the user gave a location — at least
+            # enforce that.
+            jobs = filter_jobs_by_type(jobs, job_type=None, location=location)
         persona = get_persona(profile.persona_id)
         keyword_tokens: list[str] = []
         for chunk in (query, *persona.default_target_roles):
@@ -2747,21 +2777,33 @@ class AppState:
                                   location=location, cap=15)
         self.log_analytics(user_id, "chat_cmd",
                             {"name": "find_jobs", "query": query[:120],
-                             "jobCount": len(jobs)})
+                             "jobCount": len(jobs),
+                             "jobType": bucket_key or None})
         sample = [
             {"title": j.title, "company": j.company_name,
               "location": j.location, "source": j.source,
               "url": j.source_url}
             for j, _ in ranked[:5]
         ]
+        # Persist the role+location on the profile so subsequent
+        # watchlist scans honour the same strict filter. The user's
+        # most recent /find query becomes their watchlist filter.
+        if bucket_key:
+            profile.job_type_filter = bucket_key
+            profile.job_type_location_filter = location or ""
+            self.repository.save_user_profile(profile)
+        role_label = TAXONOMY[bucket_key].label_en if bucket_key else query
         return {
             "ok": True,
             "message": (
-                f"Found **{len(jobs)}** results for {query!r}"
+                f"Found **{len(jobs)}** {role_label} result(s)"
                 f"{' in ' + location if location else ''}."
+                + (" (Strict role filter applied — only this job type.)"
+                   if bucket_key else "")
             ),
             "jobs": sample,
             "totalJobs": len(jobs),
+            "jobType": bucket_key,
         }
 
     def chat_handler_update_profile(self, user_id: str, args: dict) -> dict:
@@ -4907,6 +4949,13 @@ class Handler(BaseHTTPRequestHandler):
                         kw = keyword_route(user_message)
                         if kw:
                             routed = (kw, "")
+                            # Best-effort args extraction from natural-language
+                            # so the user doesn't have to repeat themselves.
+                            # E.g. "find bartender jobs in Berlin" → pre-fill
+                            # query=Bartender, location=Berlin so the server
+                            # only needs the confirmation prompt.
+                            _ai_extracted_args = extract_keyword_args(
+                                kw, user_message)
                         else:
                             # AI router as last resort. The ``_full``
                             # variant ALSO returns any args the AI was
