@@ -200,6 +200,41 @@
         </div>
       </aside>
 
+      <!-- R18: persistent chat dock — always visible on desktop as
+           the primary input surface. On mobile (handled in CSS) the
+           dock hides and the chat view inside <main> takes over. -->
+      <aside id="chatDock" class="chat-dock" aria-label="Assistant"
+              hidden>
+        <header class="chat-dock-header">
+          <div class="chat-dock-title">
+            <span class="chat-dock-pulse" aria-hidden="true"></span>
+            <strong>Assistant</strong>
+          </div>
+          <div class="chat-dock-actions">
+            <button id="dockChatHelpBtn" class="btn btn-ghost btn-small"
+                    type="button">Help</button>
+            <button id="dockChatResetBtn" class="btn btn-ghost btn-small"
+                    type="button">Reset</button>
+          </div>
+        </header>
+        <div id="dockChatTranscript" class="chat-dock-transcript"
+              role="log" aria-live="polite" aria-atomic="false"></div>
+        <form id="dockChatForm" class="chat-dock-form"
+              aria-label="Send a chat message">
+          <input id="dockChatInput" type="text" autocomplete="off"
+                 placeholder="Type what you want to do…"
+                 aria-label="Chat message" />
+          <button id="dockChatSendBtn" class="btn btn-primary"
+                  type="submit" aria-label="Send">
+            <svg viewBox="0 0 20 20" aria-hidden="true">
+              <path d="M3 10l14-7-7 14-2-5z" fill="currentColor"/>
+            </svg>
+          </button>
+        </form>
+        <p id="dockChatPendingHint" class="chat-dock-hint" role="status"
+            aria-live="polite"></p>
+      </aside>
+
       <main id="mainContent" class="main" tabindex="-1">
         <header class="topbar">
           <div class="topbar-title">
@@ -218,6 +253,13 @@
 
         <!-- Dashboard / Today -->
         <section id="view-dashboard" class="view" data-view="dashboard" aria-labelledby="viewTitle">
+          <aside class="chat-first-banner" role="note" aria-label="Tip">
+            <span class="chat-first-emoji" aria-hidden="true">✨</span>
+            <div class="chat-first-text">
+              <strong>Just chat.</strong>
+              <span class="muted">Type what you want in the Assistant on the left — "find a job", "add Charité", "show my watchlist". I'll handle the clicks.</span>
+            </div>
+          </aside>
           <article class="hero-card">
             <div class="hero-primary">
               <span class="hero-label" data-i18n="dashboard.hero.label">New roles waiting for you</span>

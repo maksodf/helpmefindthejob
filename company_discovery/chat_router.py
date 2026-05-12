@@ -356,6 +356,38 @@ def _build_registry() -> dict[str, Command]:
             ),
         ),
         Command(
+            name="show_view",
+            label="Show a specific view on the canvas",
+            description=(
+                "Surface one of the app's views (dashboard / "
+                "companies / jobs / briefcase / settings / cv-builder) "
+                "on the right-side canvas. Read-only navigation — "
+                "no DB writes, no confirmation gate."
+            ),
+            slash_aliases=["/show", "/open", "/go-to", "/view"],
+            keywords=[
+                # English
+                r"\b(?:show|open|go to|switch to|take me to|view)\b.*\b(?:watchlist|companies|company list)\b",
+                r"\b(?:show|open|go to|switch to|take me to|view)\b.*\b(?:queue|imported|jobs|job list|saved jobs)\b",
+                r"\b(?:show|open|go to|switch to|take me to|view)\b.*\b(?:dashboard|today|home)\b",
+                r"\b(?:show|open|go to|switch to|take me to|view)\b.*\b(?:applications|briefcase|tracker)\b",
+                r"\b(?:show|open|go to|switch to|take me to|view)\b.*\b(?:settings|profile|preferences|config)\b",
+                r"\bmy (?:watchlist|companies|queue|jobs|applications|briefcase)\b",
+                # German
+                r"\b(?:zeig|öffne|gehe zu|geh zu|wechsle)\b.*\b(?:watchlist|firmen|unternehmen|liste)\b",
+                r"\b(?:zeig|öffne|gehe zu|geh zu|wechsle)\b.*\b(?:jobs|stellen|warteschlange)\b",
+                r"\b(?:zeig|öffne|gehe zu|geh zu|wechsle)\b.*\b(?:einstellungen|profil)\b",
+                r"\b(?:zeig|öffne|gehe zu|geh zu|wechsle)\b.*\b(?:heute|dashboard|startseite)\b",
+            ],
+            params=[
+                CommandParam("target",
+                              "Which view? (dashboard / companies / "
+                              "jobs / brief / settings / cvBuilder)",
+                              validator=_validate_string),
+            ],
+            confirmation_template="Opening **{target}**.",
+        ),
+        Command(
             name="suggest_cv_enhancements",
             label="Consult on CV enhancements specific to a JD",
             description=(

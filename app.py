@@ -177,7 +177,7 @@ DEFAULT_WATCHLIST_SCHEDULE = {
     "lastRunAt": None,
     "lastRunStatus": "disabled",
 }
-APP_VERSION = "0.76.0"
+APP_VERSION = "0.77.0"
 EXPORT_SCHEMA_VERSION = 1
 SESSION_COOKIE_NAME = "directjob_session"
 APP_ENV = os.environ.get("COMPANY_DISCOVERY_ENV", "development").strip().casefold()
@@ -3191,6 +3191,47 @@ class AppState:
     # this entry point sets cv_status='building' inside the journey
     # state then runs one journey step so the user sees the first
     # question immediately.
+    def chat_handler_show_view(self, user_id: str, args: dict) -> dict:
+        """Navigate-style command. Resolves the user's free-text
+        target ("watchlist", "queue", "today", "applications", …) to
+        the matching canonical view id, returns navigateTo. Read-only
+        — no DB write, no confirmation gate. The client honours
+        navigateTo by clicking the corresponding nav-item."""
+        raw = (args.get("target") or "").strip().lower()
+        # Map synonyms → view id.
+        synonyms: dict[str, tuple[str, ...]] = {
+            "dashboard": ("dashboard", "today", "home", "heute",
+                           "startseite", "übersicht", "uebersicht"),
+            "companies": ("companies", "watchlist", "watch list",
+                           "company list", "firmen", "unternehmen"),
+            "jobs": ("jobs", "queue", "imported", "saved jobs",
+                      "job list", "stellen", "warteschlange"),
+            "brief": ("brief", "briefcase", "applications", "tracker",
+                       "bewerbungen", "anwendungen"),
+            "settings": ("settings", "profile", "preferences", "config",
+                          "einstellungen", "profil"),
+            "cvBuilder": ("cvbuilder", "cv builder", "cv-builder",
+                            "lebenslauf"),
+            "assistant": ("assistant", "chat"),
+        }
+        target_id = ""
+        for view_id, words in synonyms.items():
+            if raw in words or any(w in raw for w in words):
+                target_id = view_id
+                break
+        if not target_id:
+            allowed = ", ".join(synonyms.keys())
+            return {"ok": False,
+                     "message": (
+                         f"I don't know which view {raw!r} maps to. "
+                         f"Try one of: {allowed}."
+                     )}
+        self.log_analytics(user_id, "chat_cmd",
+                            {"name": "show_view", "view": target_id})
+        return {"ok": True,
+                 "navigateTo": target_id,
+                 "message": f"Opening **{target_id}**."}
+
     def chat_handler_suggest_cv_enhancements(self, user_id: str,
                                                 args: dict) -> dict:
         """Compare the user's CV against their picked job's JD and
@@ -3358,6 +3399,7 @@ class AppState:
             "build_cv_via_chat": self.chat_handler_build_cv_via_chat,
             "draft_motivation_letter": self.chat_handler_draft_motivation_letter,
             "suggest_cv_enhancements": self.chat_handler_suggest_cv_enhancements,
+            "show_view": self.chat_handler_show_view,
             "help": self.chat_handler_help,
         }
         if command_name not in handlers:

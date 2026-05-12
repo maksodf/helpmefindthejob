@@ -519,6 +519,15 @@ function renderAuth() {
   } else {
     showOnly("authGate");
   }
+  // R18: persistent chat dock follows the auth state. Seed the
+  // welcome bubble the first time it becomes visible.
+  const dock = $("#chatDock");
+  if (dock) {
+    dock.hidden = !state.auth.authenticated;
+    if (state.auth.authenticated) {
+      seedChatWelcomeOnce();
+    }
+  }
   $("#sidebarUser").hidden = !state.auth.authenticated;
   const email = state.auth.user?.email || "";
   $("#sidebarUserEmail").textContent = email;
@@ -4748,33 +4757,43 @@ function chatRenderInline(text) {
 }
 
 function chatAppendBubble(role, text, opts = {}) {
-  const host = $("#chatTranscript");
-  if (!host) return null;
-  const bubble = document.createElement("div");
-  bubble.className = `chat-bubble chat-bubble-${role}`;
-  const isUser = role === "user";
-  bubble.style.alignSelf = isUser ? "flex-end" : "flex-start";
-  bubble.style.maxWidth = "82%";
-  bubble.style.background = isUser ? "#3a3b54" : "#1c1c24";
-  bubble.style.padding = "8px 12px";
-  bubble.style.borderRadius = "10px";
-  bubble.style.whiteSpace = "pre-wrap";
-  bubble.style.overflowWrap = "break-word";
-  if (opts.typing) {
-    // Typing-indicator: simple three-dot animation via CSS opacity.
-    bubble.classList.add("chat-bubble-typing");
-    bubble.setAttribute("aria-live", "polite");
-    bubble.setAttribute("aria-label", "Assistant is typing");
-    bubble.innerHTML = "<span class='dot-1'>·</span><span class='dot-2'>·</span><span class='dot-3'>·</span>";
-  } else {
-    // Markdown inline for assistant bubbles; user bubbles stay
-    // literal text so users see exactly what they typed.
-    if (isUser) bubble.textContent = text == null ? "" : String(text);
-    else bubble.innerHTML = chatRenderInline(text);
+  // R18: write to BOTH chat surfaces — the view-assistant transcript
+  // AND the persistent dock — so the user sees the same conversation
+  // regardless of which input they used.
+  const hosts = [$("#chatTranscript"), $("#dockChatTranscript")]
+    .filter(Boolean);
+  if (!hosts.length) return null;
+  const bubbles = [];
+  for (const host of hosts) {
+    const bubble = document.createElement("div");
+    bubble.className = `chat-bubble chat-bubble-${role}`;
+    const isUser = role === "user";
+    bubble.style.alignSelf = isUser ? "flex-end" : "flex-start";
+    bubble.style.maxWidth = "82%";
+    if (opts.typing) {
+      bubble.classList.add("chat-bubble-typing");
+      bubble.setAttribute("aria-live", "polite");
+      bubble.setAttribute("aria-label", "Assistant is typing");
+      bubble.innerHTML = "<span class='dot-1'>·</span><span class='dot-2'>·</span><span class='dot-3'>·</span>";
+    } else {
+      if (isUser) bubble.textContent = text == null ? "" : String(text);
+      else bubble.innerHTML = chatRenderInline(text);
+    }
+    host.append(bubble);
+    host.scrollTop = host.scrollHeight;
+    bubbles.push(bubble);
   }
-  host.append(bubble);
-  host.scrollTop = host.scrollHeight;
-  return bubble;
+  // Return a wrapper with .remove() that scrubs every mirror — so
+  // typing bubbles disappear from all surfaces when the real reply
+  // lands.
+  return {
+    remove() {
+      for (const b of bubbles) b.remove();
+    },
+    // Convenience for callers that read DOM properties off the
+    // returned bubble.
+    nodes: bubbles,
+  };
 }
 
 async function chatSend(message) {
@@ -4820,39 +4839,66 @@ async function chatSend(message) {
   }
 }
 
-$("#chatForm")?.addEventListener("submit", (event) => {
-  event.preventDefault();
-  const input = $("#chatInput");
-  const message = input?.value || "";
-  if (input) input.value = "";
-  chatSend(message);
-});
-
-$("#chatHelpBtn")?.addEventListener("click", () => chatSend("/help"));
-
-$("#chatResetBtn")?.addEventListener("click", async () => {
-  try {
-    await api("/api/chat/reset", { method: "POST", body: JSON.stringify({}) });
-    const host = $("#chatTranscript");
-    if (host) host.innerHTML = "";
+function chatFormHandler(inputSel) {
+  return (event) => {
+    event.preventDefault();
+    const input = $(inputSel);
+    const message = input?.value || "";
+    if (input) input.value = "";
+    chatSend(message);
+  };
+}
+function chatResetHandler() {
+  return async () => {
+    try {
+      await api("/api/chat/reset",
+                  { method: "POST", body: JSON.stringify({}) });
+    } catch (err) {
+      chatAppendBubble("assistant", `Error: ${err.message}`);
+      return;
+    }
+    for (const sel of ["#chatTranscript", "#dockChatTranscript"]) {
+      const host = $(sel);
+      if (host) host.innerHTML = "";
+    }
     setText("#chatPendingHint", "");
+    setText("#dockChatPendingHint", "");
     chatAppendBubble("assistant",
                        "Chat reset. Type a message or /help to begin.");
-  } catch (err) {
-    chatAppendBubble("assistant", `Error: ${err.message}`);
-  }
-});
+  };
+}
 
+$("#chatForm")?.addEventListener("submit", chatFormHandler("#chatInput"));
+$("#dockChatForm")?.addEventListener("submit",
+                                       chatFormHandler("#dockChatInput"));
+
+$("#chatHelpBtn")?.addEventListener("click", () => chatSend("/help"));
+$("#dockChatHelpBtn")?.addEventListener("click", () => chatSend("/help"));
+
+$("#chatResetBtn")?.addEventListener("click", chatResetHandler());
+$("#dockChatResetBtn")?.addEventListener("click", chatResetHandler());
+
+// On first chat-view focus OR first appearance of the dock, seed
+// a welcome bubble if the transcript is empty.
+function seedChatWelcomeOnce() {
+  const dock = $("#dockChatTranscript");
+  if (dock && dock.childElementCount === 0) {
+    chatAppendBubble("assistant",
+                       "Hi — tell me what you want to do, or type **find a job** to start.");
+    return;
+  }
+  const host = $("#chatTranscript");
+  if (host && host.childElementCount === 0) {
+    chatAppendBubble("assistant",
+                       "Hi — tell me what you want to do, or type **find a job** to start.");
+  }
+}
 document.addEventListener("click", (event) => {
   const target = event.target.closest(".nav-item[data-view='assistant']");
   if (!target) return;
   setTimeout(() => {
-    const host = $("#chatTranscript");
-    if (host && host.childElementCount === 0) {
-      chatAppendBubble("assistant",
-                         "Hi — tell me what you want to do, or type /help.");
-    }
-    const input = $("#chatInput");
+    seedChatWelcomeOnce();
+    const input = $("#chatInput") || $("#dockChatInput");
     if (input) input.focus();
   }, 60);
 });
