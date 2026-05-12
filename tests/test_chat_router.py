@@ -27,14 +27,17 @@ from company_discovery.chat_router import (
 
 
 class RegistryShapeTests(unittest.TestCase):
-    def test_eleven_core_commands(self):
+    def test_sixteen_core_commands(self):
         names = set(REGISTRY)
         self.assertEqual(
             names,
             {"add_company", "create_saved_search", "find_jobs",
              "update_profile", "mark_applied",
              "tailor_cv", "run_saved_search", "set_persona",
-             "delete_company", "open_cv_builder", "help"},
+             "delete_company", "open_cv_builder",
+             "start_job_journey", "accept_cv_text", "build_cv_via_chat",
+             "draft_motivation_letter", "suggest_cv_enhancements",
+             "help"},
         )
 
     def test_every_command_has_label_and_description(self):
@@ -49,7 +52,7 @@ class RegistryShapeTests(unittest.TestCase):
 
     def test_list_commands_payload_shape(self):
         payload = list_commands()
-        self.assertEqual(len(payload), 11)
+        self.assertEqual(len(payload), 16)
         for item in payload:
             self.assertIn("name", item)
             self.assertIn("label", item)

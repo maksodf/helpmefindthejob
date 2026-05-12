@@ -356,6 +356,104 @@ def _build_registry() -> dict[str, Command]:
             ),
         ),
         Command(
+            name="suggest_cv_enhancements",
+            label="Consult on CV enhancements specific to a JD",
+            description=(
+                "For the job the user picked in their journey, "
+                "compare the JD against the CV and surface 3-5 gap "
+                "questions. AI-backed when configured; otherwise a "
+                "heuristic keyword diff with an honest banner."
+            ),
+            slash_aliases=["/consult", "/enhance-cv", "/cv-gaps"],
+            keywords=[
+                r"\b(?:consult|enhance|improve)\b.*\bcv\b",
+                r"\bcv\b.*\b(?:gaps?|enhancements?|improvements?)\b",
+            ],
+            params=[],
+            confirmation_template=(
+                "Consulting CV vs. picked JD for enhancement ideas."
+            ),
+        ),
+        Command(
+            name="draft_motivation_letter",
+            label="Draft a DACH-norm motivation letter",
+            description=(
+                "Draft a Bewerbungsschreiben in proper DACH "
+                "structure (Anrede, 3-paragraph Hauptteil, Schluss) "
+                "for a job the user picked in their journey. Uses "
+                "the configured AI when available; otherwise emits "
+                "a structured template with placeholders + an "
+                "honest \"no AI configured\" banner."
+            ),
+            slash_aliases=["/letter", "/draft-letter", "/motivation"],
+            keywords=[
+                r"\bdraft\b.*\b(?:motivation|cover|application)\b.*\bletter\b",
+                r"\bmotivation(?:s)?(?:schreiben)?\b",
+                r"\bbewerbungsschreiben\b",
+                r"\banschreiben\b",
+            ],
+            params=[],
+            confirmation_template=(
+                "Drafting a motivation letter for your picked job."
+            ),
+        ),
+        Command(
+            name="start_job_journey",
+            label="Start the guided job-search journey",
+            description=(
+                "Walk the user end-to-end: gather role/location/CV, "
+                "suggest lateral roles, run a categorized search, "
+                "drill into a job, draft a motivation letter, and "
+                "consult on CV enhancements specific to that JD. "
+                "Triggers on explicit job-seeking intent only — bare "
+                "greetings do NOT auto-start this."
+            ),
+            slash_aliases=["/start", "/journey", "/find-job", "/help-me-find"],
+            keywords=[
+                r"\b(?:i (?:want|need|wanna)|help me|can you help)"
+                r"\b.*\b(?:find|look|search|get)\b.*\b(?:job|jobs|role|roles|work|position)\b",
+                r"\b(?:find|look for|search for|get|need)\b.*\b(?:a |me a )?\b(?:job|role|position|work)\b",
+                r"\b(?:start|begin)\b.*\b(?:job search|journey|hunt)\b",
+                r"\b(?:suche|finde|brauche)\b.*\b(?:job|stelle|arbeit|position)\b",
+                r"\bhilf mir\b.*\b(?:job|stelle|arbeit)\b",
+                r"\bich (?:will|möchte|brauche)\b.*\b(?:job|stelle|arbeit)\b",
+            ],
+            params=[],
+            confirmation_template="Starting your job-search journey.",
+        ),
+        Command(
+            name="accept_cv_text",
+            label="Capture pasted CV text into your profile",
+            description=(
+                "Save a CV the user pasted directly in chat. Skips the "
+                "wizard. Only available inside the active journey."
+            ),
+            slash_aliases=["/paste-cv"],
+            keywords=[],  # invoked by journey state machine, not freely
+            params=[
+                CommandParam("cvText", "Paste your CV (free text — "
+                              "we'll store it as-is, never invent).",
+                              validator=_validate_string),
+            ],
+            confirmation_template=(
+                "Saving **{cvText}** chars to your profile. Confirm?"
+            ),
+        ),
+        Command(
+            name="build_cv_via_chat",
+            label="Build your CV sectional via chat",
+            description=(
+                "Walk through DACH-CV sections (header → summary → "
+                "experience → education → skills) via plain chat, no "
+                "wizard UI. Each section uses the same fact-ratio "
+                "gate as the visual builder."
+            ),
+            slash_aliases=["/build-cv-chat"],
+            keywords=[],
+            params=[],
+            confirmation_template="Starting CV build — one section at a time.",
+        ),
+        Command(
             name="open_cv_builder",
             label="Open the CV Builder",
             description="Walk through guided sections to create or update your CV (DACH-style with photo + PDF export). The AI formats, it never invents.",

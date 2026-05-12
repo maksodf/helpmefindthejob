@@ -177,7 +177,7 @@ DEFAULT_WATCHLIST_SCHEDULE = {
     "lastRunAt": None,
     "lastRunStatus": "disabled",
 }
-APP_VERSION = "0.74.1"
+APP_VERSION = "0.75.0"
 EXPORT_SCHEMA_VERSION = 1
 SESSION_COOKIE_NAME = "directjob_session"
 APP_ENV = os.environ.get("COMPANY_DISCOVERY_ENV", "development").strip().casefold()
@@ -2522,7 +2522,9 @@ class AppState:
     def chat_session_persist(self, user_id: str) -> None:
         """Snapshot the in-memory session to ``profile.chat_state``.
         Called after every message so a server restart doesn't lose
-        in-flight pending commands."""
+        in-flight pending commands. Merges with whatever else lives
+        in ``chat_state`` (e.g. the R17 journey state) instead of
+        clobbering it."""
         session = self._chat_sessions.get(user_id)
         if session is None:
             return
@@ -2530,7 +2532,11 @@ class AppState:
         if len(session.history) > 50:
             session.history = session.history[-50:]
         profile = self.profile_for(user_id)
-        profile.chat_state = session.to_dict()
+        # Preserve any other top-level keys (e.g. "journey") so the
+        # journey state machine doesn't get wiped out on every reply.
+        merged = dict(profile.chat_state or {})
+        merged.update(session.to_dict())
+        profile.chat_state = merged
         self.repository.save_user_profile(profile)
 
     def chat_reset(self, user_id: str) -> None:
@@ -2943,6 +2949,340 @@ class AppState:
         return {"ok": True,
                  "message": f"Removed company **{company_id}** from your watchlist."}
 
+    # ---------------- Guided job-search journey (R17) ----------------
+
+    def _journey_load(self, user_id: str):
+        from company_discovery.journey import UserJourney
+        profile = self.profile_for(user_id)
+        chat_state = profile.chat_state or {}
+        return UserJourney.from_dict(chat_state.get("journey"))
+
+    def _journey_save(self, user_id: str, journey) -> None:
+        profile = self.profile_for(user_id)
+        chat_state = dict(profile.chat_state or {})
+        chat_state["journey"] = journey.to_dict()
+        profile.chat_state = chat_state
+        self.repository.save_user_profile(profile)
+
+    def _journey_apply_profile_updates(self, user_id: str,
+                                         updates: dict) -> None:
+        if not updates:
+            return
+        profile = self.profile_for(user_id)
+        for k, v in updates.items():
+            if hasattr(profile, k):
+                setattr(profile, k, v)
+        self.repository.save_user_profile(profile)
+
+    def _journey_ai_caller(self, user_id: str):
+        """Return a callable(system, user) -> str | None that asks the
+        configured AI provider, or None if no AI is available."""
+        profile = self.profile_for(user_id)
+        provider = self.ai_provider_for(user_id)
+        if provider is None or provider.provider_id == "manual":
+            return None
+        if not _ai_consent_satisfied(profile, provider):
+            return None
+        from company_discovery.analysis import _dispatch_provider
+        def _call(system: str, user_msg: str) -> str | None:
+            # We bundle system + user into one prompt since the
+            # existing _dispatch_provider takes a single string. The
+            # provider adapters split on \n\n correctly. Errors are
+            # swallowed; journey state machine falls back to template.
+            prompt = f"{system}\n\n{user_msg}"
+            try:
+                result = _dispatch_provider(prompt, provider, "")
+                if result.status != "completed":
+                    return None
+                return result.output
+            except Exception:  # noqa: BLE001
+                return None
+        return _call
+
+    def chat_handler_start_job_journey(self, user_id: str, args: dict) -> dict:
+        from company_discovery.journey import UserJourney, PHASE_GREET
+        # Fresh journey — overwrite whatever the user had before.
+        journey = UserJourney(phase=PHASE_GREET)
+        self._journey_save(user_id, journey)
+        self.log_analytics(user_id, "chat_cmd",
+                            {"name": "start_job_journey"})
+        # Run advance() once so the first reply is the welcome + first
+        # discover question.
+        return self.chat_journey_step(user_id, "")
+
+    def chat_journey_step(self, user_id: str, message: str) -> dict:
+        """Process one user message through the journey state machine.
+
+        Called by the HTTP chat-message handler whenever the user has
+        an active journey in progress. Returns the standard chat
+        handler result shape.
+        """
+        from company_discovery.journey import advance
+        journey = self._journey_load(user_id)
+        profile = self.profile_for(user_id)
+        has_cv = bool((profile.cv_text or "").strip())
+        ai_caller = self._journey_ai_caller(user_id)
+        result = advance(
+            journey, message,
+            has_existing_cv=has_cv,
+            ai_available=ai_caller is not None,
+            ai_caller=ai_caller,
+        )
+        if result.profile_updates:
+            self._journey_apply_profile_updates(user_id,
+                                                  result.profile_updates)
+        if result.persist:
+            self._journey_save(user_id, result.journey)
+        # When the journey asks us to run a search, dispatch to
+        # find_jobs with the merged target_roles list. The first role
+        # is the user's stated one; aggregator search uses it as the
+        # primary query.
+        if result.run_search_with:
+            target_roles = result.run_search_with.get("target_roles") or []
+            primary_query = target_roles[0] if target_roles else "job"
+            location = result.run_search_with.get("location") or None
+            search_result = self.chat_handler_find_jobs(
+                user_id,
+                {"query": primary_query, "location": location},
+            )
+            jobs = search_result.get("jobs") or []
+            # Cluster by category using the new R17.5 helper.
+            from company_discovery.journey import (
+                PHASE_REVIEW, PHASE_DONE, cluster_jobs,
+            )
+            clusters = cluster_jobs(jobs)
+            categorized: dict[str, list[str]] = {}
+            jobs_by_id: dict[str, dict] = {}
+            for category, items in clusters.items():
+                ids: list[str] = []
+                for j in items:
+                    job_id = j.get("url") or j.get("title") or ""
+                    if not job_id:
+                        continue
+                    ids.append(job_id)
+                    jobs_by_id[job_id] = j
+                if ids:
+                    categorized[category] = ids
+            journey2 = self._journey_load(user_id)
+            journey2.search_results_by_category = categorized
+            journey2.search_jobs_by_id = jobs_by_id
+            if not jobs:
+                journey2.phase = PHASE_DONE
+            else:
+                journey2.phase = PHASE_REVIEW
+            self._journey_save(user_id, journey2)
+            if not jobs:
+                summary_msg = (
+                    "No matching jobs right now. Try widening the "
+                    "location or relaxing the role. Type `find a job` "
+                    "to start a new search."
+                )
+            else:
+                jobs_summary = "\n".join(
+                    f"  - **{c}**: {len(ids)} job(s)"
+                    for c, ids in categorized.items()
+                )
+                summary_msg = (
+                    f"**Found {len(jobs)} job(s) total.**\n"
+                    f"{jobs_summary}\n\n"
+                    "Reply with a **category name** to see the jobs in it."
+                )
+            return {
+                "ok": True,
+                "message": f"{result.reply}\n\n{summary_msg}",
+                "totalJobs": len(jobs),
+                "journeyPhase": journey2.phase,
+            }
+        # Journey state machine can request the chat layer to invoke
+        # a registered command (e.g. draft_motivation_letter). The
+        # sentinel is "__INVOKE_COMMAND:<name>__" in the reply.
+        sentinel = "__INVOKE_COMMAND:"
+        if result.reply.startswith(sentinel) and result.reply.endswith("__"):
+            cmd_name = result.reply[len(sentinel):-2]
+            cmd_result = self.chat_execute_command(user_id, cmd_name, {})
+            self.log_analytics(user_id, "chat_journey_step",
+                                {"phase": result.journey.phase,
+                                 "invoked": cmd_name})
+            return {"ok": cmd_result.get("ok", True),
+                     "message": cmd_result.get("message", "(done)"),
+                     "journeyPhase": result.journey.phase,
+                     "done": result.done,
+                     "invoked": cmd_name,
+                     "letter": cmd_result.get("letter"),
+                     "suggestions": cmd_result.get("suggestions")}
+        self.log_analytics(user_id, "chat_journey_step",
+                            {"phase": result.journey.phase})
+        return {"ok": True, "message": result.reply,
+                 "journeyPhase": result.journey.phase,
+                 "done": result.done}
+
+    def chat_handler_accept_cv_text(self, user_id: str, args: dict) -> dict:
+        from company_discovery.cv_builder import validate_ai_format_output
+        cv_text = (args.get("cvText") or "").strip()
+        if len(cv_text) < 40:
+            return {"ok": False,
+                     "message": "That's very short — paste the full CV text."}
+        profile = self.profile_for(user_id)
+        profile.cv_text = cv_text
+        self.repository.save_user_profile(profile)
+        self.log_analytics(user_id, "chat_cmd",
+                            {"name": "accept_cv_text",
+                             "chars": len(cv_text)})
+        return {"ok": True,
+                 "message": (
+                     f"Saved **{len(cv_text)} chars** to your profile. "
+                     "You can `/tailor` it for a specific job any time."
+                 )}
+
+    # build_cv_via_chat — sectional walk handled by the journey;
+    # this entry point sets cv_status='building' inside the journey
+    # state then runs one journey step so the user sees the first
+    # question immediately.
+    def chat_handler_suggest_cv_enhancements(self, user_id: str,
+                                                args: dict) -> dict:
+        """Compare the user's CV against their picked job's JD and
+        surface 3-5 gap-questions they can answer to strengthen
+        their CV. Never auto-edits the CV — the user has the final
+        say on every addition."""
+        from company_discovery.cv_consult import consult
+        journey = self._journey_load(user_id)
+        if not journey.picked_job_id:
+            return {"ok": False,
+                     "message": (
+                         "Pick a job first (via the journey: type "
+                         "`find a job`, drill into a category, pick a "
+                         "number)."
+                     )}
+        job = journey.search_jobs_by_id.get(journey.picked_job_id, {})
+        if not job:
+            return {"ok": False,
+                     "message": "Picked job missing — type /start to refresh."}
+        profile = self.profile_for(user_id)
+        cv_text = (profile.cv_text or "").strip()
+        if not cv_text:
+            return {"ok": False,
+                     "message": "I need a CV to consult — run `find a job` to set one up."}
+        ai_caller = self._journey_ai_caller(user_id)
+        gaps, used_ai = consult(
+            job=job, cv_text=cv_text, ai_caller=ai_caller,
+        )
+        self.log_analytics(user_id, "chat_cmd",
+                            {"name": "suggest_cv_enhancements",
+                             "jobUrl": job.get("url", "")[:120],
+                             "gapCount": len(gaps),
+                             "aiUsed": used_ai})
+        if not gaps:
+            return {"ok": True,
+                     "message": (
+                         "Your CV already covers the visible JD "
+                         "requirements. No gap suggestions for this "
+                         "posting."
+                     ),
+                     "suggestions": []}
+        banner = ("" if used_ai
+                   else "_(I'm running without an AI right now — these "
+                        "are heuristic keyword diffs. Configure a "
+                        "provider for richer suggestions.)_\n\n")
+        lines = [f"  {i}. **{g['gap']}** — {g['question']}"
+                  for i, g in enumerate(gaps, 1)]
+        listing = "\n".join(lines)
+        return {"ok": True,
+                 "message": (
+                     f"{banner}Here's what I'd strengthen on your CV "
+                     f"for **{job.get('title', '')}** at "
+                     f"**{job.get('company', '')}**:\n\n"
+                     f"{listing}\n\n"
+                     "Reply to each one with your one-sentence story "
+                     "(or 'skip' if you don't have it). Type **save** "
+                     "when you're done to wrap up."
+                 ),
+                 "suggestions": gaps}
+
+    def chat_handler_draft_motivation_letter(self, user_id: str,
+                                                args: dict) -> dict:
+        """Draft a DACH-norm motivation letter for the user's picked
+        job. The job comes from the journey state (R17.5 stored
+        search_jobs_by_id). When no AI is configured, returns the
+        templated skeleton with an honest banner — the journey never
+        gets stuck."""
+        from company_discovery.motivation_letter import (
+            draft_with_ai, templated_fallback,
+        )
+        journey = self._journey_load(user_id)
+        if not journey.picked_job_id:
+            return {"ok": False,
+                     "message": (
+                         "I don't know which job to write about yet. "
+                         "Pick one from the journey first (type "
+                         "`find a job`, drill into a category, then "
+                         "pick a number)."
+                     )}
+        job = journey.search_jobs_by_id.get(journey.picked_job_id, {})
+        if not job:
+            return {"ok": False,
+                     "message": "Picked job's details are missing — try /start to refresh."}
+        profile = self.profile_for(user_id)
+        cv_text = (profile.cv_text or "").strip()
+        if not cv_text:
+            return {"ok": False,
+                     "message": (
+                         "I need a CV to draft a letter. Run `find a job` "
+                         "to walk through the journey, or paste your CV in "
+                         "chat."
+                     )}
+        ai_caller = self._journey_ai_caller(user_id)
+        letter = draft_with_ai(
+            job=job, cv_text=cv_text,
+            user_name="", user_location=profile.location or "",
+            ai_caller=ai_caller,
+        )
+        if not letter:
+            letter = templated_fallback(
+                job=job,
+                user_name="",
+                user_location=profile.location or "",
+            )
+        # Persist to the journey for the next phase to consult against.
+        # We don't auto-write to imported_job here because the user
+        # hasn't imported the job yet — that's a separate /save step.
+        self.log_analytics(user_id, "chat_cmd",
+                            {"name": "draft_motivation_letter",
+                             "jobUrl": job.get("url", "")[:120],
+                             "aiUsed": ai_caller is not None,
+                             "chars": len(letter)})
+        return {"ok": True,
+                 "message": (
+                     f"Here's the draft for **{job.get('title', '')}** "
+                     f"at **{job.get('company', '')}**:\n\n"
+                     f"---\n\n{letter}\n\n---\n\n"
+                     "Reply **save** to keep it on your applications, or "
+                     "**consult** to get CV enhancement ideas for this JD."
+                 ),
+                 "letter": letter,
+                 "letterChars": len(letter)}
+
+    def chat_handler_build_cv_via_chat(self, user_id: str, args: dict) -> dict:
+        from company_discovery.journey import (
+            PHASE_CV_CHECK, cv_build_prompt_for, _CV_BUILD_ORDER,
+        )
+        journey = self._journey_load(user_id)
+        if journey.phase != PHASE_CV_CHECK:
+            return {"ok": False,
+                     "message": (
+                         "I can only build the CV inside the journey. "
+                         "Type `find a job` to start."
+                     )}
+        journey.cv_status = "building"
+        journey.cv_build_step = _CV_BUILD_ORDER[0]
+        self._journey_save(user_id, journey)
+        self.log_analytics(user_id, "chat_cmd",
+                            {"name": "build_cv_via_chat"})
+        return {"ok": True,
+                 "message": (
+                     "OK — 5 quick questions. "
+                     + cv_build_prompt_for(_CV_BUILD_ORDER[0])
+                 )}
+
     def chat_execute_command(self, user_id: str, command_name: str,
                               args: dict) -> dict:
         """Dispatch a confirmed command. The router never calls
@@ -2960,6 +3300,11 @@ class AppState:
             "set_persona": self.chat_handler_set_persona,
             "delete_company": self.chat_handler_delete_company,
             "open_cv_builder": self.chat_handler_open_cv_builder,
+            "start_job_journey": self.chat_handler_start_job_journey,
+            "accept_cv_text": self.chat_handler_accept_cv_text,
+            "build_cv_via_chat": self.chat_handler_build_cv_via_chat,
+            "draft_motivation_letter": self.chat_handler_draft_motivation_letter,
+            "suggest_cv_enhancements": self.chat_handler_suggest_cv_enhancements,
             "help": self.chat_handler_help,
         }
         if command_name not in handlers:
@@ -4868,6 +5213,66 @@ class Handler(BaseHTTPRequestHandler):
                     return
                 session.history.append(ChatTurn(role="user",
                                                   content=user_message))
+
+                # ── R17 guided journey: if the user has an active
+                # journey (not GREET/DONE), keep routing messages
+                # through the state machine so the conversation flows
+                # naturally without slash commands. Also auto-start a
+                # journey on explicit job-seeking intent.
+                from company_discovery.journey import (
+                    PHASE_GREET, PHASE_DONE, should_auto_start,
+                )
+                journey_now = STATE._journey_load(data_user_id)
+                in_journey = journey_now.phase not in (PHASE_GREET, PHASE_DONE)
+                if not in_journey and should_auto_start(journey_now, user_message):
+                    # Start fresh journey + dispatch the very first
+                    # turn so the user sees the welcome immediately.
+                    STATE.log_analytics(data_user_id, "chat_cmd",
+                                          {"name": "start_job_journey"})
+                    from company_discovery.journey import UserJourney
+                    STATE._journey_save(data_user_id, UserJourney())
+                    journey_result = STATE.chat_journey_step(
+                        data_user_id, user_message,
+                    )
+                    reply = journey_result.get("message") or "(continuing)"
+                    session.history.append(
+                        ChatTurn(role="assistant", content=reply),
+                    )
+                    STATE.chat_session_persist(data_user_id)
+                    self.send_json({
+                        "reply": reply,
+                        "journeyPhase": journey_result.get("journeyPhase"),
+                        "invoked": journey_result.get("invoked"),
+                        "letter": journey_result.get("letter"),
+                        "suggestions": journey_result.get("suggestions"),
+                        "totalJobs": journey_result.get("totalJobs"),
+                        "session": session.to_dict(),
+                    })
+                    return
+                if in_journey and (session.pending is None
+                                     or not session.pending.awaiting_confirmation):
+                    # Route the message through the journey state
+                    # machine. Skip when a pending command is awaiting
+                    # explicit confirmation (yes/no) — that's part of
+                    # the typed-command flow and takes priority.
+                    journey_result = STATE.chat_journey_step(
+                        data_user_id, user_message,
+                    )
+                    reply = journey_result.get("message") or "(continuing)"
+                    session.history.append(
+                        ChatTurn(role="assistant", content=reply),
+                    )
+                    STATE.chat_session_persist(data_user_id)
+                    self.send_json({
+                        "reply": reply,
+                        "journeyPhase": journey_result.get("journeyPhase"),
+                        "invoked": journey_result.get("invoked"),
+                        "letter": journey_result.get("letter"),
+                        "suggestions": journey_result.get("suggestions"),
+                        "totalJobs": journey_result.get("totalJobs"),
+                        "session": session.to_dict(),
+                    })
+                    return
 
                 # ── If a command is pending confirmation, the next user
                 # message is treated as a yes/no/edit, not a new command.
