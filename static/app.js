@@ -617,17 +617,29 @@ function renderDashboard() {
   const newJobs = state.summary.newDirectCompanyJobs ?? state.discoveredJobs.filter((j) => !j.imported_job_id).length;
   const setup = state.summary.companiesNeedingCareerPageSetup ?? state.companies.filter((c) => !c.career_page_url).length;
   const lastRun = state.summary.lastDiscoveryRunStatus || "—";
-  $("#metricWatched").textContent = watched;
-  $("#metricJobs").textContent = newJobs;
-  $("#metricSetup").textContent = setup;
-  $("#metricRun").textContent = translateScanStatus(lastRun) || (lastRun === "—" ? "—" : lastRun);
-
-  $("#metricWatchedHint").textContent = watched ? `${watched} on your watchlist` : "Add a company to start";
-  $("#metricJobsHint").textContent = newJobs ? `${newJobs} need review` : "Awaiting first scan";
-  $("#metricSetupHint").textContent = setup ? `${setup} need career page URL` : "All set up";
-  $("#metricRunHint").textContent = state.watchlistSchedule.lastRunAt
-    ? `at ${new Date(state.watchlistSchedule.lastRunAt).toLocaleString()}`
-    : "No scan recorded";
+  // Some metric elements are conditionally rendered; null-guard every
+  // direct write so a missing hint span never blows up render().
+  const setText = (sel, value) => {
+    const el = $(sel);
+    if (el) el.textContent = value;
+  };
+  setText("#metricWatched", watched);
+  setText("#metricJobs", newJobs);
+  setText("#metricSetup", setup);
+  setText("#metricRun",
+            translateScanStatus(lastRun)
+            || (lastRun === "—" ? "—" : lastRun));
+  setText("#metricWatchedHint",
+            watched ? `${watched} on your watchlist`
+                       : "Add a company to start");
+  setText("#metricJobsHint",
+            newJobs ? `${newJobs} need review` : "Awaiting first scan");
+  setText("#metricSetupHint",
+            setup ? `${setup} need career page URL` : "All set up");
+  setText("#metricRunHint",
+            state.watchlistSchedule.lastRunAt
+            ? `at ${new Date(state.watchlistSchedule.lastRunAt).toLocaleString()}`
+            : "No scan recorded");
 
   let nextStep;
   if (state.companies.length === 0) {

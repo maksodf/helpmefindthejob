@@ -831,15 +831,39 @@ def fill_param_from_message(
 
 
 def is_confirmation_yes(message: str) -> bool:
-    v = (message or "").strip().casefold()
-    return v in {"yes", "y", "confirm", "ok", "go", "do it", "ja",
-                 "yep", "yeah", "sure", "proceed"}
+    """Generous yes-detector — accepts EN + DE variants, slang
+    (\"ofc\", \"absolutely\"), affirmative emoji/punctuation
+    (e.g. \"yes!\"). Trailing punctuation is stripped."""
+    v = (message or "").strip().casefold().rstrip("!.?,")
+    return v in {
+        # EN
+        "yes", "y", "yep", "yeah", "yup", "yah", "yess",
+        "confirm", "confirmed", "ok", "okay", "k", "kk",
+        "go", "go ahead", "do it", "let's go", "lets go",
+        "sure", "absolutely", "definitely", "of course", "ofc",
+        "proceed", "right", "correct", "true",
+        # DE
+        "ja", "jawohl", "klar", "logisch", "natürlich", "natuerlich",
+        "auf jeden", "auf jeden fall", "passt", "stimmt", "richtig",
+        # Common positive emoji as text
+        "👍", "✓", "✔",
+    }
 
 
 def is_confirmation_no(message: str) -> bool:
-    v = (message or "").strip().casefold()
-    return v in {"no", "n", "cancel", "abort", "stop", "nein",
-                 "nope", "never mind", "nvm"}
+    """Generous no-detector with similar tolerance."""
+    v = (message or "").strip().casefold().rstrip("!.?,")
+    return v in {
+        "no", "n", "nope", "nah", "naw", "nay",
+        "cancel", "canceled", "cancelled", "abort", "stop", "skip",
+        "never mind", "nevermind", "nvm",
+        "no thanks", "no thank you",
+        # DE
+        "nein", "ne", "nö", "noe", "nope nicht", "abbrechen",
+        "stoppen", "lass es",
+        # Emoji
+        "👎", "✗", "✘",
+    }
 
 
 def render_help_text() -> str:

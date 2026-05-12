@@ -177,7 +177,7 @@ DEFAULT_WATCHLIST_SCHEDULE = {
     "lastRunAt": None,
     "lastRunStatus": "disabled",
 }
-APP_VERSION = "0.75.0"
+APP_VERSION = "0.76.0"
 EXPORT_SCHEMA_VERSION = 1
 SESSION_COOKIE_NAME = "directjob_session"
 APP_ENV = os.environ.get("COMPANY_DISCOVERY_ENV", "development").strip().casefold()
@@ -3041,28 +3041,66 @@ class AppState:
             target_roles = result.run_search_with.get("target_roles") or []
             primary_query = target_roles[0] if target_roles else "job"
             location = result.run_search_with.get("location") or None
-            search_result = self.chat_handler_find_jobs(
-                user_id,
-                {"query": primary_query, "location": location},
-            )
+            # Aggregators can fail (network, 5xx, rate-limit). The
+            # journey must NOT crash on those — return a friendly
+            # explanation and mark done so the user can try again.
+            try:
+                search_result = self.chat_handler_find_jobs(
+                    user_id,
+                    {"query": primary_query, "location": location},
+                )
+            except Exception as exc:  # noqa: BLE001
+                self.log_analytics(user_id, "chat_journey_step",
+                                    {"phase": "search",
+                                     "searchError": str(exc)[:200]})
+                journey_err = self._journey_load(user_id)
+                from company_discovery.journey import PHASE_DONE
+                journey_err.phase = PHASE_DONE
+                self._journey_save(user_id, journey_err)
+                return {"ok": False,
+                         "message": (
+                             "The job search hit a snag (aggregator "
+                             "issue). Try again in a minute — type "
+                             "`find a job` to restart."
+                         ),
+                         "journeyPhase": "done",
+                         "totalJobs": 0}
             jobs = search_result.get("jobs") or []
             # Cluster by category using the new R17.5 helper.
             from company_discovery.journey import (
                 PHASE_REVIEW, PHASE_DONE, cluster_jobs,
+                MAX_SEARCH_JOBS_CARRIED,
             )
             clusters = cluster_jobs(jobs)
             categorized: dict[str, list[str]] = {}
             jobs_by_id: dict[str, dict] = {}
+            # Hard cap on what we carry forward in the journey blob to
+            # keep profile.chat_state from growing unboundedly when
+            # the user re-searches across sessions.
+            carried = 0
             for category, items in clusters.items():
                 ids: list[str] = []
                 for j in items:
+                    if carried >= MAX_SEARCH_JOBS_CARRIED:
+                        break
                     job_id = j.get("url") or j.get("title") or ""
                     if not job_id:
                         continue
                     ids.append(job_id)
-                    jobs_by_id[job_id] = j
+                    # Persist only the small fields we render later
+                    # (title / company / location / url / source).
+                    jobs_by_id[job_id] = {
+                        "title": (j.get("title") or "")[:200],
+                        "company": (j.get("company") or "")[:120],
+                        "location": (j.get("location") or "")[:120],
+                        "url": (j.get("url") or "")[:300],
+                        "source": (j.get("source") or "")[:60],
+                    }
+                    carried += 1
                 if ids:
                     categorized[category] = ids
+                if carried >= MAX_SEARCH_JOBS_CARRIED:
+                    break
             journey2 = self._journey_load(user_id)
             journey2.search_results_by_category = categorized
             journey2.search_jobs_by_id = jobs_by_id
@@ -3093,12 +3131,27 @@ class AppState:
                 "totalJobs": len(jobs),
                 "journeyPhase": journey2.phase,
             }
-        # Journey state machine can request the chat layer to invoke
-        # a registered command (e.g. draft_motivation_letter). The
-        # sentinel is "__INVOKE_COMMAND:<name>__" in the reply.
-        sentinel = "__INVOKE_COMMAND:"
-        if result.reply.startswith(sentinel) and result.reply.endswith("__"):
-            cmd_name = result.reply[len(sentinel):-2]
+        # Journey state machine can ask the chat layer to dispatch a
+        # registered command (e.g. draft_motivation_letter). Typed
+        # field, not a string sentinel — keeps implementation detail
+        # out of the user-facing reply and prevents the user's text
+        # from ever being interpreted as a dispatch.
+        if result.invoke_command:
+            cmd_name = result.invoke_command
+            # Whitelist the commands the journey can invoke; the chat
+            # router's full registry has destructive commands that
+            # should never bypass the confirmation gate.
+            allowed = {"draft_motivation_letter", "suggest_cv_enhancements"}
+            if cmd_name not in allowed:
+                self.log_analytics(user_id, "chat_journey_step",
+                                    {"phase": result.journey.phase,
+                                     "invokeRejected": cmd_name})
+                return {"ok": False,
+                         "message": (
+                             f"Sorry — I can't auto-invoke `{cmd_name}` "
+                             "from inside the journey."
+                         ),
+                         "journeyPhase": result.journey.phase}
             cmd_result = self.chat_execute_command(user_id, cmd_name, {})
             self.log_analytics(user_id, "chat_journey_step",
                                 {"phase": result.journey.phase,
