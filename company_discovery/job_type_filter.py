@@ -161,18 +161,40 @@ def identify_bucket(text: str | None) -> str | None:
     and "altenpflegehelfer" doesn't ambiguously match both the
     pflegehelfer bucket and itself.
     """
+    key, _ = identify_bucket_with_match(text)
+    return key
+
+
+def identify_bucket_with_match(text: str | None) -> tuple[str | None, str | None]:
+    """Like :func:`identify_bucket` but also returns the literal token
+    from the user's message that triggered the match.
+
+    Used by the chat router to preserve the user's language when
+    sending a query to the aggregator. The user typed "Pflegehelfer"
+    in German — we want the aggregator to search for "Pflegehelfer"
+    (which matches German job-board postings), NOT the canonical
+    English label "Nursing assistant" (which only matches the small
+    English-titled subset on DE job boards).
+
+    The returned token preserves the case of the user's message so
+    the confirmation prompt also feels right.
+    """
     if not text:
-        return None
+        return None, None
     haystack = text.casefold()
     best_key: str | None = None
+    best_matched_text: str | None = None
     best_len = 0
     for key, bucket in TAXONOMY.items():
         for synonym in bucket.synonyms:
-            if _word_boundary_re(synonym).search(haystack):
-                if len(synonym) > best_len:
-                    best_key = key
-                    best_len = len(synonym)
-    return best_key
+            m = _word_boundary_re(synonym).search(haystack)
+            if m and len(synonym) > best_len:
+                start, end = m.span()
+                # Slice the ORIGINAL text — preserves case + diacritics.
+                best_matched_text = text[start:end]
+                best_key = key
+                best_len = len(synonym)
+    return best_key, best_matched_text
 
 
 def job_matches_bucket(title: str, description: str | None, key: str) -> bool:
@@ -218,6 +240,12 @@ def job_matches_location(job_location: str | None, requested: str | None) -> boo
     """True iff the job's location satisfies the requested location.
 
     - requested=None → always True (no filter)
+    - job_location empty AND requested set → True (trust upstream)
+      The aggregator search already received the location parameter
+      and filtered server-side. If it returned a job with no
+      explicit location field, rejecting it would shrink the result
+      set to almost nothing — especially for DACH-native postings
+      where the aggregator's location-tagged subset is sparse.
     - requested='germany' → match if job location contains a known DE
       city OR ends with ', germany' / ', deutschland'
     - other → match if requested is a substring of the job location
@@ -226,7 +254,7 @@ def job_matches_location(job_location: str | None, requested: str | None) -> boo
     if requested is None:
         return True
     if not job_location:
-        return False
+        return True
     location = job_location.casefold()
     if requested == "germany":
         if "germany" in location or "deutschland" in location:

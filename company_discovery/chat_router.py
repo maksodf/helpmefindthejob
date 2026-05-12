@@ -465,19 +465,21 @@ def extract_keyword_args(command_name: str, message: str) -> dict[str, str]:
     when nothing could be extracted. Each value is the raw extracted
     text — validators run later.
     """
-    from company_discovery.job_type_filter import identify_bucket, TAXONOMY
+    from company_discovery.job_type_filter import identify_bucket_with_match
 
     if not message:
         return {}
     out: dict[str, str] = {}
 
     if command_name == "find_jobs":
-        # Role — match against the taxonomy first; if found, prefer the
-        # canonical English label since that's what the search engine
-        # ranks against.
-        bucket_key = identify_bucket(message)
-        if bucket_key:
-            out["query"] = TAXONOMY[bucket_key].label_en
+        # Role — match against the taxonomy. We use the LITERAL synonym
+        # the user typed (preserving German vs English) as the search
+        # query, so aggregators searching the DACH market hit the
+        # right postings. The taxonomy still pins which bucket the
+        # query belongs to for the strict result filter downstream.
+        bucket_key, matched_text = identify_bucket_with_match(message)
+        if bucket_key and matched_text:
+            out["query"] = matched_text
 
         # Special tokens take precedence over the generic "in X" pattern,
         # so "Pflegehelfer in Deutschland gesucht" canonicalises to

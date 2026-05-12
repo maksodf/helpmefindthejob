@@ -369,11 +369,13 @@ def assert_dach_layout(pdf_text: str, print_html: str) -> None:
 
 def assert_filter_via_chat(client: _Client) -> None:
     cases: list[tuple[str, str, str, str]] = [
-        # (probe, expected jobType bucket, expected role label,
-        #  expected location)
-        ("find bartender jobs in Berlin", "bartender", "Bartender", "Berlin"),
+        # (probe, expected jobType bucket, expected role text in reply,
+        #  expected location). The role text is the LITERAL the user
+        #  typed — we preserve the language for the aggregator query so
+        #  German postings on DE job boards match.
+        ("find bartender jobs in Berlin", "bartender", "bartender", "Berlin"),
         ("Pflegehelfer in Deutschland gesucht", "pflegehelfer",
-         "Nursing assistant", "Germany"),
+         "Pflegehelfer", "Germany"),
     ]
     for probe, bucket, label, location in cases:
         client.request("POST", "/api/chat/reset", {})

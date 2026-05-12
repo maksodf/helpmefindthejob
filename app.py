@@ -177,7 +177,7 @@ DEFAULT_WATCHLIST_SCHEDULE = {
     "lastRunAt": None,
     "lastRunStatus": "disabled",
 }
-APP_VERSION = "0.74.0"
+APP_VERSION = "0.74.1"
 EXPORT_SCHEMA_VERSION = 1
 SESSION_COOKIE_NAME = "directjob_session"
 APP_ENV = os.environ.get("COMPANY_DISCOVERY_ENV", "development").strip().casefold()
@@ -2747,7 +2747,6 @@ class AppState:
         from company_discovery.job_type_filter import (
             filter_jobs as filter_jobs_by_type,
             identify_bucket,
-            TAXONOMY,
             normalize_location,
         )
         profile = self.profile_for(user_id)
@@ -2792,7 +2791,11 @@ class AppState:
             profile.job_type_filter = bucket_key
             profile.job_type_location_filter = location or ""
             self.repository.save_user_profile(profile)
-        role_label = TAXONOMY[bucket_key].label_en if bucket_key else query
+        # Show the role using the user's own language (their typed term),
+        # not the canonical English label — a German user typing
+        # "Pflegehelfer" gets "Pflegehelfer" back in the reply, not
+        # "Nursing assistant".
+        role_label = query
         return {
             "ok": True,
             "message": (

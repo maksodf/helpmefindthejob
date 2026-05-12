@@ -137,9 +137,15 @@ class JobMatchesLocationTests(unittest.TestCase):
         self.assertTrue(job_matches_location("Anywhere on the moon", None))
         self.assertTrue(job_matches_location(None, None))
 
-    def test_empty_location_with_filter_rejects(self):
-        self.assertFalse(job_matches_location(None, "berlin"))
-        self.assertFalse(job_matches_location("", "germany"))
+    def test_empty_location_trusts_aggregator(self):
+        # When the aggregator returns a job with no location field but
+        # we asked for a specific location, trust the aggregator — it
+        # already filtered server-side. Rejecting empty-location jobs
+        # would shrink DACH-native search results to almost nothing
+        # because German job boards often omit the location field on
+        # the API surface.
+        self.assertTrue(job_matches_location(None, "berlin"))
+        self.assertTrue(job_matches_location("", "germany"))
 
 
 class FilterJobsTests(unittest.TestCase):
@@ -225,20 +231,25 @@ class ExtractKeywordArgsTests(unittest.TestCase):
     def test_find_bartender_in_berlin(self):
         from company_discovery.chat_router import extract_keyword_args
         args = extract_keyword_args("find_jobs", "find me bartender jobs in Berlin")
-        self.assertEqual(args.get("query"), "Bartender")
+        # Use the user's literal term so the aggregator searches it
+        # verbatim (preserves language for DACH-native postings).
+        self.assertEqual(args.get("query"), "bartender")
         self.assertEqual(args.get("location", "").lower(), "berlin")
 
     def test_pflegehelfer_in_germany(self):
         from company_discovery.chat_router import extract_keyword_args
         args = extract_keyword_args("find_jobs", "Pflegehelfer in Deutschland gesucht")
-        self.assertEqual(args.get("query"), "Nursing assistant")
+        # User typed German → keep German for the aggregator. The EN
+        # label "Nursing assistant" matches almost nothing on DE job
+        # boards; "Pflegehelfer" matches the native postings.
+        self.assertEqual(args.get("query"), "Pflegehelfer")
         # "in Deutschland" maps to canonical "Germany"
         self.assertEqual(args.get("location"), "Germany")
 
     def test_barista_anywhere(self):
         from company_discovery.chat_router import extract_keyword_args
         args = extract_keyword_args("find_jobs", "find barista jobs anywhere")
-        self.assertEqual(args.get("query"), "Barista")
+        self.assertEqual(args.get("query"), "barista")
         self.assertEqual(args.get("location"), "anywhere")
 
     def test_no_match_returns_empty(self):
