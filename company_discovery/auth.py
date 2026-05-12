@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import hmac
 import os
+import re
 import secrets
 import sqlite3
 import threading
@@ -87,6 +88,28 @@ def now_utc() -> datetime:
 
 def _normalize_email(email: str) -> str:
     return email.strip().casefold()
+
+
+# Basic RFC-5321-ish email shape check. Intentionally lenient — we don't
+# do full RFC parsing (real-world addresses are weird) but we DO reject
+# the obvious-invalid shapes that the chaos agent surfaced:
+#   - missing local part: "@example.com"
+#   - missing domain: "user@"
+#   - dot-leading domain: "user@.com"
+#   - whitespace anywhere: "user space@x.com"
+#   - no TLD: "user@example"
+_EMAIL_SHAPE_RE = re.compile(
+    r"^[A-Za-z0-9._%+\-]+@[A-Za-z0-9](?:[A-Za-z0-9.\-]*[A-Za-z0-9])?\.[A-Za-z]{2,63}$"
+)
+
+
+def is_valid_email_shape(email: str) -> bool:
+    """True iff the email passes the basic shape check above. Operates
+    on the *normalized* (stripped + casefolded) form."""
+    normalized = _normalize_email(email)
+    if not normalized or len(normalized) > 254:
+        return False
+    return bool(_EMAIL_SHAPE_RE.match(normalized))
 
 
 def _hash_token(secret_key: str, token: str) -> str:
@@ -301,7 +324,7 @@ class AuthStore:
 
     def create_user(self, email: str, password: str, role: str = "member") -> AuthUser:
         normalized = _normalize_email(email)
-        if not normalized or "@" not in normalized:
+        if not is_valid_email_shape(normalized):
             raise ValueError("invalid_email")
         if len(password) < MIN_PASSWORD_LENGTH:
             raise ValueError("password_too_short")

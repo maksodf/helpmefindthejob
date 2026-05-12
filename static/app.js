@@ -20,6 +20,8 @@ const VIEW_TITLES = {
   brief: { title: "AI Brief", subtitle: "Prepare a provider-neutral brief and analyze fit with your own AI." },
   settings: { title: "Settings", subtitle: "AI provider, account security, backup, and scan history." },
   admin: { title: "Admin", subtitle: "Tester accounts. Visible to admins only." },
+  cvBuilder: { title: "CV Builder", subtitle: "Walk through guided sections. The AI formats — it does not invent." },
+  assistant: { title: "Assistant", subtitle: "One chat for every action. Slash-commands, keyword routing, and confirmation before every write." },
 };
 
 const ERROR_COPY = {
@@ -460,8 +462,12 @@ function navigate(view) {
     btn.setAttribute("aria-current", active ? "page" : "false");
   });
   const meta = VIEW_TITLES[view];
-  $("#viewTitle").textContent = meta.title;
-  $("#viewSubtitle").textContent = meta.subtitle;
+  // Honour the active locale — VIEW_TITLES carries the English defaults,
+  // but ``t(...)`` looks up "view.<id>.title" / ".subtitle" first so a
+  // German-locale user sees German titles instead of "Discovered jobs"
+  // bleeding through above an otherwise-translated UI.
+  $("#viewTitle").textContent = t(`view.${view}.title`, meta.title);
+  $("#viewSubtitle").textContent = t(`view.${view}.subtitle`, meta.subtitle);
   if (view === "brief") renderBrief();
   if (view === "settings") loadBilling();
   if (view === "admin" && isAdmin()) {
@@ -2279,6 +2285,23 @@ function applyTranslations() {
       node.textContent = dict[key];
     }
   }
+  // Also translate input / textarea placeholders. Bug #24: the wizard's
+  // CV textarea stayed English ("…or paste your CV here") under a German
+  // UI because applyTranslations only walked data-i18n, never the
+  // -placeholder variant — so the bundle key was loaded but never applied.
+  for (const node of document.querySelectorAll("[data-i18n-placeholder]")) {
+    const key = node.getAttribute("data-i18n-placeholder");
+    if (key && dict[key]) {
+      node.setAttribute("placeholder", dict[key]);
+    }
+  }
+  // Same for aria-label / title (announces correctly to screen readers).
+  for (const node of document.querySelectorAll("[data-i18n-aria-label]")) {
+    const key = node.getAttribute("data-i18n-aria-label");
+    if (key && dict[key]) {
+      node.setAttribute("aria-label", dict[key]);
+    }
+  }
   const localeSelect = document.getElementById("localeSelect");
   if (localeSelect) localeSelect.value = state.locale || "en";
 }
@@ -3045,11 +3068,11 @@ async function saveDetail() {
     const payload = await api(`/api/companies/${company.id}`, {
       method: "PATCH",
       body: JSON.stringify({
-        websiteUrl: $("#detailWebsite").value,
-        careerPageUrl: $("#detailCareer").value,
-        sector: $("#detailSector").value,
-        notes: $("#detailNotes").value,
-        watchEnabled: $("#detailWatch").checked,
+        websiteUrl: $("#detailWebsite")?.value ?? "",
+        careerPageUrl: $("#detailCareer")?.value ?? "",
+        sector: $("#detailSector")?.value ?? "",
+        notes: $("#detailNotes")?.value ?? "",
+        watchEnabled: Boolean($("#detailWatch")?.checked),
       }),
     });
     absorbBootstrap(payload.bootstrap);
@@ -3156,8 +3179,8 @@ async function saveSchedule() {
     const payload = await api("/api/watchlist/schedule", {
       method: "POST",
       body: JSON.stringify({
-        enabled: $("#scheduleEnabled").checked,
-        intervalMinutes: Number($("#scheduleInterval").value || 360),
+        enabled: Boolean($("#scheduleEnabled")?.checked),
+        intervalMinutes: Number($("#scheduleInterval")?.value || 360),
       }),
     });
     absorbBootstrap(payload.bootstrap);
@@ -3489,17 +3512,22 @@ async function addSuggestedCompany(item) {
 }
 
 async function saveProvider() {
+  // Read every form field via optional chaining + ?? "" so a missing
+  // input doesn't throw. Same pattern as saveProfile (#Nasr's render
+  // hardening) — form variants can hide rows, the save shouldn't be
+  // the place that crashes when one isn't rendered.
+  const fieldValue = (sel) => ($(sel)?.value ?? "");
   try {
     const payload = await api("/api/ai-provider", {
       method: "POST",
       body: JSON.stringify({
-        providerId: $("#providerId").value,
-        invocationMode: $("#invocationMode").value,
-        model: $("#providerModel").value,
-        credentialReference: $("#credentialReference").value,
-        baseUrl: $("#providerBaseUrl").value,
-        command: $("#providerCommand").value,
-        notes: $("#providerNotes").value,
+        providerId: fieldValue("#providerId"),
+        invocationMode: fieldValue("#invocationMode"),
+        model: fieldValue("#providerModel"),
+        credentialReference: fieldValue("#credentialReference"),
+        baseUrl: fieldValue("#providerBaseUrl"),
+        command: fieldValue("#providerCommand"),
+        notes: fieldValue("#providerNotes"),
       }),
     });
     absorbBootstrap(payload.bootstrap);
@@ -3598,20 +3626,20 @@ async function updateAdminUser(userId, update) {
 
 async function login(event) {
   event.preventDefault();
-  $("#authMessage").textContent = "";
+  setText("#authMessage", "");
   try {
     const payload = await api("/api/auth/login", {
       method: "POST",
       body: JSON.stringify({
-        email: $("#loginEmail").value,
-        password: $("#loginPassword").value,
+        email: $("#loginEmail")?.value ?? "",
+        password: $("#loginPassword")?.value ?? "",
       }),
     });
     if (payload.requires2fa) {
-      $("#loginPassword").value = "";
+      if ($("#loginPassword")) $("#loginPassword").value = "";
       const code = window.prompt(t("auth.totp.prompt", "Enter the 6-digit code from your authenticator app (or a recovery code):"));
       if (!code) {
-        $("#authMessage").textContent = t("auth.totp.cancelled", "Sign-in cancelled.");
+        setText("#authMessage", t("auth.totp.cancelled", "Sign-in cancelled."));
         return;
       }
       const verified = await api("/api/auth/2fa-verify", {
@@ -3627,18 +3655,18 @@ async function login(event) {
     }
     state.auth = { authenticated: true, user: payload.user, registrationOpen: false };
     absorbBootstrap(payload.bootstrap);
-    $("#loginPassword").value = "";
+    if ($("#loginPassword")) $("#loginPassword").value = "";
     renderAuth();
     render();
     if (isAdmin()) await loadAdminUsers();
   } catch (error) {
-    $("#authMessage").textContent = error.message;
+    setText("#authMessage", error.message);
   }
 }
 
 async function register(event) {
   event.preventDefault();
-  $("#authMessage").textContent = "";
+  setText("#authMessage", "");
   // Public sign-up requires DSGVO consent. The bootstrap path
   // (no users yet) skips the checkboxes — the operator IS the
   // one writing the policy.
@@ -3646,16 +3674,16 @@ async function register(event) {
   const tosAccepted = Boolean($("#registerTos")?.checked);
   const privacyAccepted = Boolean($("#registerPrivacy")?.checked);
   if (consentVisible && (!tosAccepted || !privacyAccepted)) {
-    $("#authMessage").textContent = t(
+    setText("#authMessage", t(
       "auth.consent.required",
       "Tick both boxes to accept the Terms and the Privacy policy.",
-    );
+    ));
     return;
   }
   try {
     const body = {
-      email: $("#registerEmail").value,
-      password: $("#registerPassword").value,
+      email: $("#registerEmail")?.value ?? "",
+      password: $("#registerPassword")?.value ?? "",
     };
     if (consentVisible) {
       body.tosAccepted = true;
@@ -3667,11 +3695,11 @@ async function register(event) {
     });
     state.auth = { authenticated: true, user: payload.user, registrationOpen: false };
     absorbBootstrap(payload.bootstrap);
-    $("#registerPassword").value = "";
+    if ($("#registerPassword")) $("#registerPassword").value = "";
     renderAuth();
     render();
   } catch (error) {
-    $("#authMessage").textContent = error.message;
+    setText("#authMessage", error.message);
   }
 }
 
@@ -3828,9 +3856,9 @@ async function saveCurrentSearch() {
       method: "POST",
       body: JSON.stringify({
         name,
-        targetRoles: $("#targetRoles").value.split(",").map((s) => s.trim()).filter(Boolean),
-        industry: $("#targetIndustry").value,
-        location: $("#targetLocation").value,
+        targetRoles: ($("#targetRoles")?.value ?? "").split(",").map((s) => s.trim()).filter(Boolean),
+        industry: $("#targetIndustry")?.value ?? "",
+        location: $("#targetLocation")?.value ?? "",
       }),
     });
     state.savedSearches = payload.savedSearches;
@@ -4021,11 +4049,11 @@ async function digestSend() {
 
 async function handleSupport(event) {
   event.preventDefault();
-  const subject = $("#supportSubject").value;
-  const body = $("#supportBody").value;
-  const contact = $("#supportContactEmail").value;
+  const subject = $("#supportSubject")?.value ?? "";
+  const body = $("#supportBody")?.value ?? "";
+  const contact = $("#supportContactEmail")?.value ?? "";
   if (!subject || !body) {
-    $("#supportMessage").textContent = "Subject and body are required.";
+    setText("#supportMessage", "Subject and body are required.");
     return;
   }
   try {
@@ -4033,12 +4061,12 @@ async function handleSupport(event) {
       method: "POST",
       body: JSON.stringify({ subject, body, contactEmail: contact }),
     });
-    $("#supportMessage").textContent = "Submitted. The admin will see it in the Admin → Support panel.";
-    $("#supportSubject").value = "";
-    $("#supportBody").value = "";
-    $("#supportContactEmail").value = "";
+    setText("#supportMessage", "Submitted. The admin will see it in the Admin → Support panel.");
+    if ($("#supportSubject")) $("#supportSubject").value = "";
+    if ($("#supportBody")) $("#supportBody").value = "";
+    if ($("#supportContactEmail")) $("#supportContactEmail").value = "";
   } catch (error) {
-    $("#supportMessage").textContent = error.message;
+    setText("#supportMessage", error.message);
   }
 }
 
@@ -4103,16 +4131,16 @@ async function handleAdminBilling(event) {
     const payload = await api("/api/admin/billing", {
       method: "POST",
       body: JSON.stringify({
-        planId: $("#adminBillingPlan").value,
-        status: $("#adminBillingStatus").value,
-        seats: Number($("#adminBillingSeats").value || 1),
+        planId: $("#adminBillingPlan")?.value ?? "",
+        status: $("#adminBillingStatus")?.value ?? "",
+        seats: Number($("#adminBillingSeats")?.value || 1),
       }),
     });
     state.subscription = payload.subscription;
     renderBilling();
-    $("#adminBillingNote").textContent = "Saved.";
+    setText("#adminBillingNote", "Saved.");
   } catch (error) {
-    $("#adminBillingNote").textContent = error.message;
+    setText("#adminBillingNote", error.message);
   }
 }
 
@@ -4174,17 +4202,17 @@ async function loadEmailStatus() {
 async function handleTestEmail(event) {
   event.preventDefault();
   if (!isAdmin()) return;
-  const target = $("#testEmailTarget").value || state.auth.user?.email || "";
+  const target = ($("#testEmailTarget")?.value) || state.auth.user?.email || "";
   try {
     const payload = await api("/api/admin/email/test", {
       method: "POST",
       body: JSON.stringify({ target }),
     });
-    $("#testEmailMessage").textContent = `Status: ${payload.status} (backend: ${payload.backend})`;
+    setText("#testEmailMessage", `Status: ${payload.status} (backend: ${payload.backend})`);
     showToast("Test email sent.", "success");
     loadEmailStatus();
   } catch (error) {
-    $("#testEmailMessage").textContent = error.message;
+    setText("#testEmailMessage", error.message);
   }
 }
 
@@ -4200,12 +4228,12 @@ async function handleDeletionRequest(event) {
   try {
     await api("/api/account/deletion-request", {
       method: "POST",
-      body: JSON.stringify({ reason: $("#deletionReason").value }),
+      body: JSON.stringify({ reason: $("#deletionReason")?.value ?? "" }),
     });
-    $("#deletionMessage").textContent = "Deletion request submitted. The admin will see it in Support tickets.";
-    $("#deletionReason").value = "";
+    setText("#deletionMessage", "Deletion request submitted. The admin will see it in Support tickets.");
+    if ($("#deletionReason")) $("#deletionReason").value = "";
   } catch (error) {
-    $("#deletionMessage").textContent = error.message;
+    setText("#deletionMessage", error.message);
   }
 }
 
@@ -4268,11 +4296,10 @@ function logUiEvent(kind, detail) {
 
 async function handleForgotPassword(event) {
   event.preventDefault();
-  const email = $("#forgotEmail").value.trim();
-  const message = $("#forgotPasswordMessage");
-  message.textContent = "";
+  const email = ($("#forgotEmail")?.value ?? "").trim();
+  setText("#forgotPasswordMessage", "");
   if (!email) {
-    message.textContent = "Please enter your email.";
+    setText("#forgotPasswordMessage", "Please enter your email.");
     return;
   }
   try {
@@ -4280,9 +4307,9 @@ async function handleForgotPassword(event) {
       method: "POST",
       body: JSON.stringify({ email }),
     });
-    message.textContent = "If a matching account exists, a reset link has been sent.";
+    setText("#forgotPasswordMessage", "If a matching account exists, a reset link has been sent.");
   } catch (error) {
-    message.textContent = error.message;
+    setText("#forgotPasswordMessage", error.message);
   }
 }
 
@@ -4290,15 +4317,14 @@ async function handleResetPassword(event) {
   event.preventDefault();
   const form = event.currentTarget;
   const token = form.dataset.token;
-  const newPassword = $("#resetPasswordValue").value;
-  const message = $("#resetPasswordMessage");
-  message.textContent = "";
+  const newPassword = $("#resetPasswordValue")?.value ?? "";
+  setText("#resetPasswordMessage", "");
   if (!token) {
-    message.textContent = "Reset link is missing.";
+    setText("#resetPasswordMessage", "Reset link is missing.");
     return;
   }
   if (newPassword.length < 12) {
-    message.textContent = "Password must be at least 12 characters.";
+    setText("#resetPasswordMessage", "Password must be at least 12 characters.");
     return;
   }
   try {
@@ -4306,12 +4332,12 @@ async function handleResetPassword(event) {
       method: "POST",
       body: JSON.stringify({ newPassword }),
     });
-    message.textContent = "Password reset. Redirecting to sign in…";
+    setText("#resetPasswordMessage", "Password reset. Redirecting to sign in…");
     setTimeout(() => {
       window.location.assign("/");
     }, 1200);
   } catch (error) {
-    message.textContent = error.message;
+    setText("#resetPasswordMessage", error.message);
   }
 }
 
@@ -4319,15 +4345,14 @@ async function handleAcceptInvite(event) {
   event.preventDefault();
   const form = event.currentTarget;
   const token = form.dataset.token;
-  const password = $("#acceptInvitePassword").value;
-  const message = $("#acceptInviteMessage");
-  message.textContent = "";
+  const password = $("#acceptInvitePassword")?.value ?? "";
+  setText("#acceptInviteMessage", "");
   if (!token) {
-    message.textContent = "Invitation token is missing.";
+    setText("#acceptInviteMessage", "Invitation token is missing.");
     return;
   }
   if (password.length < 12) {
-    message.textContent = "Password must be at least 12 characters.";
+    setText("#acceptInviteMessage", "Password must be at least 12 characters.");
     return;
   }
   try {
@@ -4337,19 +4362,19 @@ async function handleAcceptInvite(event) {
     });
     state.auth = { authenticated: true, user: payload.user, registrationOpen: false };
     absorbBootstrap(payload.bootstrap);
-    message.textContent = "Account activated. Redirecting…";
+    setText("#acceptInviteMessage", "Account activated. Redirecting…");
     setTimeout(() => {
       window.location.assign("/");
     }, 800);
   } catch (error) {
-    message.textContent = error.message;
+    setText("#acceptInviteMessage", error.message);
   }
 }
 
 async function handleAdminInvite(event) {
   event.preventDefault();
-  const email = $("#inviteEmail").value.trim();
-  const role = $("#inviteRole").value;
+  const email = ($("#inviteEmail")?.value ?? "").trim();
+  const role = $("#inviteRole")?.value ?? "member";
   if (!email) {
     showToast("Enter an email address.", "error");
     return;
@@ -4393,6 +4418,464 @@ $("#saveProfileBtn")?.addEventListener("click", saveProfile);
 $("#cvUploadBtn")?.addEventListener("click", () => $("#cvUploadInput")?.click());
 $("#cvUploadInput")?.addEventListener("change", handleCvUpload);
 $("#findJobsForm")?.addEventListener("submit", findJobs);
+
+// ----------------- CV Builder -----------------
+//
+// Walks the user through deterministic sections. The AI is invoked
+// server-side only to FORMAT raw input; the fact-ratio gate prevents
+// hallucination. Photo upload lives on /api/profile/photo-upload.
+
+const cvBuilder = {
+  currentSection: null,
+  state: { sections: {} },
+  photoDataUri: null,
+};
+
+async function cvBuilderRefresh() {
+  try {
+    const payload = await api("/api/cv-builder/state");
+    cvBuilder.state = payload.state || { sections: {} };
+    cvBuilder.currentSection = payload.currentSection || null;
+    cvBuilder.sectionOrder = payload.sectionOrder || [];
+    renderCvBuilder();
+  } catch (err) {
+    setText("#cvBuilderMessage", `Error: ${err.message}`);
+  }
+}
+
+async function cvBuilderStart() {
+  try {
+    const payload = await api("/api/cv-builder/start", {
+      method: "POST", body: JSON.stringify({}),
+    });
+    cvBuilder.state = payload.state || { sections: {} };
+    cvBuilder.currentSection = payload.currentSection || null;
+    cvBuilder.sectionOrder = payload.sectionOrder || [];
+    setText("#cvBuilderMessage", "");
+    renderCvBuilder();
+  } catch (err) {
+    setText("#cvBuilderMessage", `Error: ${err.message}`);
+  }
+}
+
+function renderCvBuilder() {
+  // Clear ONLY stale ERROR statuses on render. Success messages set by
+  // cvBuilderUploadPhoto (e.g. "Photo saved (32 KB).") must survive
+  // the render that immediately follows the upload, otherwise the
+  // user never sees the confirmation.
+  const photoStatus = $("#cvBuilderPhotoStatus");
+  if (photoStatus && /^error:/i.test(photoStatus.textContent || "")) {
+    photoStatus.textContent = "";
+  }
+  // Sidebar — list every section, mark completion status.
+  const sidebar = $("#cvBuilderSidebar");
+  if (sidebar) {
+    sidebar.innerHTML = "";
+    (cvBuilder.sectionOrder || []).forEach((sid) => {
+      const filled = (cvBuilder.state.sections?.[sid] || []).length;
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "btn btn-ghost";
+      button.style.textAlign = "left";
+      const isCurrent = cvBuilder.currentSection?.sectionId === sid;
+      button.style.fontWeight = isCurrent ? "600" : "400";
+      button.style.opacity = isCurrent ? "1" : (filled ? "0.85" : "0.5");
+      const marker = filled ? "●" : "○";
+      button.textContent = `${marker} ${sid}${filled ? ` (${filled})` : ""}`;
+      sidebar.append(button);
+    });
+  }
+  // Photo preview state. Only render when the URI looks valid — a
+  // malformed / empty string used to produce a broken-image icon
+  // because the <img> would still be display:block with an unusable src.
+  const preview = $("#cvBuilderPhotoPreview");
+  const removeBtn = $("#cvBuilderPhotoRemove");
+  const validPhoto = typeof cvBuilder.photoDataUri === "string"
+    && cvBuilder.photoDataUri.startsWith("data:image/");
+  if (preview && validPhoto) {
+    preview.src = cvBuilder.photoDataUri;
+    preview.style.display = "block";
+    if (removeBtn) removeBtn.style.display = "inline-flex";
+  } else if (preview) {
+    preview.removeAttribute("src");
+    preview.style.display = "none";
+    if (removeBtn) removeBtn.style.display = "none";
+  }
+  // Section host — render the current section's questions as a form.
+  const host = $("#cvBuilderSectionHost");
+  if (!host) return;
+  host.innerHTML = "";
+  const section = cvBuilder.currentSection;
+  const finishBtn = $("#cvBuilderFinishBtn");
+  const saveBtn = $("#cvBuilderSaveBtn");
+  const addAnother = $("#cvBuilderAddAnotherBtn");
+  // ``hasState`` distinguishes "user finished" vs "user hasn't started".
+  // Without this we'd render the same "All sections done" copy for a
+  // brand-new account, which is confusing — the screen has buttons but
+  // no questions to answer.
+  const hasState = Object.keys(cvBuilder.state?.sections || {}).length > 0;
+  if (!section) {
+    if (hasState) {
+      host.innerHTML = "<p class='muted'>All sections done. Click <strong>Finish CV</strong> to assemble your CV.</p>";
+      if (finishBtn) finishBtn.hidden = false;
+    } else {
+      host.innerHTML =
+        "<p class='muted'>Welcome — click <strong>Start over</strong> "
+        + "to begin a guided walk through your CV. Seven sections, "
+        + "fact-grounded, never invents.</p>";
+      if (finishBtn) finishBtn.hidden = true;
+    }
+    if (saveBtn) saveBtn.hidden = true;
+    if (addAnother) addAnother.hidden = true;
+    renderCvBuilderPreview();
+    return;
+  }
+  if (finishBtn) finishBtn.hidden = true;
+  if (saveBtn) saveBtn.hidden = false;
+  if (addAnother) addAnother.hidden = !section.repeatable;
+  const skipBtn = $("#cvBuilderSkipBtn");
+  // Skip is available on the optional sections at the end.
+  const optionalSections = new Set(["certifications", "projects"]);
+  if (skipBtn) skipBtn.hidden = !optionalSections.has(section.sectionId);
+  const heading = document.createElement("h3");
+  heading.textContent = `${section.label}${section.repeatable ? " (you can add several)" : ""}`;
+  host.append(heading);
+  const form = document.createElement("form");
+  form.id = "cvBuilderForm";
+  form.style.display = "flex";
+  form.style.flexDirection = "column";
+  form.style.gap = "12px";
+  for (const q of section.questions) {
+    const label = document.createElement("label");
+    label.className = "field";
+    const span = document.createElement("span");
+    span.textContent = q.prompt + (q.required ? " *" : "");
+    label.append(span);
+    const input = q.key.endsWith("_raw") || q.key === "achievements_raw"
+      ? document.createElement("textarea")
+      : document.createElement("input");
+    input.id = `cvb_${q.key}`;
+    input.dataset.key = q.key;
+    if (input.tagName === "TEXTAREA") input.rows = 4;
+    if (q.hint) {
+      const hint = document.createElement("span");
+      hint.className = "hint";
+      hint.textContent = q.hint;
+      label.append(input, hint);
+    } else {
+      label.append(input);
+    }
+    form.append(label);
+  }
+  host.append(form);
+  renderCvBuilderPreview();
+}
+
+function renderCvBuilderPreview() {
+  // Client-side preview — best-effort assembly so the user sees what
+  // the final CV will look like as they go. Server runs the canonical
+  // assembler on /finish; this is just for the in-wizard preview.
+  const pre = $("#cvBuilderPreview");
+  if (!pre) return;
+  const sections = cvBuilder.state.sections || {};
+  const lines = [];
+  if (cvBuilder.photoDataUri) {
+    lines.push("[photo embedded]");
+  }
+  const header = (sections.header || [{}])[0] || {};
+  if (header.full_name) lines.push(`# ${header.full_name}`);
+  const contact = [header.email, header.phone, header.location, header.linkedin, header.portfolio]
+    .filter(Boolean).join(" · ");
+  if (contact) lines.push(contact);
+  const summary = (sections.summary || [{}])[0] || {};
+  const summaryText = summary.formatted || summary.summary_raw || "";
+  if (summaryText) { lines.push("\n## Summary\n", summaryText); }
+  if (sections.experience?.length) {
+    lines.push("\n## Experience");
+    for (const e of sections.experience) {
+      lines.push(`\n**${e.job_title || ""} — ${e.company_name || ""}**  · ${e.start_date || ""} – ${e.end_date || ""} · ${e.location || ""}`);
+      lines.push(e.formatted || e.achievements_raw || "");
+    }
+  }
+  if (sections.education?.length) {
+    lines.push("\n## Education");
+    for (const ed of sections.education) {
+      lines.push(`\n**${ed.school || ""}** — ${ed.degree || ""}, ${ed.field || ""}  · ${ed.start_date || ""} – ${ed.end_date || ""}`);
+    }
+  }
+  const skills = (sections.skills || [{}])[0] || {};
+  const skillsText = skills.formatted || skills.skills_raw || "";
+  if (skillsText) { lines.push("\n## Skills\n", skillsText); }
+  pre.textContent = lines.join("\n");
+}
+
+async function cvBuilderSubmit(opts = {}) {
+  const section = cvBuilder.currentSection;
+  if (!section) return;
+  const answers = {};
+  for (const q of section.questions) {
+    const el = document.getElementById(`cvb_${q.key}`);
+    answers[q.key] = el?.value ?? "";
+  }
+  try {
+    const payload = await api(
+      `/api/cv-builder/section/${encodeURIComponent(section.sectionId)}`, {
+        method: "POST",
+        body: JSON.stringify({ answers, advance: !opts.stay }),
+      },
+    );
+    cvBuilder.state = payload.state || { sections: {} };
+    cvBuilder.currentSection = payload.currentSection || null;
+    const ratio = payload.aiMeta?.factRatio;
+    const accepted = payload.aiMeta?.aiAccepted;
+    if (ratio !== undefined) {
+      const msg = accepted
+        ? `AI formatted (fact-ratio ${(ratio * 100).toFixed(0)}%).`
+        : `AI rewrite below grounding threshold — kept your raw text.`;
+      setText("#cvBuilderMessage", msg);
+    } else {
+      setText("#cvBuilderMessage", "Saved.");
+    }
+    renderCvBuilder();
+  } catch (err) {
+    setText("#cvBuilderMessage", `Error: ${err.message}`);
+  }
+}
+
+async function cvBuilderFinish() {
+  try {
+    const payload = await api("/api/cv-builder/finish", {
+      method: "POST", body: JSON.stringify({}),
+    });
+    absorbBootstrap(payload.bootstrap);
+    setText("#cvBuilderMessage", `CV saved (${payload.cvLength} chars). Open Settings to view.`);
+    cvBuilder.state = { sections: {} };
+    cvBuilder.currentSection = null;
+    renderCvBuilder();
+    showToast("CV saved to profile.", "success");
+  } catch (err) {
+    setText("#cvBuilderMessage", `Error: ${err.message}`);
+  }
+}
+
+async function cvBuilderUploadPhoto(file) {
+  if (!file) return;
+  setText("#cvBuilderPhotoStatus", "Uploading…");
+  try {
+    const base64 = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result).split(",", 2)[1]);
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(file);
+    });
+    const payload = await api("/api/profile/photo-upload", {
+      method: "POST",
+      body: JSON.stringify({ contentBase64: base64 }),
+    });
+    cvBuilder.photoDataUri = payload.cvPhotoDataUri;
+    setText("#cvBuilderPhotoStatus",
+            `Photo saved (${Math.round(payload.sizeBytes / 1024)} KB).`);
+    renderCvBuilder();
+  } catch (err) {
+    setText("#cvBuilderPhotoStatus", `Error: ${err.message}`);
+  }
+}
+
+async function cvBuilderRemovePhoto() {
+  try {
+    await api("/api/profile/photo", {
+      method: "POST", body: JSON.stringify({ action: "remove" }),
+    });
+    cvBuilder.photoDataUri = null;
+    setText("#cvBuilderPhotoStatus", "Photo removed.");
+    renderCvBuilder();
+  } catch (err) {
+    setText("#cvBuilderPhotoStatus", `Error: ${err.message}`);
+  }
+}
+
+$("#cvBuilderStartBtn")?.addEventListener("click", cvBuilderStart);
+$("#cvBuilderSaveBtn")?.addEventListener("click", () => cvBuilderSubmit());
+$("#cvBuilderAddAnotherBtn")?.addEventListener("click", () => cvBuilderSubmit({ stay: true }));
+$("#cvBuilderSkipBtn")?.addEventListener("click", async () => {
+  const section = cvBuilder.currentSection;
+  if (!section) return;
+  try {
+    const payload = await api(
+      `/api/cv-builder/section/${encodeURIComponent(section.sectionId)}`, {
+        method: "POST",
+        body: JSON.stringify({ action: "skip" }),
+      },
+    );
+    cvBuilder.state = payload.state || { sections: {} };
+    cvBuilder.currentSection = payload.currentSection || null;
+    setText("#cvBuilderMessage", `Skipped ${section.label}.`);
+    renderCvBuilder();
+  } catch (err) {
+    setText("#cvBuilderMessage", `Error: ${err.message}`);
+  }
+});
+$("#cvBuilderFinishBtn")?.addEventListener("click", cvBuilderFinish);
+// ----------------- Assistant chat -----------------
+//
+// One chat surface. Slash-commands route deterministically; free-form
+// goes through keyword router (no AI required) → AI router (if
+// configured). Confirmation gate before every DB write. Audit-log
+// happens server-side. Designed to gradually replace forms.
+
+// Inline-markdown → HTML for bubble rendering. Handles **bold** and
+// `code`. ALL user text is HTML-escaped first so a chat reply
+// containing literal `<script>` shows as text, not executable HTML.
+function chatRenderInline(text) {
+  const div = document.createElement("div");
+  div.textContent = text == null ? "" : String(text);
+  let html = div.innerHTML;  // entities-escaped form
+  html = html.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+  html = html.replace(/`([^`]+)`/g, "<code>$1</code>");
+  return html;
+}
+
+function chatAppendBubble(role, text, opts = {}) {
+  const host = $("#chatTranscript");
+  if (!host) return null;
+  const bubble = document.createElement("div");
+  bubble.className = `chat-bubble chat-bubble-${role}`;
+  const isUser = role === "user";
+  bubble.style.alignSelf = isUser ? "flex-end" : "flex-start";
+  bubble.style.maxWidth = "82%";
+  bubble.style.background = isUser ? "#3a3b54" : "#1c1c24";
+  bubble.style.padding = "8px 12px";
+  bubble.style.borderRadius = "10px";
+  bubble.style.whiteSpace = "pre-wrap";
+  bubble.style.overflowWrap = "break-word";
+  if (opts.typing) {
+    // Typing-indicator: simple three-dot animation via CSS opacity.
+    bubble.classList.add("chat-bubble-typing");
+    bubble.setAttribute("aria-live", "polite");
+    bubble.setAttribute("aria-label", "Assistant is typing");
+    bubble.innerHTML = "<span class='dot-1'>·</span><span class='dot-2'>·</span><span class='dot-3'>·</span>";
+  } else {
+    // Markdown inline for assistant bubbles; user bubbles stay
+    // literal text so users see exactly what they typed.
+    if (isUser) bubble.textContent = text == null ? "" : String(text);
+    else bubble.innerHTML = chatRenderInline(text);
+  }
+  host.append(bubble);
+  host.scrollTop = host.scrollHeight;
+  return bubble;
+}
+
+async function chatSend(message) {
+  if (message == null) return;
+  chatAppendBubble("user", message || "(skip)");
+  // Show a typing indicator so the user knows the assistant is
+  // working — LLM intent classification can take 500ms-2s and
+  // silent input feels broken. The bubble is removed when the
+  // real response lands (success or error).
+  const typingBubble = chatAppendBubble("assistant", "…", {typing: true});
+  try {
+    const payload = await api("/api/chat/message", {
+      method: "POST",
+      body: JSON.stringify({ message }),
+    });
+    if (typingBubble) typingBubble.remove();
+    chatAppendBubble("assistant", payload.reply || "(no reply)");
+    if (payload.awaiting) {
+      setText("#chatPendingHint", `Awaiting: ${payload.awaiting}`);
+    } else if (payload.awaitingConfirmation) {
+      setText("#chatPendingHint",
+              "Reply yes / no to confirm.");
+    } else if (payload.executed) {
+      setText("#chatPendingHint", `Last executed: ${payload.executed}`);
+      // Refresh the bootstrap so any UI cards update.
+      try {
+        const fresh = await api("/api/bootstrap");
+        absorbBootstrap(fresh);
+        render();
+      } catch (_) { /* non-fatal */ }
+      // Honour any navigateTo hint from the command handler so the
+      // assistant can actually OPEN views the user asks for.
+      const target = payload.result?.navigateTo;
+      if (target) {
+        const navBtn = document.querySelector(`.nav-item[data-view='${target}']`);
+        if (navBtn) navBtn.click();
+      }
+    } else {
+      setText("#chatPendingHint", "");
+    }
+  } catch (err) {
+    chatAppendBubble("assistant", `Error: ${err.message}`);
+  }
+}
+
+$("#chatForm")?.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const input = $("#chatInput");
+  const message = input?.value || "";
+  if (input) input.value = "";
+  chatSend(message);
+});
+
+$("#chatHelpBtn")?.addEventListener("click", () => chatSend("/help"));
+
+$("#chatResetBtn")?.addEventListener("click", async () => {
+  try {
+    await api("/api/chat/reset", { method: "POST", body: JSON.stringify({}) });
+    const host = $("#chatTranscript");
+    if (host) host.innerHTML = "";
+    setText("#chatPendingHint", "");
+    chatAppendBubble("assistant",
+                       "Chat reset. Type a message or /help to begin.");
+  } catch (err) {
+    chatAppendBubble("assistant", `Error: ${err.message}`);
+  }
+});
+
+document.addEventListener("click", (event) => {
+  const target = event.target.closest(".nav-item[data-view='assistant']");
+  if (!target) return;
+  setTimeout(() => {
+    const host = $("#chatTranscript");
+    if (host && host.childElementCount === 0) {
+      chatAppendBubble("assistant",
+                         "Hi — tell me what you want to do, or type /help.");
+    }
+    const input = $("#chatInput");
+    if (input) input.focus();
+  }, 60);
+});
+
+$("#cvBuilderDownloadPdfBtn")?.addEventListener("click", () => {
+  // Open the print page in a new tab with autoprint=1 — the browser's
+  // print dialog appears and the user picks "Save as PDF" as the
+  // destination. Zero server-side PDF dependency.
+  window.open("/api/cv/print?autoprint=1", "_blank", "noopener");
+});
+$("#cvBuilderPreviewBtn")?.addEventListener("click", () => {
+  window.open("/api/cv/print", "_blank", "noopener");
+});
+$("#cvBuilderPhotoBtn")?.addEventListener("click", () => $("#cvBuilderPhotoInput")?.click());
+$("#cvBuilderPhotoInput")?.addEventListener("change", (e) => {
+  const file = e.target.files?.[0];
+  if (file) cvBuilderUploadPhoto(file);
+});
+$("#cvBuilderPhotoRemove")?.addEventListener("click", cvBuilderRemovePhoto);
+
+// When the user navigates to the CV builder view, refresh state +
+// pre-populate the photo preview from their profile.
+document.addEventListener("click", (event) => {
+  const target = event.target.closest(".nav-item[data-view='cvBuilder']");
+  if (!target) return;
+  // The view-switch handler runs separately; we just need to lazy-init
+  // the builder state on first nav.
+  setTimeout(() => {
+    const profilePhoto = state.profile?.cvPhotoDataUri;
+    if (profilePhoto && !cvBuilder.photoDataUri) {
+      cvBuilder.photoDataUri = profilePhoto;
+    }
+    cvBuilderRefresh();
+  }, 50);
+});
 
 // Bookmarklet — render the draggable javascript: URL.
 (function setupBookmarklet() {
@@ -4699,9 +5182,42 @@ init().catch((error) => {
 });
 
 // PWA — register service worker + handle install prompt.
+//
+// Auto-reload when a new SW activates so the user picks up new HTML /
+// JS / CSS without having to hard-refresh. The SW posts a message on
+// activate; we reload the page in response. Guarded against reload
+// loops by a session-storage marker so a buggy SW can't spam reload.
 if ("serviceWorker" in navigator && location.protocol !== "file:") {
+  // Snapshot at page load: if no controller exists yet, this is a
+  // first-time SW install (or the user just hard-reloaded). In that
+  // case, controllerchange will fire as the SW takes over, but the
+  // page already has the latest JS — reloading is gratuitous AND it
+  // races with user input. Concretely: an in-flight registration form
+  // mid-fill would lose its values, then the user clicks Submit and
+  // sends an empty payload.
+  const __hadInitialController = !!navigator.serviceWorker.controller;
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("/sw.js").catch(() => {});
+  });
+  navigator.serviceWorker.addEventListener("message", (event) => {
+    if (event.data?.type === "sw-updated") {
+      if (!__hadInitialController) return;  // first install, no reload
+      const last = sessionStorage.getItem("__sw_reload_v");
+      if (last !== event.data.version) {
+        sessionStorage.setItem("__sw_reload_v", event.data.version);
+        window.location.reload();
+      }
+    }
+  });
+  // When the controller changes (a new SW took over), reload once to
+  // ensure the page is running the latest shell. Skip the first
+  // install — see the comment on __hadInitialController above.
+  let __reloadingOnControllerChange = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (!__hadInitialController) return;
+    if (__reloadingOnControllerChange) return;
+    __reloadingOnControllerChange = true;
+    window.location.reload();
   });
 }
 

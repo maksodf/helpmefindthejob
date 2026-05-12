@@ -720,7 +720,19 @@ class CompanyDiscoveryService:
             raise KeyError(discovered_job_id)
         if discovered.imported_job_id:
             return self.repository.imported_jobs[discovered.imported_job_id]
-        company = self.repository.get_company(user_id, discovered.company_id)
+        # Aggregator-sourced discovered jobs (saved-search runs, bookmarklet
+        # captures) have company_id=None because they don't map to a
+        # watched company. Auto-create a placeholder company from the URL
+        # host so the import path always has a company_id to bind. This
+        # unblocks the entire post-search import → fit → tailor → apply
+        # flow for queue-side jobs.
+        if discovered.company_id is None:
+            placeholder_company = self._placeholder_company_for(user_id, discovered)
+            discovered.company_id = placeholder_company.id
+            self.repository.save_discovered_job(discovered)
+            company = placeholder_company
+        else:
+            company = self.repository.get_company(user_id, discovered.company_id)
         imported = ImportedJob(
             user_id=user_id,
             company_id=company.id,
@@ -736,6 +748,47 @@ class CompanyDiscoveryService:
         discovered.imported_job_id = imported.id
         self.repository.save_discovered_job(discovered)
         return imported
+
+    def _placeholder_company_for(
+        self, user_id: str, discovered: "DiscoveredJob",
+    ) -> "Company":
+        """Derive a company from a discovered job's metadata and persist it.
+
+        Order of preference for the company name:
+        1. ``structured_data.company_name`` if the aggregator captured one
+        2. URL host (``careers.acme.com`` → ``acme.com``)
+        3. ``"Unknown employer"`` as a last resort
+
+        If a placeholder company with the same name already exists for
+        this user, reuse it — otherwise queue rows from the same host
+        would each spawn a new company."""
+
+        from urllib.parse import urlparse
+
+        from .models import Company
+
+        sd = discovered.structured_data or {}
+        name = ""
+        if isinstance(sd, dict):
+            name = str(sd.get("company_name") or "").strip()
+        if not name:
+            host = (urlparse(discovered.source_url).hostname or "").lower()
+            # Strip leading 'www.' and 'careers.' / 'jobs.' subdomain noise.
+            for prefix in ("www.", "careers.", "career.", "jobs."):
+                if host.startswith(prefix):
+                    host = host[len(prefix):]
+                    break
+            name = host or "Unknown employer"
+        for existing in self.repository.list_companies(user_id):
+            if existing.name == name:
+                return existing
+        company = Company(
+            user_id=user_id,
+            name=name,
+            website_url=discovered.source_url,
+            notes="Auto-created from aggregator import.",
+        )
+        return self.repository.save_company(company)
 
     def deduplicate_discovered_jobs(self, user_id: str) -> dict[str, object]:
         duplicates: list[dict[str, str]] = []

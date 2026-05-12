@@ -66,9 +66,47 @@
         <h2>External services we may contact on your behalf</h2>
         <ul>
           <li>Public company websites you add (only their public pages, with robots.txt respected).</li>
-          <li>The AI provider you select — only when you explicitly click <em>Analyze fit</em>.</li>
+          <li>The AI provider you select — only when you explicitly click <em>Analyze fit</em>, <em>Tailor CV</em>, or <em>Prepare brief</em>.</li>
           <li>An SMTP relay for invitations and password resets, when configured.</li>
         </ul>
+      </section>
+
+      <section>
+        <h2>Chat assistant — when AI intent routing is enabled</h2>
+        <p>
+          The in-app chat assistant uses two routing layers: <strong>slash-commands</strong>
+          (e.g. <code>/add-company</code>) and <strong>keyword matching</strong> — both
+          run locally on our server and never contact a third party.
+        </p>
+        <p>
+          When the operator enables AI intent classification (set via the
+          server-side <code>DIRECTJOB_CHAT_AI_ROUTER=true</code> + a managed
+          AI key), free-form chat messages that don't match a slash-command
+          or keyword are sent to the operator-configured upstream provider
+          (currently one of: OpenAI, Anthropic, Google Gemini, DeepSeek,
+          OpenRouter) for intent classification only. The AI receives the
+          text of your message plus up to the last 6 turns of the
+          conversation; it does <strong>not</strong> receive your CV, your
+          imported jobs, or any other profile data unless a separate AI
+          feature (Analyze fit / Tailor CV / Prepare brief) is invoked.
+        </p>
+        <p>
+          The AI never executes anything. It can only suggest one of a fixed
+          whitelist of commands (e.g. <em>add a company</em>, <em>create a
+          saved search</em>); the deterministic confirmation gate still
+          shows you the parsed arguments and asks you to confirm before any
+          database write. Every classification is audit-logged as a
+          <code>chat_ai_route</code> event with the input (truncated to 120
+          characters) and the classified command — visible to you on
+          request as part of your data export.
+        </p>
+        <p>
+          You can disable AI routing for your account by switching your AI
+          provider to <em>Manual</em> in Settings; the operator can disable
+          it globally by unsetting <code>DIRECTJOB_CHAT_AI_ROUTER</code>.
+          Per-user rate limits (currently 20 classifications per minute)
+          prevent abuse.
+        </p>
       </section>
 
       <section>

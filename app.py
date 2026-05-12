@@ -30,6 +30,37 @@ from company_discovery.analysis import (
     parse_auto_fit_output,
 )
 from company_discovery.ai_providers import AIProviderConfig, provider_options_payload, validate_provider_config
+from company_discovery import chat_router as chat_router_mod
+from company_discovery.chat_router import (
+    REGISTRY as CHAT_REGISTRY,
+    ChatSession,
+    ChatTurn,
+    PendingCommand,
+    build_ai_router_prompt,
+    fill_param_from_message,
+    is_confirmation_no,
+    is_confirmation_yes,
+    keyword_route,
+    list_commands as list_chat_commands,
+    next_missing_param,
+    parse_ai_router_extracted_args,
+    parse_ai_router_response,
+    parse_slash_command,
+    parse_slash_inline_args,
+    render_help_text,
+)
+from company_discovery import cv_builder as cv_builder_mod
+from company_discovery.cv_builder import (
+    CvBuilderState,
+    SECTIONS,
+    SECTIONS_BY_ID,
+    assemble_cv_markdown,
+    build_format_prompt,
+    get_section,
+    next_section_id,
+    render_cv_print_html,
+    validate_ai_format_output,
+)
 from company_discovery.auth import AuthSession, AuthStore, AuthUser, hash_password
 from company_discovery.billing import (
     Plan,
@@ -241,6 +272,22 @@ def session_cookie_header(token: str, max_age: int) -> str:
     if COOKIE_SECURE:
         parts.append("Secure")
     return "; ".join(parts)
+
+
+def _serialise_cv_section(section) -> dict[str, Any]:
+    """JSON payload describing a CV-builder section for the UI."""
+    if section is None:
+        return None  # type: ignore[return-value]
+    return {
+        "sectionId": section.section_id,
+        "label": section.label,
+        "repeatable": section.repeatable,
+        "questions": [
+            {"key": q.key, "prompt": q.prompt, "required": q.required,
+              "hint": q.hint}
+            for q in section.questions
+        ],
+    }
 
 
 def validate_production_config(auth_store: AuthStore) -> None:
@@ -730,6 +777,8 @@ class AppState:
             "languages": list(profile.languages or []),
             "cvText": profile.cv_text or "",
             "cvLength": len(profile.cv_text or ""),
+            "cvPhotoDataUri": profile.cv_photo_data_uri or None,
+            "chatState": getattr(profile, "chat_state", None),
             "notes": profile.notes,
             "locale": profile.locale or "en",
             "theme": profile.theme or "dark",
@@ -2288,7 +2337,18 @@ class AppState:
         is True when at least ``min_jobs`` imported jobs carry gaps —
         otherwise the dashboard card hides because the signal is too thin.
         ``examples`` is up to two job titles per gap so the user can recognise
-        which roles drive the recommendation."""
+        which roles drive the recommendation.
+
+        Two-stage extraction:
+        1. AI-derived gaps (``job.gaps``, populated by the auto-fit prompt's
+           ``GAPS:`` line) — highest quality, but requires the user to have
+           run auto-fit on at least ``min_jobs`` jobs.
+        2. **Heuristic fallback**: when stage 1 produces no signal (the
+           common case for Manual-mode users), scan each imported job's
+           description against a curated skill vocabulary and report
+           which terms appear across multiple JDs but are *absent* from
+           the user's CV. Honors the same marketing promise without
+           needing an AI call."""
 
         from collections import Counter
 
@@ -2310,13 +2370,603 @@ class AppState:
         ready = jobs_with_gaps >= min_jobs
         top: list[dict[str, Any]] = []
         for key, jobs in counter.most_common(top_k):
-            # Use the first-seen casing of the gap as the display label.
             display = next(
                 (g for job in self.repository.list_imported_jobs(user_id) for g in (job.gaps or []) if g.strip().lower() == key),
                 key,
             )
             top.append({"skill": display, "jobs": jobs, "examples": examples[key]})
+
+        # Stage 2: heuristic fallback for Manual-mode users.
+        if not top:
+            top, jobs_with_gaps, ready = self._heuristic_skill_gaps(
+                user_id, top_k=top_k, min_jobs=min_jobs,
+            )
         return {"ready": ready, "jobsWithGaps": jobs_with_gaps, "top": top}
+
+    # Curated skill vocabulary for the heuristic fallback. Lower-cased
+    # surface forms. Order is preserved for display ranking ties.
+    _SKILL_VOCAB: tuple[str, ...] = (
+        # Languages
+        "python", "java", "javascript", "typescript", "golang", "rust",
+        "ruby", "php", "scala", "kotlin", "swift", "c++", "c#",
+        # Role / area categories (common in DACH titles)
+        "devops", "sre", "site reliability", "data engineering",
+        "machine learning", "ml", "ai", "frontend", "backend", "fullstack",
+        "full-stack", "mobile", "ios", "android", "embedded", "platform",
+        "security", "qa", "quality assurance",
+        # Frontend frameworks
+        "react", "vue", "angular", "svelte", "tailwind", "next.js", "redux",
+        # Backend frameworks
+        "django", "fastapi", "flask", "spring", "rails", "node.js", "express",
+        "graphql", "rest", "grpc",
+        # Data
+        "postgres", "postgresql", "mysql", "mongodb", "redis", "elasticsearch",
+        "snowflake", "bigquery", "kafka", "rabbitmq", "sql", "nosql",
+        "data warehouse", "dbt", "airflow", "spark", "hadoop",
+        # Cloud / Infra
+        "aws", "azure", "gcp", "kubernetes", "docker", "terraform", "ansible",
+        "helm", "prometheus", "grafana", "ci/cd", "jenkins", "github actions",
+        "linux", "microsoft", "cloud",
+        # ML / AI
+        "tensorflow", "pytorch", "scikit-learn", "pandas", "numpy",
+        "llm", "langchain", "embeddings", "vector database", "rag",
+        # DevOps / Security
+        "oauth", "jwt", "soc2", "gdpr", "dsgvo", "iso 27001",
+        # Marketing / Sales / Ops
+        "hubspot", "salesforce", "marketo", "google ads", "google analytics",
+        "looker", "tableau", "power bi", "ga4", "seo", "sem", "b2b saas",
+        "demand generation", "performance marketing", "brand marketing",
+        # Soft / methodology
+        "agile", "scrum", "kanban",
+    )
+
+    def _heuristic_skill_gaps(
+        self, user_id: str, *, top_k: int, min_jobs: int,
+    ) -> tuple[list[dict[str, Any]], int, bool]:
+        """Keyword-frequency skill gap extraction. No AI required."""
+        from collections import Counter
+
+        profile = self.profile_for(user_id)
+        cv_text = (profile.cv_text or "").casefold()
+        jobs = self.repository.list_imported_jobs(user_id)
+        # Threshold: at least 1 imported job must exist to surface anything.
+        if not jobs:
+            return [], 0, False
+        counter: "Counter[str]" = Counter()
+        examples: dict[str, list[str]] = {}
+        jobs_with_gap_count = 0
+        for job in jobs:
+            description = (job.description or "").casefold()
+            title = (job.title or "").casefold()
+            haystack = f"{title} {description}"
+            if not haystack.strip():
+                continue
+            job_gaps_seen: set[str] = set()
+            for skill in self._SKILL_VOCAB:
+                skill_lc = skill.casefold()
+                # Skill mentioned in the job AND missing from the CV
+                if skill_lc in haystack and skill_lc not in cv_text:
+                    counter[skill_lc] += 1
+                    examples.setdefault(skill_lc, [])
+                    if len(examples[skill_lc]) < 2 and job.title:
+                        if job.title not in examples[skill_lc]:
+                            examples[skill_lc].append(job.title)
+                    job_gaps_seen.add(skill_lc)
+            if job_gaps_seen:
+                jobs_with_gap_count += 1
+        top: list[dict[str, Any]] = []
+        for key, jobs_count in counter.most_common(top_k):
+            # Display: pick the original casing from the vocab (e.g. "AWS"
+            # not "aws"). The vocab is mixed-case where capitalisation matters.
+            display = next(
+                (s for s in self._SKILL_VOCAB if s.casefold() == key),
+                key,
+            )
+            # Title-case for terms that aren't acronyms in the vocab.
+            if display == display.casefold():
+                display = display.title()
+            top.append({"skill": display, "jobs": jobs_count,
+                        "examples": examples[key]})
+        # Ready when we have ≥1 imported job AND at least 1 skill surfaced.
+        # min_jobs threshold from AI path doesn't apply — the heuristic is
+        # cheaper signal so we don't need 3+ jobs to be honest about it.
+        ready = bool(top) and len(jobs) >= 1
+        return top, jobs_with_gap_count, ready
+
+    # ---------------- Chat-router session storage ----------------
+    _chat_sessions: dict[str, ChatSession] = {}
+
+    def chat_session_for(self, user_id: str) -> ChatSession:
+        """Return the user's chat session. On first access in a process,
+        rehydrate from ``profile.chat_state`` so an in-flight conversation
+        survives a server restart."""
+        if user_id not in self._chat_sessions:
+            profile = self.profile_for(user_id)
+            saved = getattr(profile, "chat_state", None)
+            if saved and isinstance(saved, dict):
+                # Reconstruct from on-disk JSON. Mirror of ChatSession.to_dict.
+                history = [
+                    ChatTurn(role=str(t.get("role", "")),
+                              content=str(t.get("content", "")))
+                    for t in (saved.get("history") or [])
+                    if isinstance(t, dict)
+                ]
+                pending_raw = saved.get("pending")
+                pending = None
+                if isinstance(pending_raw, dict) and pending_raw.get("commandName"):
+                    pending = PendingCommand(
+                        command_name=str(pending_raw["commandName"]),
+                        args=dict(pending_raw.get("args") or {}),
+                        awaiting=pending_raw.get("awaiting"),
+                        awaiting_confirmation=bool(
+                            pending_raw.get("awaitingConfirmation") or False),
+                    )
+                self._chat_sessions[user_id] = ChatSession(
+                    history=history, pending=pending)
+            else:
+                self._chat_sessions[user_id] = ChatSession()
+        return self._chat_sessions[user_id]
+
+    def chat_session_persist(self, user_id: str) -> None:
+        """Snapshot the in-memory session to ``profile.chat_state``.
+        Called after every message so a server restart doesn't lose
+        in-flight pending commands."""
+        session = self._chat_sessions.get(user_id)
+        if session is None:
+            return
+        # Cap history at 50 turns to keep the payload bounded.
+        if len(session.history) > 50:
+            session.history = session.history[-50:]
+        profile = self.profile_for(user_id)
+        profile.chat_state = session.to_dict()
+        self.repository.save_user_profile(profile)
+
+    def chat_reset(self, user_id: str) -> None:
+        self._chat_sessions.pop(user_id, None)
+        profile = self.profile_for(user_id)
+        if getattr(profile, "chat_state", None) is not None:
+            profile.chat_state = None
+            self.repository.save_user_profile(profile)
+
+    # Chat AI router — in-memory LRU cache + per-process metrics.
+    # Cache key: (message_lower_stripped, last_3_assistant_replies_joined).
+    # Same user-message + same recent context → same classification, so
+    # we can serve repeated probes without re-billing the LLM.
+    _chat_router_cache: dict[tuple, tuple[float, str | None]] = {}
+    _CHAT_ROUTER_CACHE_TTL = 600  # seconds — 10 min
+    _CHAT_ROUTER_CACHE_MAX = 1024
+    # Per-user rate limit on AI-router classifications (cache hits don't
+    # count). 20 LLM calls / 60s / user is roughly twice what a focused
+    # tester can manually generate; above that we suspect a bug or
+    # adversarial usage and fall back to keyword router.
+    _chat_router_calls: dict[str, list[float]] = {}
+    _CHAT_ROUTER_RATE_LIMIT = 20
+    _CHAT_ROUTER_RATE_WINDOW = 60
+    chat_router_metrics: dict[str, int] = {
+        "calls": 0, "cache_hits": 0, "errors": 0,
+        "via_user_provider": 0, "via_managed": 0,
+        "no_provider_available": 0, "rate_limited": 0,
+    }
+
+    def _chat_router_cache_key(self, message: str,
+                                 history: list[ChatTurn]) -> tuple:
+        recent = " | ".join(
+            t.content[:120] for t in history[-3:] if t.role == "assistant"
+        )
+        return ((message or "").strip().casefold(), recent)
+
+    def _chat_router_managed_provider(self) -> AIProviderConfig | None:
+        """Construct an AIProviderConfig that points the dispatcher at
+        the operator's managed key — used as fallback when the user is
+        in Manual mode. Returns None when no managed key is configured."""
+        managed_key = (os.environ.get("DIRECTJOB_MANAGED_AI_KEY") or "").strip()
+        if not managed_key:
+            return None
+        # Opt-in flag so the operator decides whether to spend tokens
+        # on chat-routing classifications.
+        enabled = (os.environ.get("DIRECTJOB_CHAT_AI_ROUTER") or "").strip().lower()
+        if enabled not in {"true", "1", "yes", "on"}:
+            return None
+        upstream = (os.environ.get("DIRECTJOB_MANAGED_AI_PROVIDER") or "openai").strip().lower()
+        if upstream not in {"openai", "anthropic", "google_gemini", "deepseek", "openrouter"}:
+            return None
+        return AIProviderConfig(
+            provider_id=upstream,
+            invocation_mode="api",
+            model=(os.environ.get("DIRECTJOB_MANAGED_AI_MODEL") or "").strip(),
+            credential_reference="DIRECTJOB_MANAGED_AI_KEY",
+            base_url=(os.environ.get("DIRECTJOB_MANAGED_AI_BASE_URL") or "").strip(),
+            command="",
+            notes="managed-chat-router",
+        )
+
+    def chat_ai_route_full(self, user_id: str, message: str,
+                            history: list[ChatTurn]) -> tuple[str | None, dict]:
+        """Like :meth:`chat_ai_route` but ALSO returns extracted args
+        from the AI's JSON response. Returns ``(command_id, args_dict)``;
+        empty args dict when the AI used the legacy bare-name format or
+        didn't extract anything."""
+        cmd = self.chat_ai_route(user_id, message, history)
+        if cmd is None:
+            return None, {}
+        # The last classification's raw response is held in the cache
+        # next to the parsed command id. We re-parse from the stash.
+        raw = getattr(self, "_chat_router_last_raw", None) or ""
+        args = parse_ai_router_extracted_args(raw)
+        return cmd, args
+
+    def chat_ai_route(self, user_id: str, message: str,
+                      history: list[ChatTurn]) -> str | None:
+        """Classify the user's free-form intent into ONE of the known
+        chat commands. Never executes — only proposes a command id.
+
+        Routing waterfall:
+          1. In-memory cache hit (same message + recent context).
+          2. The user's configured AI provider (if non-Manual + consent OK).
+          3. Operator-managed AI (when ``DIRECTJOB_CHAT_AI_ROUTER=true``
+             AND ``DIRECTJOB_MANAGED_AI_KEY`` are set). This is the
+             "long-term" path: Manual-mode testers get smart routing
+             via the operator's key, no per-user provider config.
+          4. ``None`` — caller falls back to the keyword router or help.
+
+        Failures are swallowed; this method NEVER raises. A flaky LLM
+        must not break the chat — the deterministic regex/keyword
+        layers stay underneath.
+        """
+        self.chat_router_metrics["calls"] += 1
+
+        # 1. Cache.
+        cache_key = self._chat_router_cache_key(message, history)
+        cached = self._chat_router_cache.get(cache_key)
+        if cached is not None:
+            cached_at, value = cached
+            if time.time() - cached_at < self._CHAT_ROUTER_CACHE_TTL:
+                self.chat_router_metrics["cache_hits"] += 1
+                return value
+
+        # 2. + 3. — pick a provider.
+        provider: AIProviderConfig | None = None
+        source = ""
+        user_provider = self.ai_provider_for(user_id)
+        profile = self.profile_for(user_id)
+        if user_provider.invocation_mode != "manual" and \
+                user_provider.provider_id != "manual" and \
+                _ai_consent_satisfied(profile, user_provider):
+            provider = user_provider
+            source = "user"
+        else:
+            managed = self._chat_router_managed_provider()
+            if managed is not None:
+                provider = managed
+                source = "managed"
+
+        if provider is None:
+            self.chat_router_metrics["no_provider_available"] += 1
+            self._chat_router_cache_put(cache_key, None)
+            return None
+
+        # Per-user rate limit — count NON-CACHED calls only. Cache
+        # hits already returned above. Sliding 60s window.
+        now = time.time()
+        bucket = self._chat_router_calls.setdefault(user_id, [])
+        # Drop expired entries.
+        cutoff = now - self._CHAT_ROUTER_RATE_WINDOW
+        bucket[:] = [t for t in bucket if t > cutoff]
+        if len(bucket) >= self._CHAT_ROUTER_RATE_LIMIT:
+            self.chat_router_metrics["rate_limited"] += 1
+            # Don't cache rate-limit decisions (the window slides).
+            return None
+        bucket.append(now)
+
+        # Bounded prompt — the AI must return only a command id.
+        prompt = build_ai_router_prompt(message, [
+            {"role": t.role, "content": t.content} for t in history
+        ])
+        try:
+            from company_discovery.analysis import _dispatch_provider
+            result = _dispatch_provider(prompt, provider, "")
+            if result.status != "completed" or not result.output:
+                self.chat_router_metrics["errors"] += 1
+                self._chat_router_cache_put(cache_key, None)
+                return None
+            command = parse_ai_router_response(result.output)
+            # Stash the raw response so chat_ai_route_full can re-parse
+            # the args dict without re-billing the LLM.
+            self._chat_router_last_raw = result.output
+            self.chat_router_metrics[
+                "via_user_provider" if source == "user" else "via_managed"
+            ] += 1
+            # Audit-log the classification (input first 120 chars, output id).
+            self.log_analytics(user_id, "chat_ai_route", {
+                "source": source,
+                "message": (message or "")[:120],
+                "classified": command,
+            })
+            self._chat_router_cache_put(cache_key, command)
+            return command
+        except Exception:  # noqa: BLE001 — router failure must not break chat
+            self.chat_router_metrics["errors"] += 1
+            self._chat_router_cache_put(cache_key, None)
+            return None
+
+    def _chat_router_cache_put(self, key: tuple, value: str | None) -> None:
+        if len(self._chat_router_cache) >= self._CHAT_ROUTER_CACHE_MAX:
+            # Drop oldest 10% (poor-man's LRU — by insertion order).
+            drop_n = max(1, self._CHAT_ROUTER_CACHE_MAX // 10)
+            for k in list(self._chat_router_cache.keys())[:drop_n]:
+                self._chat_router_cache.pop(k, None)
+        self._chat_router_cache[key] = (time.time(), value)
+
+    # ---------------- Chat command handlers ----------------
+    # Each handler runs AFTER user confirmation. Receives validated args.
+
+    def chat_handler_add_company(self, user_id: str, args: dict) -> dict:
+        from company_discovery.models import Company
+        company = Company(
+            user_id=user_id,
+            name=args["name"],
+            website_url=args["websiteUrl"],
+            career_page_url=args.get("careerPageUrl") or None,
+            watch_enabled=True,
+        )
+        saved = self.repository.save_company(company)
+        self.log_analytics(user_id, "chat_cmd",
+                            {"name": "add_company", "company_id": saved.id})
+        return {"ok": True, "id": saved.id,
+                 "message": f"Added **{saved.name}** to your watchlist."}
+
+    def chat_handler_create_saved_search(self, user_id: str, args: dict) -> dict:
+        try:
+            record = self.save_saved_search(user_id, {
+                "name": args["name"],
+                "targetRoles": args["targetRoles"],
+                "location": args.get("location") or None,
+            })
+        except ValueError as exc:
+            return {"ok": False, "message": f"Couldn't save: {exc}"}
+        self.log_analytics(user_id, "chat_cmd",
+                            {"name": "create_saved_search", "id": record.id})
+        return {"ok": True, "id": record.id,
+                 "message": f"Saved search **{record.name}** created."}
+
+    def chat_handler_find_jobs(self, user_id: str, args: dict) -> dict:
+        from company_discovery.aggregators import rank_aggregated
+        from company_discovery.personas import get_persona
+        profile = self.profile_for(user_id)
+        query = args["query"]
+        location = args.get("location") or profile.location or None
+        jobs, outcomes = self.aggregator_engine.search(
+            query=query, location=location,
+            limit_per_provider=10, persona_id=profile.persona_id,
+        )
+        persona = get_persona(profile.persona_id)
+        keyword_tokens: list[str] = []
+        for chunk in (query, *persona.default_target_roles):
+            keyword_tokens.extend(re.findall(r"\w+", chunk.casefold()))
+        ranked = rank_aggregated(jobs, keyword_tokens=keyword_tokens,
+                                  location=location, cap=15)
+        self.log_analytics(user_id, "chat_cmd",
+                            {"name": "find_jobs", "query": query[:120],
+                             "jobCount": len(jobs)})
+        sample = [
+            {"title": j.title, "company": j.company_name,
+              "location": j.location, "source": j.source,
+              "url": j.source_url}
+            for j, _ in ranked[:5]
+        ]
+        return {
+            "ok": True,
+            "message": (
+                f"Found **{len(jobs)}** results for {query!r}"
+                f"{' in ' + location if location else ''}."
+            ),
+            "jobs": sample,
+            "totalJobs": len(jobs),
+        }
+
+    def chat_handler_update_profile(self, user_id: str, args: dict) -> dict:
+        updates = {}
+        if args.get("persona"):
+            updates["personaId"] = args["persona"]
+        if args.get("location"):
+            updates["location"] = args["location"]
+        if args.get("targetRoles"):
+            updates["targetRoles"] = args["targetRoles"]
+        if not updates:
+            return {"ok": False, "message": "Nothing to update — you "
+                                               "didn't fill any field."}
+        try:
+            self.update_profile(user_id, updates)
+        except ValueError as exc:
+            return {"ok": False, "message": f"Couldn't update: {exc}"}
+        self.log_analytics(user_id, "chat_cmd",
+                            {"name": "update_profile",
+                             "fields": list(updates.keys())})
+        return {"ok": True,
+                 "message": f"Updated: {', '.join(updates.keys())}."}
+
+    def chat_handler_mark_applied(self, user_id: str, args: dict) -> dict:
+        imported_id = args["importedJobId"]
+        imported = self.repository.imported_jobs.get(imported_id)
+        if not imported or imported.user_id != user_id:
+            return {"ok": False,
+                     "message": f"Imported job {imported_id!r} not found."}
+        imported.application_status = args["status"]
+        if "replied" in args and args["replied"] and not imported.replied_at:
+            imported.replied_at = now_utc()
+        if "replied" in args and args["replied"] is False:
+            imported.replied_at = None
+        imported.updated_at = now_utc()
+        self.repository.save_imported_job(imported)
+        self.log_analytics(user_id, "chat_cmd",
+                            {"name": "mark_applied", "id": imported_id,
+                             "status": args["status"]})
+        return {"ok": True, "id": imported_id,
+                 "message": f"Marked **{imported.title}** as **{args['status']}**."}
+
+    def chat_handler_help(self, user_id: str, args: dict) -> dict:
+        self.log_analytics(user_id, "chat_cmd", {"name": "help"})
+        return {"ok": True, "message": render_help_text()}
+
+    def chat_handler_open_cv_builder(self, user_id: str, args: dict) -> dict:
+        """Navigate-style command — tells the client to open the CV
+        Builder view. The client looks at result.navigateTo and
+        switches views; no DB write here."""
+        self.log_analytics(user_id, "chat_cmd", {"name": "open_cv_builder"})
+        return {
+            "ok": True,
+            "navigateTo": "cvBuilder",
+            "message": (
+                "Opening the CV Builder. Walk through the sections — "
+                "I'll format what you write but never invent facts. "
+                "You can upload a photo and download as PDF at the end."
+            ),
+        }
+
+    def chat_handler_tailor_cv(self, user_id: str, args: dict) -> dict:
+        imported_id = args["importedJobId"]
+        imported = self.repository.imported_jobs.get(imported_id)
+        if not imported or imported.user_id != user_id:
+            return {"ok": False,
+                     "message": f"Imported job {imported_id!r} not found."}
+        profile = self.profile_for(user_id)
+        if not (profile.cv_text or "").strip():
+            return {"ok": False,
+                     "message": "Add a CV first (CV Builder or Settings)."}
+        provider = self.ai_provider_for(user_id)
+        if not _ai_consent_satisfied(profile, provider):
+            return {"ok": False,
+                     "message": "AI consent required — confirm in Settings first."}
+        from company_discovery.analysis import execute_cv_tailoring
+        result = execute_cv_tailoring(imported, provider, "", profile)
+        self.log_analytics(user_id, "chat_cmd",
+                            {"name": "tailor_cv", "id": imported_id,
+                             "status": result.status})
+        return {"ok": result.status == "completed",
+                 "message": (
+                     f"Tailored CV {result.status} for **{imported.title}**"
+                     if result.status == "completed"
+                     else f"Tailor result: {result.status}. "
+                            f"{(result.error or '')[:120]}"
+                 ),
+                 "tailoredExcerpt": (result.output or "")[:400]}
+
+    def chat_handler_run_saved_search(self, user_id: str, args: dict) -> dict:
+        search_id = args["searchId"]
+        try:
+            result = self.run_saved_search(user_id, search_id)
+        except KeyError:
+            return {"ok": False,
+                     "message": f"Saved search {search_id!r} not found."}
+        self.log_analytics(user_id, "chat_cmd",
+                            {"name": "run_saved_search", "id": search_id,
+                             "newJobs": result.get("newJobs"),
+                             "mergedSources": result.get("mergedSources")})
+        return {"ok": True,
+                 "message": (
+                     f"Saved search ran: **{result.get('newJobs', 0)}** new, "
+                     f"**{result.get('mergedSources', 0)}** merged sources."
+                 )}
+
+    def chat_handler_set_persona(self, user_id: str, args: dict) -> dict:
+        persona = args["persona"]
+        from company_discovery.personas import PERSONAS
+        if persona not in PERSONAS:
+            return {"ok": False,
+                     "message": (
+                         f"Unknown persona {persona!r}. Valid: "
+                         f"{', '.join(sorted(PERSONAS))}"
+                     )}
+        try:
+            self.update_profile(user_id, {"personaId": persona})
+        except ValueError as exc:
+            return {"ok": False, "message": f"Couldn't switch: {exc}"}
+        self.log_analytics(user_id, "chat_cmd",
+                            {"name": "set_persona", "persona": persona})
+        return {"ok": True,
+                 "message": f"Persona is now **{persona}**."}
+
+    def chat_handler_delete_company(self, user_id: str, args: dict) -> dict:
+        company_id = args["companyId"]
+        try:
+            self.repository.delete_company(user_id, company_id)
+        except KeyError:
+            return {"ok": False,
+                     "message": f"Company {company_id!r} not found in your watchlist."}
+        self.log_analytics(user_id, "chat_cmd",
+                            {"name": "delete_company", "id": company_id})
+        return {"ok": True,
+                 "message": f"Removed company **{company_id}** from your watchlist."}
+
+    def chat_execute_command(self, user_id: str, command_name: str,
+                              args: dict) -> dict:
+        """Dispatch a confirmed command. The router never calls
+        handlers directly — execution always goes through this single
+        choke point so we can centralise audit logging + future
+        permission checks."""
+        handlers = {
+            "add_company": self.chat_handler_add_company,
+            "create_saved_search": self.chat_handler_create_saved_search,
+            "find_jobs": self.chat_handler_find_jobs,
+            "update_profile": self.chat_handler_update_profile,
+            "mark_applied": self.chat_handler_mark_applied,
+            "tailor_cv": self.chat_handler_tailor_cv,
+            "run_saved_search": self.chat_handler_run_saved_search,
+            "set_persona": self.chat_handler_set_persona,
+            "delete_company": self.chat_handler_delete_company,
+            "open_cv_builder": self.chat_handler_open_cv_builder,
+            "help": self.chat_handler_help,
+        }
+        if command_name not in handlers:
+            return {"ok": False,
+                     "message": f"Unknown command: {command_name}."}
+        return handlers[command_name](user_id, args)
+
+    # ---------------- CV builder session storage ----------------
+    #
+    # In-memory dict keyed by user_id. Lives for the lifetime of the
+    # server process. A future iteration will persist to a column on
+    # user_profile so the state survives restarts; for now restart =
+    # the user starts the builder over. The state is JSON-serialisable
+    # via CvBuilderState.to_dict so persistence is a 1-line addition.
+    _cv_builder_sessions: dict[str, CvBuilderState] = {}
+
+    def cv_builder_state_for(self, user_id: str) -> CvBuilderState:
+        if user_id not in self._cv_builder_sessions:
+            self._cv_builder_sessions[user_id] = CvBuilderState()
+        return self._cv_builder_sessions[user_id]
+
+    def cv_builder_reset(self, user_id: str) -> None:
+        self._cv_builder_sessions.pop(user_id, None)
+
+    def cv_builder_format_section(
+        self, user_id: str, section_id: str, raw_field: str, raw_text: str,
+    ) -> tuple[str, float, bool]:
+        """Run the bounded AI-format prompt for ``raw_text``. Returns
+        (output, fact_ratio, was_accepted). If the AI is not configured
+        or the fact ratio is below threshold, we return the raw text
+        unchanged with ``was_accepted=False`` so the caller stores the
+        user's words rather than an unreliable AI rewrite.
+        """
+        provider = self.ai_provider_for(user_id)
+        # Manual / unconfigured provider — no AI call. Return raw.
+        if provider.invocation_mode == "manual" or provider.provider_id == "manual":
+            return raw_text, 1.0, False
+        prompt = build_format_prompt(section_id, raw_text)
+        # We dispatch via the existing CLI/API adapter. Per AI consent
+        # policy, only invoke when the user has consented.
+        profile = self.profile_for(user_id)
+        if not _ai_consent_satisfied(profile, provider):
+            return raw_text, 1.0, False
+        from company_discovery.analysis import _dispatch_provider
+        result = _dispatch_provider(prompt, provider, "")
+        if result.status != "completed" or not result.output:
+            return raw_text, 1.0, False
+        ai_output = result.output.strip()
+        accept, ratio = validate_ai_format_output(raw_text, ai_output)
+        if not accept:
+            return raw_text, ratio, False
+        return ai_output, ratio, True
 
     def application_outcomes_summary(self, user_id: str, *, threshold: int = 5) -> dict[str, Any]:
         """Reply-rate analytics for the dashboard. We only surface it to
@@ -2872,6 +3522,70 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_header("Location", f"/?capture={captured_status}")
                 self.end_headers()
                 return
+            if parsed.path == "/__reset__":
+                # One-shot SW + cache nuker.
+                #
+                # Two important guarantees:
+                # 1. The redirect fires UNCONDITIONALLY after 1.6s via
+                #    a top-level setTimeout — even if any SW / Cache
+                #    API await hangs (which can happen when the old
+                #    SW is in a weird state). The cleanup runs in
+                #    parallel; if it finishes early, all the better.
+                # 2. The redirect target includes a cache-busting
+                #    query string so the old SW's cache-first
+                #    lookup misses (cache-match is query-sensitive
+                #    by default) and falls through to a network fetch
+                #    of the fresh /index.html.
+                # 3. A manual "click here" link is always shown so
+                #    the user can self-rescue if JS is disabled or
+                #    everything goes sideways.
+                html = (
+                    "<!doctype html><html><head><meta charset=\"utf-8\">"
+                    "<title>Resetting…</title>"
+                    "<style>body{font-family:sans-serif;padding:40px;max-width:560px;"
+                    "background:#0f1014;color:#e8e8f0}h1{margin:0 0 12px}p{color:#a0a0b0;line-height:1.5}"
+                    "a{color:#5fa8ff}</style>"
+                    "</head><body>"
+                    "<h1>Refreshing the app…</h1>"
+                    "<p id=\"s\">Clearing the old cached version, then reloading.</p>"
+                    "<p><a href=\"/?_=manual\" id=\"manual\">If this doesn't redirect in 2 seconds, click here.</a></p>"
+                    "<script>\n"
+                    "// Schedule the redirect UNCONDITIONALLY — even if SW awaits hang.\n"
+                    "setTimeout(function(){\n"
+                    "  window.location.replace('/?_=' + Date.now());\n"
+                    "}, 1600);\n"
+                    "// Run cleanup in parallel. Failures are swallowed.\n"
+                    "(async function(){\n"
+                    "  const s = document.getElementById('s');\n"
+                    "  function log(t){ try{ s.textContent = t; }catch(e){} }\n"
+                    "  try {\n"
+                    "    if ('serviceWorker' in navigator) {\n"
+                    "      const rs = await Promise.race([\n"
+                    "        navigator.serviceWorker.getRegistrations(),\n"
+                    "        new Promise((res) => setTimeout(() => res([]), 800))\n"
+                    "      ]);\n"
+                    "      log('Unregistering ' + rs.length + ' service worker(s)…');\n"
+                    "      await Promise.allSettled(rs.map(r => r.unregister()));\n"
+                    "    }\n"
+                    "  } catch(e) {}\n"
+                    "  try {\n"
+                    "    if ('caches' in window) {\n"
+                    "      const ks = await Promise.race([\n"
+                    "        caches.keys(),\n"
+                    "        new Promise((res) => setTimeout(() => res([]), 800))\n"
+                    "      ]);\n"
+                    "      log('Clearing ' + ks.length + ' cache(s)…');\n"
+                    "      await Promise.allSettled(ks.map(k => caches.delete(k)));\n"
+                    "    }\n"
+                    "  } catch(e) {}\n"
+                    "  try { sessionStorage.clear(); } catch(e){}\n"
+                    "  log('Done. Redirecting…');\n"
+                    "})();\n"
+                    "</script>"
+                    "</body></html>"
+                )
+                self.send_text(html, content_type="text/html")
+                return
             if parsed.path == "/api/health":
                 session = self.current_session()
                 from urllib.parse import parse_qs
@@ -3212,6 +3926,52 @@ class Handler(BaseHTTPRequestHandler):
             if parsed.path == "/api/profile":
                 profile = STATE.profile_for(user_id)
                 self.send_json({"profile": STATE._profile_payload(profile)})
+                return
+            if parsed.path == "/api/chat/state":
+                # The GET handler doesn't define data_user_id at the
+                # top — resolve it inline for this route.
+                eff_user_id = STATE.effective_user_id(user_id)
+                session = STATE.chat_session_for(eff_user_id)
+                self.send_json({"session": session.to_dict()})
+                return
+            if parsed.path == "/api/chat/commands":
+                self.send_json({"commands": list_chat_commands()})
+                return
+            if parsed.path == "/api/cv-builder/state":
+                # Read-only GET counterpart. Client calls this without a
+                # method (default GET) to load the wizard on view-nav;
+                # before this route existed it 404'd → Python stdlib's
+                # default 404 body ("File not found") leaked into the
+                # photo status, broke the section renderer, and stuck
+                # the header health pill at "Error".
+                eff_user_id = STATE.effective_user_id(user_id)
+                state = STATE.cv_builder_state_for(eff_user_id)
+                section_obj = (get_section(state.current_section_id)
+                                if state.current_section_id else None)
+                self.send_json({
+                    "state": state.to_dict(),
+                    "currentSection": (_serialise_cv_section(section_obj)
+                                         if section_obj else None),
+                    "sectionOrder": [s.section_id for s in SECTIONS],
+                })
+                return
+            if parsed.path == "/api/cv/print":
+                # Print-styled HTML of the user's saved CV. Browser
+                # save-as-PDF gives us best-in-class typography without
+                # a server-side PDF library. Append ?autoprint=1 to
+                # auto-trigger the print dialog on load.
+                profile = STATE.profile_for(user_id)
+                cv_text = profile.cv_text or ""
+                if not cv_text.strip():
+                    self.send_text(
+                        "<!doctype html><html><body><p>No CV saved yet — "
+                        "build one in CV Builder first.</p></body></html>",
+                        content_type="text/html",
+                    )
+                    return
+                auto = urlparse(self.path).query and "autoprint" in urlparse(self.path).query
+                html = render_cv_print_html(cv_text, auto_print=bool(auto))
+                self.send_text(html, content_type="text/html")
                 return
             if parsed.path == "/api/digest/preview":
                 self.send_json({"digest": STATE.build_user_digest(user_id, email=session.user.email)})
@@ -3910,6 +4670,67 @@ class Handler(BaseHTTPRequestHandler):
                     return
                 self.send_json({"profile": STATE._profile_payload(profile), "bootstrap": STATE.bootstrap(user_id)})
                 return
+            if parsed.path == "/api/profile/photo-upload":
+                # CV photo upload. Accept base64 just like cv-upload.
+                # Runs through cv_photo.normalise_photo_upload which:
+                #   - Validates magic number (PNG/JPEG/WebP only — no SVG)
+                #   - Strips EXIF (JPEG) and ancillary chunks (PNG)
+                #   - Caps at 512KB raw
+                # The resulting data URI is stored on the profile and
+                # also surfaced to the CV builder's header section.
+                import base64 as _b64
+                import binascii as _bx
+                from company_discovery.cv_photo import (
+                    PhotoValidationError, normalise_photo_upload,
+                )
+
+                content_b64 = str(payload.get("contentBase64")
+                                    or payload.get("content_base64") or "")
+                if not content_b64:
+                    self.send_error_json(HTTPStatus.BAD_REQUEST,
+                                          "missing_fields",
+                                          "contentBase64 required")
+                    return
+                try:
+                    raw = _b64.b64decode(content_b64, validate=False)
+                except (_bx.Error, ValueError):
+                    self.send_error_json(HTTPStatus.BAD_REQUEST,
+                                          "invalid_base64",
+                                          "Could not decode upload")
+                    return
+                try:
+                    data_uri = normalise_photo_upload(raw)
+                except PhotoValidationError as error:
+                    code = str(error)
+                    human = {
+                        "empty": "The photo file appears to be empty.",
+                        "too_large": "Photo must be under 512KB.",
+                        "unsupported_mime": "Only JPEG, PNG, and WebP photos are accepted. SVG is rejected for safety.",
+                    }.get(code, code)
+                    self.send_error_json(HTTPStatus.BAD_REQUEST, code, human)
+                    return
+                profile = STATE.profile_for(user_id)
+                profile.cv_photo_data_uri = data_uri
+                STATE.repository.save_user_profile(profile)
+                STATE.log_analytics(user_id, "cv_photo_uploaded",
+                                     {"sizeBytes": len(raw)})
+                self.send_json({
+                    "cvPhotoDataUri": data_uri,
+                    "sizeBytes": len(raw),
+                })
+                return
+            if parsed.path == "/api/profile/photo":
+                # DELETE-via-POST shortcut (avoid second handler).
+                if str(payload.get("action") or "").lower() != "remove":
+                    self.send_error_json(HTTPStatus.BAD_REQUEST,
+                                          "unknown_action",
+                                          "Set action='remove' to clear the photo.")
+                    return
+                profile = STATE.profile_for(user_id)
+                profile.cv_photo_data_uri = None
+                STATE.repository.save_user_profile(profile)
+                self.send_json({"cvPhotoDataUri": None})
+                return
             if parsed.path == "/api/profile/cv-upload":
                 import base64
                 import binascii
@@ -3970,6 +4791,394 @@ class Handler(BaseHTTPRequestHandler):
                     ],
                 })
                 return
+            # ---------------- Chat-router API ----------------
+            #
+            # /api/chat/message — user sends a message. The server
+            # routes it (slash → keyword → AI → ask-for-help), elicits
+            # missing params one at a time, shows a confirmation prompt
+            # before executing any DB write, then dispatches via the
+            # central audit-logged choke point.
+            if parsed.path == "/api/chat/message":
+                session = STATE.chat_session_for(data_user_id)
+                raw_message = payload.get("message")
+                if raw_message is None:
+                    raw_message = ""
+                user_message = str(raw_message).strip()
+                # Empty replies are allowed ONLY when we're awaiting an
+                # optional param (the user wants to skip it). Reject
+                # all other empty messages.
+                awaiting_optional = (
+                    session.pending is not None
+                    and session.pending.awaiting is not None
+                    and not session.pending.awaiting_confirmation
+                    and any(
+                        p.name == session.pending.awaiting and not p.required
+                        for p in CHAT_REGISTRY[session.pending.command_name].params
+                    )
+                )
+                if not user_message and not awaiting_optional:
+                    self.send_error_json(HTTPStatus.BAD_REQUEST,
+                                          "empty_message",
+                                          "Empty chat message.")
+                    return
+                session.history.append(ChatTurn(role="user",
+                                                  content=user_message))
+
+                # ── If a command is pending confirmation, the next user
+                # message is treated as a yes/no/edit, not a new command.
+                if session.pending and session.pending.awaiting_confirmation:
+                    if is_confirmation_yes(user_message):
+                        cmd_name = session.pending.command_name
+                        args = dict(session.pending.args)
+                        result = STATE.chat_execute_command(
+                            data_user_id, cmd_name, args)
+                        session.pending = None
+                        reply = result.get("message") or "Done."
+                        session.history.append(ChatTurn(role="assistant",
+                                                          content=reply))
+                        STATE.chat_session_persist(data_user_id)
+                        self.send_json({
+                            "reply": reply,
+                            "executed": cmd_name,
+                            "result": result,
+                            "session": session.to_dict(),
+                        })
+                        return
+                    if is_confirmation_no(user_message):
+                        cancelled = session.pending.command_name
+                        session.pending = None
+                        reply = f"Cancelled — {cancelled} not run."
+                        session.history.append(ChatTurn(role="assistant",
+                                                          content=reply))
+                        STATE.chat_session_persist(data_user_id)
+                        self.send_json({
+                            "reply": reply,
+                            "cancelled": cancelled,
+                            "session": session.to_dict(),
+                        })
+                        return
+                    # Anything else mid-confirmation is treated as "user
+                    # changed their mind / wants to edit" — restart the
+                    # elicitation for the same command.
+                    session.pending.awaiting_confirmation = False
+                    # Fall through to the elicitation loop below.
+
+                # ── If we're mid-elicitation (waiting for a specific
+                # param), validate this message as the answer to that
+                # param and either advance or re-prompt.
+                if session.pending and session.pending.awaiting:
+                    cmd = CHAT_REGISTRY[session.pending.command_name]
+                    param = next((p for p in cmd.params
+                                   if p.name == session.pending.awaiting),
+                                  None)
+                    if param is None:
+                        # Defensive — should not happen.
+                        session.pending = None
+                    else:
+                        # Empty replies on optional fields = "skip this".
+                        if not param.required and not user_message:
+                            session.pending.args[param.name] = None
+                            session.pending.awaiting = None
+                        else:
+                            ok, val = fill_param_from_message(
+                                cmd, param, user_message)
+                            if not ok:
+                                reply = f"{val} {param.prompt}"
+                                session.history.append(ChatTurn(
+                                    role="assistant", content=reply))
+                                STATE.chat_session_persist(data_user_id)
+                                self.send_json({
+                                    "reply": reply,
+                                    "awaiting": param.name,
+                                    "session": session.to_dict(),
+                                })
+                                return
+                            session.pending.args[param.name] = val
+                            session.pending.awaiting = None
+
+                # ── If no pending command, try to route the message.
+                if session.pending is None:
+                    routed: tuple[str, str] | None = None
+                    slash = parse_slash_command(user_message)
+                    if slash:
+                        routed = slash
+                    else:
+                        # Try keyword router first (cheap, no AI call).
+                        kw = keyword_route(user_message)
+                        if kw:
+                            routed = (kw, "")
+                        else:
+                            # AI router as last resort. The ``_full``
+                            # variant ALSO returns any args the AI was
+                            # able to extract verbatim from the user
+                            # message (the JSON-output prompt) — we
+                            # then pre-fill the pending command's args
+                            # so the user doesn't have to type the same
+                            # info twice. Each value still passes its
+                            # per-param validator below, so a malformed
+                            # URL still re-prompts cleanly.
+                            ai_name, ai_args = STATE.chat_ai_route_full(
+                                data_user_id, user_message, session.history)
+                            if ai_name:
+                                routed = (ai_name, "")
+                                # Stash for the rest-pre-fill below.
+                                _ai_extracted_args = ai_args
+                    if routed is None:
+                        # Could not classify — surface help.
+                        reply = (
+                            "I'm not sure what you'd like to do. Type "
+                            "**help** to see what I can do, or try a "
+                            "slash-command like `/add-company` or "
+                            "`/find Senior Backend Berlin`."
+                        )
+                        session.history.append(ChatTurn(role="assistant",
+                                                          content=reply))
+                        STATE.chat_session_persist(data_user_id)
+                        self.send_json({
+                            "reply": reply,
+                            "session": session.to_dict(),
+                        })
+                        return
+                    cmd_name, rest = routed
+                    session.pending = PendingCommand(command_name=cmd_name)
+                    # Pre-fill any inline args from the slash form.
+                    if rest:
+                        inline = parse_slash_inline_args(cmd_name, rest)
+                        for k, v in inline.items():
+                            cmd = CHAT_REGISTRY[cmd_name]
+                            param = next((p for p in cmd.params
+                                            if p.name == k), None)
+                            if param is None:
+                                continue
+                            ok, val = fill_param_from_message(
+                                cmd, param, v)
+                            if ok:
+                                session.pending.args[k] = val
+                    # Pre-fill args the AI extracted from natural language.
+                    # Each value runs through the per-param validator so
+                    # malformed URLs / empty strings still re-prompt.
+                    ai_args = locals().get("_ai_extracted_args", {}) or {}
+                    if ai_args:
+                        cmd = CHAT_REGISTRY[cmd_name]
+                        for k, v in ai_args.items():
+                            if not isinstance(k, str):
+                                continue
+                            param = next((p for p in cmd.params
+                                            if p.name == k), None)
+                            if param is None:
+                                continue
+                            # Coerce non-strings to string for the validator.
+                            ok, val = fill_param_from_message(
+                                cmd, param, str(v))
+                            if ok and k not in session.pending.args:
+                                session.pending.args[k] = val
+
+                # ── Determine the next missing required param.
+                cmd = CHAT_REGISTRY[session.pending.command_name]
+                missing = next_missing_param(cmd, session.pending.args)
+                # Commands with NO params (e.g., help) execute immediately
+                # without a confirmation step.
+                if not cmd.params:
+                    result = STATE.chat_execute_command(
+                        data_user_id, cmd.name, session.pending.args)
+                    session.pending = None
+                    reply = result.get("message") or "Done."
+                    session.history.append(ChatTurn(role="assistant",
+                                                      content=reply))
+                    STATE.chat_session_persist(data_user_id)
+                    self.send_json({
+                        "reply": reply,
+                        "executed": cmd.name,
+                        "result": result,
+                        "session": session.to_dict(),
+                    })
+                    return
+                if missing:
+                    session.pending.awaiting = missing.name
+                    reply = missing.prompt
+                    if missing.hint:
+                        reply += f"\n_({missing.hint})_"
+                    session.history.append(ChatTurn(role="assistant",
+                                                      content=reply))
+                    STATE.chat_session_persist(data_user_id)
+                    self.send_json({
+                        "reply": reply,
+                        "awaiting": missing.name,
+                        "session": session.to_dict(),
+                    })
+                    return
+                # All required params filled — also offer optional ones.
+                next_optional = next(
+                    (p for p in cmd.params
+                      if not p.required and p.name not in session.pending.args),
+                    None,
+                )
+                if next_optional:
+                    session.pending.awaiting = next_optional.name
+                    reply = next_optional.prompt
+                    if next_optional.hint:
+                        reply += f"\n_({next_optional.hint})_"
+                    session.history.append(ChatTurn(role="assistant",
+                                                      content=reply))
+                    STATE.chat_session_persist(data_user_id)
+                    self.send_json({
+                        "reply": reply,
+                        "awaiting": next_optional.name,
+                        "optional": True,
+                        "session": session.to_dict(),
+                    })
+                    return
+                # Show confirmation prompt.
+                session.pending.awaiting_confirmation = True
+                reply = cmd.confirmation_message(session.pending.args)
+                session.history.append(ChatTurn(role="assistant",
+                                                  content=reply))
+                STATE.chat_session_persist(data_user_id)
+                self.send_json({
+                    "reply": reply,
+                    "awaitingConfirmation": True,
+                    "pendingArgs": session.pending.args,
+                    "session": session.to_dict(),
+                })
+                return
+
+            if parsed.path == "/api/chat/reset":
+                STATE.chat_reset(data_user_id)
+                self.send_json({"reply": "Chat reset.", "session": None})
+                return
+
+            # ---------------- CV Builder API ----------------
+            # Deterministic, fact-grounded CV creation. The state machine
+            # lives in cv_builder.py; routes here are thin handlers that
+            # update / read the per-user in-memory session.
+            if parsed.path == "/api/cv-builder/start":
+                STATE.cv_builder_reset(data_user_id)
+                state = STATE.cv_builder_state_for(data_user_id)
+                state.current_section_id = next_section_id(None)
+                section = get_section(state.current_section_id)
+                self.send_json({
+                    "state": state.to_dict(),
+                    "currentSection": _serialise_cv_section(section),
+                    "sectionOrder": [s.section_id for s in SECTIONS],
+                })
+                return
+
+            if parsed.path == "/api/cv-builder/state":
+                state = STATE.cv_builder_state_for(data_user_id)
+                section = (get_section(state.current_section_id)
+                            if state.current_section_id else None)
+                self.send_json({
+                    "state": state.to_dict(),
+                    "currentSection": _serialise_cv_section(section)
+                        if section else None,
+                    "sectionOrder": [s.section_id for s in SECTIONS],
+                })
+                return
+
+            if (len(parts) == 4 and parts[:2] == ["api", "cv-builder"]
+                    and parts[2] == "section" and parts[3] not in {"finish"}):
+                # /api/cv-builder/section/{section_id} — submit one
+                # section's user answers. AI format runs on the
+                # designated 'raw' field(s); fact-ratio gate decides
+                # whether to store the AI rewrite or the raw text.
+                #
+                # Pass {"action": "skip"} to advance past an optional
+                # section (certifications, projects) without adding any
+                # entry — those sections' fields are required *if* an
+                # entry is being created, but the section itself is not.
+                section_id = parts[3]
+                try:
+                    section = get_section(section_id)
+                except KeyError:
+                    self.send_error_json(HTTPStatus.BAD_REQUEST,
+                                          "unknown_section",
+                                          f"Unknown CV section: {section_id}")
+                    return
+                state = STATE.cv_builder_state_for(data_user_id)
+                if str(payload.get("action") or "").lower() == "skip":
+                    state.current_section_id = next_section_id(section.section_id)
+                    next_section_obj = (get_section(state.current_section_id)
+                                         if state.current_section_id else None)
+                    self.send_json({
+                        "state": state.to_dict(),
+                        "currentSection": (_serialise_cv_section(next_section_obj)
+                                             if next_section_obj else None),
+                        "aiMeta": {},
+                        "finished": state.current_section_id is None,
+                    })
+                    return
+                answers = payload.get("answers")
+                if not isinstance(answers, dict):
+                    self.send_error_json(HTTPStatus.BAD_REQUEST,
+                                          "invalid_answers",
+                                          "answers must be a JSON object")
+                    return
+                # Validate required fields are present.
+                missing = [q.key for q in section.questions
+                            if q.required and not str(answers.get(q.key) or "").strip()]
+                if missing:
+                    self.send_error_json(HTTPStatus.BAD_REQUEST,
+                                          "missing_required",
+                                          f"Missing required fields: {', '.join(missing)}")
+                    return
+                # Run AI format on each *_raw field.
+                stored: dict[str, Any] = {}
+                ai_meta: dict[str, Any] = {}
+                for q in section.questions:
+                    val = answers.get(q.key)
+                    if val is None:
+                        continue
+                    if isinstance(val, str):
+                        val = val.strip()
+                    stored[q.key] = val
+                    if isinstance(val, str) and q.key.endswith("_raw") and val:
+                        formatted, ratio, accepted = STATE.cv_builder_format_section(
+                            data_user_id, section.section_id, q.key, val,
+                        )
+                        # The formatted output is stored under the 'formatted' key
+                        # so the assembly step prefers it over the raw text.
+                        stored["formatted"] = formatted
+                        ai_meta["factRatio"] = ratio
+                        ai_meta["aiAccepted"] = accepted
+                if section.repeatable:
+                    state.sections.setdefault(section.section_id, []).append(stored)
+                else:
+                    state.sections[section.section_id] = [stored]
+                # Advance unless the section is repeatable AND the user
+                # explicitly says they want another entry. Default is
+                # 'advance' so the wizard never gets stuck.
+                advance = bool(payload.get("advance", True))
+                if advance:
+                    state.current_section_id = next_section_id(section.section_id)
+                next_section_obj = (get_section(state.current_section_id)
+                                     if state.current_section_id else None)
+                self.send_json({
+                    "state": state.to_dict(),
+                    "currentSection": (_serialise_cv_section(next_section_obj)
+                                         if next_section_obj else None),
+                    "aiMeta": ai_meta,
+                    "finished": state.current_section_id is None,
+                })
+                return
+
+            if parsed.path == "/api/cv-builder/finish":
+                state = STATE.cv_builder_state_for(data_user_id)
+                profile = STATE.profile_for(user_id)
+                cv_markdown = assemble_cv_markdown(
+                    state, photo_data_uri=profile.cv_photo_data_uri,
+                )
+                # Persist into the user's profile.cv_text so the rest
+                # of the product (Fit, Tailor, Skill-gap) picks it up.
+                profile.cv_text = cv_markdown
+                STATE.repository.save_user_profile(profile)
+                STATE.cv_builder_reset(data_user_id)
+                self.send_json({
+                    "cvText": cv_markdown,
+                    "cvLength": len(cv_markdown),
+                    "bootstrap": STATE.bootstrap(user_id),
+                })
+                return
+
             if parsed.path == "/api/saved-searches":
                 try:
                     record = STATE.save_saved_search(data_user_id, payload)
@@ -4766,7 +5975,15 @@ class Handler(BaseHTTPRequestHandler):
             user_id = session.user.id
             data_user_id = STATE.effective_user_id(user_id)
             if len(parts) == 3 and parts[:2] == ["api", "companies"]:
-                STATE.repository.delete_company(data_user_id, parts[2])
+                # Cross-user / missing-id deletes must surface as 404
+                # rather than a generic 400 — the row simply doesn't
+                # exist in the caller's namespace.
+                try:
+                    STATE.repository.delete_company(data_user_id, parts[2])
+                except KeyError:
+                    self.send_error_json(HTTPStatus.NOT_FOUND, "not_found",
+                                          "Company not found")
+                    return
                 self.send_json({"bootstrap": STATE.bootstrap(user_id)})
                 return
             if len(parts) == 3 and parts[:2] == ["api", "saved-searches"]:

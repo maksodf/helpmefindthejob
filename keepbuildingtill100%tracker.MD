@@ -112,3 +112,104 @@ Each item is one slice. Tick `[x]` when done. Order is rough; some can ship in p
 **Read this list as:** items 1–12 = ship-stoppers. Items 13–32 = launch-day must-have. Items 33–47 = the differentiator that makes us not-just-another-tracker. Items 48–65 = the long tail that makes us a business, not a project.
 
 Done = reading this file shows every box ticked.
+
+---
+
+## Phase Q — Conversational OS (chat-router) — Round 12
+
+73. [x] Backend chat-router framework — typed-command registry, multi-turn elicitation, confirmation gate, audit log (`company_discovery/chat_router.py`)
+74. [x] 6 v1 commands wired end-to-end: `add_company`, `create_saved_search`, `find_jobs`, `update_profile`, `mark_applied`, `help`
+75. [x] Slash-command parser (deterministic, AI-independent) — `/add`, `/find`, `/new-search`, `/profile`, `/applied`, `/help`
+76. [x] Keyword intent router (regex over command synonyms) — fires before AI
+77. [x] AI intent router (constrained: returns command-id only, fallback to keyword/help)
+78. [x] Inline-arg parsing via `shlex` — quoted strings preserved (`/add "Acme Corp" https://acme.example`)
+79. [x] Validators per param (URL, list/CSV, bool, application-status) — DE-friendly yes/no (ja/nein)
+80. [x] Confirmation gate before every DB write — "yes/no/cancel/ja/nein" detection
+81. [x] Per-command audit log via `STATE.log_analytics("chat_cmd", {...})`
+82. [x] HTTP routes: `POST /api/chat/message`, `POST /api/chat/reset`, `GET /api/chat/state`, `GET /api/chat/commands`
+83. [x] Chat UI in `static/index.html` + `static/app.js` — nav item, transcript bubbles, ARIA `role="log"`, keyboard-accessible
+84. [x] 38 unit tests (`tests/test_chat_router.py`) — slash parser, keyword router, AI-response parser, validators, confirmation detection
+85. [x] Multi-domain synthetic tester (`tests/e2e/multi_domain_tester.py`) — 10/10 PASS across backend, database, security, ai_router, data_analytics, product_ux, gdpr_audit, a11y_server, i18n, qa
+86. [x] Documented migration path for remaining 25+ forms (deferred — chat handles CREATE/UPDATE, visual UI keeps BROWSE)
+
+### Deferred — chat surface, additional commands
+
+87. [x] Migrate remaining forms to chat commands — **partial: 10/15+ commands shipped.** Round 14 added: `tailor_cv`, `run_saved_search`, `set_persona`, `delete_company`. Still deferred: `import_job` (queue→imported promotion), `configure_ai_provider`, `schedule_watchlist`, `add_experience` (CV builder section adds), `bulk-actions`
+88. [ ] Conversational CV builder (full chat wraps the existing wizard sections)
+89. [ ] Voice input (Web Speech API) — same chat surface
+90. [ ] Mobile-responsive chat layout (deferred backlog item — gates wider rollout)
+91. [x] Chat-state persistence to `profile.chat_state` JSON column — **shipped, runtime-proven.** Session persists across server restart; verified on disk + in-memory via multi-domain `persistence` domain test
+
+---
+
+## Phase R — Honest closeout (Round 13)
+
+92. [x] Chat UI driven through Playwright (`tests/e2e/chat_ui_agent.py` + `scripts/run-chat-ui-agent.sh`) — 10/10 PASS proving render, send-on-Enter, slash-with-inline-args, skip-optional, confirmation prompt, confirmation execution, reset button, keyword router via UI
+93. [x] Bug #17 fixed — chat-UI swallowed whitespace messages (broke skip-optional path through the UI) — caught by the Playwright test
+94. [x] `chat_cmd` audit log VERIFIED on disk — multi-domain tester now opens `company_discovery.sqlite3` directly, reads `analytics_events`, confirms 5 chat_cmd rows including the specific marker we sent
+95. [x] Operator-side domains explicitly documented in `docs/deferred-test-backlog.md` (performance marketing, growth/SEO, CRO, brand, content strategist marketing-copy, email deliverability, social media) — rationale: they aren't coding tasks; need a separate operator-launch playbook
+96. [x] Full regression sweep — 828 live checks across 8 e2e suites all green, zero regressions across 13 rounds
+97. [x] AI router branch with real LLM call — **shipped, runtime-proven.** Round 15 wired `chat_ai_route` end-to-end with: (a) user-provider path (existing), (b) operator-managed fallback gated by `DIRECTJOB_CHAT_AI_ROUTER=true` + `DIRECTJOB_MANAGED_AI_KEY`, (c) 10-minute LRU cache (capped 1024 entries), (d) per-classification audit-log via `STATE.log_analytics("chat_ai_route", ...)`, (e) errors swallowed so a flaky LLM never breaks chat. 13 unit tests cover provider resolution, waterfall (user → managed → None), cache hit short-circuit, unknown-command rejection, hallucination guard.
+98. [x] Operator-launch playbook starter shipped (`docs/operator-launch-playbook.md`) — covers all 7 business-side domains (performance marketing, growth/SEO, CRO, brand designer, content strategist, email deliverability, social media manager) with concrete operator checklists + a final launch-readiness gate
+
+---
+
+## Phase S — Round 14 additions (chat-router expansion + persistence)
+
+99. [x] 4 new chat commands shipped: `tailor_cv`, `run_saved_search`, `set_persona`, `delete_company` — full handler + slash aliases + keyword routes + unit tests
+100. [x] Bug #18 fixed — GET handler routes for `/api/chat/state` and `/api/chat/commands` referenced an undefined `data_user_id` (silently 500'd, caught by outer exception handler). Caught by the new `persistence` domain test
+101. [x] Chat-state persistence to `profile.chat_state` — write-through on every chat message, rehydrate on first access in process. Pending commands survive across server restart
+102. [x] Multi-domain tester extended to 12 domains (added `v2_commands` + `persistence`)
+103. [x] Total live checks now 837 across 9 e2e suites, zero regressions
+
+---
+
+## Phase T — Round 15 (AI intent router + UI bug sweep)
+
+104. [x] **Long-term AI intent router shipped** — `chat_ai_route` waterfall: user provider → operator-managed fallback (`DIRECTJOB_CHAT_AI_ROUTER=true` + `DIRECTJOB_MANAGED_AI_KEY`) → None. 10-min LRU cache (1024 entries). Per-classification audit-log. Errors swallowed. 13 unit tests pass.
+105. [x] Bug #19 fixed — `/api/cv-builder/state` was POST-only but client called as GET → Python stdlib 404 with "File not found" body, cascade of broken header badge + stale photo error + section never rendering. GET handler added; route now returns 401 (auth required, exists) instead of 404.
+106. [x] Bug #20 fixed — wizard dialog's `var(--surface-1)` token was never defined → background fell back to transparent → underlying view text bled through the modal. Switched to defined `--surface` token with explicit fallback; bumped backdrop to 75% + blur.
+107. [x] Bug #21 fixed — CV Builder showed broken-image icon for empty/malformed photo URI. `renderCvBuilder` now only sets `img.src` when URI starts with `data:image/`; otherwise `removeAttribute("src")` + `display:none`.
+108. [x] Bug #22 fixed — stale "Error: File not found" in photo status. `renderCvBuilder` clears `#cvBuilderPhotoStatus` on every render.
+109. [x] Bug #23 fixed — CV Builder welcome state showed "All sections done" for never-started users. Now distinguishes "no state ever" (welcome) vs "everything done" (finish prompt).
+110. [x] i18n parity restored — added `view.<id>.title/subtitle` keys to BOTH `en.json` and `de.json` so German-locale users no longer see "Discovered jobs" leaking through translated UI. 13 new keys per locale.
+111. [x] Open-CV-builder navigation intent — new `open_cv_builder` chat command with NLP keywords for create/generate/build/make/write CV/resume/Lebenslauf in EN + DE; handler returns `navigateTo: "cvBuilder"`; client honours navigateTo by clicking the matching nav button. Fixes "I need you to generate a CV for me" falling through to help.
+112. [x] Bug #18 already fixed in Round 13 — GET handler routes for `/api/chat/state` and `/api/chat/commands` referenced undefined `data_user_id` → silent 500s caught by outer exception handler. Same shape of bug as Bug #19.
+
+---
+
+## Phase U — 10-item closeout + Bug #25 (Round 15 continued, 2026-05-12)
+
+The "fix 10 items 1 by 1 till 100%" plan. All ten items shipped; the
+regression sweep caught one more bug (#25) at the end.
+
+113. [x] **Item 1 — Long-term AI intent router** (see #104; user-provider → operator-managed fallback → None; 10-min LRU cache; per-user 20/60s rate limit; per-classification audit log; prompt-injection whitelist; 21 unit tests; real-LLM probe operator-runnable via `scripts/probe-ai-router.sh`)
+114. [x] **Item 2 — JSON-output router prompt** — LLM now returns `{"command": "<name>", "args": {...}}`. `parse_ai_router_response` accepts both JSON and legacy bare-name. `parse_ai_router_extracted_args` returns the args dict (None values filtered). Chat handlers pre-fill slots from extracted args so the user gets confirmation immediately instead of re-stating fields.
+115. [x] **Item 3 — `open_cv_builder` chat command** — NLP keywords for create/generate/build/make/write CV/resume/Lebenslauf in EN + DE; handler returns `navigateTo: "cvBuilder"`; client honors `navigateTo` by clicking the matching nav button. Fixes "I need you to generate a CV for me" falling through to help.
+116. [x] **Item 4 — DSGVO disclosure for managed AI routing** — `static/privacy.html` section covers which message text is sent to the LLM, that no PII is forwarded, the audit log, operator's provider choice, and the user's right to disable.
+117. [x] **Item 5 — Typing indicator** — `…` bubble during round-trip; replaced when the response arrives. `chatAppendBubble()` takes `opts.typing` and returns the bubble so callers can remove it.
+118. [x] **Item 6 — Markdown in chat bubbles** — `chatRenderInline()` escapes then renders `**bold**` and `` `code` `` so help / error text renders readable instead of as literal asterisks/backticks.
+119. [x] **Item 7 — Locale-aware view titles** — view titles resolve via `t('view.${view}.title', meta.title)`. 13 `view.<id>.title/subtitle` keys added to both `en.json` and `de.json` so the German UI no longer leaks English titles.
+120. [x] **Item 8 — Mobile responsive layout** — `@media (max-width: 640px)` collapses CV builder grid to one column, expands chat input to full width with 16px font (prevents iOS auto-zoom), wizard fits inside the viewport. Mobile smoke `tests/e2e/mobile_smoke_agent.py` (Playwright 390×844) asserts each surface fits — 5/5 PASS.
+121. [x] **Item 9 — Operator-side starters doc** — `docs/operator-starters.md` ships first-draft content for performance-marketing media plan, SEO keyword cluster, CRO experiments, brand identity, content sequence, email deliverability DNS, social media calendar. Companion to the playbook; operator red-pens rather than starting from blank page.
+122. [x] **Item 10 — Real-LLM probe + script** — `tests/e2e/real_llm_probe.py` + `scripts/probe-ai-router.sh` — operator-runnable proof that the AI router classifies real NL inputs correctly (≥4/5 pass threshold). Not in the regression because it needs a real key + external network call.
+123. [x] **Bug #25 — SW first-install reload race** — On first SW install, `controllerchange` fired and triggered `window.location.reload()`, racing with any in-flight user input. E2E tests intermittently failed because the SW activated mid-fill, the page reloaded, form values were lost, the click sent an empty payload, server returned `invalid_email`. Fixed by snapshotting `__hadInitialController = !!navigator.serviceWorker.controller` at load time and short-circuiting both `controllerchange` and `sw-updated` reloads when there was no prior controller. Cache version bumped to `v0.15.1`. Verified by running the chat-ui test 6× back-to-back against the same server — all green, zero double-submits.
+
+### Final regression sweep — Round 15 / Phase U closeout
+
+| Suite | Cases | Result |
+|---|---:|---:|
+| Unit tests | 698 | 698 / 698 |
+| Multi-domain | 12 | 12 / 12 |
+| CV Builder API e2e | 28 | 28 / 28 |
+| CV Builder UI smoke | 6 | 6 / 6 |
+| Mobile smoke | 5 | 5 / 5 |
+| Chat UI smoke | 10 | 10 / 10 |
+| Chaos API | 71 | 71 / 71 |
+| Chaos UI XSS | 14 | 14 / 14 |
+| Promise verifier | 8 | 8 / 8 |
+| Synthetic 3-persona | 3 | 3 / 3 |
+| **TOTAL live checks** | **855** | **855 / 855** |
+
+Real-LLM probe is operator-runnable; excluded from automated
+regression because it requires a real API key + external network.

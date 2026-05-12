@@ -1,0 +1,43 @@
+#!/usr/bin/env sh
+set -eu
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$ROOT"
+PYTHON_BIN="${PYTHON_BIN:-/Users/fouad./miniconda3/bin/python3}"
+
+PORT="${E2E_PORT:-}"
+if [ -z "$PORT" ]; then
+  PORT="$($PYTHON_BIN - <<'PY'
+import socket
+with socket.socket() as s:
+    s.bind(("127.0.0.1", 0))
+    print(s.getsockname()[1])
+PY
+)"
+fi
+
+DATA_DIR="$(mktemp -d)"
+trap 'kill %1 2>/dev/null || true; rm -rf "$DATA_DIR"' EXIT
+
+echo "[cv-builder] booting app on http://127.0.0.1:$PORT"
+COMPANY_DISCOVERY_DATA_DIR="$DATA_DIR" \
+  COMPANY_DISCOVERY_ENV=development \
+  DIRECTJOB_ALLOW_REGISTRATION=true \
+  DIRECTJOB_REQUIRE_EMAIL_VERIFICATION=false \
+  "$PYTHON_BIN" app.py --host 127.0.0.1 --port "$PORT" >"$DATA_DIR/server.log" 2>&1 &
+
+ready=0
+for _ in $(seq 1 60); do
+  if curl -sS -m 2 "http://127.0.0.1:$PORT/api/health" >/dev/null 2>&1; then
+    ready=1; break
+  fi
+  sleep 0.2
+done
+[ "$ready" = "1" ] || { tail -40 "$DATA_DIR/server.log" >&2; exit 1; }
+
+E2E_BASE_URL="http://127.0.0.1:$PORT" \
+  "$PYTHON_BIN" tests/e2e/cv_builder_agent.py
+status=$?
+if [ "$status" != "0" ]; then
+  tail -40 "$DATA_DIR/server.log" >&2 || true
+fi
+exit $status

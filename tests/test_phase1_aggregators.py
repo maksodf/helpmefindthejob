@@ -298,7 +298,9 @@ class BundesagenturProviderTests(unittest.TestCase):
             "https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v4/jobs": (200, body),
         })
         provider = BundesagenturProvider(fetcher=fetcher)
-        out = provider.search(query="pflege", location="Berlin", limit=10)
+        # Empty query so the title-family filter falls back to pass-through;
+        # this test is about parsing multiple stellenangebote, not filtering.
+        out = provider.search(query="", location="Berlin", limit=10)
         self.assertEqual(len(out), 2)
         self.assertEqual(out[0].company_name, "Charité Berlin")
         self.assertIn("Berlin", out[0].location or "")

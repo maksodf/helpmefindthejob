@@ -37,11 +37,290 @@ import json
 import re
 import sqlite3
 import time
+import unicodedata
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from threading import RLock
 from typing import Iterable, Protocol
+
+
+# ---------- locale-tolerant location matching ----------------------------
+
+# Common DE/EU/EN city aliases — substring-folded for matching. Each tuple
+# is treated symmetrically: querying any alias matches any job whose
+# location text contains any other alias from the same group. Keep this
+# list short and city-level — country-name aliases are too noisy.
+_CITY_ALIASES: tuple[tuple[str, ...], ...] = (
+    ("munich", "münchen", "muenchen"),
+    ("cologne", "köln", "koeln"),
+    ("nuremberg", "nürnberg", "nuernberg"),
+    ("vienna", "wien"),
+    ("zurich", "zürich", "zuerich"),
+    ("geneva", "genève", "genf"),
+    ("warsaw", "warszawa"),
+    ("prague", "praha"),
+    ("copenhagen", "københavn", "kopenhagen"),
+    ("brussels", "bruxelles", "brüssel"),
+    ("dusseldorf", "düsseldorf", "duesseldorf"),
+)
+
+
+def _fold_diacritics(text: str) -> str:
+    """Strip combining marks so 'München' compares equal to 'Munchen'.
+
+    Decomposes via NFKD and drops the combining-mark codepoints. This
+    catches ä→a, ö→o, ü→u, ß→ss (after explicit replacement). Does NOT
+    transliterate ä→ae — that's covered by the alias table for the
+    cities where it actually matters."""
+
+    if not text:
+        return ""
+    # Explicit ß→ss replacement — NFKD doesn't decompose it.
+    text = text.replace("ß", "ss").replace("ẞ", "SS")
+    decomposed = unicodedata.normalize("NFKD", text)
+    return "".join(ch for ch in decomposed if not unicodedata.combining(ch))
+
+
+# DE/EU cities that also exist as small US towns. When the user types
+# one of these (without a country qualifier), we reject jobs whose
+# location text looks like a US listing — i.e. ends in a US state code
+# pattern or contains ", USA" / ", US".
+_DE_EU_AMBIGUOUS_CITIES: frozenset[str] = frozenset({
+    "berlin", "hamburg", "frankfurt", "munich", "munchen",
+    "vienna", "wien", "paris", "athens", "bremen",
+    "cologne", "koln", "koeln", "dresden", "essen",
+})
+
+# US-state-code pattern: ", XX" where XX is a 2-letter postal code, or
+# ", USA" / ", US" / ", United States" anywhere in the text.
+#
+# Deliberate exclusions:
+# - DE (Delaware) collides with the ISO country code for Germany.
+# - IN (Indiana) collides with "in" — too noisy. Indiana jobs are rare.
+# - OR (Oregon) collides with the English conjunction.
+# - CO (Colorado) and CA (California) collide with too many companies.
+# - WA (Washington) is fine in EU job text since "Wa" rarely appears
+#   after a comma in DE/EU listings; keeping it.
+# In practice the missed states (CO, CA, IN, OR, DE) are very unlikely
+# to host a DE/EU-namesake city in our feeds, so the loss is tiny.
+_US_HINT_RE = re.compile(
+    r",\s*"
+    r"(?:al|ak|az|ar|ct|fl|ga|hi|id|il|ia|ks|ky|la|me|md|"
+    r"ma|mi|mn|ms|mo|mt|ne|nv|nh|nj|nm|ny|nc|nd|oh|ok|pa|ri|sc|sd|"
+    r"tn|tx|ut|vt|va|wa|wv|wi|wy)"
+    r"\b(?:,\s*(?:usa?|united states))?",
+    re.IGNORECASE,
+)
+_US_COUNTRY_RE = re.compile(r"\b(?:usa|united states)\b", re.IGNORECASE)
+
+
+def _looks_like_us_listing(job_location: str) -> bool:
+    """Does the job's location text look like a US listing? Heuristic:
+    matches a ', XX' US state postal-code pattern OR explicit US country
+    marker. Used only when the user typed a DE/EU-ambiguous city without
+    a country qualifier."""
+
+    if not job_location:
+        return False
+    return bool(_US_HINT_RE.search(job_location) or _US_COUNTRY_RE.search(job_location))
+
+
+def location_matches(user_location: str | None, job_location: str | None) -> bool:
+    """True when the user's location text matches the job's location.
+
+    Defense in depth on top of plain casefold-substring matching:
+    1. Strip diacritics so 'munchen' matches 'München'.
+    2. Expand DE/EU city aliases so 'Munich' matches 'München' and vice
+       versa.
+    3. Reject same-name US namesakes when the user typed an ambiguous
+       DE/EU city without a country qualifier (e.g. 'Berlin' alone
+       should not match 'Berlin, GA, USA'; but 'Berlin, US' still does).
+
+    Empty user_location matches anything (caller's job to skip the
+    filter)."""
+
+    if not user_location:
+        return True
+    user_raw = user_location.casefold().strip()
+    user_norm = _fold_diacritics(user_raw)
+    job_raw = (job_location or "").casefold()
+    job_norm = _fold_diacritics(job_raw)
+    if not user_norm:
+        return True
+
+    user_has_country_hint = bool(
+        _US_HINT_RE.search(user_location)
+        or _US_COUNTRY_RE.search(user_location)
+        or any(hint in user_raw for hint in (
+            "germany", "deutschland", "austria", "österreich", "osterreich",
+            "switzerland", "schweiz", "france", "italy", "spain",
+            "netherlands", "belgium", "denmark", "poland", "czech",
+        ))
+    )
+    is_ambiguous_de_city = (
+        not user_has_country_hint
+        and user_norm in _DE_EU_AMBIGUOUS_CITIES
+    )
+
+    if user_norm in job_norm:
+        if is_ambiguous_de_city and _looks_like_us_listing(job_raw):
+            return False
+        return True
+    # Alias expansion: if the user's text contains any alias from a
+    # group, the job qualifies if its location contains any other alias
+    # from the same group.
+    for group in _CITY_ALIASES:
+        folded_group = [_fold_diacritics(alias) for alias in group]
+        if any(alias in user_norm for alias in folded_group):
+            if any(alias in job_norm for alias in folded_group):
+                if is_ambiguous_de_city and _looks_like_us_listing(job_raw):
+                    return False
+                return True
+    return False
+
+
+# ---------- seniority-band intelligence -----------------------------------
+
+# Words that, when present in the user's query, signal an explicit
+# seniority band. The values are the conflicting bands — if a job
+# title contains any of those, we treat it as a seniority mismatch.
+_SENIORITY_CONFLICTS: dict[str, tuple[str, ...]] = {
+    "senior": ("junior", "intern", "internship", "trainee", "praktikant",
+               "working student", "werkstudent", "apprentice", "azubi"),
+    "lead": ("junior", "intern", "internship", "trainee", "praktikant",
+             "working student", "werkstudent", "apprentice", "azubi"),
+    "staff": ("junior", "intern", "internship", "trainee", "praktikant",
+              "working student", "werkstudent", "apprentice", "azubi"),
+    "principal": ("junior", "intern", "internship", "trainee", "praktikant",
+                  "working student", "werkstudent", "apprentice", "azubi"),
+    "head of": ("junior", "intern", "internship", "trainee", "praktikant",
+                "working student", "werkstudent", "apprentice", "azubi"),
+    "junior": ("senior", "lead", "staff", "principal", "head of",
+               "director", "vp ", "chief", "cto", "cfo", "cmo", "ceo"),
+    "intern": ("senior", "lead", "staff", "principal", "head of",
+               "director", "vp ", "chief", "cto", "cfo", "cmo", "ceo"),
+    "trainee": ("senior", "lead", "staff", "principal", "head of",
+                "director", "vp ", "chief", "cto", "cfo", "cmo", "ceo"),
+}
+
+
+# Strong "this is a trainee role" markers. When the user's query
+# contains a professional-role keyword (manager, engineer, etc.) but no
+# explicit junior-band signal, treat trainee-marker titles as a
+# mismatch — the user typed "marketing manager", not "marketing
+# internship", so Praktikum/Werkstudent rows are wrong by default.
+_TRAINEE_MARKERS: tuple[str, ...] = (
+    "praktikant", "praktikum", "werkstudent", "azubi", "auszubildende",
+    "auszubildender", "trainee", "internship",
+)
+_PROFESSIONAL_ROLE_TRIGGERS: tuple[str, ...] = (
+    "manager", "director", "specialist", "engineer", "developer",
+    "scientist", "analyst", "consultant", "architect", "designer",
+    "lead", "head", "principal", "staff",
+)
+_JUNIOR_BAND_OPT_INS: tuple[str, ...] = (
+    "intern", "internship", "trainee", "praktikant", "praktikum",
+    "werkstudent", "azubi", "auszubild", "apprentice", "graduate",
+    "junior", "entry-level", "entry level",
+)
+
+
+def seniority_conflicts(query: str | None, job_title: str | None) -> bool:
+    """True iff the user's query explicitly asks for one seniority band
+    and the job title clearly belongs to a conflicting one.
+
+    Examples:
+    - query='senior backend engineer', title='Junior Backend Engineer' → True
+    - query='senior backend',          title='Senior Backend Engineer' → False
+    - query='marketing manager',       title='Praktikant Marketing'    → True (professional-role implies mid+)
+    - query='marketing internship',    title='Praktikant Marketing'    → False (user opted into junior band)
+    - query='internship marketing',    title='Head of Marketing'       → True
+    """
+
+    if not query or not job_title:
+        return False
+    q = _fold_diacritics(query.casefold())
+    t = _fold_diacritics(job_title.casefold())
+    for trigger, conflicts in _SENIORITY_CONFLICTS.items():
+        if trigger in q:
+            for bad in conflicts:
+                if bad in t:
+                    return True
+    # Implicit mid+ band: query contains a professional-role keyword
+    # AND no junior-band opt-in → reject trainee markers in title.
+    if any(trigger in q for trigger in _PROFESSIONAL_ROLE_TRIGGERS):
+        if not any(opt_in in q for opt_in in _JUNIOR_BAND_OPT_INS):
+            for marker in _TRAINEE_MARKERS:
+                if marker in t:
+                    return True
+    return False
+
+
+# ---------- role-family discriminator ------------------------------------
+
+# Words too generic to be discriminators. A 'marketing manager' search
+# must not pass jobs titled merely 'HR Manager' or 'Property Manager'
+# just because they share the word 'manager'. The same trap caught a
+# 'data scientist' search returning 'Freelance Writer' because both
+# titles satisfied OR-token matching on common stop-y role words.
+_GENERIC_ROLE_WORDS: frozenset[str] = frozenset({
+    "manager", "specialist", "engineer", "developer", "lead", "analyst",
+    "coordinator", "consultant", "assistant", "associate", "officer",
+    "executive", "professional", "professional", "expert", "scientist",
+    "leader", "head", "director", "vp", "supervisor", "owner", "operator",
+    "representative", "agent",
+})
+_QUERY_STOPWORDS: frozenset[str] = frozenset({
+    "the", "a", "an", "of", "for", "in", "at", "to", "and", "or",
+    "with", "without", "on", "by", "as",
+})
+_SENIORITY_WORDS: frozenset[str] = frozenset({
+    "senior", "sr", "junior", "jr", "lead", "staff", "principal",
+    "head", "mid", "mid-level", "intermediate", "entry", "entry-level",
+    "intern", "internship", "trainee", "praktikant", "werkstudent",
+    "apprentice", "azubi", "graduate",
+})
+
+
+def query_distinctive_tokens(query: str | None) -> list[str]:
+    """Return the distinctive (non-generic, non-stopword, non-seniority)
+    tokens from a query. Used to require at least one of these in the
+    job's title — catches the OR-token leak (e.g. 'marketing manager'
+    passing 'HR Manager' because both share 'manager').
+
+    Empty when every token is generic — caller should fall back to
+    OR-match in that case (don't over-filter when the user typed a
+    purely-generic query)."""
+
+    if not query:
+        return []
+    folded = _fold_diacritics(query.casefold())
+    tokens = re.findall(r"\w+", folded)
+    return [tok for tok in tokens
+            if tok and len(tok) > 2
+            and tok not in _GENERIC_ROLE_WORDS
+            and tok not in _QUERY_STOPWORDS
+            and tok not in _SENIORITY_WORDS]
+
+
+def title_matches_query_family(query: str | None, job_title: str | None) -> bool:
+    """True when the job title contains at least one distinctive token
+    from the user's query. Falls back to True if the query has no
+    distinctive tokens (purely-generic query — let OR-match decide).
+
+    This is the post-filter for the role-family leak documented in
+    ``_matches()``. Apply AFTER ``_matches()`` (which is too lenient by
+    design for description-only matches) but BEFORE other quality
+    checks."""
+
+    if not job_title:
+        return True  # don't reject blank titles — let the rest of the row decide
+    distinctive = query_distinctive_tokens(query)
+    if not distinctive:
+        return True  # purely-generic query; OR-match already decided
+    t = _fold_diacritics(job_title.casefold())
+    return any(tok in t for tok in distinctive)
 
 
 @dataclass
@@ -307,9 +586,12 @@ def score_job(
         hits = sum(1 for tok in keyword_tokens if tok and tok.casefold() in haystack)
         score += min(0.50, 0.10 * hits)
     if location:
-        loc = location.casefold().strip()
+        # Use the same locale-tolerant matcher the providers use, so a
+        # search for 'Munich' boosts a 'München, Deutschland' job
+        # equivalently. 'remote' as a fallback keeps remote-friendly
+        # roles competitive when the provider passed them through.
         job_loc = (job.location or "").casefold()
-        if loc and (loc in job_loc or "remote" in job_loc):
+        if location_matches(location, job.location) or "remote" in job_loc:
             score += 0.10
     # Freshness
     score += _freshness_score(job.posted_at, now=now)
@@ -432,11 +714,22 @@ class JobAggregationEngine:
             all_jobs.extend(jobs)
         # Cross-provider host-priority dedup: collapse identical canonical
         # source URLs, prefer the provider with the longest description.
+        # Canonicalization strips: scheme, www. prefix, query/fragment,
+        # and trailing slash — so a job at
+        #   https://acme.example/jobs/42
+        #   https://www.acme.example/jobs/42/
+        #   https://acme.example/jobs/42?utm_source=indeed
+        # all dedupe to the same canonical key.
         seen: dict[str, AggregatedJob] = {}
         host_pattern = re.compile(r"^https?://([^/]+)/(.+?)(?:\?|#|$)")
         for job in all_jobs:
             match = host_pattern.match(job.source_url)
-            host_path = match.group(1).lower() + "/" + match.group(2).lower() if match else job.source_url
+            if match:
+                host = match.group(1).lower().removeprefix("www.")
+                path = match.group(2).lower().rstrip("/")
+                host_path = f"{host}/{path}"
+            else:
+                host_path = job.source_url
             existing = seen.get(host_path)
             if existing is None or len(job.description or "") > len(existing.description or ""):
                 seen[host_path] = job

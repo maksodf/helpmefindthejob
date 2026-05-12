@@ -272,6 +272,18 @@ class UserProfile:
     years_experience: int | None = None
     languages: list[str] = field(default_factory=list)
     cv_text: str | None = None
+    # CV photo — stored as a self-contained data URI (e.g.
+    # ``data:image/jpeg;base64,...``) so the CV markdown renders
+    # offline and exports cleanly. Encrypted at rest via the same
+    # AEAD path as cv_text; capped at ~512KB raw (~700KB base64) on
+    # upload. PNG/JPEG only — SVG and other formats are rejected
+    # because they can carry script.
+    cv_photo_data_uri: str | None = None
+    # Chat-router session state — persisted across server restarts so an
+    # in-flight ``/add-company`` flow survives a deploy. Shape matches
+    # ChatSession.to_dict() (history + pending). Capped at ~50 turns by
+    # the chat surface; old turns get trimmed before save.
+    chat_state: dict | None = None
     notes: str | None = None
     locale: str = "en"
     theme: str = "dark"

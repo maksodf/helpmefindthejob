@@ -27,7 +27,13 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
-from .aggregators import AggregatedJob, ProviderAttribution
+from .aggregators import (
+    AggregatedJob,
+    ProviderAttribution,
+    location_matches,
+    seniority_conflicts,
+    title_matches_query_family,
+)
 
 
 _USER_AGENT = "DirectJobScout/0.19 (+https://app.khalo.org/about)"
@@ -119,7 +125,6 @@ class ArbeitnowProvider:
             return []
         items = payload.get("data") or []
         tokens = _query_tokens(query)
-        location_token = (location or "").casefold().strip()
         out: list[AggregatedJob] = []
         for item in items:
             if not isinstance(item, dict):
@@ -132,12 +137,24 @@ class ArbeitnowProvider:
             tags = " ".join(tag_list) if isinstance(tag_list, list) else ""
             if not _matches([title, company, description, tags], tokens):
                 continue
-            if location_token and location_token not in (loc or "").casefold():
-                # Strict substring match. The previous "or remote in
-                # text" escape hatch leaked remote-anywhere jobs into
-                # specific-location searches (a Berlin search returned
-                # remote-EU roles); see also JobAggregationEngine's
-                # remote-only-provider skip.
+            if location and not location_matches(location, loc):
+                # Strict substring + diacritic-fold + DE/EU alias match.
+                # The previous "or remote in text" escape hatch leaked
+                # remote-anywhere jobs into specific-location searches
+                # (a Berlin search returned remote-EU roles); see also
+                # JobAggregationEngine's remote-only-provider skip.
+                continue
+            if seniority_conflicts(query, title):
+                # Caller asked for senior; this is a junior/intern role
+                # (or vice versa). OR-token matching alone would let
+                # 'Junior Backend Engineer' pass a 'senior backend
+                # engineer' search.
+                continue
+            if not title_matches_query_family(query, title):
+                # 'marketing manager' query was passing 'HR Manager'
+                # because OR-token treats 'manager' as a hit. Require
+                # at least one distinctive (non-generic) token from
+                # the query to appear in the title.
                 continue
             posted_iso = item.get("created_at")
             posted = None
@@ -202,6 +219,15 @@ class MuseProvider:
             loc = ", ".join(str(l.get("name", "")) for l in loc_list if isinstance(l, dict)) or None
             if not _matches([title, company, description], tokens):
                 continue
+            # The Muse API loosely matches the ``location`` param, so we
+            # re-check client-side. Without this, a Berlin search would
+            # accept "Berlin, GA" or worse "anywhere" results.
+            if location and not location_matches(location, loc or ""):
+                continue
+            if seniority_conflicts(query, title):
+                continue
+            if not title_matches_query_family(query, title):
+                continue
             posted = _parse_iso(item.get("publication_date"))
             out.append(AggregatedJob(
                 title=title,
@@ -254,9 +280,22 @@ class RemotiveProvider:
         for item in jobs:
             if not isinstance(item, dict):
                 continue
+            title = str(item.get("title") or "")
+            if not title:
+                continue
+            # Remotive's server-side ``search=`` is fairly permissive —
+            # it matches keywords against the full posting body, so a
+            # query like 'senior data scientist' returns Copywriter and
+            # Customer Support Manager listings whose description
+            # happens to mention 'data' or 'senior'. Apply our standard
+            # client-side filters as defense in depth.
+            if seniority_conflicts(query, title):
+                continue
+            if not title_matches_query_family(query, title):
+                continue
             posted = _parse_iso(item.get("publication_date"))
             out.append(AggregatedJob(
-                title=str(item.get("title") or ""),
+                title=title,
                 company_name=str(item.get("company_name") or ""),
                 source=self.name,
                 source_url=str(item.get("url") or ""),
@@ -320,6 +359,10 @@ class WeWorkRemotelyProvider:
                 if ": " in title:
                     company, _, role = title.partition(": ")
                 if not _matches([role, company, description], tokens):
+                    continue
+                if seniority_conflicts(query, role):
+                    continue
+                if not title_matches_query_family(query, role):
                     continue
                 posted = None
                 if pub:
@@ -395,7 +438,6 @@ class HackerNewsHiringProvider:
             return []
         comments = thread.get("children") or []
         tokens = _query_tokens(query)
-        location_token = (location or "").casefold().strip()
         out: list[AggregatedJob] = []
         for comment in comments:
             if not isinstance(comment, dict):
@@ -405,17 +447,36 @@ class HackerNewsHiringProvider:
                 continue
             if not _matches([text], tokens):
                 continue
-            if location_token and location_token not in text.casefold():
-                # Strict — same fix as ArbeitnowProvider. The previous
-                # "remote in text" OR-clause leaked remote-anywhere
-                # listings into specific-location searches.
+            if location and not location_matches(location, text):
+                # Strict substring + diacritic-fold + DE/EU alias match.
+                # Same fix as ArbeitnowProvider. The previous "remote in
+                # text" OR-clause leaked remote-anywhere listings into
+                # specific-location searches.
                 continue
-            # First line is usually "<Company> | <Role> | <Location>" pipe-delimited.
+            # First line is usually "<Company> | <Role> | <Location>" pipe-delimited
+            # but real posters use other shapes: "<Co> | <Role> | <Full-Time> | <Loc>"
+            # or "<Co> | <Role> | <Remote>" or just "<Co> | <Role>". When the
+            # third part is a work-type / arrangement word (Full-Time, Contract,
+            # Onsite, Remote, Hybrid, etc.), skip past it to the next part.
             first_line = text.split("\n", 1)[0]
             parts = [p.strip() for p in re.split(r"\s*\|\s*", first_line) if p.strip()]
             company = parts[0] if parts else "Hacker News listing"
             role = parts[1] if len(parts) > 1 else first_line[:120]
-            loc_str = parts[2] if len(parts) > 2 else None
+            non_location_words = {
+                "full-time", "full time", "fulltime", "part-time", "part time",
+                "parttime", "contract", "contractor", "freelance", "permanent",
+                "temporary", "intern", "internship", "h1b", "visa", "onsite",
+                "on-site", "on site", "hybrid", "remote",
+            }
+            loc_str: str | None = None
+            for candidate in parts[2:]:
+                if candidate.casefold() not in non_location_words:
+                    loc_str = candidate
+                    break
+            if seniority_conflicts(query, role):
+                continue
+            if not title_matches_query_family(query, role):
+                continue
             posted = None
             created_iso = comment.get("created_at")
             if isinstance(created_iso, str):
@@ -513,6 +574,10 @@ class EuresProvider:
                 title = str(entry.get("title") or "").strip()
                 if not title:
                     continue
+                if seniority_conflicts(query, title):
+                    continue
+                if not title_matches_query_family(query, title):
+                    continue
                 org = entry.get("hiringOrganization") or {}
                 company = (org.get("name") if isinstance(org, dict) else "") or ""
                 loc_list = entry.get("jobLocation") or []
@@ -592,6 +657,13 @@ class BundesagenturProvider:
                 continue
             title = str(entry.get("titel") or entry.get("beruf") or "").strip()
             if not title:
+                continue
+            if seniority_conflicts(query, title):
+                # Bundesagentur's `was=` matches keywords, not seniority,
+                # so a 'senior backend' query can still return junior
+                # listings. Defense in depth.
+                continue
+            if not title_matches_query_family(query, title):
                 continue
             company = str(entry.get("arbeitgeber") or "").strip()
             ext_id = str(entry.get("hashId") or entry.get("refnr") or "")
@@ -674,6 +746,10 @@ class AdzunaProvider:
             if not isinstance(item, dict):
                 continue
             title = str(item.get("title") or "").strip()
+            if seniority_conflicts(query, title):
+                continue
+            if not title_matches_query_family(query, title):
+                continue
             company_obj = item.get("company") or {}
             company = str(company_obj.get("display_name") or "") if isinstance(company_obj, dict) else ""
             loc_obj = item.get("location") or {}

@@ -43,9 +43,37 @@ class StructuredFit:
 
 
 _JSON_BLOCK_RE = re.compile(r"\{[\s\S]*\}")
-_FIT_RE = re.compile(r"fit\s*score\s*[:=]\s*(\d+(?:\.\d+)?)", re.I)
-_RECOMMEND_RE = re.compile(r"recommend(?:ation)?\s*[:=]\s*(apply|consider|skip)", re.I)
+# Score regex must accept many shapes:
+#   "Fit score: 0.72"      "fit_score = 0.4"      "Fit Score is 0.91"
+#   "Score: 0.55"          "fitScore: 0.7"        "fitScore":0.7
+#   The non-digit gap is capped at 12 chars so we don't match the wrong
+#   number ("Score for X = 5 years; 0.72") and avoid runaway scans.
+_FIT_RE = re.compile(
+    r"(?:fit[\s_]*)?score[^\d]{0,12}(\d+(?:\.\d+)?)",
+    re.I,
+)
+# Recommendation regex must accept many natural-language shapes:
+#   "Recommendation: apply"     "recommend: apply"
+#   "I'd recommend you APPLY"   "Recommending apply"
+#   "recommendation = consider"
+# The separator gap allows up to 30 chars including small connector
+# words ("you", "to", "that"). We require a word-boundary around the
+# verdict so "applyer"/"applying" don't accidentally match.
+_RECOMMEND_RE = re.compile(
+    r"recommend\w*[\s\w:=\-,.'\"]{0,30}?\b(apply|consider|skip)\b",
+    re.I,
+)
 _LIST_FIELDS = ("tools", "risks")
+
+
+def _first_present(parsed: dict, *keys: str):
+    """Return parsed[k] for the first k that EXISTS — even when the
+    value is falsy (e.g. ``0``). Replaces the ``a or b or c`` pattern
+    which silently drops a legitimate ``0`` score."""
+    for k in keys:
+        if k in parsed:
+            return parsed[k]
+    return None
 
 
 def parse_freeform(output: str) -> StructuredFit:
@@ -61,9 +89,9 @@ def parse_freeform(output: str) -> StructuredFit:
             parsed = None
         if isinstance(parsed, dict):
             structured.fit_score = _coerce_float(
-                parsed.get("fitScore") or parsed.get("fit_score") or parsed.get("score")
+                _first_present(parsed, "fitScore", "fit_score", "score")
             )
-            recommendation = parsed.get("recommendation") or parsed.get("decision")
+            recommendation = (_first_present(parsed, "recommendation", "decision"))
             if isinstance(recommendation, str) and recommendation.casefold() in _VALID_RECOMMENDATIONS:
                 structured.recommendation = recommendation.casefold()
             for src, dst in (
