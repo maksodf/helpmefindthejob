@@ -186,7 +186,7 @@ DEFAULT_WATCHLIST_SCHEDULE = {
     "lastRunAt": None,
     "lastRunStatus": "disabled",
 }
-APP_VERSION = "0.79.3"
+APP_VERSION = "0.79.4"
 EXPORT_SCHEMA_VERSION = 1
 SESSION_COOKIE_NAME = "directjob_session"
 APP_ENV = os.environ.get("COMPANY_DISCOVERY_ENV", "development").strip().casefold()
@@ -3432,6 +3432,33 @@ class AppState:
                  "navigateTo": target_id,
                  "message": f"Opening **{target_id}**."}
 
+    def chat_handler_download_cv(self, user_id: str,
+                                    args: dict) -> dict:
+        """Surface the print-view URL for the user's CV. The user
+        clicks it → browser opens /api/cv/print?autoprint=1 → print
+        dialog → Save as PDF. Read-only; no DB write."""
+        profile = self.profile_for(user_id)
+        cv_text = (profile.cv_text or "").strip()
+        if not cv_text:
+            return {"ok": False,
+                     "message": (
+                         "There's no CV on your profile yet. Type "
+                         "**build my CV** to create one (5 quick "
+                         "questions), or paste your CV here."
+                     )}
+        self.log_analytics(user_id, "chat_cmd",
+                            {"name": "download_cv",
+                             "cvChars": len(cv_text)})
+        return {"ok": True,
+                 "message": (
+                     "Your CV is ready to print. **Click here to "
+                     "open the print view:** "
+                     "[Download CV as PDF](/api/cv/print?autoprint=1)\n\n"
+                     "Your browser's print dialog will open — pick "
+                     "*Save as PDF* and you're set."
+                 ),
+                 "navigateTo": "cvPrint"}
+
     def chat_handler_delete_account(self, user_id: str,
                                       args: dict) -> dict:
         """Start GDPR right-to-erasure. We never erase in-chat — the
@@ -3658,6 +3685,7 @@ class AppState:
             "suggest_cv_enhancements": self.chat_handler_suggest_cv_enhancements,
             "show_view": self.chat_handler_show_view,
             "delete_account": self.chat_handler_delete_account,
+            "download_cv": self.chat_handler_download_cv,
             "help": self.chat_handler_help,
         }
         if command_name not in handlers:

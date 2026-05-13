@@ -402,6 +402,136 @@ class DiscoverPhaseBucketCleanupTests(unittest.TestCase):
         self.assertEqual(r.journey.bucket_key, "")
 
 
+class CvPasteDetectionTests(unittest.TestCase):
+    """R79.4: a long complaint or question must NOT be silently
+    captured as the user's CV. Real prod failure case from Nasser."""
+
+    NASSER_COMPLAINT = (
+        "it's berlin and not berli! you must be able to inspect "
+        "for typo and fix them on you're own! this means that you "
+        "must be context aware."
+    )
+
+    def test_real_complaint_rejected(self):
+        from company_discovery.journey import looks_like_pasted_cv
+        self.assertGreater(len(self.NASSER_COMPLAINT), 80)
+        self.assertFalse(looks_like_pasted_cv(self.NASSER_COMPLAINT))
+
+    def test_question_rejected(self):
+        from company_discovery.journey import looks_like_pasted_cv
+        q = ("Hey can you tell me why my search returned 0 jobs? "
+             "I expected at least a few. Did I do something wrong?")
+        self.assertFalse(looks_like_pasted_cv(q))
+
+    def test_short_text_rejected(self):
+        from company_discovery.journey import looks_like_pasted_cv
+        self.assertFalse(looks_like_pasted_cv("Jane Doe, bartender."))
+
+    def test_real_cv_with_email_accepted(self):
+        from company_discovery.journey import looks_like_pasted_cv
+        cv = (
+            "Jane Doe — jane@example.com — Berlin\n\n"
+            "5 years experience as bartender at two cocktail bars.\n"
+            "Mixology, customer service, German + English."
+        )
+        self.assertTrue(looks_like_pasted_cv(cv))
+
+    def test_cv_with_date_range_accepted(self):
+        from company_discovery.journey import looks_like_pasted_cv
+        cv = (
+            "Maria Schmidt. Senior Pflegehelferin in Berlin.\n"
+            "Klinikum Alpha 2018 - 2022. Klinikum Beta 2022 - present.\n"
+            "Speaks Deutsch + English. Erste Hilfe certified."
+        )
+        self.assertTrue(looks_like_pasted_cv(cv))
+
+
+class InspireCherryPickGuardTests(unittest.TestCase):
+    """R79.4: typing "download the CV" at the inspire phase used
+    to be split on commas + added as a search target. Now rejected."""
+
+    def test_action_phrase_rejected_as_role(self):
+        from company_discovery.journey import _looks_like_a_role
+        for bad in ("download the CV", "donwload the CV",
+                     "save my work", "make me a coffee",
+                     "show watchlist", "delete account",
+                     "what's this?", "help me find a job"):
+            self.assertFalse(_looks_like_a_role(bad), msg=bad)
+
+    def test_genuine_role_accepted(self):
+        from company_discovery.journey import _looks_like_a_role
+        for role in ("Barista", "Bar Manager", "Senior Backend Engineer",
+                      "Restaurant Server", "Pflegehelfer"):
+            self.assertTrue(_looks_like_a_role(role), msg=role)
+
+    def test_inspire_phase_rejects_garbage_input(self):
+        # End-to-end via advance(): user has lateral_roles, types
+        # "download the CV" — must re-ask for a clean answer, not
+        # append "download the CV" to target_roles.
+        from company_discovery.journey import (
+            UserJourney, advance, PHASE_INSPIRE,
+        )
+        j = UserJourney(
+            phase=PHASE_INSPIRE,
+            role_text="bartender",
+            lateral_roles=["Barista", "Bar Manager"],
+        )
+        r = advance(j, "download the CV")
+        # Stayed in inspire (no advance to prefs) and didn't pollute
+        # target_roles with the garbage.
+        self.assertEqual(r.journey.phase, PHASE_INSPIRE)
+        self.assertEqual(r.journey.target_roles, [])
+        self.assertFalse(r.persist)
+
+
+class LanguageParsingTests(unittest.TestCase):
+    """R79.4: 'german and english as well as arabic' must split into
+    3 languages, not stay as one giant pseudo-language."""
+
+    def test_and_splits(self):
+        from company_discovery.journey import (
+            UserJourney, advance, PHASE_DISCOVER, DISCOVER_ASK_LANGS,
+        )
+        j = UserJourney(phase=PHASE_DISCOVER,
+                          discover_step=DISCOVER_ASK_LANGS,
+                          role_text="bartender", location="Berlin")
+        r = advance(j, "german and english as well as arabic")
+        self.assertEqual(r.journey.languages,
+                          ["Deutsch", "English", "Arabic"])
+
+    def test_german_und_splits(self):
+        from company_discovery.journey import (
+            UserJourney, advance, PHASE_DISCOVER, DISCOVER_ASK_LANGS,
+        )
+        j = UserJourney(phase=PHASE_DISCOVER,
+                          discover_step=DISCOVER_ASK_LANGS,
+                          role_text="x", location="y")
+        r = advance(j, "deutsch und englisch sowie französisch")
+        self.assertEqual(r.journey.languages,
+                          ["Deutsch", "English", "Français"])
+
+    def test_ampersand_splits(self):
+        from company_discovery.journey import (
+            UserJourney, advance, PHASE_DISCOVER, DISCOVER_ASK_LANGS,
+        )
+        j = UserJourney(phase=PHASE_DISCOVER,
+                          discover_step=DISCOVER_ASK_LANGS,
+                          role_text="x", location="y")
+        r = advance(j, "german & english")
+        self.assertEqual(r.journey.languages, ["Deutsch", "English"])
+
+    def test_traditional_comma_still_works(self):
+        from company_discovery.journey import (
+            UserJourney, advance, PHASE_DISCOVER, DISCOVER_ASK_LANGS,
+        )
+        j = UserJourney(phase=PHASE_DISCOVER,
+                          discover_step=DISCOVER_ASK_LANGS,
+                          role_text="x", location="y")
+        r = advance(j, "Deutsch, English, Türkçe")
+        self.assertEqual(r.journey.languages,
+                          ["Deutsch", "English", "Türkçe"])
+
+
 class CvCreationIntentTests(unittest.TestCase):
     """R79.3: real-user phrase "i don't have a cv and i need you to
     create ne one" must route to the sectional CV-build flow even

@@ -327,6 +327,56 @@ _CV_CREATION_INTENT = (
 )
 
 
+_CV_MARKERS = (
+    # An email is the strongest CV marker — almost every CV has one.
+    re.compile(r"\b[\w._%+-]+@[\w.-]+\.[A-Za-z]{2,}\b"),
+    # Phone-like: ≥7 digits in a run, with optional + and separators.
+    re.compile(r"(?:\+\d{1,3}[\s.-]?)?\(?\d{2,4}\)?[\s.-]?\d{3,}[\s.-]?\d{2,}"),
+    # Date ranges typical of work history.
+    re.compile(r"\b(?:19|20)\d{2}\s*[-–—]\s*(?:(?:19|20)\d{2}|present|heute)\b",
+                re.IGNORECASE),
+    # Section headers.
+    re.compile(r"\b(?:experience|berufserfahrung|education|ausbildung|"
+                r"skills|kenntnisse|summary|profil|zusammenfassung)\b\s*[:\n]",
+                re.IGNORECASE),
+    # Bullet markers paired with text.
+    re.compile(r"^\s*[•\-\*]\s+\S", re.MULTILINE),
+)
+
+# Phrases that look like a CV but are actually a question or complaint.
+# When a long message contains any of these we ALWAYS re-ask instead
+# of silently storing it.
+_NOT_A_CV_TELLS = (
+    re.compile(r"\b(?:you must|why don'?t you|aren'?t you|why is)\b",
+                re.IGNORECASE),
+    re.compile(r"\?(?:\s|$)"),
+    re.compile(r"\b(?:typo|misspell|wrong|incorrect|fix it|its not|"
+                r"that'?s not|nope)\b", re.IGNORECASE),
+    re.compile(r"\b(?:context aware|on your own|smart enough)\b",
+                re.IGNORECASE),
+)
+
+
+def looks_like_pasted_cv(text: str) -> bool:
+    """True iff the text PROBABLY is a CV paste, not a question /
+    complaint / off-topic note. Replaces the old "any message >= 80
+    chars is a CV" heuristic that mortifyingly captured Nasser's
+    correction message as his CV on prod 0.79.3.
+
+    Rules:
+    - Too short → False (≤ 80 chars almost never a real CV)
+    - Contains a complaint marker (?, "you must", "typo", etc.) → False
+    - Must contain at least ONE CV marker (email, dates, section
+      header, bullet list, or phone)
+    """
+    if not text or len(text) < 80:
+        return False
+    for pat in _NOT_A_CV_TELLS:
+        if pat.search(text):
+            return False
+    return any(pat.search(text) for pat in _CV_MARKERS)
+
+
 def looks_like_cv_creation_intent(msg: str, current_phase: str) -> bool:
     """True iff the user wants to BUILD a CV — even when stuck in
     a post-search phase. Real user typed "i don't have a cv and i
@@ -697,9 +747,17 @@ def _advance_discover(journey: UserJourney, msg: str) -> AdvanceResult:
                               profile_updates=profile_updates)
 
     if step == DISCOVER_ASK_LANGS:
-        langs = [l.strip() for l in (msg.replace(";", ",").split(","))
+        # R79.4: split on natural separators users actually type —
+        # not just commas and semicolons. "german and english as
+        # well as arabic" used to become one giant pseudo-language.
+        normalised = re.sub(
+            r"\s+(?:and|sowie|plus|as\s+well\s+as|und|oder|or|\+|&)\s+",
+            ",", (msg or ""), flags=re.IGNORECASE,
+        )
+        normalised = normalised.replace(";", ",").replace("/", ",")
+        langs = [_normalise_language(l) for l in normalised.split(",")
                   if l.strip()]
-        journey.languages = langs[:6]  # cap
+        journey.languages = [l for l in langs if l][:6]
         if langs:
             profile_updates["languages"] = langs[:6]
         journey.discover_step = DISCOVER_DONE
@@ -724,6 +782,43 @@ def _advance_discover(journey: UserJourney, msg: str) -> AdvanceResult:
         reply="Let me restart the questions — what kind of role?",
         journey=journey,
     )
+
+
+_LANGUAGE_CANONICAL = {
+    "german": "Deutsch", "deutsch": "Deutsch", "de": "Deutsch",
+    "english": "English", "englisch": "English", "en": "English",
+    "french": "Français", "französisch": "Français", "francais": "Français",
+    "fr": "Français",
+    "spanish": "Español", "spanisch": "Español", "español": "Español",
+    "es": "Español",
+    "italian": "Italiano", "italienisch": "Italiano", "italiano": "Italiano",
+    "it": "Italiano",
+    "arabic": "Arabic", "arabisch": "Arabic", "العربية": "Arabic", "ar": "Arabic",
+    "turkish": "Türkçe", "türkisch": "Türkçe", "turkce": "Türkçe", "tr": "Türkçe",
+    "polish": "Polski", "polnisch": "Polski", "pl": "Polski",
+    "russian": "Русский", "russisch": "Русский", "ru": "Русский",
+    "chinese": "中文", "chinesisch": "中文", "中文": "中文", "zh": "中文",
+    "japanese": "日本語", "japanisch": "日本語", "ja": "日本語",
+    "dutch": "Nederlands", "niederländisch": "Nederlands",
+    "portuguese": "Português", "portugiesisch": "Português", "pt": "Português",
+}
+
+
+def _normalise_language(text: str) -> str:
+    """Cap + canonicalise a single language token. 'arabic' → 'Arabic',
+    'türkisch' → 'Türkçe'. Anything not recognised is returned
+    title-cased with leading/trailing whitespace stripped.
+    """
+    cleaned = (text or "").strip(" .,;!?")
+    if not cleaned:
+        return ""
+    key = cleaned.casefold()
+    if key in _LANGUAGE_CANONICAL:
+        return _LANGUAGE_CANONICAL[key]
+    # Unknown — cap length, strip junk, title-case the first letter.
+    if len(cleaned) > 30:
+        return ""
+    return cleaned[0].upper() + cleaned[1:] if cleaned else ""
 
 
 def _parse_years(text: str) -> int | None:
@@ -907,8 +1002,12 @@ def _advance_cv_check(
                 ),
                 journey=journey,
             )
-        if len(msg) >= 80:
-            # Looks like the user pasted a CV.
+        # R79.4: smarter CV-paste detection. Length alone is too
+        # crude — a long complaint or question gets stored as the
+        # user's CV. Real fix: require at least one CV-like marker
+        # (email, phone, work-history dates, section headers) AND a
+        # reasonable length. Otherwise re-ask for clarification.
+        if looks_like_pasted_cv(msg):
             journey.cv_status = "uploaded"
             journey.phase = PHASE_INSPIRE
             chained = _advance_inspire(journey, "",
@@ -1043,7 +1142,26 @@ def _advance_inspire(
     elif lc in {"no", "n", "nein", "skip", "stick"}:
         journey.target_roles = [journey.role_text]
     elif msg:
-        chosen = [t.strip() for t in msg.split(",") if t.strip()]
+        # R79.4: only accept tokens that look like role names — not
+        # any free-text the user typed. Without this, a message
+        # like "download the CV" got split on commas into
+        # ["download the CV"] and appended to the search target
+        # list, which made the agent search aggregator for
+        # nonsense ("donwload the CV" returned 2 random jobs).
+        candidates = [t.strip() for t in msg.split(",") if t.strip()]
+        chosen = [c for c in candidates if _looks_like_a_role(c)]
+        if not chosen:
+            return AdvanceResult(
+                reply=(
+                    "I didn't catch a role in that. Reply **yes** "
+                    "to add all the suggestions, **no** to stick "
+                    "with just your stated role, or paste a "
+                    "comma-separated list of roles (e.g., "
+                    "\"Barista, Bar Manager\")."
+                ),
+                journey=journey,
+                persist=False,
+            )
         journey.target_roles = [journey.role_text] + chosen
     else:
         return AdvanceResult(
@@ -1064,6 +1182,32 @@ def _advance_inspire(
         ),
         journey=journey,
     )
+
+
+_NOT_A_ROLE_VERBS = (
+    # Action verbs that signal an INSTRUCTION, not a role title.
+    "download", "donwload", "send", "create", "make", "build", "write",
+    "show", "open", "tell", "find", "search", "give", "fix", "delete",
+    "remove", "save", "share", "print", "click", "type", "explain",
+    "list", "let me", "i want", "i need", "please", "thanks", "the cv",
+    "my cv", "a cv", "lebenslauf",
+    # German
+    "herunterladen", "lade", "öffne", "zeig", "erstell",
+)
+
+
+def _looks_like_a_role(text: str) -> bool:
+    """True iff a comma-separated token looks like an occupation
+    title — short, no verb, no question marks. Guards the inspire
+    phase from accepting "download the CV" / "actually let me do X"
+    as additional search-target roles."""
+    text = (text or "").strip()
+    if not text or len(text) > 60:
+        return False
+    if "?" in text:
+        return False
+    lower = text.lower()
+    return not any(verb in lower for verb in _NOT_A_ROLE_VERBS)
 
 
 def _suggest_lateral_roles(

@@ -513,6 +513,26 @@ def _build_registry() -> dict[str, Command]:
             confirmation_template="Starting CV build — one section at a time.",
         ),
         Command(
+            name="download_cv",
+            label="Download your CV as a PDF",
+            description=(
+                "Open the print-styled CV page so the user can "
+                "save it as PDF from their browser. Read-only — "
+                "needs an existing CV on the profile."
+            ),
+            slash_aliases=["/download-cv", "/cv-pdf", "/print-cv"],
+            keywords=[
+                r"\bdownload (?:my )?(?:cv|resume|lebenslauf)\b",
+                r"\bsave (?:my )?(?:cv|resume|lebenslauf) (?:as )?pdf\b",
+                r"\bget (?:my )?(?:cv|resume|lebenslauf) (?:as )?pdf\b",
+                r"\b(?:lebenslauf|cv) (?:als )?pdf herunterladen\b",
+                r"\b(?:herunterladen|drucken|speichern)\b.*\b(?:lebenslauf|cv)\b",
+            ],
+            params=[],
+            confirmation_template="Opening your CV in print view.",
+            requires_confirmation=False,
+        ),
+        Command(
             name="delete_account",
             label="Delete your account (GDPR right-to-erasure)",
             description=(

@@ -178,10 +178,10 @@ class DeleteAccountCommandTests(unittest.TestCase):
 
 
 class CommandRegistryShapeTests(unittest.TestCase):
-    def test_18_commands(self):
+    def test_19_commands(self):
         # If you add or remove a command, update this number and
         # the explicit list in test_chat_router.py too.
-        self.assertEqual(len(REGISTRY), 18)
+        self.assertEqual(len(REGISTRY), 19)
 
 
 if __name__ == "__main__":
