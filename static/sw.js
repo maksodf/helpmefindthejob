@@ -12,7 +12,7 @@
  * by default. We still cache the shell so the app loads under flaky
  * connectivity and offline reads work.
  */
-const CACHE_VERSION = "v0.18.0";
+const CACHE_VERSION = "v0.19.0";
 const SHELL_CACHE = `directjob-shell-${CACHE_VERSION}`;
 const SHELL_PATHS = [
   "/",

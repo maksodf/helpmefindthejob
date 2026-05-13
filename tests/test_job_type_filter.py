@@ -55,10 +55,32 @@ class IdentifyBucketTests(unittest.TestCase):
         self.assertEqual(identify_bucket("Kellner gesucht"), "waiter")
 
     def test_unknown_returns_none(self):
-        self.assertIsNone(identify_bucket("senior backend engineer"))
-        self.assertIsNone(identify_bucket("software developer"))
+        # Things genuinely outside the taxonomy still return None.
+        self.assertIsNone(identify_bucket("astronaut"))
+        self.assertIsNone(identify_bucket("submarine commander"))
         self.assertIsNone(identify_bucket(""))
         self.assertIsNone(identify_bucket(None))
+
+    def test_tech_roles_recognised(self):
+        # R21: expanded taxonomy — tech-adjacent queries route to
+        # specific buckets so the search isn't biased by an unrelated
+        # default persona.
+        self.assertEqual(identify_bucket("senior backend engineer"),
+                          "software_engineer")
+        self.assertEqual(identify_bucket("software developer"),
+                          "software_engineer")
+        self.assertEqual(identify_bucket("data scientist Berlin"),
+                          "data_engineer")
+        self.assertEqual(identify_bucket("product owner"),
+                          "product_manager")
+        self.assertEqual(identify_bucket("UX designer"), "designer")
+        self.assertEqual(identify_bucket("content manager"), "marketing")
+        self.assertEqual(identify_bucket("controller"), "finance")
+        self.assertEqual(identify_bucket("unternehmensberater"),
+                          "consulting")
+        self.assertEqual(identify_bucket("kundenservice"),
+                          "customer_success")
+        self.assertEqual(identify_bucket("sales executive"), "sales")
 
     def test_longest_synonym_wins(self):
         # "altenpflegehelfer" only lives in the pflegehelfer bucket

@@ -5013,9 +5013,29 @@ function chatResetHandler() {
   };
 }
 
+// R21.6: any user interaction with the chat dock means they've
+// chosen the chat-first path — silently dismiss the first-run
+// wizard so it stops intercepting their flow. Called from both
+// submit and focus so even "typing in the input" counts.
+function dismissWizardForDockInteraction() {
+  const dialog = document.getElementById("firstRunWizard");
+  if (dialog?.open) {
+    // Same persistence call as wizardDismiss, but fire-and-forget.
+    api("/api/profile",
+        { method: "POST",
+          body: JSON.stringify({ onboardingDismissed: true }) })
+      .catch(() => { /* non-fatal */ });
+    dialog.close();
+  }
+}
+
 $("#chatForm")?.addEventListener("submit", chatFormHandler("#chatInput"));
-$("#dockChatForm")?.addEventListener("submit",
-                                       chatFormHandler("#dockChatInput"));
+$("#dockChatForm")?.addEventListener("submit", (event) => {
+  dismissWizardForDockInteraction();
+  return chatFormHandler("#dockChatInput")(event);
+});
+$("#dockChatInput")?.addEventListener("focus",
+                                         dismissWizardForDockInteraction);
 
 $("#chatHelpBtn")?.addEventListener("click", () => chatSend("/help"));
 $("#dockChatHelpBtn")?.addEventListener("click", () => chatSend("/help"));

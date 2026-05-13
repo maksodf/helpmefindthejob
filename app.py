@@ -186,7 +186,7 @@ DEFAULT_WATCHLIST_SCHEDULE = {
     "lastRunAt": None,
     "lastRunStatus": "disabled",
 }
-APP_VERSION = "0.78.0"
+APP_VERSION = "0.79.0"
 EXPORT_SCHEMA_VERSION = 1
 SESSION_COOKIE_NAME = "directjob_session"
 APP_ENV = os.environ.get("COMPANY_DISCOVERY_ENV", "development").strip().casefold()
@@ -2769,8 +2769,10 @@ class AppState:
         from company_discovery.personas import get_persona
         from company_discovery.job_type_filter import (
             filter_jobs as filter_jobs_by_type,
+            filter_malformed_jobs,
             identify_bucket,
             normalize_location,
+            persona_for_bucket,
         )
         from company_discovery.journey import (
             cluster_jobs, PHASE_REVIEW, PHASE_DONE,
@@ -2802,15 +2804,23 @@ class AppState:
         # Build the journey-style payload — same shape regardless of
         # caller — so the chat journey state has real continuation
         # data and the canvas can render the result cards.
-        job_dicts = [
+        raw_dicts = [
             {"title": (j.title or "")[:200],
               "company": (j.company_name or "")[:120],
               "location": (j.location or "")[:120],
               "url": (j.source_url or "")[:300],
               "source": (j.source or "")[:60],
               "description": (j.description or "")[:600]}
-            for j, _ in ranked[:MAX_SEARCH_JOBS_CARRIED]
+            for j, _ in ranked[:MAX_SEARCH_JOBS_CARRIED * 2]
         ]
+        # R21.3: drop jobs with swapped fields / garbage URLs.
+        # Aggregator parsers sometimes get title↔location reversed
+        # and surface garbage cards on the canvas.
+        job_dicts = filter_malformed_jobs(raw_dicts)[:MAX_SEARCH_JOBS_CARRIED]
+        if len(raw_dicts) != len(job_dicts):
+            self.log_analytics(user_id, "aggregator_malformed_jobs_dropped",
+                                {"raw": len(raw_dicts),
+                                 "kept": len(job_dicts)})
         clusters = cluster_jobs(job_dicts)
         categorized: dict[str, list[str]] = {}
         jobs_by_id: dict[str, dict] = {}
@@ -2848,10 +2858,22 @@ class AppState:
             journey.phase = PHASE_REVIEW
         self._journey_save(user_id, journey)
 
-        # Update the profile filter (R16 behaviour preserved).
+        # Update the profile filter (R16 behaviour preserved). R21.2:
+        # also auto-set persona to the one matching the bucket so the
+        # aggregator's ranking + the watchlist scan don't bias the
+        # results back toward a default persona the user never chose.
+        # Fixes the "Pflegehelfer search returned content-manager
+        # jobs" class of bug.
         if bucket_key:
             profile.job_type_filter = bucket_key
             profile.job_type_location_filter = location or ""
+            mapped_persona = persona_for_bucket(bucket_key)
+            if (mapped_persona
+                    and profile.persona_id != mapped_persona):
+                profile.persona_id = mapped_persona
+                self.log_analytics(user_id, "auto_persona_switch",
+                                    {"from_bucket": bucket_key,
+                                     "to_persona": mapped_persona})
             self.repository.save_user_profile(profile)
 
         self.log_analytics(user_id, "chat_cmd",
@@ -3386,6 +3408,53 @@ class AppState:
                  "navigateTo": target_id,
                  "message": f"Opening **{target_id}**."}
 
+    def chat_handler_delete_account(self, user_id: str,
+                                      args: dict) -> dict:
+        """Start GDPR right-to-erasure. We never erase in-chat — the
+        flow always goes through the emailed confirmation link + a
+        7-day grace window so the user can recover from a typo or a
+        compromised session."""
+        typed_email = (args.get("email") or "").strip().casefold()
+        user = self.auth_store.get_user(user_id)
+        if user is None:
+            return {"ok": False,
+                     "message": "Auth state lost — please sign in again."}
+        if typed_email != (user.email or "").casefold():
+            return {"ok": False,
+                     "message": (
+                         "That email doesn't match the one on your "
+                         "account. Deletion not started. Try again "
+                         "if you want to proceed."
+                     )}
+        try:
+            ticket = self.request_account_deletion(
+                user=user,
+                reason="Requested via chat",
+            )
+        except Exception as exc:  # noqa: BLE001
+            self.log_analytics(user_id, "chat_cmd",
+                                {"name": "delete_account",
+                                 "status": "error",
+                                 "error": str(exc)[:200]})
+            return {"ok": False,
+                     "message": (
+                         "Couldn't start deletion right now — "
+                         "please try again in a few minutes or "
+                         "reach out via support."
+                     )}
+        self.log_analytics(user_id, "chat_cmd",
+                            {"name": "delete_account",
+                             "ticketId": ticket.id})
+        return {"ok": True,
+                 "message": (
+                     "Deletion started. Check your email for a "
+                     "confirmation link — click it within 7 days to "
+                     "schedule the deletion. After confirming, a "
+                     "second 7-day grace window starts before your "
+                     "data is erased; you can cancel any time in "
+                     "Settings → Privacy."
+                 )}
+
     def chat_handler_suggest_cv_enhancements(self, user_id: str,
                                                 args: dict) -> dict:
         """Compare the user's CV against their picked job's JD and
@@ -3554,6 +3623,7 @@ class AppState:
             "draft_motivation_letter": self.chat_handler_draft_motivation_letter,
             "suggest_cv_enhancements": self.chat_handler_suggest_cv_enhancements,
             "show_view": self.chat_handler_show_view,
+            "delete_account": self.chat_handler_delete_account,
             "help": self.chat_handler_help,
         }
         if command_name not in handlers:

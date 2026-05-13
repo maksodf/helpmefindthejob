@@ -256,8 +256,8 @@
           <aside class="chat-first-banner" role="note" aria-label="Tip">
             <span class="chat-first-emoji" aria-hidden="true">✨</span>
             <div class="chat-first-text">
-              <strong>Just chat.</strong>
-              <span class="muted">Type what you want in the Assistant on the left — "find a job", "add Charité", "show my watchlist". I'll handle the clicks.</span>
+              <strong data-i18n="dashboard.chatFirst.heading">Just chat.</strong>
+              <span class="muted" data-i18n="dashboard.chatFirst.body">Type what you want in the Assistant on the left — "find a job", "add Charité", "show my watchlist". I'll handle the clicks.</span>
             </div>
           </aside>
           <article class="hero-card">
@@ -1197,20 +1197,20 @@
           <section class="card" aria-label="Search results">
             <div class="card-heading">
               <div>
-                <h2 id="searchResultsHeading">Search results</h2>
-                <p class="muted" id="searchResultsSub">
+                <h2 id="searchResultsHeading" data-i18n="view.searchResults.title">Search results</h2>
+                <p class="muted" id="searchResultsSub" data-i18n="view.searchResults.subtitle">
                   Categorised live aggregator hits. Click a card to
                   focus on it in chat.
                 </p>
               </div>
               <div class="action-group">
                 <button id="searchResultsRerunBtn" class="btn btn-ghost"
-                        type="button" hidden>Re-run search</button>
+                        type="button" hidden data-i18n="view.searchResults.rerun">Re-run search</button>
               </div>
             </div>
             <div id="searchResultsBody" class="search-results-body">
-              <p class="muted">No active search.
-                <a href="#" id="searchResultsHint">Type "find a job" in chat to start.</a>
+              <p class="muted" data-i18n="view.searchResults.empty">No active search.
+                <a href="#" id="searchResultsHint" data-i18n="view.searchResults.hint">Type "find a job" in chat to start.</a>
               </p>
             </div>
           </section>

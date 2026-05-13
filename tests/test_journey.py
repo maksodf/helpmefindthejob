@@ -111,12 +111,23 @@ class DiscoverPhaseTests(unittest.TestCase):
         self.assertIn("Where", r.reply)
 
     def test_role_with_no_taxonomy_hit(self):
+        # Use a role outside every taxonomy bucket. "Astronaut" has
+        # no matching synonym in any bucket.
         j = UserJourney(phase=PHASE_DISCOVER, discover_step=DISCOVER_ASK_ROLE)
-        r = advance(j, "senior backend engineer")
-        self.assertEqual(r.journey.role_text, "senior backend engineer")
+        r = advance(j, "astronaut")
+        self.assertEqual(r.journey.role_text, "astronaut")
         self.assertEqual(r.journey.bucket_key, "")
         # No bucket → no job_type_filter persisted.
         self.assertNotIn("job_type_filter", r.profile_updates)
+
+    def test_software_engineer_recognised_as_bucket(self):
+        # R21.1: tech-role queries now route to a dedicated bucket
+        # instead of falling through to fuzzy aggregator ranking.
+        j = UserJourney(phase=PHASE_DISCOVER, discover_step=DISCOVER_ASK_ROLE)
+        r = advance(j, "senior backend engineer")
+        self.assertEqual(r.journey.bucket_key, "software_engineer")
+        self.assertEqual(r.profile_updates.get("job_type_filter"),
+                          "software_engineer")
 
     def test_location_advance(self):
         j = UserJourney(phase=PHASE_DISCOVER, discover_step=DISCOVER_ASK_LOCATION)

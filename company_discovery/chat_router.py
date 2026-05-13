@@ -513,6 +513,43 @@ def _build_registry() -> dict[str, Command]:
             confirmation_template="Starting CV build — one section at a time.",
         ),
         Command(
+            name="delete_account",
+            label="Delete your account (GDPR right-to-erasure)",
+            description=(
+                "Start the account-deletion flow. The agent emails "
+                "you a confirmation link. After you click, a 7-day "
+                "grace window starts before your data is erased — "
+                "you can cancel from Settings any time in that "
+                "window. Destructive: keeps the confirmation gate."
+            ),
+            slash_aliases=[
+                "/delete-account", "/delete-my-account", "/erase-account",
+            ],
+            keywords=[
+                r"\bdelete (?:my )?account\b",
+                r"\berase (?:my )?account\b",
+                r"\bclose (?:my )?account\b",
+                r"\bkonto (?:löschen|loeschen)\b",
+                r"\b(?:löschen|loeschen) (?:mein|meines)? konto\b",
+                r"\bgdpr\b.*(?:delete|erase|right to erasure)",
+                r"\bdsgvo\b.*(?:löschen|loeschen|löschung|loeschung)",
+            ],
+            params=[
+                CommandParam(
+                    "email",
+                    "To confirm, type your account email exactly "
+                    "(the one you signed up with):",
+                    validator=_validate_string,
+                ),
+            ],
+            confirmation_template=(
+                "I'll start deletion for **{email}** — you'll get a "
+                "confirmation email with a link. Clicking the link "
+                "starts a 7-day grace window before any data is "
+                "erased. Confirm?"
+            ),
+        ),
+        Command(
             name="help",
             label="Show available commands",
             description="List every command the chat understands.",

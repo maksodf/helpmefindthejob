@@ -119,6 +119,145 @@ TAXONOMY: dict[str, TaxonomyBucket] = {
             "restaurant server", "restaurant staff",
         ),
     ),
+    "software_engineer": TaxonomyBucket(
+        label_en="Software engineer",
+        label_de="Softwareentwickler/in",
+        synonyms=(
+            "software engineer", "software developer", "software dev",
+            "backend engineer", "backend developer",
+            "frontend engineer", "frontend developer",
+            "fullstack engineer", "fullstack developer",
+            "full stack", "fullstack",
+            "platform engineer", "infrastructure engineer",
+            "devops engineer", "site reliability engineer", "sre",
+            "engineering manager",
+            "softwareentwickler", "softwareentwicklerin",
+            "softwareingenieur", "softwareingenieurin",
+            "anwendungsentwickler", "anwendungsentwicklerin",
+            "programmierer", "programmiererin",
+        ),
+    ),
+    "data_engineer": TaxonomyBucket(
+        label_en="Data engineer / scientist",
+        label_de="Data Engineer / Data Scientist",
+        synonyms=(
+            "data engineer", "data scientist", "data analyst",
+            "ml engineer", "machine learning engineer",
+            "ai engineer", "ml scientist",
+            "analytics engineer", "bi analyst",
+            "datenanalyst", "datenanalystin",
+            "data engineer:in", "dateningenieur", "dateningenieurin",
+        ),
+    ),
+    "product_manager": TaxonomyBucket(
+        label_en="Product manager",
+        label_de="Product Manager / Produktmanager",
+        synonyms=(
+            "product manager", "product owner", "product lead",
+            "senior product manager", "group product manager",
+            "principal product manager",
+            "produktmanager", "produktmanagerin",
+            "produktentwickler", "produktentwicklerin",
+        ),
+    ),
+    "designer": TaxonomyBucket(
+        label_en="Designer",
+        label_de="Designer/in",
+        synonyms=(
+            "designer", "ux designer", "ui designer", "ux/ui designer",
+            "product designer", "graphic designer",
+            "visual designer", "interaction designer",
+            "designerin", "grafikdesigner", "grafikdesignerin",
+            "gestalter", "gestalterin", "mediengestalter",
+            "mediengestalterin",
+        ),
+    ),
+    "marketing": TaxonomyBucket(
+        label_en="Marketing",
+        label_de="Marketing",
+        synonyms=(
+            "marketing manager", "marketing lead", "marketing specialist",
+            "performance marketing", "growth marketing", "growth lead",
+            "growth hacker",
+            "content marketing", "content manager", "content strategist",
+            "social media manager", "social media specialist",
+            "seo specialist", "seo manager", "seo lead",
+            "brand manager", "brand strategist",
+            "crm manager", "crm specialist",
+            "marketingmanager", "marketingmanagerin",
+            "marketingreferent", "marketingreferentin",
+            "marketingbeauftragter", "marketingbeauftragte",
+        ),
+    ),
+    "sales": TaxonomyBucket(
+        label_en="Sales",
+        label_de="Vertrieb",
+        synonyms=(
+            "sales representative", "sales rep", "sales manager",
+            "sales executive", "account executive", "account manager",
+            "business development", "bdr", "sdr",
+            "sales engineer",
+            "vertriebsmitarbeiter", "vertriebsmitarbeiterin",
+            "vertriebsleiter", "vertriebsleiterin",
+            "verkäufer", "verkäuferin",
+            "kundenberater", "kundenberaterin",
+        ),
+    ),
+    "finance": TaxonomyBucket(
+        label_en="Finance",
+        label_de="Finance / Controlling",
+        synonyms=(
+            "finance manager", "financial analyst", "controller",
+            "fp&a", "fpa", "treasury", "treasurer",
+            "accountant", "senior accountant", "bookkeeper",
+            "audit", "auditor", "internal audit",
+            "tax manager", "tax accountant",
+            "buchhalter", "buchhalterin",
+            "finanzbuchhalter", "finanzbuchhalterin",
+            "finanzmanager", "finanzmanagerin",
+            "controlling", "controller/in",
+        ),
+    ),
+    "consulting": TaxonomyBucket(
+        label_en="Consultant",
+        label_de="Berater/in",
+        synonyms=(
+            "consultant", "senior consultant", "principal consultant",
+            "management consultant", "strategy consultant",
+            "business consultant", "it consultant", "tech consultant",
+            "associate consultant",
+            "berater", "beraterin", "unternehmensberater",
+            "unternehmensberaterin", "strategieberater",
+            "strategieberaterin",
+        ),
+    ),
+    "customer_success": TaxonomyBucket(
+        label_en="Customer success / support",
+        label_de="Customer Success / Support",
+        synonyms=(
+            "customer success", "customer success manager",
+            "customer support", "support engineer", "support specialist",
+            "technical support", "client success",
+            "kundenservice", "kundensupport",
+            "kundenbetreuer", "kundenbetreuerin",
+            "kundenservicemitarbeiter", "kundenservicemitarbeiterin",
+        ),
+    ),
+    "healthcare_management": TaxonomyBucket(
+        label_en="Healthcare management",
+        label_de="Healthcare-Management",
+        synonyms=(
+            "healthcare manager", "clinic manager", "hospital manager",
+            "klinikleiter", "klinikleiterin",
+            "klinikmanager", "klinikmanagerin",
+            "krankenhausmanager", "krankenhausmanagerin",
+            "stationsleiter", "stationsleiterin",
+            "pflegedienstleitung", "pflegedienstleiter",
+            "pflegedienstleiterin",
+            "healthcare project manager", "clinical project manager",
+            "digital health", "health tech",
+        ),
+    ),
 }
 
 
@@ -341,3 +480,127 @@ def list_supported_roles() -> list[dict[str, str]]:
         {"key": key, "label_en": b.label_en, "label_de": b.label_de}
         for key, b in TAXONOMY.items()
     ]
+
+
+# R21.2: when a search resolves to a known role bucket we also flip
+# the user's persona so the aggregator's ranking + the watchlist
+# scan don't bias toward a default they never chose. Keys map a
+# taxonomy bucket → an existing persona id from
+# company_discovery.personas.PERSONAS. Missing entries mean "don't
+# touch the persona" — keep what the user already had.
+BUCKET_TO_PERSONA: dict[str, str] = {
+    "software_engineer": "tech",
+    "data_engineer": "data",
+    "product_manager": "product-management",
+    "designer": "design",
+    "marketing": "marketing",
+    "sales": "sales",
+    "finance": "finance",
+    "consulting": "operations",
+    "customer_success": "support",
+    "healthcare_management": "healthcare-management",
+    "pflegehelfer": "healthcare-clinical",
+    # Hospitality buckets have no dedicated persona — leave the
+    # user's existing persona alone rather than forcing a wrong
+    # one. The strict bucket filter does the actual narrowing.
+}
+
+
+def persona_for_bucket(bucket_key: str | None) -> str | None:
+    """Look up the persona id matching a taxonomy bucket. Returns
+    None when the bucket has no mapped persona or the key is
+    unknown — callers should leave the user's existing persona
+    in place in that case."""
+    if not bucket_key:
+        return None
+    return BUCKET_TO_PERSONA.get(bucket_key)
+
+
+# R21.3: aggregator job-field sanity check.
+#
+# Real-world aggregator parsers occasionally swap title↔location
+# fields (we saw "title=Bangalore, India" + "location=Senior/Lead
+# Devops Engineer..." on prod). Rendering those raw on the search-
+# results canvas looks broken. This validator drops jobs that fail
+# basic field-shape checks.
+#
+# We're intentionally LENIENT — only the obviously-malformed cases
+# get dropped. Borderline rows pass through and the user can decide
+# whether they're useful.
+
+_LIKELY_TITLE_VERBS = (
+    "lead", "senior", "junior", "principal", "manager", "engineer",
+    "developer", "scientist", "analyst", "designer", "specialist",
+    "consultant", "executive", "coordinator", "assistant", "agent",
+    "officer", "associate", "intern",
+    "leiter", "leiterin", "entwickler", "entwicklerin",
+    "berater", "beraterin", "ingenieur", "ingenieurin",
+    "manager:in", "spezialist", "spezialistin",
+)
+
+_OBVIOUS_LOCATION_TOKENS = (
+    # Just a few — we don't need full DE city list; we just need
+    # enough that a string with NOTHING but place names is flagged
+    # as "looks like a location, not a title".
+    "berlin", "münchen", "muenchen", "munich", "hamburg",
+    "stuttgart", "frankfurt", "köln", "koeln", "düsseldorf",
+    "duesseldorf", "vienna", "wien", "zurich", "zürich",
+    "london", "paris", "amsterdam", "dublin",
+    "san francisco", "new york", "ny", "sf", "bangalore",
+    "remote", "anywhere", "germany", "deutschland", "uk", "usa",
+)
+
+
+def _looks_like_only_a_location(text: str) -> bool:
+    """True when ``text`` reads as a place name + nothing else.
+    Used to drop jobs whose 'title' is actually a location."""
+    if not text:
+        return False
+    lc = text.casefold().strip().strip(",.;:!?")
+    if len(lc) > 50:
+        return False  # too long to be a bare location
+    # If the string is a comma-separated list of place tokens, it's
+    # a location dressed up as a title.
+    bits = [b.strip() for b in lc.replace(";", ",").split(",")
+              if b.strip()]
+    if not bits:
+        return False
+    return all(b in _OBVIOUS_LOCATION_TOKENS for b in bits)
+
+
+def _looks_like_a_title_not_location(text: str) -> bool:
+    """True when ``text`` contains role-noun keywords — i.e. it's a
+    title that landed in the location field by mistake."""
+    if not text:
+        return False
+    lc = text.casefold()
+    return any(verb in lc for verb in _LIKELY_TITLE_VERBS)
+
+
+def looks_malformed(job: dict[str, Any]) -> bool:
+    """True iff the job's fields look swapped or otherwise unfit for
+    the user. Drops:
+
+    - title that's actually a location ("Bangalore, India")
+    - location that's actually a title ("Senior Devops Engineer...")
+    - URL that's not http(s) (could be a relative path, broken
+      reference, or scheme-less garbage)
+    """
+    title = (job.get("title") or "").strip()
+    location = (job.get("location") or "").strip()
+    url = (job.get("url") or "").strip()
+
+    if _looks_like_only_a_location(title):
+        return True
+    if _looks_like_a_title_not_location(location):
+        return True
+    if url and not url.lower().startswith(("http://", "https://")):
+        return True
+    if not title:
+        return True  # nothing to render
+    return False
+
+
+def filter_malformed_jobs(jobs: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Drop obviously-malformed jobs from a list. Preserves order."""
+    return [j for j in jobs if not looks_malformed(j)]
