@@ -4934,6 +4934,32 @@ async function chatSend(message) {
     });
     if (typingBubble) typingBubble.remove();
     chatAppendBubble("assistant", payload.reply || "(no reply)");
+    // R21.x: render the search-results canvas whenever a payload
+    // carries jobs — regardless of whether it came from the
+    // executed-command path (find_jobs direct) OR the journey path
+    // (find_jobs via journey state machine). Without this, journey
+    // users would see "Found 14 jobs" in chat but an empty canvas.
+    const payloadJobs = payload.result?.jobs || payload.jobs;
+    if (Array.isArray(payloadJobs) && payloadJobs.length) {
+      state.lastSearchResults = {
+        jobs: payloadJobs,
+        query: payload.result?.query
+                || (payload.reply || "").match(/Found \*\*\d+\*\* ([^*]+?) result/)?.[1]
+                || "",
+        location: payload.result?.location || "",
+        categories: payload.result?.categories || payload.categories,
+      };
+      renderSearchResults();
+    }
+    const navTarget = payload.result?.navigateTo || payload.navigateTo;
+    if (navTarget) {
+      const navBtn = document.querySelector(`.nav-item[data-view='${navTarget}']`);
+      if (navBtn) {
+        navBtn.click();
+      } else if (navTarget === "searchResults") {
+        navigate("searchResults");
+      }
+    }
     if (payload.awaiting) {
       setText("#chatPendingHint", `Awaiting: ${payload.awaiting}`);
     } else if (payload.awaitingConfirmation) {
@@ -4941,41 +4967,14 @@ async function chatSend(message) {
               "Reply yes / no to confirm.");
     } else if (payload.executed) {
       setText("#chatPendingHint", `Last executed: ${payload.executed}`);
-      // R19: when the executed command was a search, snapshot the
-      // results into state.lastSearchResults so renderSearchResults
-      // has data + render the canvas before we navigate. Same for
-      // the journey-driven search path which also returns jobs +
-      // navigateTo.
-      const resJobs = payload.result?.jobs || payload.jobs;
-      if (Array.isArray(resJobs) && resJobs.length) {
-        state.lastSearchResults = {
-          jobs: resJobs,
-          query: payload.result?.query
-                  || (payload.result?.message || "").match(/Found \*\*\d+\*\* ([^*]+?) result/)?.[1]
-                  || "",
-          location: payload.result?.location || "",
-          categories: payload.result?.categories || payload.categories,
-        };
-        renderSearchResults();
-      }
-      // Refresh bootstrap so other UI cards update.
+      // Search-results + navigation are rendered above (shared with
+      // journey-driven path). Just refresh bootstrap so unrelated
+      // UI cards reflect any DB write the executed command made.
       try {
         const fresh = await api("/api/bootstrap");
         absorbBootstrap(fresh);
         render();
       } catch (_) { /* non-fatal */ }
-      // Honour any navigateTo hint (search → searchResults,
-      // open_cv_builder → cvBuilder, show_view → target).
-      const target = payload.result?.navigateTo || payload.navigateTo;
-      if (target) {
-        const navBtn = document.querySelector(`.nav-item[data-view='${target}']`);
-        if (navBtn) {
-          navBtn.click();
-        } else if (target === "searchResults") {
-          // searchResults has no nav-item button — switch directly.
-          navigate("searchResults");
-        }
-      }
     } else {
       setText("#chatPendingHint", "");
     }

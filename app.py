@@ -186,7 +186,7 @@ DEFAULT_WATCHLIST_SCHEDULE = {
     "lastRunAt": None,
     "lastRunStatus": "disabled",
 }
-APP_VERSION = "0.79.0"
+APP_VERSION = "0.79.1"
 EXPORT_SCHEMA_VERSION = 1
 SESSION_COOKIE_NAME = "directjob_session"
 APP_ENV = os.environ.get("COMPANY_DISCOVERY_ENV", "development").strip().casefold()
@@ -3301,11 +3301,26 @@ class AppState:
                     f"{jobs_summary}\n\n"
                     "Reply with a **category name** to see the jobs in it."
                 )
+            # R21.x: include `jobs` + `navigateTo` so the client can
+            # render the search-results canvas AFTER a journey-driven
+            # search. Without these, the user finishes the journey
+            # questions and the right panel stays empty — bug found
+            # in the post-R21 audit. Flatten jobs_by_id into the
+            # ordered list the client renderer expects.
+            ordered_jobs = []
+            for category in categorized:
+                for jid in categorized[category]:
+                    j = jobs_by_id.get(jid) or {}
+                    if j:
+                        ordered_jobs.append(j)
             return {
                 "ok": True,
                 "message": f"{result.reply}\n\n{summary_msg}",
                 "totalJobs": len(jobs),
                 "journeyPhase": journey2.phase,
+                "jobs": ordered_jobs,
+                "categories": list(categorized.keys()),
+                "navigateTo": "searchResults" if ordered_jobs else None,
             }
         # Journey state machine can ask the chat layer to dispatch a
         # registered command (e.g. draft_motivation_letter). Typed
@@ -5565,6 +5580,9 @@ class Handler(BaseHTTPRequestHandler):
                         "letter": journey_result.get("letter"),
                         "suggestions": journey_result.get("suggestions"),
                         "totalJobs": journey_result.get("totalJobs"),
+                        "jobs": journey_result.get("jobs"),
+                        "categories": journey_result.get("categories"),
+                        "navigateTo": journey_result.get("navigateTo"),
                         "session": session.to_dict(),
                     })
                     return
@@ -5589,6 +5607,9 @@ class Handler(BaseHTTPRequestHandler):
                         "letter": journey_result.get("letter"),
                         "suggestions": journey_result.get("suggestions"),
                         "totalJobs": journey_result.get("totalJobs"),
+                        "jobs": journey_result.get("jobs"),
+                        "categories": journey_result.get("categories"),
+                        "navigateTo": journey_result.get("navigateTo"),
                         "session": session.to_dict(),
                     })
                     return
