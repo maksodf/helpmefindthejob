@@ -186,7 +186,7 @@ DEFAULT_WATCHLIST_SCHEDULE = {
     "lastRunAt": None,
     "lastRunStatus": "disabled",
 }
-APP_VERSION = "0.79.1"
+APP_VERSION = "0.79.2"
 EXPORT_SCHEMA_VERSION = 1
 SESSION_COOKIE_NAME = "directjob_session"
 APP_ENV = os.environ.get("COMPANY_DISCOVERY_ENV", "development").strip().casefold()
@@ -2841,11 +2841,18 @@ class AppState:
             if ids:
                 categorized[category] = ids
 
-        # Persist into the journey so review/drill works the same
-        # whether the user got here via /find, NL, or the guided
-        # journey. If there's no journey yet, this creates one in
-        # REVIEW phase.
-        journey = self._journey_load(user_id)
+        # R79.x: build the journey state ON the same profile
+        # instance we mutate below — otherwise two `save_user_profile`
+        # calls on different fetches of the same row race, and the
+        # second one obliterates the first's writes. Concretely: the
+        # journey save was being clobbered by the job_type_filter
+        # save, so the post-search REVIEW phase never landed on disk
+        # and the user's next message got the contextual fallback
+        # instead of the new-search-intent interrupt.
+        from company_discovery.journey import UserJourney
+        journey = UserJourney.from_dict(
+            (profile.chat_state or {}).get("journey"),
+        )
         journey.role_text = query
         journey.bucket_key = bucket_key or ""
         if location:
@@ -2856,14 +2863,15 @@ class AppState:
             journey.phase = PHASE_DONE
         else:
             journey.phase = PHASE_REVIEW
-        self._journey_save(user_id, journey)
 
-        # Update the profile filter (R16 behaviour preserved). R21.2:
-        # also auto-set persona to the one matching the bucket so the
-        # aggregator's ranking + the watchlist scan don't bias the
-        # results back toward a default persona the user never chose.
-        # Fixes the "Pflegehelfer search returned content-manager
-        # jobs" class of bug.
+        # Merge journey into chat_state on the SAME profile instance.
+        merged_chat_state = dict(profile.chat_state or {})
+        merged_chat_state["journey"] = journey.to_dict()
+        profile.chat_state = merged_chat_state
+
+        # R16: persist job-type filter so watchlist scans honour it.
+        # R21.2: also auto-set persona so future ranking isn't biased
+        # by an unrelated default.
         if bucket_key:
             profile.job_type_filter = bucket_key
             profile.job_type_location_filter = location or ""
@@ -2874,7 +2882,8 @@ class AppState:
                 self.log_analytics(user_id, "auto_persona_switch",
                                     {"from_bucket": bucket_key,
                                      "to_persona": mapped_persona})
-            self.repository.save_user_profile(profile)
+        # ONE save — chat_state + filter + persona all together.
+        self.repository.save_user_profile(profile)
 
         self.log_analytics(user_id, "chat_cmd",
                             {"name": "find_jobs",
@@ -5555,9 +5564,70 @@ class Handler(BaseHTTPRequestHandler):
                 # journey on explicit job-seeking intent.
                 from company_discovery.journey import (
                     PHASE_GREET, PHASE_DONE, should_auto_start,
+                    looks_like_new_search_intent,
                 )
                 journey_now = STATE._journey_load(data_user_id)
                 in_journey = journey_now.phase not in (PHASE_GREET, PHASE_DONE)
+                # R21.x: a user in a post-search phase (REVIEW / DRILL /
+                # TAILOR / LETTER / CV_CONSULT) who types "search for X"
+                # or a bare role keyword wants a NEW search — not a
+                # category drill of the OLD results. Without this
+                # escape hatch the user is stuck rejecting the same
+                # "Which category?" prompt forever (real bug seen on
+                # prod 0.79.1: "search for pflege" rejected three
+                # times after a Bartender search). Reset the journey
+                # state + let the auto-start path handle it.
+                if (in_journey
+                        and looks_like_new_search_intent(
+                            user_message, journey_now.phase)):
+                    STATE.log_analytics(data_user_id, "chat_cmd",
+                                          {"name": "new_search_interrupt",
+                                           "from_phase": journey_now.phase})
+                    from company_discovery.journey import UserJourney
+                    STATE._journey_save(data_user_id, UserJourney())
+                    # If we can extract a role from the message,
+                    # fire find_jobs directly — no need to ask the
+                    # questions again. Otherwise kick off the
+                    # journey at the role-question.
+                    nl_args = extract_keyword_args(
+                        "find_jobs", user_message)
+                    if nl_args.get("query"):
+                        result = STATE.chat_handler_find_jobs(
+                            data_user_id,
+                            {"query": nl_args["query"],
+                             "location": nl_args.get("location") or None},
+                        )
+                        reply = result.get("message") or "Done."
+                        session.history.append(ChatTurn(
+                            role="assistant", content=reply))
+                        STATE.chat_session_persist(data_user_id)
+                        payload_out = {
+                            "reply": reply,
+                            "executed": "find_jobs",
+                            "result": result,
+                            "session": session.to_dict(),
+                        }
+                        for key in ("navigateTo", "totalJobs", "jobs",
+                                      "jobType", "categories"):
+                            if key in result:
+                                payload_out[key] = result[key]
+                        self.send_json(payload_out)
+                        return
+                    # No role extracted — start the journey at
+                    # PHASE_DISCOVER so it asks "what kind of role?".
+                    journey_result = STATE.chat_journey_step(
+                        data_user_id, "",
+                    )
+                    reply = journey_result.get("message") or "(continuing)"
+                    session.history.append(ChatTurn(
+                        role="assistant", content=reply))
+                    STATE.chat_session_persist(data_user_id)
+                    self.send_json({
+                        "reply": reply,
+                        "journeyPhase": journey_result.get("journeyPhase"),
+                        "session": session.to_dict(),
+                    })
+                    return
                 if not in_journey and should_auto_start(journey_now, user_message):
                     # Start fresh journey + dispatch the very first
                     # turn so the user sees the welcome immediately.

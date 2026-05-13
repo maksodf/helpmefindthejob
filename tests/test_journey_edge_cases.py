@@ -336,6 +336,72 @@ class MixedLanguageInputTests(unittest.TestCase):
         self.assertEqual(args.get("location", "").lower(), "berlin")
 
 
+class NewSearchInterruptTests(unittest.TestCase):
+    """R79.2: a user who already finished one search must be able
+    to start a NEW one without getting stuck in a category-drill
+    loop. Exact reproduction of Nasser's 0.79.1 bug — three messages
+    rejected as "Which category?" after a Bartender search."""
+
+    def test_loose_search_for_X_detected_in_review(self):
+        from company_discovery.journey import looks_like_new_search_intent
+        self.assertTrue(looks_like_new_search_intent(
+            "search for pflege", "review"))
+
+    def test_no_search_for_X_detected_in_review(self):
+        from company_discovery.journey import looks_like_new_search_intent
+        self.assertTrue(looks_like_new_search_intent(
+            "no search for pflegehelfer please", "review"))
+
+    def test_german_suche_detected(self):
+        from company_discovery.journey import looks_like_new_search_intent
+        self.assertTrue(looks_like_new_search_intent(
+            "suche Pflegehelfer", "review"))
+
+    def test_loose_search_NOT_detected_in_discover(self):
+        # The user is mid-answering "what role?" — don't interrupt.
+        from company_discovery.journey import looks_like_new_search_intent
+        self.assertFalse(looks_like_new_search_intent(
+            "search for pflege", "discover"))
+
+    def test_category_pick_NOT_treated_as_new_search(self):
+        from company_discovery.journey import looks_like_new_search_intent
+        # Typing the actual category name to drill in must NOT
+        # trigger the interrupt. "Hospitality / Bar" contains no
+        # search verb and no full taxonomy synonym.
+        self.assertFalse(looks_like_new_search_intent(
+            "Hospitality / Bar", "review"))
+        self.assertFalse(looks_like_new_search_intent(
+            "1", "drill"))
+
+
+class DiscoverPhaseBucketCleanupTests(unittest.TestCase):
+    """R79.2: when the user's role-answer contains a bucket keyword
+    (e.g. "no search for pflegehelfer please") the journey should
+    store the matched token, not the whole sentence — otherwise
+    the aggregator query later is nonsense."""
+
+    def test_bucket_match_stores_matched_synonym(self):
+        from company_discovery.journey import (
+            UserJourney, advance, PHASE_DISCOVER, DISCOVER_ASK_ROLE,
+        )
+        j = UserJourney(phase=PHASE_DISCOVER,
+                          discover_step=DISCOVER_ASK_ROLE)
+        r = advance(j, "no search for pflegehelfer please")
+        self.assertEqual(r.journey.role_text, "pflegehelfer")
+        self.assertEqual(r.journey.bucket_key, "pflegehelfer")
+
+    def test_no_bucket_match_stores_full_message(self):
+        from company_discovery.journey import (
+            UserJourney, advance, PHASE_DISCOVER, DISCOVER_ASK_ROLE,
+        )
+        j = UserJourney(phase=PHASE_DISCOVER,
+                          discover_step=DISCOVER_ASK_ROLE)
+        r = advance(j, "Astronaut for SpaceX")
+        # No taxonomy match → preserve the user's literal answer.
+        self.assertEqual(r.journey.role_text, "Astronaut for SpaceX")
+        self.assertEqual(r.journey.bucket_key, "")
+
+
 class CommandConfirmationFlagTests(unittest.TestCase):
     """R19: read-only commands skip the confirmation gate."""
 

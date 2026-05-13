@@ -311,6 +311,54 @@ def is_off_topic(msg: str) -> bool:
     return any(p.search(msg) for p in _OFF_TOPIC_PATTERNS)
 
 
+_LOOSE_SEARCH_INTENT = (
+    re.compile(r"\b(?:search|find|look|suche|finde)\s+(?:for\s+|nach\s+|me\s+)?",
+                re.IGNORECASE),
+    re.compile(r"^\s*(?:no|nein|nope)\s*[,!.]?\s+(?:search|find|look|suche|finde)\b",
+                re.IGNORECASE),
+    re.compile(r"\b(?:i\s+(?:want|need)|i'd\s+like|ich\s+möchte)\b.*?\b(?:another|different|new|anderes|neue)\b",
+                re.IGNORECASE),
+)
+
+
+def looks_like_new_search_intent(msg: str, current_phase: str) -> bool:
+    """True iff the message means "start a fresh job search" — even
+    when the user is currently inside the journey's post-search
+    phases (review/drill/tailor/letter/cv_consult/done).
+
+    Three signal sources:
+    1. Explicit job-seeking triggers ("find me a job") — same set
+       used by ``should_auto_start``.
+    2. A taxonomy-bucket keyword the user typed AFTER a search has
+       already landed (e.g. typing "Pflegehelfer" while looking at
+       the Bartender results means "search for Pflegehelfer
+       instead", not "drill into a non-existent category").
+    3. Loose "search/find/look for X" phrases without an explicit
+       "job" noun. The bug Nasser hit on 0.79.1 — "search for
+       pflege" + "no search for pflegehelfer please" stuck him in
+       a category-drill loop because neither matched a strict
+       trigger.
+
+    We DON'T fire in the data-gathering phases (discover, cv_check,
+    inspire, prefs, search) — there the user is still answering,
+    and rerouting would discard their progress.
+    """
+    if not msg or current_phase in (
+        PHASE_GREET, PHASE_DISCOVER, PHASE_CV_CHECK, PHASE_INSPIRE,
+        PHASE_PREFS, PHASE_SEARCH,
+    ):
+        return False
+    if looks_like_journey_trigger(msg):
+        return True
+    # Bare role keyword in a post-search phase = "search this instead".
+    from company_discovery.job_type_filter import identify_bucket_with_match
+    bucket, _ = identify_bucket_with_match(msg)
+    if bucket:
+        return True
+    # Loose "search for X" / "no, search for Y" patterns.
+    return any(p.search(msg) for p in _LOOSE_SEARCH_INTENT)
+
+
 def _sanitize_for_prompt(text: str, limit: int) -> str:
     """Prompt-injection mitigation for fields we hand to the LLM.
     Strip control chars, neutralise common injection seeds, cap
@@ -559,15 +607,20 @@ def _advance_discover(journey: UserJourney, msg: str) -> AdvanceResult:
                 journey=journey,
                 persist=False,
             )
-        journey.role_text = msg
         bucket_key, matched = identify_bucket_with_match(msg)
+        # R79.x: when the message contains a clear bucket keyword
+        # (e.g. "no, search for pflegehelfer please"), use the
+        # matched token as the role — NOT the full sentence. Storing
+        # "no search for pflegehelfer please" as role_text would
+        # feed nonsense to the aggregator on the next step. Falls
+        # back to the literal message when no bucket matches.
+        journey.role_text = matched if (bucket_key and matched) else msg
         if bucket_key:
             journey.bucket_key = bucket_key
-            # Auto-persist the role filter so watchlist scans honour it.
             profile_updates["job_type_filter"] = bucket_key
         journey.discover_step = DISCOVER_ASK_LOCATION
         reply = (
-            f"Got it: **{msg}**.\n\n"
+            f"Got it: **{journey.role_text}**.\n\n"
             "**2. Where?** (city, country, or \"anywhere\" / \"remote\")"
         )
         return AdvanceResult(reply=reply, journey=journey,
