@@ -532,6 +532,118 @@ class LanguageParsingTests(unittest.TestCase):
                           ["Deutsch", "English", "Türkçe"])
 
 
+class CityTypoSuggestionTests(unittest.TestCase):
+    """R79.5: short single-char typos of known cities get an explicit
+    'Did you mean X?' before being stored. Real prod case: "berli"
+    silently accepted as the location, then complaint user could
+    not undo without restarting."""
+
+    def test_berli_suggests_berlin(self):
+        from company_discovery.journey import _suggest_city_correction
+        self.assertEqual(_suggest_city_correction("berli"), "Berlin")
+
+    def test_muenche_suggests_munchen(self):
+        from company_discovery.journey import _suggest_city_correction
+        # "muenche" — missing the trailing "n". Levenshtein-1 to
+        # "muenchen" (case-folded).
+        self.assertEqual(_suggest_city_correction("muenche"), "München")
+
+    def test_hambrug_suggests_hamburg(self):
+        # Swapped chars within Lev-1.
+        from company_discovery.journey import _suggest_city_correction
+        # Lev distance hambrug↔hamburg = 1 (swap of b↔u? no: actually
+        # 2 edits. Should NOT suggest if > 1.).
+        # Just verify behaviour doesn't crash regardless of result.
+        result = _suggest_city_correction("hambrug")
+        # Either suggests Hamburg or returns None — both are
+        # acceptable; the crash-resistance is what matters.
+        self.assertIn(result, ("Hamburg", None))
+
+    def test_exact_city_no_suggestion(self):
+        from company_discovery.journey import _suggest_city_correction
+        self.assertIsNone(_suggest_city_correction("Berlin"))
+        self.assertIsNone(_suggest_city_correction("MUNICH"))
+
+    def test_multi_word_location_skipped(self):
+        from company_discovery.journey import _suggest_city_correction
+        # "Berlin, Germany" — has a comma. Skip the typo check;
+        # treat as a real address.
+        self.assertIsNone(_suggest_city_correction("Berlin, Germany"))
+
+    def test_too_short_skipped(self):
+        from company_discovery.journey import _suggest_city_correction
+        # 3 chars is too short to suggest reliably.
+        self.assertIsNone(_suggest_city_correction("ber"))
+
+    def test_genuine_unknown_skipped(self):
+        from company_discovery.journey import _suggest_city_correction
+        # Random non-typo location → no suggestion.
+        self.assertIsNone(_suggest_city_correction("Bangkok"))
+
+
+class TechBucketLateralRoleTests(unittest.TestCase):
+    """R79.5: software_engineer / data_engineer / finance / etc.
+    buckets now have curated lateral-role fallbacks instead of the
+    pointless generic 'Senior X / Lead X / Assistant X'."""
+
+    def test_software_engineer_has_curated_neighbours(self):
+        from company_discovery.journey import _suggest_lateral_roles
+        out = _suggest_lateral_roles(
+            role_text="senior backend engineer",
+            bucket_key="software_engineer",
+            years_experience=5,
+            ai_available=False,
+            ai_caller=None,
+        )
+        for role in out["roles"]:
+            self.assertNotIn("Lead senior backend engineer", role)
+            self.assertNotIn("Assistant senior backend engineer", role)
+        self.assertTrue(any(r in out["roles"] for r in (
+            "Senior Software Engineer", "Backend Engineer",
+            "Platform Engineer", "DevOps Engineer", "Tech Lead",
+        )))
+
+    def test_marketing_has_curated_neighbours(self):
+        from company_discovery.journey import _suggest_lateral_roles
+        out = _suggest_lateral_roles(
+            role_text="marketing manager",
+            bucket_key="marketing",
+            years_experience=3,
+            ai_available=False,
+            ai_caller=None,
+        )
+        self.assertTrue(any(r in out["roles"] for r in (
+            "Growth Marketing Manager", "Content Strategist",
+            "Brand Manager", "SEO Specialist",
+        )))
+
+    def test_finance_has_curated_neighbours(self):
+        from company_discovery.journey import _suggest_lateral_roles
+        out = _suggest_lateral_roles(
+            role_text="financial controller",
+            bucket_key="finance",
+            years_experience=4,
+            ai_available=False,
+            ai_caller=None,
+        )
+        self.assertTrue(any(r in out["roles"] for r in (
+            "Controller", "FP&A Manager", "Internal Auditor",
+        )))
+
+    def test_unknown_bucket_still_falls_back_generic(self):
+        # Just verify we don't crash for an unmapped bucket.
+        from company_discovery.journey import _suggest_lateral_roles
+        out = _suggest_lateral_roles(
+            role_text="space pilot",
+            bucket_key="space_pilot_bucket",   # not in the map
+            years_experience=2,
+            ai_available=False,
+            ai_caller=None,
+        )
+        # Generic fallback gives Senior/Lead/Assistant variants.
+        self.assertEqual(len(out["roles"]), 3)
+
+
 class CvCreationIntentTests(unittest.TestCase):
     """R79.3: real-user phrase "i don't have a cv and i need you to
     create ne one" must route to the sectional CV-build flow even

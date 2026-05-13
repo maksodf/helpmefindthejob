@@ -187,14 +187,19 @@ def main() -> int:
                     "cancel echoed in chat")
 
             # Test help mid-journey: start fresh, get past greet,
-            # then ask /help.
+            # then ask /help. R79.5: slash commands now bypass the
+            # journey state machine, so /help dispatches the full
+            # command list directly. Either response is acceptable
+            # — the bare "help" word still hits the journey escape.
             _send_chat(page, "I need a job")
             _send_chat(page, "/help")
             tc3 = _transcript_text(page)
-            report("help_token_recognised_mid_journey",
-                    "middle of a guided" in tc3.lower()
-                    or "in the middle" in tc3.lower(),
-                    "help reply surfaced")
+            help_surfaced = any(needle in tc3.lower() for needle in (
+                "middle of a guided", "in the middle",
+                "here's what i can do", "add a company to your watchlist",
+            ))
+            report("help_token_recognised_mid_journey", help_surfaced,
+                    "help reply surfaced (either context-escape or full help)")
 
             # Test off-topic redirect: continue the in-progress
             # journey with a weather question.
