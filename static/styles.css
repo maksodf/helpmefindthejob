@@ -834,6 +834,80 @@ input[type="radio"] {
   color: var(--text-muted);
 }
 
+/* R19: search-results canvas. */
+.search-results-body {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  margin-top: 14px;
+}
+.search-category {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.search-category-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 4px;
+}
+.search-category-heading h3 {
+  margin: 0;
+  font-size: var(--text-lg);
+  color: var(--text);
+}
+.search-category-heading .count {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.search-job-card {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px 18px;
+  padding: 14px 18px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  transition: border-color 0.18s ease, background 0.18s ease,
+              transform 0.08s ease;
+}
+.search-job-card:hover {
+  border-color: color-mix(in oklab, var(--accent) 30%, var(--border));
+  background: color-mix(in oklab, var(--accent) 4%, var(--surface-2));
+}
+.search-job-card .job-title {
+  grid-column: 1;
+  grid-row: 1;
+  font-weight: 600;
+  font-size: var(--text-md);
+  color: var(--text);
+  margin: 0;
+}
+.search-job-card .job-meta {
+  grid-column: 1;
+  grid-row: 2;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  margin: 0;
+}
+.search-job-card .job-actions {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+  display: inline-flex;
+  gap: 8px;
+}
+.search-job-card .job-link {
+  color: var(--accent-text);
+  text-decoration: none;
+  font-size: var(--text-sm);
+  font-weight: 500;
+}
+.search-job-card .job-link:hover { text-decoration: underline; }
+
 .chat-first-banner {
   display: flex;
   gap: 14px;

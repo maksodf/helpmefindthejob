@@ -177,7 +177,7 @@ DEFAULT_WATCHLIST_SCHEDULE = {
     "lastRunAt": None,
     "lastRunStatus": "disabled",
 }
-APP_VERSION = "0.77.0"
+APP_VERSION = "0.78.0"
 EXPORT_SCHEMA_VERSION = 1
 SESSION_COOKIE_NAME = "directjob_session"
 APP_ENV = os.environ.get("COMPANY_DISCOVERY_ENV", "development").strip().casefold()
@@ -2748,6 +2748,14 @@ class AppState:
                  "message": f"Saved search **{record.name}** created."}
 
     def chat_handler_find_jobs(self, user_id: str, args: dict) -> dict:
+        """Run a job search and ALWAYS engage the journey's review
+        phase so the user has a real continuation path (drill into a
+        category → pick a job → letter / consult / save) regardless of
+        whether the search was triggered by slash, keyword, NL, or the
+        guided journey. Single code path — fixes the R18 bug where
+        slash `/find` left the user stranded with no way to see or
+        interact with the results.
+        """
         from company_discovery.aggregators import rank_aggregated
         from company_discovery.personas import get_persona
         from company_discovery.job_type_filter import (
@@ -2755,64 +2763,134 @@ class AppState:
             identify_bucket,
             normalize_location,
         )
+        from company_discovery.journey import (
+            cluster_jobs, PHASE_REVIEW, PHASE_DONE,
+            MAX_SEARCH_JOBS_CARRIED,
+        )
+
         profile = self.profile_for(user_id)
         query = args["query"]
         location = args.get("location") or profile.location or None
-        # Strict job-type filter: if the user's query matches a known
-        # role bucket (bartender, Pflegehelfer, barista, …) we apply a
-        # hard allow-list against the aggregator results. Aggregator
-        # search is still useful — it surfaces the candidate set — but
-        # the strict filter keeps only the roles actually requested.
+
         bucket_key = identify_bucket(query)
-        jobs, outcomes = self.aggregator_engine.search(
+        jobs, _outcomes = self.aggregator_engine.search(
             query=query, location=location,
             limit_per_provider=10, persona_id=profile.persona_id,
         )
         if bucket_key:
-            jobs = filter_jobs_by_type(jobs, job_type=bucket_key, location=location)
+            jobs = filter_jobs_by_type(jobs, job_type=bucket_key,
+                                          location=location)
         elif normalize_location(location):
-            # No taxonomy hit but the user gave a location — at least
-            # enforce that.
-            jobs = filter_jobs_by_type(jobs, job_type=None, location=location)
+            jobs = filter_jobs_by_type(jobs, job_type=None,
+                                          location=location)
         persona = get_persona(profile.persona_id)
         keyword_tokens: list[str] = []
         for chunk in (query, *persona.default_target_roles):
             keyword_tokens.extend(re.findall(r"\w+", chunk.casefold()))
         ranked = rank_aggregated(jobs, keyword_tokens=keyword_tokens,
-                                  location=location, cap=15)
-        self.log_analytics(user_id, "chat_cmd",
-                            {"name": "find_jobs", "query": query[:120],
-                             "jobCount": len(jobs),
-                             "jobType": bucket_key or None})
-        sample = [
-            {"title": j.title, "company": j.company_name,
-              "location": j.location, "source": j.source,
-              "url": j.source_url}
-            for j, _ in ranked[:5]
+                                  location=location, cap=30)
+
+        # Build the journey-style payload — same shape regardless of
+        # caller — so the chat journey state has real continuation
+        # data and the canvas can render the result cards.
+        job_dicts = [
+            {"title": (j.title or "")[:200],
+              "company": (j.company_name or "")[:120],
+              "location": (j.location or "")[:120],
+              "url": (j.source_url or "")[:300],
+              "source": (j.source or "")[:60],
+              "description": (j.description or "")[:600]}
+            for j, _ in ranked[:MAX_SEARCH_JOBS_CARRIED]
         ]
-        # Persist the role+location on the profile so subsequent
-        # watchlist scans honour the same strict filter. The user's
-        # most recent /find query becomes their watchlist filter.
+        clusters = cluster_jobs(job_dicts)
+        categorized: dict[str, list[str]] = {}
+        jobs_by_id: dict[str, dict] = {}
+        for category, items in clusters.items():
+            ids: list[str] = []
+            for j in items:
+                job_id = j.get("url") or j.get("title") or ""
+                if not job_id:
+                    continue
+                ids.append(job_id)
+                jobs_by_id[job_id] = {
+                    "title": j["title"],
+                    "company": j["company"],
+                    "location": j["location"],
+                    "url": j["url"],
+                    "source": j["source"],
+                }
+            if ids:
+                categorized[category] = ids
+
+        # Persist into the journey so review/drill works the same
+        # whether the user got here via /find, NL, or the guided
+        # journey. If there's no journey yet, this creates one in
+        # REVIEW phase.
+        journey = self._journey_load(user_id)
+        journey.role_text = query
+        journey.bucket_key = bucket_key or ""
+        if location:
+            journey.location = location
+        journey.search_results_by_category = categorized
+        journey.search_jobs_by_id = jobs_by_id
+        if not job_dicts:
+            journey.phase = PHASE_DONE
+        else:
+            journey.phase = PHASE_REVIEW
+        self._journey_save(user_id, journey)
+
+        # Update the profile filter (R16 behaviour preserved).
         if bucket_key:
             profile.job_type_filter = bucket_key
             profile.job_type_location_filter = location or ""
             self.repository.save_user_profile(profile)
-        # Show the role using the user's own language (their typed term),
-        # not the canonical English label — a German user typing
-        # "Pflegehelfer" gets "Pflegehelfer" back in the reply, not
-        # "Nursing assistant".
+
+        self.log_analytics(user_id, "chat_cmd",
+                            {"name": "find_jobs",
+                             "query": query[:120],
+                             "jobCount": len(job_dicts),
+                             "jobType": bucket_key or None,
+                             "categories": len(categorized)})
+
+        # Reply uses the user's own language (matches R16.1 fix).
         role_label = query
+        if not job_dicts:
+            return {
+                "ok": True,
+                "message": (
+                    f"No matches for **{role_label}**"
+                    f"{' in ' + location if location else ''} right now. "
+                    "Try a different role or widen the location — "
+                    "type **find a job** to start fresh."
+                ),
+                "jobs": [], "totalJobs": 0, "jobType": bucket_key,
+                # No navigateTo — the canvas stays where it was.
+            }
+
+        cats_md = "\n".join(
+            f"  - **{c}**: {len(ids)} job{'s' if len(ids) != 1 else ''}"
+            for c, ids in categorized.items()
+        )
+        msg = (
+            f"Found **{len(job_dicts)}** {role_label} result(s)"
+            f"{' in ' + location if location else ''}."
+            + (" (Strict role filter applied — only this job type.)"
+               if bucket_key else "")
+            + f"\n\n{cats_md}\n\n"
+            "Reply with a **category name** to drill in, or look at "
+            "the right panel to see all the cards."
+        )
         return {
             "ok": True,
-            "message": (
-                f"Found **{len(jobs)}** {role_label} result(s)"
-                f"{' in ' + location if location else ''}."
-                + (" (Strict role filter applied — only this job type.)"
-                   if bucket_key else "")
-            ),
-            "jobs": sample,
-            "totalJobs": len(jobs),
+            "message": msg,
+            "jobs": job_dicts,
+            "totalJobs": len(job_dicts),
             "jobType": bucket_key,
+            "categories": list(categorized.keys()),
+            # Tell the client to switch the canvas to the search-results
+            # view so the user can SEE the results, not just hear that
+            # they exist.
+            "navigateTo": "searchResults",
         }
 
     def chat_handler_update_profile(self, user_id: str, args: dict) -> dict:
@@ -2950,6 +3028,73 @@ class AppState:
                  "message": f"Removed company **{company_id}** from your watchlist."}
 
     # ---------------- Guided job-search journey (R17) ----------------
+
+    def _build_contextual_fallback(self, user_id: str,
+                                     user_message: str) -> str:
+        """Build a contextual no-route reply that knows the journey
+        state, so the user is never left guessing. Replaces the
+        generic "I'm not sure" dead-end (R19).
+        """
+        from company_discovery.journey import (
+            PHASE_REVIEW, PHASE_DRILL, PHASE_TAILOR, PHASE_LETTER,
+            PHASE_CV_CONSULT, PHASE_DONE, PHASE_GREET,
+        )
+        journey = self._journey_load(user_id)
+
+        # In review phase: surface the categories the user can drill
+        # into. They just searched and the answer is right there.
+        if journey.phase == PHASE_REVIEW:
+            categories = list(journey.search_results_by_category.keys())
+            if categories:
+                cats_md = "\n".join(f"  - **{c}**" for c in categories)
+                return (
+                    "I didn't catch that — you've got an active "
+                    "search waiting. Reply with one of the "
+                    "categories below to see the jobs in it:\n"
+                    f"{cats_md}\n\n"
+                    "Or type **cancel** to start over."
+                )
+
+        # In drill phase: ask for a number.
+        if journey.phase == PHASE_DRILL:
+            ids = journey.search_results_by_category.get(
+                journey.picked_category, [])
+            if ids:
+                return (
+                    "Reply with the **number** of the job you want to "
+                    f"focus on (1–{len(ids)}). Or type **cancel** "
+                    "to start over."
+                )
+
+        # In tailor phase: surface the per-job actions.
+        if journey.phase == PHASE_TAILOR:
+            return (
+                "For this job I can:\n"
+                "  - **letter** — draft a DACH-norm motivation letter\n"
+                "  - **consult** — suggest CV enhancements for this JD\n"
+                "  - **save** — mark interested and wrap up\n\n"
+                "Which?"
+            )
+
+        # In letter / cv_consult: short menu.
+        if journey.phase in (PHASE_LETTER, PHASE_CV_CONSULT):
+            return (
+                "Reply **save** to wrap up, or **letter** / "
+                "**consult** to see the other option."
+            )
+
+        # No active journey OR fresh after sign-in: surface 3 starter
+        # actions, not the abstract "help" command.
+        return (
+            "I'm not sure what you mean by that — here's what I can "
+            "do right now:\n"
+            "  - **find a job** — I'll ask a few questions and "
+            "search for you\n"
+            "  - **add a company** like *\"watch Charité, career "
+            "page karriere.charite.de\"*\n"
+            "  - **build my CV** — guided sectional walk\n\n"
+            "Or type **help** for the full command list."
+        )
 
     def _journey_load(self, user_id: str):
         from company_discovery.journey import UserJourney
@@ -5476,12 +5621,13 @@ class Handler(BaseHTTPRequestHandler):
                                 # Stash for the rest-pre-fill below.
                                 _ai_extracted_args = ai_args
                     if routed is None:
-                        # Could not classify — surface help.
-                        reply = (
-                            "I'm not sure what you'd like to do. Type "
-                            "**help** to see what I can do, or try a "
-                            "slash-command like `/add-company` or "
-                            "`/find Senior Backend Berlin`."
+                        # R19: context-aware fallback. Read the
+                        # journey state so a user with active search
+                        # results gets surfaced the next-best action
+                        # (drill into a category) instead of the
+                        # generic "type help" dead-end.
+                        reply = STATE._build_contextual_fallback(
+                            data_user_id, user_message,
                         )
                         session.history.append(ChatTurn(role="assistant",
                                                           content=reply))
@@ -5579,6 +5725,32 @@ class Handler(BaseHTTPRequestHandler):
                         "optional": True,
                         "session": session.to_dict(),
                     })
+                    return
+                # R19: read-only commands (find_jobs, show_view,
+                # suggest_*, draft_*) skip the confirmation gate.
+                # Asking permission to think is friction; only
+                # destructive operations need the yes/no prompt.
+                if not cmd.requires_confirmation:
+                    result = STATE.chat_execute_command(
+                        data_user_id, cmd.name, session.pending.args)
+                    session.pending = None
+                    reply = result.get("message") or "Done."
+                    session.history.append(ChatTurn(role="assistant",
+                                                      content=reply))
+                    STATE.chat_session_persist(data_user_id)
+                    payload_out = {
+                        "reply": reply,
+                        "executed": cmd.name,
+                        "result": result,
+                        "session": session.to_dict(),
+                    }
+                    # Surface navigateTo + extra payload fields the
+                    # handler returned so the client can react.
+                    for key in ("navigateTo", "totalJobs", "letter",
+                                  "suggestions", "jobs", "jobType"):
+                        if key in result:
+                            payload_out[key] = result[key]
+                    self.send_json(payload_out)
                     return
                 # Show confirmation prompt.
                 session.pending.awaiting_confirmation = True

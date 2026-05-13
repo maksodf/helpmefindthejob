@@ -1187,6 +1187,35 @@
           </section>
         </section>
 
+        <!-- R19: Search results — populated by find_jobs. The chat
+             handler returns navigateTo='searchResults' so the canvas
+             auto-switches here when a search completes. Read-only;
+             interactions (drill into a job) go back through chat. -->
+        <section id="view-searchResults" class="view"
+                  data-view="searchResults" aria-labelledby="viewTitle"
+                  hidden>
+          <section class="card" aria-label="Search results">
+            <div class="card-heading">
+              <div>
+                <h2 id="searchResultsHeading">Search results</h2>
+                <p class="muted" id="searchResultsSub">
+                  Categorised live aggregator hits. Click a card to
+                  focus on it in chat.
+                </p>
+              </div>
+              <div class="action-group">
+                <button id="searchResultsRerunBtn" class="btn btn-ghost"
+                        type="button" hidden>Re-run search</button>
+              </div>
+            </div>
+            <div id="searchResultsBody" class="search-results-body">
+              <p class="muted">No active search.
+                <a href="#" id="searchResultsHint">Type "find a job" in chat to start.</a>
+              </p>
+            </div>
+          </section>
+        </section>
+
         <!-- Admin -->
         <section id="view-admin" class="view admin-only" data-view="admin" aria-labelledby="viewTitle" hidden>
           <section class="card" aria-label="Tester accounts">

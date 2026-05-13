@@ -127,28 +127,30 @@ def reset(c: Client) -> None:
 
 def chat_until_confirm(c: Client, opener: str,
                         skip_optionals: bool = True) -> dict:
-    """Drive a single chat command from opener to confirmation prompt,
-    skipping any optional fields (empty reply). Returns the response
-    that carries ``awaitingConfirmation=True``. Raises if it doesn't
-    reach confirmation within ``max_turns`` turns."""
+    """Drive a single chat command from opener until either:
+      - the confirmation prompt arrives (destructive commands), OR
+      - the command executes directly (R19: read-only commands
+        like find_jobs / show_view skip the confirmation gate)
+
+    Returns the terminal response. Caller checks for
+    ``awaitingConfirmation`` vs ``executed`` to know which path it
+    took.
+    """
     r = chat(c, opener)
     for _ in range(8):
-        if r.get("awaitingConfirmation"):
+        if r.get("awaitingConfirmation") or r.get("executed"):
             return r
         if r.get("awaiting") and skip_optionals and r.get("optional"):
-            # Skip the optional by sending an empty string. The chat
-            # endpoint rejects empty messages with 400; instead we
-            # send a single space which the validators treat as empty.
             r = chat(c, " ")
             continue
         if r.get("awaiting"):
-            # Required slot but our caller is supposed to have
-            # pre-filled — re-ask shouldn't happen.
             raise RuntimeError(
                 f"unexpected required slot {r['awaiting']}; reply={r['reply']!r}"
             )
-        raise RuntimeError(f"chat did not reach confirmation: {r}")
-    raise RuntimeError("too many turns without reaching confirmation")
+        raise RuntimeError(
+            f"chat did not reach confirmation OR execution: {r}"
+        )
+    raise RuntimeError("too many turns without reaching terminal state")
 
 
 REPORT: list[dict] = []
@@ -203,8 +205,11 @@ def domain_ai_router(c: Client) -> None:
 def domain_data_analytics(c: Client) -> None:
     reset(c)
     r = chat_until_confirm(c, "/find Senior Backend Berlin")
-    confirm = chat(c, "yes")
-    result = confirm.get("result", {})
+    # R19: find_jobs is read-only and executes immediately. If the
+    # server is on an older build it'll still need a "yes" first.
+    if r.get("awaitingConfirmation"):
+        r = chat(c, "yes")
+    result = r.get("result", {})
     record("data_analytics",
             result.get("ok") is True and "jobs" in result,
             f"find_jobs returned {len(result.get('jobs') or [])} sample, "
@@ -229,8 +234,11 @@ def domain_gdpr_audit(c: Client) -> None:
     runtime proof on the actual DB file."""
     import sqlite3 as _sql
     reset(c)
-    chat_until_confirm(c, "/find Audit-Query-Marker Berlin")
-    chat(c, "yes")
+    r = chat_until_confirm(c, "/find Audit-Query-Marker Berlin")
+    # R19: find_jobs is read-only — executes immediately. Confirm
+    # only needed on older builds that still gate it.
+    if r.get("awaitingConfirmation"):
+        chat(c, "yes")
     data_dir = os.environ.get("COMPANY_DISCOVERY_DATA_DIR", "")
     if not data_dir:
         record("gdpr_audit", False,

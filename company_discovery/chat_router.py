@@ -69,6 +69,13 @@ class Command:
     slash_aliases: list[str] = field(default_factory=list)
     # Confirmation template — Python str.format with kwargs from params.
     confirmation_template: str = ""
+    # When False, the dispatcher skips the "Confirm?" prompt and
+    # executes immediately once all required params are present. Use
+    # for read-only / non-destructive commands (find_jobs, show_view,
+    # help, suggest_*, draft_*) where asking permission to think is
+    # friction. Destructive commands (add_company, mark_applied,
+    # delete_company, etc.) keep the gate.
+    requires_confirmation: bool = True
 
     def confirmation_message(self, args: dict[str, Any]) -> str:
         try:
@@ -192,7 +199,8 @@ def _build_registry() -> dict[str, Command]:
                 "Search aggregators now for a role + location. When the "
                 "role matches a supported job type (bartender, barista, "
                 "café worker, waiter, Pflegehelfer) the results are "
-                "strictly filtered to that role."
+                "strictly filtered to that role. Read-only — runs "
+                "immediately, no confirmation gate."
             ),
             slash_aliases=["/find", "/find-jobs"],
             keywords=[
@@ -212,8 +220,9 @@ def _build_registry() -> dict[str, Command]:
                               required=False),
             ],
             confirmation_template=(
-                "Searching for **{query}** in **{location}**. Confirm?"
+                "Searching for **{query}** in **{location}**."
             ),
+            requires_confirmation=False,
         ),
         Command(
             name="update_profile",
@@ -356,6 +365,21 @@ def _build_registry() -> dict[str, Command]:
             ),
         ),
         Command(
+            name="open_cv_builder",
+            label="Open the CV Builder",
+            description="Walk through guided sections to create or update your CV (DACH-style with photo + PDF export). The AI formats, it never invents.",
+            slash_aliases=["/cv", "/build-cv", "/create-cv"],
+            keywords=[
+                r"\b(?:create|generate|build|make|write|start) (?:a |my |me )?(?:new )?(?:cv|resume|lebenslauf)\b",
+                r"\bi need (?:you )?(?:to )?(?:generate|create|build|make|write)\b.*\b(?:cv|resume|lebenslauf)\b",
+                r"\bhelp (?:me )?(?:write|build|create) (?:my )?(?:cv|resume)\b",
+                r"\b(?:open|go to|show me) (?:the )?cv builder\b",
+            ],
+            params=[],
+            confirmation_template="Opening the CV Builder for you.",
+            requires_confirmation=False,
+        ),
+        Command(
             name="show_view",
             label="Show a specific view on the canvas",
             description=(
@@ -386,6 +410,7 @@ def _build_registry() -> dict[str, Command]:
                               validator=_validate_string),
             ],
             confirmation_template="Opening **{target}**.",
+            requires_confirmation=False,
         ),
         Command(
             name="suggest_cv_enhancements",
@@ -405,6 +430,7 @@ def _build_registry() -> dict[str, Command]:
             confirmation_template=(
                 "Consulting CV vs. picked JD for enhancement ideas."
             ),
+            requires_confirmation=False,
         ),
         Command(
             name="draft_motivation_letter",
@@ -428,6 +454,7 @@ def _build_registry() -> dict[str, Command]:
             confirmation_template=(
                 "Drafting a motivation letter for your picked job."
             ),
+            requires_confirmation=False,
         ),
         Command(
             name="start_job_journey",
@@ -486,20 +513,6 @@ def _build_registry() -> dict[str, Command]:
             confirmation_template="Starting CV build — one section at a time.",
         ),
         Command(
-            name="open_cv_builder",
-            label="Open the CV Builder",
-            description="Walk through guided sections to create or update your CV (DACH-style with photo + PDF export). The AI formats, it never invents.",
-            slash_aliases=["/cv", "/build-cv", "/create-cv"],
-            keywords=[
-                r"\b(?:create|generate|build|make|write|start) (?:a |my |me )?(?:new )?(?:cv|resume|lebenslauf)\b",
-                r"\bi need (?:you )?(?:to )?(?:generate|create|build|make|write)\b.*\b(?:cv|resume|lebenslauf)\b",
-                r"\bhelp (?:me )?(?:write|build|create) (?:my )?(?:cv|resume)\b",
-                r"\b(?:open|go to|show me) (?:the )?cv builder\b",
-            ],
-            params=[],
-            confirmation_template="Opening the CV Builder for you.",
-        ),
-        Command(
             name="help",
             label="Show available commands",
             description="List every command the chat understands.",
@@ -511,6 +524,7 @@ def _build_registry() -> dict[str, Command]:
             ],
             params=[],
             confirmation_template="Listing the {n} commands I understand.",
+            requires_confirmation=False,
         ),
     ]}
 
@@ -642,6 +656,28 @@ def extract_keyword_args(command_name: str, message: str) -> dict[str, str]:
                     ).strip()
                     if loc and len(loc) <= 80:
                         out["location"] = loc
+                    break
+
+        # R19: last-resort city scan for users typing in a script we
+        # don't know (Arabic, Chinese, Cyrillic, etc.) but who still
+        # mention a German/EU city in Latin script. Without this, an
+        # Arabic-speaking user typing "أريد bartender في Berlin" gets
+        # no location extracted. We scan for the same DE-city list
+        # job_type_filter expands "Germany" into, plus a few more
+        # major EU cities the aggregator commonly returns.
+        if "location" not in out:
+            from company_discovery.job_type_filter import _GERMAN_CITIES
+            extra_cities = ("vienna", "wien", "zurich", "zürich",
+                              "london", "paris", "amsterdam", "warsaw",
+                              "prague", "budapest", "lisbon", "madrid",
+                              "barcelona", "rome", "milan", "remote")
+            haystack = message.casefold()
+            for city in (*_GERMAN_CITIES, *extra_cities):
+                if re.search(rf"(?<![A-Za-zÄÖÜäöüß]){re.escape(city)}"
+                              rf"(?![A-Za-zÄÖÜäöüß])", haystack):
+                    # Title-case for display; preserves the user
+                    # intent.
+                    out["location"] = city.title()
                     break
 
     return out

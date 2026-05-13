@@ -280,5 +280,84 @@ class CvConsultInjectionTests(unittest.TestCase):
         self.assertIn("<job_posting>", user)
 
 
+class MixedLanguageInputTests(unittest.TestCase):
+    """Real-user inputs mix EN + DE + sometimes more in one sentence.
+    None of these may crash; the extractor should pick a sensible
+    bucket and not garble the location capture."""
+
+    def test_de_role_with_en_location(self):
+        from company_discovery.chat_router import extract_keyword_args
+        args = extract_keyword_args(
+            "find_jobs", "Ich suche einen Pflegehelfer job in Berlin",
+        )
+        # Bucket key still detected → user's literal role preserved.
+        self.assertEqual(args.get("query"), "Pflegehelfer")
+        # Location capture works across the language switch.
+        self.assertEqual(args.get("location", "").lower(), "berlin")
+
+    def test_en_role_with_de_location(self):
+        from company_discovery.chat_router import extract_keyword_args
+        args = extract_keyword_args(
+            "find_jobs", "I want a bartender job in Deutschland",
+        )
+        self.assertEqual(args.get("query"), "bartender")
+        # "in Deutschland" canonicalises to Germany.
+        self.assertEqual(args.get("location"), "Germany")
+
+    def test_three_language_blend_does_not_crash(self):
+        from company_discovery.chat_router import extract_keyword_args
+        # EN + DE + French — must not raise.
+        args = extract_keyword_args(
+            "find_jobs",
+            "I'm searching for un travail comme bartender in Berlin"
+            " und ich spreche Deutsch",
+        )
+        self.assertEqual(args.get("query"), "bartender")
+        # Whatever the location captured, must not be empty / crash.
+        self.assertIsInstance(args.get("location", ""), str)
+
+    def test_rtl_text_does_not_crash(self):
+        # Arabic + English. The agent doesn't need to understand
+        # Arabic but it must not throw on it.
+        from company_discovery.chat_router import extract_keyword_args
+        args = extract_keyword_args(
+            "find_jobs",
+            "أريد bartender job في Berlin",
+        )
+        self.assertEqual(args.get("query"), "bartender")
+        self.assertEqual(args.get("location", "").lower(), "berlin")
+
+    def test_emoji_in_role_does_not_crash(self):
+        from company_discovery.chat_router import extract_keyword_args
+        args = extract_keyword_args(
+            "find_jobs", "I want a bartender 🍸 job in Berlin",
+        )
+        self.assertEqual(args.get("query"), "bartender")
+        self.assertEqual(args.get("location", "").lower(), "berlin")
+
+
+class CommandConfirmationFlagTests(unittest.TestCase):
+    """R19: read-only commands skip the confirmation gate."""
+
+    def test_find_jobs_skips_confirmation(self):
+        from company_discovery.chat_router import REGISTRY
+        self.assertFalse(REGISTRY["find_jobs"].requires_confirmation)
+
+    def test_show_view_skips_confirmation(self):
+        from company_discovery.chat_router import REGISTRY
+        self.assertFalse(REGISTRY["show_view"].requires_confirmation)
+
+    def test_help_skips_confirmation(self):
+        from company_discovery.chat_router import REGISTRY
+        self.assertFalse(REGISTRY["help"].requires_confirmation)
+
+    def test_destructive_commands_require_confirmation(self):
+        from company_discovery.chat_router import REGISTRY
+        for name in ("add_company", "create_saved_search",
+                      "mark_applied", "set_persona", "delete_company"):
+            self.assertTrue(REGISTRY[name].requires_confirmation,
+                              msg=name)
+
+
 if __name__ == "__main__":
     unittest.main()

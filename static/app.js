@@ -22,6 +22,7 @@ const VIEW_TITLES = {
   admin: { title: "Admin", subtitle: "Tester accounts. Visible to admins only." },
   cvBuilder: { title: "CV Builder", subtitle: "Walk through guided sections. The AI formats — it does not invent." },
   assistant: { title: "Assistant", subtitle: "One chat for every action. Slash-commands, keyword routing, and confirmation before every write." },
+  searchResults: { title: "Search results", subtitle: "Live aggregator hits for your last search, grouped by role family." },
 };
 
 const ERROR_COPY = {
@@ -496,6 +497,7 @@ function render() {
     renderPrivacyAudit, renderWorkspacePicker, renderHistory,
     renderImportedJobs, renderBriefSummary, renderApplicationForm,
     renderQuotaSummary, renderAdminUsers, renderBilling,
+    renderSearchResults,
   ];
   for (const fn of renderers) {
     try {
@@ -4630,6 +4632,127 @@ function renderCvBuilderPreview() {
   pre.textContent = lines.join("\n");
 }
 
+// R19: search-results canvas renderer. Reads from
+// state.lastSearchResults (populated by chatSend when find_jobs
+// returns) and renders categorised cards into #searchResultsBody.
+function renderSearchResults() {
+  const host = $("#searchResultsBody");
+  if (!host) return;
+  const data = state.lastSearchResults;
+  if (!data || !data.jobs || data.jobs.length === 0) {
+    host.innerHTML = '<p class="muted">No active search. '
+      + '<a href="#" id="searchResultsHint">Type "find a job" in chat to start.</a></p>';
+    const hint = $("#searchResultsHint");
+    if (hint) hint.addEventListener("click", (e) => {
+      e.preventDefault();
+      const input = $("#dockChatInput") || $("#chatInput");
+      if (input) { input.focus(); input.value = "find a job"; }
+    });
+    setText("#searchResultsHeading", "Search results");
+    setText("#searchResultsSub",
+              "Categorised live aggregator hits. Click a card to focus on it in chat.");
+    return;
+  }
+  // Heading reflects the actual query.
+  const role = data.query || data.role || "";
+  const loc = data.location || "";
+  const where = loc ? ` in ${loc}` : "";
+  setText("#searchResultsHeading",
+            role ? `${data.jobs.length} ${role} result(s)${where}` : "Search results");
+  setText("#searchResultsSub",
+            "Click **Open** to view the source. Click **Pick** to draft a letter or get CV suggestions for that role.");
+  // Group by category — server returned a flat job list; cluster by
+  // the same shape we used server-side (via data.categories).
+  const groups = data.groups || groupJobsByCategory(data.jobs);
+  const html = [];
+  for (const [category, items] of Object.entries(groups)) {
+    if (!items.length) continue;
+    html.push('<section class="search-category">');
+    html.push('<div class="search-category-heading">'
+      + `<h3>${escapeHtml(category)}</h3>`
+      + `<span class="count">${items.length} job${items.length === 1 ? "" : "s"}</span>`
+      + "</div>");
+    for (const j of items) {
+      const meta = [j.company, j.location, j.source]
+        .filter(Boolean).map(escapeHtml).join(" · ");
+      const url = j.url ? escapeHtml(j.url) : "";
+      const safeTitle = escapeHtml(j.title || "(no title)");
+      const pickToken = (j.url || j.title || "").replace(/"/g, "");
+      html.push('<article class="search-job-card">'
+        + `<p class="job-title">${safeTitle}</p>`
+        + `<p class="job-meta">${meta}</p>`
+        + '<div class="job-actions">'
+        + (url
+            ? `<a class="job-link" href="${url}" target="_blank" rel="noopener">Open ↗</a>`
+            : "")
+        + `<button class="btn btn-small btn-secondary" type="button"`
+        + ` data-pick-token="${escapeHtml(pickToken)}">Pick</button>`
+        + "</div>"
+        + "</article>");
+    }
+    html.push("</section>");
+  }
+  host.innerHTML = html.join("\n");
+  // Wire up the Pick buttons → send a chat message that the journey
+  // state machine will pick up.
+  host.querySelectorAll("[data-pick-token]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const token = btn.getAttribute("data-pick-token") || "";
+      // Find which category + index this is so the journey can drill.
+      const card = btn.closest(".search-job-card");
+      const section = card?.closest(".search-category");
+      const heading = section?.querySelector("h3");
+      const category = heading?.textContent || "";
+      if (category) {
+        chatSend(category);
+        // Find the 1-based index of this card within the section.
+        const cards = section.querySelectorAll(".search-job-card");
+        const idx = Array.from(cards).indexOf(card) + 1;
+        if (idx > 0) {
+          setTimeout(() => chatSend(String(idx)), 250);
+        }
+      }
+    });
+  });
+}
+
+function groupJobsByCategory(jobs) {
+  // Mirror of the server's company_discovery.journey.categorize_job
+  // heuristic. We use the SAME keyword buckets so the canvas group
+  // labels match what the chat reply showed.
+  const buckets = [
+    ["Clinical / Pflege", ["pflege", "nurse", "nursing", "clinical",
+      "krank", "altenpflege", "betreuung", "care", "hca", "patient"]],
+    ["Hospitality / Bar", ["bartender", "barkeeper", "barista", "café",
+      "cafe", "kellner", "waiter", "wait staff", "host", "server",
+      "restaurant", "hotel"]],
+    ["Tech / Engineering", ["engineer", "developer", "backend", "frontend",
+      "devops", "sre", "platform", "ml", "data", "fullstack", "tech"]],
+    ["Marketing / Brand", ["marketing", "growth", "brand", "seo",
+      "content", "social", "crm", "performance"]],
+    ["Operations / Admin", ["operations", "ops", "admin", "coordinator",
+      "assistant", "office", "manager"]],
+  ];
+  const groups = {};
+  for (const j of jobs) {
+    const hay = `${j.title || ""} ${j.description || ""}`.toLowerCase();
+    let category = "Other";
+    outer: for (const [name, needles] of buckets) {
+      for (const n of needles) {
+        if (hay.includes(n)) { category = name; break outer; }
+      }
+    }
+    (groups[category] = groups[category] || []).push(j);
+  }
+  return groups;
+}
+
+function escapeHtml(text) {
+  const div = document.createElement("div");
+  div.textContent = text == null ? "" : String(text);
+  return div.innerHTML;
+}
+
 async function cvBuilderSubmit(opts = {}) {
   const section = cvBuilder.currentSection;
   if (!section) return;
@@ -4818,18 +4941,40 @@ async function chatSend(message) {
               "Reply yes / no to confirm.");
     } else if (payload.executed) {
       setText("#chatPendingHint", `Last executed: ${payload.executed}`);
-      // Refresh the bootstrap so any UI cards update.
+      // R19: when the executed command was a search, snapshot the
+      // results into state.lastSearchResults so renderSearchResults
+      // has data + render the canvas before we navigate. Same for
+      // the journey-driven search path which also returns jobs +
+      // navigateTo.
+      const resJobs = payload.result?.jobs || payload.jobs;
+      if (Array.isArray(resJobs) && resJobs.length) {
+        state.lastSearchResults = {
+          jobs: resJobs,
+          query: payload.result?.query
+                  || (payload.result?.message || "").match(/Found \*\*\d+\*\* ([^*]+?) result/)?.[1]
+                  || "",
+          location: payload.result?.location || "",
+          categories: payload.result?.categories || payload.categories,
+        };
+        renderSearchResults();
+      }
+      // Refresh bootstrap so other UI cards update.
       try {
         const fresh = await api("/api/bootstrap");
         absorbBootstrap(fresh);
         render();
       } catch (_) { /* non-fatal */ }
-      // Honour any navigateTo hint from the command handler so the
-      // assistant can actually OPEN views the user asks for.
-      const target = payload.result?.navigateTo;
+      // Honour any navigateTo hint (search → searchResults,
+      // open_cv_builder → cvBuilder, show_view → target).
+      const target = payload.result?.navigateTo || payload.navigateTo;
       if (target) {
         const navBtn = document.querySelector(`.nav-item[data-view='${target}']`);
-        if (navBtn) navBtn.click();
+        if (navBtn) {
+          navBtn.click();
+        } else if (target === "searchResults") {
+          // searchResults has no nav-item button — switch directly.
+          navigate("searchResults");
+        }
       }
     } else {
       setText("#chatPendingHint", "");

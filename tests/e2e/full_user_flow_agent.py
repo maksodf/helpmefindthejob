@@ -384,36 +384,37 @@ def assert_filter_via_chat(client: _Client) -> None:
         report(f"chat_routes:{probe[:40]}", ok, f"HTTP {s}")
         if not ok:
             continue
-        session = p.get("session") or {}
-        pending = session.get("pending") or {}
-        args = pending.get("args") or {}
-        # Either it pre-filled and asks confirmation, OR it executed.
-        # We assert the args were pre-filled with the right canonical
-        # role label.
-        got_role = (args.get("query") or "").strip()
-        got_loc = (args.get("location") or "").strip()
-        report(f"role_extracted:{bucket}", got_role.lower() == label.lower(),
-                f"got query={got_role!r}, want {label!r}")
-        report(f"location_extracted:{bucket}",
-                got_loc.lower() == location.lower(),
-                f"got location={got_loc!r}, want {location!r}")
-        # Confirm "yes" — the handler runs and applies the strict filter.
-        s, p2 = client.request("POST", "/api/chat/message", {"message": "yes"})
-        if s != 200:
-            report(f"chat_confirm:{bucket}", False, f"HTTP {s} on yes")
-            continue
-        executed_msg = (p2 or {}).get("reply", "")
-        # The handler's reply mentions the canonical role label
-        # ("Bartender" or "Nursing assistant").
-        report(f"reply_uses_canonical_label:{bucket}",
-                label.lower() in executed_msg.lower(),
-                f"reply tail: {executed_msg[-160:]!r}")
-        # When the bucket matched, the reply must say "Strict role
-        # filter applied" — that's the user-facing proof we honoured
-        # the new contract.
+        # R19: find_jobs is read-only and executes immediately —
+        # no confirmation gate. The response carries the executed
+        # command name + the handler's result + the reply text.
+        executed = (p or {}).get("executed", "")
+        result = (p or {}).get("result", {}) or {}
+        reply = (p or {}).get("reply", "")
+        report(f"find_jobs_executed:{bucket}", executed == "find_jobs",
+                f"executed={executed!r}")
+        # The user-facing reply echoes the literal role + location
+        # (preserves the user's language). When the role matched a
+        # taxonomy bucket, the reply also announces the strict filter.
+        report(f"role_in_reply:{bucket}",
+                label.lower() in reply.lower(),
+                f"reply tail: {reply[-160:]!r}")
+        report(f"location_in_reply:{bucket}",
+                location.lower() in reply.lower(),
+                f"want {location!r} in reply")
         report(f"strict_filter_announced:{bucket}",
-                "strict role filter" in executed_msg.lower(),
-                "looking for 'Strict role filter applied'")
+                "strict role filter" in reply.lower()
+                or "no matches for" in reply.lower(),
+                "looking for 'Strict role filter applied' OR no-matches fallback")
+        # The handler stamped the journey state so review/drill works
+        # the same regardless of trigger path. We also expect
+        # navigateTo='searchResults' so the canvas auto-switches.
+        nav = (p or {}).get("navigateTo") or result.get("navigateTo")
+        # Only expect navigation when there were matches (no-results
+        # path intentionally keeps the user where they were).
+        if result.get("totalJobs", 0) > 0:
+            report(f"navigate_to_search_results:{bucket}",
+                    nav == "searchResults",
+                    f"navigateTo={nav!r}")
 
 
 # ---------------- Entry ----------------
