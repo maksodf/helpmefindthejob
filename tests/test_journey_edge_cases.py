@@ -402,6 +402,46 @@ class DiscoverPhaseBucketCleanupTests(unittest.TestCase):
         self.assertEqual(r.journey.bucket_key, "")
 
 
+class CvCreationIntentTests(unittest.TestCase):
+    """R79.3: real-user phrase "i don't have a cv and i need you to
+    create ne one" must route to the sectional CV-build flow even
+    when stuck in PHASE_TAILOR."""
+
+    def test_no_cv_phrase_detected(self):
+        from company_discovery.journey import looks_like_cv_creation_intent
+        self.assertTrue(looks_like_cv_creation_intent(
+            "i don't have a cv and i need you to create ne one",
+            "tailor"))
+
+    def test_create_cv_phrase_detected(self):
+        from company_discovery.journey import looks_like_cv_creation_intent
+        for msg in (
+            "create a CV for me",
+            "I need a CV",
+            "build my CV please",
+            "make me a resume",
+            "help me with my CV",
+            "Hilf mir mit meinem Lebenslauf",
+            "erstell einen Lebenslauf",
+            "Ich habe keinen Lebenslauf",
+        ):
+            self.assertTrue(looks_like_cv_creation_intent(msg, "tailor"),
+                              msg=msg)
+
+    def test_no_false_positive_for_other_messages(self):
+        from company_discovery.journey import looks_like_cv_creation_intent
+        for msg in ("letter", "consult", "save", "find a job",
+                     "1", "Hospitality / Bar"):
+            self.assertFalse(looks_like_cv_creation_intent(msg, "tailor"),
+                              msg=msg)
+
+    def test_skipped_during_cv_build(self):
+        # Already building — don't interrupt with another CV start.
+        from company_discovery.journey import looks_like_cv_creation_intent
+        self.assertFalse(looks_like_cv_creation_intent(
+            "i need a cv", "cv_check"))
+
+
 class CommandConfirmationFlagTests(unittest.TestCase):
     """R19: read-only commands skip the confirmation gate."""
 

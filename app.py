@@ -186,7 +186,7 @@ DEFAULT_WATCHLIST_SCHEDULE = {
     "lastRunAt": None,
     "lastRunStatus": "disabled",
 }
-APP_VERSION = "0.79.2"
+APP_VERSION = "0.79.3"
 EXPORT_SCHEMA_VERSION = 1
 SESSION_COOKIE_NAME = "directjob_session"
 APP_ENV = os.environ.get("COMPANY_DISCOVERY_ENV", "development").strip().casefold()
@@ -3502,7 +3502,11 @@ class AppState:
         cv_text = (profile.cv_text or "").strip()
         if not cv_text:
             return {"ok": False,
-                     "message": "I need a CV to consult — run `find a job` to set one up."}
+                     "message": (
+                         "I need a CV to consult. Type "
+                         "**build my CV** and I'll walk you through "
+                         "5 quick questions, or paste your CV here."
+                     )}
         ai_caller = self._journey_ai_caller(user_id)
         gaps, used_ai = consult(
             job=job, cv_text=cv_text, ai_caller=ai_caller,
@@ -3567,9 +3571,10 @@ class AppState:
         if not cv_text:
             return {"ok": False,
                      "message": (
-                         "I need a CV to draft a letter. Run `find a job` "
-                         "to walk through the journey, or paste your CV in "
-                         "chat."
+                         "I need a CV to draft a letter. Type "
+                         "**build my CV** and I'll walk you through "
+                         "5 quick questions, or paste your full CV "
+                         "text here right now."
                      )}
         ai_caller = self._journey_ai_caller(user_id)
         letter = draft_with_ai(
@@ -3603,25 +3608,30 @@ class AppState:
                  "letterChars": len(letter)}
 
     def chat_handler_build_cv_via_chat(self, user_id: str, args: dict) -> dict:
+        """Start the sectional CV-build flow. Works from ANY journey
+        phase — previous restriction (only PHASE_CV_CHECK) prevented
+        a user stuck in PHASE_TAILOR from creating a CV when they
+        needed one for the letter draft. R79.3 fix."""
         from company_discovery.journey import (
-            PHASE_CV_CHECK, cv_build_prompt_for, _CV_BUILD_ORDER,
+            PHASE_CV_CHECK, UserJourney,
+            cv_build_prompt_for, _CV_BUILD_ORDER,
         )
+        # Reset journey to a fresh CV_CHECK state regardless of where
+        # the user was before. Any in-flight search results are
+        # preserved by NOT clearing search_jobs_by_id — but the
+        # phase changes so the discover/build flow runs cleanly.
         journey = self._journey_load(user_id)
-        if journey.phase != PHASE_CV_CHECK:
-            return {"ok": False,
-                     "message": (
-                         "I can only build the CV inside the journey. "
-                         "Type `find a job` to start."
-                     )}
+        journey.phase = PHASE_CV_CHECK
         journey.cv_status = "building"
         journey.cv_build_step = _CV_BUILD_ORDER[0]
+        journey.cv_build_answers = {}
         self._journey_save(user_id, journey)
         self.log_analytics(user_id, "chat_cmd",
                             {"name": "build_cv_via_chat"})
         return {"ok": True,
                  "message": (
-                     "OK — 5 quick questions. "
-                     + cv_build_prompt_for(_CV_BUILD_ORDER[0])
+                     "OK — 5 quick questions and you'll have a CV "
+                     "ready. " + cv_build_prompt_for(_CV_BUILD_ORDER[0])
                  )}
 
     def chat_execute_command(self, user_id: str, command_name: str,
@@ -5563,8 +5573,10 @@ class Handler(BaseHTTPRequestHandler):
                 # naturally without slash commands. Also auto-start a
                 # journey on explicit job-seeking intent.
                 from company_discovery.journey import (
-                    PHASE_GREET, PHASE_DONE, should_auto_start,
+                    PHASE_GREET, PHASE_DONE, PHASE_CV_CHECK,
+                    should_auto_start,
                     looks_like_new_search_intent,
+                    looks_like_cv_creation_intent,
                 )
                 journey_now = STATE._journey_load(data_user_id)
                 in_journey = journey_now.phase not in (PHASE_GREET, PHASE_DONE)
@@ -5577,6 +5589,40 @@ class Handler(BaseHTTPRequestHandler):
                 # prod 0.79.1: "search for pflege" rejected three
                 # times after a Bartender search). Reset the journey
                 # state + let the auto-start path handle it.
+                # R79.3: CV-creation intent escape hatch. From real
+                # prod transcript: user picks a job, has no CV, types
+                # "i don't have a cv and i need you to create ne one"
+                # — currently stuck in the tailor letter/consult/save
+                # menu. This routes them straight to the sectional
+                # CV-build flow regardless of journey phase.
+                if (looks_like_cv_creation_intent(
+                        user_message, journey_now.phase)):
+                    STATE.log_analytics(data_user_id, "chat_cmd",
+                                          {"name": "cv_creation_interrupt",
+                                           "from_phase": journey_now.phase})
+                    from company_discovery.journey import (
+                        UserJourney, _CV_BUILD_ORDER, cv_build_prompt_for,
+                    )
+                    # Set journey into the sectional-build state so the
+                    # next user message answers the first question.
+                    fresh = UserJourney()
+                    fresh.phase = PHASE_CV_CHECK
+                    fresh.cv_status = "building"
+                    fresh.cv_build_step = _CV_BUILD_ORDER[0]
+                    STATE._journey_save(data_user_id, fresh)
+                    reply = (
+                        "OK — 5 quick questions and you'll have a CV "
+                        "ready. " + cv_build_prompt_for(_CV_BUILD_ORDER[0])
+                    )
+                    session.history.append(ChatTurn(
+                        role="assistant", content=reply))
+                    STATE.chat_session_persist(data_user_id)
+                    self.send_json({
+                        "reply": reply,
+                        "journeyPhase": fresh.phase,
+                        "session": session.to_dict(),
+                    })
+                    return
                 if (in_journey
                         and looks_like_new_search_intent(
                             user_message, journey_now.phase)):

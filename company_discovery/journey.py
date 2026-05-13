@@ -311,6 +311,36 @@ def is_off_topic(msg: str) -> bool:
     return any(p.search(msg) for p in _OFF_TOPIC_PATTERNS)
 
 
+_CV_CREATION_INTENT = (
+    # English
+    re.compile(r"\b(?:create|build|make|write|need|generate)\b[^.!?]*\b(?:a |my |me )?\b(?:cv|resume|lebenslauf)\b",
+                re.IGNORECASE),
+    re.compile(r"\bi\s+(?:don'?t|do not)\s+have\s+(?:a\s+)?(?:cv|resume|lebenslauf)\b",
+                re.IGNORECASE),
+    re.compile(r"\b(?:help\s+me|can\s+you)\s+(?:with\s+)?(?:my\s+)?(?:cv|resume|lebenslauf)\b",
+                re.IGNORECASE),
+    # German
+    re.compile(r"\b(?:erstell|schreib|bau|mach|brauche|hilf)\b.*\b(?:lebenslauf|cv|resume)\b",
+                re.IGNORECASE),
+    re.compile(r"\bich\s+habe\s+(?:keinen|kein)\s+(?:lebenslauf|cv)\b",
+                re.IGNORECASE),
+)
+
+
+def looks_like_cv_creation_intent(msg: str, current_phase: str) -> bool:
+    """True iff the user wants to BUILD a CV — even when stuck in
+    a post-search phase. Real user typed "i don't have a cv and i
+    need you to create ne one" while in PHASE_TAILOR and got the
+    "letter/consult/save" loop because none of those tokens match.
+
+    Skip during the build itself (cv_check with status=building) to
+    avoid interrupting the very flow we're trying to start.
+    """
+    if not msg or current_phase == PHASE_CV_CHECK:
+        return False
+    return any(p.search(msg) for p in _CV_CREATION_INTENT)
+
+
 _LOOSE_SEARCH_INTENT = (
     re.compile(r"\b(?:search|find|look|suche|finde)\s+(?:for\s+|nach\s+|me\s+)?",
                 re.IGNORECASE),
