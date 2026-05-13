@@ -162,7 +162,16 @@ SCHEDULER_PATH = DATA_ROOT / "scheduler.sqlite3"
 EMAIL_OUTBOX_PATH = DATA_ROOT / "email_outbox.log"
 PASSWORD_RESET_REQUEST_LIMIT = 5  # per-IP per 10 minutes
 PASSWORD_RESET_REQUEST_WINDOW = 600
-REGISTER_REQUEST_LIMIT = 3  # per-IP per 10 minutes
+# Per-IP per 10 minutes. Set DIRECTJOB_REGISTER_LIMIT in dev / test
+# environments to relax the cap (e.g. red-team agents that need to
+# register 7+ throwaway accounts in quick succession). Production
+# stays at the default of 3.
+try:
+    REGISTER_REQUEST_LIMIT = int(
+        os.environ.get("DIRECTJOB_REGISTER_LIMIT") or 3
+    )
+except ValueError:
+    REGISTER_REQUEST_LIMIT = 3
 REGISTER_REQUEST_WINDOW = 600
 REQUIRE_EMAIL_VERIFICATION = (
     (os.environ.get("DIRECTJOB_REQUIRE_EMAIL_VERIFICATION") or "").strip().casefold()
