@@ -1,26 +1,60 @@
 # DirectJob Scout
 
-DirectJob Scout is a small self-hosted app for finding jobs from direct company career pages, reviewing them, and creating provider-neutral Job Decision Briefs.
+DirectJob Scout is a self-hosted, chat-driven job-hunting copilot. You talk to an assistant, it pulls roles from multiple sources, and walks you through a guided journey from discovery to a tailored CV and motivation letter — using your own AI provider subscription, or a managed Pro tier.
 
-It is designed for a controlled pilot:
+It combines three parallel discovery rails:
 
-- The user adds or accepts companies into a watchlist.
-- The app scans only known public career pages with robots.txt checks and page limits.
-- Discovered jobs are reviewed before import.
-- AI analysis works with the user's own provider subscription, or manual handoff mode.
+- **Career-page monitoring** of companies you add to your watchlist (with robots.txt checks and page limits).
+- **Live job-aggregator search** across Adzuna, Indeed, LinkedIn, and other configurable providers.
+- **Bookmarklet captures** for saving roles you find on third-party sites.
 
-The current build is a working hosted MVP. It is **not yet sellable-ready** — see [`docs/sellable-readiness-gap-analysis.md`](docs/sellable-readiness-gap-analysis.md) for the open work.
+Discovered jobs flow into a review queue, then into an AI-assisted pipeline that scores fit, tailors your CV per role, drafts cover letters, and tracks which CV variant gets replies.
 
-## Workflow
+The current build is a working hosted MVP. It is **not yet sellable-ready** — see [`docs/sellable-readiness-gap-analysis.md`](docs/sellable-readiness-gap-analysis.md) for the open work, and [`keepbuildingtill100%tracker.MD`](keepbuildingtill100%tracker.MD) for the live roadmap.
 
-After signing in you land on **Today**, then move through:
+## How It Works
 
-1. **Companies** — add a company, find or paste its career page URL.
-2. **Today / Companies** — Check for new roles.
-3. **Discovered Jobs** — review what was found.
-4. **AI Brief** — prepare a provider-neutral brief and analyze fit with your own AI subscription.
+After signing in you land on **Today** with a chat sidebar as the primary interface. Type a slash command or natural language and the assistant handles the rest:
 
-Settings holds AI provider config, account security, backup/restore, and scan history. Admins also see a Tester Accounts panel.
+- `/find a job` — starts the 12-phase journey wizard
+- `add Charité` — adds a company to your watchlist
+- `/profile`, `/applied`, `/new-search`, `/help` — direct commands
+- Natural language ("suche stelle in Berlin", "find data engineer roles") is routed via keyword + AI intent fallback
+
+### The Job-Search Journey (12 phases)
+
+1. **Greet** — clarify what you're looking for
+2. **Discover** — role, location, seniority
+3. **CV inspect** — pull facts from your stored CV
+4. **Inspiration** — suggest lateral roles you might not have considered
+5. **Preferences** — remote, salary, company size
+6. **Aggregator search** — fan out across job boards in parallel
+7. **Review & categorize** — accept / reject / save for later
+8. **Drill** — deeper analysis on a chosen role
+9. **Tailor CV** — generate a role-specific CV variant
+10. **Draft letter** — motivation letter grounded in CV facts
+11. **CV coaching** — gap analysis and improvement suggestions
+12. **Done** — outcome captured for tracking
+
+Every AI write is gated by a confirmation prompt. Missing parameters trigger multi-turn elicitation ("Which location?") rather than failing.
+
+### Other Built-in Flows
+
+- **CV builder** — 5-question sectional interview (header → summary → experience → education → skills); AI reformats your raw text with fact-grounding to avoid hallucination; encrypted at rest (ChaCha20-Poly1305).
+- **CV variant tracking** — tracks which tailored CV gets replies; recommends your best-performing variant for new roles.
+- **Skill-gap atlas** — extracts gaps from job descriptions ("JD wants Kubernetes, your CV doesn't mention it") and aggregates into a "Top 3 skills holding you back" dashboard card with "add this → unlocks N more roles" hints.
+- **Persona system** — five personas (healthcare-management, tech, marketing, finance, product-management) carry sector weights and role suggestions; auto-selected from your job-type choice; drives ranking.
+- **Outcome tracking** — Applied / Replied / Interviewing / Offer / Rejected timeline with reply-rate analytics ("small companies <50 reply 3× more").
+- **Workspaces** — multi-seat with admin invites and role-based membership.
+- **Account stack** — email verification, TOTP 2FA, 7-day deletion grace, encrypted profile data.
+- **i18n** — full English + German, including a German Impressum (§5 TMG) and locale-aware date / yes-no parsing (ja/nein).
+- **SEO pages** — auto-generated `/jobs/<slug>` landing pages for organic discovery, configured via `data/seo-pages.json`.
+- **MCP server** — `mcp_server.py` exposes the toolset as a Claude-native MCP server (JSON-RPC over stdio).
+
+## Plans
+
+- **Free** — 3 saved searches, manual / bring-your-own AI, 30-day retention.
+- **Pro** (€5/mo or €40/year) — unlimited searches, managed AI, 90-day retention, daily digest. Stripe checkout, webhooks, and customer portal are wired in.
 
 ## Run With Python
 
@@ -85,6 +119,8 @@ The app does not require one fixed AI vendor. Users can select manual handoff, O
 
 For API providers, users can either reference a server environment variable such as `OPENAI_API_KEY` or enter a session-only API key before clicking `Run AI`. Session keys are sent only with the analysis request and are not saved in the app database or backup export.
 
+When the journey or chat router needs AI but no provider is set, it falls back to templated responses so the flow still works end-to-end.
+
 ## Safety Model
 
 - Password login is required for API access.
@@ -96,6 +132,7 @@ For API providers, users can either reference a server environment variable such
 - robots.txt is checked before page fetches.
 - Redirect targets are checked independently.
 - Scans are bounded by pages, response size, redirects, and delay.
+- Aggregator providers respect source attribution for ToS compliance.
 
 ## Backup
 
@@ -148,11 +185,28 @@ Tune via `DIRECTJOB_QUOTA_*` env vars; see `company_discovery/quotas.py`.
 
 ## Legal pages
 
-`/privacy`, `/terms`, `/data-retention` are served as static HTML and
-linked from the auth gate footer and Settings. They are written as
-product-honest summaries; **counsel must review them before commercial
-sale.**
+`/privacy`, `/terms`, `/data-retention`, and the German `/impressum` are
+served as static HTML and linked from the auth gate footer and Settings.
+They are written as product-honest summaries; **counsel must review them
+before commercial sale.**
 
 ## Admin Audit Log
 
 Admin actions (create user, change role, change active state, reset password) are appended to `data/admin_audit.log` as one JSON object per line. Each entry records the action, actor, target, and timestamp.
+
+## Code Map
+
+| Path | Role |
+|---|---|
+| `app.py` | HTTP handler, session management, chat/journey dispatch |
+| `company_discovery/chat_router.py` | Slash commands, intent routing, multi-turn state machine |
+| `company_discovery/journey.py` | 12-phase job-search wizard |
+| `company_discovery/aggregators.py`, `aggregator_providers.py` | Job-board fan-out, dedup, source attribution |
+| `company_discovery/personas.py` | Persona definitions, sector weights, ranking |
+| `company_discovery/cv_builder.py` | Sectional CV interview, fact-grounding |
+| `company_discovery/analysis.py` | AI calls: fit, tailor, cover letter, decision brief |
+| `company_discovery/auth.py` | Users, 2FA, invites, email verify, deletion |
+| `company_discovery/billing.py` | Stripe, plan gates, quotas |
+| `company_discovery/service.py` | Watchlist scan orchestration |
+| `mcp_server.py` | Claude-native MCP server (JSON-RPC over stdio) |
+| `static/i18n/{en,de}.json` | Translation bundles |
