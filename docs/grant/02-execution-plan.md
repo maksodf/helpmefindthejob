@@ -1,77 +1,82 @@
 # 4-Week Execution Plan — NGI0 Grant Readiness
 
-**Created**: 2026-05-17
-**Target submission**: ~4 weeks from creation (verify exact NGI0 call deadline before submitting)
-**Estimated total effort**: 85–95 hours of focused non-feature work
+**Last updated**: 2026-05-17
+**Target submission**: next NLnet call after planning completes (verify NLnet's published call dates before committing to a deadline)
+**Estimated total effort**: ~140–180 hours of focused non-feature work (calibrated to maintainer's 18 h/day availability)
 **Owner**: maintainer + agent sessions
 
-This is the live tracker. **Tick boxes as work is completed. Add notes when scope changes.**
+This is the live tracker. Tick boxes as work is completed. Add notes when scope changes.
 
-For each task: `[ ]` = not done, `[x]` = done, `[~]` = in progress, `[!]` = blocked.
+`[ ]` = not done. `[x]` = done. `[~]` = in progress. `[!]` = blocked. `[-]` = dropped (with note explaining why).
+
+For task ordering and dependencies, the weeks are roughly sequential but not strictly. Several tasks can run in parallel (sanitisation while drafting CONTRIBUTING.md, NGO outreach while writing AI Act docs, etc.).
 
 ---
 
 ## Pre-flight checklist (do before Week 1 starts)
 
-- [ ] Confirm the exact NGI0 Commons Fund call deadline (next opening or current open call)
-- [ ] Decide repo hosting: stay on `github.com/maksodf/directjob-scout` or migrate to a `directjob-scout` GitHub org for the institutional-wrapper signal
-- [ ] Switch maintainer workstation from mobile to computer for execution (mobile is fine for review only)
-- [ ] Skim `01-project-brief.md` end-to-end so the strategic context is fresh
-- [ ] Create a `claude/week-1-foundations` branch off `claude/project-analysis-bpHCo` (or whatever the working branch is at start)
+- [ ] Verify the exact NLnet Commons Fund call deadline that aligns with the planned submission timing
+- [ ] Confirm the GitHub repo URL stays where it is OR migrate to a `directjob-scout` org for institutional-wrapper signal
+- [ ] Switch maintainer workstation from mobile to computer for execution
+- [ ] Read `01-project-brief.md` and `04-research-and-decisions.md` end-to-end so the strategic context is fresh
+- [ ] Create `claude/week-1-foundations` branch off the current working branch
+- [ ] Snapshot the live production deployment state (real users? real revenue? what we can change publicly without breaking trust?)
+- [ ] Decide on the public-domain name for the eventual demo deployment (Week 3 task — needs decision now)
 
 ---
 
-## Week 1 — Legal and narrative foundations
+## Week 1 — Legal, narrative, and outreach foundations
 
-**Goal**: by end of week 1, the repo passes the "is this a real open-source project" sniff test. LICENSE, governance, README mission, no internal residue.
+**Goal**: by end of week 1, the repo passes the "is this a real open-source project" sniff test. LICENSE, governance, README mission, no internal residue. First outreach messages sent.
 
-**Estimated effort**: ~20 hours.
+**Estimated effort**: ~30 hours.
 
-### 1.1 Licensing (2 h) — BLOCKER FIX
+### 1.1 Licensing (3 h) — BLOCKER FIX
 
-- [ ] Add `LICENSE` file at repo root with full AGPL-3.0 text
-- [ ] Add `NOTICE` file if any third-party AGPL-incompatible code is detected (run `pip-licenses` to check dependencies)
-- [ ] Add SPDX-License-Identifier header to every Python source file (script-driven; ~30 min)
-- [ ] Add `.license_header_template.txt` (copy Tenzu's pattern)
-- [ ] Add a pre-commit hook that checks SPDX headers in new files
-- [ ] Update `README.md` to display license badge (shields.io AGPL-3.0)
+- [ ] Add `LICENSE` file at repo root with full **Apache 2.0** text
+- [ ] Add `NOTICE` file (Apache requirement)
+- [ ] Add `TRADEMARK.md` (Tenzu pattern — separates copyright from trademark)
+- [ ] Add `cla.md` — Contributor License Agreement based on the Apache CLA model
+- [ ] Add SPDX-License-Identifier header to every Python source file (script-driven)
+- [ ] Add `.license-header-template.txt` for future contributors
+- [ ] Add pre-commit hook that checks SPDX headers in new files
+- [ ] Add Apache 2.0 license badge to README
 
 ### 1.2 Governance pack (8 h) — BLOCKER FIX
 
-- [ ] `CONTRIBUTING.md` — even if it says "early-stage, limited PRs accepted" (Tenzu pattern). Cover: dev setup, code style, commit message convention, PR process, DCO sign-off requirement.
-- [ ] `CODE_OF_CONDUCT.md` — full Contributor Covenant 2.1 text with maintainer email for reports
-- [ ] `SECURITY.md` — vulnerability reporting channel, response SLA, PGP key (or just an email), supported versions
-- [ ] `SUPPORT.md` — where to ask questions, expected response times
-- [ ] `AUTHORS.md` — start with the lone maintainer; add co-maintainers and translator credits as they appear
-- [ ] `ACKNOWLEDGMENTS.md` — credit MCP ecosystem, NLnet if funded, any prior art
-- [ ] `FUNDING.yml` in `.github/` — point to GitHub Sponsors or Open Collective
+- [ ] `CONTRIBUTING.md` — covers dev setup, code style, commit message convention, PR process, DCO sign-off OR CLA sign-up
+- [ ] `CODE_OF_CONDUCT.md` — full Contributor Covenant 2.1 with maintainer email for reports
+- [ ] `SECURITY.md` — vulnerability reporting channel, response SLA, contact email, supported versions
+- [ ] `SUPPORT.md` — where to ask questions, expected response times, channels
+- [ ] `AUTHORS.md` — start with the lone maintainer; placeholder for co-maintainers and translator credits
+- [ ] `ACKNOWLEDGMENTS.md` — credit MCP ecosystem, Redwax inspiration, NLnet if funded, prior art
+- [ ] `FUNDING.yml` in `.github/` — point to GitHub Sponsors or Open Collective placeholder
 - [ ] `.github/ISSUE_TEMPLATE/` — bug, feature, security templates
 - [ ] `.github/PULL_REQUEST_TEMPLATE.md`
-- [ ] `CODEOWNERS` — at minimum, the lone maintainer until co-maintainers join
+- [ ] `CODEOWNERS` — at minimum the lone maintainer until co-maintainers join
 
 ### 1.3 README rewrite (4 h) — BLOCKER FIX
 
-- [ ] Open with a single-sentence value prop containing either a quantified claim or a continuity claim. **Draft**: *"DirectJob Scout is an open-source civic employment agent for the labor-shortage gap in Germany: multilingual, privacy-preserving, MCP-composable, and self-hostable by individuals and migrant-services NGOs alike."*
-- [ ] Add badges row: license (AGPL-3.0), CI status, latest release, code coverage, languages, MCP-protocol version
-- [ ] Add one screenshot or animated GIF demoing the chat journey end-to-end (use anchor persona Aïcha)
-- [ ] Add "Standards we implement" section: MCP, schema.org JobPosting, WCAG 2.2 AA (target), RFC 9116, AGPL-3.0
-- [ ] Move Pro/Free billing section below the fold (or out of public README entirely — see 1.5)
-- [ ] Add "Funded by" placeholder for NLnet (fill in only if/when funded)
+- [ ] Open with the new positioning: "DirectJob Scout is an open civic employment commons for the European labor-shortage gap..."
+- [ ] First sentence references at least one persona concretely (e.g., "Aïcha, a Tunisian-trained nurse working through Anerkennung in Berlin, opens DirectJob Scout.")
+- [ ] Add badges row: license (Apache 2.0), CI status, latest release, code coverage, languages, MCP-protocol version
+- [ ] Add one screenshot or animated GIF demoing the chat journey end-to-end
+- [ ] Add "Standards we implement" section: MCP, schema.org JobPosting, ESCO, EURES schema, WCAG 2.2 AA (target), RFC 9116, GDPR-aligned, Apache 2.0
+- [ ] Move Pro/Free billing section below the fold or out of public README entirely
+- [ ] Add "Hosted by" notice for The Commons Conservancy (placeholder if not yet admitted)
 - [ ] Add quickstart that genuinely works in 5 minutes from a clean machine
-- [ ] Add link to docs site (placeholder if site not built yet; build in Week 3)
+- [ ] Add link to documentation site (placeholder if not built yet — built in Week 3)
+- [ ] Add link to public demo (placeholder if not built yet — built in Week 3)
 
-### 1.4 Sanitize internal residue (4 h) — BLOCKER FIX
+### 1.4 Sanitise internal residue (4 h) — MAJOR FIX
 
-- [ ] Replace all 29 `khalo.org` occurrences in `app.py` with `example.com` or environment-variable placeholders
-- [ ] Replace `support@khalo.org` with a sanitized contact or `security@<your-domain>`
-- [ ] Add a `CONTRIBUTORS-NOTE.md` (or note in CONTRIBUTING.md) explaining that early commits may reference internal tester names — do not retroactively rewrite history (loses signed commits, costs more than it gains)
-- [ ] Delete `keepbuildingtill100%tracker.MD` from repo root (move content to private gist or `private/` if you want to keep it)
-- [ ] Sanitize `.env.example` (verify no real keys leaked)
-- [ ] Run a secret-scan with `gitleaks` over the full history; fix anything found
-
-### 1.5 Hide / relocate commercial docs (1 h) — narrative fix
-
-- [ ] Move these files to a `private/` folder (gitignored) OR a separate private repo:
+- [ ] Replace all ~29 `khalo.org` occurrences in `app.py` with `example.com` placeholders or environment-variable-driven configuration
+- [ ] Replace `support@khalo.org` with a sanitised contact
+- [ ] Add `CONTRIBUTORS-NOTE.md` honestly explaining that early commits may reference internal tester names — do not retroactively rewrite history (preserves commit integrity)
+- [ ] Delete `keepbuildingtill100%tracker.MD` from repo root (per Decision 14 in `04-research-and-decisions.md`)
+- [ ] Sanitise `.env.example` — verify no real keys leaked
+- [ ] Run `gitleaks` over the full history; fix anything found
+- [ ] Move commercial docs to a `private/` folder (gitignored) OR a separate private repo:
   - `docs/sellable-readiness-completion-report-pass2.md`
   - `docs/sellable-readiness-final-report.md`
   - `docs/sellable-readiness-gap-analysis.md`
@@ -83,109 +88,169 @@ For each task: `[ ]` = not done, `[x]` = done, `[~]` = in progress, `[!]` = bloc
   - `docs/operator-starters.md`
   - `docs/press-kit.md`
   - `docs/launch-day-content.md`
-- [ ] Decide on retention or deletion of `keepbuildingtill100%tracker.MD` (recommended: delete from repo, archive privately)
 
-### 1.6 GitHub repo housekeeping (1 h)
+### 1.5 GitHub repo housekeeping (1 h)
 
-- [ ] Update the repo description on GitHub to match the new positioning ("Open-source civic employment agent — multilingual, privacy-preserving, MCP-composable")
-- [ ] Add topic tags: `civic-tech`, `mcp`, `model-context-protocol`, `jobs`, `employment`, `open-source`, `germany`, `migration`, `agpl-3-0`, `self-hosted`
+- [ ] Update the repo description to match the new positioning
+- [ ] Add topic tags: `civic-tech`, `mcp`, `model-context-protocol`, `jobs`, `employment`, `open-source`, `germany`, `eu`, `migration`, `apache-2-0`, `self-hosted`, `civic-commons`
 - [ ] Enable GitHub Discussions
-- [ ] Pin the most relevant repos to the user/org profile
-- [ ] Verify default branch is appropriately named (`main` or `develop`)
+- [ ] Verify default branch is appropriately named
+
+### 1.6 Outreach drafting and sending (6 h)
+
+- [ ] Identify one specific named contact per top-ranked partner (MBE, IQ-Netzwerk, university career service) — use the BAMF database, IQ-Netzwerk regional pages, and university career-service pages
+- [ ] Personalise the cold-contact templates in `11-institutional-outreach.md` for each named target
+- [ ] Send the first wave of cold contacts (3 outbound: one MBE, one IQ-Netzwerk, one university career service)
+- [ ] Draft the housing-agent collaboration message together with the maintainer (Template F in `11-institutional-outreach.md`)
+- [ ] Maintainer sends the housing-agent message
+- [ ] Send the single optional TU Berlin email (Template G)
+- [ ] Update the outreach tracker in `11-institutional-outreach.md`
+
+### 1.7 Production-deployment alignment (3 h)
+
+- [ ] Snapshot the current production deployment state
+- [ ] Decide: bring it into alignment with new positioning, take it offline, or replace it with the Week 3 demo deployment
+- [ ] Execute the decision
 
 ### Week 1 Definition of Done
 
-- LICENSE file present, recognized by GitHub
-- All 6 governance files at root
-- README opens with the new positioning, badges visible, anchor-persona screenshot included
+- LICENSE file present, recognised by GitHub
+- All 6+ governance files at root
+- README opens with the new positioning, badges visible, one persona referenced
 - Zero occurrences of `khalo.org` in code
-- Commercial docs moved out of `docs/` (gitignored or relocated)
+- Commercial docs moved out of `docs/`
 - GitHub repo description and topics updated
-- A fresh-clone smoke test passes: `git clone && docker compose up` works on a clean machine without secret-leak
+- A fresh-clone smoke test passes
+- First wave of outreach sent (3 cold contacts + housing-agent friend + optional TU Berlin)
+- Production-deployment state addressed
 
 ---
 
-## Week 2 — Prove the MCP composition story (central pitch artifact)
+## Week 2 — MCP composition, Commons Conservancy, AI Act compliance
 
-**Goal**: the central pitch claim — "MCP-composable, civic-agent platform" — is verifiable by any reviewer who reads the repo for 5 minutes.
+**Goal**: the central pitch claim — "MCP-composable, AI-Act-compliant civic-agent infrastructure" — is verifiable by any reviewer reading the repo for 5 minutes. The Commons Conservancy application is submitted.
 
-**Estimated effort**: ~24–36 hours.
+**Estimated effort**: ~50 hours.
 
-### 2.1 MCP server documentation (6 h) — BLOCKER FIX
+### 2.1 Commons Conservancy application (4 h)
 
-- [ ] Create `docs/mcp-server.md` (or expand `mcp_server.py` README) covering:
-  - Tool catalog (currently 8 tools — list each with name, purpose, schema)
-  - JSON Schema for inputs and outputs
-  - Protocol version pinned (currently `2024-11-05`)
-  - Versioning policy: SemVer for the tool surface
-  - Error semantics: what does the server return on failure
-  - Authentication / session model
-  - Example client invocations (Python, TypeScript)
-- [ ] Add a `STANDARDS.md` listing every standard we implement or commit to (see §6 of `01-project-brief.md`)
+- [ ] Read `commonsconservancy.org/how/` end-to-end
+- [ ] Prepare the Programme application: mission alignment, signed Pledge, declared free/open-software commitment
+- [ ] Submit the Programme application
+- [ ] Confirm receipt; note expected response timing in `04-research-and-decisions.md`
 
-### 2.2 Reference integration — proving composition (8–20 h) — BLOCKER FIX
+### 2.2 MCP server documentation (6 h) — BLOCKER FIX
 
-Pick option A or option B depending on what's achievable in the window.
+- [ ] Create `docs/mcp-server.md` covering the catalogue (initial 8 tools + 5 new Week-2 tools):
+  - Tool name, purpose, JSON Schema for input and output, audit-log entry shape, deterministic fallback behaviour, standards alignment, example invocation in Python and TypeScript
+  - Protocol version pinned at `2024-11-05`
+  - Catalogue version (SemVer): start at v0.1.0
+  - Composition patterns explained: sequential handoff, profile-shared, orchestrated (future)
+  - Portable civic profile schema linked
+  - Error conventions (RFC 7807)
+- [ ] Publish JSON Schema for every tool input/output as separate files in `mcp_server/schemas/`
+- [ ] Add an `/mcp/schemas.json` endpoint exposing the full catalogue
+- [ ] Add a `/mcp/version` endpoint
+- [ ] Create `STANDARDS.md` at repo root listing every standard cited
 
-**Option A — Mock second consumer (safer, ~8 h)**:
+### 2.3 New MCP tools (8 h) — composition expansion
 
-- [ ] Create `examples/housing-stub-client/` — a minimal Python script that connects to the DirectJob Scout MCP server, calls `find_company_career_page`, then "hands off" a mock housing-search request showing how composition would route across agents
-- [ ] Include a recorded terminal session (asciinema or plain log) showing the composition working end-to-end
+- [ ] Implement `get_user_profile_for_consent` — returns the user's portable civic profile (subset they have consented to share)
+- [ ] Implement `propose_referral` — emits a structured referral to another civic agent
+- [ ] Implement `query_esco_skill` — looks up an ESCO skill or occupation code
+- [ ] Implement `export_eures_compatible` — exports a job listing in EURES schema
+- [ ] Implement `record_user_outcome` — persists an outcome event for analytics
+- [ ] Add JSON Schemas for all new tools
+- [ ] Add unit tests for each new tool
+
+### 2.4 ESCO and EURES integration (4 h)
+
+- [ ] Verify ESCO data licensing (Creative Commons)
+- [ ] Download the ESCO taxonomy dataset
+- [ ] Map at least 30 high-value occupations covering the persona panel (nursing, engineering, frontend, plumbing trades, elderly care)
+- [ ] Map at least 50 corresponding skills
+- [ ] Document the mapping in `docs/esco-integration.md`
+- [ ] Verify the EURES schema export endpoint produces valid output for sample jobs
+
+### 2.5 Reference integration with the housing agent (8–20 h)
+
+If the housing-agent friend responded positively (Option B):
+
+- [ ] Coordinate scope with the friend
+- [ ] Verify or convert the housing agent's license to Apache 2.0
+- [ ] Build the integration in `examples/housing-agent-integration/`
+- [ ] Cross-link the two repositories
+- [ ] Both projects ideally apply jointly to The Commons Conservancy
 - [ ] Document the integration in `examples/README.md`
 
-**Option B — Real housing agent published (gold standard, ~20 h)**:
+If no positive response (Option A fallback):
 
-- [ ] Coordinate with the existing housing agent codebase
-- [ ] Publish it (even minimally) under AGPL-3.0
-- [ ] Add `examples/housing-agent-integration/` showing it consuming the DirectJob Scout MCP
-- [ ] Cross-link both repos
+- [ ] Build the mock `examples/housing-stub-client/` demonstrating the composition pattern end-to-end
+- [ ] Record an asciinema or plain-text terminal session showing it working
+- [ ] Document in `examples/README.md` that this is a stub pending real-housing-agent collaboration
 
-**Recommendation**: start Option A immediately; pursue Option B in parallel if the housing agent is closer to publishable than feared.
+### 2.6 MCP integration test in CI (4 h)
 
-### 2.3 Architecture documentation (4 h)
+- [ ] Add `.github/workflows/mcp-integration.yml`
+- [ ] Test spawns the MCP server as subprocess
+- [ ] Connects a mock MCP client over stdio
+- [ ] Calls `initialize`, expects version `2024-11-05`
+- [ ] Calls `tools/list`, expects at least 13 tools
+- [ ] Calls `find_company_career_page` and `propose_referral` with known inputs
+- [ ] Validates all responses against the published JSON Schemas
+- [ ] Clean shutdown
+- [ ] Green badge in README
 
-- [ ] `ARCHITECTURE.md` at repo root with a Mermaid diagram showing:
-  - DirectJob Scout web app (the reference implementation)
-  - The MCP server as the composition surface
-  - The future-housing-agent slot (and any other future agents)
-  - Data flow: user → chat router → journey state machine → MCP tool → underlying service
-  - BYO-AI provider abstraction layer
-  - Encrypted profile-at-rest layer
-- [ ] Caption every component with which file/module implements it (linkable navigation)
+### 2.7 ARCHITECTURE.md (4 h)
 
-### 2.4 MCP integration test in CI (4 h)
+- [ ] Write `ARCHITECTURE.md` at repo root
+- [ ] Mermaid diagram showing: web app, MCP server as composition surface, future-housing-agent slot, BYO-AI provider abstraction, encrypted profile-at-rest layer, audit-log layer, journey state machine
+- [ ] Caption every component with the implementing file/module
+- [ ] Cross-link to `09-mcp-composition.md`
 
-- [ ] Add a CI test that spawns `mcp_server.py` and runs a mock client through 3 tool calls
-- [ ] Add a badge to README showing MCP-integration test status
+### 2.8 AI Act compliance pack (12 h) — BLOCKER FIX
 
-### 2.5 Schema endpoint (2 h)
+Per `10-ai-act-compliance.md`. Create the `/compliance/` directory and ship:
 
-- [ ] Expose the MCP tool schemas via a public endpoint (e.g., `/mcp/schemas.json`) so external consumers can discover tools without running the server
-- [ ] Document the endpoint in `docs/mcp-server.md`
+- [ ] `compliance/risk-management-plan.md` (Article 9)
+- [ ] `compliance/data-governance.md` (Article 10)
+- [ ] `compliance/technical-documentation.md` (Article 11 + Annex IV — all 9 sections)
+- [ ] Audit-log schema documented + audit-log infrastructure integrated into MCP server and web app
+- [ ] `compliance/transparency-notice.md` (user-facing, Article 13)
+- [ ] `compliance/deployer-operating-manual.md` (Article 13)
+- [ ] `compliance/human-oversight-guide.md` + minimal human-oversight UI for deployers (Article 14)
+- [ ] `compliance/accuracy-and-bias-testing.md` (Article 15)
+- [ ] `compliance/eu-database-registration-template.md` (deployer pre-fill, Article 49)
+- [ ] `compliance/fundamental-rights-impact-assessment-template.md` (deployer pre-fill, Article 27)
+- [ ] Cross-link from README and from `10-ai-act-compliance.md`
 
 ### Week 2 Definition of Done
 
-- `docs/mcp-server.md` exists and is complete
-- `STANDARDS.md` lists every standard we cite
-- A reference integration (Option A minimum) exists in `examples/`
-- `ARCHITECTURE.md` exists with a system diagram
-- CI runs an MCP integration test and the badge is green in README
-- A reviewer can verify the composition story by reading the repo in 5 minutes
+- Commons Conservancy application submitted
+- `docs/mcp-server.md` complete with 13 tools documented
+- `STANDARDS.md` lists every standard cited
+- ESCO integration covering 30+ occupations
+- EURES schema export verified
+- Reference integration with housing agent (Option B preferred, Option A fallback acceptable) — shipped in `examples/`
+- CI runs MCP integration test, badge is green
+- ARCHITECTURE.md with system diagram
+- Complete AI Act compliance pack in `/compliance/`
 
 ---
 
-## Week 3 — Quality signals and contributor pathway
+## Week 3 — Quality, demo deployment, accessibility, contributor pathway
 
-**Goal**: from "personal MVP" to "looks like a project a community could contribute to."
+**Goal**: from "personal MVP" to "looks like a project a community can contribute to and an institution can adopt."
 
-**Estimated effort**: ~19 hours.
+**Estimated effort**: ~40 hours.
 
-### 3.1 Fix the local test environment (3 h) — MAJOR FIX
+### 3.1 Fix the local test environment (3 h)
 
 - [ ] Diagnose the `cryptography` / `cffi` build failure on fresh clones
-- [ ] Pin runtime deps in `requirements.txt` and dev deps in `requirements-dev.txt`
-- [ ] Document the install order in `CONTRIBUTING.md`
+- [ ] Pin runtime dependencies in `requirements.txt` and dev dependencies in `requirements-dev.txt`
+- [ ] Document install order in `CONTRIBUTING.md`
 - [ ] Verify `python -m unittest discover` passes on a clean machine
+- [ ] Add a fresh-clone Docker smoke-test workflow
 
 ### 3.2 CI expansion (8 h)
 
@@ -195,103 +260,133 @@ Pick option A or option B depending on what's achievable in the window.
 - [ ] Add `pip-audit` for CVE scanning
 - [ ] Add `Renovate` (preferred over Dependabot for NGI0 cohort signal) config
 - [ ] Add `codespell` workflow
-- [ ] Add `locale_check` workflow (verify en.json and de.json are key-parity, fail if not)
-- [ ] Optionally add multi-OS matrix (Ubuntu + macOS for the test job)
-- [ ] Add CI badges to README for each new workflow
+- [ ] Add `locale_check` workflow verifying en.json and de.json key parity
+- [ ] Add multi-OS matrix (Ubuntu + macOS) where applicable
+- [ ] Add OpenSSF Scorecard workflow + badge in README
+- [ ] All CI badges visible in README
 
 ### 3.3 Roadmap and release discipline (5 h)
 
-- [ ] `ROADMAP.md` at repo root with quarterly milestones for 2026 Q3 → 2028 Q2
-  - Q3 2026: Grant-funded hardening complete; v0.2 with MCP integration test, full governance, public roadmap
-  - Q4 2026: Third UI language (Arabic or Ukrainian)
-  - Q1 2027: First external NGO deployment
-  - Q2 2027: Housing-agent live composition (Phase 2 grant)
-  - Q3 2027: Healthcare-agent composition prototype
-  - Q4 2027: Multi-country expansion (Austria / France)
-  - Q1 2028: Sustainability model proven
+- [ ] `ROADMAP.md` at repo root with quarterly milestones for 2026 Q3 → 2028 Q2 (see `03-post-grant.md` for the multi-phase view)
 - [ ] `CHANGELOG.md` in Keep-a-Changelog format, backfilled from git log
 - [ ] First tagged release: `v0.1.0` with release notes
 - [ ] Set up GitHub Releases workflow to automate future tagging
 
-### 3.4 Documentation site (3 h)
+### 3.4 Public demo deployment (6 h)
 
-- [ ] Set up mkdocs-material with a basic site structure (Quickstart, Architecture, Deployment, Contributing, MCP API, Standards)
+- [ ] Pick hosting provider (Hetzner Cloud, OVH, Scaleway — all EU-anchored)
+- [ ] Secure domain (`directjob-scout.eu` or similar)
+- [ ] Deploy the canonical reference implementation
+- [ ] Pre-seed with the persona-panel example users (Aïcha, Yusuf, Olga, Mahmoud, Maria)
+- [ ] Add health-check monitoring
+- [ ] Document the deployment recipe in `docs/deployment-recipe.md`
+- [ ] Add the demo URL to README and to the application package
+
+### 3.5 Documentation site (3 h)
+
+- [ ] Set up mkdocs-material with basic site structure: Quickstart, Architecture, Deployment, Contributing, MCP API, Standards, AI Act compliance, Roadmap
 - [ ] Auto-deploy via GitHub Actions to GitHub Pages
 - [ ] Link from README
 
+### 3.6 Accessibility audit and ACCESSIBILITY.md (8 h)
+
+- [ ] Run an automated accessibility audit (axe-core or WAVE) against the public demo
+- [ ] Fix the highest-impact issues
+- [ ] Document the current state in `ACCESSIBILITY.md` honestly: WCAG 2.2 Level AA as target, known gaps, remediation plan
+- [ ] Optionally request HAN University accessibility support if Commons Conservancy admission has come through
+
+### 3.7 Translator contributor pathway (2 h)
+
+- [ ] `docs/translating.md` explaining the JSON file structure and how to add a new locale
+- [ ] Document the translation review process
+- [ ] Native-speaker review of `de.json` — recruit one person (friend, fellow TU Berlin student, social circle) for 2 hours
+- [ ] Credit reviewers in `AUTHORS.md`
+
+### 3.8 Reproducible build (Nix flake) (4 h)
+
+- [ ] Add `flake.nix` at repo root producing a reproducible build
+- [ ] Document usage in `docs/deployment-recipe.md` and CONTRIBUTING.md
+- [ ] Verify the flake builds on a clean machine
+- [ ] Optionally request NixOS Foundation packaging support if Commons Conservancy admission has come through
+
+### 3.9 Outreach follow-ups (1 h)
+
+- [ ] Day-7 follow-up to any cold contacts who have not replied (one follow-up, then stop)
+- [ ] Process any positive replies into letter-of-support drafts
+- [ ] Update the outreach tracker in `11-institutional-outreach.md`
+
 ### Week 3 Definition of Done
 
-- Tests pass on a clean machine without manual hacks
-- README displays at least 5 CI badges (license, build, coverage, lint, MCP integration)
-- `ROADMAP.md` and `CHANGELOG.md` present
-- `v0.1.0` tagged with release notes
-- Documentation site deployed to GitHub Pages
+- Tests pass on a clean machine
+- README displays 8+ CI badges (license, build, coverage, lint, security, locale, MCP integration, Scorecard)
+- `ROADMAP.md` and `CHANGELOG.md` present, `v0.1.0` tagged
+- Public demo deployed at stable URL with pre-seeded persona-panel content
+- Documentation site live at `docs.<domain>`
+- `ACCESSIBILITY.md` honest about current WCAG state with audit-date
+- `flake.nix` builds reproducibly
+- German native-speaker review feedback integrated, reviewer credited
 
 ---
 
-## Week 4 — Sustainability, differentiation, and application polish
+## Week 4 — Sustainability, signing, and the application
 
-**Goal**: clear the winner bar, plant the differentiation flags, write the application.
+**Goal**: clear differentiation flags planted; application drafted, reviewed, submitted.
 
-**Estimated effort**: ~23 hours.
+**Estimated effort**: ~25 hours.
 
 ### 4.1 Sustainability and post-grant story (3 h)
 
 - [ ] `SUSTAINABILITY.md` describing the post-grant model:
   - NGO/Beratungsstelle deployment partners
-  - Hosted Pro tier as the sustainability layer (mention it here, not in the main README)
-  - Support contracts for institutional deployments
-  - Plan for Phase 2 / Phase 3 grant arcs
+  - Optional hosted support contracts (mention here, not in main README)
+  - Phase 2 / Phase 3 grant arc plan (NLnet follow-on, Sovereign Tech Fund, EU NGI tracks)
+- [ ] Link from README
 
-### 4.2 Differentiation moves (10 h)
+### 4.2 Final differentiation polish (4 h)
 
-- [ ] `ACCESSIBILITY.md` committing to WCAG 2.2 AA *as a deliverable of the grant* (Tenzu pattern)
-- [ ] OpenSSF Scorecard workflow + badge in README
-- [ ] `security.txt` per RFC 9116 in `static/.well-known/security.txt`
-- [ ] Cosign-sign `v0.1.0` release; attach an SBOM in CycloneDX format (`cyclonedx-py`)
-- [ ] Optional stretch: add a `flake.nix` for reproducible builds (skip if time-pressed)
+- [ ] Cosign-sign `v0.1.0` release
+- [ ] Attach CycloneDX SBOM (via `cyclonedx-py`)
+- [ ] `static/.well-known/security.txt` per RFC 9116
+- [ ] Verify OpenSSF Scorecard badge is at acceptable score (8.0+)
 
-### 4.3 Translator pathway (2 h)
+### 4.3 Letter of support consolidation (2 h)
 
-- [ ] `docs/translating.md` explaining the JSON file structure and how to add a new locale
-- [ ] Native-speaker review of `de.json` for quality — find a German speaker for 2 hours
-- [ ] Credit reviewers in AUTHORS.md
+- [ ] Confirm receipt of at least one letter of support OR ensure the cold contact is in active discussion that can be cited
+- [ ] If letter signed: archive PDF in `docs/grant/letters-of-support/`
+- [ ] Update `11-institutional-outreach.md` tracker
 
-### 4.4 Letter of support from an NGO (coordination — ~1 h your time)
+### 4.4 Write and dry-run the application (10 h)
 
-- [ ] Cold email 5–7 German migrant-services orgs in Week 1; follow up Week 3
-- [ ] Targets: Handbook Germany, Diakonie Berlin Migrationsberatung, Caritas, ProAsyl, IQ Netzwerk, Triple Win, Jobs4Refugees
-- [ ] Goal: 1 letter of support attached to the application
-
-### 4.5 Write and dry-run the application (8 h)
-
-- [ ] Draft the proposal against NGI0's application form (questions are public; review the template before drafting)
-- [ ] Structure with milestones, each as a verifiable deliverable with a budget line
-- [ ] **Pre-empt NLnet's support services**: list which of (a11y audit by HAN, packaging by NixOS Foundation, security audit, mentoring, governance advice) you intend to use
+- [ ] Verify NLnet's live application form structure (Open Research Question R3 in `04-research-and-decisions.md`)
+- [ ] Adapt `12-application-package.md` content into the form fields
+- [ ] Pre-empt NLnet's support services: list which we anticipate using (accessibility audit, packaging, security audit, mentoring)
 - [ ] Have one person outside the project read it cold for clarity
 - [ ] Revise based on feedback
 
+### 4.5 Final polish and submission (5 h)
+
+- [ ] Final README pass — every badge green, every link working
+- [ ] Final demo deployment health check
+- [ ] Final documentation-site review
+- [ ] Final application-package review against the submission checklist in `12-application-package.md` §I
+- [ ] Submit the application
+- [ ] Archive submission confirmation in `docs/grant/submitted-application-<date>.md`
+
+### 4.6 Post-submission (1 h)
+
+- [ ] Tag `v0.2.0` release reflecting all Week 1–4 work
+- [ ] Continue any outstanding outreach
+- [ ] Brief celebration; then recovery break before Phase 2 planning
+
 ### Week 4 Definition of Done
 
-- `SUSTAINABILITY.md`, `ACCESSIBILITY.md`, `security.txt` all present
-- OpenSSF Scorecard badge green in README
-- `v0.1.0` release signed with cosign + SBOM attached
-- At least one NGO letter of support secured (or active outreach with reply expected)
-- Application drafted, reviewed by one outside reader, ready to submit
-
----
-
-## Application submission checklist (final 24 hours)
-
-- [ ] Final repo state matches the application's claims
-- [ ] All blocker fixes from `01-project-brief.md` §"Honest current state" are addressed
-- [ ] Application proposal reviewed end-to-end one more time
-- [ ] Milestones are concrete, verifiable, and budgeted
-- [ ] Letter(s) of support attached
-- [ ] Anchor user persona (Aïcha) referenced consistently throughout
-- [ ] Standards we implement explicitly listed
-- [ ] Submission email/portal used
-- [ ] Confirmation received and archived
+- `SUSTAINABILITY.md` present
+- `v0.1.0` signed with cosign + SBOM attached
+- `security.txt` published per RFC 9116
+- OpenSSF Scorecard badge ≥ 8.0
+- At least one letter of support in hand or active partner discussion ongoing
+- Application submitted to NLnet
+- `v0.2.0` tagged
 
 ---
 
@@ -299,6 +394,6 @@ Pick option A or option B depending on what's achievable in the window.
 
 Use this section for free-form notes during execution. Date each entry.
 
-**2026-05-17**: Plan created. Pre-flight checklist pending.
+**2026-05-17**: plan created reflecting all strategic decisions, AI Act work, Commons Conservancy application, Apache 2.0 licensing, cost-saving doctrine, and the EU-wide positioning.
 
 <!-- Add new dated notes below this line as execution proceeds -->

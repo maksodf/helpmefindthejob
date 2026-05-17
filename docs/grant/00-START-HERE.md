@@ -1,6 +1,6 @@
 # Grant Application Workspace — Start Here
 
-**Purpose of this folder**: track everything related to the NLnet NGI Zero Commons Fund application for DirectJob Scout. This is the single source of truth for the strategic vision, research findings, and execution plan. If you (human or agent) are picking up this work mid-flight, read the four files in this folder in order.
+**Purpose**: track everything related to the NLnet NGI Zero Commons Fund application for DirectJob Scout. This folder is the single source of truth for the strategic vision, research findings, decisions, and execution plan. If you (human or agent) are picking up this work mid-flight, read the files in this folder in the order below before touching anything.
 
 ---
 
@@ -9,54 +9,94 @@
 | File | Purpose |
 |---|---|
 | `00-START-HERE.md` | This file. Orientation. |
-| `01-project-brief.md` | The full strategic context: vision, NGI0 research findings, gap analysis, positioning decisions. Read this first if you're new. |
-| `02-execution-plan.md` | The 4-week plan to make the project grant-competitive. Check progress here. |
-| `03-post-grant.md` | What happens after the 4 weeks — both success and failure paths. |
+| `01-project-brief.md` | The strategic source of truth: mission, positioning, decisions, eight strategic choices, full audit. **Read first.** |
+| `02-execution-plan.md` | 4-week task list with checkboxes. Tick boxes as work is completed. |
+| `03-post-grant.md` | What happens after the 4 weeks: win, lose, Phases 2/3/4. |
+| `04-research-and-decisions.md` | Verified facts (sourced), decisions log (dated), open research questions. |
+| `05-risks-and-stakeholders.md` | Risk register + stakeholder map. Reviewed weekly during execution. |
+| `06-glossary.md` | Quick reference for German bureaucratic, EU policy, and project-specific terms. |
+| `07-personas.md` | The five-persona panel (Aïcha, Yusuf, Olga, Mahmoud, Maria) used in proposal narrative, demos, public artifacts. |
+| `08-cost-saving-doctrine.md` | The project-level design principle: every feature reduces institutional cost while improving outcomes. |
+| `09-mcp-composition.md` | Technical spine: how the MCP server exposes the project as composable civic infrastructure. |
+| `10-ai-act-compliance.md` | Compliance pack for EU AI Act high-risk-AI obligations, applicable 2 August 2026. The institutional moat. |
+| `11-institutional-outreach.md` | Outreach tracker, partner-targeting strategy, cold-contact templates, letter-of-support template. |
+| `12-application-package.md` | The actual application draft, milestone budget breakdown, submission checklist. |
 
 ---
 
-## TL;DR for a fast onboarding
+## TL;DR for fast onboarding
 
-**The goal**: win a €5k–€50k grant from NLnet NGI Zero Commons Fund (or scale up to €500k across multi-round arc) to harden DirectJob Scout into a credible open-source civic-employment commons.
+**The goal**: win a Phase 1 NLnet NGI Zero Commons Fund grant of ~€37,000 (within the €50k first-round cap) to harden DirectJob Scout into a credible open-source civic-employment commons. Multi-grant arc planned beyond Phase 1.
 
-**The deadline**: ~4 weeks from 2026-05-17. (Verify the exact NGI0 call deadline before submitting — the calendar shows recurring calls; aim for the next open window.)
+**The deadline**: ~4 weeks from 2026-05-17 — verify the exact NLnet call deadline in `04-research-and-decisions.md` Open Question R1 before committing to a date.
 
-**The product positioning**: not "an open-source job app" — it is **an open, multilingual, privacy-preserving civic-employment agent, MCP-exposed so other open civic agents can compose with it**. The MCP server is the commons interface. Germany-first, EU-exportable.
+**The product positioning**: not "an open-source job app." It is **an open-source EU-wide civic employment commons that captures specialist HR and bureaucratic-navigation knowledge into modular, MCP-composable tools** — the Redwax pattern applied to civic life. Germany is the first reference deployment because that is where the maintainer is.
 
-**The strategic risk**: the codebase today reads as a commercial SaaS that happens to be open-source, not as a commons. Without 60–80 hours of disciplined non-feature work on legal/governance/narrative/CI/MCP-proof, NLnet reviewers will reject it.
+**The institutional home**: Programme of **The Commons Conservancy** (NLnet-co-founded Dutch stichting; application target Week 2).
 
-**The honest current state**: feature-rich working MVP with strong privacy/encryption/i18n/Docker stories, but no LICENSE file, no governance scaffolding, no proof of the MCP-composition claim, single-author, hardcoded internal references, and a "sellable-readiness" narrative throughout. See `01-project-brief.md` for the full audit.
+**The license**: Apache 2.0 + Contributor License Agreement. (Not AGPL — this was a deliberate revision after Redwax research; reasoning in `04-research-and-decisions.md` Decision 1.)
+
+**The moat**: EU AI Act compliance built in for the 2 August 2026 enforcement deadline. Every institution deploying our agent inherits a compliant configuration, avoiding €30–€200k of consulting otherwise required.
+
+**The strategic doctrine**: every feature evaluated against "does it reduce institutional operational cost while improving end-user outcomes?" — see `08-cost-saving-doctrine.md`.
+
+**The current honest state**: feature-rich working MVP with strong privacy/encryption/i18n/Docker stories. Missing: LICENSE file, governance scaffolding, MCP composition proof, sanitised commercial residue, public demo, AI Act compliance pack. All addressed across Weeks 1–4 of `02-execution-plan.md`.
 
 ---
 
 ## Rules for any agent (or contributor) working on this
 
-1. **Do not add product features during these 4 weeks.** Every hour on features is an hour not on the application.
-2. **Do not refactor for the "framework extraction"** discussed in earlier sessions — that's Phase 2 work; doing it now produces neither a clean library nor a fundable application.
-3. **Every change must move the project toward NGI0-credibility.** If you're not sure why a task is on the plan, re-read `01-project-brief.md` §"Where we stand vs. the winner bar."
-4. **Update `02-execution-plan.md` after completing any task.** Tick the box, add a note if scope changed.
-5. **Mobile-friendly assumption**: the maintainer reviews on a phone. Keep diffs small, commit messages descriptive, and headings clear.
-6. **Never commit secrets, real API keys, or PII.** Sanitize any `khalo.org`, real tester names, or production URLs before pushing.
-7. **License everything you write under AGPL-3.0** (the project's chosen license — see `01-project-brief.md` §"License decision"). Add SPDX headers in new source files.
+1. **No new product features during these 4 weeks.** Every hour on features is an hour not on the application.
+2. **No framework extraction.** Deferred to Phase 2; see `03-post-grant.md`.
+3. **License everything you write under Apache 2.0.** Add SPDX-License-Identifier headers in new source files.
+4. **Never commit secrets, real keys, or PII.** Sanitise any `khalo.org`, real tester names, or production URLs before pushing.
+5. **Mobile-friendly assumption**: the maintainer reviews on a phone for planning; for execution, computer is recommended. Small diffs, clear commit messages.
+6. **Honest about instability**: do not over-polish to look finished. NGI0 winners are honest about alpha state.
+7. **Anchor persona panel**: every public-facing example, screenshot, narrative uses one of the five personas. See `07-personas.md`.
+8. **Cost-saving doctrine applies to every feature decision.** When in doubt, re-read `08-cost-saving-doctrine.md`.
+9. **AI Act compliance is non-negotiable scope.** Cannot be cut for time. See `10-ai-act-compliance.md`.
+10. **One credible letter of support is enough.** Don't pad outreach. See `11-institutional-outreach.md`.
 
 ---
 
 ## How to update this folder
 
-- **Strategic changes** (positioning, scope, target funder): update `01-project-brief.md` and note the decision date.
-- **Execution progress** (tasks done, blockers found): update `02-execution-plan.md` and tick checkboxes.
+- **Strategic changes** (positioning, scope, target funder): update `01-project-brief.md` and add a dated entry to `04-research-and-decisions.md`.
+- **Execution progress** (tasks done, blockers found): update `02-execution-plan.md` checkboxes and note in the tracking notes section.
+- **New verified fact**: add to `04-research-and-decisions.md` Part A with source.
+- **New risk or stakeholder**: add to `05-risks-and-stakeholders.md`.
 - **Long-term vision changes**: update `03-post-grant.md`.
-- **Re-orientation for a new agent**: update this `00-START-HERE.md` only if the high-level summary above is no longer accurate.
 
-If you make a strategic change, **commit it in a separate commit from code changes** so the decision history is visible in git log.
+**Strategic changes go in separate commits from code changes** so decision history is visible in git log.
 
 ---
 
 ## Source-of-truth precedence
 
-If documents disagree, this is the order:
+If documents disagree:
 
 1. `01-project-brief.md` — strategic context wins
-2. `02-execution-plan.md` — current task list wins
-3. The README and CLAUDE.md at repo root — pointers only, never source of truth
-4. Internal commercial docs in `docs/*` (operator-runbook, marketing-copy, sellable-readiness-*) — **scheduled for deletion or relocation in Week 1**. Do not treat them as guidance for grant work.
+2. `04-research-and-decisions.md` — specific decisions and facts win
+3. `02-execution-plan.md` — current task list wins
+4. The README and CLAUDE.md at repo root — pointers only, never source of truth
+5. Internal commercial docs (operator-runbook, marketing-copy, sellable-readiness-*) — **scheduled for relocation in Week 1**. Do not treat as guidance for grant work.
+
+---
+
+## What's been done as of 2026-05-17
+
+The planning phase is complete. The workspace now contains:
+
+- A clear strategic vision with eight binding decisions documented
+- A 4-week execution plan calibrated to ~140–180 hours of available work
+- Full reverse-engineering of six NGI0 reference winners
+- Full Redwax research, leading to the Apache 2.0 + Commons Conservancy decisions
+- The cost-saving doctrine adopted as a project-level design principle
+- The multi-persona panel defined for proposal and design use
+- The complete EU AI Act compliance plan, calibrated to the 2 August 2026 enforcement date
+- The institutional-outreach strategy with templates and target lists
+- A risk register and stakeholder map for ongoing review
+- A draft application package ready to be adapted to NLnet's form
+- All sources cited, no claims unverified
+
+The next step is **execution**, starting with Week 1 of `02-execution-plan.md`.

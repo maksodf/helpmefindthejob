@@ -1,20 +1,21 @@
-# What Comes After the 4 Weeks
+# What Comes After the 4-Week Sprint
 
 **Last updated**: 2026-05-17
 
-This document covers what happens after the application is submitted — both success paths (we win) and failure paths (we don't). It also captures the multi-phase grant arc and the longer-term vision so future agent sessions and contributors can see where the project is heading beyond the immediate funding push.
+This document covers what happens after the application is submitted — both success paths (we win) and failure paths (we don't) — and the longer-term multi-phase vision for the project past Phase 1.
 
 ---
 
 ## Immediately after submission (Week 5)
 
-Whether the application is in or not, the same disciplined non-feature work continues for one more week to keep momentum.
+Whether the application is in or not, disciplined non-feature work continues for one more week to lock in momentum and let the maintainer recover.
 
-- [ ] Archive the submitted application text in `docs/grant/submitted-application-<date>.md` for the record
-- [ ] Tag a `v0.2.0` release reflecting all the Week 1–4 work
-- [ ] Resume product-feature work cautiously — do not undo any of the commons hardening
-- [ ] Continue NGO outreach: even without funding, NGO partnerships matter
-- [ ] Continue the housing-agent integration work; the proof-of-composition gets stronger every week
+- [ ] Archive the submitted application text in `docs/grant/submitted-application-<date>.md`
+- [ ] Tag a `v0.2.0` release reflecting all Week 1–4 work
+- [ ] Communicate transparently with any letter-of-support partner about submission status
+- [ ] Continue any in-flight housing-agent integration
+- [ ] Take at least 2 full rest days
+- [ ] Resume feature work cautiously — do not undo any of the commons hardening
 
 ---
 
@@ -23,52 +24,58 @@ Whether the application is in or not, the same disciplined non-feature work cont
 ### Within 2 weeks of acceptance
 
 - Sign the grant agreement with NLnet
-- Set up the milestone-based deliverable tracking they expect
+- Set up the milestone-based deliverable tracking
 - Engage NLnet support services declared in the proposal:
   - Accessibility audit by HAN University
-  - Packaging support by NixOS Foundation (if Nix flake was committed to)
-  - Security audit (if scope is above €50k)
+  - Packaging support by NixOS Foundation
+  - Security audit (if scope is above €50k or if requested)
   - Governance/sustainability mentoring
+- Publish a project update naming the grant, on the website and via partners
 
-### Milestones during the grant (typical 6–9 month execution window)
+### Milestones during the grant (6–9 month execution window)
 
-These map roughly to the deliverables proposed. Specific milestones get updated when the application is drafted.
+The exact milestones submitted in the application become the binding deliverable list. The grant calls for ~6 milestones based on `12-application-package.md`:
 
-1. **M1: MCP server hardening** — full schema versioning, integration tests, published as a discrete artifact for external consumption
-2. **M2: Third UI language** — translation contributed by an NGO partner, native-reviewed
-3. **M3: WCAG 2.2 AA conformance** — audit complete, fixes deployed, conformance statement published
-4. **M4: Reference NGO deployment** — one Beratungsstelle running an instance for real users
-5. **M5: Portable encrypted-profile spec** — JSON schema for civic profiles, import/export tooling, documented
-6. **M6: Final deliverables published** — code shipped under AGPL-3.0, all docs on the site, security audit results addressed
+1. **M1 — Legal and narrative foundations** (delivered before submission for the application itself)
+2. **M2 — MCP composition reference** (delivered before submission)
+3. **M3 — EU AI Act compliance pack** (delivered before submission, refined during grant)
+4. **M4 — Public demo deployment and accessibility** (refined during grant; full WCAG 2.2 AA conformance attempted)
+5. **M5 — Reproducible builds and quality signalling** (delivered before submission, refined during grant)
+6. **M6 — Institutional readiness and standards interop** (Commons Conservancy admission completed; ESCO/EURES expanded; first institutional pilot scoped)
+
+Most of the Phase 1 deliverables are shipped *before* submission as evidence of execution capability. The grant funds the *refinement, documentation, audits, and institutional pilots* during the 6–9 month period.
 
 ### Sustainability work during the grant
 
-- File for a legal entity wrapper (lightweight: a French SCOP, a German Verein, or a Dutch Stichting)
-- Onboard 2–3 active co-maintainers with named responsibilities in AUTHORS.md
-- Set up a public community channel (Matrix preferred over Discord for an open-commons project)
-- Publish quarterly progress reports on the website (separate from grant milestone payments)
+- File for additional legal-entity scaffolding if Commons Conservancy admission needs supplementing
+- Onboard 2–3 active co-maintainers with named responsibilities in `AUTHORS.md`
+- Set up a public community channel (Matrix preferred for the European-sovereignty signal; alternative: GitHub Discussions)
+- Publish quarterly progress reports separate from grant milestone payments
+- Submit a FOSDEM 2027 talk proposal (deadline typically late September 2026)
+- Begin scoping the Phase 2 application
 
 ---
 
 ## If we don't win the grant
 
-A rejection is not a failure of the project, only of one round. NGI0 runs multiple calls per year.
+A rejection is one round, not the project's end. NLnet runs rolling 2-month deadlines.
 
 ### Within 1 week of rejection
 
-- Request feedback from NLnet (they sometimes provide it)
-- Compare our application to recently-funded ones in the same call
-- Note specific gaps for next round
+- Request feedback from NLnet (sometimes provided)
+- Compare the application to recently-funded ones in the same call
+- Note specific gaps for the next round
 
 ### Within 4 weeks of rejection
 
-- Address the specific gaps identified
-- Apply to other relevant funds (in priority order):
-  - **NGI0 next call** (Commons Fund runs multiple times per year)
-  - **Sovereign Tech Fund** (German federal fund for critical open-source infrastructure) — possibly stronger fit given German focus
-  - **Prototype Fund Deutschland** (Open Knowledge Foundation DE, BMBF-backed) — explicitly civic-tech
-  - **EU NGI other tracks** (Entrust, Discovery if revived, etc.)
+- Address the specific gaps
+- Apply to the next NLnet call (cadence: 2 months)
+- In parallel, apply to other relevant funds:
+  - **Sovereign Tech Fund** (German federal fund for critical open-source infrastructure, run by SPRIND) — particularly strong fit given the German civic-tech alignment
+  - **Prototype Fund Deutschland** (Open Knowledge Foundation DE, BMBF-backed) — civic-tech-aligned, smaller grants, faster cycles
+  - **EU NGI other tracks** (Entrust, PET if revived, etc.)
   - **Mercator Stiftung / Bosch Stiftung** — German foundation route, longer timelines
+  - **EU AMIF** (Asylum, Migration and Integration Fund) if positioning aligns
 
 ### Continue building regardless
 
@@ -79,106 +86,92 @@ A rejection is not a failure of the project, only of one round. NGI0 runs multip
 
 ---
 
-## Phase 2: Framework extraction (12–18 months after grant)
+## Phase 2 (~6–12 months after Phase 1 grant): Multi-grant arc + framework extraction
 
-This is the work we explicitly *deferred* during the 4-week sprint. It becomes viable once:
+### What gets done in Phase 2
 
-- DirectJob Scout has shipped v1.0 (feature-complete per the original product vision)
-- The housing agent is production-stable and visible
-- The MCP integration between them has been live for several months
-- Patterns of shared logic have crystallized into obvious abstractions
+1. **Framework extraction** — the work explicitly deferred during Phase 1. Once DirectJob Scout and the housing agent have both been running for several months, the shared abstractions become obvious. The 11-week refactor scoped earlier (chat router, journey state machine, MCP server packaging, encrypted-profile SDK, i18n loader) becomes the Phase 2 grant.
+2. **Second NLnet application** — leveraging Phase 1 completion as evidence of delivery capability. NLnet's program rewards multi-round arcs (Redwax precedent).
+3. **First institutional pilot deployment** — at the partner Beratungsstelle / IQ-Netzwerk office / Optionskommune that signed the letter of support.
+4. **Security audit through NLnet support services** if not already done.
+5. **WCAG 2.2 AA full conformance** with HAN University audit support.
+6. **FOSDEM 2027 talk delivered** — credibility multiplier.
+7. **Codeberg mirror** for European-sovereignty resilience.
 
-### What gets extracted
+### Phase 2 grant ask
 
-The "Civic Agent Toolkit" the earlier session scoped:
-
-- `chat_router.py` → standalone library: command registry, intent routing, multi-turn elicitation, confirmation gates
-- Journey state machine → standalone library: phase definitions, callback protocol, AI-provider abstraction
-- Encrypted profile-at-rest → standalone library: ChaCha20 vault with portable JSON schema
-- i18n loader → namespaced multi-app translation system
-- AI provider abstraction → already standalone-ready (`ai_providers.py`)
-
-### Why we defer it
-
-- The earlier audit found ~11 weeks of refactor work to extract cleanly
-- Premature abstraction without a third consumer risks bloated base classes
-- The grant rewards delivered code, not future libraries
-- We can pitch this as Phase 2 with the existing track record from Phase 1
-
-### Phase 2 grant strategy
-
-- Apply to NGI0 a second time with two existing reference implementations (jobs + housing) and the explicit framework extraction as the new scope
-- Budget: €40–80k for ~10 weeks of two-engineer refactor + docs + WCAG audit + packaging
-- The framework is the commons; the existing agents become the proof
+- €40–80k depending on framework-extraction scope
+- Three or four milestones, each verifiable
+- Aligned with the multi-grant arc precedent (Redwax: NGI0 PET → NGI0 PKI → NGI0 Server Modernisation)
 
 ---
 
-## Phase 3: Multi-agent civic platform (18–36 months)
+## Phase 3 (~12–24 months): Multi-agent civic platform
 
-If Phase 1 and Phase 2 land, the next horizon is genuine multi-agent civic composition.
+If Phase 1 and Phase 2 land, the next horizon is genuine multi-domain civic composition.
 
-### Domains we'd add (in priority order)
+### Domains we'd add (priority order)
 
-1. **Healthcare access** (Krankenversicherung selection, GP registration, language-assisted appointments)
-2. **Residency / visa** (carefully: must stay informational under Rechtsdienstleistungsgesetz, partner with Beratungsstellen)
-3. **Education / language courses** (Integrationskurs, Berufssprachkurs, recognition of foreign diplomas)
-4. **Financial onboarding** (Bankkonto, Steuer-ID, Lohnsteuerklasse)
-5. **Housing** (already in-flight as the second agent)
+1. **Healthcare access** — Krankenversicherung selection, GP registration, language-assisted appointments
+2. **Residency / visa support** — informational only (Rechtsdienstleistungsgesetz constraints), partnered with Beratungsstellen
+3. **Education / language courses** — Integrationskurs, Berufssprachkurs, foreign-diploma recognition
+4. **Financial onboarding** — Bankkonto, Steuer-ID, Lohnsteuerklasse
+5. **Housing** — already in flight as the partner agent
 
 ### Architectural shape
 
 - Each domain is an independent agent built on the Civic Agent Toolkit (Phase 2 framework)
-- All agents share a portable user profile (with explicit consent per share)
-- A meta-orchestrator handles routing between agents in a single conversation
-- Government / NGO / Beratungsstelle deployers can pick which agents to enable
+- All agents share the portable civic profile, with explicit consent per share
+- A meta-orchestrator routes between agents in a single conversation
+- Government / NGO / Beratungsstelle deployers pick which agents to enable
 
 ### Funding strategy for Phase 3
 
 - Sovereign Tech Fund or EU NGI for the orchestration layer
-- Per-domain grants from sector-specific funds (Diakonie for migration, BMFSFJ for family/integration, BMG for healthcare)
-- Optional: hosted Pro tier for end users who choose convenience over self-hosting; revenue flows back to the foundation
+- Per-domain grants from sector-specific funds (Diakonie for migration, BMFSFJ for family/integration, BMG for healthcare, BMBF for education)
+- Possible hosted Pro tier for end users who choose convenience over self-hosting; revenue flows back to the foundation governance
 
 ---
 
-## Phase 4: Multi-country expansion (36+ months)
+## Phase 4 (~24–48 months): Multi-country expansion
 
-The architecture is country-neutral once Phase 3 is solid. Localization to other EU countries is a porting exercise, not a rebuild.
+The architecture is country-neutral once Phase 3 is solid. Cross-country localisation is a porting exercise, not a rebuild.
 
 ### Likely early targets
 
-- **Austria** — language overlap, similar bureaucratic structure, smaller scale → cheap proof
+- **Austria** — language overlap, similar bureaucratic structure → cheapest proof
 - **France** — large migrant population, civic-tech ecosystem strong, French co-op partners exist (BIRU pattern)
 - **Netherlands** — NLnet's home turf, smaller scale, multilingual norm
 - **Belgium** — multilingual by default (NL/FR/DE), Brussels EU centrality
-- Then UK / Ireland / Spain / Portugal / Italy
+- Then UK / Ireland / Spain / Portugal / Italy / Nordic countries
 
 ### What expansion requires
 
-- Per-country domain data (recognized credentials, agency contacts, legal-information boundaries)
+- Per-country domain data (recognised credentials, agency contacts, legal-information boundaries)
 - Native-speaker translation contributors
 - Local NGO deployment partners
-- Compliance review per jurisdiction
+- Compliance review per jurisdiction (GDPR baseline + national variations)
 
 ---
 
-## Sustainability model (the long answer)
+## Sustainability model (the long-term answer)
 
-For a civic commons to survive past the initial grant, it needs a sustainability model that does not require the maintainers to subsidize it indefinitely.
+For a civic commons to survive past the initial grant arc, it needs a sustainability model that does not require maintainers to subsidise it indefinitely.
 
-### Layers of sustainability
+### Five layers
 
 1. **Self-hosting (free)** — individuals, small NGOs, hobbyists. No money flows.
-2. **Hosted Pro tier (low-margin)** — for end users who don't want to self-host. Revenue funds development of the open commons.
-3. **Institutional support contracts** — Beratungsstellen, public agencies, larger NGOs pay for deployment help, training, SLA, custom integrations. Revenue funds development.
-4. **Grant arc** — NGI0 Phase 1 → Phase 2 → Sovereign Tech Fund → Prototype Fund → EU programmes. Each grant funds a specific extension, never general operations.
-5. **Foundation / legal entity** — once the project has a track record, register as a foundation (Stichting in NL, gGmbH or Verein in DE) to receive philanthropic donations and apply for restricted funds.
+2. **Hosted support (low-margin)** — for institutional deployers who want hosting plus light SLA. Revenue funds development.
+3. **Institutional support contracts** — Beratungsstellen, public agencies, larger NGOs pay for deployment help, training, custom integrations, AI-Act-compliance-pack customisation. Revenue funds development.
+4. **Grant arc** — NGI0 Phase 1 → Phase 2 → Sovereign Tech Fund → Prototype Fund → EU AMIF → EU NGI tracks → German federal foundations. Each grant funds a specific extension, never general operations.
+5. **Foundation governance** — once the project has a track record, Commons Conservancy or a follow-on dedicated foundation can receive philanthropic donations and apply for restricted funds.
 
 ### What sustainability is NOT
 
 - Not advertising-supported (incompatible with commons)
-- Not data-monetization (incompatible with privacy positioning)
-- Not vendor lock-in (incompatible with AGPL + BYO-AI)
-- Not "all on the maintainer's free time" (unsustainable)
+- Not data-monetisation (incompatible with privacy positioning)
+- Not vendor lock-in (incompatible with Apache 2.0 + BYO-AI)
+- Not "all on the maintainer's free time" (unsustainable, demonstrated repeatedly in the FOSS world)
 
 ---
 
@@ -186,12 +179,12 @@ For a civic commons to survive past the initial grant, it needs a sustainability
 
 Update this document when:
 
-- A grant application is submitted, accepted, or rejected (note the outcome and lessons)
-- A milestone is reached (note the date and what shipped)
-- A phase transition happens (Phase 1 → 2, etc.)
-- A strategic decision shifts the long-term direction
+- A grant application is submitted, accepted, or rejected (note outcome and lessons)
+- A milestone is reached (note date and what shipped)
+- A phase transition happens (Phase 1 → 2 etc.)
+- A strategic decision shifts long-term direction
 - A new funding source becomes relevant
 
-Append entries below this line with dates:
+Append entries with dates below this line:
 
-**2026-05-17**: document created during pre-application planning session.
+**2026-05-17**: document updated to reflect Apache 2.0 + CLA license, The Commons Conservancy admission target, the cost-saving doctrine, AI Act compliance, multi-persona panel, EU-wide positioning, and the verified Bundesagentur für Arbeit labor-shortage primary-source data.

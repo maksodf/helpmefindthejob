@@ -6,43 +6,69 @@ Any Claude session (or other coding agent) working on this repository should rea
 
 ## What this project is
 
-**DirectJob Scout** is being repositioned as an **open-source, multilingual, privacy-preserving civic employment agent** for the German labor-shortage gap. It is MCP-exposed (Model Context Protocol) so other open civic agents can compose with it. The MCP server is the commons interface. German-first, EU-exportable.
+**DirectJob Scout** is an **open-source EU-wide civic employment commons** — an MCP-composable tool that captures specialist HR and bureaucratic-navigation knowledge into modular, standards-anchored modules and puts that knowledge in migrants' hands directly. Germany is the first reference deployment; the architecture is EU-wide.
 
-This is *not* a commercial SaaS, even though earlier iterations of the codebase contain commercial-product residue (Pro/Free tier, "sellable-readiness" docs, `khalo.org` hardcoded). The active project direction is the civic-commons framing.
+The project is being prepared as a Programme of **The Commons Conservancy** (Dutch stichting co-founded by NLnet). License is **Apache 2.0 with Contributor License Agreement**.
+
+This is *not* a commercial SaaS, even though earlier iterations of the codebase contain commercial-product residue (Pro/Free tier, "sellable-readiness" docs, `khalo.org` hardcoded). The active project direction is civic-commons.
 
 ---
 
 ## What we are currently doing
 
-Preparing the project for an **NLnet NGI Zero Commons Fund** grant application. Target submission window: ~4 weeks from 2026-05-17.
+Preparing the project for the **NLnet NGI Zero Commons Fund** application. Target submission window: ~4 weeks from 2026-05-17 — exact NLnet call deadline verified at start of execution.
 
-The work has three layers running in parallel:
-1. **Strategic/documentation** — captured in `docs/grant/`
-2. **Repository hardening** — LICENSE, governance files, README, sanitization, CI
-3. **MCP composition proof** — docs + reference integration + integration test
+Three workstreams run in parallel:
+1. **Strategic/documentation** — captured in `docs/grant/` (planning phase complete as of 2026-05-17)
+2. **Repository hardening** — LICENSE, governance files, README, sanitisation, CI, MCP composition proof
+3. **EU AI Act compliance pack** — required by 2 August 2026 enforcement date; built in as project-level deliverable
 
 ---
 
 ## Where to find context (read in this order)
 
-1. **`docs/grant/00-START-HERE.md`** — orientation
-2. **`docs/grant/01-project-brief.md`** — strategic context, audit findings, decisions
-3. **`docs/grant/02-execution-plan.md`** — the 4-week task list, tick boxes as you progress
-4. **`docs/grant/03-post-grant.md`** — what happens after week 4
+1. **`docs/grant/00-START-HERE.md`** — orientation and table of contents
+2. **`docs/grant/01-project-brief.md`** — the strategic source of truth
+3. **`docs/grant/04-research-and-decisions.md`** — verified facts, decisions log, open questions
+4. **`docs/grant/02-execution-plan.md`** — week-by-week task list with checkboxes
+5. Everything else in `docs/grant/` as relevant
 
-If you change strategic direction, update `01-project-brief.md`. If you complete a task, update `02-execution-plan.md`.
+If you change strategic direction, update `01-project-brief.md` AND log the decision in `04-research-and-decisions.md`. If you complete a task, tick the box in `02-execution-plan.md` and add a note if scope changed.
 
 ---
 
 ## Hard rules for this 4-week window
 
 1. **No new product features.** Every hour on features is an hour not on the application.
-2. **No framework extraction.** Deferred to Phase 2 (see `03-post-grant.md`).
-3. **License everything you write under AGPL-3.0.** Add SPDX headers in new source files.
-4. **Never commit secrets, real keys, or PII.** Sanitize before pushing.
-5. **Mobile-friendly assumption**: maintainer reviews on a phone. Small diffs, clear commit messages.
-6. **Honest about instability**: do not over-polish to look finished. NGI0 winners are honest about alpha state.
-7. **Anchor user persona**: every public-facing example, screenshot, narrative uses the named persona Aïcha (Tunisian-trained nurse navigating German Anerkennung). See `01-project-brief.md` §7.
+2. **No framework extraction.** Deferred to Phase 2 (see `docs/grant/03-post-grant.md`).
+3. **License everything you write under Apache 2.0.** Add SPDX-License-Identifier headers in new source files.
+4. **Never commit secrets, real keys, or PII.** Sanitise before pushing. The repo contains known residue (`khalo.org`, tester names) — Week 1 sanitisation task addresses it.
+5. **Mobile-friendly assumption**: maintainer reviews on a phone for planning, computer for execution. Small diffs, clear commit messages.
+6. **Honest about instability**: do not over-polish. NGI0 winners are honest about alpha state. Tenzu literally says "main branch may be unstable."
+7. **Anchor persona panel**: every public-facing example, screenshot, narrative uses one of the five personas — Aïcha, Yusuf, Olga, Mahmoud, Maria. See `docs/grant/07-personas.md`.
+8. **Cost-saving doctrine**: every feature decision is evaluated against "does it reduce institutional cost while improving outcomes?" See `docs/grant/08-cost-saving-doctrine.md`.
+9. **EU AI Act compliance is in scope and non-negotiable.** See `docs/grant/10-ai-act-compliance.md`.
+
+---
+
+## Key strategic decisions (binding unless explicitly reopened)
+
+| Decision | Choice |
+|---|---|
+| License | Apache 2.0 + CLA |
+| Institutional wrapper | The Commons Conservancy (application target: Week 2) |
+| Positioning | EU-wide civic employment commons; Germany first reference deployment |
+| TU Berlin affiliation | Optional 1-hour email only; deferred as dependency |
+| Personas | Multi-persona panel of five |
+| Languages | EN + DE shipped; Arabic, Ukrainian, Turkish, Romanian on post-grant roadmap |
+| Cost-saving doctrine | Project-level design principle |
+| AI Act compliance | Build in as deliverable for 2 August 2026 enforcement |
+| Housing-agent integration | Option B (real, via maintainer's friend) with Option A (mock stub) as fallback |
+| Grant ask | €37,000 across 6 milestones, frugal-by-default |
+| Repository sanitisation | Do not rewrite history; sanitise current state, document residue honestly |
+| `keepbuildingtill100%tracker.MD` | Delete in Week 1 |
+
+Full reasoning for every decision in `docs/grant/04-research-and-decisions.md` Part B.
 
 ---
 
@@ -50,38 +76,39 @@ If you change strategic direction, update `01-project-brief.md`. If you complete
 
 | Path | Role |
 |---|---|
-| `app.py` (~7.3k lines) | HTTP handler, session, chat/journey dispatch |
-| `mcp_server.py` | MCP server skeleton — needs hardening (Week 2) |
+| `app.py` | HTTP handler, session, chat/journey dispatch |
+| `mcp_server.py` | MCP server skeleton — hardened in Week 2 |
 | `company_discovery/chat_router.py` | Slash commands, intent routing, multi-turn state machine |
-| `company_discovery/journey.py` | 12-phase job-search wizard |
+| `company_discovery/journey.py` | 12-phase job-search journey state machine |
 | `company_discovery/aggregators.py` + `aggregator_providers.py` | Job-board fan-out, dedup |
 | `company_discovery/ai_providers.py` | BYO-AI abstraction (OpenAI/Gemini/DeepSeek/OpenRouter/Ollama/manual/Claude Code) |
-| `company_discovery/personas.py` | 5 personas + ranking |
+| `company_discovery/personas.py` | Persona system + ranking |
 | `company_discovery/cv_builder.py` | Sectional CV interview, encrypted at rest |
 | `company_discovery/analysis.py` | AI calls: fit score, cover letter, tailor, brief |
-| `company_discovery/billing.py` | Stripe — **moved out of public messaging during grant work** |
+| `company_discovery/billing.py` | Stripe — billing moved out of public messaging during grant work |
 | `static/i18n/{en,de}.json` | Translation bundles |
-| `docs/grant/` | **Read these files first.** |
+| `docs/grant/` | **Planning workspace. Read first.** |
 | `docs/` (other files) | Mostly internal commercial docs — scheduled for relocation in Week 1 |
 
 ---
 
 ## Branch convention
 
-Active branch: `claude/project-analysis-bpHCo` (or a derivative branch).
+Active working branch: `claude/project-analysis-bpHCo`.
 
-Create week-specific branches off this for execution: `claude/week-1-foundations`, `claude/week-2-mcp-proof`, etc.
+Create week-specific branches off the working branch for execution: `claude/week-1-foundations`, `claude/week-2-mcp-and-compliance`, etc.
 
 ---
 
 ## How to update this CLAUDE.md
 
-This file should stay short and orient agents to the workspace. If the orientation summary above stops being accurate, edit this file. For substantive context, edit `docs/grant/` instead.
+Keep this file short and oriented toward agents. If the orientation summary above stops being accurate, edit this file. For substantive context, edit `docs/grant/` instead.
 
 ---
 
 ## If something seems off
 
-- The repository has known narrative residue (commercial framing, `khalo.org`, tester names) that will be cleaned up in Week 1 per `02-execution-plan.md`. Don't be surprised by it; don't add to it.
-- Tests fail locally due to a `cryptography` / `cffi` build issue — scheduled for fix in Week 3.
+- The repository has known commercial-narrative residue (Pro/Free tier, `khalo.org`, tester names). Week 1 sanitisation in `02-execution-plan.md` addresses it. Do not add to it.
+- Tests fail locally due to a `cryptography` / `cffi` build issue — Week 3 task fixes this. If you need tests to pass before then, run them in the Docker container instead.
 - If you find a strategic ambiguity not covered in `docs/grant/`, ask the maintainer rather than guessing.
+- If you must make a decision without the maintainer present, document it in `docs/grant/04-research-and-decisions.md` and surface it for confirmation at the next interaction.
