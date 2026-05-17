@@ -20,7 +20,7 @@ When team grows past 1 human, split these. Until then: one phone, one runbook.
 
 ## First five minutes — triage
 
-1. **Confirm the report.** Hit `https://app.khalo.org/api/health`. If 200, go look at what the user was actually doing. If 5xx or timeout, treat as SEV-1 and continue.
+1. **Confirm the report.** Hit `https://app.directjob-scout.example/api/health`. If 200, go look at what the user was actually doing. If 5xx or timeout, treat as SEV-1 and continue.
 2. **Check Better Stack.** Open the source `directjob-scout-prod`. Recent error spikes? Container restart loops? OOM lines?
 3. **SSH and get container state.**
    ```sh
@@ -39,7 +39,7 @@ set -eu
 cd /opt/directjob-scout
 PREV=$(docker images --format '{{.Repository}}:{{.Tag}}' | grep ':previous-' | head -1)
 [ -n "$PREV" ] || { echo "no previous tag found" >&2; exit 1; }
-docker tag "$PREV" nassermcpserver-directjob-scout:latest
+docker tag "$PREV" directjob-scout:latest
 docker compose -f docker-compose.prod.yml up -d --wait --wait-timeout 60
 EOF
 ```
@@ -59,7 +59,7 @@ If data is corrupted, do **not** restart — that compounds. Use the sidecar res
 
 ```sh
 # Pull most recent backup tarball locally first
-rclone copy b2:khalo-directjob-backups/$(rclone ls b2:khalo-directjob-backups | sort -k 2 | tail -1 | awk '{print $2}') ./backups/
+rclone copy "b2:${B2_BACKUP_BUCKET:?set B2_BACKUP_BUCKET}/$(rclone ls "b2:${B2_BACKUP_BUCKET}" | sort -k 2 | tail -1 | awk '{print $2}')" ./backups/
 ./scripts/restore-drill.sh ./backups/<that-tarball>
 ```
 

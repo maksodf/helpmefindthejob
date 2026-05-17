@@ -43,7 +43,7 @@ from .aggregators import (
 )
 
 
-_USER_AGENT = "DirectJobScout/0.19 (+https://app.khalo.org/about)"
+_USER_AGENT = "DirectJobScout/0.19 (+https://app.directjob-scout.example/about)"
 
 
 def _strip_html(html_text: str) -> str:

@@ -22,4 +22,4 @@ Disallow: /admin
 # Honour standard meta-robots on dynamic share pages.
 Allow: /share/
 
-Sitemap: https://khalo.org/sitemap.xml
+Sitemap: https://directjob-scout.example/sitemap.xml

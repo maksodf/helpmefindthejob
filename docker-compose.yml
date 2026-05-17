@@ -1,5 +1,8 @@
+name: directjob-scout
+
 services:
   directjob-scout:
+    image: directjob-scout:latest
     build: .
     ports:
       - "8765:8765"

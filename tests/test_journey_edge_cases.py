@@ -346,8 +346,8 @@ class MixedLanguageInputTests(unittest.TestCase):
 class NewSearchInterruptTests(unittest.TestCase):
     """R79.2: a user who already finished one search must be able
     to start a NEW one without getting stuck in a category-drill
-    loop. Exact reproduction of Nasser's 0.79.1 bug — three messages
-    rejected as "Which category?" after a Bartender search."""
+    loop. Exact reproduction of an early tester's 0.79.1 bug — three
+    messages rejected as "Which category?" after a Bartender search."""
 
     def test_loose_search_for_X_detected_in_review(self):
         from company_discovery.journey import looks_like_new_search_intent
@@ -411,9 +411,10 @@ class DiscoverPhaseBucketCleanupTests(unittest.TestCase):
 
 class CvPasteDetectionTests(unittest.TestCase):
     """R79.4: a long complaint or question must NOT be silently
-    captured as the user's CV. Real prod failure case from Nasser."""
+    captured as the user's CV. Real prod failure case from an early
+    tester."""
 
-    NASSER_COMPLAINT = (
+    EARLY_TESTER_COMPLAINT = (
         "it's berlin and not berli! you must be able to inspect "
         "for typo and fix them on you're own! this means that you "
         "must be context aware."
@@ -421,8 +422,8 @@ class CvPasteDetectionTests(unittest.TestCase):
 
     def test_real_complaint_rejected(self):
         from company_discovery.journey import looks_like_pasted_cv
-        self.assertGreater(len(self.NASSER_COMPLAINT), 80)
-        self.assertFalse(looks_like_pasted_cv(self.NASSER_COMPLAINT))
+        self.assertGreater(len(self.EARLY_TESTER_COMPLAINT), 80)
+        self.assertFalse(looks_like_pasted_cv(self.EARLY_TESTER_COMPLAINT))
 
     def test_question_rejected(self):
         from company_discovery.journey import looks_like_pasted_cv

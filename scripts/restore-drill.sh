@@ -22,7 +22,7 @@ BACKUP_FILE="${1:-${BACKUP_FILE:-}}"
 SIDECAR_NAME="${SIDECAR_NAME:-directjob-scout-restore-drill}"
 SIDECAR_VOLUME="${SIDECAR_VOLUME:-directjob_data_restore_drill}"
 SIDECAR_PORT="${SIDECAR_PORT:-18765}"
-IMAGE="${IMAGE:-nassermcpserver-directjob-scout}"
+IMAGE="${IMAGE:-directjob-scout}"
 
 if [ -z "$BACKUP_FILE" ]; then
   echo "drill: provide a backup file path (or set BACKUP_FILE)" >&2

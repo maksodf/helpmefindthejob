@@ -1206,28 +1206,28 @@ class AppState:
         }
         samples: tuple[tuple[str, str, str, str, str, float, float, str], ...] = (
             (
-                "Senior Backend Engineer", "Acme Health (Demo)", "https://demo.khalo.org/acme-health",
-                "Berlin", "https://demo.khalo.org/jobs/senior-backend", 0.92, 0.88,
+                "Senior Backend Engineer", "Acme Health (Demo)", "https://demo.directjob-scout.example/acme-health",
+                "Berlin", "https://demo.directjob-scout.example/jobs/senior-backend", 0.92, 0.88,
                 "High overlap on Python + healthcare-management keywords; remote-friendly.",
             ),
             (
-                "Frontend Engineer", "Sample SaaS (Demo)", "https://demo.khalo.org/sample-saas",
-                "Remote — DACH", "https://demo.khalo.org/jobs/frontend", 0.85, 0.82,
+                "Frontend Engineer", "Sample SaaS (Demo)", "https://demo.directjob-scout.example/sample-saas",
+                "Remote — DACH", "https://demo.directjob-scout.example/jobs/frontend", 0.85, 0.82,
                 "Demo lead — TypeScript + design-system fit. Remote.",
             ),
             (
-                "DevOps Engineer", "Demo Insurance (Demo)", "https://demo.khalo.org/demo-insurance",
-                "München", "https://demo.khalo.org/jobs/devops", 0.78, 0.75,
+                "DevOps Engineer", "Demo Insurance (Demo)", "https://demo.directjob-scout.example/demo-insurance",
+                "München", "https://demo.directjob-scout.example/jobs/devops", 0.78, 0.75,
                 "Demo lead — Kubernetes / Terraform / SRE focus. Hybrid.",
             ),
             (
-                "Data Engineer", "Mock Analytics (Demo)", "https://demo.khalo.org/mock-analytics",
-                "Hamburg", "https://demo.khalo.org/jobs/data", 0.88, 0.84,
+                "Data Engineer", "Mock Analytics (Demo)", "https://demo.directjob-scout.example/mock-analytics",
+                "Hamburg", "https://demo.directjob-scout.example/jobs/data", 0.88, 0.84,
                 "Demo lead — dbt + Snowflake + CDC; bilingual EN/DE team.",
             ),
             (
-                "Product Manager", "Test Tech (Demo)", "https://demo.khalo.org/test-tech",
-                "Berlin", "https://demo.khalo.org/jobs/product", 0.74, 0.71,
+                "Product Manager", "Test Tech (Demo)", "https://demo.directjob-scout.example/test-tech",
+                "Berlin", "https://demo.directjob-scout.example/jobs/product", 0.74, 0.71,
                 "Demo lead — early-stage SaaS; PM-of-one with engineering background.",
             ),
         )
@@ -2080,7 +2080,7 @@ class AppState:
         company_name = company.name if company else (
             (job.also_seen_at and next(iter(job.also_seen_at), "")) or ""
         )
-        public_url = os.environ.get("DIRECTJOB_PUBLIC_URL") or "https://app.khalo.org"
+        public_url = os.environ.get("DIRECTJOB_PUBLIC_URL") or "https://app.directjob-scout.example"
         result = post_high_fit_notification(
             webhook_url=url,
             job_title=job.title or "",
@@ -3994,7 +3994,7 @@ class AppState:
 
     def inbound_token_for_user(self, user_id: str) -> str:
         """Stable per-user token used as the local-part of inbound email
-        addresses (e.g. ``u-{token}@inbox.khalo.org``).
+        addresses (e.g. ``u-{token}@inbox.directjob-scout.example``).
 
         Derived as HMAC-SHA256 over the user-id + the server secret so it
         survives restarts and can be re-derived if a user loses their
@@ -4631,7 +4631,7 @@ class Handler(BaseHTTPRequestHandler):
                 if not url:
                     self.send_error_json(HTTPStatus.BAD_REQUEST, "no_webhook", "Set a Slack webhook URL first.")
                     return
-                public_url = os.environ.get("DIRECTJOB_PUBLIC_URL") or "https://app.khalo.org"
+                public_url = os.environ.get("DIRECTJOB_PUBLIC_URL") or "https://app.directjob-scout.example"
                 result = post_high_fit_notification(
                     webhook_url=url,
                     job_title="Test notification",
@@ -4836,7 +4836,7 @@ class Handler(BaseHTTPRequestHandler):
                 # token route the message to the right account.
                 #
                 # Activation steps for the operator:
-                #   1. Wire MX for inbox.khalo.org to the inbound
+                #   1. Wire MX for inbox.directjob-scout.example to the inbound
                 #      provider (Resend supports this).
                 #   2. Set DIRECTJOB_INBOUND_EMAIL_SECRET in prod env.
                 #   3. Configure the provider's webhook to POST here.
@@ -7056,7 +7056,7 @@ class Handler(BaseHTTPRequestHandler):
             "    <a href=\"/\" class=\"legal-back\">← DirectJob Scout</a>\n"
             "    <h1>Job alert not found</h1>\n"
             "    <p>This job-alert page does not exist. Head to "
-            "<a href=\"/\">khalo.org</a> to set up your own saved search — we watch the "
+            "<a href=\"/\">directjob-scout.example</a> to set up your own saved search — we watch the "
             "company pages + the major aggregators daily.</p>\n"
             "  </main>\n"
             "</body>\n"
@@ -7158,7 +7158,7 @@ class Handler(BaseHTTPRequestHandler):
             "    <a href=\"/\" class=\"legal-back\">← DirectJob Scout</a>\n"
             "    <h1>Job not available</h1>\n"
             "    <p>This job's share link has been disabled by its owner, or the link is wrong. "
-            "If you arrived here by mistake, head to <a href=\"/\">khalo.org</a>.</p>\n"
+            "If you arrived here by mistake, head to <a href=\"/\">directjob-scout.example</a>.</p>\n"
             "  </main>\n"
             "</body>\n"
             "</html>\n"
@@ -7260,7 +7260,7 @@ class Handler(BaseHTTPRequestHandler):
             "    <a href=\"/\" class=\"legal-back\">← Back to DirectJob Scout</a>\n"
             f"    <h1 style=\"color: {accent}\">{_escape(title)}</h1>\n"
             f"    <p>{_escape(message)}</p>\n"
-            "    <p class=\"muted small\">If something is wrong, contact <a href=\"mailto:support@khalo.org\">support@khalo.org</a>.</p>\n"
+            "    <p class=\"muted small\">If something is wrong, contact <a href=\"mailto:support@directjob-scout.example\">support@directjob-scout.example</a>.</p>\n"
             "  </main>\n"
             "</body>\n"
             "</html>\n"

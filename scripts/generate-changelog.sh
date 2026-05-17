@@ -37,8 +37,8 @@ write_header() {
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="robots" content="index,follow" />
     <title>Changelog — DirectJob Scout</title>
-    <meta name="description" content="What we shipped on DirectJob Scout (khalo.org). Real cadence, no marketing spin." />
-    <link rel="canonical" href="https://khalo.org/changelog" />
+    <meta name="description" content="What we shipped on DirectJob Scout (directjob-scout.example). Real cadence, no marketing spin." />
+    <link rel="canonical" href="https://directjob-scout.example/changelog" />
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body class="legal-body">

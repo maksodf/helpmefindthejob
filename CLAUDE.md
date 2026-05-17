@@ -10,7 +10,7 @@ Any Claude session (or other coding agent) working on this repository should rea
 
 The project is being prepared as a Programme of **The Commons Conservancy** (Dutch stichting co-founded by NLnet). License is **Apache 2.0 with Contributor License Agreement**.
 
-This is *not* a commercial SaaS, even though earlier iterations of the codebase contain commercial-product residue (Pro/Free tier, "sellable-readiness" docs, `khalo.org` hardcoded). The active project direction is civic-commons.
+This is *not* a commercial SaaS, even though earlier iterations of the codebase carried commercial-product framing (Pro/Free tier in the README, "sellable-readiness" docs, `khalo.org` hardcoded). The Week 1 sanitisation pass (see `docs/grant/02-execution-plan.md` task 1.4) replaced the public-facing residue with `directjob-scout.example` placeholders and relocated the commercial-vision docs to `private/`. The active project direction is civic-commons. Early git commits may still reference legacy strings; see `CONTRIBUTORS-NOTE.md` for the history-preservation rationale.
 
 ---
 
@@ -42,7 +42,7 @@ If you change strategic direction, update `01-project-brief.md` AND log the deci
 1. **No new product features.** Every hour on features is an hour not on the application.
 2. **No framework extraction.** Deferred to Phase 2 (see `docs/grant/03-post-grant.md`).
 3. **License everything you write under Apache 2.0.** Add SPDX-License-Identifier headers in new source files.
-4. **Never commit secrets, real keys, or PII.** Sanitise before pushing. The repo contains known residue (`khalo.org`, tester names) — Week 1 sanitisation task addresses it.
+4. **Never commit secrets, real keys, or PII.** Sanitise before pushing. The Week 1 task 1.4 sanitisation pass cleared the `khalo.org` and tester-name residue from the current working tree; do not reintroduce it. Git history is preserved per Decision 12.
 5. **Mobile-friendly assumption**: maintainer reviews on a phone for planning, computer for execution. Small diffs, clear commit messages.
 6. **Honest about instability**: do not over-polish. NGI0 winners are honest about alpha state. Tenzu literally says "main branch may be unstable."
 7. **Anchor persona panel**: every public-facing example, screenshot, narrative uses one of the five personas — Aïcha, Yusuf, Olga, Mahmoud, Maria. See `docs/grant/07-personas.md`.
@@ -108,7 +108,7 @@ Keep this file short and oriented toward agents. If the orientation summary abov
 
 ## If something seems off
 
-- The repository has known commercial-narrative residue (Pro/Free tier, `khalo.org`, tester names). Week 1 sanitisation in `02-execution-plan.md` addresses it. Do not add to it.
+- The Week 1 task 1.4 sanitisation pass replaced `khalo.org` references with `directjob-scout.example` placeholders, neutralised tester-name leakage in code and test comments, and relocated commercial-vision docs (sellable-readiness, operator-launch, marketing-copy, press-kit, launch-day-content, operator-package, operator-starters, operator-final-punchlist, legal-review-brief, deployment-handoff) to `private/` (gitignored). Do not reintroduce. The Pro/Free framing in the README is removed by Week 1 task 1.3 (README rewrite).
 - Tests fail locally due to a `cryptography` / `cffi` build issue — Week 3 task fixes this. If you need tests to pass before then, run them in the Docker container instead.
 - If you find a strategic ambiguity not covered in `docs/grant/`, ask the maintainer rather than guessing.
 - If you must make a decision without the maintainer present, document it in `docs/grant/04-research-and-decisions.md` and surface it for confirmation at the next interaction.

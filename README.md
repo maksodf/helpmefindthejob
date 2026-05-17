@@ -172,7 +172,7 @@ DIRECTJOB_SMTP_USERNAME=...
 DIRECTJOB_SMTP_PASSWORD=...
 DIRECTJOB_SMTP_STARTTLS=true
 DIRECTJOB_EMAIL_FROM=no-reply@your-domain.example
-DIRECTJOB_PUBLIC_URL=https://app.khalo.org
+DIRECTJOB_PUBLIC_URL=https://app.directjob-scout.example
 ```
 
 Without `DIRECTJOB_PUBLIC_URL`, links use relative paths and only resolve

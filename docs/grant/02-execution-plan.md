@@ -70,13 +70,13 @@ For task ordering and dependencies, the weeks are roughly sequential but not str
 
 ### 1.4 Sanitise internal residue (4 h) — MAJOR FIX
 
-- [ ] Replace all ~29 `khalo.org` occurrences in `app.py` with `example.com` placeholders or environment-variable-driven configuration
-- [ ] Replace `support@khalo.org` with a sanitised contact
-- [ ] Add `CONTRIBUTORS-NOTE.md` honestly explaining that early commits may reference internal tester names — do not retroactively rewrite history (preserves commit integrity)
-- [ ] Delete `keepbuildingtill100%tracker.MD` from repo root (per Decision 14 in `04-research-and-decisions.md`)
-- [ ] Sanitise `.env.example` — verify no real keys leaked
-- [ ] Run `gitleaks` over the full history; fix anything found
-- [ ] Move commercial docs to a `private/` folder (gitignored) OR a separate private repo:
+- [x] Replace all `khalo.org` occurrences (verified count: 17 in `app.py`; ~70 across the public tree including static HTML, scripts, .env.example, docker-compose.prod.yml, and tests) with `directjob-scout.example` placeholders or environment-variable-driven configuration. Planning-doc estimate of "~29 in app.py" was inaccurate; the fresh-scan count is reported in the Commit D message.
+- [x] Replace `support@khalo.org` with `support@directjob-scout.example`
+- [x] Add `CONTRIBUTORS-NOTE.md` honestly explaining that early commits may reference internal tester names and legacy framing — do not retroactively rewrite history (preserves commit integrity per Decision 12)
+- [x] Delete `keepbuildingtill100%tracker.MD` from repo root (per Decision 14 in `04-research-and-decisions.md`)
+- [x] Sanitise `.env.example` — analytics domain placeholders updated; no real keys present
+- [ ] Run `gitleaks` over the full history; fix anything found *(deferred to Week 3 CI expansion task 3.2 — gitleaks belongs alongside the CVE/secret-scanning hooks)*
+- [x] Move commercial docs to a `private/` folder (gitignored). Extension beyond the originally-listed 11 files: `legal-review-brief.md` and `deployment-handoff.md` were also relocated because they contained the maintainer's real personal Gmail and operational-handoff narrative respectively. Relocated:
   - `docs/sellable-readiness-completion-report-pass2.md`
   - `docs/sellable-readiness-final-report.md`
   - `docs/sellable-readiness-gap-analysis.md`
@@ -88,6 +88,10 @@ For task ordering and dependencies, the weeks are roughly sequential but not str
   - `docs/operator-starters.md`
   - `docs/press-kit.md`
   - `docs/launch-day-content.md`
+  - `docs/legal-review-brief.md` *(extension — contained real PII: maintainer's Gmail)*
+  - `docs/deployment-handoff.md` *(extension — heavily commercial-operational, "friend"-handoff narrative)*
+- [x] Sanitise tester-name leakage: `Nasser` references in `company_discovery/journey.py` and `tests/test_journey_edge_cases.py` replaced with generic "an early tester" phrasing; Python identifier `NASSER_COMPLAINT` renamed to `EARLY_TESTER_COMPLAINT`. Bug-history context preserved.
+- [x] Pin Docker project name to `directjob-scout` in both compose files (`name:` field plus `image: directjob-scout:latest`) so the generated image name no longer leaks the original local directory name (`nassermcpserver-...`). Script references updated accordingly.
 
 ### 1.5 GitHub repo housekeeping (1 h)
 

@@ -6,8 +6,8 @@
 # Uses only OpenSSL; no provider lock-in.
 #
 # Usage:
-#   DOMAIN=app.khalo.org ./scripts/tls-expiry-check.sh
-#   DOMAIN=app.khalo.org WARN_DAYS=21 ./scripts/tls-expiry-check.sh
+#   DOMAIN=app.directjob-scout.example ./scripts/tls-expiry-check.sh
+#   DOMAIN=app.directjob-scout.example WARN_DAYS=21 ./scripts/tls-expiry-check.sh
 #
 # Exit codes:
 #   0  cert valid for more than WARN_DAYS days

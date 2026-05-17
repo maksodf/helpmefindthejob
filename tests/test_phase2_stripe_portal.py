@@ -50,18 +50,18 @@ class StripePortalSessionTests(unittest.TestCase):
 
         result = backend.create_portal_session(
             customer_id="cus_test_123",
-            return_url="https://app.khalo.org/?billing=portal-return",
+            return_url="https://app.directjob-scout.example/?billing=portal-return",
         )
 
         self.assertEqual(result["id"], "bps_test_123")
         self.assertEqual(result["url"], "https://billing.stripe.example/p/bps_test_123")
-        self.assertEqual(result["returnUrl"], "https://app.khalo.org/?billing=portal-return")
+        self.assertEqual(result["returnUrl"], "https://app.directjob-scout.example/?billing=portal-return")
         # Verify the form fields posted upstream.
         method, url, form = transport.calls[0]
         self.assertEqual(method, "POST")
         self.assertEqual(url, "https://api.stripe.com/v1/billing_portal/sessions")
         self.assertEqual(form["customer"], "cus_test_123")
-        self.assertEqual(form["return_url"], "https://app.khalo.org/?billing=portal-return")
+        self.assertEqual(form["return_url"], "https://app.directjob-scout.example/?billing=portal-return")
 
     def test_missing_api_key_raises(self) -> None:
         backend = StripeBillingBackend(transport=FakeStripeTransport({}))

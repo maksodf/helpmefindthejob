@@ -92,13 +92,13 @@ class SiteConfigEndpointTests(unittest.TestCase):
 
     def test_set_returns_values(self) -> None:
         env_extra = {
-            "DIRECTJOB_ANALYTICS_SCRIPT_URL": "https://analytics.khalo.org/js/script.js",
-            "DIRECTJOB_ANALYTICS_DOMAIN": "khalo.org",
+            "DIRECTJOB_ANALYTICS_SCRIPT_URL": "https://analytics.directjob-scout.example/js/script.js",
+            "DIRECTJOB_ANALYTICS_DOMAIN": "directjob-scout.example",
         }
         _, base = self._spawn(env_extra)
         cfg = self._get_site_config(base)
-        self.assertEqual(cfg["analytics"]["scriptUrl"], "https://analytics.khalo.org/js/script.js")
-        self.assertEqual(cfg["analytics"]["domain"], "khalo.org")
+        self.assertEqual(cfg["analytics"]["scriptUrl"], "https://analytics.directjob-scout.example/js/script.js")
+        self.assertEqual(cfg["analytics"]["domain"], "directjob-scout.example")
 
 
 if __name__ == "__main__":

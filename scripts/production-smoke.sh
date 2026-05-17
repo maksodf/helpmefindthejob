@@ -5,7 +5,7 @@
 #
 # Usage:
 #   ./scripts/production-smoke.sh
-#   APP_BASE_URL=https://app.khalo.org ./scripts/production-smoke.sh
+#   APP_BASE_URL=https://app.directjob-scout.example ./scripts/production-smoke.sh
 #   ADMIN_EMAIL=admin@example.com ADMIN_PASSWORD=... \
 #     ./scripts/production-smoke.sh
 #
@@ -20,7 +20,7 @@
 
 set -eu
 
-APP_BASE_URL="${APP_BASE_URL:-https://app.khalo.org}"
+APP_BASE_URL="${APP_BASE_URL:-https://app.directjob-scout.example}"
 ADMIN_EMAIL="${ADMIN_EMAIL:-${DIRECTJOB_ADMIN_EMAIL:-}}"
 ADMIN_PASSWORD="${ADMIN_PASSWORD:-${DIRECTJOB_ADMIN_PASSWORD:-}}"
 COOKIE_JAR="$(mktemp -t directjob-smoke.XXXXXX)"

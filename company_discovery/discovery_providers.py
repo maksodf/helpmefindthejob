@@ -308,7 +308,7 @@ class DuckDuckGoSearchProvider:
         request = Request(
             url,
             headers={
-                "User-Agent": "Mozilla/5.0 (compatible; DirectJobScout/0.14; +https://app.khalo.org/about)",
+                "User-Agent": "Mozilla/5.0 (compatible; DirectJobScout/0.14; +https://app.directjob-scout.example/about)",
                 "Accept": "text/html,application/xhtml+xml",
                 "Accept-Language": "en-US,en;q=0.9",
             },

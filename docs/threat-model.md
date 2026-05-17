@@ -6,7 +6,7 @@ test. Track an external review as **P0.K BLOCKED until vendor engaged**
 in the gap analysis.
 
 The model targets the production hosted deployment at
-`https://app.khalo.org`, with admin-managed tester accounts and
+`https://app.directjob-scout.example`, with admin-managed tester accounts and
 provider-neutral AI handoff.
 
 ## 1. Assets and trust boundaries

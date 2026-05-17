@@ -367,8 +367,8 @@ _NOT_A_CV_TELLS = (
 def looks_like_pasted_cv(text: str) -> bool:
     """True iff the text PROBABLY is a CV paste, not a question /
     complaint / off-topic note. Replaces the old "any message >= 80
-    chars is a CV" heuristic that mortifyingly captured Nasser's
-    correction message as his CV on prod 0.79.3.
+    chars is a CV" heuristic that mortifyingly captured an early
+    tester's correction message as their CV on prod 0.79.3.
 
     Rules:
     - Too short → False (≤ 80 chars almost never a real CV)
@@ -421,7 +421,7 @@ def looks_like_new_search_intent(msg: str, current_phase: str) -> bool:
        the Bartender results means "search for Pflegehelfer
        instead", not "drill into a non-existent category").
     3. Loose "search/find/look for X" phrases without an explicit
-       "job" noun. The bug Nasser hit on 0.79.1 — "search for
+       "job" noun. The bug an early tester hit on 0.79.1 — "search for
        pflege" + "no search for pflegehelfer please" stuck him in
        a category-drill loop because neither matched a strict
        trigger.
