@@ -4,7 +4,7 @@
 # pull requests that touch matching paths. The maintainer is currently
 # the sole owner of every path; this expands as co-maintainers are
 # formally onboarded (see AUTHORS.md and docs/grant/04-research-and-decisions.md
-# Decision 16 for the current team-structure context).
+# Decision 17 for the current team-structure context).
 #
 # Syntax: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
 

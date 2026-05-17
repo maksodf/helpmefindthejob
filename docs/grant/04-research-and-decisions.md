@@ -105,7 +105,7 @@ If a number, claim, or decision in `01-project-brief.md` ever seems off, the sou
 | Public traffic | None | Maintainer attestation, 2026-05-17 |
 | Commercial residue scope | One-way removal, no user migration required | Implied by all the above |
 
-This clarification reframes parts of the audit in `01-project-brief.md` §4 and downgrades risk R15 in `05-risks-and-stakeholders.md`. See Decision 16 in Part B for the stakeholder consequences.
+This clarification reframes parts of the audit in `01-project-brief.md` §4 and downgrades risk R15 in `05-risks-and-stakeholders.md`. See Decision 17 in Part B for the stakeholder consequences.
 
 ---
 
@@ -307,7 +307,7 @@ This is positive for project coherence — one committed contributor rather than
 
 **Reversibility**: Soft. If the partner withdraws from project involvement, the recruitment-pipeline framing of Decision 15 returns to active operating mode.
 
-#### Decision 17: Identity-bearing fields ship as explicit placeholders, resolved via dated follow-up commits per the consent-first authorship policy
+#### Decision 18: Identity-bearing fields ship as explicit placeholders, resolved via dated follow-up commits per the consent-first authorship policy
 
 **Decided**: 2026-05-17.
 
