@@ -30,11 +30,17 @@ class PlanShapeTests(unittest.TestCase):
             self.assertIn(plan.daily_digest_enabled, (True, False))
             self.assertIsInstance(plan.retention_days_max, int)
 
-    def test_pilot_is_the_restricted_one(self) -> None:
+    def test_pilot_is_the_low_cap_tier(self) -> None:
+        """R23.7 — pilot stays the low-tier (3 saved searches, no
+        daily digest) but now also includes managed AI with a small
+        cap so the chat-first vision works for free-tier users."""
         pilot = find_plan("pilot")
         self.assertEqual(pilot.saved_search_limit, 3)
-        self.assertEqual(pilot.ai_modes_allowed, ("manual",))
+        self.assertIn("managed", pilot.ai_modes_allowed)
         self.assertFalse(pilot.daily_digest_enabled)
+        # Cap is tight on pilot — chat works, but heavy use needs
+        # an upgrade.
+        self.assertLess(pilot.llm_daily_cap, 50)
 
     def test_team_unlocks_byok_and_managed(self) -> None:
         team = find_plan("team")
@@ -67,7 +73,8 @@ class PlanLimitsHelperTests(unittest.TestCase):
         state = self._state_on_plan("pilot")
         limits = state.plan_limits()
         self.assertEqual(limits["savedSearchLimit"], 3)
-        self.assertEqual(limits["aiModesAllowed"], ("manual",))
+        # R23.7 — all plans include managed AI; cap is the differentiator.
+        self.assertIn("managed", limits["aiModesAllowed"])
         self.assertEqual(limits["retentionDaysMax"], 30)
         self.assertFalse(limits["dailyDigestEnabled"])
 
@@ -145,13 +152,14 @@ class AiModeLockingTests(unittest.TestCase):
         state.billing_backend.save(sub)
         return state
 
-    def test_pilot_allows_manual_only(self) -> None:
+    def test_pilot_now_allows_managed_chat(self) -> None:
+        """R23.7 — every plan now grants managed-AI chat access; the
+        differentiator is the daily call cap. Previously pilot was
+        manual-only which conflicted with the chat-first vision."""
         state = self._state_on_plan("pilot")
         state.assert_ai_mode_allowed("manual")  # no raise
-        with self.assertRaises(ValueError):
-            state.assert_ai_mode_allowed("byok")
-        with self.assertRaises(ValueError):
-            state.assert_ai_mode_allowed("managed")
+        state.assert_ai_mode_allowed("byok")    # no raise (R23.7)
+        state.assert_ai_mode_allowed("managed")  # no raise (R23.7)
 
     def test_team_unlocks_byok_and_managed(self) -> None:
         state = self._state_on_plan("team")
@@ -159,15 +167,23 @@ class AiModeLockingTests(unittest.TestCase):
         state.assert_ai_mode_allowed("byok")
         state.assert_ai_mode_allowed("managed")
 
-    def test_update_ai_provider_refuses_byok_on_pilot(self) -> None:
+    def test_assert_ai_mode_still_gates_unknown_modes(self) -> None:
+        """The gate mechanism still works — if a future plan
+        restricts a mode, assert_ai_mode_allowed will raise."""
+        state = self._state_on_plan("pilot")
+        with self.assertRaises(ValueError):
+            state.assert_ai_mode_allowed("nonsense-mode-not-in-allowlist")
+
+    def test_update_ai_provider_accepts_byok_on_pilot_now(self) -> None:
+        """R23.7 — pilot no longer locks BYOK. Confirms the change
+        rolled through the update path."""
         state = self._state_on_plan("pilot")
         user = state.auth_store.create_user("alice@example.com", "very-secret-pass-1234")
-        with self.assertRaises(ValueError) as ctx:
-            state.update_ai_provider(user.id, {
-                "providerId": "openai", "invocationMode": "api",
-                "credentialReference": "OPENAI_API_KEY",
-            })
-        self.assertEqual(str(ctx.exception), "plan_ai_mode_locked")
+        config = state.update_ai_provider(user.id, {
+            "providerId": "openai", "invocationMode": "api",
+            "credentialReference": "OPENAI_API_KEY",
+        })
+        self.assertEqual(config.invocation_mode, "api")
 
     def test_update_ai_provider_accepts_byok_on_team(self) -> None:
         state = self._state_on_plan("team")

@@ -146,32 +146,32 @@
           <button id="inviteWorkspaceBtn" class="btn btn-ghost btn-small" type="button" data-i18n="workspaces.invite">Invite member</button>
         </div>
         <nav class="nav" id="sidebarNav">
-          <button class="nav-item" type="button" data-view="jobs" aria-current="page">
-            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 6a2 2 0 0 1 2-2h3l1 2h6a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" fill="currentColor"/></svg>
-            <span data-i18n="nav.queue">Jobs</span>
-            <span class="nav-pill" id="navJobCount">0</span>
-          </button>
-          <button class="nav-item" type="button" data-view="dashboard">
+          <!-- R25.2 — Jobs nav-item removed. Discovered roles still
+               live at #view-jobs as a canvas the chat navigates to
+               (e.g. when a watchlist scan completes). Users no
+               longer trigger discovery by clicking a sidebar button;
+               they chat ("show me new roles"). The Today / dashboard
+               view is the new default landing surface. -->
+          <button class="nav-item" type="button" data-view="dashboard" aria-current="page">
             <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 10l7-6 7 6v8a1 1 0 0 1-1 1h-4v-5h-4v5H4a1 1 0 0 1-1-1z" fill="currentColor"/></svg>
             <span data-i18n="nav.dashboard">Today</span>
           </button>
-          <button class="nav-item" type="button" data-view="brief">
+          <button class="nav-item" type="button" data-view="applications">
             <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 3h7l4 4v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zm6 1.5V8h3.5L11 4.5z M6 11h8v1.5H6z M6 14h8v1.5H6z" fill="currentColor"/></svg>
-            <span data-i18n="nav.brief">Briefcase</span>
+            <span data-i18n="nav.applications">Applications</span>
           </button>
-          <button class="nav-item" type="button" data-view="companies">
-            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v12H3z M14 8a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v9h-4z M5 7h2v2H5z M5 11h2v2H5z M9 7h2v2H9z M9 11h2v2H9z" fill="currentColor"/></svg>
-            <span data-i18n="nav.companies">Companies</span>
-            <span class="nav-pill" id="navCompanyCount">0</span>
-          </button>
-          <button class="nav-item" type="button" data-view="assistant">
-            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 4h14a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H7l-4 3V5a1 1 0 0 1 1-1zM7 9h1m3 0h1m3 0h1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
-            <span>Assistant</span>
-          </button>
-          <button class="nav-item" type="button" data-view="cvBuilder">
-            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 2h7l3 3v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1zm6 1.5V6h2.5L11 3.5zM7 10h6M7 13h6M7 7h3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
-            <span>CV Builder</span>
-          </button>
+          <!-- R25.4 — Companies nav removed. Watchlist is chat-
+               driven ("add Charité" / "follow karriere.charite.de").
+               The #view-companies canvas still exists and chat-tools
+               (open Companies, suggest companies) navigate to it.   -->
+
+          <!-- R25.1 — Assistant nav removed. The chat dock is now
+               the primary chat surface at every viewport (no separate
+               page). Users see the chat directly; nothing to navigate
+               to. The dock takes the full main column on tablet /
+               mobile and sits next to the canvas on desktop.
+               R23.4 — CV Builder also removed; chat opens it.        -->
+
           <button class="nav-item" type="button" data-view="settings">
             <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 6a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm0 2a2 2 0 1 1 0 4 2 2 0 0 1 0-4z M9 1.6V3a7 7 0 0 0-2.5 1l-1-1L4 4.5l1 1A7 7 0 0 0 4 8H2.6V12H4a7 7 0 0 0 1 2.5l-1 1 1.5 1.5 1-1A7 7 0 0 0 9 17v1.4h2V17a7 7 0 0 0 2.5-1l1 1 1.5-1.5-1-1a7 7 0 0 0 1-2.5h1.4V8H17a7 7 0 0 0-1-2.5l1-1L15.5 3l-1 1A7 7 0 0 0 11 3V1.6z" fill="currentColor"/></svg>
             <span data-i18n="nav.settings">Settings</span>
@@ -221,6 +221,14 @@
               role="log" aria-live="polite" aria-atomic="false"></div>
         <form id="dockChatForm" class="chat-dock-form"
               aria-label="Send a chat message">
+          <button id="dockChatAttachBtn" class="btn btn-ghost btn-small"
+                  type="button" aria-label="Upload CV (PDF / DOCX / TXT)"
+                  title="Upload CV (PDF / DOCX / TXT)">
+            <svg viewBox="0 0 20 20" aria-hidden="true" width="18" height="18">
+              <path d="M14.5 6.5l-6 6a2.5 2.5 0 1 1-3.5-3.5l7-7a4 4 0 0 1 5.5 5.5l-7 7a5.5 5.5 0 1 1-7.5-7.5l5-5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+          <input id="dockChatAttachInput" type="file" accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain" hidden />
           <input id="dockChatInput" type="text" autocomplete="off"
                  placeholder="Type what you want to do…"
                  aria-label="Chat message" />
@@ -242,11 +250,10 @@
             <p id="viewSubtitle" class="muted">Your watched companies, recent runs, and what to do next.</p>
           </div>
           <div class="topbar-meta">
-            <button id="cmdkLauncher" class="cmdk-launcher" type="button" aria-label="Open command palette">
-              <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="9" cy="9" r="6" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M14 14l4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-              <span class="cmdk-launcher-text" data-i18n="topbar.cmdkHint">Search</span>
-              <kbd class="cmdk-launcher-kbd" id="cmdkLauncherKbd">⌘K</kbd>
-            </button>
+            <!-- R26.4 — Cmd-K palette launcher removed. Every action
+                 it exposed (nav, search, open a company) is reachable
+                 via the chat dock. The keybinding (Cmd/Ctrl+K) is
+                 also unbound. -->
             <span class="status-pill" id="networkState" role="status" aria-live="polite" data-i18n="status.ready">Ready</span>
           </div>
         </header>
@@ -267,7 +274,7 @@
               <span class="hero-hint muted" id="metricJobsHint" data-i18n="dashboard.hero.empty">Awaiting first scan</span>
             </div>
             <div class="hero-actions">
-              <button class="btn btn-primary" type="button" data-i18n="dashboard.hero.openQueue" onclick="navigate('jobs')">Open queue</button>
+              <button class="btn btn-primary" type="button" data-i18n="dashboard.hero.openQueue" onclick="navigate('jobs')">Show new roles</button>
             </div>
             <div class="hero-secondary">
               <div class="hero-stat">
@@ -399,7 +406,7 @@
                 <h2 data-i18n="companies.watchlist.heading">Companies to watch</h2>
                 <button id="newCompanyBtn" class="btn btn-primary btn-small" type="button" data-i18n="companies.watchlist.add">+ Add</button>
               </div>
-              <input id="companyFilter" class="filter-input" type="search" placeholder="Filter watchlist" />
+              <input id="companyFilter" class="filter-input" type="search" placeholder="Filter companies" />
               <div id="companyList" class="company-list"></div>
             </aside>
 
@@ -602,27 +609,16 @@
         </section>
 
         <!-- Briefcase: imported jobs + AI brief + application tracking -->
-        <section id="view-brief" class="view" data-view="brief" aria-labelledby="viewTitle" hidden>
-          <section class="card" aria-label="Selected job brief">
-            <div class="card-heading">
-              <div>
-                <h2 id="briefMeta" data-i18n="brief.briefHeading">No brief prepared yet</h2>
-                <p class="muted" data-i18n="brief.briefLead">Pick an imported job to prepare a provider-neutral brief.</p>
-              </div>
-              <div class="action-group">
-                <button id="copyBriefBtn" class="btn" type="button" data-i18n="brief.copy">Copy</button>
-                <button id="openInChatGPTBtn" class="btn" type="button" title="Copy the prompt and open ChatGPT in a new tab">↗ ChatGPT</button>
-                <button id="openInClaudeBtn" class="btn" type="button" title="Copy the prompt and open Claude in a new tab">↗ Claude</button>
-                <button id="runAnalysisBriefBtn" class="btn btn-primary" type="button" data-i18n="brief.analyze">Analyze fit</button>
-              </div>
-            </div>
-            <label class="field">
-              <span data-i18n="brief.runtimeKey">Session API key (optional, not saved)</span>
-              <input id="providerRuntimeKey" type="password" autocomplete="off" placeholder="Used only for one Run AI request" />
-            </label>
-            <textarea id="briefPrompt" class="brief-textarea" rows="14" readonly placeholder="Import a job, then click Brief on the role to see a provider-neutral brief here."></textarea>
-            <p class="muted small" data-i18n="brief.handoffNote">The brief is sent only when you click Analyze fit. Manual handoff always works.</p>
-          </section>
+        <section id="view-applications" class="view" data-view="applications" aria-labelledby="viewTitle" hidden>
+          <!--
+            R23.1: the legacy "Selected job brief" card + AI-handoff
+            textarea was removed. With managed-AI chat (R22) every
+            user gets the brief in conversation — no more "copy this
+            prompt into ChatGPT" UX. The Analyze-fit + Tailor-CV +
+            Draft-letter actions still live per-job (below + in the
+            imported-jobs list) and now flow through cost-tracked
+            managed AI.
+          -->
 
           <section class="card" aria-label="Imported jobs">
             <div class="card-heading">
@@ -631,7 +627,10 @@
             <div id="importedJobsList" class="imported-list"></div>
           </section>
 
-          <section class="card" aria-label="Application preparation">
+          <!-- R26.1 — Application preparation card now hidden by
+               default. It only appears once a job is selected from
+               the list above, freeing the canvas of empty-state UI. -->
+          <section class="card" id="applicationCard" aria-label="Application preparation" hidden>
             <div class="card-heading">
               <div>
                 <h2 data-i18n="applications.heading">Application preparation</h2>
@@ -677,14 +676,17 @@
               </label>
               <label class="field wide">
                 <span data-i18n="applications.coverLetterDraft">Cover letter draft</span>
+                <!-- R26.2 — Cover-letter prompt + Draft cover letter
+                     + Tailor CV collapsed into a single "Ask the
+                     assistant" button. The chat handles all four
+                     intents (brief / analyze / draft / tailor) by
+                     natural language. Manual paste into the textarea
+                     still works for users who want it. -->
                 <div class="cover-letter-toolbar">
-                  <button id="prepareCoverLetterBtn" class="btn" type="button" title="Show the cover-letter prompt for manual handoff" data-i18n="applications.coverLetter.prompt">Cover-letter prompt</button>
-                  <button id="draftCoverLetterBtn" class="btn btn-primary" type="button" title="Run the configured AI provider to draft a tailored cover letter" data-i18n="applications.coverLetter.draft">Draft cover letter</button>
-                  <button id="tailorCvBtn" class="btn" type="button" title="Rewrite your CV for this specific job using the configured AI provider" data-i18n="applications.coverLetter.tailor">Tailor CV</button>
+                  <button id="applicationAskBtn" class="btn btn-primary" type="button" title="Open the chat with this job pre-filled — ask for a brief, cover letter, CV tailoring, or fit analysis." data-i18n="applications.ask">Ask the assistant</button>
                   <span id="coverLetterStatus" class="muted small"></span>
-                  <span id="tailorCvStatus" class="muted small"></span>
                 </div>
-                <textarea id="applicationCoverLetter" rows="6" placeholder="Click 'Draft cover letter' to generate one with your AI provider, or paste your own."></textarea>
+                <textarea id="applicationCoverLetter" rows="6" placeholder="Type 'draft a cover letter for this' in the chat, or paste your own here."></textarea>
               </label>
               <details class="application-extras field wide">
                 <summary data-i18n="applications.extras.summary">More — checklist, history note</summary>
@@ -727,6 +729,10 @@
             <button class="settings-tab" type="button" role="tab" data-tab="notifications" aria-selected="false" data-i18n="settings.tab.notifications">Notifications</button>
             <button class="settings-tab" type="button" role="tab" data-tab="security" aria-selected="false" data-i18n="settings.tab.security">Security</button>
             <button class="settings-tab" type="button" role="tab" data-tab="workspace" aria-selected="false" data-i18n="settings.tab.workspace">Workspace</button>
+            <!-- R26.3 — Developer tab. AI provider config + CLI /
+                 custom endpoint controls live here, away from the
+                 normal user's settings flow. -->
+            <button class="settings-tab" type="button" role="tab" data-tab="developer" aria-selected="false" data-i18n="settings.tab.developer">Developer</button>
           </nav>
           <section class="card" aria-label="Language" data-tab="profile">
             <div class="card-heading">
@@ -809,26 +815,31 @@
             </label>
           </section>
 
-          <section class="card" aria-label="Persona &amp; profile" data-tab="profile">
+          <!-- R27.2 — single dense "Persona & profile" card split
+               into two: "Target role" (the search parameters that
+               drive job matching) and "My CV" (the document + photo).
+               Both still POST to /api/profile so saving works as
+               before; the visual split reduces cognitive load. -->
+          <section class="card" aria-label="Target role" data-tab="profile">
             <div class="card-heading">
               <div>
-                <h2>Persona &amp; profile</h2>
-                <p class="muted">Choose your persona and paste your CV. The AI Brief and cover-letter drafts use this context.</p>
+                <h2 data-i18n="settings.persona.heading">Target role &amp; profile</h2>
+                <p class="muted" data-i18n="settings.persona.lead">Pick the role family that best describes the job you want. The chat uses this to rank matches and write cover letters.</p>
               </div>
-              <button id="saveProfileBtn" class="btn btn-primary" type="button">Save profile</button>
+              <button id="saveProfileBtn" class="btn btn-primary" type="button" data-i18n="settings.persona.save">Save profile</button>
             </div>
             <form id="profileForm" class="provider-grid">
               <label class="field">
-                <span>Persona</span>
-                <input id="profilePersona" list="personaDatalist" data-i18n-placeholder="settings.persona.searchPlaceholder" placeholder="Type to search personas…" autocomplete="off" />
+                <span data-i18n="settings.persona.persona">Role family</span>
+                <input id="profilePersona" list="personaDatalist" data-i18n-placeholder="settings.persona.searchPlaceholder" placeholder="Type to search…" autocomplete="off" />
                 <datalist id="personaDatalist"></datalist>
               </label>
               <label class="field">
-                <span>Industry preference</span>
+                <span data-i18n="settings.persona.industry">Industry preference</span>
                 <input id="profileIndustry" placeholder="e.g. Healthcare, B2B SaaS, Fintech" />
               </label>
               <label class="field wide">
-                <span>Target roles (comma-separated)</span>
+                <span data-i18n="settings.persona.targetRoles">Target roles (comma-separated)</span>
                 <input id="profileTargetRoles" placeholder="e.g. project management, digital health" />
               </label>
               <label class="field">
@@ -844,26 +855,32 @@
                 <input id="profileYearsExperience" type="number" min="0" max="60" />
               </label>
               <label class="field">
-                <span>Languages (comma-separated)</span>
+                <span>Languages spoken</span>
                 <input id="profileLanguages" placeholder="e.g. German (C1), English (C2)" />
               </label>
               <div id="personaSuggestionHost" class="form-row-full"></div>
-              <label class="field form-row-full">
-                <span>Resume / CV</span>
-                <div class="cv-upload-toolbar">
-                  <input id="cvUploadInput" type="file" accept=".docx,.txt,.pdf" hidden />
-                  <button id="cvUploadBtn" class="btn" type="button">Upload .docx / .pdf / .txt</button>
-                  <span id="cvUploadStatus" class="muted small"></span>
-                </div>
-                <textarea id="profileCvText" rows="10" placeholder="Upload a .docx or .txt CV, or paste plain text. PDF upload is not supported yet."></textarea>
-                <span id="profileCvHint" class="hint">No CV pasted yet. The AI Brief still works without it but is less personalised.</span>
-              </label>
-              <label class="field form-row-full">
-                <span>Notes for the AI (optional)</span>
-                <input id="profileNotes" placeholder="Anything else the AI should know — e.g. visa status, certifications" />
-              </label>
             </form>
             <p id="profileMessage" class="muted small" role="status" aria-live="polite"></p>
+          </section>
+
+          <section class="card" aria-label="My CV" data-tab="profile">
+            <div class="card-heading">
+              <div>
+                <h2>My CV</h2>
+                <p class="muted">Upload (PDF / DOCX / TXT) or paste your CV here. You can also drop a file into the chat dock — same effect.</p>
+              </div>
+            </div>
+            <div class="cv-upload-toolbar">
+              <input id="cvUploadInput" type="file" accept=".docx,.txt,.pdf,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain" hidden />
+              <button id="cvUploadBtn" class="btn" type="button">Upload .pdf / .docx / .txt</button>
+              <span id="cvUploadStatus" class="muted small"></span>
+            </div>
+            <textarea id="profileCvText" rows="10" placeholder="Or paste your CV as plain text here."></textarea>
+            <span id="profileCvHint" class="hint muted small">No CV saved yet. Chat will work without it but match scores are more accurate with one.</span>
+            <label class="field form-row-full" style="margin-top: 12px;">
+              <span>Notes for the assistant (optional)</span>
+              <input id="profileNotes" placeholder="Anything else worth knowing — e.g. visa status, certifications" />
+            </label>
           </section>
 
           <section class="card" aria-label="Notifications" id="notificationsCard" data-tab="notifications">
@@ -910,46 +927,46 @@
             <div id="totpControls" class="totp-controls"></div>
           </section>
 
-          <section class="card" aria-label="AI Provider" data-tab="security">
+          <section class="card" aria-label="AI Provider" data-tab="developer">
             <div class="card-heading">
               <div>
-                <h2 data-i18n="settings.ai.heading">AI brief & cover letters — pick how it runs</h2>
-                <p class="muted" data-i18n="settings.ai.lead">DirectJob can write a job-fit summary and a tailored cover letter for any role you import. Three ways to power that — pick whichever matches how you already use AI.</p>
+                <!-- R23.2 — the 3-mode picker (Manual / BYOK / Managed)
+                     was removed from the default view. Vision: every
+                     user gets managed AI through their subscription —
+                     no AI-stack knobs to configure. The Advanced section
+                     below still lets the 1% paste their own API key. -->
+                <h2 data-i18n="settings.ai.heading">AI assistant</h2>
+                <p class="muted" data-i18n="settings.ai.lead">Your subscription covers the AI — no setup, no API keys. Type into the chat and the assistant takes care of search, briefs, cover letters, and CV tailoring.</p>
               </div>
             </div>
-            <div class="ai-modes" role="radiogroup" aria-label="AI mode">
-              <button class="ai-mode" type="button" role="radio" data-ai-mode="manual" aria-checked="true">
-                <div class="ai-mode-head">
-                  <strong data-i18n="settings.ai.mode.manual.title">Manual</strong>
-                  <span class="tag" data-i18n="settings.ai.mode.free">Free · no setup</span>
-                </div>
-                <p class="muted small" data-i18n="settings.ai.mode.manual.desc">We prepare the perfect prompt for each job — you copy it once into ChatGPT, Claude, or any AI tool you already use, paste the answer back. Best when you have a ChatGPT Plus or Claude Pro subscription you're already paying for.</p>
-              </button>
-              <button class="ai-mode" type="button" role="radio" data-ai-mode="byok" aria-checked="false">
-                <div class="ai-mode-head">
-                  <strong data-i18n="settings.ai.mode.byok.title">Bring your own key</strong>
-                  <span class="tag" data-i18n="settings.ai.mode.byok.tag">~$2/mo at typical use</span>
-                </div>
-                <p class="muted small" data-i18n="settings.ai.mode.byok.desc">Paste an API key from OpenAI, Anthropic, Google, or DeepSeek. From then on every "Auto-fit" / "Draft cover letter" runs automatically — no more copy-paste. We never store your key. Best if you already have an API account, or want to batch-score 30 jobs at once.</p>
-              </button>
-              <button class="ai-mode" type="button" role="radio" data-ai-mode="managed" aria-checked="false">
-                <div class="ai-mode-head">
-                  <strong data-i18n="settings.ai.mode.managed.title">Managed</strong>
-                  <span class="tag" data-i18n="settings.ai.mode.managed.tag">€5/mo · waitlist</span>
-                </div>
-                <p class="muted small" data-i18n="settings.ai.mode.managed.desc">We provide the AI for you — no key, no setup, all included in your DirectJob subscription. One click to enable when it opens. Best if you don't already have an AI account and don't want to deal with API keys. Tap to join the waitlist; we'll email you the moment it's live.</p>
-              </button>
-            </div>
-            <div id="aiByokPane" class="ai-byok-pane" hidden>
-              <label class="field">
-                <span data-i18n="settings.ai.byok.label">API key</span>
-                <input id="aiByokKey" type="password" autocomplete="off" data-i18n-placeholder="settings.ai.byok.placeholder" placeholder="sk-… (OpenAI), sk-ant-… (Anthropic), AIza… (Google)" />
-                <span class="hint" id="aiByokHint" data-i18n="settings.ai.byok.hint">We detect the provider from the key's prefix. Keys are passed straight through and never logged.</span>
-              </label>
-              <button id="aiByokSaveBtn" class="btn btn-primary" type="button" data-i18n="settings.ai.byok.save">Save key</button>
-            </div>
             <details class="ai-advanced">
-              <summary data-i18n="settings.ai.advanced">Advanced (CLI, custom endpoints, env-var refs)</summary>
+              <summary data-i18n="settings.ai.advanced">Advanced — use my own API key or model</summary>
+              <p class="muted small" style="margin: 8px 0 12px;">For the rare case you want to pin a specific provider (OpenAI, Anthropic, Google, DeepSeek, OpenRouter) or model. Most users should leave this alone.</p>
+              <div class="ai-modes" role="radiogroup" aria-label="AI mode">
+                <button class="ai-mode" type="button" role="radio" data-ai-mode="manual" aria-checked="true">
+                  <div class="ai-mode-head">
+                    <strong data-i18n="settings.ai.mode.manual.title">Manual</strong>
+                    <span class="tag" data-i18n="settings.ai.mode.free">no setup</span>
+                  </div>
+                  <p class="muted small" data-i18n="settings.ai.mode.manual.desc">Copy the prompt into ChatGPT/Claude yourself. Use this if you don't want managed AI to call any provider on your behalf.</p>
+                </button>
+                <button class="ai-mode" type="button" role="radio" data-ai-mode="byok" aria-checked="false">
+                  <div class="ai-mode-head">
+                    <strong data-i18n="settings.ai.mode.byok.title">Bring your own key</strong>
+                    <span class="tag" data-i18n="settings.ai.mode.byok.tag">your account, your cost</span>
+                  </div>
+                  <p class="muted small" data-i18n="settings.ai.mode.byok.desc">Paste a key from OpenAI / Anthropic / Google / DeepSeek and we route all your AI calls through it. We never store the key.</p>
+                </button>
+              </div>
+              <div id="aiByokPane" class="ai-byok-pane" hidden>
+                <label class="field">
+                  <span data-i18n="settings.ai.byok.label">API key</span>
+                  <input id="aiByokKey" type="password" autocomplete="off" data-i18n-placeholder="settings.ai.byok.placeholder" placeholder="sk-… (OpenAI), sk-ant-… (Anthropic), AIza… (Google)" />
+                  <span class="hint" id="aiByokHint" data-i18n="settings.ai.byok.hint">We detect the provider from the key's prefix. Keys are passed straight through and never logged.</span>
+                </label>
+                <button id="aiByokSaveBtn" class="btn btn-primary" type="button" data-i18n="settings.ai.byok.save">Save key</button>
+              </div>
+              <h3 style="margin: 16px 0 6px; font-size: var(--text-sm); color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em;">CLI / custom endpoint</h3>
               <form id="providerForm" class="provider-grid">
                 <label class="field">
                   <span>Provider</span>
@@ -1120,69 +1137,84 @@
           </section>
         </section>
 
-        <!-- Assistant chat -->
-        <section id="view-assistant" class="view" data-view="assistant" aria-labelledby="viewTitle" hidden>
-          <section class="card" aria-label="AI Assistant chat">
-            <div class="card-heading">
-              <div>
-                <h2>Assistant</h2>
-                <p class="muted">Tell me what you want to do — e.g., "watch Charité, career page karriere.charite.de" or "/find Senior Backend Berlin". I'll ask for any missing details, confirm with you, then run the command.</p>
-              </div>
-              <div class="action-group">
-                <button id="chatHelpBtn" class="btn btn-ghost" type="button">Show commands</button>
-                <button id="chatResetBtn" class="btn btn-ghost" type="button">Reset chat</button>
-              </div>
-            </div>
-            <div id="chatTranscript" role="log" aria-live="polite" aria-atomic="false"
-                 style="display:flex;flex-direction:column;gap:10px;padding:14px;background:#13141c;border-radius:8px;min-height:280px;max-height:520px;overflow-y:auto;font-size:14px;"></div>
-            <form id="chatForm" style="display:flex;gap:8px;margin-top:12px;" aria-label="Send a chat message">
-              <input id="chatInput" type="text" autocomplete="off" placeholder="Type a message or a /slash-command…" aria-label="Chat message"
-                     style="flex:1;padding:10px 12px;background:#1c1c24;border:1px solid #2a2b36;border-radius:6px;color:inherit;" />
-              <button id="chatSendBtn" class="btn btn-primary" type="submit">Send</button>
-            </form>
-            <p id="chatPendingHint" class="muted small" role="status" aria-live="polite" style="margin-top:6px;"></p>
-          </section>
-        </section>
+        <!-- R25.1 — #view-assistant deleted. The chat dock (see
+             <aside id="chatDock"> earlier in the document) is the
+             single chat surface at every viewport. -->
 
-        <!-- CV Builder -->
+
+        <!-- CV Builder canvas — R25.3 simplified.
+             The sectional Q&A walk used to live here AND in chat.
+             Pick one: chat owns the Q&A ("build my CV" → the
+             assistant walks the user through sections). The
+             canvas now owns ONLY the visual customization that
+             needs a real UI: profile photo + template gallery +
+             preview. Reachable when chat opens it (open_cv_builder
+             tool) or the user clicks "Preview & download". -->
         <section id="view-cvBuilder" class="view" data-view="cvBuilder" aria-labelledby="viewTitle" hidden>
-          <section class="card" aria-label="CV Builder">
+          <!-- R25.3 empty-state hint. The Q&A walk for CV content
+               (name / location / experience / skills) lives in the
+               chat now; this canvas owns only photo + template +
+               preview. When there's no structured CV yet, surface
+               a one-line nudge so the user knows where to enter
+               their data. -->
+          <div id="cvBuilderEmptyHint" class="card cv-empty-hint" role="note"
+                hidden>
+            <p>📝 Type <strong>"build my CV"</strong> in the chat to add your details, then come back to pick a template.</p>
+            <button id="cvBuilderEmptyChatBtn" class="btn btn-primary" type="button">Open chat</button>
+          </div>
+          <section class="card" aria-label="Profile photo">
             <div class="card-heading">
               <div>
-                <h2>CV Builder</h2>
-                <p class="muted">Walk through a guided sequence of sections. We never invent facts — the AI only formats what you write. Add a profile photo (PNG/JPEG up to 512KB) for a DACH-style CV.</p>
-              </div>
-              <div class="action-group">
-                <button id="cvBuilderStartBtn" class="btn btn-primary" type="button">Start over</button>
+                <h2>Profile photo</h2>
+                <p class="muted">Optional DACH-style portrait. PNG / JPEG / WebP, up to 512KB. EXIF is stripped automatically.</p>
               </div>
             </div>
-            <div class="cv-builder-layout" style="display:grid;grid-template-columns:240px 1fr;gap:24px;">
-              <aside id="cvBuilderSidebar" class="cv-builder-sidebar" aria-label="Sections" style="display:flex;flex-direction:column;gap:6px;"></aside>
-              <div class="cv-builder-main">
-                <div id="cvBuilderPhotoPanel" style="margin-bottom:16px;display:flex;gap:12px;align-items:center;">
-                  <img id="cvBuilderPhotoPreview" alt="Profile photo" style="width:96px;height:96px;border-radius:8px;object-fit:cover;background:#1c1c24;display:none;" />
-                  <div>
-                    <input id="cvBuilderPhotoInput" type="file" accept="image/png,image/jpeg,image/webp" hidden />
-                    <button id="cvBuilderPhotoBtn" class="btn" type="button">Upload photo</button>
-                    <button id="cvBuilderPhotoRemove" class="btn btn-ghost" type="button" style="display:none;">Remove</button>
-                    <p id="cvBuilderPhotoStatus" class="muted small"></p>
-                  </div>
-                </div>
-                <div id="cvBuilderSectionHost"></div>
-                <p id="cvBuilderMessage" class="muted small" role="status" aria-live="polite"></p>
-                <div class="action-group" id="cvBuilderActions" style="margin-top:16px;display:flex;gap:8px;">
-                  <button id="cvBuilderSaveBtn" class="btn btn-primary" type="button">Save & continue</button>
-                  <button id="cvBuilderAddAnotherBtn" class="btn" type="button" hidden>Add another</button>
-                  <button id="cvBuilderSkipBtn" class="btn btn-ghost" type="button" hidden>Skip this section</button>
-                  <button id="cvBuilderFinishBtn" class="btn btn-primary" type="button" hidden>Finish CV</button>
-                  <button id="cvBuilderDownloadPdfBtn" class="btn" type="button">Download as PDF</button>
-                  <button id="cvBuilderPreviewBtn" class="btn btn-ghost" type="button">Preview print view</button>
-                </div>
-                <details style="margin-top:24px;">
-                  <summary>Preview the assembled CV (live)</summary>
-                  <pre id="cvBuilderPreview" style="white-space:pre-wrap;font-family:monospace;background:#1c1c24;padding:12px;border-radius:8px;max-height:480px;overflow:auto;"></pre>
-                </details>
+            <div id="cvBuilderPhotoPanel" style="display:flex;gap:16px;align-items:center;">
+              <img id="cvBuilderPhotoPreview" alt="Profile photo" style="width:96px;height:96px;border-radius:8px;object-fit:cover;background:#1c1c24;display:none;" />
+              <div>
+                <input id="cvBuilderPhotoInput" type="file" accept="image/png,image/jpeg,image/webp" hidden />
+                <button id="cvBuilderPhotoBtn" class="btn" type="button">Upload photo</button>
+                <button id="cvBuilderPhotoRemove" class="btn btn-ghost" type="button" style="display:none;">Remove</button>
+                <p id="cvBuilderPhotoStatus" class="muted small"></p>
               </div>
+            </div>
+          </section>
+
+          <!-- R24.8 — template picker. Six hand-designed CV templates
+               + 3 accent colors + photo toggle + headline override.
+               Vision: AI never edits the layout; user picks a polished
+               template and just sees their data filled in. -->
+          <section class="card" aria-label="CV template" id="cvTemplateCard">
+            <div class="card-heading">
+              <div>
+                <h2>Template</h2>
+                <p class="muted">Pick a polished, A4 print-ready layout. We never rewrite the design — only swap your data in.</p>
+              </div>
+              <div class="action-group">
+                <button id="cvTemplateExtractBtn" class="btn btn-ghost" type="button" title="One-time: read your saved CV text into the structured template fields. Runs the AI extraction (cheap call).">Re-extract from CV text</button>
+                <button id="cvTemplatePreviewBtn" class="btn btn-primary" type="button">Preview &amp; download</button>
+              </div>
+            </div>
+
+            <div class="cv-template-grid" id="cvTemplateGrid"></div>
+
+            <div class="cv-template-controls">
+              <div class="cv-template-row">
+                <span class="cv-template-row-label">Accent</span>
+                <div class="cv-accent-swatches" id="cvAccentSwatches"></div>
+              </div>
+              <div class="cv-template-row">
+                <span class="cv-template-row-label">Photo</span>
+                <label class="cv-template-toggle">
+                  <input id="cvTemplatePhotoOn" type="checkbox" checked />
+                  <span>Show profile photo on the CV</span>
+                </label>
+              </div>
+              <div class="cv-template-row">
+                <span class="cv-template-row-label">Headline</span>
+                <input id="cvTemplateHeadline" type="text" maxlength="220" placeholder="One-line tagline (e.g. 'Pflegehelferin · 6y Berlin') — leave blank to use the AI-extracted default" />
+              </div>
+              <p id="cvTemplateStatus" class="muted small" role="status" aria-live="polite"></p>
             </div>
           </section>
         </section>
@@ -1283,6 +1315,53 @@
             <ul id="readinessList" class="readiness-list"></ul>
           </section>
 
+          <section class="card" aria-label="LLM cost dashboard">
+            <div class="card-heading">
+              <div>
+                <h2>LLM cost dashboard</h2>
+                <p class="muted">Today's spend across all users + last-30-day trend. Helps you spot a user who's burning budget and right-size the daily cap.</p>
+              </div>
+              <button id="refreshLlmCostsBtn" class="btn btn-ghost" type="button">Refresh</button>
+            </div>
+            <div class="llm-cost-summary">
+              <div class="llm-cost-tile">
+                <span class="llm-cost-label">Today</span>
+                <strong id="llmCostToday">$0.00</strong>
+              </div>
+              <div class="llm-cost-tile">
+                <span class="llm-cost-label">7-day total</span>
+                <strong id="llmCost7d">$0.00</strong>
+              </div>
+              <div class="llm-cost-tile">
+                <span class="llm-cost-label">30-day total</span>
+                <strong id="llmCost30d">$0.00</strong>
+              </div>
+              <div class="llm-cost-tile">
+                <span class="llm-cost-label">Cache hit rate</span>
+                <strong id="llmCacheHitRate">—</strong>
+                <span class="llm-cost-sublabel" id="llmCacheDetail"></span>
+              </div>
+            </div>
+            <div class="llm-cost-breakdown">
+              <div>
+                <h3>By provider (today)</h3>
+                <ul id="llmCostByProvider" class="llm-cost-list"></ul>
+              </div>
+              <div>
+                <h3>By task (today)</h3>
+                <ul id="llmCostByTask" class="llm-cost-list"></ul>
+              </div>
+              <div>
+                <h3>By model (today)</h3>
+                <ul id="llmCostByModel" class="llm-cost-list"></ul>
+              </div>
+              <div>
+                <h3>Top users (today)</h3>
+                <ul id="llmCostTopUsers" class="llm-cost-list"></ul>
+              </div>
+            </div>
+          </section>
+
           <section class="card" aria-label="Email operations">
             <div class="card-heading">
               <div>
@@ -1376,74 +1455,17 @@
       <option>Healthcare consulting</option>
     </datalist>
 
-    <dialog id="cmdkDialog" class="cmdk-dialog" aria-label="Command palette">
-      <div class="cmdk">
-        <div class="cmdk-input-row">
-          <svg class="cmdk-icon" viewBox="0 0 20 20" aria-hidden="true"><circle cx="9" cy="9" r="6" fill="none" stroke="currentColor" stroke-width="2"/><path d="M14 14l4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-          <input id="cmdkInput" type="text" data-i18n-placeholder="cmdk.placeholder" placeholder="Search jobs, companies, settings…" autocomplete="off" spellcheck="false" />
-          <kbd class="cmdk-kbd" id="cmdkKbdHint">Esc</kbd>
-        </div>
-        <ul id="cmdkResults" class="cmdk-results" role="listbox"></ul>
-        <div class="cmdk-foot muted small">
-          <span><kbd>↑</kbd><kbd>↓</kbd> <span data-i18n="cmdk.foot.move">move</span></span>
-          <span><kbd>↵</kbd> <span data-i18n="cmdk.foot.select">select</span></span>
-          <span><kbd>Esc</kbd> <span data-i18n="cmdk.foot.close">close</span></span>
-        </div>
-      </div>
-    </dialog>
+    <!-- R26.4 — Cmd-K palette dialog deleted. Duplicated the sidebar
+         nav + chat. Use the chat to navigate or search. -->
 
-    <dialog id="firstRunWizard" class="wizard-dialog" aria-labelledby="wizardTitle">
-      <form method="dialog" class="wizard">
-        <header class="wizard-header">
-          <h2 id="wizardTitle" data-i18n="wizard.title">Set up your job search in 30 seconds</h2>
-          <p class="muted" data-i18n="wizard.lead">Three quick steps so we can find roles for you across Indeed, StepStone, Arbeitnow, Muse, and more.</p>
-        </header>
-        <ol class="wizard-steps">
-          <li id="wizardStep1" class="wizard-step active">
-            <h3 data-i18n="wizard.step1.title">1. Add your CV</h3>
-            <p class="muted" data-i18n="wizard.step1.lead">Optional — paste plain text or upload a file. We'll auto-suggest the best persona.</p>
-            <div class="cv-upload-toolbar">
-              <input id="wizardCvFile" type="file" accept=".docx,.txt,.pdf" hidden />
-              <button id="wizardCvUploadBtn" class="btn" type="button" data-i18n="wizard.step1.upload">Upload .docx / .pdf / .txt</button>
-              <span id="wizardCvStatus" class="muted small"></span>
-            </div>
-            <textarea id="wizardCvText" rows="6" data-i18n-placeholder="wizard.step1.placeholder" placeholder="…or paste your CV here"></textarea>
-            <div class="wizard-actions">
-              <button id="wizardSkipCv" class="btn btn-ghost" type="button" data-i18n="wizard.skip">Skip</button>
-              <button id="wizardCvNext" class="btn btn-primary" type="button" data-i18n="wizard.next">Next</button>
-            </div>
-          </li>
-          <li id="wizardStep2" class="wizard-step">
-            <h3 data-i18n="wizard.step2.title">2. Confirm your persona</h3>
-            <p class="muted" id="wizardPersonaHint" data-i18n="wizard.step2.lead">Pick what best describes the role you want. We pre-selected the closest match.</p>
-            <select id="wizardPersona"></select>
-            <div class="wizard-actions">
-              <button id="wizardBackPersona" class="btn btn-ghost" type="button" data-i18n="wizard.back">Back</button>
-              <button id="wizardPersonaNext" class="btn btn-primary" type="button" data-i18n="wizard.next">Next</button>
-            </div>
-          </li>
-          <li id="wizardStep3" class="wizard-step">
-            <h3 data-i18n="wizard.step3.title">3. Tell us what you're looking for</h3>
-            <p class="muted" data-i18n="wizard.step3.lead">A role keyword + a city. We watch the major aggregators daily and email you matches.</p>
-            <label class="field">
-              <span data-i18n="wizard.step3.role">Role keyword</span>
-              <input id="wizardRole" placeholder="e.g. data analyst" />
-            </label>
-            <label class="field">
-              <span data-i18n="wizard.step3.location">City / region</span>
-              <input id="wizardLocation" placeholder="e.g. Berlin" />
-            </label>
-            <div class="wizard-actions">
-              <button id="wizardBackSearch" class="btn btn-ghost" type="button" data-i18n="wizard.back">Back</button>
-              <button id="wizardFinish" class="btn btn-primary" type="button" data-i18n="wizard.finish">Save & run</button>
-            </div>
-          </li>
-        </ol>
-        <footer class="wizard-footer">
-          <button id="wizardDismiss" class="btn btn-ghost" type="button" data-i18n="wizard.dismiss">Set up later</button>
-        </footer>
-      </form>
-    </dialog>
+
+    <!-- R26.5 — first-run wizard modal deleted. The chat is the
+         onboarding now: a fresh user lands → dock seeds the welcome
+         bubble → the assistant asks "What kind of job are you
+         looking for?" and walks through the same questions as a
+         conversation. journey.py PHASE_GREET → PHASE_DISCOVER does
+         it natively. -->
+
 
     <template id="companyTemplate">
       <button class="company-item" type="button">

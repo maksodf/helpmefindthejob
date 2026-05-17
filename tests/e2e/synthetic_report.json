@@ -1,0 +1,267 @@
+[
+  {
+    "persona": "senior-backend-berlin",
+    "label": "Senior backend engineer in Berlin",
+    "queue_size": 7,
+    "duplicates": 0,
+    "seniority_fails": 0,
+    "location_fails": 0,
+    "role_family_soft_warns": 0,
+    "attribution": "Powered by: Arbeitnow · The Muse · Remotive · We Work Remotely · Hacker News “Who is hiring?” · Bundesagentur für Arbeit",
+    "status_line": "7 results · arbeitnow 2 · hn_hiring 1 · bundesagentur 4",
+    "verdict": "PASS",
+    "warnings": [],
+    "per_job": [
+      {
+        "title": "Senior Backend Engineer (m/f/x)",
+        "location": "Berlin",
+        "source": "ARBEITNOW",
+        "location_ok": true,
+        "location_reason": "substring match on 'Berlin'",
+        "seniority_ok": true,
+        "seniority_reason": "no seniority red flags",
+        "role_family_ok": true,
+        "role_family_reason": "matches role keyword 'backend'"
+      },
+      {
+        "title": "(Senior) Quality Assurance Engineer - Fokus Backend",
+        "location": "Berlin, 10117, Berlin, Deutschland",
+        "source": "BUNDESAGENTUR",
+        "location_ok": true,
+        "location_reason": "substring match on 'Berlin'",
+        "seniority_ok": true,
+        "seniority_reason": "no seniority red flags",
+        "role_family_ok": true,
+        "role_family_reason": "matches role keyword 'backend'"
+      },
+      {
+        "title": "Senior Backend-Entwickler (m/w/d) Python and C# (Ref.Nr.: 46726)",
+        "location": "Berlin",
+        "source": "ARBEITNOW",
+        "location_ok": true,
+        "location_reason": "substring match on 'Berlin'",
+        "seniority_ok": true,
+        "seniority_reason": "no seniority red flags",
+        "role_family_ok": true,
+        "role_family_reason": "matches role keyword 'backend'"
+      },
+      {
+        "title": "Senior Backend Engineer (m/f/d), Berlin, remote",
+        "location": "Berlin, 13507, Berlin, Deutschland",
+        "source": "BUNDESAGENTUR",
+        "location_ok": true,
+        "location_reason": "substring match on 'Berlin'",
+        "seniority_ok": true,
+        "seniority_reason": "no seniority red flags",
+        "role_family_ok": true,
+        "role_family_reason": "matches role keyword 'backend'"
+      },
+      {
+        "title": "Embedded/Backend/App Software Engineers, Architects, Product Owners, DevOps, various roles",
+        "location": "Berlin & Stuttgart, Germany",
+        "source": "HN_HIRING",
+        "location_ok": true,
+        "location_reason": "substring match on 'Berlin'",
+        "seniority_ok": true,
+        "seniority_reason": "no seniority red flags",
+        "role_family_ok": true,
+        "role_family_reason": "matches role keyword 'backend'"
+      },
+      {
+        "title": "Senior Software Engineer Backend (m/w/d)",
+        "location": "Berlin, 10117, Berlin, Deutschland",
+        "source": "BUNDESAGENTUR",
+        "location_ok": true,
+        "location_reason": "substring match on 'Berlin'",
+        "seniority_ok": true,
+        "seniority_reason": "no seniority red flags",
+        "role_family_ok": true,
+        "role_family_reason": "matches role keyword 'backend'"
+      },
+      {
+        "title": "Senior Backend Software Engineer (m/w/d)",
+        "location": "Berlin, 10178, Berlin, Deutschland",
+        "source": "BUNDESAGENTUR",
+        "location_ok": true,
+        "location_reason": "substring match on 'Berlin'",
+        "seniority_ok": true,
+        "seniority_reason": "no seniority red flags",
+        "role_family_ok": true,
+        "role_family_reason": "matches role keyword 'backend'"
+      }
+    ]
+  },
+  {
+    "persona": "marketing-manager-munich",
+    "label": "Marketing manager in München",
+    "queue_size": 7,
+    "duplicates": 0,
+    "seniority_fails": 0,
+    "location_fails": 0,
+    "role_family_soft_warns": 0,
+    "attribution": "Powered by: Arbeitnow · The Muse · Remotive · We Work Remotely · Hacker News “Who is hiring?” · Bundesagentur für Arbeit",
+    "status_line": "7 results · bundesagentur 7",
+    "verdict": "PASS",
+    "warnings": [],
+    "per_job": [
+      {
+        "title": "Slack Paid Digital Marketing, Senior Manager",
+        "location": "München, 80636, Bayern, Deutschland",
+        "source": "BUNDESAGENTUR",
+        "location_ok": true,
+        "location_reason": "substring match on 'München'",
+        "seniority_ok": true,
+        "seniority_reason": "no seniority red flags",
+        "role_family_ok": true,
+        "role_family_reason": "matches role keyword 'marketing'"
+      },
+      {
+        "title": "CRM Marketing Manager (m/w/d)",
+        "location": "München, 80339, Bayern, Deutschland",
+        "source": "BUNDESAGENTUR",
+        "location_ok": true,
+        "location_reason": "substring match on 'München'",
+        "seniority_ok": true,
+        "seniority_reason": "no seniority red flags",
+        "role_family_ok": true,
+        "role_family_reason": "matches role keyword 'marketing'"
+      },
+      {
+        "title": "Marketing Manager - B2B / Growth / Performance (m/w/d)",
+        "location": "München, 80331, Bayern, Deutschland",
+        "source": "BUNDESAGENTUR",
+        "location_ok": true,
+        "location_reason": "substring match on 'München'",
+        "seniority_ok": true,
+        "seniority_reason": "no seniority red flags",
+        "role_family_ok": true,
+        "role_family_reason": "matches role keyword 'marketing'"
+      },
+      {
+        "title": "Sales Manager (m/w/d) Schwerpunkt Online Marketing",
+        "location": "München, 80331, Bayern, Deutschland",
+        "source": "BUNDESAGENTUR",
+        "location_ok": true,
+        "location_reason": "substring match on 'München'",
+        "seniority_ok": true,
+        "seniority_reason": "no seniority red flags",
+        "role_family_ok": true,
+        "role_family_reason": "matches role keyword 'marketing'"
+      },
+      {
+        "title": "Performance Marketing Manager - Ads in Voll- oder Teilzeit (mind. 32h) (m/w/d)",
+        "location": "München, 81543, Bayern, Deutschland",
+        "source": "BUNDESAGENTUR",
+        "location_ok": true,
+        "location_reason": "substring match on 'München'",
+        "seniority_ok": true,
+        "seniority_reason": "no seniority red flags",
+        "role_family_ok": true,
+        "role_family_reason": "matches role keyword 'marketing'"
+      },
+      {
+        "title": "International Marketing und Partner Manager (m/w/d)",
+        "location": "Maisach, Oberbayern, 82216, Bayern, Deutschland",
+        "source": "BUNDESAGENTUR",
+        "location_ok": true,
+        "location_reason": "metro postal-code match (prefix 82)",
+        "seniority_ok": true,
+        "seniority_reason": "no seniority red flags",
+        "role_family_ok": true,
+        "role_family_reason": "matches role keyword 'marketing'"
+      },
+      {
+        "title": "Brand Marketing Manager Campaigns & Operations (m/w/d)",
+        "location": "Hohenbrunn, 85662, Bayern, Deutschland",
+        "source": "BUNDESAGENTUR",
+        "location_ok": true,
+        "location_reason": "metro postal-code match (prefix 85)",
+        "seniority_ok": true,
+        "seniority_reason": "no seniority red flags",
+        "role_family_ok": true,
+        "role_family_reason": "matches role keyword 'marketing'"
+      }
+    ]
+  },
+  {
+    "persona": "remote-data-anywhere",
+    "label": "Senior data scientist, remote",
+    "queue_size": 6,
+    "duplicates": 0,
+    "seniority_fails": 0,
+    "location_fails": 0,
+    "role_family_soft_warns": 0,
+    "attribution": "Powered by: Arbeitnow · The Muse · Remotive · We Work Remotely · Hacker News “Who is hiring?” · Bundesagentur für Arbeit",
+    "status_line": "6 results · muse 3 · remotive 1 · weworkremotely 1 · hn_hiring 8",
+    "verdict": "PASS",
+    "warnings": [],
+    "per_job": [
+      {
+        "title": "Program Manager - Data & End-to-End Capability Delivery (CONTRACT)",
+        "location": "Flexible / Remote",
+        "source": "MUSE",
+        "location_ok": true,
+        "location_reason": "remote-friendly tag in 'Flexible / Remote'",
+        "seniority_ok": true,
+        "seniority_reason": "no seniority red flags",
+        "role_family_ok": true,
+        "role_family_reason": "matches role keyword 'data'"
+      },
+      {
+        "title": "Associate, Operations Data Analytics",
+        "location": "Flexible / Remote, Tempe, AZ",
+        "source": "MUSE",
+        "location_ok": true,
+        "location_reason": "remote-friendly tag in 'Flexible / Remote, Tempe, AZ'",
+        "seniority_ok": true,
+        "seniority_reason": "no seniority red flags",
+        "role_family_ok": true,
+        "role_family_reason": "matches role keyword 'data'"
+      },
+      {
+        "title": "Product Lead - Data Products",
+        "location": "Remote",
+        "source": "WEWORKREMOTELY",
+        "location_ok": true,
+        "location_reason": "remote-friendly tag in 'Remote'",
+        "seniority_ok": true,
+        "seniority_reason": "no seniority red flags",
+        "role_family_ok": true,
+        "role_family_reason": "matches role keyword 'data'"
+      },
+      {
+        "title": "Senior Data Engineer, Data Science Infrastructure",
+        "location": "Boston, MA, Columbus, OH, Flexible / Remote, Plano, TX, Portsmouth, NH, Seattle, WA",
+        "source": "MUSE",
+        "location_ok": true,
+        "location_reason": "remote-friendly tag in 'Boston, MA, Columbus, OH, Flexible / Remote, Plano, TX, Portsmouth, NH, Seattle, WA'",
+        "seniority_ok": true,
+        "seniority_reason": "no seniority red flags",
+        "role_family_ok": true,
+        "role_family_reason": "matches role keyword 'data'"
+      },
+      {
+        "title": "Online Data Analyst United States",
+        "location": "USA",
+        "source": "REMOTIVE",
+        "location_ok": true,
+        "location_reason": "remote-friendly tag in 'USA'",
+        "seniority_ok": true,
+        "seniority_reason": "no seniority red flags",
+        "role_family_ok": true,
+        "role_family_reason": "matches role keyword 'data'"
+      },
+      {
+        "title": "Backend / iOS / Android / Data Science / Testing",
+        "location": "San Francisco & San Diego, CA & REMOTE 25 million monthly active users. Doubled userbase year-over-year. Public company with real revenue. Bringing peace of mind to families with technology. We're hiring engineers for our back-end Cloud Engineering and Mobile teams to help us scale up globally. Our tech stack in total handles over 5 billion API requests daily, so if you know your way around AWS microservices and love writing efficient fault-tolerant code, we would love to chat. With over 25 million monthly active users and a recent IPO on the Australian Stock Exchange, Life360 is the world’s largest mobile app for families. Today, we are focused on location sharing and safety, and our mission is to become the must-have Family Membership that gives families peace of mind anytime and anywhere. From personalized location-based alerts that help make daily coordination easier, to advanced sensor tech that can detect a car crash and automatically send you an ambulance, we are leveraging smartphones to their fullest extent to reinvent how families get through the day. - Full-time - Locations: San Francisco, California; San Diego, California; Remote - Competitive salary and stock options - $200/month Quality of Life perk - Great office in SoMa: dogs are welcome, tons of snacks, and great catered lunches Apply here: https://www.life360.com/careers/",
+        "source": "HN_HIRING",
+        "location_ok": true,
+        "location_reason": "remote-friendly tag in 'San Francisco & San Diego, CA & REMOTE 25 million monthly active users. Doubled userbase year-over-year. Public company with real revenue. Bringing peace of mind to families with technology. We're hiring engineers for our back-end Cloud Engineering and Mobile teams to help us scale up globally. Our tech stack in total handles over 5 billion API requests daily, so if you know your way around AWS microservices and love writing efficient fault-tolerant code, we would love to chat. With over 25 million monthly active users and a recent IPO on the Australian Stock Exchange, Life360 is the world’s largest mobile app for families. Today, we are focused on location sharing and safety, and our mission is to become the must-have Family Membership that gives families peace of mind anytime and anywhere. From personalized location-based alerts that help make daily coordination easier, to advanced sensor tech that can detect a car crash and automatically send you an ambulance, we are leveraging smartphones to their fullest extent to reinvent how families get through the day. - Full-time - Locations: San Francisco, California; San Diego, California; Remote - Competitive salary and stock options - $200/month Quality of Life perk - Great office in SoMa: dogs are welcome, tons of snacks, and great catered lunches Apply here: https://www.life360.com/careers/'",
+        "seniority_ok": true,
+        "seniority_reason": "no seniority red flags",
+        "role_family_ok": true,
+        "role_family_reason": "matches role keyword 'data'"
+      }
+    ]
+  }
+]

@@ -17,11 +17,13 @@ const VIEW_TITLES = {
   dashboard: { title: "Today", subtitle: "Your watched companies, recent runs, and what to do next." },
   companies: { title: "Companies", subtitle: "Add companies, find their career pages, and check for new roles." },
   jobs: { title: "Discovered jobs", subtitle: "Roles found on company sites. Review before importing." },
-  brief: { title: "AI Brief", subtitle: "Prepare a provider-neutral brief and analyze fit with your own AI." },
+  applications: { title: "Applications", subtitle: "Imported jobs + the application tracker. Brief, draft, and tailor are done through the chat." },
   settings: { title: "Settings", subtitle: "AI provider, account security, backup, and scan history." },
   admin: { title: "Admin", subtitle: "Tester accounts. Visible to admins only." },
   cvBuilder: { title: "CV Builder", subtitle: "Walk through guided sections. The AI formats — it does not invent." },
-  assistant: { title: "Assistant", subtitle: "One chat for every action. Slash-commands, keyword routing, and confirmation before every write." },
+  // R25.1 — ``assistant`` no longer routes to a view; it's a focus
+  // hint for the dock (see navigate() + focusChat()). Kept out of
+  // VIEW_TITLES so the early-return in navigate() handles it cleanly.
   searchResults: { title: "Search results", subtitle: "Live aggregator hits for your last search, grouped by role family." },
 };
 
@@ -82,7 +84,9 @@ function translateScanStatus(code) {
 }
 
 const state = {
-  view: "jobs",
+  // R25.2 — default landing surface is the Today dashboard (the
+  // Jobs nav button was removed; the queue is now chat-navigated).
+  view: "dashboard",
   companies: [],
   discoveredJobs: [],
   importedJobs: [],
@@ -260,12 +264,10 @@ function absorbBootstrap(bootstrap) {
   state.applicationOutcomes = bootstrap.applicationOutcomes || null;
   state.skillGaps = bootstrap.skillGaps || null;
   state.onboarding = bootstrap.onboarding || { steps: [], progress: { completed: 0, total: 0 }, firstRunWizard: false };
-  // Open the first-run wizard when the server says we should AND it
-  // isn't already on screen. After the user dismisses or finishes, the
-  // server flips firstRunWizard to false and we won't reopen it.
-  if (state.onboarding?.firstRunWizard) {
-    queueMicrotask(() => openFirstRunWizard());
-  }
+  // R26.5 — first-run wizard modal deleted. The chat is the
+  // onboarding: the welcome bubble + journey.py state machine
+  // ask the same questions in conversation. ``firstRunWizard``
+  // flag on the bootstrap is ignored client-side.
   if (!state.selectedCompanyId && state.companies.length) {
     state.selectedCompanyId = state.companies[0].id;
   }
@@ -451,13 +453,58 @@ async function load() {
 
 /* ---------- Routing ---------- */
 
+function focusChat() {
+  // R25.1 — there's no Assistant view anymore. ``focusChat()`` is
+  // what every old ``navigate("assistant")`` call now does: scroll
+  // the dock transcript to the bottom, focus the input, and briefly
+  // pulse the dock border so the user sees where the reply landed.
+  // On mobile (<1280px), the dock sits above the main canvas in a
+  // vertical stack — also scroll the page up to the dock so the
+  // user can see the new bubble without hunting.
+  const transcript = $("#dockChatTranscript");
+  if (transcript) transcript.scrollTop = transcript.scrollHeight;
+  const dock = $("#chatDock");
+  if (dock) {
+    dock.classList.remove("chat-dock-flash");
+    void dock.offsetWidth;  // restart the CSS animation
+    dock.classList.add("chat-dock-flash");
+    if (window.matchMedia &&
+        window.matchMedia("(max-width: 1279px)").matches) {
+      dock.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }
+  const input = $("#dockChatInput");
+  if (input) input.focus({ preventScroll: true });
+}
+
 function navigate(view) {
-  if (!VIEW_TITLES[view]) view = "jobs";
-  if (view === "admin" && !isAdmin()) view = "jobs";
+  // R25.1 — ``navigate("assistant")`` no longer switches views; it
+  // just focuses the dock (where the chat lives). Routes that used
+  // to go to the assistant view (CV-creation interrupt, post-search
+  // reply, brief output) now stay on the current canvas while the
+  // reply lands in the dock.
+  if (view === "assistant") {
+    focusChat();
+    return;
+  }
+  if (!VIEW_TITLES[view]) view = "dashboard";
+  if (view === "admin" && !isAdmin()) view = "dashboard";
   state.view = view;
   $$(".view").forEach((el) => {
     el.hidden = el.dataset.view !== view;
   });
+  // R25-bugfix: on tablet/mobile (<1280px) the dock sits ABOVE the
+  // main canvas in a vertical stack. When chat-driven navigation
+  // switches the canvas (e.g. search results, CV builder, an open
+  // company), scroll the main element into view so the user
+  // doesn't have to know the canvas exists below the dock.
+  if (window.matchMedia &&
+      window.matchMedia("(max-width: 1279px)").matches) {
+    setTimeout(() => {
+      const main = document.querySelector(".main");
+      if (main) main.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 80);
+  }
   $$(".nav-item").forEach((btn) => {
     const active = btn.dataset.view === view;
     btn.setAttribute("aria-current", active ? "page" : "false");
@@ -469,13 +516,32 @@ function navigate(view) {
   // bleeding through above an otherwise-translated UI.
   $("#viewTitle").textContent = t(`view.${view}.title`, meta.title);
   $("#viewSubtitle").textContent = t(`view.${view}.subtitle`, meta.subtitle);
-  if (view === "brief") renderBrief();
+  if (view === "applications") renderBrief();
   if (view === "settings") loadBilling();
+  // R23.4 — chat-triggered navigation into the CV Builder canvas
+  // (the top-level nav button was removed). Refresh state + pull
+  // the photo from the profile, the same work the old click
+  // handler used to do.
+  if (view === "cvBuilder" && typeof cvBuilderRefresh === "function") {
+    setTimeout(() => {
+      const profilePhoto = state.profile?.cvPhotoDataUri;
+      if (profilePhoto && cvBuilder && !cvBuilder.photoDataUri) {
+        cvBuilder.photoDataUri = profilePhoto;
+      }
+      cvBuilderRefresh();
+      // R24.8 — re-render the template picker every time we land
+      // on the CV Builder view so it reflects the latest profile.
+      if (typeof renderCvTemplatePicker === "function") {
+        renderCvTemplatePicker();
+      }
+    }, 50);
+  }
   if (view === "admin" && isAdmin()) {
     loadAdminUsers().catch((error) => showToast(error.message, "error"));
     loadAdminTickets().catch(() => {});
     loadReadiness().catch(() => {});
     loadEmailStatus().catch(() => {});
+    loadLlmCosts().catch(() => {});
   }
   logUiEvent("ui_nav", { view });
 }
@@ -1128,25 +1194,41 @@ function renderJobs() {
     const importBtn = node.querySelector(".import-btn");
     const briefBtn = node.querySelector(".brief-btn");
     const analyzeBtn = node.querySelector(".analyze-btn");
-    importBtn.textContent = job.imported_job_id ? "Imported" : "Import";
+    // R27.1 — "Import" / "Imported" reads like jargon for DACH
+    // job seekers. Replace with "Save" / "Saved" — same action
+    // (copy this role into the user's tracker), plain language.
+    importBtn.textContent = job.imported_job_id
+      ? t("queue.actions.saved", "Saved")
+      : t("queue.actions.save", "Save");
     importBtn.disabled = Boolean(job.imported_job_id);
     importBtn.addEventListener("click", () => importJob(job.id));
-    briefBtn.addEventListener("click", () => {
-      state.selectedImportedJobId = job.imported_job_id;
-      navigate("brief");
-      prepareBrief(job.imported_job_id);
-    });
-    analyzeBtn.addEventListener("click", () => {
-      state.selectedImportedJobId = job.imported_job_id;
-      runAnalysis(job.imported_job_id);
-    });
 
-    const fitBtn = document.createElement("button");
-    fitBtn.type = "button";
-    fitBtn.className = "btn btn-ghost";
-    fitBtn.textContent = job.auto_fit_score == null ? "Auto-fit" : "Re-score";
-    fitBtn.addEventListener("click", () => autoFitOne(job.id));
-    analyzeBtn.after(fitBtn);
+    // R26.2 — collapse Brief + Analyze + Auto-fit into ONE button.
+    // The label is "Ask the assistant"; clicking opens the chat
+    // with the job context pre-filled. Users then type or accept
+    // the suggestion; chat handles brief / analyze / tailor /
+    // letter / fit-score by intent. The legacy Analyze API call
+    // (POST /api/discovered-jobs/.../auto-fit) is still available
+    // for power users via slash-command in the chat.
+    const askBtn = briefBtn;
+    askBtn.textContent = t("queue.actions.ask", "Ask the assistant");
+    askBtn.className = "btn";
+    askBtn.title = t("queue.actions.ask.hint",
+      "Open the chat with this role's details to ask for a brief, fit score, cover letter, or CV tailor.");
+    askBtn.addEventListener("click", () => {
+      state.selectedImportedJobId = job.imported_job_id;
+      focusChat();
+      setTimeout(() => {
+        const input = $("#dockChatInput");
+        if (input) {
+          input.value = `Help me with the "${job.title || "imported"}" role at ${job.company_name || "this company"}.`;
+          input.focus();
+        }
+      }, 60);
+    });
+    // The legacy Analyze button is removed — it's now reachable
+    // by saying "analyze fit" in the chat after Ask-the-assistant.
+    analyzeBtn.remove();
 
     const dismissBtn = document.createElement("button");
     dismissBtn.type = "button";
@@ -1154,7 +1236,7 @@ function renderJobs() {
     dismissBtn.textContent = t("queue.notRelevant", "Not relevant");
     dismissBtn.title = t("queue.notRelevant.hint", "Hide this job and downweight similar future results");
     dismissBtn.addEventListener("click", () => dismissJob(job));
-    fitBtn.after(dismissBtn);
+    askBtn.after(dismissBtn);
     list.append(node);
   }
 }
@@ -1279,19 +1361,22 @@ async function tailorCv(importedJobId) {
       body: JSON.stringify({ credentialValue }),
     });
     const tailored = payload.tailored || {};
+    // R23.1 — surface the result in the chat instead of the (now
+    // removed) brief textarea. The chat is the single output
+    // surface across the app.
     state.analysisBrief = { title: "Tailored CV", prompt: tailored.output || tailored.error || tailored.prompt || "", providerLabel: tailored.provider_id, invocationMode: tailored.invocation_mode };
-    $("#briefMeta").textContent = `Tailored CV · ${tailored.provider_id} (${tailored.invocation_mode})`;
-    $("#briefPrompt").value = tailored.output || tailored.error || tailored.prompt || "";
+    const tailoredText = tailored.output || tailored.error || tailored.prompt || "";
     if (tailored.status === "completed") {
-      showToast("Tailored CV ready in the AI Brief view.", "success");
+      showToast("Tailored CV ready — see chat.", "success");
+      chatAppendBubble("assistant",
+        `**Tailored CV** (${tailored.provider_id} · ${tailored.invocation_mode})\n\n${tailoredText}`);
     } else if (tailored.status === "handoff_required") {
-      showToast("Configure an API-mode AI provider, or copy the prompt manually.", "info");
+      showToast("Configure managed AI or your own provider in Settings.", "info");
     } else {
       showToast(`CV tailoring ${tailored.status}: ${tailored.error || ""}`, "info");
     }
-    if ($("#providerRuntimeKey")) $("#providerRuntimeKey").value = "";
     if (status) status.textContent = `Status: ${tailored.status}`;
-    navigate("brief");
+    navigate("assistant");
   } catch (error) {
     if (status) status.textContent = `Error: ${error.message}`;
     showToast(error.message, "error");
@@ -1303,12 +1388,14 @@ function renderImportedJobs() {
   if (!list) return;
   list.replaceChildren();
   if (!state.importedJobs.length) {
+    // R25.2 — Jobs nav removed; the empty-state CTA now nudges the
+    // user to chat-driven discovery instead of "open the queue".
     list.append(emptyNode(
-      t("imported.empty.text", "No imported jobs yet. Open the queue, find one you like, hit Import."),
+      t("imported.empty.text", "No imported jobs yet. Type **find a job** in the chat to start looking."),
       {
         icon: "briefcase",
-        ctaText: t("imported.empty.cta", "Open queue"),
-        onCta: () => navigate("jobs"),
+        ctaText: t("imported.empty.cta", "Focus chat"),
+        onCta: () => focusChat(),
       },
     ));
     return;
@@ -1329,7 +1416,7 @@ function renderImportedJobs() {
     const briefBtn = document.createElement("button");
     briefBtn.type = "button";
     briefBtn.className = "btn";
-    briefBtn.textContent = "Open brief";
+    briefBtn.textContent = "Brief in chat";
     briefBtn.addEventListener("click", () => {
       state.selectedImportedJobId = job.id;
       prepareBrief(job.id);
@@ -1394,48 +1481,18 @@ function renderBriefSummary() {
 }
 
 function renderBrief() {
-  if (!state.analysisBrief) {
-    $("#briefMeta").textContent = state.selectedImportedJobId ? "Click an imported job to prepare its brief" : "No brief prepared yet";
-    $("#briefPrompt").value = "";
-  }
-  syncBriefActionsEnabled();
+  // R23.1 — the dedicated brief textarea was removed. Briefs now
+  // flow through the chat. Keep the function as a no-op so the
+  // navigate() switch board has nothing to break on.
 }
 
 function syncBriefActionsEnabled() {
-  const text = ($("#briefPrompt")?.value || "").trim();
-  const has = text.length > 0;
-  for (const id of ["copyBriefBtn", "openInChatGPTBtn", "openInClaudeBtn"]) {
-    const btn = document.getElementById(id);
-    if (!btn) continue;
-    btn.disabled = !has;
-    if (!has) {
-      btn.dataset.disabledReason = "1";
-      btn.title = t("brief.disabledTitle", "Pick an imported job below to prepare a brief first.");
-    } else if (btn.dataset.disabledReason) {
-      btn.title = btn.dataset.originalTitle || "";
-      delete btn.dataset.disabledReason;
-    }
-  }
+  // R23.1 — buttons that drove the brief textarea no longer exist.
+  // No-op for back-compat with any caller still in flight.
 }
 
-// Auto-sync the brief buttons when the textarea changes for any reason.
-(function bootBriefAutoSync() {
-  const ta = document.getElementById("briefPrompt");
-  if (!ta) return;
-  ta.addEventListener("input", syncBriefActionsEnabled);
-  // Stash original tooltips so we can restore after a disabled cycle.
-  for (const id of ["copyBriefBtn", "openInChatGPTBtn", "openInClaudeBtn"]) {
-    const btn = document.getElementById(id);
-    if (btn) btn.dataset.originalTitle = btn.title || "";
-  }
-  // MutationObserver covers programmatic .value = … assignments which
-  // don't trigger the "input" event.
-  let last = ta.value;
-  setInterval(() => {
-    if (ta.value !== last) { last = ta.value; syncBriefActionsEnabled(); }
-  }, 400);
-  syncBriefActionsEnabled();
-})();
+// R23.1 — bootBriefAutoSync was removed; the brief textarea is
+// gone (the chat handles briefs now). Nothing to wire up.
 
 function renderHistory() {
   const list = $("#scanHistory");
@@ -1655,14 +1712,19 @@ function renderApplicationHistory(job) {
 function renderApplicationForm() {
   const form = $("#applicationForm");
   if (!form) return;
+  // R26.1 — the whole Application preparation card is hidden when
+  // no job is selected, not just the form inside. Frees the
+  // Applications canvas of empty-state UI.
+  const card = $("#applicationCard");
   const summary = $("#structuredFitSummary");
   const job = state.importedJobs.find((j) => j.id === state.selectedImportedJobId);
   if (!job) {
     form.hidden = true;
-    summary.hidden = true;
-    $("#applicationContextLabel").textContent = "Pick an imported job to update its status and notes.";
+    if (summary) summary.hidden = true;
+    if (card) card.hidden = true;
     return;
   }
+  if (card) card.hidden = false;
   form.hidden = false;
   $("#applicationContextLabel").textContent = `${job.title} — ${job.company_name}`;
   const select = $("#applicationStatus");
@@ -1769,7 +1831,25 @@ function renderBilling() {
   }
   if (summary && state.subscription) {
     const plan = (state.billingPlans || []).find((p) => p.id === state.subscription.plan_id);
-    summary.textContent = `${plan ? plan.label : state.subscription.plan_id} — ${state.subscription.status}, ${state.subscription.seats} seats.`;
+    summary.replaceChildren();
+    const line = document.createElement("div");
+    line.textContent = `${plan ? plan.label : state.subscription.plan_id} — ${state.subscription.status}, ${state.subscription.seats} seats.`;
+    summary.append(line);
+    // R23.7 — render the user's AI usage if the endpoint returned it.
+    const usage = state.aiUsage;
+    if (usage) {
+      const aiLine = document.createElement("div");
+      aiLine.className = "small muted";
+      aiLine.style.marginTop = "4px";
+      if (usage.dailyCap == null) {
+        aiLine.textContent = `AI chats today: ${usage.today} (unlimited)`;
+      } else if (usage.dailyCap === 0) {
+        aiLine.textContent = "AI chats: not included on this plan";
+      } else {
+        aiLine.textContent = `AI chats today: ${usage.today} / ${usage.dailyCap}`;
+      }
+      summary.append(aiLine);
+    }
   } else if (summary) {
     summary.textContent = "Subscription details load when you open Settings.";
   }
@@ -1884,282 +1964,16 @@ async function loadLocale(locale) {
   } catch (_) { state.queueSourceFilter = {}; }
 })();
 
-// First-run wizard controller. Opened by absorbBootstrap when the
-// server reports firstRunWizard=true. Three steps; each Next persists
-// what the user typed so far so a refresh mid-wizard doesn't lose data.
-const wizardState = { step: 1, suggestedPersonaId: null };
+// R26.5 — first-run wizard controller deleted. The dialog markup
+// was removed from index.html; the welcome bubble + journey.py
+// state machine onboard the user in chat.
 
-function openFirstRunWizard() {
-  const dialog = document.getElementById("firstRunWizard");
-  if (!dialog || typeof dialog.showModal !== "function") return;
-  if (dialog.open) return;
-  wizardState.step = 1;
-  setWizardStep(1);
-  // Pre-populate persona dropdown with the same list as Settings.
-  const select = document.getElementById("wizardPersona");
-  if (select) {
-    select.replaceChildren();
-    for (const p of state.personas || []) {
-      const opt = document.createElement("option");
-      opt.value = p.id;
-      opt.textContent = p.label;
-      select.append(opt);
-    }
-    select.value = state.profile?.personaId || "healthcare-management";
-  }
-  dialog.showModal();
-}
-
-function setWizardStep(step) {
-  for (let i = 1; i <= 3; i += 1) {
-    const el = document.getElementById(`wizardStep${i}`);
-    if (el) el.classList.toggle("active", i === step);
-  }
-  wizardState.step = step;
-}
-
-async function wizardSaveCv() {
-  const text = (document.getElementById("wizardCvText")?.value || "").trim();
-  if (!text) return;
-  try {
-    await api("/api/profile", { method: "POST", body: JSON.stringify({ cvText: text }) });
-    // Ask the server for a persona suggestion based on the saved CV.
-    const sug = await api("/api/profile/persona-suggest", { method: "POST", body: JSON.stringify({}) });
-    const top = (sug.personaSuggestions || [])[0];
-    if (top && top.personaId) {
-      wizardState.suggestedPersonaId = top.personaId;
-      const hint = document.getElementById("wizardPersonaHint");
-      if (hint) {
-        const tpl = t("wizard.step2.suggested", "From your CV we picked: {label}");
-        hint.textContent = tpl.replace("{label}", top.label);
-      }
-      const select = document.getElementById("wizardPersona");
-      if (select) select.value = top.personaId;
-    }
-  } catch (error) {
-    showToast(error.message, "error");
-  }
-}
-
-async function wizardFinish() {
-  const role = (document.getElementById("wizardRole")?.value || "").trim();
-  const location = (document.getElementById("wizardLocation")?.value || "").trim();
-  const personaId = document.getElementById("wizardPersona")?.value;
-  if (!role) {
-    showToast(t("wizard.step3.roleRequired", "Add a role keyword to save."), "info");
-    return;
-  }
-  try {
-    if (personaId) {
-      await api("/api/profile", { method: "POST", body: JSON.stringify({ personaId }) });
-    }
-    const search = await api("/api/saved-searches", {
-      method: "POST",
-      body: JSON.stringify({
-        label: role + (location ? ` in ${location}` : ""),
-        role,
-        location,
-      }),
-    });
-    if (search.savedSearch?.id) {
-      // Run the search immediately so the user lands on real results.
-      await api(`/api/saved-searches/${encodeURIComponent(search.savedSearch.id)}/run-now`, { method: "POST" });
-    }
-    await api("/api/profile", { method: "POST", body: JSON.stringify({ onboardingDismissed: true }) });
-    const dialog = document.getElementById("firstRunWizard");
-    if (dialog?.open) dialog.close();
-    showToast(t("wizard.done", "Set up. We'll watch this search daily."), "success");
-    // Re-fetch bootstrap so the new saved search + ranked results show up.
-    const bs = await api("/api/bootstrap");
-    absorbBootstrap(bs);
-    render();
-  } catch (error) {
-    showToast(error.message, "error");
-  }
-}
-
-async function wizardDismiss() {
-  try {
-    await api("/api/profile", { method: "POST", body: JSON.stringify({ onboardingDismissed: true }) });
-  } catch (_) {}
-  const dialog = document.getElementById("firstRunWizard");
-  if (dialog?.open) dialog.close();
-}
-
-// Command palette (cmd-K on Mac, ctrl-K on Windows/Linux). Single
-// search bar that lets you switch view, jump to a job, or open a
-// company without lifting your hands off the keyboard.
-const cmdK = {
-  open() {
-    const dialog = document.getElementById("cmdkDialog");
-    if (!dialog || dialog.open) return;
-    document.getElementById("cmdkKbdHint").textContent = "Esc";
-    document.getElementById("cmdkInput").value = "";
-    cmdK.activeIndex = 0;
-    cmdK.render("");
-    dialog.showModal();
-    setTimeout(() => document.getElementById("cmdkInput")?.focus(), 0);
-  },
-  close() {
-    const dialog = document.getElementById("cmdkDialog");
-    if (dialog?.open) dialog.close();
-  },
-  activeIndex: 0,
-  visibleItems: [],
-  buildItems(query) {
-    const q = query.trim().toLowerCase();
-    const matches = (text) => !q || (text || "").toLowerCase().includes(q);
-    const items = [];
-    // Views
-    const views = [
-      { view: "jobs", label: t("nav.queue", "Jobs") },
-      { view: "dashboard", label: t("nav.dashboard", "Today") },
-      { view: "brief", label: t("nav.brief", "Briefcase") },
-      { view: "companies", label: t("nav.companies", "Companies") },
-      { view: "settings", label: t("nav.settings", "Settings") },
-    ];
-    if (isAdmin()) views.push({ view: "admin", label: t("nav.admin", "Admin") });
-    views.forEach((v) => {
-      if (matches(v.label)) items.push({ kind: "view", label: v.label, meta: t("cmdk.go", "Go to view"), action: () => navigate(v.view) });
-    });
-    // Common actions
-    const actions = [
-      { label: t("cmdk.action.toggleTheme", "Toggle theme"), action: () => {
-          const next = (state.theme === "dark") ? "light" : "dark";
-          state.theme = next; applyTheme(next);
-          api("/api/profile", { method: "POST", body: JSON.stringify({ theme: next }) }).catch(() => {});
-        } },
-      { label: t("cmdk.action.toggleLocale", "Switch language"), action: async () => {
-          const next = (state.locale === "de") ? "en" : "de";
-          try {
-            await api("/api/profile", { method: "POST", body: JSON.stringify({ locale: next }) });
-            try { localStorage.setItem("dj_locale", next); } catch (_) {}
-            showToast(t("settings.locale.switching", "Switching language…"), "info", 800);
-            setTimeout(() => location.reload(), 220);
-          } catch (error) {
-            showToast(error.message, "error");
-          }
-        } },
-      { label: t("cmdk.action.signOut", "Sign out"), action: () => document.getElementById("logoutBtn")?.click() },
-    ];
-    actions.forEach((a) => { if (matches(a.label)) items.push({ kind: "action", label: a.label, meta: t("cmdk.do", "Action"), action: a.action }); });
-    // Open jobs (top 30 matches)
-    let jobMatches = 0;
-    for (const job of state.discoveredJobs || []) {
-      if (jobMatches >= 30) break;
-      const company = (state.companies || []).find((c) => c.id === job.company_id);
-      const label = `${job.title}${company ? " · " + company.name : ""}`;
-      if (!matches(label)) continue;
-      items.push({
-        kind: "job", label, meta: t("cmdk.openJob", "Open job"),
-        action: () => {
-          if (job.source_url) window.open(job.source_url, "_blank", "noopener,noreferrer");
-        },
-      });
-      jobMatches += 1;
-    }
-    // Companies (top 20 matches)
-    let companyMatches = 0;
-    for (const co of state.companies || []) {
-      if (companyMatches >= 20) break;
-      if (!matches(co.name)) continue;
-      items.push({
-        kind: "company", label: co.name, meta: t("cmdk.openCompany", "Watchlist"),
-        action: () => { state.selectedCompanyId = co.id; navigate("companies"); },
-      });
-      companyMatches += 1;
-    }
-    // Saved searches: Run-now action for each.
-    for (const search of state.savedSearches || []) {
-      const label = search.label || `${search.role || ""} ${search.location ? "@ " + search.location : ""}`.trim();
-      if (!matches(label)) continue;
-      items.push({
-        kind: "savedSearch", label: `▶ ${label}`, meta: t("cmdk.runSearch", "Run saved search"),
-        action: () => runSavedSearchNow(search.id),
-      });
-    }
-    return items;
-  },
-  render(query) {
-    const list = document.getElementById("cmdkResults");
-    if (!list) return;
-    list.replaceChildren();
-    cmdK.visibleItems = cmdK.buildItems(query);
-    if (!cmdK.visibleItems.length) {
-      const empty = document.createElement("li");
-      empty.className = "cmdk-section";
-      empty.textContent = t("cmdk.noResults", "No matches");
-      list.append(empty);
-      return;
-    }
-    cmdK.activeIndex = Math.min(cmdK.activeIndex, cmdK.visibleItems.length - 1);
-    cmdK.visibleItems.forEach((item, idx) => {
-      const li = document.createElement("li");
-      li.className = "cmdk-item" + (idx === cmdK.activeIndex ? " active" : "");
-      li.setAttribute("role", "option");
-      const label = document.createElement("span");
-      label.textContent = item.label;
-      const meta = document.createElement("span");
-      meta.className = "cmdk-item-meta";
-      meta.textContent = item.meta;
-      li.append(label, meta);
-      li.addEventListener("mousedown", (e) => {
-        e.preventDefault();
-        cmdK.activeIndex = idx;
-        cmdK.execute();
-      });
-      list.append(li);
-    });
-  },
-  execute() {
-    const item = cmdK.visibleItems[cmdK.activeIndex];
-    if (!item) return;
-    cmdK.close();
-    try { item.action(); } catch (_) {}
-  },
-};
-
-document.addEventListener("keydown", (event) => {
-  // Open cmd-K on Cmd+K (mac) or Ctrl+K (win/linux). Escape closes.
-  if ((event.metaKey || event.ctrlKey) && !event.shiftKey && !event.altKey && event.key.toLowerCase() === "k") {
-    event.preventDefault();
-    cmdK.open();
-    return;
-  }
-  const dialog = document.getElementById("cmdkDialog");
-  if (!dialog || !dialog.open) return;
-  if (event.key === "Escape") {
-    event.preventDefault();
-    cmdK.close();
-  } else if (event.key === "ArrowDown") {
-    event.preventDefault();
-    cmdK.activeIndex = (cmdK.activeIndex + 1) % Math.max(1, cmdK.visibleItems.length);
-    cmdK.render(document.getElementById("cmdkInput").value);
-  } else if (event.key === "ArrowUp") {
-    event.preventDefault();
-    cmdK.activeIndex = (cmdK.activeIndex - 1 + cmdK.visibleItems.length) % Math.max(1, cmdK.visibleItems.length);
-    cmdK.render(document.getElementById("cmdkInput").value);
-  } else if (event.key === "Enter") {
-    event.preventDefault();
-    cmdK.execute();
-  }
-});
-
-(function bootCmdKInputHandler() {
-  const input = document.getElementById("cmdkInput");
-  input?.addEventListener("input", (e) => {
-    cmdK.activeIndex = 0;
-    cmdK.render(e.target.value);
-  });
-  // Topbar launcher button — also opens the palette.
-  document.getElementById("cmdkLauncher")?.addEventListener("click", () => cmdK.open());
-  // Adapt the kbd hint on Windows/Linux (Ctrl) vs Mac (Cmd).
-  const isMac = /Mac|iPad|iPhone|iPod/.test(navigator.userAgent || "");
-  const kbd = document.getElementById("cmdkLauncherKbd");
-  const hintKbd = document.getElementById("cmdkKbdHint");
-  if (kbd) kbd.textContent = isMac ? "⌘K" : "Ctrl+K";
-  if (hintKbd) hintKbd.textContent = "Esc";
-})();
+// R26.4 — Cmd-K palette deleted (dialog markup + JS controller +
+// keybinding). Duplicated the sidebar nav + chat: every view it
+// exposed (Today / Applications / Settings / Admin) is reachable
+// via the sidebar, every action it shortcutted (open a job,
+// run a saved search, switch theme, toggle locale, sign out)
+// is reachable via the chat dock.
 
 // Settings tabs — show only cards with data-tab matching the active tab.
 // Cards without a data-tab attr stay always-visible (e.g. workspace
@@ -2255,50 +2069,10 @@ function setSettingsTab(tabId) {
   });
 })();
 
-(function bootWizardHandlers() {
-  document.getElementById("wizardCvUploadBtn")?.addEventListener("click", () => {
-    document.getElementById("wizardCvFile")?.click();
-  });
-  document.getElementById("wizardCvFile")?.addEventListener("change", async (event) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    const status = document.getElementById("wizardCvStatus");
-    if (status) status.textContent = `Uploading ${file.name}…`;
-    try {
-      const arrayBuffer = await file.arrayBuffer();
-      const bytes = new Uint8Array(arrayBuffer);
-      let binary = "";
-      for (let i = 0; i < bytes.length; i += 1) binary += String.fromCharCode(bytes[i]);
-      const contentBase64 = btoa(binary);
-      const payload = await api("/api/profile/cv-upload", {
-        method: "POST",
-        body: JSON.stringify({ filename: file.name, contentBase64 }),
-      });
-      if (status) status.textContent = `Imported ${payload.extractedChars || 0} chars.`;
-      const text = payload.profile?.cvText || "";
-      const ta = document.getElementById("wizardCvText");
-      if (ta) ta.value = text;
-      const top = (payload.personaSuggestions || [])[0];
-      if (top) {
-        wizardState.suggestedPersonaId = top.personaId;
-      }
-    } catch (error) {
-      if (status) status.textContent = `Error: ${error.message}`;
-    } finally {
-      event.target.value = "";
-    }
-  });
-  document.getElementById("wizardSkipCv")?.addEventListener("click", () => setWizardStep(2));
-  document.getElementById("wizardCvNext")?.addEventListener("click", async () => {
-    await wizardSaveCv();
-    setWizardStep(2);
-  });
-  document.getElementById("wizardBackPersona")?.addEventListener("click", () => setWizardStep(1));
-  document.getElementById("wizardPersonaNext")?.addEventListener("click", () => setWizardStep(3));
-  document.getElementById("wizardBackSearch")?.addEventListener("click", () => setWizardStep(2));
-  document.getElementById("wizardFinish")?.addEventListener("click", wizardFinish);
-  document.getElementById("wizardDismiss")?.addEventListener("click", wizardDismiss);
-})();
+// R26.5 — bootWizardHandlers deleted. The dialog markup + handlers
+// are gone; the chat dock + journey state machine onboard the user.
+// CV upload from the chat (R25, paperclip icon) is the only CV
+// upload surface non-Settings users see.
 
 function applyTranslations() {
   const dict = state.translations || {};
@@ -2456,9 +2230,15 @@ function renderPrivacyAudit() {
   if (banner) {
     const provider = state.aiProvider || {};
     const providerLabel = (state.aiProviderOptions || []).find((p) => p.id === provider.provider_id)?.label || provider.provider_id || "manual";
+    // R23.3 — managed AI is covered by the ToS+Privacy consent
+    // captured at signup. Manual + local-http providers move no
+    // data off-host. The per-provider consent banner only fires
+    // for BYOK / custom-CLI providers, which the user has to
+    // configure inside the Advanced section to even reach.
     const consentNeeded =
       provider.provider_id &&
       provider.provider_id !== "manual" &&
+      provider.provider_id !== "managed" &&
       provider.invocation_mode !== "local_http" &&
       (!state.profile?.aiConsentAt || state.profile?.aiConsentProviderId !== provider.provider_id);
     if (!consentNeeded) {
@@ -3258,7 +3038,7 @@ async function importJob(id) {
     });
     absorbBootstrap(payload.bootstrap);
     state.selectedImportedJobId = payload.job.id;
-    showToast(t("toast.imported", "Imported. Open AI Brief to prepare a brief."), "success");
+    showToast(t("toast.imported", "Imported. Use the chat for a brief or letter."), "success");
     render();
   } catch (error) {
     showToast(error.message, "error");
@@ -3275,9 +3055,13 @@ async function prepareBrief(importedJobId) {
     absorbBootstrap(payload.bootstrap);
     state.analysisBrief = payload.brief;
     state.selectedImportedJobId = importedJobId;
-    $("#briefMeta").textContent = `${payload.brief.title} · ${payload.brief.providerLabel} (${payload.brief.invocationMode})`;
-    $("#briefPrompt").value = payload.brief.prompt;
-    navigate("brief");
+    // R23.1 — push the prompt into the chat as an assistant message.
+    // Users who need the manual prompt for an external tool can
+    // copy it from there; users on managed AI just see the LLM's
+    // reply right after.
+    chatAppendBubble("assistant",
+      `**Brief prompt — ${payload.brief.title}**\n\n${payload.brief.prompt}`);
+    navigate("assistant");
     render();
   } catch (error) {
     showToast(error.message, "error");
@@ -3292,10 +3076,10 @@ async function prepareCoverLetter(importedJobId) {
       body: JSON.stringify({}),
     });
     state.analysisBrief = payload.brief;
-    $("#briefMeta").textContent = `${payload.brief.title} · ${payload.brief.providerLabel} (${payload.brief.invocationMode})`;
-    $("#briefPrompt").value = payload.brief.prompt;
-    showToast("Cover-letter prompt ready in the AI Brief view.", "info");
-    navigate("brief");
+    chatAppendBubble("assistant",
+      `**Cover-letter prompt — ${payload.brief.title}**\n\n${payload.brief.prompt}`);
+    showToast("Cover-letter prompt added to chat.", "info");
+    navigate("assistant");
   } catch (error) {
     showToast(error.message, "error");
   }
@@ -3476,11 +3260,12 @@ async function runAnalysis(importedJobId) {
     });
     absorbBootstrap(payload.bootstrap);
     state.analysisBrief = payload.analysis;
-    $("#briefMeta").textContent = `Analysis ${payload.analysis.status} · ${payload.analysis.provider_id} (${payload.analysis.invocation_mode})`;
-    $("#briefPrompt").value = payload.analysis.output || payload.analysis.error || payload.analysis.prompt || "";
-    if ($("#providerRuntimeKey")) $("#providerRuntimeKey").value = "";
-    showToast(payload.analysis.status === "completed" ? "Analysis ready." : `Analysis ${payload.analysis.status}.`, payload.analysis.status === "completed" ? "success" : "info");
-    navigate("brief");
+    // R23.1 — surface the analysis output in the chat.
+    const analysisText = payload.analysis.output || payload.analysis.error || payload.analysis.prompt || "";
+    chatAppendBubble("assistant",
+      `**Job-fit analysis** (${payload.analysis.status} · ${payload.analysis.provider_id})\n\n${analysisText}`);
+    showToast(payload.analysis.status === "completed" ? "Analysis ready in chat." : `Analysis ${payload.analysis.status}.`, payload.analysis.status === "completed" ? "success" : "info");
+    navigate("assistant");
     render();
   } catch (error) {
     showToast(error.message, "error");
@@ -4142,6 +3927,7 @@ async function loadBilling() {
     const payload = await api("/api/billing");
     state.subscription = payload.subscription;
     state.billingPlans = payload.plans;
+    state.aiUsage = payload.aiUsage || null;
     renderBilling();
   } catch (error) {
     showToast(error.message, "error");
@@ -4165,6 +3951,92 @@ async function handleAdminBilling(event) {
   } catch (error) {
     setText("#adminBillingNote", error.message);
   }
+}
+
+async function loadLlmCosts() {
+  if (!isAdmin()) return;
+  // Placeholder row + tile values while the fetch runs.
+  const totalToday = $("#llmCostToday");
+  const total7d = $("#llmCost7d");
+  const total30d = $("#llmCost30d");
+  if (totalToday) totalToday.textContent = "…";
+  if (total7d) total7d.textContent = "…";
+  if (total30d) total30d.textContent = "…";
+  try {
+    const payload = await api("/api/admin/llm-costs");
+    renderLlmCosts(payload);
+  } catch (error) {
+    if (totalToday) totalToday.textContent = "—";
+    if (total7d) total7d.textContent = "—";
+    if (total30d) total30d.textContent = "—";
+  }
+}
+
+function _fmtUsd(n) {
+  const v = Number(n) || 0;
+  if (v < 0.01) return "$" + v.toFixed(5);
+  if (v < 1) return "$" + v.toFixed(4);
+  return "$" + v.toFixed(2);
+}
+
+function _sumDays(days) {
+  return (days || []).reduce((s, d) => s + (Number(d.cost_usd) || 0), 0);
+}
+
+function _fillCostList(targetId, items, keyField, label = "") {
+  const list = $("#" + targetId);
+  if (!list) return;
+  list.replaceChildren();
+  if (!items || !items.length) {
+    const li = document.createElement("li");
+    const k = document.createElement("span");
+    k.className = "llm-cost-row-key";
+    k.textContent = label ? `(no ${label} yet)` : "(no data)";
+    li.append(k);
+    list.append(li);
+    return;
+  }
+  for (const item of items) {
+    const li = document.createElement("li");
+    const k = document.createElement("span");
+    k.className = "llm-cost-row-key";
+    k.textContent = item[keyField] || "—";
+    k.title = item[keyField] || "";
+    const v = document.createElement("span");
+    v.className = "llm-cost-row-value";
+    v.textContent = `${_fmtUsd(item.cost_usd)} · ${item.calls} call${item.calls === 1 ? "" : "s"}`;
+    li.append(k, v);
+    list.append(li);
+  }
+}
+
+function renderLlmCosts(payload) {
+  const today = (payload && payload.today) || {};
+  const days7 = (payload && payload.last7Days) || [];
+  const days30 = (payload && payload.last30Days) || [];
+  const tEl = $("#llmCostToday");
+  const t7 = $("#llmCost7d");
+  const t30 = $("#llmCost30d");
+  if (tEl) tEl.textContent = _fmtUsd(today.total_usd || 0);
+  if (t7) t7.textContent = _fmtUsd(_sumDays(days7));
+  if (t30) t30.textContent = _fmtUsd(_sumDays(days30));
+  // R23.8 — response cache effectiveness tile.
+  const cache = payload && payload.responseCache;
+  const hr = $("#llmCacheHitRate");
+  const hd = $("#llmCacheDetail");
+  if (hr) {
+    if (cache && (cache.hits + cache.misses) > 0) {
+      hr.textContent = (cache.hit_rate * 100).toFixed(1) + "%";
+      if (hd) hd.textContent = `${cache.hits} hits / ${cache.misses} misses, ${cache.entries}/${cache.max_entries} entries`;
+    } else {
+      hr.textContent = "—";
+      if (hd) hd.textContent = "(no LLM calls yet)";
+    }
+  }
+  _fillCostList("llmCostByProvider", today.by_provider, "provider", "providers");
+  _fillCostList("llmCostByTask", today.by_task, "task", "tasks");
+  _fillCostList("llmCostByModel", today.by_model, "model", "models");
+  _fillCostList("llmCostTopUsers", today.top_users, "user_id", "users");
 }
 
 async function loadReadiness() {
@@ -4825,6 +4697,186 @@ async function cvBuilderUploadPhoto(file) {
   }
 }
 
+// ----------------- R24.8 CV template picker -----------------
+
+const CV_TEMPLATES = [
+  { id: "modern", name: "Modern",
+    desc: "Clean, mostly one column. Default for everyone." },
+  { id: "classic", name: "Classic",
+    desc: "Serif typography, ATS-perfect, conservative." },
+  { id: "tech", name: "Tech",
+    desc: "Skills sidebar, two-column layout." },
+  { id: "executive", name: "Executive",
+    desc: "Serif, accented section titles, premium feel." },
+  { id: "creative", name: "Creative",
+    desc: "Bold tinted header, large name, looser spacing." },
+  { id: "academic", name: "Academic",
+    desc: "Publications + teaching prominent." },
+];
+const CV_ACCENTS = [
+  { id: "indigo", color: "#4f46e5" },
+  { id: "teal", color: "#0d9488" },
+  { id: "slate", color: "#334155" },
+];
+
+function _cvTemplateThumb(tplId, accentId) {
+  // R29 — real-rendered preview via /api/cv/template-thumbnail.
+  // The iframe loads an A4 page (210mm wide) and we scale it down
+  // to fit the card via CSS transform. The container's aspect-ratio
+  // (210/297) is set in styles.css so layout is stable while the
+  // iframe loads.
+  const thumb = document.createElement("div");
+  thumb.className = "cv-template-thumb";
+  const frame = document.createElement("iframe");
+  frame.className = "cv-template-thumb-frame";
+  frame.setAttribute("loading", "lazy");
+  frame.setAttribute("title", `${tplId} template preview`);
+  // allow-same-origin lets the parent read contentDocument (e.g. for
+  // smoke tests) and lets the iframe load /static/cv_templates/cv_base.css
+  // normally. The rendered preview has zero JS, so we deliberately do
+  // NOT grant allow-scripts.
+  frame.setAttribute("sandbox", "allow-same-origin");
+  frame.setAttribute("aria-hidden", "true");
+  frame.src = `/api/cv/template-thumbnail?id=${encodeURIComponent(tplId)}`
+            + `&accent=${encodeURIComponent(accentId || "indigo")}&photo=0`;
+  thumb.append(frame);
+  // Keep the iframe transform scaled to whatever width the grid
+  // happens to give this card.
+  if (typeof ResizeObserver !== "undefined") {
+    const ro = new ResizeObserver((entries) => {
+      for (const e of entries) {
+        const w = Math.max(80, Math.round(e.contentRect.width));
+        thumb.style.setProperty("--thumb-w", String(w));
+      }
+    });
+    ro.observe(thumb);
+  }
+  return thumb;
+}
+
+function renderCvTemplatePicker() {
+  // R25.3 empty-state — show the "build via chat" hint when the
+  // structured CV doc hasn't been populated yet.
+  const hint = $("#cvBuilderEmptyHint");
+  if (hint) {
+    hint.hidden = Boolean(state.profile?.cvDocumentReady);
+  }
+  const grid = $("#cvTemplateGrid");
+  if (!grid) return;
+  const current = state.profile?.cvTemplateId || "modern";
+  const accent = state.profile?.cvAccentColor || "indigo";
+  grid.replaceChildren();
+  for (const tpl of CV_TEMPLATES) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "cv-template-card";
+    btn.setAttribute("aria-pressed", String(tpl.id === current));
+    btn.dataset.templateId = tpl.id;
+    btn.style.setProperty("--accent",
+      (CV_ACCENTS.find((a) => a.id === accent) || CV_ACCENTS[0]).color);
+    btn.append(_cvTemplateThumb(tpl.id, accent));
+    const name = document.createElement("div");
+    name.className = "cv-template-name";
+    name.textContent = tpl.name;
+    btn.append(name);
+    const desc = document.createElement("div");
+    desc.className = "cv-template-desc";
+    desc.textContent = tpl.desc;
+    btn.append(desc);
+    btn.addEventListener("click", () => saveCvTemplate({ templateId: tpl.id }));
+    grid.append(btn);
+  }
+  // Accent swatches.
+  const swatches = $("#cvAccentSwatches");
+  if (swatches) {
+    swatches.replaceChildren();
+    for (const a of CV_ACCENTS) {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "cv-accent-swatch";
+      b.style.setProperty("--swatch", a.color);
+      b.setAttribute("aria-pressed", String(a.id === accent));
+      b.title = a.id;
+      b.addEventListener("click", () => saveCvTemplate({ accentColor: a.id }));
+      swatches.append(b);
+    }
+  }
+  const photoToggle = $("#cvTemplatePhotoOn");
+  if (photoToggle) {
+    photoToggle.checked = state.profile?.cvPhotoOn !== false;
+  }
+  const headlineInput = $("#cvTemplateHeadline");
+  if (headlineInput && headlineInput !== document.activeElement) {
+    headlineInput.value = state.profile?.cvHeadlineOverride || "";
+  }
+}
+
+async function saveCvTemplate(patch) {
+  const status = $("#cvTemplateStatus");
+  try {
+    const payload = await api("/api/cv/template", {
+      method: "POST", body: JSON.stringify(patch),
+    });
+    // Update local state so re-renders reflect the new choice.
+    state.profile = state.profile || {};
+    if (payload.templateId) state.profile.cvTemplateId = payload.templateId;
+    if (payload.accentColor) state.profile.cvAccentColor = payload.accentColor;
+    if (typeof payload.photoOn === "boolean") state.profile.cvPhotoOn = payload.photoOn;
+    if (typeof payload.headlineOverride === "string") {
+      state.profile.cvHeadlineOverride = payload.headlineOverride;
+    }
+    renderCvTemplatePicker();
+    if (status) status.textContent = "Saved.";
+    setTimeout(() => { if (status) status.textContent = ""; }, 1500);
+  } catch (err) {
+    if (status) status.textContent = `Error: ${err.message}`;
+  }
+}
+
+async function cvTemplateExtract() {
+  const status = $("#cvTemplateStatus");
+  if (status) status.textContent = "Reading your CV text into the template…";
+  try {
+    const payload = await api("/api/cv/extract", {
+      method: "POST", body: JSON.stringify({}),
+    });
+    if (status) {
+      status.textContent =
+        `Extracted ${payload.experienceCount || 0} role(s) + `
+        + `${payload.skillsCount || 0} skill(s). Refreshing…`;
+    }
+    // Refresh profile so the preview picks up the new doc.
+    await loadProfile?.();
+    renderCvTemplatePicker();
+  } catch (err) {
+    if (status) status.textContent = `Error: ${err.message}`;
+  }
+}
+
+$("#cvTemplatePhotoOn")?.addEventListener("change", (e) => {
+  saveCvTemplate({ photoOn: Boolean(e.target.checked) });
+});
+let _cvHeadlineDebounce = null;
+$("#cvTemplateHeadline")?.addEventListener("input", (e) => {
+  clearTimeout(_cvHeadlineDebounce);
+  const val = e.target.value || "";
+  _cvHeadlineDebounce = setTimeout(() => {
+    saveCvTemplate({ headlineOverride: val });
+  }, 500);
+});
+$("#cvTemplateExtractBtn")?.addEventListener("click", cvTemplateExtract);
+$("#cvTemplatePreviewBtn")?.addEventListener("click", () => {
+  window.open("/api/cv/print?autoprint=1", "_blank", "noopener");
+});
+$("#cvBuilderEmptyChatBtn")?.addEventListener("click", () => {
+  focusChat();
+  const input = $("#dockChatInput");
+  if (input) {
+    input.value = "build my CV";
+    input.focus();
+  }
+});
+
 async function cvBuilderRemovePhoto() {
   try {
     await api("/api/profile/photo", {
@@ -4876,15 +4928,40 @@ function chatRenderInline(text) {
   let html = div.innerHTML;  // entities-escaped form
   html = html.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
   html = html.replace(/`([^`]+)`/g, "<code>$1</code>");
+  // R23.7 — italics for fallback notes ("_AI is taking a break_").
+  // We accept _x_ but only when wrapped in word boundaries so file
+  // names like ``my_var_name`` don't accidentally render as italic.
+  html = html.replace(
+    /(^|[\s(>])_((?:[^_\n]|_(?=\w))+?)_(?=[\s).,;:!?<]|$)/g,
+    "$1<em>$2</em>",
+  );
+  // Markdown links. Only allow http(s):// and anchor (#) targets —
+  // anything else (javascript:, data:, file:) is dropped to avoid
+  // XSS via crafted chat replies. Anchor links open in-app; http(s)
+  // open in a new tab.
+  html = html.replace(
+    /\[([^\]]+)\]\(([^)\s]+)\)/g,
+    (m, label, href) => {
+      if (/^https?:\/\//i.test(href)) {
+        const safe = href.replace(/"/g, "&quot;");
+        return `<a href="${safe}" target="_blank" rel="noopener noreferrer">${label}</a>`;
+      }
+      if (href.startsWith("#")) {
+        const safe = href.replace(/"/g, "&quot;");
+        return `<a href="${safe}" data-chat-link>${label}</a>`;
+      }
+      return label;  // strip unknown protocols, keep text
+    },
+  );
   return html;
 }
 
 function chatAppendBubble(role, text, opts = {}) {
-  // R18: write to BOTH chat surfaces — the view-assistant transcript
-  // AND the persistent dock — so the user sees the same conversation
-  // regardless of which input they used.
-  const hosts = [$("#chatTranscript"), $("#dockChatTranscript")]
-    .filter(Boolean);
+  // R25.1 — single transcript. The standalone Assistant view is
+  // gone; the chat dock is the only surface. Earlier rounds wrote
+  // to both #chatTranscript (Assistant view) and #dockChatTranscript;
+  // now only the dock receives bubbles.
+  const hosts = [$("#dockChatTranscript")].filter(Boolean);
   if (!hosts.length) return null;
   const bubbles = [];
   for (const host of hosts) {
@@ -4969,12 +5046,12 @@ async function chatSend(message) {
       catch (_) { /* popup blocker — the markdown link in reply still works */ }
     }
     if (payload.awaiting) {
-      setText("#chatPendingHint", `Awaiting: ${payload.awaiting}`);
+      setText("#dockChatPendingHint", `Awaiting: ${payload.awaiting}`);
     } else if (payload.awaitingConfirmation) {
-      setText("#chatPendingHint",
+      setText("#dockChatPendingHint",
               "Reply yes / no to confirm.");
     } else if (payload.executed) {
-      setText("#chatPendingHint", `Last executed: ${payload.executed}`);
+      setText("#dockChatPendingHint", `Last executed: ${payload.executed}`);
       // Search-results + navigation are rendered above (shared with
       // journey-driven path). Just refresh bootstrap so unrelated
       // UI cards reflect any DB write the executed command made.
@@ -4984,7 +5061,7 @@ async function chatSend(message) {
         render();
       } catch (_) { /* non-fatal */ }
     } else {
-      setText("#chatPendingHint", "");
+      setText("#dockChatPendingHint", "");
     }
   } catch (err) {
     chatAppendBubble("assistant", `Error: ${err.message}`);
@@ -5009,70 +5086,141 @@ function chatResetHandler() {
       chatAppendBubble("assistant", `Error: ${err.message}`);
       return;
     }
-    for (const sel of ["#chatTranscript", "#dockChatTranscript"]) {
-      const host = $(sel);
-      if (host) host.innerHTML = "";
-    }
-    setText("#chatPendingHint", "");
+    // R25.1 — single transcript. The Assistant view (and its
+    // duplicate #chatTranscript) was removed; only the dock remains.
+    const host = $("#dockChatTranscript");
+    if (host) host.innerHTML = "";
     setText("#dockChatPendingHint", "");
     chatAppendBubble("assistant",
                        "Chat reset. Type a message or /help to begin.");
   };
 }
 
-// R21.6: any user interaction with the chat dock means they've
-// chosen the chat-first path — silently dismiss the first-run
-// wizard so it stops intercepting their flow. Called from both
-// submit and focus so even "typing in the input" counts.
-function dismissWizardForDockInteraction() {
-  const dialog = document.getElementById("firstRunWizard");
-  if (dialog?.open) {
-    // Same persistence call as wizardDismiss, but fire-and-forget.
-    api("/api/profile",
-        { method: "POST",
-          body: JSON.stringify({ onboardingDismissed: true }) })
-      .catch(() => { /* non-fatal */ });
-    dialog.close();
-  }
-}
+// R26.5 — dismissWizardForDockInteraction deleted. The first-run
+// wizard dialog is gone; nothing to dismiss when the user types.
+// (Pre-R26.5 the wizard could sit on top of the dock and block it.)
 
-$("#chatForm")?.addEventListener("submit", chatFormHandler("#chatInput"));
-$("#dockChatForm")?.addEventListener("submit", (event) => {
-  dismissWizardForDockInteraction();
-  return chatFormHandler("#dockChatInput")(event);
-});
-$("#dockChatInput")?.addEventListener("focus",
-                                         dismissWizardForDockInteraction);
+// R25.1 — only the dock form remains; the Assistant view's
+// duplicate chat form was removed.
+$("#dockChatForm")?.addEventListener("submit",
+                                        chatFormHandler("#dockChatInput"));
 
 $("#chatHelpBtn")?.addEventListener("click", () => chatSend("/help"));
 $("#dockChatHelpBtn")?.addEventListener("click", () => chatSend("/help"));
 
+// R25 — CV upload from the chat (paperclip icon). Wires both chat
+// surfaces (dock + assistant view) to the same handler.
+async function chatAttachCv(file) {
+  if (!file) return;
+  // Surface progress in the chat transcript itself so the user
+  // sees what's happening — no separate "uploading…" toast.
+  chatAppendBubble("user", `📎 ${file.name}`);
+  const progress = chatAppendBubble("assistant", "Reading your CV…",
+                                       { typing: true });
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    const bytes = new Uint8Array(arrayBuffer);
+    let binary = "";
+    for (let i = 0; i < bytes.length; i += 1) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    const contentBase64 = btoa(binary);
+    const payload = await api("/api/profile/cv-upload", {
+      method: "POST",
+      body: JSON.stringify({ filename: file.name, contentBase64 }),
+    });
+    if (progress?.remove) progress.remove();
+    const chars = payload.extractedChars || 0;
+    if (!chars) {
+      chatAppendBubble("assistant",
+        "I read the file but didn't find any readable text. Try a "
+        + "different format (PDF, DOCX, or plain TXT).");
+      return;
+    }
+    chatAppendBubble("assistant",
+      `Got it — read **${chars}** characters from your CV. Extracting `
+      + "the structured fields now…");
+    // R24.11 — kick off the AI extraction so the structured CvDocument
+    // is ready for the template renderer. Best-effort: if extraction
+    // fails, the user still has the raw text saved.
+    try {
+      const extract = await api("/api/cv/extract", {
+        method: "POST", body: JSON.stringify({}),
+      });
+      chatAppendBubble("assistant",
+        `Extracted **${extract.experienceCount || 0}** role(s) + `
+        + `**${extract.skillsCount || 0}** skill(s). `
+        + "Open the CV builder to pick a template and preview.");
+      // Refresh profile so cvDocumentReady flips client-side.
+      if (typeof loadProfile === "function") {
+        loadProfile().catch(() => {});
+      }
+    } catch (err) {
+      chatAppendBubble("assistant",
+        "Saved your CV. Managed AI isn't on right now, so I'll skip "
+        + "the structured extraction — you can still pick a template "
+        + "and the renderer will use your raw text as the summary.");
+    }
+  } catch (err) {
+    if (progress?.remove) progress.remove();
+    chatAppendBubble("assistant",
+      `Upload failed: ${err.message}. Try a different file (PDF, DOCX, TXT).`);
+  }
+}
+
+$("#chatAttachBtn")?.addEventListener("click", () => {
+  $("#chatAttachInput")?.click();
+});
+$("#chatAttachInput")?.addEventListener("change", async (event) => {
+  const file = event.target.files?.[0];
+  await chatAttachCv(file);
+  event.target.value = "";
+});
+$("#dockChatAttachBtn")?.addEventListener("click", () => {
+  $("#dockChatAttachInput")?.click();
+});
+$("#dockChatAttachInput")?.addEventListener("change", async (event) => {
+  const file = event.target.files?.[0];
+  await chatAttachCv(file);
+  event.target.value = "";
+});
+
 $("#chatResetBtn")?.addEventListener("click", chatResetHandler());
 $("#dockChatResetBtn")?.addEventListener("click", chatResetHandler());
 
-// On first chat-view focus OR first appearance of the dock, seed
-// a welcome bubble if the transcript is empty.
+// On first appearance of the dock, seed a welcome bubble if the
+// transcript is empty. The standalone Assistant view was removed
+// (R25.1) so there's only one place to check now.
 function seedChatWelcomeOnce() {
   const dock = $("#dockChatTranscript");
   if (dock && dock.childElementCount === 0) {
     chatAppendBubble("assistant",
                        "Hi — tell me what you want to do, or type **find a job** to start.");
-    return;
-  }
-  const host = $("#chatTranscript");
-  if (host && host.childElementCount === 0) {
-    chatAppendBubble("assistant",
-                       "Hi — tell me what you want to do, or type **find a job** to start.");
   }
 }
+// R25.1 — the Assistant nav-item is gone, so the click-to-focus
+// handler from R23 (which seeded the welcome bubble) is no longer
+// wired. The seeding now happens lazily on first dock interaction
+// (see seedChatWelcomeOnce calls inside chatFormHandler + register).
+
+// R23.7 — chat-rendered anchor links (data-chat-link) deep-link
+// into the SPA. ``#billing`` opens Settings + scrolls to the
+// Subscription card so the user can click Upgrade from the chat
+// fallback note ("you've used today's AI chats — upgrade").
 document.addEventListener("click", (event) => {
-  const target = event.target.closest(".nav-item[data-view='assistant']");
-  if (!target) return;
-  setTimeout(() => {
-    seedChatWelcomeOnce();
-    const input = $("#chatInput") || $("#dockChatInput");
-    if (input) input.focus();
-  }, 60);
+  const link = event.target.closest("a[data-chat-link]");
+  if (!link) return;
+  const href = link.getAttribute("href") || "";
+  if (!href.startsWith("#")) return;
+  event.preventDefault();
+  if (href === "#billing") {
+    navigate("settings");
+    setTimeout(() => {
+      const card = document.querySelector(
+        "#view-settings [aria-label='Subscription']");
+      if (card) card.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 80);
+  }
 });
 
 $("#cvBuilderDownloadPdfBtn")?.addEventListener("click", () => {
@@ -5141,17 +5289,28 @@ document.addEventListener("click", (event) => {
   // Strip the query param so subsequent reloads don't re-toast.
   history.replaceState({}, "", window.location.pathname);
 })();
-$("#prepareCoverLetterBtn")?.addEventListener("click", () => {
-  if (state.selectedImportedJobId) prepareCoverLetter(state.selectedImportedJobId);
-  else showToast("Pick an imported job first.", "info");
-});
-$("#draftCoverLetterBtn")?.addEventListener("click", () => {
-  if (state.selectedImportedJobId) draftCoverLetter(state.selectedImportedJobId);
-  else showToast("Pick an imported job first.", "info");
-});
-$("#tailorCvBtn")?.addEventListener("click", () => {
-  if (state.selectedImportedJobId) tailorCv(state.selectedImportedJobId);
-  else showToast("Pick an imported job first.", "info");
+// R26.2 — three buttons (Cover-letter prompt, Draft cover letter,
+// Tailor CV) collapsed into one "Ask the assistant" button that
+// opens the chat with the selected job's context. Users then type
+// (or accept the suggestion) and the chat handles all four intents
+// — brief / analyze / draft / tailor — via the existing tools.
+$("#applicationAskBtn")?.addEventListener("click", () => {
+  const jobId = state.selectedImportedJobId;
+  if (!jobId) {
+    showToast("Pick an imported job first.", "info");
+    return;
+  }
+  const job = (state.importedJobs || []).find((j) => j.id === jobId);
+  const title = job?.title || "this role";
+  const company = job?.company_name || "this company";
+  focusChat();
+  setTimeout(() => {
+    const input = $("#dockChatInput");
+    if (input) {
+      input.value = `Help me with the "${title}" role at ${company}.`;
+      input.focus();
+    }
+  }, 60);
 });
 $("#autoFitAllBtn")?.addEventListener("click", autoFitAll);
 $("#queueSortSelect")?.addEventListener("change", (event) => {
@@ -5280,43 +5439,11 @@ $("#quickAddCompanyBtn").addEventListener("click", () => {
   navigate("companies");
   document.querySelector("#companyForm input[name='name']")?.focus();
 });
-$("#briefOpenSettings")?.addEventListener("click", () => navigate("settings"));
-$("#runAnalysisBriefBtn").addEventListener("click", () => {
-  if (state.selectedImportedJobId) runAnalysis(state.selectedImportedJobId);
-  else showToast("Pick an imported job first.", "info");
-});
-async function copyBriefThen(actionFn) {
-  const text = $("#briefPrompt").value;
-  if (!text) {
-    showToast(t("brief.empty", "No brief to copy yet."), "info");
-    return false;
-  }
-  try {
-    await navigator.clipboard.writeText(text);
-    if (actionFn) actionFn();
-    return true;
-  } catch {
-    showToast(t("brief.clipboardErr", "Could not access the clipboard."), "error");
-    return false;
-  }
-}
-
-$("#copyBriefBtn").addEventListener("click", async () => {
-  const ok = await copyBriefThen();
-  if (ok) showToast(t("brief.copied", "Brief copied to clipboard."), "success");
-});
-
-// Manual-mode handoff: copy the prompt + open the LLM's web UI in a new tab.
-// We can't programmatically prefill the LLM's textarea from a 3rd-party origin
-// (CSP / cross-origin restrictions), but copy-then-open removes 80% of the friction.
-$("#openInChatGPTBtn")?.addEventListener("click", async () => {
-  const ok = await copyBriefThen(() => window.open("https://chat.openai.com/", "_blank", "noopener,noreferrer"));
-  if (ok) showToast(t("brief.openHandoff", "Copied. Paste it into the LLM tab."), "success");
-});
-$("#openInClaudeBtn")?.addEventListener("click", async () => {
-  const ok = await copyBriefThen(() => window.open("https://claude.ai/new", "_blank", "noopener,noreferrer"));
-  if (ok) showToast(t("brief.openHandoff", "Copied. Paste it into the LLM tab."), "success");
-});
+// R23.1 — manual-handoff buttons (#runAnalysisBriefBtn, #copyBriefBtn,
+// #openInChatGPTBtn, #openInClaudeBtn) were removed with the brief
+// textarea. Briefs now flow through the chat. The optional chains
+// on the remaining listeners are defensive: if the element doesn't
+// exist, the listener is never wired.
 $("#companyFilter").addEventListener("input", (event) => {
   state.companyFilter = event.target.value;
   renderCompanies();
@@ -5402,6 +5529,7 @@ $("#acceptInviteForm")?.addEventListener("submit", handleAcceptInvite);
 $("#adminInviteForm")?.addEventListener("submit", handleAdminInvite);
 $("#refreshMetricsBtn")?.addEventListener("click", refreshAdminMetrics);
 $("#refreshReadinessBtn")?.addEventListener("click", loadReadiness);
+$("#refreshLlmCostsBtn")?.addEventListener("click", loadLlmCosts);
 $("#refreshEmailStatusBtn")?.addEventListener("click", loadEmailStatus);
 $("#testEmailForm")?.addEventListener("submit", handleTestEmail);
 $("#deletionForm")?.addEventListener("submit", handleDeletionRequest);

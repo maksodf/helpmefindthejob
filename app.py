@@ -186,7 +186,7 @@ DEFAULT_WATCHLIST_SCHEDULE = {
     "lastRunAt": None,
     "lastRunStatus": "disabled",
 }
-APP_VERSION = "0.79.5"
+APP_VERSION = "0.91.0"
 EXPORT_SCHEMA_VERSION = 1
 SESSION_COOKIE_NAME = "directjob_session"
 APP_ENV = os.environ.get("COMPANY_DISCOVERY_ENV", "development").strip().casefold()
@@ -231,13 +231,25 @@ def dataclass_from_payload(model: type[Any], payload: dict[str, Any]) -> Any:
 def _ai_consent_satisfied(profile, provider) -> bool:
     """The user must have granted consent for the *current* provider id
     before we send their CV / structured profile to a third-party LLM.
-    Manual mode + Ollama-local don't transmit anything off-host, so they
-    bypass the gate."""
+    Manual mode + Ollama-local + Managed AI bypass the gate:
+
+    * Manual  — no data leaves the device.
+    * Local   — data stays on the user's machine.
+    * Managed — covered by the single ToS / Privacy consent captured
+                at signup; the operator's one contract handles all
+                downstream providers, so the user never sees a
+                separate per-provider banner (R23.3 vision).
+    BYOK still requires an explicit per-provider consent stamp
+    because the user is wiring their OWN third-party account.
+    """
 
     if provider is None or provider.provider_id == "manual":
         return True
     if provider.invocation_mode == "local_http":
         return True  # Ollama runs in the user's own container.
+    # R23.3 — managed AI is covered by ToS+Privacy at signup.
+    if provider.provider_id == "managed":
+        return True
     consent_at = getattr(profile, "ai_consent_at", None)
     consent_pid = getattr(profile, "ai_consent_provider_id", None)
     if not consent_at:
@@ -369,10 +381,34 @@ class AppState:
         self._reset_requests: dict[str, list[float]] = {}
         self._register_request_lock = Lock()
         self._register_requests: dict[str, list[float]] = {}
+        # R22.9: per-user daily LLM-call counter. Key is
+        # (user_id, "YYYY-MM-DD"); value is the count. Periodically
+        # GC'd so the dict can't grow unbounded across long uptimes.
+        self._llm_tool_use_lock = Lock()
+        self._llm_tool_use_calls: dict[tuple[str, str], int] = {}
         self._demo_seed_lock = Lock()
         self.ai_providers = self._load_ai_providers()
         self.token_store = TokenStore(self.token_path, SECRET_KEY)
         self.quota_store = QuotaStore(self.quota_path)
+        # R23.6: persistent LLM cost ledger. Path lives next to the
+        # main app DB so backups & WAL behave the same. Operator can
+        # query /api/admin/llm-costs for today's spend + breakdowns.
+        from company_discovery.llm_cost_tracker import LLMCostTracker
+        self.llm_cost_tracker = LLMCostTracker(
+            self.data_path.parent / "llm_costs.sqlite")
+        # Phase 1 / Step 4 — Tier I reversal_tokens + Tier N
+        # pending_actions ledger. Separate SQLite next to the main DB
+        # so backups + WAL behave the same as the rest of the app.
+        from company_discovery.tool_actions_store import ToolActionsStore
+        self.tool_actions_store = ToolActionsStore(
+            self.data_path.parent / "tool_actions.sqlite")
+        # R23.8: in-memory LLM response cache. Per-process; cache
+        # entries expire after 10 minutes by default. Repeated
+        # text-only Q&A ("how does the search work?") gets answered
+        # without burning a new API call. Tool-using replies are
+        # never cached (would skip side effects).
+        from company_discovery.llm_response_cache import LLMResponseCache
+        self.llm_response_cache = LLMResponseCache()
         self.email_transport: EmailTransport = email_transport or build_transport(
             outbox_path=self.data_path.parent / "email_outbox.log",
         )
@@ -801,6 +837,15 @@ class AppState:
             "slackFitThreshold": float(getattr(profile, "slack_fit_threshold", 0.70) or 0.0),
             "aiConsentAt": profile.ai_consent_at.isoformat() if getattr(profile, "ai_consent_at", None) else None,
             "aiConsentProviderId": getattr(profile, "ai_consent_provider_id", None),
+            # R24.8 — CV template + accent + photo toggle + headline
+            # override so the picker UI can render the user's saved
+            # choice without a separate fetch. cvDocumentReady is True
+            # iff structured extraction has run.
+            "cvTemplateId": getattr(profile, "cv_template_id", None) or "modern",
+            "cvAccentColor": getattr(profile, "cv_accent_color", None) or "indigo",
+            "cvPhotoOn": bool(getattr(profile, "cv_photo_on", True)),
+            "cvHeadlineOverride": getattr(profile, "cv_headline_override", "") or "",
+            "cvDocumentReady": bool(getattr(profile, "cv_document", None)),
             "updatedAt": profile.updated_at.isoformat() if profile.updated_at else None,
         }
 
@@ -1495,6 +1540,215 @@ class AppState:
             attempts = self._login_attempts.get(client_id)
             if attempts:
                 attempts.pop()
+
+    def llm_daily_cap_for_user(self, user_id: str) -> int:
+        """R23.7: resolve the user's daily LLM call cap. Resolution
+        order:
+
+        1. ``DIRECTJOB_LLM_DAILY_CAP`` env override (operator escape
+           hatch — wins over plan).
+        2. Active subscription plan's ``llm_daily_cap``.
+        3. 0 (no managed AI).
+
+        Returns 0 when blocked, a positive int for capped, or
+        ``sys.maxsize`` for unlimited (Plan.llm_daily_cap is None).
+        """
+        import sys as _sys
+        env_raw = (os.environ.get("DIRECTJOB_LLM_DAILY_CAP") or "").strip()
+        if env_raw:
+            try:
+                v = int(env_raw)
+                # 0 = no override (fall through to plan). Negative =
+                # unlimited (operator's "stop throttling" knob). >0 =
+                # hard cap, wins over plan.
+                if v < 0:
+                    return _sys.maxsize
+                if v > 0:
+                    return v
+            except ValueError:
+                pass
+        # Plan-derived cap. Workspace-wide subscription for now (the
+        # B2C-per-user model would be a bigger refactor — single
+        # subscription suffices until we ship per-user billing).
+        try:
+            sub = self.get_subscription()
+            from company_discovery.billing import find_plan
+            plan = find_plan(sub.plan_id) if sub and sub.plan_id else None
+        except Exception:  # noqa: BLE001
+            plan = None
+        if plan is None:
+            return 0
+        if plan.llm_daily_cap is None:
+            return _sys.maxsize
+        return max(0, int(plan.llm_daily_cap))
+
+    def claim_llm_tool_use_slot(self, user_id: str) -> bool:
+        """R22.9 + R23.7: per-user daily LLM call cap. The router
+        invokes a managed model for every user message in supported
+        phases — without a cap, a single user can burn through the
+        operator's API budget by spamming the chat. This is a hard
+        cap, not a soft warning: when hit, the router returns
+        ``error_quota`` and the chat falls back to the deterministic
+        path with a clear "upgrade or come back tomorrow" message.
+
+        Resolution:
+        1. ``DIRECTJOB_LLM_DAILY_CAP`` env wins (operator override).
+        2. Active subscription plan's ``llm_daily_cap``.
+        3. Default 0 (managed AI off for that user).
+
+        Resets at UTC midnight by date key. GC entries older than
+        2 days on each claim so the dict stays bounded.
+        """
+        cap = self.llm_daily_cap_for_user(user_id)
+        if cap <= 0:
+            return False  # plan doesn't include managed AI
+        today = now_utc().strftime("%Y-%m-%d")
+        with self._llm_tool_use_lock:
+            # GC entries older than today (date keys are YYYY-MM-DD
+            # so lex-compare == date compare). The redundant
+            # (today != k[1]) guard from a prior iteration was
+            # dropped — k[1] < today already implies inequality.
+            stale = [k for k in self._llm_tool_use_calls
+                      if k[1] < today]
+            for k in stale[:200]:
+                self._llm_tool_use_calls.pop(k, None)
+            count = self._llm_tool_use_calls.get((user_id, today), 0)
+            if count >= cap:
+                return False
+            self._llm_tool_use_calls[(user_id, today)] = count + 1
+            return True
+
+    def llm_tool_use_count_today(self, user_id: str) -> int:
+        """Read-only: how many LLM calls this user has burned today.
+        Used by tests and the admin view."""
+        today = now_utc().strftime("%Y-%m-%d")
+        with self._llm_tool_use_lock:
+            return self._llm_tool_use_calls.get((user_id, today), 0)
+
+    def release_llm_tool_use_slot(self, user_id: str) -> None:
+        """Phase 1 / Step 5 — atomic-reservation release. When the
+        LLM call itself fails (network error, provider 5xx, timeout),
+        release the slot we claimed in ``claim_llm_tool_use_slot`` so
+        the user doesn't lose a call to a failure that produced no
+        value.
+
+        The decrement is bounded at zero — concurrent races (release
+        after the day rolled over and the counter was cleared) end
+        with a no-op rather than going negative.
+
+        This is the DJS-shaped version of xboard's atomic
+        cost-reservation pattern: we reserve slot-by-count on entry,
+        commit on success (by not releasing), release on failure.
+        """
+        today = now_utc().strftime("%Y-%m-%d")
+        with self._llm_tool_use_lock:
+            count = self._llm_tool_use_calls.get((user_id, today), 0)
+            if count <= 0:
+                return
+            self._llm_tool_use_calls[(user_id, today)] = count - 1
+
+    def resolve_cv_document(self, profile) -> "CvDocument | None":  # noqa: F821
+        """R24.10 — return the user's structured CV document, or None
+        if there's nothing to render.
+
+        Resolution order:
+        1. ``profile.cv_document`` (the structured form populated by
+           AI extraction or the chat CV-builder).
+        2. Best-effort fallback built from ``profile.cv_text`` +
+           profile metadata. The fallback CV is intentionally minimal
+           so the user sees SOMETHING printable rather than a blank
+           page, but the recommended path is to run extraction.
+        """
+        from company_discovery.cv_schema import (
+            CvContact, CvDocument, CvLanguage,
+        )
+
+        # Apply the user's per-profile template + accent customisation
+        # whenever we return a doc (whether structured or fallback).
+        def _with_user_chrome(doc: CvDocument) -> CvDocument:
+            doc.template_id = (
+                getattr(profile, "cv_template_id", None) or "modern")
+            doc.accent_color = (
+                getattr(profile, "cv_accent_color", None) or "indigo")
+            doc.photo_on = bool(
+                getattr(profile, "cv_photo_on", True))
+            override = getattr(profile, "cv_headline_override", "") or ""
+            if override:
+                doc.headline = override
+            photo = getattr(profile, "cv_photo_data_uri", None) or ""
+            if photo and not doc.photo_data_uri:
+                doc.photo_data_uri = photo
+            return doc
+
+        stored = getattr(profile, "cv_document", None)
+        if isinstance(stored, dict) and stored:
+            return _with_user_chrome(CvDocument.from_dict(stored))
+
+        cv_text = (getattr(profile, "cv_text", "") or "").strip()
+        location = (getattr(profile, "location", "") or "").strip()
+        if not cv_text and not location:
+            return None
+
+        # Best-effort fallback. We don't try to parse the text into
+        # sections (that's what extraction is for). We surface it as
+        # the summary so the user at least has a printable page.
+        languages = []
+        for lang in (getattr(profile, "languages", []) or []):
+            if not lang:
+                continue
+            languages.append(CvLanguage(language=str(lang), level=""))
+
+        # Truncate the summary at the schema's MAX_SUMMARY (1200);
+        # the sanitised() call inside the renderer will enforce it
+        # anyway, but truncating here keeps the fallback readable.
+        summary = cv_text[:1200]
+        fallback = CvDocument(
+            full_name="",  # we don't know it yet
+            summary=summary,
+            location=location,
+            languages=languages,
+        )
+        return _with_user_chrome(fallback)
+
+    def make_llm_record_call(self, user_id: str):
+        """R23.9: returns a closure suitable for the ``record_call``
+        kwarg on ``analysis._dispatch_provider`` / ``execute_*``.
+        Captures user_id so every legacy AI call (brief, letter,
+        consult, etc.) lands in the cost-tracker tied to the right
+        user.
+
+        R24.0: signature ``(provider, model, task, in, out)``. The
+        caller (the dispatcher) is the only one that knows the
+        actually-used upstream provider — for managed AI that's the
+        post-rebind id (anthropic/openai/...), NOT the literal
+        string "managed". Without this fix, every legacy AI call
+        recorded ``provider=""`` and the "by_provider" admin
+        breakdown silently dropped them.
+
+        Errors during recording are logged at WARNING level rather
+        than silently swallowed so a disk-full / migration-in-progress
+        condition is visible in ops logs.
+        """
+
+        tracker = self.llm_cost_tracker
+
+        def _record(provider: str, model: str, task: str,
+                     input_tokens: int, output_tokens: int) -> None:
+            try:
+                tracker.record(
+                    user_id=user_id,
+                    provider=provider or "",
+                    model=model or "",
+                    task=task or "",
+                    input_tokens=input_tokens or 0,
+                    output_tokens=output_tokens or 0,
+                )
+            except Exception as exc:  # noqa: BLE001
+                import logging as _logging
+                _logging.getLogger("directjob.cost").warning(
+                    "llm_cost_tracker.record failed (lost row): %s", exc)
+
+        return _record
 
     # Backwards-compatible wrappers — kept so any external callers
     # / tests that exercise the old API don't break. New code should
@@ -2691,7 +2945,12 @@ class AppState:
         ])
         try:
             from company_discovery.analysis import _dispatch_provider
-            result = _dispatch_provider(prompt, provider, "")
+            from company_discovery.model_router import TASK_CHAT_ROUTING
+            result = _dispatch_provider(
+                prompt, provider, "",
+                task=TASK_CHAT_ROUTING,
+                record_call=self.make_llm_record_call(user_id),
+            )
             if result.status != "completed" or not result.output:
                 self.chat_router_metrics["errors"] += 1
                 self._chat_router_cache_put(cache_key, None)
@@ -3001,24 +3260,94 @@ class AppState:
         profile = self.profile_for(user_id)
         if not (profile.cv_text or "").strip():
             return {"ok": False,
-                     "message": "Add a CV first (CV Builder or Settings)."}
+                     "message": "Add a CV first via the chat paperclip or Settings."}
         provider = self.ai_provider_for(user_id)
         if not _ai_consent_satisfied(profile, provider):
             return {"ok": False,
                      "message": "AI consent required — confirm in Settings first."}
-        from company_discovery.analysis import execute_cv_tailoring
-        result = execute_cv_tailoring(imported, provider, "", profile)
+
+        # R28.2 — use the STRUCTURED tailor (cv_tailor.py) so the
+        # result is a CvDocument we can render via the template
+        # picker, instead of free-form prose that ignored layout.
+        # Falls back to the legacy text rewrite if the structured
+        # path can't run (no cv_document and managed AI off so we
+        # can't extract).
+        doc = self.resolve_cv_document(profile)
+        if doc is None or not doc.experience:
+            # Best-effort: try a one-shot extraction before tailoring.
+            try:
+                from company_discovery.cv_extraction import extract_cv_data
+                doc = extract_cv_data(
+                    profile.cv_text or "", provider,
+                    record_call=self.make_llm_record_call(user_id),
+                ).sanitised()
+                if doc.full_name or doc.experience:
+                    profile.cv_document = doc.to_dict()
+                    self.repository.save_user_profile(profile)
+            except Exception:  # noqa: BLE001
+                doc = None
+
+        if doc is None or not doc.experience:
+            # Last-resort fallback: the legacy text-rewrite path.
+            from company_discovery.analysis import execute_cv_tailoring
+            result = execute_cv_tailoring(
+                imported, provider, "", profile,
+                record_call=self.make_llm_record_call(user_id),
+            )
+            self.log_analytics(user_id, "chat_cmd",
+                                {"name": "tailor_cv", "id": imported_id,
+                                 "status": result.status,
+                                 "path": "legacy_text"})
+            return {"ok": result.status == "completed",
+                     "message": (
+                         f"Tailored draft ready for **{imported.title}**. "
+                         "Couldn't read the structured fields though — "
+                         "build out your CV via the chat for the layout-"
+                         "preserving tailor."
+                         if result.status == "completed"
+                         else f"Tailor result: {result.status}. "
+                                f"{(result.error or '')[:120]}"
+                     ),
+                     "tailoredExcerpt": (result.output or "")[:400]}
+
+        from company_discovery.cv_tailor import tailor_cv_for_job
+        job_desc = (imported.description or imported.title or "").strip()
+        tailored = tailor_cv_for_job(
+            doc, job_desc, provider,
+            record_call=self.make_llm_record_call(user_id),
+        ).sanitised()
+
+        # Persist the tailored variant against the imported job so a
+        # later /api/cv/print?variant=<imported_job_id> can render it.
+        # Drop any prior variant for this job before appending so the
+        # list doesn't grow unbounded on repeat tailoring.
+        existing = list(imported.cv_variants or [])
+        existing = [v for v in existing
+                     if not isinstance(v, dict)
+                     or v.get("kind") != "tailored_document"]
+        existing.append({
+            "kind": "tailored_document",
+            "imported_job_id": imported.id,
+            "cv_document": tailored.to_dict(),
+            "created_at": now_utc().isoformat(),
+        })
+        imported.cv_variants = existing
+        imported.updated_at = now_utc()
+        self.repository.save_imported_job(imported)
+
         self.log_analytics(user_id, "chat_cmd",
                             {"name": "tailor_cv", "id": imported_id,
-                             "status": result.status})
-        return {"ok": result.status == "completed",
-                 "message": (
-                     f"Tailored CV {result.status} for **{imported.title}**"
-                     if result.status == "completed"
-                     else f"Tailor result: {result.status}. "
-                            f"{(result.error or '')[:120]}"
-                 ),
-                 "tailoredExcerpt": (result.output or "")[:400]}
+                             "status": "completed",
+                             "path": "structured"})
+        return {
+            "ok": True,
+            "message": (
+                f"Tailored CV ready for **{imported.title}**. "
+                f"[Download the tailored version](/api/cv/print?variant={imported.id}&autoprint=1)"
+            ),
+            "tailoredSummary": tailored.summary,
+            "openUrl": f"/api/cv/print?variant={imported.id}&autoprint=1",
+        }
 
     def chat_handler_run_saved_search(self, user_id: str, args: dict) -> dict:
         search_id = args["searchId"]
@@ -3176,7 +3505,12 @@ class AppState:
             # swallowed; journey state machine falls back to template.
             prompt = f"{system}\n\n{user_msg}"
             try:
-                result = _dispatch_provider(prompt, provider, "")
+                from company_discovery.model_router import TASK_TOOL_USE_CHAT
+                result = _dispatch_provider(
+                    prompt, provider, "",
+                    task=TASK_TOOL_USE_CHAT,
+                    record_call=self.make_llm_record_call(user_id),
+                )
                 if result.status != "completed":
                     return None
                 return result.output
@@ -3733,7 +4067,12 @@ class AppState:
         if not _ai_consent_satisfied(profile, provider):
             return raw_text, 1.0, False
         from company_discovery.analysis import _dispatch_provider
-        result = _dispatch_provider(prompt, provider, "")
+        from company_discovery.model_router import TASK_CV_FORMAT
+        result = _dispatch_provider(
+            prompt, provider, "",
+            task=TASK_CV_FORMAT,
+            record_call=self.make_llm_record_call(user_id),
+        )
         if result.status != "completed" or not result.output:
             return raw_text, 1.0, False
         ai_output = result.output.strip()
@@ -4184,9 +4523,19 @@ class Handler(BaseHTTPRequestHandler):
 
     def end_headers(self) -> None:
         self.send_header("X-Content-Type-Options", "nosniff")
-        self.send_header("X-Frame-Options", "DENY")
+        # Per-route opt-in to allow same-origin framing — set on the
+        # handler instance before send_response by endpoints that need
+        # to be embeddable (R29 CV template-picker thumbnails). Default
+        # remains DENY to prevent any embedding.
+        frame_opt = getattr(self, "_x_frame_options", "DENY")
+        self.send_header("X-Frame-Options", frame_opt)
         self.send_header("Referrer-Policy", "same-origin")
         self.send_header("Permissions-Policy", "geolocation=(), microphone=(), camera=()")
+        # frame-ancestors is similarly per-route: 'self' allows the
+        # response to be embedded by pages on the same origin (used by
+        # the template-picker thumbnails); the default 'none' refuses
+        # all embedding for full-app pages.
+        frame_ancestors = getattr(self, "_frame_ancestors", "'none'")
         self.send_header(
             "Content-Security-Policy",
             "default-src 'self'; "
@@ -4198,7 +4547,7 @@ class Handler(BaseHTTPRequestHandler):
             "img-src 'self' data:; "
             "connect-src 'self'; "
             "base-uri 'none'; "
-            "frame-ancestors 'none'",
+            f"frame-ancestors {frame_ancestors}",
         )
         super().end_headers()
 
@@ -4534,6 +4883,54 @@ class Handler(BaseHTTPRequestHandler):
                     ok=True,
                 )
                 return
+            if parsed.path == "/api/cv/template-thumbnail":
+                # R29 — public, no-auth preview of one (template, accent)
+                # combo using believable DACH sample data. Used by the
+                # template-picker UI in the CV builder canvas. No LLM
+                # calls; pure deterministic render. Auth not required
+                # because the response contains no user data — it's
+                # the same sample CV for every visitor.
+                from company_discovery.cv_renderer import (
+                    render_cv, sample_cv_document,
+                )
+                from company_discovery.cv_schema import (
+                    VALID_ACCENT_COLORS, VALID_TEMPLATES,
+                )
+                _q = urlparse(self.path).query or ""
+                _params = {}
+                for _frag in _q.split("&"):
+                    if "=" in _frag:
+                        _k, _v = _frag.split("=", 1)
+                        _params[_k] = _v
+                _tpl = _params.get("id", "modern")
+                if _tpl not in VALID_TEMPLATES:
+                    _tpl = "modern"
+                _accent = _params.get("accent", "indigo")
+                if _accent not in VALID_ACCENT_COLORS:
+                    _accent = "indigo"
+                _photo_on = _params.get("photo", "1") != "0"
+                _sample = sample_cv_document(
+                    template_id=_tpl,
+                    accent_color=_accent,
+                    photo_on=_photo_on,
+                )
+                _html = render_cv(_sample, thumb=True)
+                # Allow same-origin framing so the template picker can
+                # embed this response in an iframe. The default DENY +
+                # frame-ancestors 'none' would block it.
+                self._x_frame_options = "SAMEORIGIN"
+                self._frame_ancestors = "'self'"
+                # Browser-cache the rendered preview for a minute so
+                # switching accent / photo toggles is instant and we
+                # don't re-render six templates per picker open.
+                _body = _html.encode("utf-8")
+                self.send_response(200)
+                self.send_header("Content-Type", "text/html; charset=utf-8")
+                self.send_header("Content-Length", str(len(_body)))
+                self.send_header("Cache-Control", "public, max-age=60")
+                self.end_headers()
+                self.wfile.write(_body)
+                return
             if parsed.path.startswith("/api/"):
                 session = self.require_auth()
                 if session is None:
@@ -4604,6 +5001,31 @@ class Handler(BaseHTTPRequestHandler):
                 events = STATE.repository.list_analytics_events(limit=200)
                 self.send_json({"events": events})
                 return
+            if parsed.path == "/api/admin/llm-costs":
+                # R23.6: operator cost dashboard. One JSON call gives
+                # today's spend + breakdowns (by provider, task, model,
+                # top users) and the last 7 days. The admin UI renders
+                # these without further round-trips.
+                if not self.require_admin(session):
+                    return
+                tracker = STATE.llm_cost_tracker
+                self.send_json({
+                    "today": {
+                        "total_usd": tracker.today_total_usd(),
+                        "by_provider": tracker.by_provider_today(),
+                        "by_task": tracker.by_task_today(),
+                        "by_model": tracker.by_model_today(),
+                        "top_users": tracker.top_users_today(limit=10),
+                    },
+                    "last7Days": tracker.usage_last_n_days(7),
+                    "last30Days": tracker.usage_last_n_days(30),
+                    # R23.8: response-cache effectiveness — every cache
+                    # hit is a saved API call. Surfacing it lets the
+                    # operator see how much the cache is saving and
+                    # tune ttl_s / max_entries.
+                    "responseCache": STATE.llm_response_cache.stats(),
+                })
+                return
             if parsed.path == "/api/managed-ai/waitlist":
                 # Express interest in the operator-side managed AI tier.
                 # We log it via analytics_event so admin can read the list
@@ -4672,7 +5094,24 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json({"savedSearches": STATE._saved_searches_with_alerts(user_id)})
                 return
             if parsed.path == "/api/billing":
-                self.send_json({"subscription": STATE.get_subscription().to_dict(), "plans": plans_payload()})
+                # R23.7: include the user's current LLM usage + cap so
+                # the chat dock can render "N/M chats today" and the
+                # quota-exceeded path can deep-link to the right
+                # upgrade. ``dailyCap`` is None for unlimited or 0 for
+                # blocked.
+                _eff_uid = STATE.effective_user_id(user_id)
+                _cap = STATE.llm_daily_cap_for_user(_eff_uid)
+                _used = STATE.llm_tool_use_count_today(_eff_uid)
+                import sys as _sys
+                self.send_json({
+                    "subscription": STATE.get_subscription().to_dict(),
+                    "plans": plans_payload(),
+                    "aiUsage": {
+                        "today": _used,
+                        "dailyCap": (None if _cap >= _sys.maxsize
+                                       else _cap),
+                    },
+                })
                 return
             if parsed.path == "/api/watchlist-templates":
                 profile = STATE.profile_for(user_id)
@@ -4730,22 +5169,103 @@ class Handler(BaseHTTPRequestHandler):
                 })
                 return
             if parsed.path == "/api/cv/print":
-                # Print-styled HTML of the user's saved CV. Browser
-                # save-as-PDF gives us best-in-class typography without
-                # a server-side PDF library. Append ?autoprint=1 to
-                # auto-trigger the print dialog on load.
+                # R24.10 — print path uses the deterministic template
+                # renderer. R28.1: if the user has cv_text but no
+                # structured cv_document YET and managed AI is
+                # available, auto-extract on this first print so
+                # the templates fill on first visit (no "click
+                # Re-extract first" friction). Cheap (~$0.005 on
+                # claude-haiku-4-5). Failure is silent — falls
+                # through to the best-effort cv_text-as-summary doc.
                 profile = STATE.profile_for(user_id)
-                cv_text = profile.cv_text or ""
-                if not cv_text.strip():
+                from company_discovery.cv_schema import CvDocument
+                from company_discovery.cv_renderer import render_cv
+                _has_text = bool((profile.cv_text or "").strip())
+                _has_doc = bool(profile.cv_document)
+                if _has_text and not _has_doc:
+                    _provider = STATE.ai_provider_for(user_id)
+                    if (_provider is not None
+                            and _provider.provider_id != "manual"
+                            and _ai_consent_satisfied(profile, _provider)):
+                        try:
+                            from company_discovery.cv_extraction import (
+                                extract_cv_data,
+                            )
+                            _extracted = extract_cv_data(
+                                profile.cv_text or "", _provider,
+                                runtime_credential="",
+                                record_call=STATE.make_llm_record_call(user_id),
+                            ).sanitised()
+                            # Only persist if extraction actually
+                            # found something — empty CvDocument
+                            # means the LLM call failed.
+                            if _extracted.full_name or _extracted.experience:
+                                profile.cv_document = _extracted.to_dict()
+                                STATE.repository.save_user_profile(profile)
+                                STATE.log_analytics(
+                                    user_id, "cv_auto_extracted",
+                                    {"trigger": "first_print",
+                                      "experience": len(_extracted.experience),
+                                      "skills": len(_extracted.skills)})
+                        except Exception as _exc:  # noqa: BLE001
+                            import logging as _logging
+                            _logging.getLogger("directjob.cv").warning(
+                                "auto-extract on first print failed: %s",
+                                _exc)
+                # R28.2 — ``?variant=<imported_job_id>`` renders the
+                # tailored CvDocument stored on that imported job
+                # (R28.2 wrote it via chat_handler_tailor_cv). Falls
+                # through to the base CV when the variant isn't found.
+                _q = urlparse(self.path).query or ""
+                _variant_id = ""
+                for _frag in _q.split("&"):
+                    if _frag.startswith("variant="):
+                        _variant_id = _frag.split("=", 1)[1]
+                        break
+                doc = None
+                if _variant_id:
+                    _imp = STATE.repository.imported_jobs.get(_variant_id)
+                    if _imp and _imp.user_id == STATE.effective_user_id(user_id):
+                        for _v in (_imp.cv_variants or []):
+                            if (isinstance(_v, dict)
+                                    and _v.get("kind") == "tailored_document"):
+                                from company_discovery.cv_schema import (
+                                    CvDocument as _CvDoc,
+                                )
+                                doc = _CvDoc.from_dict(
+                                    _v.get("cv_document") or {})
+                                # Apply user's template/accent/photo overrides
+                                # on top of the tailored content.
+                                doc.template_id = (
+                                    getattr(profile, "cv_template_id", "modern")
+                                    or "modern")
+                                doc.accent_color = (
+                                    getattr(profile, "cv_accent_color", "indigo")
+                                    or "indigo")
+                                doc.photo_on = bool(
+                                    getattr(profile, "cv_photo_on", True))
+                                override = getattr(
+                                    profile, "cv_headline_override", "") or ""
+                                if override:
+                                    doc.headline = override
+                                photo = getattr(
+                                    profile, "cv_photo_data_uri", "") or ""
+                                if photo and not doc.photo_data_uri:
+                                    doc.photo_data_uri = photo
+                                break
+                if doc is None:
+                    doc = STATE.resolve_cv_document(profile)
+                if doc is None:
                     self.send_text(
                         "<!doctype html><html><body><p>No CV saved yet — "
-                        "build one in CV Builder first.</p></body></html>",
+                        "open the chat and say \"build my CV\" to get started."
+                        "</p></body></html>",
                         content_type="text/html",
                     )
                     return
                 auto = urlparse(self.path).query and "autoprint" in urlparse(self.path).query
-                html = render_cv_print_html(cv_text, auto_print=bool(auto))
-                self.send_text(html, content_type="text/html")
+                html_out = render_cv(doc, auto_print=bool(auto))
+                self.send_text(html_out, content_type="text/html")
                 return
             if parsed.path == "/api/digest/preview":
                 self.send_json({"digest": STATE.build_user_digest(user_id, email=session.user.email)})
@@ -5444,6 +5964,79 @@ class Handler(BaseHTTPRequestHandler):
                     return
                 self.send_json({"profile": STATE._profile_payload(profile), "bootstrap": STATE.bootstrap(user_id)})
                 return
+            if parsed.path == "/api/cv/template":
+                # R24.8 — save the user's CV template customisation:
+                # template_id (one of six), accent (one of three),
+                # photo_on (bool), headline_override (≤220 chars).
+                # All fields validated against the schema's allow-lists.
+                from company_discovery.cv_schema import (
+                    VALID_ACCENT_COLORS, VALID_TEMPLATES,
+                )
+                profile = STATE.profile_for(user_id)
+                tpl = str(payload.get("templateId") or "").strip().lower()
+                accent = str(payload.get("accentColor") or "").strip().lower()
+                photo_on = payload.get("photoOn")
+                headline = str(payload.get("headlineOverride") or "")
+                changed = False
+                if tpl in VALID_TEMPLATES and tpl != profile.cv_template_id:
+                    profile.cv_template_id = tpl
+                    changed = True
+                if accent in VALID_ACCENT_COLORS and accent != profile.cv_accent_color:
+                    profile.cv_accent_color = accent
+                    changed = True
+                if isinstance(photo_on, bool) and photo_on != profile.cv_photo_on:
+                    profile.cv_photo_on = photo_on
+                    changed = True
+                if headline != profile.cv_headline_override:
+                    profile.cv_headline_override = headline[:220]
+                    changed = True
+                if changed:
+                    STATE.repository.save_user_profile(profile)
+                self.send_json({
+                    "templateId": profile.cv_template_id,
+                    "accentColor": profile.cv_accent_color,
+                    "photoOn": profile.cv_photo_on,
+                    "headlineOverride": profile.cv_headline_override,
+                })
+                return
+            if parsed.path == "/api/cv/extract":
+                # R24.11 — run the AI extraction (TASK_CV_EXTRACT)
+                # over the user's cv_text and persist the structured
+                # result to profile.cv_document. Idempotent — calling
+                # twice just re-extracts.
+                profile = STATE.profile_for(user_id)
+                cv_text = (profile.cv_text or "").strip()
+                if not cv_text:
+                    self.send_error_json(
+                        HTTPStatus.BAD_REQUEST, "no_cv_text",
+                        "No CV text saved yet — paste your CV first.")
+                    return
+                provider = STATE.ai_provider_for(user_id)
+                if provider is None or provider.provider_id == "manual":
+                    self.send_error_json(
+                        HTTPStatus.PRECONDITION_FAILED,
+                        "ai_unavailable",
+                        "Managed AI is not configured. Pick a provider in Settings → Advanced.")
+                    return
+                if not _ai_consent_satisfied(profile, provider):
+                    self.send_error_json(
+                        HTTPStatus.PRECONDITION_FAILED,
+                        "ai_consent_required",
+                        "Confirm consent in Settings before running AI on your CV.")
+                    return
+                from company_discovery.cv_extraction import extract_cv_data
+                doc = extract_cv_data(
+                    cv_text, provider, runtime_credential="",
+                    record_call=STATE.make_llm_record_call(user_id),
+                ).sanitised()
+                profile.cv_document = doc.to_dict()
+                STATE.repository.save_user_profile(profile)
+                self.send_json({
+                    "extracted": True,
+                    "experienceCount": len(doc.experience),
+                    "skillsCount": len(doc.skills),
+                })
+                return
             if parsed.path == "/api/profile/photo-upload":
                 # CV photo upload. Accept base64 just like cv-upload.
                 # Runs through cv_photo.normalise_photo_upload which:
@@ -5598,6 +6191,28 @@ class Handler(BaseHTTPRequestHandler):
                 session.history.append(ChatTurn(role="user",
                                                   content=user_message))
 
+                # R22.10 failure-UX tracker: if the LLM path was
+                # supposed to run but couldn't (quota hit or HTTP
+                # error), we prepend a one-line note to the
+                # deterministic reply so the user knows the chat
+                # downgraded — instead of a silent personality swap.
+                # "" = no fallback note needed.
+                _llm_fallback_reason = ""
+                def _wrap_reply(text: str) -> str:  # noqa: E306
+                    if _llm_fallback_reason == "quota":
+                        # R23.7: friendly upgrade nudge instead of a
+                        # dead-end "you're capped" note. The Billing
+                        # page (linked) is where Stripe checkout lives.
+                        return ("_(You've used today's AI chats. "
+                                "Running the simple chat for the rest "
+                                "of the day — or [upgrade for more](#billing).)_"
+                                "\n\n") + text
+                    if _llm_fallback_reason == "error":
+                        return ("_(AI is taking a break — running the "
+                                "simple chat. Try again in a moment.)_"
+                                "\n\n") + text
+                    return text
+
                 # ── R17 guided journey: if the user has an active
                 # journey (not GREET/DONE), keep routing messages
                 # through the state machine so the conversation flows
@@ -5611,6 +6226,212 @@ class Handler(BaseHTTPRequestHandler):
                 )
                 journey_now = STATE._journey_load(data_user_id)
                 in_journey = journey_now.phase not in (PHASE_GREET, PHASE_DONE)
+
+                # ── R22 LLM tool-use path. When the operator has
+                # configured a managed AI key AND the user is in a
+                # phase where the deterministic state-machine isn't
+                # mid-flow (GREET / DONE / REVIEW), let the LLM drive
+                # the conversation with the full registry as tools.
+                # The LLM sees the journey phase + user profile in
+                # its system prompt so it knows what to suggest.
+                # Slash commands and mid-pending flows bypass the
+                # LLM — those stay deterministic so power users keep
+                # exact, predictable behaviour.
+                _llm_phases = {PHASE_GREET, PHASE_DONE, "review"}
+                if (not user_message.startswith("/")
+                        and session.pending is None
+                        and journey_now.phase in _llm_phases):
+                    try:
+                        from company_discovery.tool_use_router import (
+                            run_tool_use, resolve_managed_provider,
+                            ToolResult,
+                        )
+                    except Exception:  # noqa: BLE001
+                        run_tool_use = None  # type: ignore[assignment]
+                        resolve_managed_provider = None  # type: ignore[assignment]
+                    _llm_configured = (
+                        run_tool_use is not None
+                        and resolve_managed_provider is not None
+                        and resolve_managed_provider() is not None
+                    )
+                    if (_llm_configured
+                            and not STATE.claim_llm_tool_use_slot(data_user_id)):
+                        # User is over today's LLM cap. Fall through to
+                        # deterministic with a one-line note attached
+                        # to the eventual reply.
+                        _llm_fallback_reason = "quota"
+                        STATE.log_analytics(
+                            data_user_id, "chat_llm_tool_use_fallback",
+                            {"reason": "quota_exceeded"})
+                    elif _llm_configured:
+                        _profile = STATE.profile_for(data_user_id)
+                        _profile_snapshot = {
+                            "persona_id": getattr(_profile, "persona_id", ""),
+                            "location": getattr(_profile, "location", "") or "",
+                            "languages": list(getattr(_profile, "languages", []) or []),
+                            "cv_text": getattr(_profile, "cv_text", "") or "",
+                        }
+                        # History to the LLM = everything EXCEPT the
+                        # live user message we just appended (the
+                        # router wraps that in <user_message> tags).
+                        _hist = [
+                            {"role": t.role, "content": t.content}
+                            for t in list(session.history)[:-1]
+                            if t.role in ("user", "assistant")
+                        ]
+                        # Build a short "last search" summary from the
+                        # journey state so the LLM knows what the user
+                        # is looking at. Use the real field names from
+                        # journey.UserJourney — role_text + bucket_key
+                        # + len(search_jobs_by_id) — NOT the made-up
+                        # review_total / role_query names a prior
+                        # iteration referenced (those don't exist and
+                        # silently produced an empty summary).
+                        _role_label = (
+                            getattr(journey_now, "bucket_key", "")
+                            or getattr(journey_now, "role_text", "")
+                            or ""
+                        )
+                        _job_ids = getattr(journey_now,
+                                            "search_jobs_by_id", {}) or {}
+                        _picked = getattr(journey_now,
+                                            "picked_category", "") or ""
+                        if _role_label and _job_ids:
+                            _summary = f"{len(_job_ids)} jobs for {_role_label}"
+                            if _picked:
+                                _summary += f" (drilling into {_picked})"
+                        else:
+                            _summary = ""
+                        _tool_outputs: list[dict] = []
+                        def _enrich_message(name: str, out: dict) -> str:  # noqa: E306
+                            # The find_jobs handler returns a short
+                            # status line ("Found 12 bartender roles")
+                            # plus a structured ``jobs`` list. Without
+                            # the titles + companies the LLM has no
+                            # context to riff on ("the top one is…").
+                            # Append the top 5 hits to the message it
+                            # sees back so it can summarise / drill /
+                            # draft a letter for the top match.
+                            base = (out.get("message") or "")[:1500]
+                            jobs = out.get("jobs") or []
+                            if not jobs:
+                                return base
+                            lines = [base, "", "Top results:"]
+                            for j in jobs[:5]:
+                                if not isinstance(j, dict):
+                                    continue
+                                title = (j.get("title") or "")[:80]
+                                comp = (j.get("company") or "")[:60]
+                                loc = (j.get("location") or "")[:40]
+                                tag = " — ".join(
+                                    x for x in (title, comp, loc) if x)
+                                jid = j.get("id") or j.get("job_id") or ""
+                                if jid:
+                                    tag = f"[{jid}] {tag}"
+                                lines.append(f"- {tag}")
+                            return "\n".join(lines)[:3500]
+                        def _dispatch(name: str, args: dict) -> ToolResult:  # noqa: E306
+                            # New Pydantic-backed registry takes
+                            # precedence over the legacy chat_router
+                            # registry during the migration. See
+                            # ~/Desktop/personal Projects/_portfolio-architecture/chat-tool-invocation.md
+                            from company_discovery.tool_registry import (
+                                try_dispatch as _try_new_dispatch,
+                            )
+                            out = _try_new_dispatch(
+                                name, args,
+                                ctx={"state": STATE,
+                                     "user_id": data_user_id,
+                                     "tool_actions_store":
+                                         STATE.tool_actions_store},
+                            )
+                            if out is None:
+                                # Tool not migrated yet — legacy path.
+                                try:
+                                    out = STATE.chat_execute_command(
+                                        data_user_id, name, args)
+                                except Exception as exc:  # noqa: BLE001
+                                    return ToolResult(
+                                        id="", name=name, ok=False,
+                                        message=f"error: {exc}")
+                                if not isinstance(out, dict):
+                                    out = {"ok": False,
+                                            "message": "handler returned non-dict"}
+                            _tool_outputs.append({"name": name, **out})
+                            return ToolResult(
+                                id="", name=name,
+                                ok=bool(out.get("ok", True)),
+                                message=_enrich_message(name, out),
+                                payload=out,
+                            )
+                        # R23.6 / R24.0: per-call cost capture. The
+                        # router passes the provider it actually used,
+                        # so we don't re-resolve env vars (avoids a
+                        # mid-request env-flip race) and we don't
+                        # record provider="" by accident.
+                        _record_call = STATE.make_llm_record_call(
+                            data_user_id)
+                        _llm_result = run_tool_use(
+                            user_message=user_message,
+                            history=_hist,
+                            user_profile=_profile_snapshot,
+                            journey_phase=journey_now.phase,
+                            last_search_summary=_summary,
+                            dispatch=_dispatch,
+                            locale=getattr(_profile, "locale", "en"),
+                            record_call=_record_call,
+                            response_cache=STATE.llm_response_cache,
+                        )
+                        if not _llm_result.error and _llm_result.reply:
+                            session.history.append(ChatTurn(
+                                role="assistant",
+                                content=_llm_result.reply))
+                            STATE.chat_session_persist(data_user_id)
+                            STATE.log_analytics(
+                                data_user_id, "chat_llm_tool_use",
+                                {"executed": _llm_result.executed,
+                                  "refused": _llm_result.refused,
+                                  "turns": _llm_result.turns_used,
+                                  "phase": journey_now.phase})
+                            _resp: dict = {
+                                "reply": _llm_result.reply,
+                                "session": session.to_dict(),
+                                "executed": _llm_result.executed,
+                                "refused": _llm_result.refused,
+                            }
+                            # Surface side-effects from the most
+                            # recent tool result so the client can
+                            # render results / navigate / open files.
+                            for _out in _tool_outputs:
+                                for _k in ("navigateTo", "totalJobs",
+                                            "jobs", "jobType",
+                                            "categories", "openUrl",
+                                            "letter", "suggestions"):
+                                    if _k in _out:
+                                        _resp[_k] = _out[_k]
+                            self.send_json(_resp)
+                            return
+                        # On llm_error we drop through to deterministic
+                        # with a one-line note so the user knows the
+                        # chat downgraded. no_managed_provider can't
+                        # happen here (gated above by _llm_configured).
+                        if _llm_result.error:
+                            _llm_fallback_reason = "error"
+                            # Phase 1 / Step 5 — release the slot we
+                            # claimed on entry; this LLM call produced
+                            # no value (provider error, transport
+                            # failure, etc.), so the user shouldn't
+                            # be charged one of their daily slots
+                            # for it. Mirror of xboard's
+                            # atomic-reservation pattern: reserve on
+                            # entry, commit on success (by not
+                            # releasing), release on failure.
+                            STATE.release_llm_tool_use_slot(data_user_id)
+                            STATE.log_analytics(
+                                data_user_id, "chat_llm_tool_use_fallback",
+                                {"reason": _llm_result.error})
+
+
                 # R21.x: a user in a post-search phase (REVIEW / DRILL /
                 # TAILOR / LETTER / CV_CONSULT) who types "search for X"
                 # or a bare role keyword wants a NEW search — not a
@@ -5626,8 +6447,16 @@ class Handler(BaseHTTPRequestHandler):
                 # — currently stuck in the tailor letter/consult/save
                 # menu. This routes them straight to the sectional
                 # CV-build flow regardless of journey phase.
+                # NB: defer to the new-search interrupt below when BOTH
+                # signals fire (e.g. "I need a CV and want to search
+                # for nursing"). A fresh search is the more active
+                # intent — handling it first lets the deterministic
+                # journey kick a CV-build inside the new search if
+                # the profile lacks one.
                 if (looks_like_cv_creation_intent(
-                        user_message, journey_now.phase)):
+                        user_message, journey_now.phase)
+                        and not looks_like_new_search_intent(
+                            user_message, journey_now.phase)):
                     STATE.log_analytics(data_user_id, "chat_cmd",
                                           {"name": "cv_creation_interrupt",
                                            "from_phase": journey_now.phase})
@@ -5649,7 +6478,7 @@ class Handler(BaseHTTPRequestHandler):
                         role="assistant", content=reply))
                     STATE.chat_session_persist(data_user_id)
                     self.send_json({
-                        "reply": reply,
+                        "reply": _wrap_reply(reply),
                         "journeyPhase": fresh.phase,
                         "session": session.to_dict(),
                     })
@@ -5679,7 +6508,7 @@ class Handler(BaseHTTPRequestHandler):
                             role="assistant", content=reply))
                         STATE.chat_session_persist(data_user_id)
                         payload_out = {
-                            "reply": reply,
+                            "reply": _wrap_reply(reply),
                             "executed": "find_jobs",
                             "result": result,
                             "session": session.to_dict(),
@@ -5700,7 +6529,7 @@ class Handler(BaseHTTPRequestHandler):
                         role="assistant", content=reply))
                     STATE.chat_session_persist(data_user_id)
                     self.send_json({
-                        "reply": reply,
+                        "reply": _wrap_reply(reply),
                         "journeyPhase": journey_result.get("journeyPhase"),
                         "session": session.to_dict(),
                     })
@@ -5721,7 +6550,7 @@ class Handler(BaseHTTPRequestHandler):
                     )
                     STATE.chat_session_persist(data_user_id)
                     self.send_json({
-                        "reply": reply,
+                        "reply": _wrap_reply(reply),
                         "journeyPhase": journey_result.get("journeyPhase"),
                         "invoked": journey_result.get("invoked"),
                         "letter": journey_result.get("letter"),
@@ -5756,7 +6585,7 @@ class Handler(BaseHTTPRequestHandler):
                     )
                     STATE.chat_session_persist(data_user_id)
                     self.send_json({
-                        "reply": reply,
+                        "reply": _wrap_reply(reply),
                         "journeyPhase": journey_result.get("journeyPhase"),
                         "invoked": journey_result.get("invoked"),
                         "letter": journey_result.get("letter"),
@@ -5783,7 +6612,7 @@ class Handler(BaseHTTPRequestHandler):
                                                           content=reply))
                         STATE.chat_session_persist(data_user_id)
                         self.send_json({
-                            "reply": reply,
+                            "reply": _wrap_reply(reply),
                             "executed": cmd_name,
                             "result": result,
                             "session": session.to_dict(),
@@ -5797,7 +6626,7 @@ class Handler(BaseHTTPRequestHandler):
                                                           content=reply))
                         STATE.chat_session_persist(data_user_id)
                         self.send_json({
-                            "reply": reply,
+                            "reply": _wrap_reply(reply),
                             "cancelled": cancelled,
                             "session": session.to_dict(),
                         })
@@ -5833,7 +6662,7 @@ class Handler(BaseHTTPRequestHandler):
                                     role="assistant", content=reply))
                                 STATE.chat_session_persist(data_user_id)
                                 self.send_json({
-                                    "reply": reply,
+                                    "reply": _wrap_reply(reply),
                                     "awaiting": param.name,
                                     "session": session.to_dict(),
                                 })
@@ -5888,7 +6717,7 @@ class Handler(BaseHTTPRequestHandler):
                                                           content=reply))
                         STATE.chat_session_persist(data_user_id)
                         self.send_json({
-                            "reply": reply,
+                            "reply": _wrap_reply(reply),
                             "session": session.to_dict(),
                         })
                         return
@@ -5940,7 +6769,7 @@ class Handler(BaseHTTPRequestHandler):
                                                       content=reply))
                     STATE.chat_session_persist(data_user_id)
                     self.send_json({
-                        "reply": reply,
+                        "reply": _wrap_reply(reply),
                         "executed": cmd.name,
                         "result": result,
                         "session": session.to_dict(),
@@ -5955,7 +6784,7 @@ class Handler(BaseHTTPRequestHandler):
                                                       content=reply))
                     STATE.chat_session_persist(data_user_id)
                     self.send_json({
-                        "reply": reply,
+                        "reply": _wrap_reply(reply),
                         "awaiting": missing.name,
                         "session": session.to_dict(),
                     })
@@ -5975,7 +6804,7 @@ class Handler(BaseHTTPRequestHandler):
                                                       content=reply))
                     STATE.chat_session_persist(data_user_id)
                     self.send_json({
-                        "reply": reply,
+                        "reply": _wrap_reply(reply),
                         "awaiting": next_optional.name,
                         "optional": True,
                         "session": session.to_dict(),
@@ -5994,7 +6823,7 @@ class Handler(BaseHTTPRequestHandler):
                                                       content=reply))
                     STATE.chat_session_persist(data_user_id)
                     payload_out = {
-                        "reply": reply,
+                        "reply": _wrap_reply(reply),
                         "executed": cmd.name,
                         "result": result,
                         "session": session.to_dict(),
@@ -6669,6 +7498,7 @@ class Handler(BaseHTTPRequestHandler):
                     return
                 result = execute_job_decision_brief(
                     imported, provider, runtime_credential, profile,
+                    record_call=STATE.make_llm_record_call(user_id),
                 )
                 STATE.quota_store.record_ai_run(user_id)
                 imported.analysis_status = result.status
@@ -6703,6 +7533,7 @@ class Handler(BaseHTTPRequestHandler):
                     return
                 result = execute_cover_letter_brief(
                     imported, provider, runtime_credential, profile,
+                    record_call=STATE.make_llm_record_call(user_id),
                 )
                 STATE.quota_store.record_ai_run(user_id)
                 if result.status == "completed" and result.output:
@@ -6739,6 +7570,7 @@ class Handler(BaseHTTPRequestHandler):
                     return
                 result = execute_cv_tailoring(
                     imported, provider, runtime_credential, profile,
+                    record_call=STATE.make_llm_record_call(user_id),
                 )
                 STATE.quota_store.record_ai_run(user_id)
                 # CV variant attribution (#44): persist a small record
@@ -6790,6 +7622,7 @@ class Handler(BaseHTTPRequestHandler):
                     provider,
                     runtime_credential,
                     profile,
+                    record_call=STATE.make_llm_record_call(user_id),
                 )
                 STATE.quota_store.record_ai_run(user_id)
                 if result.status == "completed":

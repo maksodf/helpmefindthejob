@@ -100,8 +100,11 @@ class _ScriptedDispatch:
 
         def patched(prompt: str,
                     provider: AIProviderConfig,
-                    runtime_credential: str) -> AnalysisExecutionResult:
+                    runtime_credential: str,
+                    *, task: str = "",
+                    record_call=None) -> AnalysisExecutionResult:
             outer.last_prompt = prompt
+            outer.last_task = task
             return AnalysisExecutionResult(
                 status=outer.status,
                 provider_id=provider.provider_id,

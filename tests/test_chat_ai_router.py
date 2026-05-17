@@ -153,7 +153,7 @@ class RouterWaterfallTests(unittest.TestCase):
         The scripted AI returns 'open_cv_builder' for any CV-related text."""
         user_id = self._make_user()
 
-        def fake_dispatch(prompt, provider, runtime_credential):
+        def fake_dispatch(prompt, provider, runtime_credential, **_kw):
             assert provider.notes == "managed-chat-router", \
                 f"expected managed provider, got {provider.notes}"
             # The prompt should include the user's message + the
@@ -177,7 +177,7 @@ class RouterWaterfallTests(unittest.TestCase):
         history = [ChatTurn(role="user", content="hi")]
 
         call_count = {"n": 0}
-        def fake_dispatch(prompt, provider, runtime_credential):
+        def fake_dispatch(prompt, provider, runtime_credential, **_kw):
             call_count["n"] += 1
             return _completed("find_jobs")
 

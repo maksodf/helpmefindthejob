@@ -104,24 +104,28 @@ def main() -> int:
         assert_de(page, "Browser-Benachrichtigungen", "settings push card")
         assert_de(page, "Design", "settings theme card")
 
-        # Step 3: Companies (Watchlist + Add company)
-        page.click(".nav-item[data-view='companies']")
+        # R25.2 + R25.4 — Jobs and Companies nav buttons removed.
+        # Navigate via the SPA's JS function (the views still exist
+        # as canvases reachable from chat). R23.1 renamed Brief →
+        # Applications.
+        # Step 3: Companies canvas
+        page.evaluate("() => navigate('companies')")
         page.wait_for_timeout(500)
         page.screenshot(path=str(OUT / "04-companies-de.png"), full_page=True)
         assert_de(page, "Beobachtete Unternehmen", "companies watchlist heading")
         assert_de(page, "Unternehmen hinzufügen", "companies add heading")
         assert_de(page, "Vorlagen", "companies templates")
 
-        # Step 4: Discovered jobs
-        page.click(".nav-item[data-view='jobs']")
+        # Step 4: Discovered jobs canvas
+        page.evaluate("() => navigate('jobs')")
         page.wait_for_timeout(500)
         page.screenshot(path=str(OUT / "05-queue-de.png"), full_page=True)
         assert_de(page, "Stellen auf Unternehmens-Websites", "queue heading")
         assert_de(page, "Sortieren nach", "queue toolbar")
         assert_de(page, "Ungescorte bewerten", "queue auto-fit-all")
 
-        # Step 5: AI Brief view (also has application form below)
-        page.click(".nav-item[data-view='brief']")
+        # Step 5: Applications view (R23.1 renamed Brief → Applications)
+        page.click(".nav-item[data-view='applications']")
         page.wait_for_timeout(500)
         page.screenshot(path=str(OUT / "06-brief-de.png"), full_page=True)
         assert_de(page, "So läuft die KI", "brief provider heading")

@@ -1,0 +1,86 @@
+[
+  {
+    "payload": "script_tag",
+    "surface": "cv",
+    "ok": true,
+    "detail": "cv_render: no XSS fired (script_tag rendered inert)"
+  },
+  {
+    "payload": "script_tag",
+    "surface": "company_name",
+    "ok": true,
+    "detail": "company_name: no XSS fired (script_tag rendered inert)"
+  },
+  {
+    "payload": "img_onerror",
+    "surface": "cv",
+    "ok": true,
+    "detail": "cv_render: no XSS fired (img_onerror rendered inert)"
+  },
+  {
+    "payload": "img_onerror",
+    "surface": "company_name",
+    "ok": true,
+    "detail": "company_name: no XSS fired (img_onerror rendered inert)"
+  },
+  {
+    "payload": "svg_onload",
+    "surface": "cv",
+    "ok": true,
+    "detail": "cv_render: no XSS fired (svg_onload rendered inert)"
+  },
+  {
+    "payload": "svg_onload",
+    "surface": "company_name",
+    "ok": true,
+    "detail": "company_name: no XSS fired (svg_onload rendered inert)"
+  },
+  {
+    "payload": "a_javascript",
+    "surface": "cv",
+    "ok": true,
+    "detail": "cv_render: no XSS fired (a_javascript rendered inert)"
+  },
+  {
+    "payload": "a_javascript",
+    "surface": "company_name",
+    "ok": true,
+    "detail": "company_name: no XSS fired (a_javascript rendered inert)"
+  },
+  {
+    "payload": "body_onfocus",
+    "surface": "cv",
+    "ok": true,
+    "detail": "cv_render: no XSS fired (body_onfocus rendered inert)"
+  },
+  {
+    "payload": "body_onfocus",
+    "surface": "company_name",
+    "ok": true,
+    "detail": "company_name: no XSS fired (body_onfocus rendered inert)"
+  },
+  {
+    "payload": "iframe_srcdoc",
+    "surface": "cv",
+    "ok": true,
+    "detail": "cv_render: no XSS fired (iframe_srcdoc rendered inert)"
+  },
+  {
+    "payload": "iframe_srcdoc",
+    "surface": "company_name",
+    "ok": true,
+    "detail": "company_name: no XSS fired (iframe_srcdoc rendered inert)"
+  },
+  {
+    "payload": "data_uri",
+    "surface": "cv",
+    "ok": true,
+    "detail": "cv_render: no XSS fired (data_uri rendered inert)"
+  },
+  {
+    "payload": "data_uri",
+    "surface": "company_name",
+    "ok": true,
+    "detail": "company_name: no XSS fired (data_uri rendered inert)"
+  }
+]

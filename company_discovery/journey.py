@@ -391,14 +391,56 @@ def looks_like_cv_creation_intent(msg: str, current_phase: str) -> bool:
     return any(p.search(msg) for p in _CV_CREATION_INTENT)
 
 
+# Words that follow "search/find/look" but DON'T signal a new search
+# intent — e.g. "the search results were great". Without this guard,
+# any post-search praise / question that mentions "search" triggers a
+# spurious journey reset.
+_SEARCH_FALSE_FRIENDS = re.compile(
+    r"(?:results?|page|tab|option|filter|button|view|"
+    r"history|terms?|criteria|engine)\b",
+    re.IGNORECASE,
+)
+
 _LOOSE_SEARCH_INTENT = (
-    re.compile(r"\b(?:search|find|look|suche|finde)\s+(?:for\s+|nach\s+|me\s+)?",
-                re.IGNORECASE),
+    # Anchored to the start (with an optional polite/German prefix)
+    # so we don't catch mid-sentence "the search results were great"
+    # or "I love the search filter". Pure-start matches preserve the
+    # real intents — "search for pflege", "find me a bartender",
+    # "look for marketing roles".
+    re.compile(
+        r"^\s*(?:please\s+|bitte\s+)?"
+        r"(?:search|find|look|suche|finde)\s+"
+        r"(?:for\s+|nach\s+|me\s+)?\S{2,}",
+        re.IGNORECASE),
     re.compile(r"^\s*(?:no|nein|nope)\s*[,!.]?\s+(?:search|find|look|suche|finde)\b",
                 re.IGNORECASE),
     re.compile(r"\b(?:i\s+(?:want|need)|i'd\s+like|ich\s+möchte)\b.*?\b(?:another|different|new|anderes|neue)\b",
                 re.IGNORECASE),
 )
+
+# Meta-words that, when they're the OBJECT of the verb, indicate the
+# user is talking about a UI feature rather than starting a fresh
+# search. "find the option …", "look at the results page", etc.
+_SEARCH_OBJECT_DENYLIST = frozenset({
+    "result", "results", "page", "pages", "tab", "tabs", "option",
+    "options", "filter", "filters", "button", "buttons", "view",
+    "views", "history", "term", "terms", "criteria", "engine",
+    "settings", "menu", "field", "feature", "function",
+})
+
+
+def _search_intent_object_is_meta(msg: str) -> bool:
+    """True when the loose search-verb pattern matched on a UI-feature
+    object instead of a role. Pre-filters "find the option to delete
+    a saved search" from triggering a journey reset."""
+    m = re.match(
+        r"^\s*(?:please\s+|bitte\s+)?(?:search|find|look|suche|finde)\s+"
+        r"(?:for\s+|nach\s+|me\s+)?"
+        r"(?:the|a|an|this|that|those|these|my|your|all)\s+(\w+)",
+        msg.strip(), re.IGNORECASE)
+    if not m:
+        return False
+    return m.group(1).lower() in _SEARCH_OBJECT_DENYLIST
 
 
 def looks_like_new_search_intent(msg: str, current_phase: str) -> bool:
@@ -435,7 +477,12 @@ def looks_like_new_search_intent(msg: str, current_phase: str) -> bool:
     bucket, _ = identify_bucket_with_match(msg)
     if bucket:
         return True
-    # Loose "search for X" / "no, search for Y" patterns.
+    # Loose "search for X" / "no, search for Y" patterns. Skip when
+    # the verb's object is a UI feature word ("find the OPTION", "look
+    # at the RESULTS PAGE") — that's the user asking about the app,
+    # not asking to start a fresh search.
+    if _search_intent_object_is_meta(msg):
+        return False
     return any(p.search(msg) for p in _LOOSE_SEARCH_INTENT)
 
 

@@ -22,6 +22,13 @@ class AnalysisExecutionResult:
     output: str = ""
     error: str = ""
     prompt: str = ""
+    # R23.9 — token usage + resolved model name so the cost tracker
+    # can record legacy AI calls (briefs, letters, CV consults) the
+    # same way R22.6 records the tool-use chat. 0 + "" when the
+    # provider didn't return usage (CLI / ollama / error path).
+    input_tokens: int = 0
+    output_tokens: int = 0
+    model_used: str = ""
 
 
 _HEALTHCARE_SECTION_LABEL = "Healthcare relevance"
@@ -319,9 +326,14 @@ def execute_cv_query_expansion(
     free_text: str | None,
     provider: AIProviderConfig,
     runtime_credential: str = "",
+    *,
+    record_call=None,
 ) -> AnalysisExecutionResult:
+    from company_discovery.model_router import TASK_KEYWORD_EXTRACTION
     brief = build_cv_query_expansion_prompt(profile, free_text, provider)
-    return _dispatch_provider(brief["prompt"], provider, runtime_credential)
+    return _dispatch_provider(brief["prompt"], provider, runtime_credential,
+                                task=TASK_KEYWORD_EXTRACTION,
+                                record_call=record_call)
 
 
 _AUTO_FIT_SCORE_RE = re.compile(r"score\s*[:\-]\s*(\d{1,3})", re.IGNORECASE)
@@ -374,9 +386,14 @@ def execute_auto_fit(
     provider: AIProviderConfig,
     runtime_credential: str = "",
     profile: UserProfile | None = None,
+    *,
+    record_call=None,
 ) -> AnalysisExecutionResult:
+    from company_discovery.model_router import TASK_JOB_RANKING
     brief = build_auto_fit_prompt(job, company_name, provider, profile)
-    return _dispatch_provider(brief["prompt"], provider, runtime_credential)
+    return _dispatch_provider(brief["prompt"], provider, runtime_credential,
+                                task=TASK_JOB_RANKING,
+                                record_call=record_call)
 
 
 def build_cv_tailoring_prompt(
@@ -437,9 +454,14 @@ def execute_cv_tailoring(
     provider: AIProviderConfig,
     runtime_credential: str = "",
     profile: UserProfile | None = None,
+    *,
+    record_call=None,
 ) -> AnalysisExecutionResult:
+    from company_discovery.model_router import TASK_CV_CONSULT
     brief = build_cv_tailoring_prompt(job, provider, profile)
-    return _dispatch_provider(brief["prompt"], provider, runtime_credential)
+    return _dispatch_provider(brief["prompt"], provider, runtime_credential,
+                                task=TASK_CV_CONSULT,
+                                record_call=record_call)
 
 
 def execute_job_decision_brief(
@@ -447,9 +469,14 @@ def execute_job_decision_brief(
     provider: AIProviderConfig,
     runtime_credential: str = "",
     profile: UserProfile | None = None,
+    *,
+    record_call=None,
 ) -> AnalysisExecutionResult:
+    from company_discovery.model_router import TASK_BRIEF
     brief = build_job_decision_brief_prompt(job, provider, profile)
-    return _dispatch_provider(brief["prompt"], provider, runtime_credential)
+    return _dispatch_provider(brief["prompt"], provider, runtime_credential,
+                                task=TASK_BRIEF,
+                                record_call=record_call)
 
 
 def execute_cover_letter_brief(
@@ -457,16 +484,33 @@ def execute_cover_letter_brief(
     provider: AIProviderConfig,
     runtime_credential: str = "",
     profile: UserProfile | None = None,
+    *,
+    record_call=None,
 ) -> AnalysisExecutionResult:
+    from company_discovery.model_router import TASK_LETTER
     brief = build_cover_letter_brief_prompt(job, provider, profile)
-    return _dispatch_provider(brief["prompt"], provider, runtime_credential)
+    return _dispatch_provider(brief["prompt"], provider, runtime_credential,
+                                task=TASK_LETTER,
+                                record_call=record_call)
 
 
 def _dispatch_provider(
     prompt: str,
     provider: AIProviderConfig,
     runtime_credential: str,
+    *,
+    task: str = "",
+    record_call=None,
 ) -> AnalysisExecutionResult:
+    """Run an LLM prompt against the configured provider.
+
+    ``task`` (optional) is one of the constants in
+    :mod:`company_discovery.model_router`. When set, the model is
+    chosen via that router (cheap / medium / premium tier) unless
+    the caller already pinned ``provider.model``. With no task,
+    behavior matches the pre-R23.5 path — provider.model wins or a
+    provider-specific default is used.
+    """
     if provider.invocation_mode == "manual" or provider.provider_id == "manual":
         return AnalysisExecutionResult(
             status="handoff_required",
@@ -499,30 +543,69 @@ def _dispatch_provider(
                 prompt=prompt,
                 error="Managed AI is enabled in the picker but DIRECTJOB_MANAGED_AI_KEY is not set on the server.",
             )
+        # R23.5: if the caller named a task, the model router picks
+        # the right tier (cheap/medium/premium); otherwise honour
+        # the legacy single-model env. The router itself falls back
+        # to DIRECTJOB_MANAGED_AI_MODEL when no per-tier override
+        # is set, so existing deployments behave identically until
+        # someone sets the per-tier env vars.
+        from company_discovery.model_router import select_model
+        legacy_model = (
+            os.environ.get("DIRECTJOB_MANAGED_AI_MODEL")
+            or provider.model
+            or ""
+        ).strip()
+        chosen_model = select_model(
+            upstream, task,
+            explicit_model=legacy_model if not task else "",
+        ) or legacy_model
         provider = AIProviderConfig(
             provider_id=upstream,
             invocation_mode="api",
-            model=(os.environ.get("DIRECTJOB_MANAGED_AI_MODEL") or provider.model or "").strip(),
+            model=chosen_model,
             credential_reference="DIRECTJOB_MANAGED_AI_KEY",
             base_url=(os.environ.get("DIRECTJOB_MANAGED_AI_BASE_URL") or "").strip(),
             command="",
             notes="managed",
         )
     if provider.invocation_mode == "local_http" and provider.provider_id == "ollama":
-        return _execute_ollama(prompt, provider)
-    if provider.invocation_mode == "api" and provider.provider_id in {"openai", "deepseek", "openrouter", "custom"}:
-        return _execute_openai_compatible(prompt, provider, runtime_credential)
-    if provider.invocation_mode == "api" and provider.provider_id == "google_gemini":
-        return _execute_google_gemini(prompt, provider, runtime_credential)
-    if provider.invocation_mode == "cli" and provider.provider_id in {"codex_cli", "claude_code", "anthropic", "custom"}:
-        return _execute_cli(prompt, provider)
-    return AnalysisExecutionResult(
-        status="unsupported",
-        provider_id=provider.provider_id,
-        invocation_mode=provider.invocation_mode,
-        prompt=prompt,
-        error="No direct adapter is available for this provider/mode yet. Use the handoff prompt.",
-    )
+        result = _execute_ollama(prompt, provider)
+    elif provider.invocation_mode == "api" and provider.provider_id in {"openai", "deepseek", "openrouter", "custom"}:
+        result = _execute_openai_compatible(prompt, provider, runtime_credential)
+    elif provider.invocation_mode == "api" and provider.provider_id == "google_gemini":
+        result = _execute_google_gemini(prompt, provider, runtime_credential)
+    elif provider.invocation_mode == "cli" and provider.provider_id in {"codex_cli", "claude_code", "anthropic", "custom"}:
+        result = _execute_cli(prompt, provider)
+    else:
+        return AnalysisExecutionResult(
+            status="unsupported",
+            provider_id=provider.provider_id,
+            invocation_mode=provider.invocation_mode,
+            prompt=prompt,
+            error="No direct adapter is available for this provider/mode yet. Use the handoff prompt.",
+        )
+    # R23.9 / R24.0 — record the legacy AI call into the cost tracker
+    # so the operator dashboard reflects briefs / letters / consults /
+    # etc. Best-effort: log exceptions rather than swallow silently so
+    # cost-tracker hiccups (disk full, schema migration, etc.) surface
+    # in operator logs.
+    #
+    # We record EVERY completed call (not only status="completed") —
+    # API errors that returned token counts (some providers charge for
+    # input tokens even on 400/refusal) should be visible in the
+    # dashboard. Calls with NO usage data (CLI mode, transport error)
+    # naturally record 0 tokens.
+    if record_call is not None and result.status != "configuration_error":
+        try:
+            record_call(provider.provider_id or "",
+                          result.model_used or provider.model,
+                          task or "legacy_ai",
+                          result.input_tokens, result.output_tokens)
+        except Exception as exc:  # noqa: BLE001
+            import logging as _logging
+            _logging.getLogger("directjob.cost").warning(
+                "record_call failed in _dispatch_provider: %s", exc)
+    return result
 
 
 def _resolve_api_key(provider: AIProviderConfig, runtime_credential: str) -> tuple[str, str]:
@@ -587,7 +670,17 @@ def _execute_openai_compatible(
     choices = body.get("choices") or []
     if choices:
         output = choices[0].get("message", {}).get("content", "") or choices[0].get("text", "")
-    return AnalysisExecutionResult("completed" if output else "provider_error", provider.provider_id, provider.invocation_mode, output=output, prompt=prompt, error="" if output else "Provider returned no text.")
+    # R23.9 — surface usage so _dispatch_provider can record cost.
+    usage = body.get("usage") or {}
+    return AnalysisExecutionResult(
+        "completed" if output else "provider_error",
+        provider.provider_id, provider.invocation_mode,
+        output=output, prompt=prompt,
+        error="" if output else "Provider returned no text.",
+        input_tokens=int(usage.get("prompt_tokens") or 0),
+        output_tokens=int(usage.get("completion_tokens") or 0),
+        model_used=payload["model"],
+    )
 
 
 def _execute_google_gemini(
@@ -618,7 +711,17 @@ def _execute_google_gemini(
     candidates = body.get("candidates") or []
     parts = candidates[0].get("content", {}).get("parts", []) if candidates else []
     output = "\n".join(part.get("text", "") for part in parts if part.get("text"))
-    return AnalysisExecutionResult("completed" if output else "provider_error", provider.provider_id, provider.invocation_mode, output=output, prompt=prompt, error="" if output else "Gemini returned no text.")
+    # R23.9 — Gemini's usageMetadata block carries token counts.
+    usage = body.get("usageMetadata") or {}
+    return AnalysisExecutionResult(
+        "completed" if output else "provider_error",
+        provider.provider_id, provider.invocation_mode,
+        output=output, prompt=prompt,
+        error="" if output else "Gemini returned no text.",
+        input_tokens=int(usage.get("promptTokenCount") or 0),
+        output_tokens=int(usage.get("candidatesTokenCount") or 0),
+        model_used=model,
+    )
 
 
 def _execute_ollama(prompt: str, provider: AIProviderConfig) -> AnalysisExecutionResult:

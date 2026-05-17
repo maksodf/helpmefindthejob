@@ -279,6 +279,18 @@ class UserProfile:
     # upload. PNG/JPEG only — SVG and other formats are rejected
     # because they can carry script.
     cv_photo_data_uri: str | None = None
+    # R24 — structured CV document the deterministic renderer
+    # consumes. Populated by AI extraction (R24.5) or by the chat
+    # CV-builder. Shape matches CvDocument.to_dict(). When None,
+    # the renderer falls back to a best-effort construction from
+    # ``cv_text`` + ``full_name`` + ``location`` etc.
+    cv_document: dict | None = None
+    # User's chosen template + customisation overrides. Defaults
+    # apply when None (template=modern, accent=indigo, photo_on=True).
+    cv_template_id: str = "modern"
+    cv_accent_color: str = "indigo"
+    cv_photo_on: bool = True
+    cv_headline_override: str = ""
     # Chat-router session state — persisted across server restarts so an
     # in-flight ``/add-company`` flow survives a deploy. Shape matches
     # ChatSession.to_dict() (history + pending). Capped at ~50 turns by

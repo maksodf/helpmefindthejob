@@ -53,6 +53,12 @@ class Plan:
     ai_modes_allowed: tuple[str, ...] = ("manual", "byok", "managed")
     retention_days_max: int = 365
     daily_digest_enabled: bool = True
+    # R23.7 — per-user daily LLM call cap for the managed-AI chat.
+    # 0 means "blocked" (no managed AI on this plan); ``None`` means
+    # "unlimited". Numbers are tuned so the typical user costs less
+    # than the subscription pays (Haiku at $0.0022/call → break-even
+    # on Pro at ~$5/mo is ~75 calls/day → set to 50 for margin).
+    llm_daily_cap: int | None = 0
 
 
 PLANS: tuple[Plan, ...] = (
@@ -64,14 +70,20 @@ PLANS: tuple[Plan, ...] = (
         seats_included=1,
         features=(
             "3 saved searches",
-            "Manual AI handoff",
+            "5 AI chats / day",
             "30-day retention",
             "Bookmarklet + 6 aggregators",
         ),
         saved_search_limit=3,
-        ai_modes_allowed=("manual",),
+        # R23.7 vision: every user gets the chat-first AI experience
+        # — free tier just has a tight cap. Without managed AI on
+        # free, the chat reverts to the deterministic command path
+        # and the product loses its main differentiator. Free is the
+        # taste; Pro is "your assistant has your back all day".
+        ai_modes_allowed=("manual", "byok", "managed"),
         retention_days_max=30,
         daily_digest_enabled=False,
+        llm_daily_cap=5,
     ),
     Plan(
         id="pro_monthly",
@@ -80,7 +92,7 @@ PLANS: tuple[Plan, ...] = (
         seats_included=1,
         features=(
             "Unlimited saved searches",
-            "Manual + BYOK + Managed AI",
+            "50 AI chats / day",
             "90-day retention",
             "Daily digest",
             "Push notifications",
@@ -89,6 +101,9 @@ PLANS: tuple[Plan, ...] = (
         ai_modes_allowed=("manual", "byok", "managed"),
         retention_days_max=90,
         daily_digest_enabled=True,
+        # ~$0.0022/Haiku-call × 50 = $0.11/day = $3.30/mo wholesale.
+        # On a €5 subscription that's 34% margin before infra.
+        llm_daily_cap=50,
     ),
     Plan(
         id="pro_annual",
@@ -104,6 +119,27 @@ PLANS: tuple[Plan, ...] = (
         ai_modes_allowed=("manual", "byok", "managed"),
         retention_days_max=90,
         daily_digest_enabled=True,
+        llm_daily_cap=50,
+    ),
+    Plan(
+        # R23.7 — the "power user" tier the vision mentions for the
+        # 1% who blow through the Pro cap (heavy job-hunting weeks,
+        # writing many letters at once). $15/mo → break-even at
+        # ~225 calls/day, capped at 200 for margin.
+        id="power_monthly",
+        label="Power",
+        monthly_price_eur=15,
+        seats_included=1,
+        features=(
+            "All Pro features",
+            "200 AI chats / day",
+            "Priority support",
+        ),
+        saved_search_limit=None,
+        ai_modes_allowed=("manual", "byok", "managed"),
+        retention_days_max=180,
+        daily_digest_enabled=True,
+        llm_daily_cap=200,
     ),
     # ----- B2B multi-seat plans ----------------------------------------
     # Kept alongside the single-user plans so a multi-seat sales motion
@@ -115,9 +151,10 @@ PLANS: tuple[Plan, ...] = (
         seats_included=5,
         features=("Up to 5 testers", "ConsoleTransport email", "Manual restore drill"),
         saved_search_limit=3,
-        ai_modes_allowed=("manual",),
+        ai_modes_allowed=("manual", "byok", "managed"),
         retention_days_max=30,
         daily_digest_enabled=False,
+        llm_daily_cap=10,
     ),
     Plan(
         id="team",
@@ -129,6 +166,7 @@ PLANS: tuple[Plan, ...] = (
         ai_modes_allowed=("manual", "byok", "managed"),
         retention_days_max=90,
         daily_digest_enabled=True,
+        llm_daily_cap=100,
     ),
     Plan(
         id="org",
@@ -140,6 +178,7 @@ PLANS: tuple[Plan, ...] = (
         ai_modes_allowed=("manual", "byok", "managed"),
         retention_days_max=180,
         daily_digest_enabled=True,
+        llm_daily_cap=500,
     ),
 )
 
@@ -355,6 +394,10 @@ class StripeBillingBackend:
             "org": os.environ.get("DIRECTJOB_STRIPE_PRICE_ORG", ""),
             "pro_monthly": os.environ.get("DIRECTJOB_STRIPE_PRICE_PRO_MONTHLY", ""),
             "pro_annual": os.environ.get("DIRECTJOB_STRIPE_PRICE_PRO_ANNUAL", ""),
+            # R23.7 — power tier for users who blow through the Pro
+            # cap. Without this entry, checkout for power_monthly
+            # raises "unknown_plan" silently.
+            "power_monthly": os.environ.get("DIRECTJOB_STRIPE_PRICE_POWER_MONTHLY", ""),
         }
         self._transport: StripeTransport = transport or _default_stripe_transport
 
@@ -447,6 +490,7 @@ def plans_payload() -> list[dict[str, object]]:
             "aiModesAllowed": list(plan.ai_modes_allowed),
             "retentionDaysMax": plan.retention_days_max,
             "dailyDigestEnabled": plan.daily_digest_enabled,
+            "llmDailyCap": plan.llm_daily_cap,
         }
         for plan in PLANS
     ]

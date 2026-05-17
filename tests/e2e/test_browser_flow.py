@@ -162,10 +162,11 @@ class BrowserFlowTests(unittest.TestCase):
             page.locator("text=E2E Hospital").first.wait_for(state="visible")
             self._shot(page, "04_company_added_desktop")
 
-            # Seed the demo + import the demo discovered job
+            # Seed the demo + import the demo discovered job.
+            # R25.2 — Jobs nav-item removed; navigate via JS function.
             page.locator(".nav-item[data-view='dashboard']").click()
             self._click(page, "#quickSeedDemoBtn")
-            page.locator(".nav-item[data-view='jobs']").click()
+            page.evaluate("() => navigate('jobs')")
             page.locator("text=Junior Healthcare Project Manager").first.wait_for(state="visible")
             self._click(page, ".job-actions .import-btn")
             page.locator(".job-item.imported").first.wait_for(state="visible")

@@ -1,0 +1,570 @@
+[
+  {
+    "case": "cv_empty",
+    "category": "cv",
+    "expectation": "graceful_empty",
+    "verdict": "PASS",
+    "status": 200,
+    "detail": "200 OK"
+  },
+  {
+    "case": "cv_whitespace_only",
+    "category": "cv",
+    "expectation": "graceful_empty",
+    "verdict": "PASS",
+    "status": 200,
+    "detail": "200 OK"
+  },
+  {
+    "case": "cv_normal",
+    "category": "cv",
+    "expectation": "sanitize",
+    "verdict": "PASS",
+    "status": 200,
+    "detail": "accepted + round-tripped (36 chars)"
+  },
+  {
+    "case": "cv_html_inert",
+    "category": "cv",
+    "expectation": "sanitize",
+    "verdict": "PASS",
+    "status": 200,
+    "detail": "accepted + round-tripped (44 chars)"
+  },
+  {
+    "case": "cv_script_tag",
+    "category": "cv",
+    "expectation": "sanitize",
+    "verdict": "PASS",
+    "status": 200,
+    "detail": "accepted + round-tripped (50 chars)"
+  },
+  {
+    "case": "cv_event_handler",
+    "category": "cv",
+    "expectation": "sanitize",
+    "verdict": "PASS",
+    "status": 200,
+    "detail": "accepted + round-tripped (52 chars)"
+  },
+  {
+    "case": "cv_unicode_emoji",
+    "category": "cv",
+    "expectation": "sanitize",
+    "verdict": "PASS",
+    "status": 200,
+    "detail": "accepted + round-tripped (36 chars)"
+  },
+  {
+    "case": "cv_german_umlaut",
+    "category": "cv",
+    "expectation": "sanitize",
+    "verdict": "PASS",
+    "status": 200,
+    "detail": "accepted + round-tripped (52 chars)"
+  },
+  {
+    "case": "cv_arabic_rtl",
+    "category": "cv",
+    "expectation": "sanitize",
+    "verdict": "PASS",
+    "status": 200,
+    "detail": "accepted + round-tripped (42 chars)"
+  },
+  {
+    "case": "cv_chinese",
+    "category": "cv",
+    "expectation": "sanitize",
+    "verdict": "PASS",
+    "status": 200,
+    "detail": "accepted + round-tripped (33 chars)"
+  },
+  {
+    "case": "cv_50kb",
+    "category": "cv",
+    "expectation": "sanitize",
+    "verdict": "PASS",
+    "status": 200,
+    "detail": "accepted + round-tripped (50016 chars)"
+  },
+  {
+    "case": "cv_100kb_over_limit",
+    "category": "cv",
+    "expectation": "reject",
+    "verdict": "PASS",
+    "status": 400,
+    "detail": "rejected with 400"
+  },
+  {
+    "case": "cv_null_bytes",
+    "category": "cv",
+    "expectation": "sanitize",
+    "verdict": "PASS",
+    "status": 200,
+    "detail": "accepted + round-tripped (22 chars)"
+  },
+  {
+    "case": "cv_control_chars",
+    "category": "cv",
+    "expectation": "sanitize",
+    "verdict": "PASS",
+    "status": 200,
+    "detail": "accepted + round-tripped (26 chars)"
+  },
+  {
+    "case": "cv_sql_payload",
+    "category": "cv",
+    "expectation": "sanitize",
+    "verdict": "PASS",
+    "status": 200,
+    "detail": "accepted + round-tripped (30 chars)"
+  },
+  {
+    "case": "query_empty",
+    "category": "search",
+    "expectation": "graceful_empty",
+    "verdict": "PASS",
+    "status": 200,
+    "detail": "200 OK, 2 jobs (empty allowed)"
+  },
+  {
+    "case": "query_whitespace",
+    "category": "search",
+    "expectation": "graceful_empty",
+    "verdict": "PASS",
+    "status": 200,
+    "detail": "200 OK, 2 jobs (empty allowed)"
+  },
+  {
+    "case": "query_1char",
+    "category": "search",
+    "expectation": "sanitize",
+    "verdict": "PASS",
+    "status": 200,
+    "detail": "200 OK; 11 results"
+  },
+  {
+    "case": "query_emoji",
+    "category": "search",
+    "expectation": "sanitize",
+    "verdict": "PASS",
+    "status": 200,
+    "detail": "200 OK; 11 results"
+  },
+  {
+    "case": "query_500_chars",
+    "category": "search",
+    "expectation": "sanitize",
+    "verdict": "PASS",
+    "status": 200,
+    "detail": "200 OK; 11 results"
+  },
+  {
+    "case": "query_sql_injection",
+    "category": "search",
+    "expectation": "sanitize",
+    "verdict": "PASS",
+    "status": 200,
+    "detail": "200 OK; 0 results"
+  },
+  {
+    "case": "query_html_tags",
+    "category": "search",
+    "expectation": "sanitize",
+    "verdict": "PASS",
+    "status": 200,
+    "detail": "200 OK; 0 results"
+  },
+  {
+    "case": "query_path_traversal",
+    "category": "search",
+    "expectation": "sanitize",
+    "verdict": "PASS",
+    "status": 200,
+    "detail": "200 OK; 0 results"
+  },
+  {
+    "case": "query_unicode_mix",
+    "category": "search",
+    "expectation": "sanitize",
+    "verdict": "PASS",
+    "status": 200,
+    "detail": "200 OK; 6 results"
+  },
+  {
+    "case": "location_empty",
+    "category": "search",
+    "expectation": "sanitize",
+    "verdict": "PASS",
+    "status": 200,
+    "detail": "200 OK; 20 results"
+  },
+  {
+    "case": "location_null",
+    "category": "search",
+    "expectation": "sanitize",
+    "verdict": "PASS",
+    "status": 200,
+    "detail": "200 OK; 20 results"
+  },
+  {
+    "case": "location_country_name",
+    "category": "search",
+    "expectation": "sanitize",
+    "verdict": "PASS",
+    "status": 200,
+    "detail": "200 OK; 2 results"
+  },
+  {
+    "case": "location_emoji",
+    "category": "search",
+    "expectation": "sanitize",
+    "verdict": "PASS",
+    "status": 200,
+    "detail": "200 OK; 5 results"
+  },
+  {
+    "case": "location_sql_injection",
+    "category": "search",
+    "expectation": "sanitize",
+    "verdict": "PASS",
+    "status": 200,
+    "detail": "200 OK; 0 results"
+  },
+  {
+    "case": "location_500_chars",
+    "category": "search",
+    "expectation": "sanitize",
+    "verdict": "PASS",
+    "status": 200,
+    "detail": "200 OK; 0 results"
+  },
+  {
+    "case": "limits_negative",
+    "category": "limits",
+    "expectation": "200-299",
+    "verdict": "PASS",
+    "status": 200,
+    "detail": "got 200"
+  },
+  {
+    "case": "limits_zero",
+    "category": "limits",
+    "expectation": "200-299",
+    "verdict": "PASS",
+    "status": 200,
+    "detail": "got 200"
+  },
+  {
+    "case": "limits_huge",
+    "category": "limits",
+    "expectation": "200-299",
+    "verdict": "PASS",
+    "status": 200,
+    "detail": "got 200"
+  },
+  {
+    "case": "limits_non_int",
+    "category": "limits",
+    "expectation": "200-499",
+    "verdict": "PASS",
+    "status": 400,
+    "detail": "got 400"
+  },
+  {
+    "case": "limits_null",
+    "category": "limits",
+    "expectation": "200-299",
+    "verdict": "PASS",
+    "status": 200,
+    "detail": "got 200"
+  },
+  {
+    "case": "company_empty_name",
+    "category": "company",
+    "expectation": "reject",
+    "verdict": "PASS",
+    "status": 400,
+    "detail": "rejected with 400"
+  },
+  {
+    "case": "company_whitespace_name",
+    "category": "company",
+    "expectation": "reject",
+    "verdict": "PASS",
+    "status": 400,
+    "detail": "rejected with 400"
+  },
+  {
+    "case": "company_huge_name",
+    "category": "company",
+    "expectation": "sanitize",
+    "verdict": "PASS",
+    "status": 201,
+    "detail": "accepted"
+  },
+  {
+    "case": "company_html_in_name",
+    "category": "company",
+    "expectation": "sanitize",
+    "verdict": "PASS",
+    "status": 201,
+    "detail": "accepted"
+  },
+  {
+    "case": "company_bad_url_scheme",
+    "category": "company",
+    "expectation": "sanitize",
+    "verdict": "PASS",
+    "status": 201,
+    "detail": "accepted"
+  },
+  {
+    "case": "company_url_path_traversal",
+    "category": "company",
+    "expectation": "sanitize",
+    "verdict": "PASS",
+    "status": 201,
+    "detail": "accepted"
+  },
+  {
+    "case": "company_unicode_name",
+    "category": "company",
+    "expectation": "sanitize",
+    "verdict": "PASS",
+    "status": 201,
+    "detail": "accepted"
+  },
+  {
+    "case": "company_notes_xss",
+    "category": "company",
+    "expectation": "sanitize",
+    "verdict": "PASS",
+    "status": 201,
+    "detail": "accepted"
+  },
+  {
+    "case": "auth_invalid_email_empty",
+    "category": "auth",
+    "expectation": "reject",
+    "verdict": "PASS",
+    "status": 400,
+    "detail": "400: {'error': {'code': 'bad_request', 'message': 'Missing or inv"
+  },
+  {
+    "case": "auth_invalid_email_not-an-email",
+    "category": "auth",
+    "expectation": "reject",
+    "verdict": "PASS",
+    "status": 400,
+    "detail": "400: {'error': {'code': 'bad_request', 'message': 'Missing or inv"
+  },
+  {
+    "case": "auth_invalid_email_@example.com",
+    "category": "auth",
+    "expectation": "reject",
+    "verdict": "PASS",
+    "status": 400,
+    "detail": "400: {'error': {'code': 'bad_request', 'message': 'Missing or inv"
+  },
+  {
+    "case": "auth_invalid_email_user@",
+    "category": "auth",
+    "expectation": "reject",
+    "verdict": "PASS",
+    "status": 400,
+    "detail": "400: {'error': {'code': 'bad_request', 'message': 'Missing or inv"
+  },
+  {
+    "case": "auth_invalid_email_user@.com",
+    "category": "auth",
+    "expectation": "reject",
+    "verdict": "PASS",
+    "status": 400,
+    "detail": "400: {'error': {'code': 'bad_request', 'message': 'Missing or inv"
+  },
+  {
+    "case": "auth_invalid_email_user space@exam",
+    "category": "auth",
+    "expectation": "reject",
+    "verdict": "PASS",
+    "status": 400,
+    "detail": "400: {'error': {'code': 'bad_request', 'message': 'Missing or inv"
+  },
+  {
+    "case": "auth_weak_password_0",
+    "category": "auth",
+    "expectation": "reject",
+    "verdict": "PASS",
+    "status": 400,
+    "detail": "400: {'error': {'code': 'bad_request', 'message': 'Missing or inv"
+  },
+  {
+    "case": "auth_weak_password_1",
+    "category": "auth",
+    "expectation": "reject",
+    "verdict": "PASS",
+    "status": 400,
+    "detail": "400: {'error': {'code': 'bad_request', 'message': 'Missing or inv"
+  },
+  {
+    "case": "auth_weak_password_5",
+    "category": "auth",
+    "expectation": "reject",
+    "verdict": "PASS",
+    "status": 400,
+    "detail": "400: {'error': {'code': 'bad_request', 'message': 'Missing or inv"
+  },
+  {
+    "case": "auth_weak_password_11",
+    "category": "auth",
+    "expectation": "reject",
+    "verdict": "PASS",
+    "status": 400,
+    "detail": "400: {'error': {'code': 'bad_request', 'message': 'Missing or inv"
+  },
+  {
+    "case": "auth_duplicate_registration",
+    "category": "auth",
+    "expectation": "reject 2nd",
+    "verdict": "PASS",
+    "status": 400,
+    "detail": "400: {'error': {'code': 'bad_request', 'message': 'Missing or inv"
+  },
+  {
+    "case": "request_invalid_json",
+    "category": "request_shape",
+    "expectation": "400",
+    "verdict": "PASS",
+    "status": 400,
+    "detail": "400 (expected 4xx)"
+  },
+  {
+    "case": "request_missing_csrf",
+    "category": "request_shape",
+    "expectation": "403",
+    "verdict": "PASS",
+    "status": 403,
+    "detail": "403: {'error': {'code': 'csrf_failed', 'message': 'Invalid CSRF t"
+  },
+  {
+    "case": "request_no_auth",
+    "category": "request_shape",
+    "expectation": "401 or 403",
+    "verdict": "PASS",
+    "status": 401,
+    "detail": "401 (expected 401/403)"
+  },
+  {
+    "case": "request_unknown_fields",
+    "category": "request_shape",
+    "expectation": "ignored",
+    "verdict": "PASS",
+    "status": 200,
+    "detail": "200 (expected 200, unknown fields silently dropped)"
+  },
+  {
+    "case": "crossuser_no_company_leak",
+    "category": "cross_user",
+    "expectation": "no leak",
+    "verdict": "PASS",
+    "status": 200,
+    "detail": "B sees 0 companies; leaked=False"
+  },
+  {
+    "case": "crossuser_delete_other",
+    "category": "cross_user",
+    "expectation": "403/404",
+    "verdict": "PASS",
+    "status": 404,
+    "detail": "DELETE returned 404 (expected 403/404)"
+  },
+  {
+    "case": "app_status_invalid",
+    "category": "application",
+    "expectation": "reject",
+    "verdict": "PASS",
+    "status": 400,
+    "detail": "400: {'error': {'code': 'invalid_application_status', 'message': "
+  },
+  {
+    "case": "app_status_empty",
+    "category": "application",
+    "expectation": "reject",
+    "verdict": "PASS",
+    "status": 400,
+    "detail": "400: {'error': {'code': 'invalid_application_status', 'message': "
+  },
+  {
+    "case": "app_notes_html",
+    "category": "application",
+    "expectation": "sanitize",
+    "verdict": "PASS",
+    "status": 200,
+    "detail": "200: {'job': {'user_id': 'user_a6bfc299c2d81c7ff6f9378413648b0d',"
+  },
+  {
+    "case": "app_notes_huge",
+    "category": "application",
+    "expectation": "sanitize",
+    "verdict": "PASS",
+    "status": 200,
+    "detail": "200: {'job': {'user_id': 'user_a6bfc299c2d81c7ff6f9378413648b0d',"
+  },
+  {
+    "case": "app_notes_emoji",
+    "category": "application",
+    "expectation": "sanitize",
+    "verdict": "PASS",
+    "status": 200,
+    "detail": "200: {'job': {'user_id': 'user_a6bfc299c2d81c7ff6f9378413648b0d',"
+  },
+  {
+    "case": "app_replied_true",
+    "category": "application",
+    "expectation": "sanitize",
+    "verdict": "PASS",
+    "status": 200,
+    "detail": "200: {'job': {'user_id': 'user_a6bfc299c2d81c7ff6f9378413648b0d',"
+  },
+  {
+    "case": "app_replied_invalid_type",
+    "category": "application",
+    "expectation": "sanitize",
+    "verdict": "PASS",
+    "status": 200,
+    "detail": "200: {'job': {'user_id': 'user_a6bfc299c2d81c7ff6f9378413648b0d',"
+  },
+  {
+    "case": "app_cover_letter_huge",
+    "category": "application",
+    "expectation": "sanitize",
+    "verdict": "PASS",
+    "status": 200,
+    "detail": "200: {'job': {'user_id': 'user_a6bfc299c2d81c7ff6f9378413648b0d',"
+  },
+  {
+    "case": "import_idempotent_5x",
+    "category": "idempotency",
+    "expectation": "1 unique imported id",
+    "verdict": "PASS",
+    "status": 200,
+    "detail": "got 5 responses, 1 unique ids"
+  },
+  {
+    "case": "concurrent_cv_writes",
+    "category": "concurrency",
+    "expectation": "all 200 OK",
+    "verdict": "PASS",
+    "status": 200,
+    "detail": "20 parallel writes: 20/20 OK"
+  },
+  {
+    "case": "auth_login_rate_limit",
+    "category": "auth",
+    "expectation": "429 after N attempts",
+    "verdict": "PASS",
+    "status": 429,
+    "detail": "locked-out after burst (last=429)"
+  }
+]

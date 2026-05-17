@@ -1,0 +1,62 @@
+[
+  {
+    "domain": "backend",
+    "ok": true,
+    "detail": "/help responded 200 with reply field"
+  },
+  {
+    "domain": "database",
+    "ok": true,
+    "detail": "company persisted: True"
+  },
+  {
+    "domain": "security",
+    "ok": true,
+    "detail": "XSS payload stored as text in JSON; no HTML execution path"
+  },
+  {
+    "domain": "ai_router",
+    "ok": true,
+    "detail": "keyword router → add_company; awaiting='name'"
+  },
+  {
+    "domain": "data_analytics",
+    "ok": true,
+    "detail": "find_jobs returned 0 sample, total 0"
+  },
+  {
+    "domain": "product_ux",
+    "ok": true,
+    "detail": "'no' cancelled the add; UX-Co not persisted: True"
+  },
+  {
+    "domain": "gdpr_audit",
+    "ok": true,
+    "detail": "DB=company_discovery.sqlite3 · 5 chat_cmd rows · find_jobs=True · marker=True"
+  },
+  {
+    "domain": "a11y_server",
+    "ok": true,
+    "detail": "help reply (1310 chars) contains no raw HTML"
+  },
+  {
+    "domain": "i18n",
+    "ok": true,
+    "detail": "German yes=True no=True"
+  },
+  {
+    "domain": "qa",
+    "ok": true,
+    "detail": "invalid URL → re-prompt; awaiting='websiteUrl'"
+  },
+  {
+    "domain": "v2_commands",
+    "ok": true,
+    "detail": "set_persona ok: True, delete_company ok: True"
+  },
+  {
+    "domain": "persistence",
+    "ok": true,
+    "detail": "in-memory OK=True (history=2, awaiting='careerPageUrl'); on-disk profile.chatState OK=True"
+  }
+]

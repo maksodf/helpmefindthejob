@@ -279,7 +279,8 @@ class HttpPhase2Tests(unittest.TestCase):
         # Phase 2 #21 expanded the plan catalogue to include the B2C
         # single-user plans (free / pro_monthly / pro_annual) alongside
         # the original B2B multi-seat plans (pilot / team / org).
-        self.assertEqual(len(payload["plans"]), 6)
+        # R23.7 added the "power_monthly" tier → 7 plans.
+        self.assertEqual(len(payload["plans"]), 7)
         # Admin updates to team
         code, payload, _, _ = self.admin.request(
             "/api/admin/billing",

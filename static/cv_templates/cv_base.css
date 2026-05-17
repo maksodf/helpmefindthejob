@@ -1,0 +1,204 @@
+/* R24.6 — Shared base styles for all 6 CV templates.
+ *
+ * Accent color is driven by CSS variables set on .cv-doc by the
+ * server-side renderer (R24.7). Each template overrides layout and
+ * typography but inherits the print + ATS-friendly base.
+ *
+ * Print target: A4 (210mm × 297mm), 18mm margins.
+ * Aim: zero JS, zero web fonts, no images outside the user's photo.
+ */
+
+:root {
+  --cv-page-w: 210mm;
+  --cv-page-h: 297mm;
+  --cv-margin: 18mm;
+  --cv-color-text: #111827;
+  --cv-color-muted: #4b5563;
+  --cv-color-line: #e5e7eb;
+  --cv-color-page: #ffffff;
+  --cv-font-body: 11pt;
+  --cv-font-h1: 24pt;
+  --cv-font-h2: 13pt;
+  --cv-font-small: 9.5pt;
+  --cv-line-height: 1.45;
+}
+
+/* Accent palettes (3 options per template). Driven by a single
+   ``data-accent`` attribute on .cv-doc set by the renderer. */
+.cv-doc[data-accent="indigo"] {
+  --cv-accent: #4f46e5;
+  --cv-accent-soft: #eef2ff;
+}
+.cv-doc[data-accent="teal"] {
+  --cv-accent: #0d9488;
+  --cv-accent-soft: #ccfbf1;
+}
+.cv-doc[data-accent="slate"] {
+  --cv-accent: #334155;
+  --cv-accent-soft: #f1f5f9;
+}
+
+/* ──────────────────────── Page reset ──────────────────────── */
+@page {
+  size: A4;
+  margin: 0;
+}
+html, body {
+  margin: 0;
+  padding: 0;
+  background: #f3f4f6;  /* preview background only; print is white */
+  color: var(--cv-color-text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  font-size: var(--cv-font-body);
+  line-height: var(--cv-line-height);
+  -webkit-font-smoothing: antialiased;
+}
+.cv-doc {
+  width: var(--cv-page-w);
+  min-height: var(--cv-page-h);
+  background: var(--cv-color-page);
+  margin: 12mm auto;
+  padding: var(--cv-margin);
+  box-sizing: border-box;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+  position: relative;
+}
+@media print {
+  body { background: var(--cv-color-page); }
+  .cv-doc {
+    margin: 0;
+    box-shadow: none;
+    width: 100%;
+    min-height: 100%;
+  }
+}
+
+/* ──────────────────────── Typography ──────────────────────── */
+.cv-name {
+  font-size: var(--cv-font-h1);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin: 0 0 4px;
+  color: var(--cv-color-text);
+}
+.cv-headline {
+  font-size: 12pt;
+  color: var(--cv-color-muted);
+  margin: 0 0 4px;
+}
+.cv-meta-line {
+  font-size: var(--cv-font-small);
+  color: var(--cv-color-muted);
+  margin: 0;
+}
+.cv-section-title {
+  font-size: var(--cv-font-h2);
+  font-weight: 600;
+  color: var(--cv-accent);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin: 16pt 0 6pt;
+  border-bottom: 1px solid var(--cv-color-line);
+  padding-bottom: 3pt;
+}
+.cv-section { page-break-inside: avoid; }
+
+/* ──────────────────────── Header ──────────────────────── */
+.cv-header {
+  display: flex;
+  gap: 16pt;
+  align-items: flex-start;
+  border-bottom: 2pt solid var(--cv-accent);
+  padding-bottom: 10pt;
+  margin-bottom: 10pt;
+}
+.cv-header-text { flex: 1; min-width: 0; }
+.cv-photo {
+  width: 28mm;
+  height: 28mm;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2pt solid var(--cv-accent);
+  flex-shrink: 0;
+}
+.cv-doc[data-photo-off="true"] .cv-photo { display: none; }
+
+.cv-contacts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4pt 14pt;
+  font-size: var(--cv-font-small);
+  color: var(--cv-color-muted);
+  margin-top: 6pt;
+}
+.cv-contact-label { color: var(--cv-accent); margin-right: 3pt; font-weight: 600; }
+
+/* ──────────────────────── Experience / Education ──────────────────────── */
+.cv-entry {
+  margin: 0 0 10pt;
+  page-break-inside: avoid;
+}
+.cv-entry-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10pt;
+  align-items: baseline;
+}
+.cv-entry-title { font-weight: 600; }
+.cv-entry-meta {
+  font-size: var(--cv-font-small);
+  color: var(--cv-color-muted);
+  white-space: nowrap;
+}
+.cv-entry-company {
+  color: var(--cv-color-muted);
+  font-size: 10.5pt;
+  margin: 1pt 0 4pt;
+}
+.cv-entry-description { margin: 0 0 4pt; }
+.cv-entry-bullets {
+  margin: 0;
+  padding-left: 18pt;
+}
+.cv-entry-bullets li { margin-bottom: 2pt; }
+
+/* ──────────────────────── Skills / Languages / Certs ──────────────────────── */
+.cv-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5pt;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.cv-pill {
+  background: var(--cv-accent-soft);
+  color: var(--cv-accent);
+  padding: 2pt 9pt;
+  border-radius: 999px;
+  font-size: var(--cv-font-small);
+  font-weight: 500;
+}
+.cv-kv-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8pt;
+  padding: 2pt 0;
+  border-bottom: 1px solid var(--cv-color-line);
+  font-size: 10.5pt;
+}
+.cv-kv-row:last-child { border-bottom: none; }
+.cv-kv-key { color: var(--cv-color-text); }
+.cv-kv-value { color: var(--cv-color-muted); }
+
+/* ──────────────────────── Summary ──────────────────────── */
+.cv-summary {
+  margin: 0 0 4pt;
+  white-space: pre-wrap;
+}
+
+/* ──────────────────────── Print A4 page break hints ──────────────────────── */
+@media print {
+  h2.cv-section-title { break-after: avoid; }
+  .cv-entry, .cv-section { break-inside: avoid; }
+}

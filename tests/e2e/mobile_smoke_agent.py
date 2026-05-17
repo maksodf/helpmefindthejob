@@ -102,12 +102,13 @@ def main() -> int:
                         dialog_width <= VIEWPORT["width"],
                         f"wizard width={dialog_width:.0f}px (≤{VIEWPORT['width']})")
 
-            # Assistant view — chat surface fits
-            page.locator(".nav-item[data-view='assistant']").click()
-            page.locator("#view-assistant:not([hidden])").wait_for()
+            # R25.1 — Assistant view was removed; the chat dock is
+            # the single chat surface at every viewport.
+            page.locator("#dockChatInput").wait_for(state="visible",
+                                                       timeout=10000)
             page.wait_for_timeout(300)
-            chat_box = page.locator("#chatTranscript").bounding_box()
-            input_box = page.locator("#chatInput").bounding_box()
+            chat_box = page.locator("#dockChatTranscript").bounding_box()
+            input_box = page.locator("#dockChatInput").bounding_box()
             report("chat_transcript_within_viewport",
                     chat_box and chat_box["width"] <= VIEWPORT["width"],
                     f"transcript width={chat_box['width']:.0f}px" if chat_box else "missing")
@@ -116,11 +117,11 @@ def main() -> int:
                     f"input width={input_box['width']:.0f}px" if input_box else "missing")
 
             # Send a message via the input; assert the typing bubble appears.
-            page.locator("#chatInput").fill("/help")
-            page.locator("#chatInput").press("Enter")
+            page.locator("#dockChatInput").fill("/help")
+            page.locator("#dockChatInput").press("Enter")
             page.wait_for_timeout(800)
             transcript_text = page.evaluate(
-                "() => document.querySelector('#chatTranscript')?.textContent || ''"
+                "() => document.querySelector('#dockChatTranscript')?.textContent || ''"
             )
             report("chat_help_renders_on_mobile",
                     "Add a company" in transcript_text,

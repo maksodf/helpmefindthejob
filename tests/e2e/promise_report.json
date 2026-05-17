@@ -1,0 +1,50 @@
+[
+  {
+    "promise": "P1",
+    "label": "One clean queue — no duplicates",
+    "verdict": "PASS",
+    "detail": "run1=6 jobs (0 dup), run2=6 jobs (0 dup)"
+  },
+  {
+    "promise": "P2",
+    "label": "AI scores how well each job matches your CV",
+    "verdict": "PASS",
+    "detail": "brief=1231 chars, contains CV + job title"
+  },
+  {
+    "promise": "P3",
+    "label": "AI rewrites your CV for the specific job",
+    "verdict": "PASS",
+    "detail": "tailor prompt=2044 chars, references CV + role"
+  },
+  {
+    "promise": "P4",
+    "label": "Skills blocking you from more roles",
+    "verdict": "PASS",
+    "detail": "3 jobs imported, 3 gaps: ['Devops', 'Backend', 'Microsoft']"
+  },
+  {
+    "promise": "P5",
+    "label": "Mark applied / tick when they reply",
+    "verdict": "PASS",
+    "detail": "status=applied, replied=True persisted across reload"
+  },
+  {
+    "promise": "P6",
+    "label": "Watches your companies every day",
+    "verdict": "PASS",
+    "detail": "scan ack'd: status=queued, runs_started=1"
+  },
+  {
+    "promise": "P7",
+    "label": "CV encrypted at rest",
+    "verdict": "PASS",
+    "detail": "scanned 18 .db file(s); sentinel not in plaintext"
+  },
+  {
+    "promise": "P8",
+    "label": "Reply rate analytics",
+    "verdict": "PASS",
+    "detail": "3 applied, 1 replied, rate=0.333 (≈33%)"
+  }
+]

@@ -719,17 +719,88 @@ input[type="radio"] {
   min-height: 100vh;
 }
 
-/* R18: persistent 3-column layout on desktop —
-   [sidebar] [chat-dock] [main/canvas]. Chat is always visible as
-   the primary input. Dock collapses on mobile (display:none) so the
-   chat is reachable via the existing #view-assistant view. */
-@media (min-width: 1100px) {
+/* R25.1 + R25-bugfix: chat dock is THE chat surface at every
+   viewport. The standalone #view-assistant page was removed
+   (R25.1); the dock occupies the chat column at every width.
+
+   Layout breakpoints:
+     ≥1280px   [sidebar 248] [dock 400] [main 1fr]   3-column
+     <1280px   [top sidebar bar] / [dock 60vh] / [main]  vertical stack
+*/
+@media (min-width: 1280px) {
   .shell {
     grid-template-columns: var(--sidebar-width) 400px 1fr;
   }
 }
-@media (max-width: 1099px) {
-  #chatDock { display: none !important; }
+@media (max-width: 1279px) {
+  /* Vertical stack — sidebar collapses to a top bar; dock takes a
+     fixed slice of the viewport so the canvas below stays reachable
+     by scrolling. ``navigate()`` calls scrollIntoView on .main so
+     chat-triggered view switches feel like the canvas slid up. */
+  .shell {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto 1fr;
+  }
+  .sidebar {
+    position: relative;
+    height: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    padding: 10px 14px;
+  }
+  .sidebar > .nav,
+  #sidebarNav {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .sidebar .nav-item {
+    flex: 0 0 auto;
+    padding: 6px 12px;
+  }
+  /* Workspace picker stays hidden on mobile (admin chrome). The
+     sidebar-footer (install button + user info row) survives but
+     in a compact inline layout so users can still see who's logged
+     in and install the app. */
+  .workspace-picker {
+    display: none;
+  }
+  .sidebar-footer {
+    padding: 6px 0 0;
+    border-top: 1px solid var(--border);
+    margin-top: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .sidebar-footer .install-btn {
+    padding: 4px 10px;
+    font-size: var(--text-xs);
+  }
+  .sidebar-footer .user-row {
+    flex: 1;
+    min-width: 0;
+  }
+  .sidebar-footer .user-info {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .sidebar-header {
+    padding-bottom: 6px;
+  }
+  #chatDock {
+    height: 60vh;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+    top: auto;
+  }
+  /* Main canvas takes the rest. Min-height keeps it discoverable
+     when search results / CV templates render below the dock. */
+  .main {
+    min-height: 40vh;
+  }
 }
 
 .chat-dock {
@@ -748,6 +819,20 @@ input[type="radio"] {
   gap: 12px;
 }
 .chat-dock[hidden] { display: none !important; }
+
+/* R25.1 — gentle border-pulse when ``focusChat()`` is called from
+   anywhere that used to swap views (e.g. CV-creation interrupt
+   reply lands while user is on the Jobs canvas). Lets the user see
+   that something happened in the dock without forcing a full view
+   switch. */
+@keyframes chat-dock-flash {
+  0%   { box-shadow: 0 0 0 0 color-mix(in oklab, var(--accent) 35%, transparent); }
+  40%  { box-shadow: 0 0 0 4px color-mix(in oklab, var(--accent) 22%, transparent); }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+.chat-dock-flash {
+  animation: chat-dock-flash 1.2s ease-out 1;
+}
 
 .chat-dock-header {
   display: flex;
@@ -935,16 +1020,9 @@ input[type="radio"] {
   color: var(--text);
   font-weight: 700;
 }
-@media (max-width: 1099px) {
-  /* On mobile/tablet the dock isn't visible — pivot the banner to
-     direct the user at the Assistant nav item instead. */
-  .chat-first-text strong::after {
-    content: " (Assistant tab)";
-    color: var(--text-muted);
-    font-weight: 400;
-    font-size: var(--text-sm);
-  }
-}
+/* R25.1 — the "(Assistant tab)" hint that used to pivot the banner
+   at mobile/tablet widths was removed. The dock is now visible at
+   every viewport, so no nav pivot is needed. */
 
 .sidebar {
   display: flex;
@@ -2856,6 +2934,71 @@ details[open] .collapsible-chevron { transform: rotate(180deg); }
   gap: 6px;
 }
 
+/* R23.6 LLM cost dashboard */
+.llm-cost-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin: 12px 0 16px;
+}
+.llm-cost-tile {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.llm-cost-label {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.llm-cost-tile strong {
+  font-size: var(--text-lg);
+  font-variant-numeric: tabular-nums;
+}
+.llm-cost-breakdown {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+.llm-cost-breakdown h3 {
+  font-size: var(--text-sm);
+  margin: 0 0 6px;
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.llm-cost-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 4px;
+}
+.llm-cost-list li {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  padding: 4px 0;
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+  border-bottom: 1px solid var(--border);
+}
+.llm-cost-list li:last-child { border-bottom: none; }
+.llm-cost-list .llm-cost-row-key {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.llm-cost-list .llm-cost-row-value {
+  color: var(--text-muted);
+}
+
 .readiness-list li {
   display: grid;
   grid-template-columns: 100px 1fr;
@@ -3466,9 +3609,144 @@ details[open] .collapsible-chevron { transform: rotate(180deg); }
   .queue-select { transform: scale(1.2); margin-right: 0.75rem; }
 }
 
+/* R25.3 — empty-state hint on the CV Builder canvas when there's
+   no structured CV yet. Nudges the user to use the chat first. */
+.cv-empty-hint {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: var(--accent-weak);
+  border: 1px solid color-mix(in oklab, var(--accent) 25%, var(--border));
+}
+.cv-empty-hint p { margin: 0; }
+
+/* ============================================================
+   R24.8 — CV template picker
+   ============================================================ */
+.cv-template-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin: 12px 0 20px;
+}
+.cv-template-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  padding: 10px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+  transition: border-color 0.15s ease, background 0.15s ease;
+  color: inherit;
+  font: inherit;
+}
+.cv-template-card:hover { border-color: var(--border-strong); }
+.cv-template-card[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: var(--accent-weak);
+}
+/* R29 — real-rendered preview iframe.
+   The iframe is sized to a virtual A4 viewport (794×1123 ≈ 210mm @ 96dpi)
+   and shrunk to fit the card via transform: scale(). Container has the
+   A4 aspect-ratio so layout doesn't jump while the iframe loads. */
+.cv-template-thumb {
+  aspect-ratio: 210 / 297;
+  background: white;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  position: relative;
+  overflow: hidden;
+}
+.cv-template-thumb-frame {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 794px;
+  height: 1123px;
+  border: 0;
+  transform: scale(calc(var(--thumb-w, 140) / 794));
+  transform-origin: top left;
+  pointer-events: none;
+  background: white;
+}
+.cv-template-name {
+  font-weight: 600;
+  font-size: var(--text-sm);
+}
+.cv-template-desc {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+
+.cv-template-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.cv-template-row {
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  align-items: center;
+  gap: 12px;
+}
+.cv-template-row-label {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.cv-accent-swatches { display: flex; gap: 8px; }
+.cv-accent-swatch {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  cursor: pointer;
+  background: var(--swatch);
+  padding: 0;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+.cv-accent-swatch:hover { transform: scale(1.1); }
+.cv-accent-swatch[aria-pressed="true"] {
+  border-color: var(--text);
+  box-shadow: 0 0 0 2px var(--accent-weak);
+}
+.cv-template-toggle {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: var(--text-sm);
+  color: var(--text);
+  cursor: pointer;
+}
+.cv-template-toggle input { margin: 0; }
+
 /* ============================================================
    Chat assistant — bubble + typing animation
    ============================================================ */
+/* R22.12 mobile overflow guard. LLM replies can include long
+   URLs, code snippets, or unbroken DACH job-title strings. Without
+   these rules a 60-char unbroken word forces the bubble past the
+   82% max-width on a 390px viewport. word-break:break-word
+   handles standard text; overflow-wrap:anywhere catches the rare
+   case where break-word still won't split (very long URLs). */
+.chat-bubble {
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+.chat-bubble pre {
+  white-space: pre-wrap;
+  max-width: 100%;
+  overflow-x: auto;
+}
 .chat-bubble code {
   background: rgba(255,255,255,0.06);
   padding: 1px 5px;
@@ -3499,41 +3777,24 @@ details[open] .collapsible-chevron { transform: rotate(180deg); }
    Round-15 add: chat + CV builder + first-run wizard
    ============================================================ */
 @media (max-width: 640px) {
-  /* Chat transcript: more compact bubbles, full-width input. */
-  #chatTranscript {
-    min-height: 200px !important;
-    max-height: 50vh !important;
+  /* R25.1 — chat lives in the dock at every viewport. The legacy
+     #chatTranscript / #chatForm / #chatInput rules below were for
+     the deleted Assistant view; replaced with dock equivalents. */
+  #dockChatTranscript {
+    min-height: 180px !important;
     padding: 10px !important;
   }
-  #chatForm {
-    flex-direction: column;
-    gap: 6px !important;
-  }
-  #chatForm .btn { width: 100%; }
-  #chatInput {
+  #dockChatInput {
     font-size: 16px !important; /* prevent iOS zoom-on-focus */
   }
 
-  /* CV builder: stack the two-column layout (sidebar+main). */
-  .cv-builder-layout {
-    grid-template-columns: 1fr !important;
-    gap: 14px !important;
-  }
-  .cv-builder-sidebar {
-    flex-direction: row !important;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    padding-bottom: 4px;
-  }
-  .cv-builder-sidebar .btn { white-space: nowrap; font-size: 13px; }
+  /* R25.3 — sectional walk + #cvBuilderActions are gone from the
+     CV Builder canvas (the chat owns the Q&A). The photo panel
+     still stacks vertically on narrow screens for tap-target size. */
   #cvBuilderPhotoPanel {
     flex-direction: column !important;
     align-items: stretch !important;
   }
-  #cvBuilderActions {
-    flex-wrap: wrap;
-  }
-  #cvBuilderActions .btn { flex: 1 1 calc(50% - 4px); }
 
   /* First-run wizard: full-width on small screens; bigger tap targets. */
   .wizard-dialog {

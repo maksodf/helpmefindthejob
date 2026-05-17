@@ -142,7 +142,7 @@ def run_xss_sweep() -> list[dict]:
                                      "surface": "cv", "ok": ok, "detail": detail})
 
                     # Surface 2: Company name in queue / detail render.
-                    page.locator(".nav-item[data-view='companies']").click()
+                    page.evaluate("() => navigate('companies')")
                     page.wait_for_timeout(300)
                     # The companyForm is inside a collapsed <details>;
                     # open it via JS so the inputs become visible.
@@ -162,7 +162,7 @@ def run_xss_sweep() -> list[dict]:
                     page.wait_for_timeout(800)
                     page.reload()
                     page.locator("#sidebarUserEmail").wait_for(state="visible")
-                    page.locator(".nav-item[data-view='companies']").click()
+                    page.evaluate("() => navigate('companies')")
                     page.wait_for_timeout(600)
                     ok, detail = _check_no_xss(page, "company_name",
                                                 payload_name)

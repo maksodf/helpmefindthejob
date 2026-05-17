@@ -294,7 +294,11 @@ class BillingTests(unittest.TestCase):
         # operator picks which Stripe Prices to wire via env.
         plans = plans_payload()
         ids = {p["id"] for p in plans}
-        self.assertEqual(ids, {"free", "pro_monthly", "pro_annual", "pilot", "team", "org"})
+        # R23.7 added the "power_monthly" tier for users who blow
+        # through the Pro cap (~50 chats/day) and want headroom.
+        self.assertEqual(ids, {"free", "pro_monthly", "pro_annual",
+                                 "power_monthly",
+                                 "pilot", "team", "org"})
 
     def test_stripe_backend_load_falls_back_to_local_cache(self) -> None:
         with TemporaryDirectory() as tmp:

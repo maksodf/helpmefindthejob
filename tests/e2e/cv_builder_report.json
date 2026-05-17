@@ -1,0 +1,142 @@
+[
+  {
+    "name": "start_ok",
+    "ok": true,
+    "detail": "status=200, currentSection=header"
+  },
+  {
+    "name": "start_returns_header",
+    "ok": true,
+    "detail": "got 'header'"
+  },
+  {
+    "name": "header_submit_ok",
+    "ok": true,
+    "detail": "status=200, next=summary"
+  },
+  {
+    "name": "header_advances_to_summary",
+    "ok": true,
+    "detail": "got 'summary'"
+  },
+  {
+    "name": "missing_required_rejected",
+    "ok": true,
+    "detail": "status=400"
+  },
+  {
+    "name": "summary_submit_ok",
+    "ok": true,
+    "detail": "status=200"
+  },
+  {
+    "name": "summary_ai_meta_present",
+    "ok": true,
+    "detail": "meta={'factRatio': 1.0, 'aiAccepted': False}"
+  },
+  {
+    "name": "experience_submit_ok",
+    "ok": true,
+    "detail": "status=200"
+  },
+  {
+    "name": "education_submit_ok",
+    "ok": true,
+    "detail": "status=200"
+  },
+  {
+    "name": "skills_submit_ok",
+    "ok": true,
+    "detail": "status=200"
+  },
+  {
+    "name": "photo_upload_ok",
+    "ok": true,
+    "detail": "status=200, size=69"
+  },
+  {
+    "name": "photo_uri_is_png",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "photo_reject_svg",
+    "ok": true,
+    "detail": "status=400, code=unsupported_mime"
+  },
+  {
+    "name": "photo_reject_oversize",
+    "ok": true,
+    "detail": "status=400, code=too_large"
+  },
+  {
+    "name": "finish_ok",
+    "ok": true,
+    "detail": "status=200"
+  },
+  {
+    "name": "cv_includes_name",
+    "ok": true,
+    "detail": "len=617"
+  },
+  {
+    "name": "cv_includes_summary",
+    "ok": true,
+    "detail": "summary text present"
+  },
+  {
+    "name": "cv_includes_experience",
+    "ok": true,
+    "detail": "experience header present"
+  },
+  {
+    "name": "cv_includes_education",
+    "ok": true,
+    "detail": "education present"
+  },
+  {
+    "name": "cv_includes_skills",
+    "ok": true,
+    "detail": "skills present"
+  },
+  {
+    "name": "cv_includes_photo_tag",
+    "ok": true,
+    "detail": "photo embedded at top of CV"
+  },
+  {
+    "name": "profile_cv_text_persisted",
+    "ok": true,
+    "detail": "len=617"
+  },
+  {
+    "name": "print_html_serves",
+    "ok": true,
+    "detail": "status=200"
+  },
+  {
+    "name": "print_html_includes_name",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "print_html_a4_css",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "print_html_pdf_button",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "print_html_embeds_photo",
+    "ok": true,
+    "detail": "embedded photo data URI present"
+  },
+  {
+    "name": "print_autoprint_injects_script",
+    "ok": true,
+    "detail": "status=200"
+  }
+]

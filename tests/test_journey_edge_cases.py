@@ -373,6 +373,38 @@ class NewSearchInterruptTests(unittest.TestCase):
         self.assertFalse(looks_like_new_search_intent(
             "1", "drill"))
 
+    def test_praise_about_search_NOT_treated_as_new_search(self):
+        """R22.5 audit: tighten the loose pattern so feedback like
+        "the search results were great" doesn't restart the journey.
+        Before the fix, the bare "search " match triggered the
+        interrupt."""
+        from company_discovery.journey import looks_like_new_search_intent
+        for msg in (
+            "the search results were great",
+            "your search results page is nice",
+            "I love how the search filter works",
+            "find the option to delete a saved search",
+        ):
+            self.assertFalse(
+                looks_like_new_search_intent(msg, "review"),
+                f"false positive on {msg!r}",
+            )
+
+    def test_real_search_still_caught_after_tightening(self):
+        from company_discovery.journey import looks_like_new_search_intent
+        # The intended positive cases must still pass after the
+        # false-friend guard.
+        for msg in (
+            "search for nursing roles",
+            "find me a bartender job",
+            "look for marketing positions",
+            "no, search for Pflegehelfer instead",
+        ):
+            self.assertTrue(
+                looks_like_new_search_intent(msg, "review"),
+                f"regression: real new-search missed for {msg!r}",
+            )
+
 
 class DiscoverPhaseBucketCleanupTests(unittest.TestCase):
     """R79.2: when the user's role-answer contains a bucket keyword
