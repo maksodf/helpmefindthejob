@@ -307,6 +307,20 @@ This is positive for project coherence — one committed contributor rather than
 
 **Reversibility**: Soft. If the partner withdraws from project involvement, the recruitment-pipeline framing of Decision 15 returns to active operating mode.
 
+#### Decision 17: Identity-bearing fields ship as explicit placeholders, resolved via dated follow-up commits per the consent-first authorship policy
+
+**Decided**: 2026-05-17.
+
+**Reasoning**: contributor identity is consent-bearing data. The project does not name a contributor in any public file (`AUTHORS.md`, `ACKNOWLEDGMENTS.md`, commit co-author trailers, governance docs) on the basis of a guess about their preference. Where a contributor has not yet explicitly consented to public attribution, the identity-bearing line ships as an explicit placeholder and is resolved in a **separate dated commit** so the consent event is visible in `git log` as its own line item. Convention: commit subject `governance: AUTHORS — add <handle> per consent dated YYYY-MM-DD`.
+
+**Operational consequences**:
+
+- `AUTHORS.md` ships with the maintainer's handle (already public from the repo URL — no consent needed) and an explicit Co-maintainer placeholder line for the partner. Full policy text is embedded in `AUTHORS.md` under "Consent-first authorship policy" so contributors encounter it at the same place as the contributor list.
+- `.github/CODEOWNERS` and `.github/FUNDING.yml` follow the same convention; CODEOWNERS lists only the maintainer until co-maintainers consent, FUNDING.yml lists explicit TBD placeholders with a documented resolution trigger.
+- The Tenzu and Redwax precedent — both projects evolved their AUTHORS / ACKNOWLEDGMENTS rosters over time as contributors joined and consented — is the cohort pattern this decision matches.
+
+**Reversibility**: Hard (in spirit). Once shipped, the policy is the public norm for the project; rolling it back would damage credibility and would arguably violate the Contributor Covenant's contributor-autonomy stance. Soft (in mechanics): individual placeholder lines are routinely resolved as contributors consent.
+
 ---
 
 ## Part C — Open research questions

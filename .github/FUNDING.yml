@@ -5,6 +5,13 @@
 # funded) and post-grant (Commons Conservancy donation channel once the
 # project is admitted as a Programme).
 #
+# Resolution trigger: an uncommented entry below is added once
+#   (a) the project's public domain is registered (Week 3 of the grant
+#       sprint, alongside the public demo deployment), and
+#   (b) The Commons Conservancy has admitted the project as a Programme
+#       and a donation channel is live.
+# Until both conditions hold, this file documents intent only.
+#
 # Reference: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/displaying-a-sponsor-button-in-your-repository
 
 # github: TBD-maintainer-github-sponsors-handle
