@@ -16,6 +16,90 @@ Whether the application is in or not, disciplined non-feature work continues for
 - [ ] Continue any in-flight housing-agent integration
 - [ ] Take at least 2 full rest days
 - [ ] Resume feature work cautiously — do not undo any of the commons hardening
+- [ ] Begin the WIP reintegration triage (next section)
+
+---
+
+## WIP reintegration triage (begins Week 5 / day-after-submission)
+
+### Context
+
+During the planning phase (May 2026), an existing branch named `wip/product-work` was created to park substantial in-flight feature work that was developed on `main` in parallel with the grant-sprint planning. The branch was created to keep the 4-week sprint focused on commons-hardening rather than feature integration, while preserving every byte of recent product engineering for future use.
+
+The `wip/product-work` branch contains, at minimum:
+
+- **CV layer**: `cv_extraction`, `cv_renderer`, `cv_tailor` modules — pull structured CV data from documents, render to printable/exportable formats, tailor CVs per job posting
+- **LLM cost / observability layer**: `llm_cost_tracker`, `llm_pricing`, `llm_response_cache` modules — instrument token usage, attribute cost per call, cache deterministic AI responses
+- **Model routing**: `model_router` — route requests to the cheapest viable model per task
+- **Tool layer**: `tool_actions_store`, `tool_registry`, `tool_use_router`, and the `company_discovery/tools/` directory — internal tool-use orchestration parallel to the MCP server
+- **Probe scripts, tests, screenshots, reports** — development artifacts
+- **`HANDOFF_RESTART.md`** — session-handoff note from a prior coding session
+
+Engineering maturity per module is not yet verified. The triage process below establishes maturity before any reintegration.
+
+### Why a triage process is needed
+
+Three failure modes are common when reintegrating WIP work:
+
+1. **Bulk-merge regression**: pulling all modules in at once causes cascading test failures and obscures which change caused what
+2. **Misaligned features**: modules built for the earlier commercial vision (Pro/Free tier, billing-driven features) may not serve the civic-commons positioning
+3. **Compliance-debt accumulation**: features added without audit logging, transparency notices, or human-oversight hooks accumulate AI Act compliance debt that has to be repaid later — at higher cost
+
+The triage prevents all three.
+
+### Strategic ranking (initial priority — adjusted after triage reveals actual maturity)
+
+| Rank | Module(s) | Strategic alignment | Reasoning |
+|---|---|---|---|
+| 1 | `llm_cost_tracker`, `llm_pricing`, `llm_response_cache` | Highest | Cost-saving-doctrine evidence in code form. Every euro avoided becomes a measurable number. Low integration cost (mostly additive observability around `ai_providers.py`). |
+| 2 | `model_router` | High | Strengthens BYO-AI story and reinforces cost-saving directly. Depends on cost-tracker data to route well; naturally sequenced after rank 1. |
+| 3 | `cv_extraction`, `cv_renderer`, `cv_tailor` | High | CV is the single most-used user touchpoint. Persona panel (especially Mahmoud's Ausbildung-format Bewerbungsmappe need) depends on richer CV capabilities. |
+| 4 | `tool_registry`, `tool_use_router`, `tool_actions_store`, `company_discovery/tools/` | High but framework-shaped | Structurally parallel to the MCP server. In Phase 2's framework extraction (see below), this is likely the internal implementation layer that powers MCP tools we expose externally. Best brought back together with framework-extraction work. |
+| 5 | Probe scripts, screenshots, reports | Low | Development artifacts. Most go to `private/`. A small number of probe scripts may have value as integration tests if they exercise specific flows. |
+| 6 | `HANDOFF_RESTART.md` and similar session-handoff notes | None | Scaffolding, not product. Move to `private/` or delete after content review. |
+
+### The four-question triage gate
+
+Apply to every module before reintegration. A module that fails any one of these does not merge until the failure is resolved.
+
+1. **Strategic alignment**: does it serve the cost-saving doctrine, the MCP composition story, the persona panel's actual needs, or the EU-wide positioning? If not — defer indefinitely or delete.
+2. **Engineering maturity**: are there tests? Does the test suite pass? Are the dependencies pinned? If not — schedule the hardening work *before* merging.
+3. **AI Act compliance**: does the module add new AI-driven behaviour? If so, does it have audit logging, transparency notices, human-oversight hooks per the compliance pack in `10-ai-act-compliance.md`? If not — extend the compliance work to cover it *before* merging.
+4. **Persona impact**: does at least one persona in `07-personas.md` concretely benefit? Can the benefit be described in one specific sentence about a specific persona? If not — the module is solving a hypothetical, not a real need; defer.
+
+### Reintegration discipline (anti-patterns to avoid)
+
+- **Do not merge everything at once.** Each module lands on its own branch, with its own PR, its own test pass, its own rollback path.
+- **Do not merge without tests.** If a WIP module has tests, those run green. If it does not, write them before merging. The cost is real; pay it once.
+- **Do not merge without observation.** Each reintegrated module ships behind a feature flag (env-var-driven) for the first week. Observe before defaulting it on.
+- **Do not merge directly into `main`.** Merge into a Phase 2 working branch (e.g. `phase-2-cost-layer`), exercise it, observe, then merge to main when it has been live and stable for a week.
+- **Do not break the `v0.1.0` release shape.** The grant application points at a specific release artifact. Do not surprise reviewers with `v0.5.0` by the time they look. Tag minor versions, do not skip.
+- **Do not pull modules in just because they are "almost done."** "Almost done" is the most expensive state in software. Either finish it deliberately or leave it parked.
+
+### The triage session — concrete next step
+
+The day after grant submission (Week 5 day 1), run a single triage session with the coding agent:
+
+1. Check out the `wip/product-work` branch and read each module's current state
+2. For each module, apply the four-question gate above and record the answer in a new file `docs/grant/wip-triage-<date>.md`
+3. Sort the modules into three buckets:
+   - **Ready to merge** after a hardening pass (tests + audit logging + transparency notice if AI-related)
+   - **Needs hardening first** before merging is realistic
+   - **Defer to framework-extraction window** OR **delete**
+4. Produce the Phase 2 reintegration plan with the priority order from the strategic ranking, adjusted for whatever the actual code state reveals
+5. Commit the plan to `docs/grant/wip-triage-<date>.md` and link it from this section as the reference
+
+### What success looks like
+
+By the end of Phase 2 (~6–12 months after grant submission):
+
+- The **LLM cost layer** is live, producing real numbers from at least one institutional pilot deployment — cost-saving claims become measured, not estimated
+- The **model router** is routing in production, with telemetry showing actual cost reductions
+- The **CV layer** has shipped its most user-facing capabilities (extraction + tailor at minimum); rendering quality matches German hiring conventions
+- The **tool layer** has been folded into the framework extraction or has been deliberately retired in favour of the MCP-exposed surface
+- All other WIP modules are either reintegrated, deferred with an explicit second-look date, or deleted with a one-line rationale in the triage log
+
+**The single most important rule**: every reintegrated module passes through the same hardening gauntlet the grant sprint built (CI, lint, type check, coverage, security scan, audit logging, AI Act compliance review). The 4 weeks of grant work raise the project's quality bar permanently. Every future feature, including reintegrated WIP, meets that bar or does not ship.
 
 ---
 

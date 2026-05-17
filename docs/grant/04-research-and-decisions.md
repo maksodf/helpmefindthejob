@@ -253,6 +253,26 @@ See `11-institutional-outreach.md` Template F.
 
 **Reasoning**: maintainer's partner takes on the bureaucratic/community-organising work. We do not plan or research this from the technical side; we integrate the partner's outcome when ready.
 
+#### Decision 16: WIP product-work — park, do not integrate during the 4-week grant sprint; triage post-submission
+
+**Decided**: 2026-05-17.
+
+**Context**: The `wip/product-work` branch parks substantial in-flight feature work that was developed on `main` in parallel with grant-sprint planning: CV extraction/renderer/tailor modules, LLM cost tracker / pricing / response cache, model router, tool registry/use-router/actions-store, the `company_discovery/tools/` directory, plus probe scripts and development artifacts.
+
+**Decision**:
+1. Park the WIP entirely during the 4-week grant sprint. No reintegration during Weeks 1–4.
+2. Begin a structured triage session on Week 5 day 1 (the day after grant submission).
+3. Apply a four-question gate to each module (strategic alignment, engineering maturity, AI Act compliance, persona impact) before any module merges.
+4. Reintegrate by priority: LLM cost layer first (cost-saving doctrine evidence in code), then model router, then CV layer, then tool layer with framework extraction. Each module merges through the hardening gauntlet (CI, lint, type check, coverage, security scan, audit logging, AI Act compliance review) — none ships without it.
+
+**Reasoning**:
+- The 4-week sprint is for credibility hardening, not feature integration. NLnet funds existing technical merit made legible; pulling in unstable WIP weakens the application.
+- The WIP modules are strategically aligned (especially the LLM cost layer, which is direct cost-saving-doctrine evidence) but are not required for the grant application. They are first-class candidates for Phase 2.
+- Premature reintegration risks: cascading test failures, compliance debt, and merging modules built for the deprecated commercial vision rather than the civic-commons positioning.
+- The detailed triage process and strategic ranking are documented in `03-post-grant.md` §"WIP reintegration triage."
+
+**Reversibility**: soft. If a specific WIP module is found in Week 2 to be critical to the application (e.g., the LLM cost tracker turns out to produce data we need to substantiate cost-saving claims), it can be individually merged with explicit decision logged here. Default remains: parked.
+
 ---
 
 ## Part C — Open research questions
