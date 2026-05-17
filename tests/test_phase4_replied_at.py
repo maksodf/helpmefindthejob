@@ -1,3 +1,10 @@
+# Copyright (c) 2026 DirectJob Scout contributors
+# SPDX-License-Identifier: Apache-2.0
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License. You may obtain
+# a copy of the License at http://www.apache.org/licenses/LICENSE-2.0.
+
 """Reply-rate signal on ImportedJob (Phase 4 tracker item #42).
 
 Also covers a regression guard: demo-data jobs (#34) must be importable.

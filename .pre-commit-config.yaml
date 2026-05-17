@@ -1,0 +1,20 @@
+# Pre-commit hooks for the DirectJob Scout project.
+#
+# Setup once after cloning:
+#     pip install pre-commit
+#     pre-commit install
+#
+# Week 1 scope: SPDX-header check only. Lint, format, and type-check hooks
+# (ruff, black, mypy) land in Week 3 task 3.2 (CI expansion). The Week 1
+# hook list is intentionally minimal so contributors can install the hook
+# without setting up the full dev-dependency stack first.
+
+repos:
+  - repo: local
+    hooks:
+      - id: spdx-header-check
+        name: Check SPDX-License-Identifier header on Python files
+        entry: python3 scripts/check_spdx_headers.py
+        language: system
+        files: \.py$
+        pass_filenames: true

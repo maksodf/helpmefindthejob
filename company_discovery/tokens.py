@@ -1,3 +1,10 @@
+# Copyright (c) 2026 DirectJob Scout contributors
+# SPDX-License-Identifier: Apache-2.0
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License. You may obtain
+# a copy of the License at http://www.apache.org/licenses/LICENSE-2.0.
+
 """Single-use, time-limited tokens for invitations and password resets.
 
 Tokens are stored as ``HMAC-SHA256(secret_key, raw_token)`` so leaking the

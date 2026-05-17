@@ -1,5 +1,7 @@
 # DirectJob Scout
 
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+
 DirectJob Scout is a self-hosted, chat-driven job-hunting copilot. You talk to an assistant, it pulls roles from multiple sources, and walks you through a guided journey from discovery to a tailored CV and motivation letter — using your own AI provider subscription, or a managed Pro tier.
 
 It combines three parallel discovery rails:

@@ -33,14 +33,14 @@ For task ordering and dependencies, the weeks are roughly sequential but not str
 
 ### 1.1 Licensing (3 h) — BLOCKER FIX
 
-- [ ] Add `LICENSE` file at repo root with full **Apache 2.0** text
-- [ ] Add `NOTICE` file (Apache requirement)
-- [ ] Add `TRADEMARK.md` (Tenzu pattern — separates copyright from trademark)
-- [ ] Add `cla.md` — Contributor License Agreement based on the Apache CLA model
-- [ ] Add SPDX-License-Identifier header to every Python source file (script-driven)
-- [ ] Add `.license-header-template.txt` for future contributors
-- [ ] Add pre-commit hook that checks SPDX headers in new files
-- [ ] Add Apache 2.0 license badge to README
+- [x] Add `LICENSE` file at repo root with full **Apache 2.0** text
+- [x] Add `NOTICE` file (Apache requirement)
+- [x] Add `TRADEMARK.md` (Tenzu pattern — separates copyright from trademark)
+- [x] Add `cla.md` — Contributor License Agreement based on the Apache CLA model
+- [x] Add SPDX-License-Identifier header to every Python source file (script-driven)
+- [x] Add `.license-header-template.txt` for future contributors
+- [x] Add pre-commit hook that checks SPDX headers in new files
+- [x] Add Apache 2.0 license badge to README
 
 ### 1.2 Governance pack (8 h) — BLOCKER FIX
 

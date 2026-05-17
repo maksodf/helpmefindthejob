@@ -1,0 +1,15 @@
+DirectJob Scout
+Copyright 2026 DirectJob Scout contributors
+
+This product includes software developed by the DirectJob Scout
+contributors as an open civic-employment commons project.
+
+DirectJob Scout is hosted as a Programme of The Commons Conservancy
+(application pending — see TRADEMARK.md and the project README for the
+current status of institutional admission).
+
+Third-party software included in or used by this project retains its
+original license and attribution; see the source headers and
+requirements.txt for upstream provenance. When dependencies that require
+a NOTICE entry are introduced, append their attribution to this file
+beneath this header in accordance with Apache 2.0 §4(d).
