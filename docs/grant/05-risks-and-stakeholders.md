@@ -133,13 +133,15 @@ A risk is **Critical** if it can sink the application or the project entirely.
 
 **Owner**: agent execution (verification).
 
-### R15 — Existing production deployment leaks or surprises reviewer (Likelihood: Low, Impact: High)
+### R15 — Existing production deployment leaks or surprises reviewer (Likelihood: Low, Impact: Low — downgraded 2026-05-17)
 
-**Risk**: Maintainer's existing deployment is publicly accessible, contains test data, has commercial framing, or otherwise contradicts the new commons positioning when a reviewer visits.
+**Risk** (original framing, retained for history): Maintainer's existing deployment is publicly accessible, contains test data, has commercial framing, or otherwise contradicts the new commons positioning when a reviewer visits.
 
-**Mitigation**: assess production-deployment state in Week 1; either bring it into alignment with the new positioning or take it offline during the application review window. The new public demo (Week 3) becomes the canonical reference.
+**Downgrade note (2026-05-17)**: The project has never been publicly launched. The only running deployment is a single private instance for one tester (the maintainer's partner — see Decision 17 in `04-research-and-decisions.md`). There is no public URL for a reviewer to find, no paying users, no commercial framing reachable from outside the maintainer's network. The risk surface for this item is effectively the maintainer's own laptop / private VPS, not a public-internet deployment. Likelihood remains Low (only the maintainer can leak it); Impact moves from High to Low because what leaks is a single-tester instance, not commercial product copy or PII at scale.
 
-**Owner**: maintainer (production-deployment decision).
+**Mitigation** (residual): The Week 3 public demo (`02-execution-plan.md` task 3.4) becomes the canonical reference for any reviewer. Until then, the private instance stays private; no public-traffic URL is shared in the application. Sanitisation in Week 1 task 1.4 is treated as a one-way removal rather than a coordinated migration (no users to migrate).
+
+**Owner**: maintainer (private-instance hygiene) + agent execution (Week 3 demo deployment).
 
 ---
 
@@ -163,13 +165,20 @@ For each stakeholder: their role, what we need from them, what they need from us
 - **Engagement status**: not yet contacted.
 - **Next step**: Week 2 — submit application to join. See `02-execution-plan.md`.
 
-### S3 — Maintainer's partner
+### S3 — Maintainer's partner (refined 2026-05-17 — see Decision 17 in `04-research-and-decisions.md`)
 
-- **Role**: co-owner of the bureaucratic and community-organising side of the project.
-- **What we need from them**: handle co-maintainer recruitment, governance question of "is this a solo project or a community project?", lead the eventual Verein or legal-entity decision if needed.
-- **What they need from us**: clarity on what falls in their scope vs. the maintainer's; consistent communication.
-- **Engagement status**: actively involved (per maintainer).
-- **Next step**: handoff the co-maintainer question to them explicitly with a target ("at least one named co-maintainer in AUTHORS.md by Week 3 end").
+- **Role(s)**: collapsed identity covering co-maintainer, sole current tester of the private deployment, HR / bureaucratic-navigation domain expert (the project's substantive credibility on civic-employment know-how), and co-owner of the bureaucratic / community-organising side of the project.
+- **What we need from them**:
+  - Confirmation of preferred public name / handle for `AUTHORS.md` (one-time, Week 1)
+  - Pre-check before any cold-outreach send: do they have pre-existing contacts at MBE-equivalent or IQ-Netzwerk-equivalent organisations through their bureaucratic-domain network? (1 question, sub-1-hour turnaround — warm intros are worth 10× cold emails)
+  - Continued domain-expertise input on persona panel, German bureaucratic flows, ESCO/Anerkennung mappings
+  - Eventual Verein or legal-entity decision contribution if the Commons Conservancy wrapper does not cover everything
+- **What they need from us**: clarity on what falls in their scope vs. the maintainer's; small, well-scoped asks rather than open-ended pulls; consistent communication; credit in `AUTHORS.md` from day one.
+- **Engagement status**: active contributor since project inception. Not a recruitment target — already on the team.
+- **Next step**:
+  - Week 1 (governance commit): maintainer confirms partner's preferred public name / handle before the governance pack is pushed.
+  - Week 1 (outreach): maintainer asks partner the pre-existing-contacts question before any cold message goes out.
+  - Ongoing: maintainer is the side-channel for all partner coordination; executing agents do not block on partner unless explicitly told otherwise.
 
 ### S4 — Housing-agent author (the maintainer's friend)
 

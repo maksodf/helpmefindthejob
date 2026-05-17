@@ -94,6 +94,19 @@ If a number, claim, or decision in `01-project-brief.md` ever seems off, the sou
 | Beratungsstelle advisor hourly cost (loaded) | ~€45 / hour | German NGO budget benchmarks |
 | Professional translator (advisor-client setting) | €60 – €120 / hour | German market benchmark |
 
+### Project deployment state (verified 2026-05-17)
+
+| Fact | Verified value | Source |
+|---|---|---|
+| Public launch status | Never publicly launched | Maintainer attestation, 2026-05-17 |
+| Active deployment | Single private instance, one tester (the maintainer's partner) | Maintainer attestation, 2026-05-17 |
+| Paying users | Zero | Maintainer attestation, 2026-05-17 |
+| Stripe subscriptions | Zero active | Maintainer attestation, 2026-05-17 |
+| Public traffic | None | Maintainer attestation, 2026-05-17 |
+| Commercial residue scope | One-way removal, no user migration required | Implied by all the above |
+
+This clarification reframes parts of the audit in `01-project-brief.md` §4 and downgrades risk R15 in `05-risks-and-stakeholders.md`. See Decision 16 in Part B for the stakeholder consequences.
+
 ---
 
 ## Part B — Strategic decisions log
@@ -253,6 +266,8 @@ See `11-institutional-outreach.md` Template F.
 
 **Reasoning**: maintainer's partner takes on the bureaucratic/community-organising work. We do not plan or research this from the technical side; we integrate the partner's outcome when ready.
 
+**Update (2026-05-17, same day)**: superseded in substance by Decision 17 below. The partner is not a recruitment *target* — the partner is already an active contributor. Decision 15 is preserved for history; Decision 17 is the current operating model.
+
 #### Decision 16: WIP product-work — park, do not integrate during the 4-week grant sprint; triage post-submission
 
 **Decided**: 2026-05-17.
@@ -272,6 +287,25 @@ See `11-institutional-outreach.md` Template F.
 - The detailed triage process and strategic ranking are documented in `03-post-grant.md` §"WIP reintegration triage."
 
 **Reversibility**: soft. If a specific WIP module is found in Week 2 to be critical to the application (e.g., the LLM cost tracker turns out to produce data we need to substantiate cost-saving claims), it can be individually merged with explicit decision logged here. Default remains: parked.
+
+#### Decision 17: Stakeholder collapse — partner is co-maintainer, sole tester, domain expert, and bureaucratic-coordination lead
+
+**Decided / clarified**: 2026-05-17.
+
+**Reasoning**: The "maintainer's partner" referenced in Decision 15 is the same person who is the maintainer's roommate, the sole current tester of the live private deployment, the project's HR / bureaucratic-navigation domain expert (a credibility pillar of the civic-commons positioning), and the named co-maintainer recruitment target. Several previously-distinct stakeholder slots collapse to one trusted long-term contributor.
+
+This is positive for project coherence — one committed contributor rather than a recruitment pipeline of strangers — but must be acknowledged explicitly so future agents, reviewers, and any institutional partner understand the team structure honestly. Single-author concerns (R2 in `05-risks-and-stakeholders.md`) are partially but not fully mitigated by this clarification: the project has two named contributors from day one, but they are co-resident and not legally independent, so the Commons Conservancy wrapper remains the load-bearing continuity guarantee.
+
+**Operational consequences**:
+
+- `AUTHORS.md` ships with the maintainer's handle plus an explicit Co-maintainer placeholder for the partner; resolution per the consent-first authorship policy (see Decision 18).
+- Partner does not block any individual Week 1 work item. Coordination with the partner is the maintainer's side-channel, not the executing agent's.
+- The "co-maintainer recruitment" framing in Decision 15 is recast as "formalising the partner's already-existing role" — the recruitment work is documentation, not search.
+- Stakeholder S3 in `05-risks-and-stakeholders.md` is refined accordingly.
+- R15 (production-deployment leak) is downgraded to Low / Low in `05-risks-and-stakeholders.md` because the deployment has never been public; the partner is the only person ever to have seen it.
+- The HR / bureaucratic-navigation domain-expert credential is internal to the project; this strengthens the credibility narrative without requiring an external letter of support on that dimension.
+
+**Reversibility**: Soft. If the partner withdraws from project involvement, the recruitment-pipeline framing of Decision 15 returns to active operating mode.
 
 ---
 

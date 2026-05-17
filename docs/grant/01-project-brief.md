@@ -96,6 +96,10 @@ Follow-on grants are anticipated in a multi-grant arc — the Redwax precedent d
 
 Audit summary, May 2026. The unflinching version is documented in earlier planning iterations; this section is the synthesis we work from.
 
+### Deployment state (clarified 2026-05-17)
+
+The project has **never been publicly launched**. A single private-instance deployment runs for one tester — the maintainer's partner — who also serves as the project's HR / bureaucratic-navigation domain expert and named co-maintainer (see Decision 17 in `04-research-and-decisions.md`). There are no paying users, no Stripe subscriptions, no public traffic. Consequence: Week 1 sanitisation and README rewrite are unconstrained one-way operations, not coordinated migrations. R15 in `05-risks-and-stakeholders.md` is downgraded to Low / Low accordingly.
+
 ### Strong (commons-quality already)
 
 - Working multi-source job discovery (career-page scanning + federated aggregators + bookmarklet capture)
