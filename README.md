@@ -1,214 +1,249 @@
 # DirectJob Scout
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+[![CI](https://img.shields.io/badge/CI-pending-lightgrey.svg)](.github/workflows/)
+[![Release](https://img.shields.io/badge/release-pre--v0.1.0-lightgrey.svg)](#)
+[![Languages](https://img.shields.io/badge/languages-EN%20%2B%20DE-informational.svg)](static/i18n/)
+[![MCP](https://img.shields.io/badge/MCP-2024--11--05-blueviolet.svg)](https://modelcontextprotocol.io)
 
-DirectJob Scout is a self-hosted, chat-driven job-hunting copilot. You talk to an assistant, it pulls roles from multiple sources, and walks you through a guided journey from discovery to a tailored CV and motivation letter — using your own AI provider subscription, or a managed Pro tier.
+> Aïcha is a Tunisian-trained registered nurse working through §16d
+> Anerkennung in Berlin. Her German is B1 climbing toward B2, her CV is
+> shaped for a Tunisian recruiter, and the role she is qualified for is
+> open right now at three Berlin clinics — but the recognition path, the
+> recruiter-side bias, and the bureaucratic stack between her and that
+> role are not something Google or LinkedIn can navigate for her.
+> **DirectJob Scout is the open civic-employment commons built so Aïcha,
+> and the millions like her, can navigate that stack themselves.**
 
-It combines three parallel discovery rails:
+DirectJob Scout is an **open-source EU-wide civic-employment commons** —
+an MCP-composable copilot that captures specialist HR and
+bureaucratic-navigation knowledge into modular, standards-anchored tools
+and puts it directly into the hands of migrants and EU-mobile workers
+across Europe. Germany is the first reference deployment because that is
+where the maintainer is; the architecture is country-neutral.
 
-- **Career-page monitoring** of companies you add to your watchlist (with robots.txt checks and page limits).
-- **Live job-aggregator search** across Adzuna, Indeed, LinkedIn, and other configurable providers.
-- **Bookmarklet captures** for saving roles you find on third-party sites.
+The project is being prepared as a Programme of **The Commons
+Conservancy** (the NLnet-co-founded Dutch stichting whose Programmes
+include Redwax, FileSender, eduVPN, and others). License is **Apache 2.0
+with a Contributor License Agreement** so that public-sector and
+non-profit institutions across the EU can adopt, fork, and self-host
+without licence friction. See [`docs/grant/`](docs/grant/) for the full
+strategic context.
 
-Discovered jobs flow into a review queue, then into an AI-assisted pipeline that scores fit, tailors your CV per role, drafts cover letters, and tracks which CV variant gets replies.
+**Status**: pre-v0.1.0 alpha. Working hosted reference implementation in
+private testing; public demo deploys in Week 3 of the grant sprint
+(see [Roadmap](#roadmap)). The main branch is intended to stay buildable
+but may contain unfinished work. Honest about instability — see
+[`CONTRIBUTORS-NOTE.md`](CONTRIBUTORS-NOTE.md) for the project's history
+including the deprecated commercial phase.
 
-The current build is a working hosted MVP. It is **not yet sellable-ready** — see [`docs/sellable-readiness-gap-analysis.md`](docs/sellable-readiness-gap-analysis.md) for the open work, and [`keepbuildingtill100%tracker.MD`](keepbuildingtill100%tracker.MD) for the live roadmap.
+## What it does
 
-## How It Works
+DirectJob Scout combines three discovery rails behind a single chat
+interface:
 
-After signing in you land on **Today** with a chat sidebar as the primary interface. Type a slash command or natural language and the assistant handles the rest:
+- **Career-page monitoring** of companies the user adds to a watchlist
+  (robots.txt-aware, page-bounded, redirect-safe).
+- **Live job-aggregator fan-out** across configurable providers
+  (Adzuna, Indeed, LinkedIn public listings, federated country-specific
+  career pages), with deduplication and source attribution.
+- **Bookmarklet captures** for roles seen on third-party sites that the
+  scanners do not reach.
 
-- `/find a job` — starts the 12-phase journey wizard
-- `add Charité` — adds a company to your watchlist
-- `/profile`, `/applied`, `/new-search`, `/help` — direct commands
-- Natural language ("suche stelle in Berlin", "find data engineer roles") is routed via keyword + AI intent fallback
+Discovered jobs flow into a structured 12-phase journey state machine
+(see [`company_discovery/journey.py`](company_discovery/journey.py)) that
+gates every AI invocation to a phase and asks for user confirmation
+before any write. From there the user can score role-fit, generate a
+tailored CV per opening, draft a motivation letter grounded in their CV
+facts, and track which CV variant gets replies. Anerkennung,
+Beratungsstelle, and Jobcenter context is built into the prompts so the
+guidance is actually useful to someone navigating §16d, Blue Card, §24,
+subsidiary protection, or Romanian / EU-citizen tracks rather than a
+generic English-speaking job market.
 
-### The Job-Search Journey (12 phases)
+## Quickstart
 
-1. **Greet** — clarify what you're looking for
-2. **Discover** — role, location, seniority
-3. **CV inspect** — pull facts from your stored CV
-4. **Inspiration** — suggest lateral roles you might not have considered
-5. **Preferences** — remote, salary, company size
-6. **Aggregator search** — fan out across job boards in parallel
-7. **Review & categorize** — accept / reject / save for later
-8. **Drill** — deeper analysis on a chosen role
-9. **Tailor CV** — generate a role-specific CV variant
-10. **Draft letter** — motivation letter grounded in CV facts
-11. **CV coaching** — gap analysis and improvement suggestions
-12. **Done** — outcome captured for tracking
-
-Every AI write is gated by a confirmation prompt. Missing parameters trigger multi-turn elicitation ("Which location?") rather than failing.
-
-### Other Built-in Flows
-
-- **CV builder** — 5-question sectional interview (header → summary → experience → education → skills); AI reformats your raw text with fact-grounding to avoid hallucination; encrypted at rest (ChaCha20-Poly1305).
-- **CV variant tracking** — tracks which tailored CV gets replies; recommends your best-performing variant for new roles.
-- **Skill-gap atlas** — extracts gaps from job descriptions ("JD wants Kubernetes, your CV doesn't mention it") and aggregates into a "Top 3 skills holding you back" dashboard card with "add this → unlocks N more roles" hints.
-- **Persona system** — five personas (healthcare-management, tech, marketing, finance, product-management) carry sector weights and role suggestions; auto-selected from your job-type choice; drives ranking.
-- **Outcome tracking** — Applied / Replied / Interviewing / Offer / Rejected timeline with reply-rate analytics ("small companies <50 reply 3× more").
-- **Workspaces** — multi-seat with admin invites and role-based membership.
-- **Account stack** — email verification, TOTP 2FA, 7-day deletion grace, encrypted profile data.
-- **i18n** — full English + German, including a German Impressum (§5 TMG) and locale-aware date / yes-no parsing (ja/nein).
-- **SEO pages** — auto-generated `/jobs/<slug>` landing pages for organic discovery, configured via `data/seo-pages.json`.
-- **MCP server** — `mcp_server.py` exposes the toolset as a Claude-native MCP server (JSON-RPC over stdio).
-
-## Plans
-
-- **Free** — 3 saved searches, manual / bring-your-own AI, 30-day retention.
-- **Pro** (€5/mo or €40/year) — unlimited searches, managed AI, 90-day retention, daily digest. Stripe checkout, webhooks, and customer portal are wired in.
-
-## Run With Python
-
-Requires Python 3.11+.
+A clean clone should land you at a working local instance in five
+minutes.
 
 ```bash
+git clone https://github.com/maksodf/directjob-scout.git
+cd directjob-scout
+
+# Option 1: Python directly. Requires Python 3.11+.
+pip install -r requirements.txt
 python3 app.py
-```
+# Open http://127.0.0.1:8765
 
-Open:
-
-```text
-http://127.0.0.1:8765
-```
-
-Optional configuration:
-
-```bash
-COMPANY_DISCOVERY_DATA_DIR=./data \
-COMPANY_DISCOVERY_HOST=127.0.0.1 \
-COMPANY_DISCOVERY_PORT=8765 \
-python3 app.py
-```
-
-## Run With Docker
-
-```bash
+# Option 2: Docker.
 docker compose up --build
+# Open http://127.0.0.1:8765
 ```
 
-Open:
+Tests on a fresh clone currently require Docker due to a known
+`cryptography` / `cffi` build issue tracked for Week 3 of the grant
+sprint. Inside Docker:
 
-```text
-http://127.0.0.1:8765
+```bash
+docker compose exec directjob-scout python3 -m unittest discover -v
 ```
 
-Data is stored in `./data` by default.
+Configuration is environment-variable driven; see
+[`.env.example`](.env.example) for the full list. The
+[Deployment](#self-hosting) section covers production with Caddy HTTPS.
 
-On first local run, create the first account from the sign-in screen. For production, set `DIRECTJOB_ADMIN_EMAIL` and `DIRECTJOB_ADMIN_PASSWORD` instead.
+## The personas
 
-## Deploy Online
+DirectJob Scout's design is anchored by a **panel of five personas** —
+the system serves a category of human situations, not a single
+demographic. The panel doubles as a forcing function for accessibility,
+RTL-language readiness, regulated-profession recognition flows, and EU
+vs non-EU work-rights nuances. Real consenting anonymised stories
+replace fictional ones over time. See
+[`docs/grant/07-personas.md`](docs/grant/07-personas.md) for the full
+profiles.
 
-Use the production Compose stack with Caddy HTTPS:
+| Persona | Origin | Profession | Status | Solves |
+|---|---|---|---|---|
+| Aïcha | Tunisia | Registered nurse | §16d Anerkennung | Recognition-friendly employer matching + clinical-German CV |
+| Yusuf | Turkey | Mechanical engineer | EU Blue Card pending | Post-arrival timeline + cross-city role comparison |
+| Olga | Ukraine | Senior frontend dev | §24 protection | English-team / remote tech matching + residence-status explainer |
+| Mahmoud | Syria | Trade apprentice | Subsidiärer Schutz | Ausbildung aggregation + Handwerk-format CV |
+| Maria | Romania | Care worker | EU citizen | Language-barrier-friendly Pflegedienst matching |
+
+## Standards we implement
+
+The project is standards-anchored on purpose. Adopters inherit
+interoperability and the ability to switch out individual layers
+without forking.
+
+- **Apache License 2.0** ([LICENSE](LICENSE)) — broad permissive
+  software licence with a Contributor License Agreement
+  ([cla.md](cla.md)) modelled on the Apache Individual CLA.
+- **Model Context Protocol (MCP)** — composition surface, version
+  `2024-11-05`. JSON-RPC over stdio. Public tool catalogue with JSON
+  Schemas (full catalogue documentation lands in Week 2). See
+  [modelcontextprotocol.io](https://modelcontextprotocol.io).
+- **schema.org JobPosting** — canonical structure for job records.
+- **ESCO** (European Skills, Competences, Qualifications and
+  Occupations) — taxonomy for cross-EU occupation mapping; integrated
+  in Week 2.
+- **EURES schema** — interoperability with the European Employment
+  Services portal; export endpoint in Week 2.
+- **WCAG 2.2 AA** — accessibility target. Honest audit and remediation
+  plan in [`ACCESSIBILITY.md`](ACCESSIBILITY.md) (lands Week 3).
+- **RFC 9116** — `/.well-known/security.txt` for vulnerability
+  disclosure (lands with the public demo in Week 3).
+- **GDPR alignment** — encrypted profile-at-rest with
+  ChaCha20-Poly1305, user-sovereign AI provider choice (BYO-AI
+  including Ollama for fully-offline mode), explicit-consent data
+  egress, user-export and user-deletion paths.
+- **EU AI Act compliance** — designed for high-risk AI under Annex III
+  §4. Risk-management plan, data-governance documentation, audit
+  logging, transparency notice, human-oversight UI, accuracy + bias
+  testing. Full pack in [`compliance/`](compliance/) (lands Week 2,
+  ahead of the 2 August 2026 enforcement date).
+
+## MCP composition
+
+The MCP server in [`mcp_server.py`](mcp_server.py) exposes the project
+as composable civic infrastructure. Other open civic agents — housing,
+healthcare, residency, education — compose with DirectJob Scout
+without forking either project. See
+[`docs/grant/09-mcp-composition.md`](docs/grant/09-mcp-composition.md)
+for the composition patterns (sequential handoff, profile-shared,
+orchestrated) and
+[`docs/grant/01-project-brief.md`](docs/grant/01-project-brief.md) §8
+for the architectural reasoning.
+
+A reference integration with an open housing agent — proving the
+composition claim end-to-end — ships in Week 2 of the grant sprint
+under [`examples/`](examples/) (TBD).
+
+## Self-hosting
+
+DirectJob Scout is designed to be deployed by a single NGO, a
+Beratungsstelle, a Jobcenter, a university career service, or an
+individual at home, on commodity hardware. There is no per-seat licence
+fee and no managed cloud lock-in. The reference deployment uses Docker
+Compose with Caddy HTTPS:
 
 ```bash
 cp .env.example .env
-# fill .env with domain, admin email/password, and DIRECTJOB_SECRET_KEY
+# Edit .env: domain, admin email/password, DIRECTJOB_SECRET_KEY,
+# DIRECTJOB_PUBLIC_URL, SMTP credentials, AI provider config.
 docker compose -f docker-compose.prod.yml --env-file .env up -d --build
 ```
 
-Full checklist: [docs/production-deployment.md](docs/production-deployment.md).
+Backup, restore, restore-drill, smoke checks, uptime checks, and
+TLS-expiry monitoring scripts live in [`scripts/`](scripts/). A `Nix`
+flake for reproducible builds lands in Week 3.
 
-For a public deployment, the app requires login, secure cookies, CSRF protection, per-user data isolation, and production startup checks.
+For sensitive deployments, the BYO-AI abstraction
+([`company_discovery/ai_providers.py`](company_discovery/ai_providers.py))
+supports fully-offline operation via Ollama; the chat router falls back
+to deterministic templated responses when no provider is configured,
+so the user-facing flow still works.
 
-## Tester Accounts
+## Hosted by
 
-The first production account is the admin account from `DIRECTJOB_ADMIN_EMAIL` / `DIRECTJOB_ADMIN_PASSWORD`. After signing in as an admin, open `Tester Accounts` to create tester logins, reset tester passwords, activate/deactivate accounts, or grant/revoke admin role. Testers only need the app URL plus their email/password; they never need SSH or server commands.
+**Hosted by The Commons Conservancy** *(application pending — Week 2 of
+the grant sprint).* Once admission lands, this section is updated with
+the Programme page link and any required acknowledgment language.
 
-## AI Providers
+## Roadmap
 
-The app does not require one fixed AI vendor. Users can select manual handoff, OpenAI-compatible APIs, Gemini, DeepSeek, OpenRouter, Ollama, Codex CLI, Claude Code, or a custom provider path.
+A quarterly roadmap with explicit milestones for 2026 Q3 → 2028 Q2 lands
+in [`ROADMAP.md`](ROADMAP.md) in Week 3. Near-term commitments visible
+from this file:
 
-For API providers, users can either reference a server environment variable such as `OPENAI_API_KEY` or enter a session-only API key before clicking `Run AI`. Session keys are sent only with the analysis request and are not saved in the app database or backup export.
+- **Week 1 (current)**: licensing, governance, sanitisation, README
+  positioning, outreach foundations. See
+  [`docs/grant/02-execution-plan.md`](docs/grant/02-execution-plan.md).
+- **Week 2**: MCP server documentation, ESCO + EURES integration,
+  reference housing-agent integration, AI Act compliance pack, Commons
+  Conservancy application submitted.
+- **Week 3**: CI expansion, public demo deployment, documentation site,
+  accessibility audit, translator pathway, reproducible Nix build.
+- **Week 4**: SUSTAINABILITY.md, signed releases with SBOM, NLnet NGI
+  Zero Commons Fund application.
 
-When the journey or chat router needs AI but no provider is set, it falls back to templated responses so the flow still works end-to-end.
+## Documentation
 
-## Safety Model
+- [`docs/grant/`](docs/grant/) — strategic source of truth: project
+  brief, execution plan, decisions log, research notes, personas,
+  cost-saving doctrine, MCP composition spec, AI Act compliance plan.
+- [`CONTRIBUTING.md`](CONTRIBUTING.md) — how to contribute.
+- [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) — Contributor Covenant 2.1.
+- [`SECURITY.md`](SECURITY.md) — private vulnerability disclosure.
+- [`SUPPORT.md`](SUPPORT.md) — where to ask questions.
+- [`AUTHORS.md`](AUTHORS.md), [`ACKNOWLEDGMENTS.md`](ACKNOWLEDGMENTS.md) — who built this.
+- [`TRADEMARK.md`](TRADEMARK.md) — name and mark usage.
+- [`CONTRIBUTORS-NOTE.md`](CONTRIBUTORS-NOTE.md) — honest project history.
+- **Documentation site**: lands in Week 3 at `docs.<public-domain>`.
+- **Public demo**: lands in Week 3 at `demo.<public-domain>` with the
+  five-persona panel pre-seeded.
 
-- Password login is required for API access.
-- Mutating requests require CSRF tokens.
-- User data is scoped by authenticated user.
-- No broad crawling.
-- No login/CAPTCHA bypass.
-- No restricted-platform scraping.
-- robots.txt is checked before page fetches.
-- Redirect targets are checked independently.
-- Scans are bounded by pages, response size, redirects, and delay.
-- Aggregator providers respect source attribution for ToS compliance.
+## Why this exists
 
-## Backup
+The honest version: every advisor at a Migrationsberatungsstelle, every
+caseworker at an Optionskommune, every nurse-recognition coordinator,
+every Anerkennung specialist already holds in their head most of what
+DirectJob Scout will eventually codify. Their time is rationed. Their
+caseload is structurally larger than their capacity. Their advice is
+rarely written down in a form a foreign-credentialed worker can act on
+alone at 11 p.m. between two shifts. The opportunity is to put that
+specialist knowledge into modular, MCP-composable tools — under an
+open licence, AI Act compliant by design, hosted by a Dutch stichting
+that outlasts any one maintainer — and to evaluate every feature by
+whether it reduces institutional cost while improving end-user
+outcomes. See
+[`docs/grant/08-cost-saving-doctrine.md`](docs/grant/08-cost-saving-doctrine.md)
+for the full doctrine.
 
-Use **Settings → Backup &amp; restore** to export/import a JSON backup. The backup contains watchlist, discovery runs, scans, discovered jobs, imported jobs, schedule settings, and non-secret AI provider configuration.
+## Licence
 
-For server-side snapshots (raw SQLite + JSON), use:
+Apache License 2.0 — see [`LICENSE`](LICENSE), [`NOTICE`](NOTICE),
+[`TRADEMARK.md`](TRADEMARK.md), and [`cla.md`](cla.md).
 
-```bash
-./scripts/backup-production.sh
-```
-
-This produces a timestamped tarball in `./backups/` using SQLite's online backup API for WAL-safe copies.
-
-## Operations Scripts
-
-- `scripts/start.sh` — start the app with the configured host/port.
-- `scripts/production-smoke.sh` — black-box smoke check against the deployed URL (anonymous probes plus optional admin-authenticated bootstrap when `ADMIN_EMAIL`/`ADMIN_PASSWORD` are set).
-- `scripts/backup-production.sh` — Docker-volume snapshot to a local tarball.
-- `scripts/backup-retention.sh` — prune local tarballs older than `BACKUP_RETENTION_DAYS` (default 30).
-- `scripts/restore-drill.sh path/to/backup.tar.gz` — restore-drill rehearsal: spins up a sidecar container, restores the backup into a throwaway volume, runs the smoke script, tears down.
-- `scripts/run-e2e.sh` — boot the app on a free port and run the Playwright E2E suite. Requires a one-time `pip install playwright && playwright install chromium`.
-
-## Email transport
-
-DirectJob Scout sends invites and password-reset links via the configured
-transport. With no SMTP env vars set it defaults to `ConsoleTransport`,
-which records every send to `data/email_outbox.log`. To wire up SMTP for
-production, set:
-
-```bash
-DIRECTJOB_EMAIL_BACKEND=smtp
-DIRECTJOB_SMTP_HOST=smtp.example.com
-DIRECTJOB_SMTP_PORT=587
-DIRECTJOB_SMTP_USERNAME=...
-DIRECTJOB_SMTP_PASSWORD=...
-DIRECTJOB_SMTP_STARTTLS=true
-DIRECTJOB_EMAIL_FROM=no-reply@your-domain.example
-DIRECTJOB_PUBLIC_URL=https://app.directjob-scout.example
-```
-
-Without `DIRECTJOB_PUBLIC_URL`, links use relative paths and only resolve
-when the recipient opens the app on the same domain they were sent from.
-
-## Quotas
-
-Each tester is capped per UTC day at 50 scans and 50 AI analyses by
-default. They can run up to 3 concurrent scans, and any one career-page
-domain is limited to 30 scans per hour across the whole workspace.
-Tune via `DIRECTJOB_QUOTA_*` env vars; see `company_discovery/quotas.py`.
-
-## Legal pages
-
-`/privacy`, `/terms`, `/data-retention`, and the German `/impressum` are
-served as static HTML and linked from the auth gate footer and Settings.
-They are written as product-honest summaries; **counsel must review them
-before commercial sale.**
-
-## Admin Audit Log
-
-Admin actions (create user, change role, change active state, reset password) are appended to `data/admin_audit.log` as one JSON object per line. Each entry records the action, actor, target, and timestamp.
-
-## Code Map
-
-| Path | Role |
-|---|---|
-| `app.py` | HTTP handler, session management, chat/journey dispatch |
-| `company_discovery/chat_router.py` | Slash commands, intent routing, multi-turn state machine |
-| `company_discovery/journey.py` | 12-phase job-search wizard |
-| `company_discovery/aggregators.py`, `aggregator_providers.py` | Job-board fan-out, dedup, source attribution |
-| `company_discovery/personas.py` | Persona definitions, sector weights, ranking |
-| `company_discovery/cv_builder.py` | Sectional CV interview, fact-grounding |
-| `company_discovery/analysis.py` | AI calls: fit, tailor, cover letter, decision brief |
-| `company_discovery/auth.py` | Users, 2FA, invites, email verify, deletion |
-| `company_discovery/billing.py` | Stripe, plan gates, quotas |
-| `company_discovery/service.py` | Watchlist scan orchestration |
-| `mcp_server.py` | Claude-native MCP server (JSON-RPC over stdio) |
-| `static/i18n/{en,de}.json` | Translation bundles |
+Copyright (c) 2026 DirectJob Scout contributors.

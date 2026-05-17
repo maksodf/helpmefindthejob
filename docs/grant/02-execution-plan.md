@@ -57,16 +57,16 @@ For task ordering and dependencies, the weeks are roughly sequential but not str
 
 ### 1.3 README rewrite (4 h) — BLOCKER FIX
 
-- [ ] Open with the new positioning: "DirectJob Scout is an open civic employment commons for the European labor-shortage gap..."
-- [ ] First sentence references at least one persona concretely (e.g., "Aïcha, a Tunisian-trained nurse working through Anerkennung in Berlin, opens DirectJob Scout.")
-- [ ] Add badges row: license (Apache 2.0), CI status, latest release, code coverage, languages, MCP-protocol version
-- [ ] Add one screenshot or animated GIF demoing the chat journey end-to-end
-- [ ] Add "Standards we implement" section: MCP, schema.org JobPosting, ESCO, EURES schema, WCAG 2.2 AA (target), RFC 9116, GDPR-aligned, Apache 2.0
-- [ ] Move Pro/Free billing section below the fold or out of public README entirely
-- [ ] Add "Hosted by" notice for The Commons Conservancy (placeholder if not yet admitted)
-- [ ] Add quickstart that genuinely works in 5 minutes from a clean machine
-- [ ] Add link to documentation site (placeholder if not built yet — built in Week 3)
-- [ ] Add link to public demo (placeholder if not built yet — built in Week 3)
+- [x] Open with the new positioning: civic-commons framing from `01-project-brief.md` §2 (EU-wide, Germany-first, MCP-composable infrastructure)
+- [x] First sentence references persona Aïcha concretely (Tunisian-trained nurse, §16d Anerkennung in Berlin)
+- [x] Add badges row: license (Apache 2.0), CI placeholder, latest release placeholder, languages (EN+DE), MCP version placeholder
+- [ ] Add one screenshot or animated GIF demoing the chat journey end-to-end *(deferred to Week 3 alongside the public demo deployment so the captured screenshot reflects the canonical reference state, not the pre-launch private instance)*
+- [x] Add "Standards we implement" section: MCP, schema.org JobPosting, ESCO, EURES, WCAG 2.2 AA target, RFC 9116, GDPR-aligned, Apache 2.0, EU AI Act
+- [x] Pro/Free billing removed entirely from public README (per maintainer instruction; no transition language needed because the deployment never had paying users)
+- [x] "Hosted by The Commons Conservancy" notice with application-pending placeholder
+- [x] Quickstart that genuinely works in 5 minutes from a clean machine (Python or Docker path)
+- [x] Link to documentation site placeholder (Week 3)
+- [x] Link to public demo placeholder (Week 3)
 
 ### 1.4 Sanitise internal residue (4 h) — MAJOR FIX
 
