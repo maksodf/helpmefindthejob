@@ -44,16 +44,16 @@ For task ordering and dependencies, the weeks are roughly sequential but not str
 
 ### 1.2 Governance pack (8 h) — BLOCKER FIX
 
-- [ ] `CONTRIBUTING.md` — covers dev setup, code style, commit message convention, PR process, DCO sign-off OR CLA sign-up
-- [ ] `CODE_OF_CONDUCT.md` — full Contributor Covenant 2.1 with maintainer email for reports
-- [ ] `SECURITY.md` — vulnerability reporting channel, response SLA, contact email, supported versions
-- [ ] `SUPPORT.md` — where to ask questions, expected response times, channels
-- [ ] `AUTHORS.md` — start with the lone maintainer; placeholder for co-maintainers and translator credits
-- [ ] `ACKNOWLEDGMENTS.md` — credit MCP ecosystem, Redwax inspiration, NLnet if funded, prior art
-- [ ] `FUNDING.yml` in `.github/` — point to GitHub Sponsors or Open Collective placeholder
-- [ ] `.github/ISSUE_TEMPLATE/` — bug, feature, security templates
-- [ ] `.github/PULL_REQUEST_TEMPLATE.md`
-- [ ] `CODEOWNERS` — at minimum the lone maintainer until co-maintainers join
+- [x] `CONTRIBUTING.md` — covers dev setup, code style, commit message convention, PR process, DCO sign-off OR CLA sign-up
+- [x] `CODE_OF_CONDUCT.md` — adopts Contributor Covenant 2.1 by reference (canonical URL) per content-policy pivot; not embedded verbatim
+- [x] `SECURITY.md` — vulnerability reporting channel, response SLA, contact email, supported versions
+- [x] `SUPPORT.md` — where to ask questions, expected response times, channels
+- [x] `AUTHORS.md` — maintainer + partner with TBD-name placeholders (resolved before push); template for future contributors and translator credits
+- [x] `ACKNOWLEDGMENTS.md` — credit MCP ecosystem, Redwax inspiration, NLnet if funded, prior art
+- [x] `FUNDING.yml` in `.github/` — placeholder (GitHub Sponsors / Open Collective / Commons Conservancy donation channel TBD)
+- [x] `.github/ISSUE_TEMPLATE/` — bug, feature, security templates
+- [x] `.github/PULL_REQUEST_TEMPLATE.md`
+- [x] `CODEOWNERS` — at minimum the lone maintainer until co-maintainers join
 
 ### 1.3 README rewrite (4 h) — BLOCKER FIX
 

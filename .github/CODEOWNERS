@@ -1,0 +1,22 @@
+# DirectJob Scout — Code Owners
+#
+# This file tells GitHub who is automatically requested for review on
+# pull requests that touch matching paths. The maintainer is currently
+# the sole owner of every path; this expands as co-maintainers are
+# formally onboarded (see AUTHORS.md and docs/grant/04-research-and-decisions.md
+# Decision 16 for the current team-structure context).
+#
+# Syntax: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Catch-all — the maintainer owns everything until co-maintainers are
+# named and have accepted the responsibility.
+*       @maksodf
+
+# When co-maintainers are formally onboarded, override specific paths
+# here, for example:
+#
+# /docs/                          @maksodf @co-maintainer-handle
+# /static/i18n/de.json            @maksodf @german-translation-reviewer
+# /compliance/                    @maksodf @ai-act-compliance-lead
+#
+# Keep the catch-all as a backstop so no path is unowned.

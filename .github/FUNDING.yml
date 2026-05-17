@@ -1,0 +1,20 @@
+# DirectJob Scout funding configuration for GitHub Sponsors-style links.
+#
+# All entries are placeholders during the May–August 2026 NLnet grant
+# sprint. Real funding handles land in Week 4 (NLnet acknowledgment if
+# funded) and post-grant (Commons Conservancy donation channel once the
+# project is admitted as a Programme).
+#
+# Reference: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/displaying-a-sponsor-button-in-your-repository
+
+# github: TBD-maintainer-github-sponsors-handle
+# open_collective: TBD-directjob-scout-collective
+# ko_fi: TBD
+# tidelift: TBD
+# custom:
+#   - https://commonsconservancy.org/  # Once admitted; donation path TBD
+
+# Empty placeholder until at least one real channel is live. GitHub
+# renders the Sponsor button only when at least one entry above is
+# uncommented and resolves; until then this file stays as documentation
+# of intent.
