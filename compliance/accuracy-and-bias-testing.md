@@ -195,7 +195,7 @@ Each claim is tagged `proven` / `plausible` / `aspirational` in the cost-saving 
 
 ## 8. Current results
 
-**As of 2026-05-18**: the methodology is documented but **not yet executed** at full scale. The standing 974-test suite covers the deterministic-component accuracy (rule-based scoring, schema validation, locale parsing, encryption-at-rest). The AI-component bias-testing methodology is scheduled for execution as part of Week-3 partner-NGO pilot collaboration; results land in `docs/grant/bias-testing-<date>.md` reports.
+**As of 2026-05-18**: the methodology is documented but **not yet executed** at full scale. The standing 994-test suite covers the deterministic-component accuracy (rule-based scoring, schema validation, locale parsing, encryption-at-rest). The AI-component bias-testing methodology is scheduled for execution as part of Week-3 partner-NGO pilot collaboration; results land in `docs/grant/bias-testing-<date>.md` reports.
 
 The honest status: this document describes a methodology committed to before its full execution at scale. The methodology is the contract; the results are pending. We disclose the gap in the transparency notice ("the system's bias profile is being tested in partner-NGO collaboration; preliminary results due Week 3 of the grant sprint").
 

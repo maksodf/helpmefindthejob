@@ -74,7 +74,7 @@ Two surfaces:
 The project is a single-maintainer codebase with a co-maintainer being formalised (see Decision 17). Development follows:
 
 - **Conventional Git workflow**: feature branches → PRs → reviewed merge to `claude/project-analysis-bpHCo` (the active working branch during the grant sprint) or `main`.
-- **Test-driven development** where applicable: 974+ tests across 76+ test files; full suite runs in ~18 s on bare host.
+- **Test-driven development** where applicable: 994+ tests across 76+ test files; full suite runs in ~20 s on bare host.
 - **CI**: GitHub Actions matrix on Python 3.11 + 3.12; MCP integration test workflow at [`.github/workflows/mcp-integration.yml`](../.github/workflows/mcp-integration.yml).
 - **Linting and security**: planned Week 3 (CI expansion in `02-execution-plan.md` §3.2): ruff, mypy, pip-audit, codespell.
 - **Documentation co-evolves**: every architectural change updates [`../ARCHITECTURE.md`](../ARCHITECTURE.md); every standards-relevant change updates [`../STANDARDS.md`](../STANDARDS.md); every AI-Act-relevant change updates this compliance pack.

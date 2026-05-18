@@ -7,10 +7,9 @@ labels: ["enhancement"]
 
 ## The problem this solves
 
-<!-- What user or deployer pain point does this address? Frame in terms
-of a real situation, ideally referencing one of the project's five
-personas (Aïcha, Yusuf, Olga, Mahmoud, Maria) if relevant. See
-docs/grant/07-personas.md. -->
+<!-- What user or deployer pain point does this address? Frame in
+terms of a real situation, ideally referencing the persona panel
+(`docs/grant/07-personas.md`) where relevant. -->
 
 ## Proposed behavior
 

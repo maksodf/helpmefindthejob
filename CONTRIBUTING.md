@@ -168,8 +168,10 @@ body is optional but encouraged for anything non-trivial.
    routing decision.
 4. Update relevant documentation (README, ARCHITECTURE.md, MCP catalogue,
    CHANGELOG.md once that exists in Week 3).
-5. Ensure `python3 -m unittest discover` and (if you ran them) the
-   Playwright suite pass. CI runs the same on push.
+5. Ensure `python3 -m unittest discover -s tests` (the bare
+   `discover` from repo root collects zero tests because the project's
+   tests live under `tests/`) and, if you ran them, the Playwright
+   suite pass. CI runs the same on push.
 6. Open a pull request using the
    [pull-request template](.github/PULL_REQUEST_TEMPLATE.md). Fill every
    section.

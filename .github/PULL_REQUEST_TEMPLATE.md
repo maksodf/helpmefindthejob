@@ -39,9 +39,11 @@ that should be exercised. -->
 - [ ] New Python files include the SPDX header from
       [`.license-header-template.txt`](../.license-header-template.txt).
       `python3 scripts/check_spdx_headers.py` passes locally.
-- [ ] Tests pass locally: `python3 -m unittest discover` (or the
-      Docker-container path if you hit the known `cryptography`/`cffi`
-      build issue — Week 3 task 3.1 will remove that workaround).
+- [ ] Tests pass locally: `python3 -m unittest discover -s tests`
+      (the bare `discover` invocation collects zero tests because the
+      project's tests live under `tests/`). If you hit any install or
+      runtime friction, see `CONTRIBUTING.md` "Development Setup" for
+      the supported install path.
 - [ ] User-facing strings exist in both `static/i18n/en.json` and
       `static/i18n/de.json`. (i18n parity tests will fail otherwise.)
 - [ ] Documentation updated where behavior or interface changed
