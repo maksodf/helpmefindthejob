@@ -105,7 +105,7 @@ For task ordering and dependencies, the weeks are roughly sequential but not str
 
 **Repo description (Settings → General → About)**:
 
-> Open-source EU-wide civic-employment commons — an MCP-composable copilot for migrants and EU-mobile workers. Apache 2.0, EU AI Act compliant by design, pending Programme of The Commons Conservancy.
+> Open-source EU-wide civic-employment commons — an MCP-composable copilot for anyone facing structural labor-market friction in Europe; migrants and EU-mobile workers are the most acute use case. Apache 2.0, EU AI Act compliant by design, pending Programme of The Commons Conservancy.
 
 **Website field**: leave blank for now; populate with `https://demo.<domain>` once the public demo deploys in Week 3 task 3.4.
 
@@ -244,6 +244,8 @@ The verification runs in a clean Docker container so the "fresh-clone smoke test
 - [x] Verify the EURES schema export endpoint produces valid output for sample jobs — `export_eures_compatible` projection shape is documented in `docs/esco-integration.md` §"EURES projection shape" with the field-by-field map (`hiringOrganization`, `jobLocation`, `datePosted`, `validThrough`, `employmentType`, `sourceProvider`, `schemaConformance: "EURES-compatible-subset-v0"`). Projection shape is tested in `tests/test_phase12_esco_eures.py::EURESProjectionShapeTests`; full end-to-end with a persisted DiscoveredJob lands in the §2.6 MCP CI integration test.
 
 ### 2.5 Reference integration with the housing agent (8–20 h)
+
+**Decision 20 guardrail (added 2026-05-18)**: Per Decision 20 in `04-research-and-decisions.md`, the maintainer does not self-build a Phase 1 housing agent regardless of friend response; default is Option A (mock stub), upgrade to Option B only on explicit collaborator confirmation. Options C / D (self-built, narrow or full) are deferred to Phase 2 per `03-post-grant.md`.
 
 If the housing-agent friend responded positively (Option B):
 

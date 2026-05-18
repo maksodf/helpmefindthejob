@@ -152,7 +152,7 @@ Full reasoning in `04-research-and-decisions.md` Part B. Summary below; each is 
 | 2 | Institutional wrapper: **apply to The Commons Conservancy** | 2026-05-17 | Soft (can withdraw before admission) |
 | 3 | TU Berlin: **defer as dependency**, single optional email | 2026-05-17 | Soft |
 | 4 | Positioning: **EU-wide commons, Germany-first reference deployment** | 2026-05-17 | Strategic — major change requires re-pitching |
-| 5 | Personas: **panel of five**, not single anchor | 2026-05-17 | Soft (real testers replace fictional over time) |
+| 5 | Personas: **panel of seven** (five most-acute migrant + two wider friction-class per Decision 21), not single anchor | 2026-05-17 / 2026-05-18 | Soft (real testers replace fictional over time) |
 | 6 | Languages: **EN + DE shipped, others post-grant** with translator pathway | 2026-05-17 | Soft (add as native speakers join) |
 | 7 | Cost-saving doctrine: **project-level design principle** | 2026-05-17 | Strategic |
 | 8 | AI Act compliance: **build in as deliverable** for 2 August 2026 enforcement | 2026-05-17 | Hard — this is the moat |
@@ -173,7 +173,7 @@ Every feature is evaluated against the question: **does it reduce institutional 
 
 Eight built-in cost-saving mechanisms documented in `08-cost-saving-doctrine.md`:
 
-1. **Lower advisor caseload per migrant served** — agent handles routine queries; advisors focus on complex cases
+1. **Lower advisor caseload per case served** — agent handles routine queries; advisors focus on complex cases. Migrant subset is the densest concentration of cases per advisor visit; mechanism applies across the friction class (Jobcenter, university career service, Beratungsstelle, MBE)
 2. **Shorter time-to-employment** — Bürgergeld avoidance, plausibly significant per case (~€1,000+/month direct + indirect)
 3. **Zero per-seat licensing fees** — self-hosted; €15k–€19k/month avoided per Beratungsstelle-scale deployment vs commercial alternatives
 4. **No vendor lock-in** — Apache 2.0, open standards, exportable user data

@@ -39,13 +39,15 @@ A feature fails — and is dropped or deferred — if it only improves user outc
 
 These are the specific ways DirectJob Scout reduces institutional operational cost. Each is documented because each is a defensible claim in funding proposals and partner conversations.
 
-### 1. Lower advisor caseload per migrant served
+### 1. Lower advisor caseload per case served
 
-**How**: The agent handles routine queries (CV format, application tracking, common bureaucratic FAQ, "what should my motivation letter look like for a German Pflegedienst", "how do I follow up after an interview"). Trained advisors at MBE / JMD / Beratungsstelle / Jobcenter spend their time on cases requiring human judgement (complex Anerkennung paths, legal questions referred to lawyers, mental-health-adjacent situations, family-reunification timing) rather than triaging CV format questions.
+The migrant subset is the densest concentration of cases per advisor visit and is therefore the strongest specific evidence for this mechanism; the same mechanism applies more broadly to any advisor-client interaction in the friction class (Jobcenter caseloads with all Bürgergeld recipients, university career-service appointments, Beratungsstelle visits across all client types).
+
+**How**: The agent handles routine queries (CV format, application tracking, common bureaucratic FAQ, "what should my motivation letter look like for a German Pflegedienst", "how do I follow up after an interview"). Trained advisors at MBE / JMD / Beratungsstelle / Jobcenter / university career services spend their time on cases requiring human judgement (complex Anerkennung paths, legal questions referred to lawyers, mental-health-adjacent situations, family-reunification timing, Wiedereinstieg programme planning, public-sector career-pivot guidance) rather than triaging CV format questions.
 
 **Per-instance saving**: An MBE advisor session averages 60 minutes per visit and is fully booked. If the agent absorbs 20 minutes of routine work per visit, the advisor can serve 33% more clients with the same FTE allocation.
 
-**At scale**: Across the ~700 MBE service points, even a 15% caseload reduction translates to thousands of additional clients served per year without hiring.
+**At scale**: Across the ~700 MBE service points alone, even a 15% caseload reduction translates to thousands of additional clients served per year without hiring; the same mechanism applied across the ~104 Optionskommunen Jobcenter (serving all Bürgergeld recipients, of which the migrant subset is one significant share) and the university career-service network materially compounds the addressable saving.
 
 **Caveat**: This claim depends on the agent's outputs being *good enough* that advisors trust them. We measure this via the Week-3 partner-NGO pilot and refine accordingly.
 

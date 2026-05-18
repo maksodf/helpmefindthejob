@@ -3,9 +3,11 @@
 Thank you for considering a contribution. DirectJob Scout is an open
 civic-employment commons — a small focused codebase that aims to put
 specialist HR and bureaucratic-navigation knowledge directly into the
-hands of migrants and EU-mobile workers across Europe. Contributors are
-welcome from any background, and especially from people with direct lived
-experience of the problems the project tries to address.
+hands of anyone facing structural labor-market friction in Europe, with
+migrants and EU-mobile workers as the most acute use case (see
+Decision 21 in `docs/grant/04-research-and-decisions.md`). Contributors
+are welcome from any background, and especially from people with direct
+lived experience of the problems the project tries to address.
 
 This document covers: how to set up a development environment, how to
 propose changes, the commit and pull-request conventions we follow, and

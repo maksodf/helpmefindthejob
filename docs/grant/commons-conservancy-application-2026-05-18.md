@@ -32,7 +32,7 @@ We have read the Conservancy's mission statement (DRACC 0001), the framework doc
 
 ### About the project
 
-DirectJob Scout is an **open-source EU-wide civic-employment commons**. The project captures specialist HR and bureaucratic-navigation knowledge — currently locked in advisors' heads, HR departments, recruiter networks, and overworked migrant-services case workers — and puts that knowledge directly into the hands of skilled and semi-skilled migrants and EU-mobile workers across Europe.
+DirectJob Scout is an **open-source EU-wide civic-employment commons**. The project captures specialist HR and bureaucratic-navigation knowledge — currently locked in advisors' heads, HR departments, recruiter networks, and overworked employment-services case workers — and puts that knowledge directly into the hands of anyone facing structural friction between their capability and the European labor market's ability to recognise and connect them to work. Migrants and EU-mobile workers are the most acute use case and the primary specific evidence in our proposal narrative; the same architecture serves career changers, workers returning after caregiving or extended absence, the long-term unemployed re-entering, returning expats, and others facing structurally similar friction. The architecture is friction-driven, not demographic-driven (see Decision 21 in `04-research-and-decisions.md`).
 
 The first concrete reference implementation is a conversational copilot deployed in Germany (because that is where the maintainer is based); the architecture is country-neutral and the cross-border story is a localisation exercise, not a re-engineering effort.
 

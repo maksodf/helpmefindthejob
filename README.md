@@ -104,14 +104,22 @@ Configuration is environment-variable driven; see
 
 ## The personas
 
-DirectJob Scout's design is anchored by a **panel of five personas** —
-the system serves a category of human situations, not a single
+DirectJob Scout's design is anchored by a **panel of seven personas**
+split into two groups: five **most-acute-use-case** personas (migrants
+and EU-mobile workers facing the densest concentration of friction —
+the strongest specific narrative evidence in proposals and demos) and
+two **wider-friction-class** personas (non-migrant users facing
+structurally similar friction in different forms — their presence
+demonstrates the friction-class architectural claim per Decision 21).
+The system serves a category of human situations, not a single
 demographic. The panel doubles as a forcing function for accessibility,
 RTL-language readiness, regulated-profession recognition flows, and EU
 vs non-EU work-rights nuances. Real consenting anonymised stories
 replace fictional ones over time. See
 [`docs/grant/07-personas.md`](docs/grant/07-personas.md) for the full
 profiles.
+
+**The five most-acute-use-case personas** (migrants and EU-mobile workers):
 
 | Persona | Origin | Profession | Status | Solves |
 |---|---|---|---|---|
@@ -120,6 +128,13 @@ profiles.
 | Olga | Ukraine | Senior frontend dev | §24 protection | English-team / remote tech matching + residence-status explainer |
 | Mahmoud | Syria | Trade apprentice | Subsidiärer Schutz | Ausbildung aggregation + Handwerk-format CV |
 | Maria | Romania | Care worker | EU citizen | Language-barrier-friendly Pflegedienst matching |
+
+**The two wider-friction-class personas** (non-migrant users with structurally similar friction):
+
+| Persona | Origin | Profession | Status | Solves |
+|---|---|---|---|---|
+| Käthe | Germany | Registered nurse returning after 12 years out for childcare | German citizen | Wiedereinstieg-programme matching + 2026-format CV for re-entrants |
+| Tobias | Germany | Backend developer pivoting commercial → civic-tech | German citizen | Public-sector / TVöD-aware CV reframe + civic-employer landscape |
 
 ## Standards we implement
 
@@ -232,7 +247,7 @@ from this file:
 - [`CONTRIBUTORS-NOTE.md`](CONTRIBUTORS-NOTE.md) — honest project history.
 - **Documentation site**: lands in Week 3 at `docs.<public-domain>`.
 - **Public demo**: lands in Week 3 at `demo.<public-domain>` with the
-  five-persona panel pre-seeded.
+  seven-persona panel pre-seeded.
 
 ## Why this exists
 

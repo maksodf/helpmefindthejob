@@ -283,6 +283,53 @@ This is drafted *with the maintainer*, since the friend is their personal contac
 > [Name]
 > [TU Berlin student ID and programme, if appropriate]
 
+### Template H: Invitation to co-create a sibling civic agent (housing) — developer friend (German)
+
+This template is for developer friends who could build a housing-search agent from scratch as an independent sibling project to DirectJob Scout, integrated via MCP. It is the friend-outreach counterpart to Template F (which addresses a friend who already operates a housing agent). Per Decision 20 in `04-research-and-decisions.md`, a positive response to Template H produces additive evidence of MCP composition; a non-response produces no project change (Option A mock stub remains the §2.5 default).
+
+> **Betreff**: Kollaborationsanfrage — Open-Source-Projekt, wenn du Zeit hast
+>
+> Hi [Name],
+>
+> [hier kurze persönliche Anrede einfügen — z.B. "lange nicht gesehen", oder Bezug zum letzten Gespräch]
+>
+> Ich arbeite an einem Open-Source-Projekt namens DirectJob Scout — einem zivilgesellschaftlichen Tool, das Migrant:innen und EU-mobilen Arbeitssuchenden in Deutschland und Europa beim Anerkennungs- und Bewerbungsprozess hilft. Wir bewerben uns gerade um eine Förderung beim niederländischen NLnet-Stiftungsprogramm (NGI Zero Commons Fund, EU-finanziert; bekanntes Förderschiene, z.B. Redwax, eduVPN, Tenzu wurden über dieses Programm finanziert).
+>
+> Kern der technischen Vision: das Projekt ist über das Model Context Protocol (MCP) komponierbar — andere offene zivile Agenten (Wohnungssuche, Krankenversicherung, Aufenthalt, Sprachkurse etc.) können sich strukturell mit DirectJob Scout verzahnen, sodass ein:e Nutzer:in in einem einzigen Gespräch durch mehrere Lebensbereiche begleitet werden kann. Damit "komponierbar" mehr als ein Versprechen ist, brauche ich ein zweites konkretes Schwester-Projekt, das diese Komposition real demonstriert.
+>
+> Mein Vorschlag — und ich verstehe absolut, wenn das gerade nicht passt:
+>
+> Du baust einen Wohnungssuche-Agenten als eigenständiges, kleines Open-Source-Projekt unter Apache 2.0. Du behältst die volle Kontrolle: Architektur, Sprachwahl, Scope, Roadmap, Code-Style — alles deins. Die einzige Beschränkung ist die Interoperabilität via MCP mit DirectJob Scout.
+>
+> Was das konkret bedeuten würde:
+>
+> — Aufwand: ungefähr 30–60 Stunden über 4–6 Wochen, je nachdem wie tief du gehst. Der minimal viable Scope könnte z.B. sein: einen Anmeldung-freundlichen Vermieter-Anschreiben-Generator, der auf einem Nutzerprofil basiert (das er von DirectJob Scout via MCP einliest, mit ausdrücklicher Einwilligung der Nutzer:in). Mehr Scope, etwa eine kleine Such-Schnittstelle für öffentliche Wohnungsdaten, wäre möglich aber nicht nötig.
+>
+> — Lizenz: Apache 2.0. Das ist auch die Lizenz von DirectJob Scout — sorgt für maximale institutionelle Adoption (NGOs, Beratungsstellen, Jobcenter) und passt zur zivilgesellschaftlichen Ausrichtung.
+>
+> — Anerkennung: du wirst als Co-Autor:in deines Schwester-Projekts namentlich genannt. Das Projekt kann selbst als Programme bei der Commons Conservancy (NLnet-Stiftung) gehostet werden, was eigene Förderschienen eröffnet.
+>
+> — Mögliche eigene Förderung: falls die NLnet-Förderung für DirectJob Scout klappt, ist ein eigener Folge-Antrag für dein Projekt der natürliche nächste Schritt. Die Architektur und das institutionelle Framing sind gleich genug, dass der Antrag relativ schnell geht — die Pionier-Arbeit ist bereits geleistet.
+>
+> — Timing: Integration zwischen Woche 2 und Woche 3 meiner Sprint-Phase. Wir könnten die technischen Details (MCP-Surface, geteiltes Nutzerprofil-Schema, Consent-Flow) in einem 20-Minuten-Call durchsprechen, sobald du grundsätzlich Lust hast.
+>
+> — Bürokratisches: kein Vertrag, keine Geheimhaltung, keine NDA. Open Source heißt: alles ist im Repository sichtbar; alle Entscheidungen sind dokumentiert; Austritt jederzeit möglich.
+>
+> Was ich von dir gerne hätte, wenn du grundsätzlich offen bist:
+> 1. Eine kurze Bestätigung "ja, lass uns reden" oder "nein, gerade nicht"
+> 2. Eine ehrliche Einschätzung deiner Zeitkapazität in den nächsten 4–6 Wochen
+> 3. Bereitschaft, die Lizenz Apache 2.0 zu akzeptieren (die ist nicht verhandelbar — sie ist Teil des Pitches)
+>
+> Wenn du gerade keine Zeit hast — vollkommen in Ordnung, ich frage nur kurz an. Es gibt eine Fallback-Variante (mock-Demo), die die Komposition prinzipiell zeigen kann; deine echte Mitarbeit wäre aber qualitativ um Welten stärker.
+>
+> Eine Antwort innerhalb der nächsten 5 Tage wäre super, damit ich planen kann. Ein einfaches "ja" oder "nein, sorry" reicht.
+>
+> Falls Interesse: 20-Minuten-Call diese Woche?
+>
+> [Maintainer]
+> [Kontakt]
+> [Link zum DirectJob Scout README: https://github.com/maksodf/directjob-scout/blob/claude/project-analysis-bpHCo/README.md]
+
 ---
 
 ## Outreach discipline

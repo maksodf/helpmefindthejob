@@ -46,7 +46,7 @@ If you change strategic direction, update `01-project-brief.md` AND log the deci
 4. **Never commit secrets, real keys, or PII.** Sanitise before pushing. The Week 1 task 1.4 sanitisation pass cleared the `khalo.org` and tester-name residue from the current working tree; do not reintroduce it. Git history is preserved per Decision 12.
 5. **Mobile-friendly assumption**: maintainer reviews on a phone for planning, computer for execution. Small diffs, clear commit messages.
 6. **Honest about instability**: do not over-polish. NGI0 winners are honest about alpha state. Tenzu literally says "main branch may be unstable."
-7. **Anchor persona panel**: every public-facing example, screenshot, narrative uses one of the five personas — Aïcha, Yusuf, Olga, Mahmoud, Maria. See `docs/grant/07-personas.md`.
+7. **Anchor persona panel**: every public-facing example, screenshot, narrative uses one of the seven personas — five most-acute migrant (Aïcha, Yusuf, Olga, Mahmoud, Maria) plus two wider friction-class (Käthe, Tobias) per Decision 21. Primary narrative weight stays with the migrant five — the wider two demonstrate the friction-class claim architecturally. See `docs/grant/07-personas.md`.
 8. **Cost-saving doctrine**: every feature decision is evaluated against "does it reduce institutional cost while improving outcomes?" See `docs/grant/08-cost-saving-doctrine.md`.
 9. **EU AI Act compliance is in scope and non-negotiable.** See `docs/grant/10-ai-act-compliance.md`.
 
@@ -60,11 +60,11 @@ If you change strategic direction, update `01-project-brief.md` AND log the deci
 | Institutional wrapper | The Commons Conservancy (application target: Week 2) |
 | Positioning | EU-wide civic employment commons; Germany first reference deployment |
 | TU Berlin affiliation | Optional 1-hour email only; deferred as dependency |
-| Personas | Multi-persona panel of five |
+| Personas | Panel of seven (five most-acute migrant + two wider friction-class) per Decisions 5 and 21 |
 | Languages | EN + DE shipped; Arabic, Ukrainian, Turkish, Romanian on post-grant roadmap |
 | Cost-saving doctrine | Project-level design principle |
 | AI Act compliance | Build in as deliverable for 2 August 2026 enforcement |
-| Housing-agent integration | Option B (real, via maintainer's friend) with Option A (mock stub) as fallback |
+| Housing-agent integration | Option A (mock stub) default; Option B (real, via friend) only if collaborator confirms; self-built (C/D) deferred to Phase 2 per Decision 20 |
 | Grant ask | €37,000 across 6 milestones, frugal-by-default |
 | Repository sanitisation | Do not rewrite history; sanitise current state, document residue honestly |
 | `keepbuildingtill100%tracker.MD` | Delete in Week 1 |

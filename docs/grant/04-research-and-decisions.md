@@ -183,6 +183,8 @@ Each decision is dated. Each can be reopened — but reopening means changing th
 
 **Composition**: Aïcha (Tunisia / Nurse / Anerkennung), Yusuf (Turkey / Engineer / EU Blue Card), Olga (Ukraine / Tech / §24 protection), Mahmoud (Syria / Trade / subsidiary protection), Maria (Romania / Care / EU citizen with language barrier). See `07-personas.md`.
 
+**Note (2026-05-18)**: panel composition expanded by Decision 21 to seven personas (five most-acute migrant + two wider friction-class) without changing the original framing. The migrant five remain the primary narrative anchor.
+
 #### Decision 6: Language strategy — EN + DE shipped, others on post-grant roadmap
 
 **Decided**: 2026-05-17.
@@ -238,6 +240,8 @@ Documented in `10-ai-act-compliance.md`.
 - Collaboration message drafted in Week 1; integration shipped in Week 2
 
 See `11-institutional-outreach.md` Template F.
+
+**Note (2026-05-18)**: partially superseded by Decision 20. The Option B preference at the time of Decision 11 was rebalanced toward Option A (mock stub) as the Phase 1 default; Option B remains the upgrade path if a collaborator confirms. Self-built Phase 1 housing-agent (Option C / D) is off the table per Decision 20.
 
 #### Decision 12: Repository sanitisation — do not rewrite history; replace forward, document the residue
 

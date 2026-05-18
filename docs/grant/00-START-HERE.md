@@ -15,7 +15,7 @@
 | `04-research-and-decisions.md` | Verified facts (sourced), decisions log (dated), open research questions. |
 | `05-risks-and-stakeholders.md` | Risk register + stakeholder map. Reviewed weekly during execution. |
 | `06-glossary.md` | Quick reference for German bureaucratic, EU policy, and project-specific terms. |
-| `07-personas.md` | The five-persona panel (Aïcha, Yusuf, Olga, Mahmoud, Maria) used in proposal narrative, demos, public artifacts. |
+| `07-personas.md` | The seven-persona panel — five most-acute migrant (Aïcha, Yusuf, Olga, Mahmoud, Maria) plus two wider friction-class (Käthe, Tobias) per Decision 21 — used in proposal narrative, demos, public artifacts. |
 | `08-cost-saving-doctrine.md` | The project-level design principle: every feature reduces institutional cost while improving outcomes. |
 | `09-mcp-composition.md` | Technical spine: how the MCP server exposes the project as composable civic infrastructure. |
 | `10-ai-act-compliance.md` | Compliance pack for EU AI Act high-risk-AI obligations, applicable 2 August 2026. The institutional moat. |

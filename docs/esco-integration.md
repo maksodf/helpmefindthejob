@@ -8,7 +8,7 @@ This document is the operational reference for how DirectJob Scout uses the **ES
 
 ## Why these standards
 
-The project's mission — captured in [`docs/grant/01-project-brief.md`](grant/01-project-brief.md) — is to put bureaucratic-navigation knowledge in migrants' hands across the EU. Bureaucratic navigation in this domain depends on agreeing on what *occupations* and *skills* are. ESCO and EURES are the canonical EU vocabularies:
+The project's mission — captured in [`docs/grant/01-project-brief.md`](grant/01-project-brief.md) — is to put bureaucratic-navigation knowledge in the hands of anyone facing structural labor-market friction across the EU, with migrants and EU-mobile workers as the most acute use case (see Decision 21 in `docs/grant/04-research-and-decisions.md`). Bureaucratic navigation in this domain depends on agreeing on what *occupations* and *skills* are. ESCO and EURES are the canonical EU vocabularies:
 
 - **ESCO** is the European Commission's pan-EU classification of ~3,000 occupations and ~13,000 skills, multilingually labelled in all 24 EU official languages plus Norwegian, Icelandic, and Arabic. Maintained by the Directorate-General for Employment, Social Affairs and Inclusion. Published as CSV, RDF, and SKOS under [Creative Commons Attribution 4.0 International (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/).
 - **EURES** is the EU portal for cross-border employment services. Its [job-posting schema](https://eures.europa.eu/eures-services/eures-services-european-online-job-day_en) is the de-facto interoperability format for job listings shared between European public employment services and is closely aligned with [schema.org JobPosting](https://schema.org/JobPosting).
@@ -86,7 +86,7 @@ Adopting these standards has three concrete consequences for the project:
 
 ## Persona-panel coverage
 
-Each occupation entry carries a `personas` array linking it back to the [five-persona panel](grant/07-personas.md). The pull-through:
+Each occupation entry carries a `personas` array linking it back to the [seven-persona panel](grant/07-personas.md). The pull-through:
 
 | Persona | Profession archetype | Linked occupation codes (selection) |
 |---|---|---|
@@ -95,8 +95,10 @@ Each occupation entry carries a `personas` array linking it back to the [five-pe
 | **Olga** (Ukraine, frontend dev, §24) | IT / tech | 2512.1, 2513.1, 2512.2, 2522.1, 2511.1, 2511.2 |
 | **Mahmoud** (Syria, trade apprentice, subsidiary protection) | Construction trades | 7126.1, 7411.1, 7115.1, 7512.1, 7112.1, 3434.1 |
 | **Maria** (Romania, care worker, EU citizen) | Home-based care | 5321.1, 5321.2, 5322.1, 5311.1, 4222.1 |
+| **Käthe** (Germany, returning nurse after 12 yr caregiving) | Healthcare (re-entrant) | shares 2221.1, 2221.2, 2222.1 with Aïcha — `personas` array extension to the JSON dataset lands in a follow-up commit |
+| **Tobias** (Germany, commercial → civic-tech developer) | IT / tech (sector pivot) | shares 2512.1, 2513.1, 2511.1 with Olga — `personas` array extension to the JSON dataset lands in a follow-up commit |
 
-(Some codes appear under more than one persona — e.g. 5321.1 covers both Aïcha and Maria via the Pflegehelfer pathway.)
+(Some codes appear under more than one persona — e.g. 5321.1 covers both Aïcha and Maria via the Pflegehelfer pathway; the same code-reuse pattern applies for Käthe-with-Aïcha and Tobias-with-Olga.)
 
 The skill entries are categorised (`language`, `healthcare`, `engineering`, `it`, `trade`, `cross-cutting`) rather than persona-mapped because skills compose across personas more loosely. Roughly:
 
@@ -114,7 +116,7 @@ The skill entries are categorised (`language`, `healthcare`, `engineering`, `it`
 
 The Bundesagentur für Arbeit 2025 shortage-occupations statement names 163 shortage occupations across the German labour market. The `shortageDE2024: true` flag on each occupation entry tracks intersection with that list. As of v1-curated-2026-05-18 the curated set covers **21 of the 30 occupations** as Bundesagentur-flagged shortages, concentrated in healthcare, engineering, IT, and construction trades — the four areas the persona panel was designed around.
 
-A reviewer cross-checking the project's "cost-saving doctrine mechanism 1" (lower advisor caseload per migrant served) claim can use this overlap to verify that the project is genuinely targeting where institutional cost relief is most acute, not painting the persona panel against a generic labour-market backdrop.
+A reviewer cross-checking the project's "cost-saving doctrine mechanism 1" (lower advisor caseload per case served — most acute for the migrant subset) claim can use this overlap to verify that the project is genuinely targeting where institutional cost relief is most acute, not painting the persona panel against a generic labour-market backdrop.
 
 ## Loader behaviour
 
