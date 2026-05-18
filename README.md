@@ -98,7 +98,7 @@ docker compose up --build
 Run the test suite directly on a fresh clone:
 
 ```bash
-python3 -m unittest discover
+python3 -m unittest discover -s tests
 ```
 
 The 994-test suite passes natively on Python 3.11 and 3.12 across

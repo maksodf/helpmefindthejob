@@ -33,7 +33,19 @@
 
 ---
 
-## Step 3 — §3.5 documentation site (mkdocs-material on GitHub Pages)
+## Step 3 — Open R12 close (synthetic-cohort bias-testing interim run)
+
+| Field | Value |
+|---|---|
+| **Deliverable** | Three artefacts the methodology at `compliance/accuracy-and-bias-testing.md` already specifies but has not yet produced: (a) `tests/fixtures/personas/` — synthetic-but-realistic profile records for all seven personas, shaped per §2.1; (b) `tests/test_bias_methodology.py` — runs the methodology against the fixtures and asserts the divergence-from-tolerance counts under the bands of §2.4; (c) `docs/grant/bias-testing-2026-05-XX.md` — the first executed run's report per §2.5. Closes the transparency notice's "preliminary results due Week 3" claim before NLnet submission. |
+| **Planning anchor** | `docs/grant/04-research-and-decisions.md` Open R12 (added 2026-05-18 with status `IN PROGRESS — scheduled for Phase 1 close before NLnet submission`). Methodology contract at `compliance/accuracy-and-bias-testing.md` §§2–6 (executed here, not redesigned). |
+| **Prerequisites** | The seven persona profiles in `docs/grant/07-personas.md` are the source of truth (already settled). An AI provider chosen for the first run — Ollama default for fully-offline / reproducible-result reasons; `manual` provider also acceptable if the maintainer prefers documented hand-replay of prompts. **AI-provider choice is the one open prerequisite**; everything else is in place today. |
+| **Estimate** | ~6–10 h. **Persona-fixture work-share with Step 2**: the fixtures at `tests/fixtures/personas/` and the seed records used by `scripts/seed-personas.py` consume the same persona-source-of-truth and emit comparable record shapes. Sharing the fixture-builder between R12 and §3.4 saves ~2–3 h of duplicate work and reduces drift risk. The two steps should be bundled into a single execution slice for that reason. |
+| **Agent-doable?** | **Yes — autonomous** once the AI-provider choice is locked. The methodology is documented; the fixtures are mechanical; the bias-testing report is structured per §2.5. Maintainer reviews the divergence table after the first run; remediation surface (if any) is the next-after. |
+
+---
+
+## Step 4 — §3.5 documentation site (mkdocs-material on GitHub Pages)
 
 | Field | Value |
 |---|---|
@@ -45,7 +57,7 @@
 
 ---
 
-## Step 4 — §3.6 accessibility audit + `ACCESSIBILITY.md`
+## Step 5 — §3.6 accessibility audit + `ACCESSIBILITY.md`
 
 | Field | Value |
 |---|---|
@@ -57,7 +69,7 @@
 
 ---
 
-## Step 5 — §3.7 translator contributor pathway
+## Step 6 — §3.7 translator contributor pathway
 
 | Field | Value |
 |---|---|
@@ -69,29 +81,30 @@
 
 ---
 
-## What is NOT in the 5-step list
+## What is NOT in the 6-step list
 
-The maintainer's earlier in-session framing mentioned §3.8 (Nix flake) and Week 4 (outreach + application drafting + cosign signing + final polish). Those are real, but they are **further out** than the 5 immediate steps above. Specifically:
+The maintainer's earlier in-session framing mentioned §3.8 (Nix flake) and Week 4 (outreach + application drafting + cosign signing + final polish). Those are real, but they are **further out** than the six immediate steps above. Specifically:
 
 - **§3.8 Nix flake**: agent-doable autonomously; depends on the Phase 1 baseline being stable. Estimate ~4 hours. Sequenced after §3.7.
-- **§3.9 outreach follow-ups**: deferred per Decision 19 to Week 4 start. Not in the next-5.
-- **Week 4 tasks**: outreach send pass, sustainability section in README, letter-of-support consolidation, application drafting, final polish, submission. These are dependent on Week 3 completion and an active outreach window; not in the next-5.
-- **§2.5 housing-agent integration**: deferred — friend-response window active through 2026-05-23. Maintainer signal triggers either Option A (mock stub, agent-doable) or Option B (real friend collaboration). Not in the next-5.
-- **Open R12 (synthetic-cohort bias-testing interim run)**: the maintainer flagged this in the prior advisory prompt as a question. The prior prompt itself was advisory-introduced; whether R12 is a real open question for the maintainer or another speculative-advisory artifact is itself unclear. **Not in the next-5; surface back as a single question if it remains in scope after this cleanup.**
+- **§3.9 outreach follow-ups**: deferred per Decision 19 to Week 4 start. Not in the next-6.
+- **Week 4 tasks**: outreach send pass, sustainability section in README, letter-of-support consolidation, application drafting, final polish, submission. These are dependent on Week 3 completion and an active outreach window; not in the next-6.
+- **§2.5 housing-agent integration**: deferred — friend-response window active through 2026-05-23. Maintainer signal triggers either Option A (mock stub, agent-doable) or Option B (real friend collaboration). Not in the next-6.
+
+*Open R12 was promoted into the next-six list as the new Step 3 per maintainer decision 2026-05-18 (i — close in Phase 1). The earlier "possible-advisory-artifact" framing is superseded by Open R12 in `04-research-and-decisions.md`.*
 
 ---
 
 ## Order of execution recommended
 
-If the maintainer green-lights everything, the dependency order is:
+R8 ANSWERED 2026-05-18 (placeholder convention retained); Step 1 is closed. The remaining dependency order:
 
-1. Step 1 first (Open R8 answer) — gates Step 2's "where does the demo URL go in the public tree?" sub-question.
-2. Step 2 (recipe + seed) — gated only on the demo-password decision (one line).
-3. Step 3 (docs site) — independent; can run in parallel with Step 2.
-4. Step 4 (accessibility audit) — independent; can run in parallel.
-5. Step 5 (translator pathway) — independent; can run in parallel.
+1. ~~Step 1 (Open R8 answer)~~ — **closed** 2026-05-18.
+2. Step 2 + Step 3 **bundled** (§3.4 deployment recipe + seed script **and** R12 bias-testing interim run). The persona-fixture work-share between the two steps saves ~2–3 h of duplicate work and reduces drift risk; bundle into a single execution slice.
+3. Step 4 (docs site) — independent; can run in parallel with the Step 2 + 3 bundle.
+4. Step 5 (accessibility audit) — independent; can run in parallel.
+5. Step 6 (translator pathway) — independent; can run in parallel.
 
-Steps 2 + 3 + 4 + 5 are largely parallel. Steps 1 and the answer to it gate the public-tree URL question only.
+Steps 2+3, 4, 5, and 6 are largely parallel after R8's closure.
 
 ---
 

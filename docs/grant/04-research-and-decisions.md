@@ -461,6 +461,23 @@ These are not yet decided. Listed so a future agent or planning session can prio
 - **Action**: maintainer sends the letter once reviewed; agent updates this entry with send date and case-officer assignment when the response lands; one polite nudge after 4 weeks if no reply.
 - Linked decision: Decision 2 (Institutional wrapper — apply to The Commons Conservancy, 2026-05-17).
 
+### Open R12: Synthetic-cohort bias-testing interim run
+
+**Status as of 2026-05-18**: IN PROGRESS — scheduled for Phase 1 close before NLnet submission, per maintainer decision 2026-05-18.
+
+**Context**: `compliance/accuracy-and-bias-testing.md` documents a methodology that is not yet executed at full scale. The transparency notice (`compliance/transparency-notice.md`) promises "preliminary results due Week 3 of the grant sprint." Closing R12 closes that public claim before submission. The earlier framing — that the methodology would first execute at the partner-NGO pilot — has shifted with the partner-NGO pilot now positioned in 2026 Q4 (post-grant) per `ROADMAP.md`. A synthetic-cohort interim run using the seven canonical personas bridges the gap.
+
+**Target artefacts**:
+- `tests/fixtures/personas/` — committed synthetic-but-realistic profile records for each of the seven personas (Aïcha, Yusuf, Olga, Mahmoud, Maria, Käthe, Tobias), shaped per `compliance/accuracy-and-bias-testing.md` §2.1.
+- `tests/test_bias_methodology.py` — runs the methodology against the fixtures and asserts divergence-from-tolerance counts below threshold per the bands documented in §2.4.
+- `docs/grant/bias-testing-<date>.md` — the first executed run's report, structured per §2.5.
+
+**Methodology source**: `compliance/accuracy-and-bias-testing.md` §§2–6 (the contract; this open question executes the documented contract, it does not redesign it).
+
+**Estimate**: ~6–10 h of agent work. The persona fixtures here are designed to **share** with the §3.4 `scripts/seed-personas.py` script — both consume the same persona-source-of-truth at `docs/grant/07-personas.md` and emit comparable record shapes, so the work folds neatly into the §3.4 next-slice.
+
+**Action**: next-slice execution alongside §3.4 deployment work (next-steps Step 2 + the new R12 step). Surface report when methodology run completes; maintainer reviews the divergence table; remediation as needed before NLnet submission.
+
 ---
 
 ## How to update this document

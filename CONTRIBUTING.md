@@ -81,7 +81,7 @@ will be added in Week 3 (`docs/grant/02-execution-plan.md` §3.2).
 ### Running Tests
 
 ```bash
-python3 -m unittest discover -v
+python3 -m unittest discover -s tests -v
 ```
 
 The suite passes natively on Python 3.11 + 3.12 across macOS, Linux,
@@ -93,7 +93,7 @@ run inside Docker as a fallback:
 
 ```bash
 docker compose up --build
-docker compose exec app python3 -m unittest discover -v
+docker compose exec app python3 -m unittest discover -s tests -v
 ```
 
 The Playwright browser-flow tests have a one-time setup:
