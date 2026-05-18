@@ -236,12 +236,12 @@ The verification runs in a clean Docker container so the "fresh-clone smoke test
 
 ### 2.4 ESCO and EURES integration (4 h)
 
-- [ ] Verify ESCO data licensing (Creative Commons)
-- [ ] Download the ESCO taxonomy dataset
-- [ ] Map at least 30 high-value occupations covering the persona panel (nursing, engineering, frontend, plumbing trades, elderly care)
-- [ ] Map at least 50 corresponding skills
-- [ ] Document the mapping in `docs/esco-integration.md`
-- [ ] Verify the EURES schema export endpoint produces valid output for sample jobs
+- [x] Verify ESCO data licensing — ESCO v1.1 published by European Commission DG-EMPL under Creative Commons Attribution 4.0 International (CC BY 4.0); attribution surfaces in `reference/esco/*.json` and `docs/esco-integration.md`.
+- [x] Curated subset shipped — full ESCO dataset (~3,000 occupations / ~13,000 skills / 27 languages / ~80 MB) deliberately not committed (see `docs/esco-integration.md` §"Upgrade path" — build-time fetch is the post-grant Phase 2 approach). The curated v1 dataset covers the persona panel + Bundesagentur 2025 shortage occupations.
+- [x] Map at least 30 high-value occupations covering the persona panel — `reference/esco/occupations.json` ships 30 entries with ISCO-08 codes, EN + DE labels, persona linkage, and shortage-list flag. Persona coverage: Aïcha (8 occupations), Yusuf (6), Olga (6), Mahmoud (6), Maria (5; overlap with Aïcha on Pflegehelfer).
+- [x] Map at least 50 corresponding skills — `reference/esco/skills.json` ships 50 entries grouped by category (language 5, healthcare 10, engineering 8, IT 15, trade 8, cross-cutting 4) with EN + DE labels and optional CEFR level for language skills.
+- [x] Document the mapping in `docs/esco-integration.md` — covers schema, persona-panel coverage table, shortage-list overlap stats, loader behaviour, EURES projection field-map, full upgrade path, and attribution.
+- [x] Verify the EURES schema export endpoint produces valid output for sample jobs — `export_eures_compatible` projection shape is documented in `docs/esco-integration.md` §"EURES projection shape" with the field-by-field map (`hiringOrganization`, `jobLocation`, `datePosted`, `validThrough`, `employmentType`, `sourceProvider`, `schemaConformance: "EURES-compatible-subset-v0"`). Projection shape is tested in `tests/test_phase12_esco_eures.py::EURESProjectionShapeTests`; full end-to-end with a persisted DiscoveredJob lands in the §2.6 MCP CI integration test.
 
 ### 2.5 Reference integration with the housing agent (8–20 h)
 

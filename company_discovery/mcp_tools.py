@@ -18,20 +18,24 @@ from .service import CompanyDiscoveryService
 
 
 # ---------------------------------------------------------------------------
-# Reference ESCO mini-dataset.
+# Reference ESCO dataset.
 #
-# The query_esco_skill tool returns matches from this set today. It is a
-# Week 2 stub seeded with the occupations and skills that map to the project's
-# five-persona panel (Aïcha = nurse, Yusuf = mechanical engineer,
-# Olga = frontend developer, Mahmoud = trade apprentice, Maria = care worker).
-# Full ESCO dataset import lands in Week 2 §2.4 (ESCO + EURES integration);
-# that work replaces this constant with a loader against the canonical
-# dataset under a CC-BY licence and brings the entry count from ~12 to 30+
-# per the §2.4 plan.
+# The query_esco_skill tool returns matches loaded from the curated dataset
+# under reference/esco/ (occupations.json + skills.json). These files were
+# seeded in Week 2 §2.4 with 30 occupations + 50 skills covering the five-
+# persona panel (Aïcha = nurse, Yusuf = mechanical engineer, Olga = frontend
+# developer, Mahmoud = trade apprentice, Maria = home-based care worker) plus
+# Bundesagentur-für-Arbeit 2025 shortage-occupation coverage. Codes derive
+# from ISCO-08 / ESCO 1.1 (CC BY 4.0). See docs/esco-integration.md for the
+# upgrade path to the full ESCO dataset.
+#
+# The legacy 12-entry inline mini-dataset below is kept as a fallback for
+# environments where the reference/ tree is unavailable (e.g. some Python
+# packaging configurations). It is also used by tests that want to exercise
+# the loader's fallback path.
 # ---------------------------------------------------------------------------
 
-_ESCO_REFERENCE_DATASET: list[dict[str, str]] = [
-    # Occupations (ISCO 4-digit + ESCO leaf)
+_ESCO_REFERENCE_DATASET_FALLBACK: list[dict[str, str]] = [
     {"code": "2221.1", "label": "Registered nurse (general)", "type": "occupation", "isco": "2221"},
     {"code": "2221.2", "label": "Specialist nurse (clinical / Pflege)", "type": "occupation", "isco": "2221"},
     {"code": "5321.1", "label": "Healthcare assistant / Pflegehelfer", "type": "occupation", "isco": "5321"},
@@ -40,12 +44,60 @@ _ESCO_REFERENCE_DATASET: list[dict[str, str]] = [
     {"code": "2513.1", "label": "Frontend developer / Web developer", "type": "occupation", "isco": "2513"},
     {"code": "7126.1", "label": "Plumbing trade apprentice / Anlagenmechaniker SHK", "type": "occupation", "isco": "7126"},
     {"code": "5322.1", "label": "Home-based personal-care worker / Häusliche Pflegehilfe", "type": "occupation", "isco": "5322"},
-    # Skills
     {"code": "S1.0.1", "label": "Clinical-German communication", "type": "skill"},
     {"code": "S1.0.2", "label": "Patient documentation", "type": "skill"},
     {"code": "S5.0.1", "label": "TypeScript / React frontend development", "type": "skill"},
     {"code": "S2.0.1", "label": "Mechanical CAD (Solidworks / CATIA)", "type": "skill"},
 ]
+
+
+# Module-level cache for the loaded dataset. Populated lazily on first call
+# to :func:`_load_esco_reference_dataset` and not refreshed during a process
+# lifetime — the file is repo-tracked reference data, not user data.
+_ESCO_DATASET_CACHE: list[dict[str, Any]] | None = None
+
+
+def _load_esco_reference_dataset() -> list[dict[str, Any]]:
+    """Load the curated ESCO dataset from `reference/esco/*.json`.
+
+    Falls back to :data:`_ESCO_REFERENCE_DATASET_FALLBACK` if the files are
+    not present. Cached for the process lifetime.
+    """
+
+    global _ESCO_DATASET_CACHE
+    if _ESCO_DATASET_CACHE is not None:
+        return _ESCO_DATASET_CACHE
+
+    base = Path(__file__).resolve().parent.parent / "reference" / "esco"
+    occupations_path = base / "occupations.json"
+    skills_path = base / "skills.json"
+    if not occupations_path.exists() or not skills_path.exists():
+        _ESCO_DATASET_CACHE = list(_ESCO_REFERENCE_DATASET_FALLBACK)
+        return _ESCO_DATASET_CACHE
+
+    combined: list[dict[str, Any]] = []
+    for path, kind in ((occupations_path, "occupation"), (skills_path, "skill")):
+        with path.open("r", encoding="utf-8") as handle:
+            data = json.load(handle)
+        for entry in data.get("entries", []):
+            # Normalised match record. `label` is the EN label by default
+            # (compat with the legacy mini-dataset shape); both EN + DE
+            # remain available for callers that want locale-aware display.
+            record: dict[str, Any] = {
+                "code": entry["code"],
+                "label": entry.get("label_en") or entry.get("label") or "",
+                "label_en": entry.get("label_en") or entry.get("label") or "",
+                "label_de": entry.get("label_de") or "",
+                "type": kind,
+            }
+            for optional_key in ("isco", "category", "cefr", "personas",
+                                 "shortageDE2024", "esco_uri"):
+                if optional_key in entry:
+                    record[optional_key] = entry[optional_key]
+            combined.append(record)
+
+    _ESCO_DATASET_CACHE = combined
+    return combined
 
 
 # ---------------------------------------------------------------------------
@@ -432,29 +484,39 @@ class CompanyDiscoveryMCPTools:
         type: str | None = None,
         limit: int | None = None,
     ) -> dict[str, Any]:
-        """Substring-match the persona-panel mini-dataset.
+        """Substring-match the curated ESCO reference dataset.
 
-        Replaced by the full ESCO dataset integration in Week 2 §2.4. The
-        output shape is deliberately stable so callers do not need to be
-        aware of the underlying dataset version.
+        Matches against both the English and German labels so a German-
+        language query against a record with an English `label_en` still
+        resolves. The output shape is stable across the v0-mini fallback
+        and the v1-curated dataset; consumers can switch dataset versions
+        without code changes.
         """
 
+        dataset = _load_esco_reference_dataset()
         lowered = (query or "").strip().lower()
         kind = (type or "any").lower()
         candidates = (
-            entry for entry in _ESCO_REFERENCE_DATASET
+            entry for entry in dataset
             if kind in ("any", entry["type"])
         )
         matches = [
             entry for entry in candidates
-            if lowered and lowered in entry["label"].lower()
+            if lowered and (
+                lowered in entry.get("label_en", entry.get("label", "")).lower()
+                or lowered in entry.get("label_de", "").lower()
+            )
         ]
         if limit is not None:
             matches = matches[: max(0, int(limit))]
         return {
             "status": "ok",
-            "datasetVersion": "v0-mini",
-            "totalCandidates": len(_ESCO_REFERENCE_DATASET),
+            "datasetVersion": (
+                "v1-curated-2026-05-18"
+                if dataset is not _ESCO_REFERENCE_DATASET_FALLBACK
+                else "v0-mini-fallback"
+            ),
+            "totalCandidates": len(dataset),
             "matches": matches,
         }
 

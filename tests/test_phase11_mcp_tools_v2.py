@@ -41,9 +41,9 @@ from typing import Any
 
 import mcp_server
 from company_discovery.mcp_tools import (
-    _ESCO_REFERENCE_DATASET,
     _OUTCOME_TYPES,
     TOOL_SCHEMAS,
+    _load_esco_reference_dataset,
 )
 
 
@@ -256,7 +256,7 @@ class QueryEscoSkillTests(unittest.TestCase):
     def test_no_match_returns_empty_list(self) -> None:
         result = self.tools.query_esco_skill(query="zzzzz-not-a-real-skill")
         self.assertEqual(result["matches"], [])
-        self.assertEqual(result["totalCandidates"], len(_ESCO_REFERENCE_DATASET))
+        self.assertEqual(result["totalCandidates"], len(_load_esco_reference_dataset()))
 
     def test_limit_caps_results(self) -> None:
         full = self.tools.query_esco_skill(query="e")["matches"]

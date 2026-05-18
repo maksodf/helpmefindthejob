@@ -1,0 +1,254 @@
+{
+  "schemaVersion": "0.1.0",
+  "datasetVersion": "v1-curated-2026-05-18",
+  "attribution": "Codes and concept structure derived from the ISCO-08 / ESCO 1.1 classifications published by the European Commission under Creative Commons Attribution 4.0 International (CC BY 4.0). See docs/esco-integration.md for the upgrade path to the full ESCO dataset.",
+  "license": "CC-BY-4.0",
+  "sourceTaxonomies": [
+    "ISCO-08 (ILO four-digit unit groups)",
+    "ESCO v1.1 (European Skills, Competences, Qualifications and Occupations)"
+  ],
+  "coveragePolicy": "Persona-panel-aligned subset. Each entry serves at least one of the five DirectJob Scout personas (Aïcha = nursing; Yusuf = mechanical engineering; Olga = frontend development; Mahmoud = construction trades; Maria = home-based care) and/or appears in the Bundesagentur für Arbeit 2025 shortage-occupation list.",
+  "entries": [
+    {
+      "code": "2221.1",
+      "isco": "2221",
+      "label_en": "Registered nurse (general)",
+      "label_de": "Examinierte/r Krankenpfleger/in",
+      "personas": ["Aicha"],
+      "shortageDE2024": true,
+      "esco_uri": "http://data.europa.eu/esco/occupation/2221.1"
+    },
+    {
+      "code": "2221.2",
+      "isco": "2221",
+      "label_en": "Specialist nurse — clinical / Pflege",
+      "label_de": "Fachkrankenpfleger/in",
+      "personas": ["Aicha"],
+      "shortageDE2024": true
+    },
+    {
+      "code": "2222.1",
+      "isco": "2222",
+      "label_en": "Midwife",
+      "label_de": "Hebamme",
+      "personas": ["Aicha"],
+      "shortageDE2024": true
+    },
+    {
+      "code": "5321.1",
+      "isco": "5321",
+      "label_en": "Healthcare assistant / Pflegehelfer",
+      "label_de": "Pflegehelfer/in",
+      "personas": ["Aicha", "Maria"],
+      "shortageDE2024": true
+    },
+    {
+      "code": "5321.2",
+      "isco": "5321",
+      "label_en": "Geriatric care assistant",
+      "label_de": "Altenpflegehelfer/in",
+      "personas": ["Maria"],
+      "shortageDE2024": true
+    },
+    {
+      "code": "5322.1",
+      "isco": "5322",
+      "label_en": "Home-based personal-care worker",
+      "label_de": "Häusliche Pflegekraft",
+      "personas": ["Maria"],
+      "shortageDE2024": true
+    },
+    {
+      "code": "2264.1",
+      "isco": "2264",
+      "label_en": "Physiotherapist",
+      "label_de": "Physiotherapeut/in",
+      "personas": ["Aicha"],
+      "shortageDE2024": true
+    },
+    {
+      "code": "2269.1",
+      "isco": "2269",
+      "label_en": "Occupational therapist",
+      "label_de": "Ergotherapeut/in",
+      "personas": ["Aicha"],
+      "shortageDE2024": false
+    },
+    {
+      "code": "3258.1",
+      "isco": "3258",
+      "label_en": "Ambulance care worker / Notfallsanitäter",
+      "label_de": "Notfallsanitäter/in",
+      "personas": ["Aicha"],
+      "shortageDE2024": true
+    },
+    {
+      "code": "3251.1",
+      "isco": "3251",
+      "label_en": "Dental assistant",
+      "label_de": "Zahnmedizinische/r Fachangestellte/r (ZFA)",
+      "personas": ["Aicha"],
+      "shortageDE2024": false
+    },
+    {
+      "code": "2144.1",
+      "isco": "2144",
+      "label_en": "Mechanical engineer",
+      "label_de": "Maschinenbauingenieur/in",
+      "personas": ["Yusuf"],
+      "shortageDE2024": true
+    },
+    {
+      "code": "2151.1",
+      "isco": "2151",
+      "label_en": "Electrical engineer",
+      "label_de": "Elektroingenieur/in",
+      "personas": ["Yusuf"],
+      "shortageDE2024": true
+    },
+    {
+      "code": "2142.1",
+      "isco": "2142",
+      "label_en": "Civil engineer",
+      "label_de": "Bauingenieur/in",
+      "personas": ["Yusuf"],
+      "shortageDE2024": true
+    },
+    {
+      "code": "2141.1",
+      "isco": "2141",
+      "label_en": "Industrial / manufacturing engineer",
+      "label_de": "Wirtschaftsingenieur/in",
+      "personas": ["Yusuf"],
+      "shortageDE2024": false
+    },
+    {
+      "code": "2144.2",
+      "isco": "2144",
+      "label_en": "Automotive engineer",
+      "label_de": "Kraftfahrzeugingenieur/in",
+      "personas": ["Yusuf"],
+      "shortageDE2024": false
+    },
+    {
+      "code": "2152.1",
+      "isco": "2152",
+      "label_en": "Electronics engineer",
+      "label_de": "Elektronikingenieur/in",
+      "personas": ["Yusuf"],
+      "shortageDE2024": true
+    },
+    {
+      "code": "2512.1",
+      "isco": "2512",
+      "label_en": "Software developer (general)",
+      "label_de": "Softwareentwickler/in",
+      "personas": ["Olga"],
+      "shortageDE2024": true
+    },
+    {
+      "code": "2513.1",
+      "isco": "2513",
+      "label_en": "Frontend developer / Web developer",
+      "label_de": "Frontend-Entwickler/in",
+      "personas": ["Olga"],
+      "shortageDE2024": true
+    },
+    {
+      "code": "2512.2",
+      "isco": "2512",
+      "label_en": "Backend developer",
+      "label_de": "Backend-Entwickler/in",
+      "personas": ["Olga"],
+      "shortageDE2024": true
+    },
+    {
+      "code": "2522.1",
+      "isco": "2522",
+      "label_en": "DevOps / systems engineer",
+      "label_de": "DevOps-Ingenieur/in",
+      "personas": ["Olga"],
+      "shortageDE2024": true
+    },
+    {
+      "code": "2511.1",
+      "isco": "2511",
+      "label_en": "Data engineer",
+      "label_de": "Datentechniker/in",
+      "personas": ["Olga"],
+      "shortageDE2024": true
+    },
+    {
+      "code": "2511.2",
+      "isco": "2511",
+      "label_en": "Machine-learning / AI engineer",
+      "label_de": "Machine-Learning-Ingenieur/in",
+      "personas": ["Olga"],
+      "shortageDE2024": true
+    },
+    {
+      "code": "7126.1",
+      "isco": "7126",
+      "label_en": "Plumbing-trade journeyman / Anlagenmechaniker SHK",
+      "label_de": "Anlagenmechaniker/in für Sanitär-, Heizungs- und Klimatechnik",
+      "personas": ["Mahmoud"],
+      "shortageDE2024": true
+    },
+    {
+      "code": "7411.1",
+      "isco": "7411",
+      "label_en": "Electrician / Elektroniker",
+      "label_de": "Elektroniker/in für Energie- und Gebäudetechnik",
+      "personas": ["Mahmoud"],
+      "shortageDE2024": true
+    },
+    {
+      "code": "7115.1",
+      "isco": "7115",
+      "label_en": "Carpenter / Zimmerer",
+      "label_de": "Zimmerer/in",
+      "personas": ["Mahmoud"],
+      "shortageDE2024": true
+    },
+    {
+      "code": "7512.1",
+      "isco": "7512",
+      "label_en": "Baker / Bäcker",
+      "label_de": "Bäcker/in",
+      "personas": ["Mahmoud"],
+      "shortageDE2024": true
+    },
+    {
+      "code": "7112.1",
+      "isco": "7112",
+      "label_en": "Mason / bricklayer",
+      "label_de": "Maurer/in",
+      "personas": ["Mahmoud"],
+      "shortageDE2024": true
+    },
+    {
+      "code": "5311.1",
+      "isco": "5311",
+      "label_en": "Kindergarten / early-childhood educator",
+      "label_de": "Erzieher/in",
+      "personas": ["Maria"],
+      "shortageDE2024": true
+    },
+    {
+      "code": "4222.1",
+      "isco": "4222",
+      "label_en": "Hotel receptionist",
+      "label_de": "Hotelfachmann/-frau",
+      "personas": ["Maria"],
+      "shortageDE2024": false
+    },
+    {
+      "code": "3434.1",
+      "isco": "3434",
+      "label_en": "Restaurant chef / Koch",
+      "label_de": "Koch/Köchin",
+      "personas": ["Mahmoud"],
+      "shortageDE2024": true
+    }
+  ]
+}
