@@ -397,6 +397,13 @@ These are not yet decided. Listed so a future agent or planning session can prio
 - Decided to be frugal-by-default, max €50k if justified; exact per-milestone breakdown unfinalised
 - **Action**: Week 4 — when application is drafted, exact breakdown emerges from the milestone deliverables; document in `12-application-package.md`
 
+### Open R11: Commons Conservancy application — response timing
+
+- Application drafted 2026-05-18 (`docs/grant/commons-conservancy-application-2026-05-18.md`); pending maintainer review before send to `website@commonsconservancy.org` (or any more-specific application address Conservancy may have published).
+- The Conservancy `/how/` page does not publish an explicit review SLA. Estimated response window based on observed recent admission cadences: **2–6 weeks**. Concrete data added here once a case officer responds.
+- **Action**: maintainer sends the letter once reviewed; agent updates this entry with send date and case-officer assignment when the response lands; one polite nudge after 4 weeks if no reply.
+- Linked decision: Decision 2 (Institutional wrapper — apply to The Commons Conservancy, 2026-05-17).
+
 ---
 
 ## How to update this document

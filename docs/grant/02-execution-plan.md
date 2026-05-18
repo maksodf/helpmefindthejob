@@ -203,10 +203,10 @@ The verification runs in a clean Docker container so the "fresh-clone smoke test
 
 ### 2.1 Commons Conservancy application (4 h)
 
-- [ ] Read `commonsconservancy.org/how/` end-to-end
-- [ ] Prepare the Programme application: mission alignment, signed Pledge, declared free/open-software commitment
-- [ ] Submit the Programme application
-- [ ] Confirm receipt; note expected response timing in `04-research-and-decisions.md`
+- [x] Read `commonsconservancy.org/how/` end-to-end (2026-05-18; six-phase process: Orientation, Initiation, Setup, Operational, optional Graduation / Hibernation. Initiation = the notification step). Also read DRACC 0001 (mission) and DRACC 0017 (FileSender founding statutes — worked example).
+- [x] Prepare the Programme application: mission alignment with DRACC 0001 (quoted verbatim in the draft), free/open-software commitment (Apache 2.0 + CLA, no novel terms), governance shape on entry, NLnet NGI Zero Commons Fund linkage explained. Draft saved at [`commons-conservancy-application-2026-05-18.md`](commons-conservancy-application-2026-05-18.md) with explicit `[MAINTAINER_NAME]` / `[MAINTAINER_EMAIL]` placeholders for maintainer to resolve and send.
+- [~] Submit the Programme application — **maintainer action**: review the draft, fill placeholders, send to `website@commonsconservancy.org` (or any more-specific application address the Conservancy may have published). Pledge signature happens during the Setup phase after case-officer assignment, not at Initiation.
+- [x] Confirm receipt; note expected response timing in `04-research-and-decisions.md` — Open R11 added with expected window of 2–6 weeks (Conservancy publishes no explicit SLA; estimate based on observed recent admission cadences). Once a case officer responds, update R11 with concrete dates and parameters.
 
 ### 2.2 MCP server documentation (6 h) — BLOCKER FIX
 
