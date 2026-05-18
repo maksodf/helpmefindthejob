@@ -94,7 +94,9 @@ class PersonaChangeRescoreTests(unittest.TestCase):
     def test_same_persona_does_not_clear(self) -> None:
         user = self.STATE.auth_store.create_user("nochange@score.test", "supersecret-123")
         job = DiscoveredJob(
-            user_id=user.id, source_url="https://x/3", title="r",
+            user_id=user.id,
+            source_url="https://x/3",
+            title="r",
             auto_fit_score=0.50,
         )
         self.STATE.repository.save_discovered_job(job)

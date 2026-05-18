@@ -23,7 +23,7 @@ from __future__ import annotations
 import os
 import unittest
 
-from company_discovery.ai_providers import AIProviderConfig, PROVIDER_OPTIONS
+from company_discovery.ai_providers import PROVIDER_OPTIONS, AIProviderConfig
 from company_discovery.analysis import _dispatch_provider
 
 
@@ -35,7 +35,7 @@ class _EnvSandbox:
         self.overrides = overrides
         self.restore: dict[str, str | None] = {}
 
-    def __enter__(self) -> "_EnvSandbox":
+    def __enter__(self) -> _EnvSandbox:
         for key, value in self.overrides.items():
             self.restore[key] = os.environ.get(key)
             if value is None:
@@ -93,12 +93,17 @@ class ManagedAiDispatchTests(unittest.TestCase):
             captured["provider"] = provider
             captured["credential"] = runtime_credential
             from company_discovery.analysis import AnalysisExecutionResult
+
             return AnalysisExecutionResult(
-                "completed", provider.provider_id, provider.invocation_mode,
-                output="ok", prompt=prompt,
+                "completed",
+                provider.provider_id,
+                provider.invocation_mode,
+                output="ok",
+                prompt=prompt,
             )
 
         from company_discovery import analysis as analysis_module
+
         original = analysis_module._execute_openai_compatible
         analysis_module._execute_openai_compatible = fake_openai
         try:

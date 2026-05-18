@@ -46,8 +46,7 @@ class Email:
 
 
 class EmailTransport(Protocol):
-    def send(self, email: Email) -> None:
-        ...
+    def send(self, email: Email) -> None: ...
 
 
 class ConsoleTransport:
@@ -131,14 +130,24 @@ def build_transport(
     if backend == "smtp":
         host = smtp_host or os.environ.get("DIRECTJOB_SMTP_HOST", "")
         port = smtp_port or int(os.environ.get("DIRECTJOB_SMTP_PORT", "587"))
-        username = smtp_username if smtp_username is not None else os.environ.get("DIRECTJOB_SMTP_USERNAME")
-        password = smtp_password if smtp_password is not None else os.environ.get("DIRECTJOB_SMTP_PASSWORD")
+        username = (
+            smtp_username
+            if smtp_username is not None
+            else os.environ.get("DIRECTJOB_SMTP_USERNAME")
+        )
+        password = (
+            smtp_password
+            if smtp_password is not None
+            else os.environ.get("DIRECTJOB_SMTP_PASSWORD")
+        )
         use_tls = (
             smtp_starttls
             if smtp_starttls is not None
             else os.environ.get("DIRECTJOB_SMTP_STARTTLS", "true").strip().casefold() == "true"
         )
-        return SmtpTransport(host=host, port=port, username=username, password=password, use_tls=use_tls)
+        return SmtpTransport(
+            host=host, port=port, username=username, password=password, use_tls=use_tls
+        )
     return ConsoleTransport(outbox_path=outbox_path)
 
 

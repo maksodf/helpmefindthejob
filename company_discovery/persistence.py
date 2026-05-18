@@ -17,7 +17,6 @@ from typing import Any, TypeVar
 from .models import CareerPageScan, Company, CompanyDiscoveryRun, DiscoveredJob, ImportedJob
 from .repository import InMemoryCompanyDiscoveryRepository
 
-
 T = TypeVar("T")
 
 
@@ -88,7 +87,9 @@ class JsonCompanyDiscoveryRepository(InMemoryCompanyDiscoveryRepository):
         with self._lock:
             return list(super().list_companies(user_id))
 
-    def list_discovered_jobs(self, user_id: str, company_id: str | None = None) -> list[DiscoveredJob]:
+    def list_discovered_jobs(
+        self, user_id: str, company_id: str | None = None
+    ) -> list[DiscoveredJob]:
         with self._lock:
             return list(super().list_discovered_jobs(user_id, company_id))
 

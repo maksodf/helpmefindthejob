@@ -104,7 +104,9 @@ class ScoreJobTests(unittest.TestCase):
         # capped at 0.40 so a strong signal can still surface. Build a
         # high-baseline job (keyword + location + freshness all maxed)
         # so the cap is observable rather than floored at zero.
-        job = self._job(title="Senior Frontend Engineer Healthcare Policy", company_name="ContosoCo")
+        job = self._job(
+            title="Senior Frontend Engineer Healthcare Policy", company_name="ContosoCo"
+        )
         terms = ["senior", "frontend", "engineer", "contoso", "co"]
         baseline = score_job(
             job,
@@ -131,13 +133,21 @@ class RankWithDismissedTests(unittest.TestCase):
         # Two equally-fresh jobs with the same source priority. The
         # dismissed one should rank strictly lower.
         keep = AggregatedJob(
-            title="Backend Engineer", company_name="OpenCo", source="muse",
-            source_url="https://x/keep", location="Berlin", description="x",
+            title="Backend Engineer",
+            company_name="OpenCo",
+            source="muse",
+            source_url="https://x/keep",
+            location="Berlin",
+            description="x",
             posted_at=self.NOW - timedelta(hours=1),
         )
         drop = AggregatedJob(
-            title="Insurance Claims Adjuster", company_name="Allstate", source="muse",
-            source_url="https://x/drop", location="Berlin", description="x",
+            title="Insurance Claims Adjuster",
+            company_name="Allstate",
+            source="muse",
+            source_url="https://x/drop",
+            location="Berlin",
+            description="x",
             posted_at=self.NOW - timedelta(hours=1),
         )
         ranked = rank_aggregated(
@@ -183,8 +193,14 @@ class RankAggregatedTests(unittest.TestCase):
 
     def test_cap_applied(self) -> None:
         jobs = [
-            AggregatedJob(title=f"Role {i}", company_name="Co", source="muse",
-                          source_url=f"https://x/{i}", description="x", posted_at=self.NOW)
+            AggregatedJob(
+                title=f"Role {i}",
+                company_name="Co",
+                source="muse",
+                source_url=f"https://x/{i}",
+                description="x",
+                posted_at=self.NOW,
+            )
             for i in range(20)
         ]
         ranked = rank_aggregated(jobs, cap=5, now=self.NOW)

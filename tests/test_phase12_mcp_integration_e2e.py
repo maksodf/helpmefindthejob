@@ -48,7 +48,6 @@ from typing import Any
 
 import jsonschema
 
-
 REPO_ROOT = Path(__file__).resolve().parent.parent
 MCP_SERVER = REPO_ROOT / "mcp_server.py"
 
@@ -182,8 +181,14 @@ class MCPIntegrationE2E(unittest.TestCase):
         self.assertEqual(payload["status"], "ok")
         referral = payload["referral"]
         for field in (
-            "referralId", "sourceAgent", "targetAgent", "userId",
-            "intent", "priority", "reasonCode", "userConsentRequired",
+            "referralId",
+            "sourceAgent",
+            "targetAgent",
+            "userId",
+            "intent",
+            "priority",
+            "reasonCode",
+            "userConsentRequired",
         ):
             self.assertIn(field, referral, msg=field)
         self.assertEqual(referral["sourceAgent"], "directjob-scout")

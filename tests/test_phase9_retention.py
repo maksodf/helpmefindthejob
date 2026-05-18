@@ -26,25 +26,31 @@ class RetentionPurgeTests(unittest.TestCase):
     def setUp(self) -> None:
         self.repo = InMemoryCompanyDiscoveryRepository()
         self.now = datetime(2026, 5, 9, tzinfo=timezone.utc)
-        self.repo.save_discovered_job(DiscoveredJob(
-            user_id="u1",
-            source_url="https://x/old",
-            title="Old role",
-            discovered_at=self.now - timedelta(days=120),
-        ))
-        self.repo.save_discovered_job(DiscoveredJob(
-            user_id="u1",
-            source_url="https://x/recent",
-            title="Recent role",
-            discovered_at=self.now - timedelta(days=15),
-        ))
-        self.repo.save_discovered_job(DiscoveredJob(
-            user_id="u1",
-            source_url="https://x/imported",
-            title="Imported role",
-            imported_job_id="job_xyz",
-            discovered_at=self.now - timedelta(days=200),
-        ))
+        self.repo.save_discovered_job(
+            DiscoveredJob(
+                user_id="u1",
+                source_url="https://x/old",
+                title="Old role",
+                discovered_at=self.now - timedelta(days=120),
+            )
+        )
+        self.repo.save_discovered_job(
+            DiscoveredJob(
+                user_id="u1",
+                source_url="https://x/recent",
+                title="Recent role",
+                discovered_at=self.now - timedelta(days=15),
+            )
+        )
+        self.repo.save_discovered_job(
+            DiscoveredJob(
+                user_id="u1",
+                source_url="https://x/imported",
+                title="Imported role",
+                imported_job_id="job_xyz",
+                discovered_at=self.now - timedelta(days=200),
+            )
+        )
 
     def test_only_old_unimported_removed(self) -> None:
         cutoff = self.now - timedelta(days=90)
@@ -62,13 +68,15 @@ class RetentionPurgeTests(unittest.TestCase):
         # because effective_freshness_at picks the most recent timestamp.
         self.repo.discovered_jobs.clear()
         recent = self.now - timedelta(days=1)
-        self.repo.save_discovered_job(DiscoveredJob(
-            user_id="u1",
-            source_url="https://x/old-but-fresh",
-            title="Old but re-sighted",
-            discovered_at=self.now - timedelta(days=200),
-            also_seen_at={"indeed.com": {"found_at": recent.isoformat()}},
-        ))
+        self.repo.save_discovered_job(
+            DiscoveredJob(
+                user_id="u1",
+                source_url="https://x/old-but-fresh",
+                title="Old but re-sighted",
+                discovered_at=self.now - timedelta(days=200),
+                also_seen_at={"indeed.com": {"found_at": recent.isoformat()}},
+            )
+        )
         cutoff = self.now - timedelta(days=90)
         removed = self.repo.purge_discovered_jobs_older_than(
             "u1", cutoff=cutoff, keep_imported=True

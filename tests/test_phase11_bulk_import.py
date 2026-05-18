@@ -46,17 +46,29 @@ class BulkImportTests(unittest.TestCase):
         self.tmp = TemporaryDirectory()
         self.STATE = _fresh_state(self.tmp.name)
         self.user = self.STATE.auth_store.create_user("bi@test.local", "supersecret-12345")
-        self.company = self.STATE.repository.save_company(Company(
-            user_id=self.user.id, name="Acme", website_url="https://acme.test",
-        ))
-        self.j1 = self.STATE.repository.save_discovered_job(DiscoveredJob(
-            user_id=self.user.id, company_id=self.company.id,
-            source_url="https://acme.test/jobs/1", title="Backend Engineer",
-        ))
-        self.j2 = self.STATE.repository.save_discovered_job(DiscoveredJob(
-            user_id=self.user.id, company_id=self.company.id,
-            source_url="https://acme.test/jobs/2", title="Frontend Engineer",
-        ))
+        self.company = self.STATE.repository.save_company(
+            Company(
+                user_id=self.user.id,
+                name="Acme",
+                website_url="https://acme.test",
+            )
+        )
+        self.j1 = self.STATE.repository.save_discovered_job(
+            DiscoveredJob(
+                user_id=self.user.id,
+                company_id=self.company.id,
+                source_url="https://acme.test/jobs/1",
+                title="Backend Engineer",
+            )
+        )
+        self.j2 = self.STATE.repository.save_discovered_job(
+            DiscoveredJob(
+                user_id=self.user.id,
+                company_id=self.company.id,
+                source_url="https://acme.test/jobs/2",
+                title="Frontend Engineer",
+            )
+        )
 
     def tearDown(self) -> None:
         self.tmp.cleanup()

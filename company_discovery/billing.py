@@ -170,11 +170,9 @@ class Subscription:
 class BillingBackend(Protocol):
     name: str
 
-    def load(self) -> Subscription:
-        ...
+    def load(self) -> Subscription: ...
 
-    def save(self, subscription: Subscription) -> Subscription:
-        ...
+    def save(self, subscription: Subscription) -> Subscription: ...
 
 
 def verify_stripe_webhook_signature(
@@ -216,7 +214,7 @@ def verify_stripe_webhook_signature(
     current = now_ts if now_ts is not None else int(time.time())
     if abs(current - ts) > tolerance_seconds:
         return False
-    signed = f"{ts}.".encode("utf-8") + payload
+    signed = f"{ts}.".encode() + payload
     expected = hmac.new(secret.encode("utf-8"), signed, hashlib.sha256).hexdigest()
     return any(hmac.compare_digest(expected, c) for c in candidates)
 
@@ -250,7 +248,11 @@ def apply_stripe_event(
         customer_id=current.customer_id,
         last_event=event_type,
     )
-    customer_email = obj.get("customer_email") or obj.get("customer_details", {}).get("email") if isinstance(obj.get("customer_details"), dict) else obj.get("customer_email")
+    customer_email = (
+        obj.get("customer_email") or obj.get("customer_details", {}).get("email")
+        if isinstance(obj.get("customer_details"), dict)
+        else obj.get("customer_email")
+    )
     if customer_email and isinstance(customer_email, str):
         next_state.customer_email = customer_email
     customer_id = obj.get("customer")
@@ -259,7 +261,11 @@ def apply_stripe_event(
 
     if event_type == "checkout.session.completed":
         next_state.status = "active"
-        line = (obj.get("display_items") or obj.get("line_items") or [None])[0] if isinstance(obj.get("line_items"), list) else None
+        line = (
+            (obj.get("display_items") or obj.get("line_items") or [None])[0]
+            if isinstance(obj.get("line_items"), list)
+            else None
+        )
         price_id = ""
         if isinstance(line, dict):
             price_id = str((line.get("price") or {}).get("id") or "")
@@ -296,7 +302,9 @@ class ManualBillingBackend:
             payload = json.loads(self.path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
             return Subscription()
-        return Subscription(**{key: payload.get(key) for key in Subscription.__dataclass_fields__ if key in payload})
+        return Subscription(
+            **{key: payload.get(key) for key in Subscription.__dataclass_fields__ if key in payload}
+        )
 
     def save(self, subscription: Subscription) -> Subscription:
         self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -323,7 +331,9 @@ def _default_stripe_transport(method: str, url: str, form: dict[str, str]) -> di
         method=method,
     )
     try:
-        with urllib.request.urlopen(request, timeout=15, context=ssl.create_default_context()) as response:
+        with urllib.request.urlopen(
+            request, timeout=15, context=ssl.create_default_context()
+        ) as response:
             payload = response.read().decode("utf-8")
     except urllib.error.HTTPError as error:
         detail = error.read().decode("utf-8") if error.fp else ""
@@ -376,21 +386,29 @@ class StripeBillingBackend:
             payload = json.loads(self.path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
             return Subscription()
-        return Subscription(**{key: payload.get(key) for key in Subscription.__dataclass_fields__ if key in payload})
+        return Subscription(
+            **{key: payload.get(key) for key in Subscription.__dataclass_fields__ if key in payload}
+        )
 
     def save(self, subscription: Subscription) -> Subscription:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self.path.write_text(json.dumps(subscription.to_dict(), indent=2), encoding="utf-8")
         return subscription
 
-    def create_checkout_session(self, *, plan_id: str, customer_email: str | None = None) -> dict[str, object]:
+    def create_checkout_session(
+        self, *, plan_id: str, customer_email: str | None = None
+    ) -> dict[str, object]:
         if not self.configured:
-            raise RuntimeError("billing_backend_unconfigured: set DIRECTJOB_STRIPE_API_KEY and price IDs")
+            raise RuntimeError(
+                "billing_backend_unconfigured: set DIRECTJOB_STRIPE_API_KEY and price IDs"
+            )
         price_id = self.price_lookup.get(plan_id)
         if not price_id:
             raise ValueError("unknown_plan")
         if not self.success_url or not self.cancel_url:
-            raise RuntimeError("billing_backend_unconfigured: set DIRECTJOB_STRIPE_SUCCESS_URL and DIRECTJOB_STRIPE_CANCEL_URL")
+            raise RuntimeError(
+                "billing_backend_unconfigured: set DIRECTJOB_STRIPE_SUCCESS_URL and DIRECTJOB_STRIPE_CANCEL_URL"
+            )
         form: dict[str, str] = {
             "mode": "subscription",
             "success_url": self.success_url,
@@ -426,7 +444,9 @@ class StripeBillingBackend:
             "customer": customer_id,
             "return_url": return_url,
         }
-        response = self._transport("POST", "https://api.stripe.com/v1/billing_portal/sessions", form)
+        response = self._transport(
+            "POST", "https://api.stripe.com/v1/billing_portal/sessions", form
+        )
         return {
             "id": response.get("id"),
             "url": response.get("url"),

@@ -17,6 +17,8 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
+from datetime import timezone
+
 from company_discovery.dedup import effective_freshness_at, normalize_url
 from company_discovery.models import DiscoveredJob
 from company_discovery.repository import InMemoryCompanyDiscoveryRepository
@@ -88,7 +90,7 @@ class MergeSemanticsTests(unittest.TestCase):
         )
 
         # Simulate the in-scan merge directly
-        from datetime import datetime, timezone
+        from datetime import datetime
         from urllib.parse import urlparse
 
         duplicate = self.repo.find_duplicate_discovered_job(candidate)
@@ -128,7 +130,7 @@ class EffectiveFreshnessTests(unittest.TestCase):
     """A re-sighting on a new source promotes the job's effective freshness."""
 
     def test_falls_back_to_discovered_at_when_no_resightings(self) -> None:
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         old = datetime(2026, 1, 1, tzinfo=timezone.utc)
         job = DiscoveredJob(
@@ -140,7 +142,7 @@ class EffectiveFreshnessTests(unittest.TestCase):
         self.assertEqual(effective_freshness_at(job), old)
 
     def test_picks_latest_resighting_over_discovered_at(self) -> None:
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         original = datetime(2026, 1, 1, tzinfo=timezone.utc)
         recent = datetime(2026, 5, 9, tzinfo=timezone.utc)
@@ -149,14 +151,12 @@ class EffectiveFreshnessTests(unittest.TestCase):
             source_url="https://acme.example/jobs/42",
             title="Backend Engineer",
             discovered_at=original,
-            also_seen_at={
-                "indeed.com": {"url": "https://indeed/", "found_at": recent.isoformat()}
-            },
+            also_seen_at={"indeed.com": {"url": "https://indeed/", "found_at": recent.isoformat()}},
         )
         self.assertEqual(effective_freshness_at(job), recent)
 
     def test_picks_max_across_many_resightings(self) -> None:
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         a = datetime(2026, 3, 1, tzinfo=timezone.utc)
         b = datetime(2026, 4, 1, tzinfo=timezone.utc)
@@ -174,7 +174,7 @@ class EffectiveFreshnessTests(unittest.TestCase):
         self.assertEqual(effective_freshness_at(job), c)
 
     def test_repository_sort_uses_effective_freshness(self) -> None:
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         repo = InMemoryCompanyDiscoveryRepository()
         # "stale" was discovered first but re-found yesterday via Indeed.
@@ -236,11 +236,17 @@ class CrossLocaleDedupTests(unittest.TestCase):
 
         repo = InMemoryCompanyDiscoveryRepository()
         first = DiscoveredJob(
-            user_id="u1", source_url="https://x/1", title="Senior Software Engineer", location="Berlin",
+            user_id="u1",
+            source_url="https://x/1",
+            title="Senior Software Engineer",
+            location="Berlin",
         )
         repo.save_discovered_job(first)
         second = DiscoveredJob(
-            user_id="u1", source_url="https://x/2", title="Senior Datenanalyst", location="Berlin",
+            user_id="u1",
+            source_url="https://x/2",
+            title="Senior Datenanalyst",
+            location="Berlin",
         )
         self.assertIsNone(find_duplicate(second, repo.discovered_jobs.values()))
 

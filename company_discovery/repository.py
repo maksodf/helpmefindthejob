@@ -110,7 +110,9 @@ class InMemoryCompanyDiscoveryRepository:
                 removed += 1
         return removed
 
-    def list_discovered_jobs(self, user_id: str, company_id: str | None = None) -> list[DiscoveredJob]:
+    def list_discovered_jobs(
+        self, user_id: str, company_id: str | None = None
+    ) -> list[DiscoveredJob]:
         jobs = [job for job in self.discovered_jobs.values() if job.user_id == user_id]
         if company_id:
             jobs = [job for job in jobs if job.company_id == company_id]
@@ -170,7 +172,9 @@ class InMemoryCompanyDiscoveryRepository:
         self.analytics_events[event.id] = event
         return event
 
-    def list_analytics_events(self, user_id: str | None = None, limit: int = 200) -> list[AnalyticsEvent]:
+    def list_analytics_events(
+        self, user_id: str | None = None, limit: int = 200
+    ) -> list[AnalyticsEvent]:
         events = list(self.analytics_events.values())
         if user_id:
             events = [e for e in events if e.user_id == user_id]
@@ -222,7 +226,9 @@ class InMemoryCompanyDiscoveryRepository:
     def list_workspace_members(self, workspace_id: str) -> list[WorkspaceMembership]:
         return [m for m in self.workspace_memberships.values() if m.workspace_id == workspace_id]
 
-    def find_workspace_membership(self, user_id: str, workspace_id: str) -> WorkspaceMembership | None:
+    def find_workspace_membership(
+        self, user_id: str, workspace_id: str
+    ) -> WorkspaceMembership | None:
         for m in self.workspace_memberships.values():
             if m.user_id == user_id and m.workspace_id == workspace_id:
                 return m
@@ -249,7 +255,9 @@ class InMemoryCompanyDiscoveryRepository:
         ]
         return find_duplicate(candidate, existing)
 
-    def find_duplicate_discovered_job_pair(self, existing: DiscoveredJob, candidate: DiscoveredJob) -> bool:
+    def find_duplicate_discovered_job_pair(
+        self, existing: DiscoveredJob, candidate: DiscoveredJob
+    ) -> bool:
         return find_duplicate(candidate, [existing]) is not None
 
     def watchlist_summary(self, user_id: str) -> dict[str, object]:
@@ -268,11 +276,15 @@ class InMemoryCompanyDiscoveryRepository:
         )
         return {
             "companiesWatched": len(watched),
-            "newDirectCompanyJobs": len([job for job in discovered_jobs if not job.imported_job_id]),
+            "newDirectCompanyJobs": len(
+                [job for job in discovered_jobs if not job.imported_job_id]
+            ),
             "companiesNeedingCareerPageSetup": len(setup_needed),
             "bestDirectCompanyMatches": [
                 asdict(job)
-                for job in sorted(discovered_jobs, key=lambda item: item.confidence_score, reverse=True)[:5]
+                for job in sorted(
+                    discovered_jobs, key=lambda item: item.confidence_score, reverse=True
+                )[:5]
             ],
             "lastDiscoveryRunStatus": last_scan.status if last_scan else None,
         }

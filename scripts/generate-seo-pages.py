@@ -25,15 +25,12 @@ Usage:
 Input file shape::
 
     {
-      "cities": [
-        {"slug": "berlin", "label": "Berlin"},
-        {"slug": "munich", "label": "Munich"}
-      ],
-      "roles": [
-        {"slug": "data-engineer", "label": "Data engineer"},
-        {"slug": "product-manager", "label": "Product manager"}
-      ],
-      "intro_template": "DirectJob Scout watches direct career pages plus the major aggregators for {role} roles in {city}. No feed, no algorithm, no recruiter messages."
+        "cities": [{"slug": "berlin", "label": "Berlin"}, {"slug": "munich", "label": "Munich"}],
+        "roles": [
+            {"slug": "data-engineer", "label": "Data engineer"},
+            {"slug": "product-manager", "label": "Product manager"},
+        ],
+        "intro_template": "DirectJob Scout watches direct career pages plus the major aggregators for {role} roles in {city}. No feed, no algorithm, no recruiter messages.",
     }
 
 Output is ``deploy/seo-pages.json.example``-shaped — an object with a
@@ -49,7 +46,6 @@ import json
 import sys
 from pathlib import Path
 from typing import Any
-
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
@@ -82,13 +78,15 @@ def fan_out(payload: dict[str, Any]) -> list[dict[str, str]]:
             if slug in seen:
                 continue
             seen.add(slug)
-            pages.append({
-                "slug": slug,
-                "title": f"{role_label} jobs in {city_label}",
-                "role": role_label,
-                "city": city_label,
-                "intro": template.format(role=role_label, city=city_label),
-            })
+            pages.append(
+                {
+                    "slug": slug,
+                    "title": f"{role_label} jobs in {city_label}",
+                    "role": role_label,
+                    "city": city_label,
+                    "intro": template.format(role=role_label, city=city_label),
+                }
+            )
     return pages
 
 

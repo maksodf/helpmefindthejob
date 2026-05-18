@@ -70,18 +70,20 @@ def _build_minimal_pdf(text: str) -> bytes:
     # Build a minimal text-showing content stream.
     stream = DecodedStreamObject()
     safe = text.replace("(", r"\(").replace(")", r"\)")
-    stream.set_data(
-        f"BT /F1 18 Tf 50 700 Td ({safe}) Tj ET".encode("latin-1")
-    )
+    stream.set_data(f"BT /F1 18 Tf 50 700 Td ({safe}) Tj ET".encode("latin-1"))
     page[NameObject("/Contents")] = stream
-    font = DictionaryObject({
-        NameObject("/Type"): NameObject("/Font"),
-        NameObject("/Subtype"): NameObject("/Type1"),
-        NameObject("/BaseFont"): NameObject("/Helvetica"),
-    })
-    resources = DictionaryObject({
-        NameObject("/Font"): DictionaryObject({NameObject("/F1"): font}),
-    })
+    font = DictionaryObject(
+        {
+            NameObject("/Type"): NameObject("/Font"),
+            NameObject("/Subtype"): NameObject("/Type1"),
+            NameObject("/BaseFont"): NameObject("/Helvetica"),
+        }
+    )
+    resources = DictionaryObject(
+        {
+            NameObject("/Font"): DictionaryObject({NameObject("/F1"): font}),
+        }
+    )
     page[NameObject("/Resources")] = resources
     out = io.BytesIO()
     writer.write(out)

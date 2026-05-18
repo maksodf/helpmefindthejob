@@ -30,11 +30,22 @@ class TaxonomyExpansionTests(unittest.TestCase):
     """The 10 new buckets all exist + carry the right shape."""
 
     EXPECTED_BUCKETS = {
-        "software_engineer", "data_engineer", "product_manager",
-        "designer", "marketing", "sales", "finance",
-        "consulting", "customer_success", "healthcare_management",
+        "software_engineer",
+        "data_engineer",
+        "product_manager",
+        "designer",
+        "marketing",
+        "sales",
+        "finance",
+        "consulting",
+        "customer_success",
+        "healthcare_management",
         # Legacy hospitality / care buckets.
-        "bartender", "barista", "cafe_worker", "pflegehelfer", "waiter",
+        "bartender",
+        "barista",
+        "cafe_worker",
+        "pflegehelfer",
+        "waiter",
     }
 
     def test_all_buckets_present(self):
@@ -53,26 +64,26 @@ class PersonaForBucketTests(unittest.TestCase):
 
     def test_every_mapped_persona_exists(self):
         from company_discovery.personas import PERSONAS
+
         for bucket_key, persona_id in BUCKET_TO_PERSONA.items():
-            self.assertIn(persona_id, PERSONAS,
-                           msg=f"bucket {bucket_key} maps to "
-                               f"missing persona {persona_id}")
+            self.assertIn(
+                persona_id,
+                PERSONAS,
+                msg=f"bucket {bucket_key} maps to missing persona {persona_id}",
+            )
 
     def test_hospitality_buckets_intentionally_unmapped(self):
         # bartender / barista / cafe_worker / waiter have no
         # dedicated persona — the bucket filter does the narrowing.
         # Leaving the user's existing persona alone is intentional.
         for key in ("bartender", "barista", "cafe_worker", "waiter"):
-            self.assertIsNone(persona_for_bucket(key),
-                                msg=f"{key} should not auto-flip persona")
+            self.assertIsNone(persona_for_bucket(key), msg=f"{key} should not auto-flip persona")
 
     def test_software_engineer_maps_to_tech(self):
-        self.assertEqual(persona_for_bucket("software_engineer"),
-                          "tech")
+        self.assertEqual(persona_for_bucket("software_engineer"), "tech")
 
     def test_pflegehelfer_maps_to_healthcare_clinical(self):
-        self.assertEqual(persona_for_bucket("pflegehelfer"),
-                          "healthcare-clinical")
+        self.assertEqual(persona_for_bucket("pflegehelfer"), "healthcare-clinical")
 
     def test_unknown_bucket_returns_none(self):
         self.assertIsNone(persona_for_bucket(""))
@@ -139,10 +150,18 @@ class AggregatorSanityTests(unittest.TestCase):
     def test_mixed_list_filters_correctly(self):
         jobs = [
             {"title": "Berlin", "company": "X", "location": "Y", "url": "https://x"},
-            {"title": "Bartender", "company": "Bar", "location": "Berlin",
-              "url": "https://bar.example/1"},
-            {"title": "Pflegehelfer", "company": "Charité",
-              "location": "Senior Lead Manager", "url": "https://x"},
+            {
+                "title": "Bartender",
+                "company": "Bar",
+                "location": "Berlin",
+                "url": "https://bar.example/1",
+            },
+            {
+                "title": "Pflegehelfer",
+                "company": "Charité",
+                "location": "Senior Lead Manager",
+                "url": "https://x",
+            },
         ]
         kept = filter_malformed_jobs(jobs)
         self.assertEqual([j["title"] for j in kept], ["Bartender"])
@@ -170,6 +189,7 @@ class DeleteAccountCommandTests(unittest.TestCase):
 
     def test_dsgvo_keyword_routes(self):
         from company_discovery.chat_router import keyword_route
+
         # German DSGVO triggers should route to delete_account.
         self.assertEqual(
             keyword_route("DSGVO Löschung meines Kontos bitte"),
@@ -178,6 +198,7 @@ class DeleteAccountCommandTests(unittest.TestCase):
 
     def test_english_routes(self):
         from company_discovery.chat_router import keyword_route
+
         self.assertEqual(
             keyword_route("delete my account"),
             "delete_account",

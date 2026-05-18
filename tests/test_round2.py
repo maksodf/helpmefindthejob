@@ -27,9 +27,9 @@ if str(REPO_ROOT) not in sys.path:
 
 from company_discovery.cv_extract import CvExtractError, extract_text
 from company_discovery.models import (
+    INTERVIEW_STAGES,
     Company,
     DiscoveredJob,
-    INTERVIEW_STAGES,
     SavedSearch,
     now_utc,
 )
@@ -49,10 +49,10 @@ def _build_minimal_docx(text: str) -> bytes:
     document_xml = (
         '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
         '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
-        '<w:body>'
-        f'<w:p><w:r><w:t>{text}</w:t></w:r></w:p>'
-        '</w:body>'
-        '</w:document>'
+        "<w:body>"
+        f"<w:p><w:r><w:t>{text}</w:t></w:r></w:p>"
+        "</w:body>"
+        "</w:document>"
     )
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", compression=zipfile.ZIP_DEFLATED) as zf:
@@ -92,7 +92,9 @@ class SavedSearchAlertsTests(unittest.TestCase):
         )
         self.repo.save_company(self.company)
 
-    def _add_job(self, title: str, location: str = "Berlin", offset: timedelta | None = None) -> DiscoveredJob:
+    def _add_job(
+        self, title: str, location: str = "Berlin", offset: timedelta | None = None
+    ) -> DiscoveredJob:
         job = DiscoveredJob(
             user_id=self.user_id,
             company_id=self.company.id,
@@ -105,7 +107,9 @@ class SavedSearchAlertsTests(unittest.TestCase):
         return self.repo.save_discovered_job(job)
 
     def test_role_token_match(self) -> None:
-        search = SavedSearch(user_id=self.user_id, name="Backend", target_roles=["backend engineer"])
+        search = SavedSearch(
+            user_id=self.user_id, name="Backend", target_roles=["backend engineer"]
+        )
         good = self._add_job("Senior Backend Engineer")
         bad = self._add_job("Marketing Coordinator")
         self.assertTrue(saved_search_matches_job(search, good, self.company.sector))
@@ -113,8 +117,10 @@ class SavedSearchAlertsTests(unittest.TestCase):
 
     def test_location_filter(self) -> None:
         search = SavedSearch(
-            user_id=self.user_id, name="Berlin only",
-            target_roles=["engineer"], location="Berlin",
+            user_id=self.user_id,
+            name="Berlin only",
+            target_roles=["engineer"],
+            location="Berlin",
         )
         in_berlin = self._add_job("Backend Engineer", location="Berlin")
         in_paris = self._add_job("Backend Engineer", location="Paris")
@@ -125,7 +131,8 @@ class SavedSearchAlertsTests(unittest.TestCase):
         old = self._add_job("Backend Engineer", offset=timedelta(days=-7))
         new = self._add_job("Backend Architect", offset=timedelta(seconds=5))
         search = SavedSearch(
-            user_id=self.user_id, name="Backend",
+            user_id=self.user_id,
+            name="Backend",
             target_roles=["backend"],
             last_seen_at=now_utc() - timedelta(days=1),
         )
@@ -140,7 +147,8 @@ class SavedSearchAlertsTests(unittest.TestCase):
         self._add_job("Frontend Engineer")
         self._add_job("Marketing Coordinator")
         search = SavedSearch(
-            user_id=self.user_id, name="Engineering",
+            user_id=self.user_id,
+            name="Engineering",
             target_roles=["engineer"],
         )
         summary = alert_summary_for_search(
@@ -219,10 +227,14 @@ class TrackerDepthTests(unittest.TestCase):
     def test_status_change_appends_history(self) -> None:
         user_id, job_id = self._seed_imported_job()
         first = self.state.update_application_state(
-            user_id, job_id, {"applicationStatus": "applied"},
+            user_id,
+            job_id,
+            {"applicationStatus": "applied"},
         )
         second = self.state.update_application_state(
-            user_id, job_id, {"applicationStatus": "interview", "historyNote": "phone screen Thurs"},
+            user_id,
+            job_id,
+            {"applicationStatus": "interview", "historyNote": "phone screen Thurs"},
         )
         self.assertEqual(len(second.application_history), 2)
         self.assertEqual(second.application_history[-1]["status"], "interview")
@@ -232,21 +244,27 @@ class TrackerDepthTests(unittest.TestCase):
         user_id, job_id = self._seed_imported_job(user_id="tracker-stage-user")
         with self.assertRaises(ValueError):
             self.state.update_application_state(
-                user_id, job_id, {"interviewStage": "not-a-real-stage"},
+                user_id,
+                job_id,
+                {"interviewStage": "not-a-real-stage"},
             )
 
     def test_valid_interview_stage_persists(self) -> None:
         user_id, job_id = self._seed_imported_job(user_id="tracker-valid-stage")
         for stage in INTERVIEW_STAGES:
             updated = self.state.update_application_state(
-                user_id, job_id, {"interviewStage": stage},
+                user_id,
+                job_id,
+                {"interviewStage": stage},
             )
             self.assertEqual(updated.interview_stage, stage)
 
     def test_reminder_at_round_trip(self) -> None:
         user_id, job_id = self._seed_imported_job(user_id="tracker-reminder")
         updated = self.state.update_application_state(
-            user_id, job_id, {"reminderAt": "2026-06-01T09:30:00"},
+            user_id,
+            job_id,
+            {"reminderAt": "2026-06-01T09:30:00"},
         )
         self.assertIsNotNone(updated.reminder_at)
 

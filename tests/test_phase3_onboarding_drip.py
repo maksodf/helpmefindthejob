@@ -27,8 +27,12 @@ import unittest
 from datetime import timedelta
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from typing import TYPE_CHECKING
 
 from company_discovery.auth import AuthStore, now_utc
+
+if TYPE_CHECKING:
+    from app import AppState
 
 
 class DripEligibilityTests(unittest.TestCase):
@@ -42,7 +46,8 @@ class DripEligibilityTests(unittest.TestCase):
     def _set_created_at(self, store: AuthStore, user_id: str, days_ago: int) -> None:
         when = (now_utc() - timedelta(days=days_ago)).isoformat()
         store.connection.execute(
-            "UPDATE users SET created_at = ? WHERE id = ?", (when, user_id),
+            "UPDATE users SET created_at = ? WHERE id = ?",
+            (when, user_id),
         )
         store.connection.commit()
 
@@ -58,9 +63,14 @@ class DripEligibilityTests(unittest.TestCase):
         self._set_created_at(store, in_window_high.id, 13)
         self._set_created_at(store, too_old.id, 30)
 
-        due = {u.id for u in store.users_due_for_drip(
-            column="drip_day3_sent_at", min_age_days=3, max_age_days=14,
-        )}
+        due = {
+            u.id
+            for u in store.users_due_for_drip(
+                column="drip_day3_sent_at",
+                min_age_days=3,
+                max_age_days=14,
+            )
+        }
         self.assertNotIn(too_new.id, due)
         self.assertIn(in_window_low.id, due)
         self.assertIn(in_window_high.id, due)
@@ -72,19 +82,33 @@ class DripEligibilityTests(unittest.TestCase):
         self._set_created_at(store, user.id, 5)
 
         self.assertEqual(
-            [u.id for u in store.users_due_for_drip(column="drip_day3_sent_at", min_age_days=3, max_age_days=14)],
+            [
+                u.id
+                for u in store.users_due_for_drip(
+                    column="drip_day3_sent_at", min_age_days=3, max_age_days=14
+                )
+            ],
             [user.id],
         )
         store.mark_drip_sent(user.id, "drip_day3_sent_at")
         self.assertEqual(
-            list(store.users_due_for_drip(column="drip_day3_sent_at", min_age_days=3, max_age_days=14)),
+            list(
+                store.users_due_for_drip(
+                    column="drip_day3_sent_at", min_age_days=3, max_age_days=14
+                )
+            ),
             [],
         )
         # day-7 column is independent — same user still surfaces on
         # that sweep when their age crosses 7d.
         self._set_created_at(store, user.id, 8)
         self.assertEqual(
-            [u.id for u in store.users_due_for_drip(column="drip_day7_sent_at", min_age_days=7, max_age_days=30)],
+            [
+                u.id
+                for u in store.users_due_for_drip(
+                    column="drip_day7_sent_at", min_age_days=7, max_age_days=30
+                )
+            ],
             [user.id],
         )
 
@@ -102,10 +126,16 @@ class DripEligibilityTests(unittest.TestCase):
         self._set_created_at(store, active.id, 5)
         self._set_created_at(store, inactive.id, 5)
         store.connection.execute(
-            "UPDATE users SET active = 0 WHERE id = ?", (inactive.id,),
+            "UPDATE users SET active = 0 WHERE id = ?",
+            (inactive.id,),
         )
         store.connection.commit()
-        due = {u.id for u in store.users_due_for_drip(column="drip_day3_sent_at", min_age_days=3, max_age_days=14)}
+        due = {
+            u.id
+            for u in store.users_due_for_drip(
+                column="drip_day3_sent_at", min_age_days=3, max_age_days=14
+            )
+        }
         self.assertIn(active.id, due)
         self.assertNotIn(inactive.id, due)
 
@@ -115,8 +145,9 @@ class RunOnboardingDripIntegrationTests(unittest.TestCase):
     a user with the right ``created_at``, run the sweep, assert the
     email transport was hit and the column flipped."""
 
-    def _state(self) -> tuple["AppState", str]:
+    def _state(self) -> tuple[AppState, str]:
         from app import AppState
+
         tmp = TemporaryDirectory()
         self.addCleanup(tmp.cleanup)
         root = Path(tmp.name)
@@ -134,7 +165,8 @@ class RunOnboardingDripIntegrationTests(unittest.TestCase):
     def _set_created_at(self, state, user_id, days_ago: int) -> None:
         when = (now_utc() - timedelta(days=days_ago)).isoformat()
         state.auth_store.connection.execute(
-            "UPDATE users SET created_at = ? WHERE id = ?", (when, user_id),
+            "UPDATE users SET created_at = ? WHERE id = ?",
+            (when, user_id),
         )
         state.auth_store.connection.commit()
 

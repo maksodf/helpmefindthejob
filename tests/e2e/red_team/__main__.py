@@ -6,7 +6,7 @@
 # a copy of the License at http://www.apache.org/licenses/LICENSE-2.0.
 
 """Red-team runner — invoke via:
-    E2E_BASE_URL=https://app.directjob-scout.example python -m tests.e2e.red_team
+E2E_BASE_URL=https://app.directjob-scout.example python -m tests.e2e.red_team
 """
 
 from __future__ import annotations
@@ -27,7 +27,10 @@ if str(_ROOT) not in sys.path:
 
 from agents import ALL_AGENTS  # noqa: E402
 from harness import (  # noqa: E402
-    BASE_URL, RedTeamAgent, render_console_summary, write_report,
+    BASE_URL,
+    RedTeamAgent,
+    render_console_summary,
+    write_report,
 )
 
 
@@ -42,7 +45,7 @@ def main() -> int:
         agent = RedTeamAgent(name, persona)
         if not agent.register():
             reports.append(agent.finish())
-            print(f"  ✗ register failed; skipping")
+            print("  ✗ register failed; skipping")
             time.sleep(1)
             continue
         try:
@@ -56,12 +59,13 @@ def main() -> int:
         agent.expect_no_leak()
         agent.expect_replies_nonempty()
         reports.append(agent.finish())
-        crit = sum(1 for f in agent.report.findings
-                    if f.severity == "CRITICAL")
+        crit = sum(1 for f in agent.report.findings if f.severity == "CRITICAL")
         hi = sum(1 for f in agent.report.findings if f.severity == "HIGH")
-        print(f"  done · {len(agent.report.transcript)} turns · "
-              f"{crit} CRIT / {hi} HIGH / "
-              f"{len(agent.report.findings)} total findings")
+        print(
+            f"  done · {len(agent.report.transcript)} turns · "
+            f"{crit} CRIT / {hi} HIGH / "
+            f"{len(agent.report.findings)} total findings"
+        )
         # Brief pause to avoid hammering prod aggregators.
         time.sleep(0.8)
     out_path = Path(__file__).resolve().parent.parent / "red_team_report.md"
@@ -70,10 +74,7 @@ def main() -> int:
     print(f"Report written: {out_path}")
     # Exit non-zero ONLY on CRITICAL findings (HIGH is reportable but
     # the operator decides whether to block release).
-    total_critical = sum(
-        sum(1 for f in r.findings if f.severity == "CRITICAL")
-        for r in reports
-    )
+    total_critical = sum(sum(1 for f in r.findings if f.severity == "CRITICAL") for r in reports)
     return 1 if total_critical else 0
 
 

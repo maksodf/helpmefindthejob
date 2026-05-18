@@ -331,16 +331,16 @@ Per `10-ai-act-compliance.md`. Create the `/compliance/` directory and ship:
 
 ### 3.2 CI expansion (8 h)
 
-- [ ] Add `ruff` lint + format check
-- [ ] Add `mypy` type check (start with `--ignore-missing-imports`, tighten over time)
-- [ ] Add coverage upload to Codecov; add coverage badge to README
-- [ ] Add `pip-audit` for CVE scanning
-- [ ] Add `Renovate` (preferred over Dependabot for NGI0 cohort signal) config
-- [ ] Add `codespell` workflow
-- [ ] Add `locale_check` workflow verifying en.json and de.json key parity
-- [ ] Add multi-OS matrix (Ubuntu + macOS) where applicable
-- [ ] Add OpenSSF Scorecard workflow + badge in README
-- [ ] All CI badges visible in README
+- [x] Add `ruff` lint + format check — config in `pyproject.toml` `[tool.ruff]`; CI workflow `.github/workflows/quality.yml` (`ruff-lint` job); pre-commit hook in `.pre-commit-config.yaml`. Target `py39` (matches the minimum supported Python). Real-bug findings fixed (B039 mutable ContextVar default in `audit_log.py`, F821 forward-ref imports in `auth.py` + `tests/test_phase1_seo_pages.py` + `tests/test_phase3_onboarding_drip.py`, B030 + B005 with explicit `# noqa` on intentional patterns); pre-existing style nits in legacy code added to ignore list as drift targets.
+- [x] Add `mypy` type check — config in `pyproject.toml` `[tool.mypy]`; CI workflow `.github/workflows/quality.yml` (`mypy-strict-subset` job). Permissive baseline (`follow_imports = "silent"`, no `disallow_untyped_defs`) with **strict overrides** for `company_discovery.audit_log`, `company_discovery.crypto_kit`, and `mcp_server`. Subset grows as more modules tighten. Strict subset green (`Success: no issues found in 3 source files`).
+- [x] Add coverage upload to Codecov — CI workflow `.github/workflows/quality.yml` (`coverage` job). Uses `coverage run -m unittest discover` then `codecov/codecov-action@v5`. Branch coverage enabled in `pyproject.toml` `[tool.coverage.run]`. README badge added.
+- [x] Add `pip-audit` for CVE scanning — CI workflow `.github/workflows/quality.yml` (`pip-audit` job). Strict mode (`--strict`) fails on any vulnerability across both `requirements.txt` and `requirements-dev.txt`.
+- [x] Add `Renovate` config — `renovate.json` at repo root. Activation requires the Renovate GitHub App installed by the maintainer; the config is the contract. Groups minor/patch updates weekly into a single PR per file (`requirements.txt`, `requirements-dev.txt`); major updates get explicit PRs; `cryptography` major releases tagged `security-review-needed`; vulnerability alerts immediate; GitHub Actions pinned to commit SHAs to satisfy OpenSSF Scorecard.
+- [x] Add `codespell` workflow — CI workflow `.github/workflows/quality.yml` (`codespell` job). Config in `.codespellrc` (the `[tool.codespell]` table in pyproject.toml is unreliable across codespell versions, see upstream issue #1853). Pre-commit hook adds local feedback. German-vocabulary false positives ignored explicitly; real typo `donwload` → `download` fixed in `journey.py` + `tests/test_journey_edge_cases.py`.
+- [x] Add `locale_check` workflow verifying en.json and de.json key parity — already exists as `i18n parity check` step in `.github/workflows/test.yml`; multi-OS matrix exercises it on every push.
+- [x] Add multi-OS matrix — `.github/workflows/test.yml` now matrices over `ubuntu-latest`, `macos-latest`, `windows-latest` × Python `3.9` + `3.12`. macOS×3.9 excluded due to setup-python cache strategy on arm64; macOS coverage from 3.12, 3.9 coverage from Ubuntu + Windows.
+- [x] Add OpenSSF Scorecard workflow + badge in README — `.github/workflows/scorecard.yml` using `ossf/scorecard-action@v2.4.0`. Weekly cron + push-to-main triggers. SARIF uploaded to GitHub Security tab; results published to scorecard.dev.
+- [x] All CI badges visible in README — tests, quality, MCP integration, fresh-clone install, OpenSSF Scorecard, Codecov coverage. Existing badges (License, Release placeholder, Languages, MCP version) retained.
 
 ### 3.3 Roadmap and release discipline (5 h)
 

@@ -32,7 +32,6 @@ import json
 import re
 from typing import Callable
 
-
 _MAX_CV_CHARS_FOR_PROMPT = 6000
 _MAX_JD_CHARS_FOR_PROMPT = 3000
 _MAX_FIELD_CHARS = 200
@@ -45,12 +44,13 @@ def _sanitize_for_prompt(text: str, limit: int) -> str:
     if not text:
         return ""
     text = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]", "", text)
-    text = re.sub(r"(?i)ignore (?:all )?previous (?:instructions?|prompts?)",
-                   "[neutralised:ignore-previous]", text)
-    text = re.sub(r"(?i)disregard (?:the )?(?:above|previous)",
-                   "[neutralised:disregard]", text)
-    text = re.sub(r"(?i)you are now an? \w+",
-                   "[neutralised:role-play]", text)
+    text = re.sub(
+        r"(?i)ignore (?:all )?previous (?:instructions?|prompts?)",
+        "[neutralised:ignore-previous]",
+        text,
+    )
+    text = re.sub(r"(?i)disregard (?:the )?(?:above|previous)", "[neutralised:disregard]", text)
+    text = re.sub(r"(?i)you are now an? \w+", "[neutralised:role-play]", text)
     text = re.sub(r"(?i)system\s*:", "[neutralised:system-claim]:", text)
     text = re.sub(r"^#{1,6}\s", "", text, flags=re.MULTILINE)
     if len(text) > limit:
@@ -81,7 +81,8 @@ def build_consult_prompt(*, job: dict, cv_text: str) -> tuple[str, str]:
         "- The only acceptable output is the JSON list described above."
     )
     description = (
-        job.get("description") or job.get("rawDescription")
+        job.get("description")
+        or job.get("rawDescription")
         or "(no description; consult by title only)"
     )
     user = (
@@ -125,13 +126,54 @@ def parse_consult_response(raw: str | None) -> list[dict[str, str]]:
 # Heuristic stopwords for the fallback path — we don't want to surface
 # generic JD boilerplate as "gaps".
 _STOP = {
-    "the", "and", "or", "for", "with", "you", "your", "we", "our",
-    "are", "you'll", "will", "have", "has", "this", "that", "team",
-    "experience", "year", "years", "english", "deutsch", "german",
-    "job", "role", "position", "company", "candidate", "applicant",
-    "ideal", "looking", "based", "ability", "able", "must", "should",
-    "ein", "eine", "und", "oder", "für", "der", "die", "das",
-    "wir", "sie", "ihr", "stelle",
+    "the",
+    "and",
+    "or",
+    "for",
+    "with",
+    "you",
+    "your",
+    "we",
+    "our",
+    "are",
+    "you'll",
+    "will",
+    "have",
+    "has",
+    "this",
+    "that",
+    "team",
+    "experience",
+    "year",
+    "years",
+    "english",
+    "deutsch",
+    "german",
+    "job",
+    "role",
+    "position",
+    "company",
+    "candidate",
+    "applicant",
+    "ideal",
+    "looking",
+    "based",
+    "ability",
+    "able",
+    "must",
+    "should",
+    "ein",
+    "eine",
+    "und",
+    "oder",
+    "für",
+    "der",
+    "die",
+    "das",
+    "wir",
+    "sie",
+    "ihr",
+    "stelle",
 }
 
 
@@ -141,10 +183,7 @@ def heuristic_consult(*, job: dict, cv_text: str) -> list[dict[str, str]]:
     and surfaces them as gap-questions. Conservative — produces 0-3
     items so the user isn't drowned in noise."""
     description = (
-        job.get("description")
-        or job.get("rawDescription")
-        or job.get("raw_description")
-        or ""
+        job.get("description") or job.get("rawDescription") or job.get("raw_description") or ""
     )
     if not description:
         return []
@@ -168,15 +207,19 @@ def heuristic_consult(*, job: dict, cv_text: str) -> list[dict[str, str]]:
         if len(candidates) >= 3:
             break
     return [
-        {"gap": c,
-          "question": f"Do you have hands-on experience with **{c}**? "
-                       "If yes, give me a one-sentence story I can add."}
+        {
+            "gap": c,
+            "question": f"Do you have hands-on experience with **{c}**? "
+            "If yes, give me a one-sentence story I can add.",
+        }
         for c in candidates
     ]
 
 
 def consult(
-    *, job: dict, cv_text: str,
+    *,
+    job: dict,
+    cv_text: str,
     ai_caller: Callable[[str, str], str | None] | None,
 ) -> tuple[list[dict[str, str]], bool]:
     """Top-level consultation. Returns ``(gaps, used_ai)`` where

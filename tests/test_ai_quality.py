@@ -46,8 +46,7 @@ class WellFormedJsonShapeTests(unittest.TestCase):
 
     def test_pure_json_snake_case(self):
         out = parse_freeform(
-            '{"fit_score": 0.5, "recommendation": "consider", '
-            '"healthcare_relevance": "medium"}'
+            '{"fit_score": 0.5, "recommendation": "consider", "healthcare_relevance": "medium"}'
         )
         self.assertAlmostEqual(out.fit_score, 0.5, places=3)
         self.assertEqual(out.recommendation, "consider")
@@ -55,8 +54,7 @@ class WellFormedJsonShapeTests(unittest.TestCase):
 
     def test_mixed_case_json_keys(self):
         out = parse_freeform(
-            '{"fitScore": 0.6, "recommendation": "consider", '
-            '"junior_suitability": "fits"}'
+            '{"fitScore": 0.6, "recommendation": "consider", "junior_suitability": "fits"}'
         )
         self.assertAlmostEqual(out.fit_score, 0.6, places=3)
         self.assertEqual(out.junior_suitability, "fits")
@@ -157,25 +155,19 @@ class MalformedJsonGracefulFallbackTests(unittest.TestCase):
 
     def test_trailing_comma_in_json(self):
         # json.loads chokes on trailing commas; we still extract via regex.
-        out = parse_freeform(
-            '{"fitScore": 0.7, "recommendation": "apply",}'
-        )
+        out = parse_freeform('{"fitScore": 0.7, "recommendation": "apply",}')
         self.assertAlmostEqual(out.fit_score, 0.7, places=3)
         self.assertEqual(out.recommendation, "apply")
 
     def test_missing_closing_brace(self):
-        out = parse_freeform(
-            '{"fitScore": 0.6, "recommendation": "consider"'
-        )
+        out = parse_freeform('{"fitScore": 0.6, "recommendation": "consider"')
         # The JSON_BLOCK_RE wants {…}; with no closing brace it doesn't
         # match. The text regex fallback should still pick up the score.
         self.assertAlmostEqual(out.fit_score, 0.6, places=3)
         self.assertEqual(out.recommendation, "consider")
 
     def test_single_quotes_not_json(self):
-        out = parse_freeform(
-            "Score: 0.45; recommendation: skip"
-        )
+        out = parse_freeform("Score: 0.45; recommendation: skip")
         self.assertAlmostEqual(out.fit_score, 0.45, places=3)
         self.assertEqual(out.recommendation, "skip")
 
@@ -205,9 +197,7 @@ class EdgeCaseTests(unittest.TestCase):
 
     def test_invalid_recommendation_string(self):
         """``maybe`` is not in the whitelist — should NOT be set."""
-        out = parse_freeform(
-            '{"fitScore": 0.5, "recommendation": "maybe"}'
-        )
+        out = parse_freeform('{"fitScore": 0.5, "recommendation": "maybe"}')
         self.assertAlmostEqual(out.fit_score, 0.5, places=3)
         self.assertIsNone(out.recommendation)
 
@@ -231,17 +221,13 @@ class EdgeCaseTests(unittest.TestCase):
 
     def test_tools_as_csv_string(self):
         """Some models emit tools as a comma-separated string."""
-        out = parse_freeform(
-            '{"fitScore": 0.5, "tools": "Python, K8s, Postgres"}'
-        )
+        out = parse_freeform('{"fitScore": 0.5, "tools": "Python, K8s, Postgres"}')
         self.assertAlmostEqual(out.fit_score, 0.5, places=3)
         self.assertEqual(out.tools, ["Python", "K8s", "Postgres"])
 
     def test_score_in_json_string_form(self):
         """Model emits ``"0.7"`` as a string, not a number."""
-        out = parse_freeform(
-            '{"fitScore": "0.7", "recommendation": "consider"}'
-        )
+        out = parse_freeform('{"fitScore": "0.7", "recommendation": "consider"}')
         self.assertAlmostEqual(out.fit_score, 0.7, places=3)
 
     def test_negative_score_handling(self):
@@ -253,9 +239,7 @@ class EdgeCaseTests(unittest.TestCase):
         self.assertIn(out.fit_score, (None, -0.2))
 
     def test_null_fields(self):
-        out = parse_freeform(
-            '{"fitScore": null, "recommendation": null, "tools": null}'
-        )
+        out = parse_freeform('{"fitScore": null, "recommendation": null, "tools": null}')
         self.assertIsNone(out.fit_score)
         self.assertIsNone(out.recommendation)
         self.assertEqual(out.tools, [])
@@ -266,21 +250,23 @@ class RoundTripStructureTests(unittest.TestCase):
     drift when we add fields."""
 
     def test_to_dict_keys_are_camelcase(self):
-        out = parse_freeform(
-            '{"fitScore": 0.7, "recommendation": "apply"}'
-        )
+        out = parse_freeform('{"fitScore": 0.7, "recommendation": "apply"}')
         d = out.to_dict()
         expected = {
-            "fitScore", "recommendation", "healthcareRelevance",
-            "juniorSuitability", "requiredExperience",
-            "languageRequirements", "tools", "risks", "notes",
+            "fitScore",
+            "recommendation",
+            "healthcareRelevance",
+            "juniorSuitability",
+            "requiredExperience",
+            "languageRequirements",
+            "tools",
+            "risks",
+            "notes",
         }
         self.assertEqual(set(d.keys()), expected)
 
     def test_to_dict_preserves_lists(self):
-        out = parse_freeform(
-            '{"fitScore": 0.5, "tools": ["a", "b"], "risks": ["x"]}'
-        )
+        out = parse_freeform('{"fitScore": 0.5, "tools": ["a", "b"], "risks": ["x"]}')
         d = out.to_dict()
         self.assertEqual(d["tools"], ["a", "b"])
         self.assertEqual(d["risks"], ["x"])

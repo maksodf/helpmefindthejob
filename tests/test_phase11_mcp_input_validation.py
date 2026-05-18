@@ -115,9 +115,7 @@ class HandleRequestDispatchTests(unittest.TestCase):
 
     def setUp(self) -> None:
         self._tmp = tempfile.TemporaryDirectory()
-        self.tools = mcp_server.build_tools(
-            data_path=Path(self._tmp.name) / "company.sqlite3"
-        )
+        self.tools = mcp_server.build_tools(data_path=Path(self._tmp.name) / "company.sqlite3")
 
     def tearDown(self) -> None:
         self._tmp.cleanup()
@@ -180,9 +178,7 @@ class HandleRequestDispatchTests(unittest.TestCase):
     def test_validation_short_circuits_before_dispatch(self) -> None:
         """Validation failures must not reach the tool implementation."""
 
-        with patch.object(
-            self.tools, "add_company_to_watchlist"
-        ) as mock_tool:
+        with patch.object(self.tools, "add_company_to_watchlist") as mock_tool:
             response = self._call("add_company_to_watchlist", {})
             self.assertTrue(response["result"]["isError"])
             mock_tool.assert_not_called()

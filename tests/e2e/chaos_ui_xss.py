@@ -47,27 +47,19 @@ SENTINEL = "__chaos_xss_fired__"
 # Different XSS shapes — script tag, event handler, javascript: URL,
 # svg vector, encoded variants. Each should NOT execute when rendered.
 XSS_PAYLOADS = [
-    ("script_tag",
-     f"<script>window.{SENTINEL}_script=true</script>"),
-    ("img_onerror",
-     f"<img src=x onerror='window.{SENTINEL}_img=true'>"),
-    ("svg_onload",
-     f"<svg onload='window.{SENTINEL}_svg=true'></svg>"),
-    ("a_javascript",
-     f"<a href='javascript:window.{SENTINEL}_a=true'>x</a>"),
-    ("body_onfocus",
-     f"<body onfocus='window.{SENTINEL}_body=true'>"),
-    ("iframe_srcdoc",
-     f"<iframe srcdoc=\"<script>parent.{SENTINEL}_iframe=true</script>\"></iframe>"),
-    ("data_uri",
-     f"<embed src='data:text/html,<script>top.{SENTINEL}_embed=true</script>'>"),
+    ("script_tag", f"<script>window.{SENTINEL}_script=true</script>"),
+    ("img_onerror", f"<img src=x onerror='window.{SENTINEL}_img=true'>"),
+    ("svg_onload", f"<svg onload='window.{SENTINEL}_svg=true'></svg>"),
+    ("a_javascript", f"<a href='javascript:window.{SENTINEL}_a=true'>x</a>"),
+    ("body_onfocus", f"<body onfocus='window.{SENTINEL}_body=true'>"),
+    ("iframe_srcdoc", f'<iframe srcdoc="<script>parent.{SENTINEL}_iframe=true</script>"></iframe>'),
+    ("data_uri", f"<embed src='data:text/html,<script>top.{SENTINEL}_embed=true</script>'>"),
 ]
 
 
 def _signup(page, email: str, password: str) -> None:
     page.goto(BASE_URL + "/")
-    page.locator("#authGate, #mainContent").first.wait_for(state="visible",
-                                                             timeout=15000)
+    page.locator("#authGate, #mainContent").first.wait_for(state="visible", timeout=15000)
     if page.locator("#mainContent").is_visible(timeout=300):
         return
     page.locator("#registerForm").wait_for(state="visible", timeout=10000)
@@ -99,12 +91,9 @@ def _dismiss_wizard(page) -> None:
 
 def _check_no_xss(page, surface: str, payload_name: str) -> tuple[bool, str]:
     """Verify no sentinel keys appear on window. Returns (ok, detail)."""
-    fired_keys = page.evaluate(
-        f"() => Object.keys(window).filter(k => k.startsWith('{SENTINEL}'))"
-    )
+    fired_keys = page.evaluate(f"() => Object.keys(window).filter(k => k.startsWith('{SENTINEL}'))")
     if fired_keys:
-        return False, (f"{surface}: XSS sentinel fired via "
-                       f"{payload_name}: keys={fired_keys}")
+        return False, (f"{surface}: XSS sentinel fired via {payload_name}: keys={fired_keys}")
     return True, f"{surface}: no XSS fired ({payload_name} rendered inert)"
 
 
@@ -145,8 +134,9 @@ def run_xss_sweep() -> list[dict]:
                     page.locator(".nav-item[data-view='settings']").click()
                     page.wait_for_timeout(400)
                     ok, detail = _check_no_xss(page, "cv_render", payload_name)
-                    results.append({"payload": payload_name,
-                                     "surface": "cv", "ok": ok, "detail": detail})
+                    results.append(
+                        {"payload": payload_name, "surface": "cv", "ok": ok, "detail": detail}
+                    )
 
                     # Surface 2: Company name in queue / detail render.
                     page.locator(".nav-item[data-view='companies']").click()
@@ -158,28 +148,35 @@ def run_xss_sweep() -> list[dict]:
                         "?.closest('details')?.setAttribute('open', '')"
                     )
                     page.wait_for_timeout(150)
-                    name_input = page.locator(
-                        "#companyForm input[name='name']")
+                    name_input = page.locator("#companyForm input[name='name']")
                     name_input.fill(f"Evil-Corp-{payload_name} {payload}")
-                    page.locator(
-                        "#companyForm input[name='websiteUrl']").fill(
-                        f"https://evil-{payload_name}.example")
-                    page.locator(
-                        "#companyForm button[type='submit']").click()
+                    page.locator("#companyForm input[name='websiteUrl']").fill(
+                        f"https://evil-{payload_name}.example"
+                    )
+                    page.locator("#companyForm button[type='submit']").click()
                     page.wait_for_timeout(800)
                     page.reload()
                     page.locator("#sidebarUserEmail").wait_for(state="visible")
                     page.locator(".nav-item[data-view='companies']").click()
                     page.wait_for_timeout(600)
-                    ok, detail = _check_no_xss(page, "company_name",
-                                                payload_name)
-                    results.append({"payload": payload_name,
-                                     "surface": "company_name", "ok": ok,
-                                     "detail": detail})
+                    ok, detail = _check_no_xss(page, "company_name", payload_name)
+                    results.append(
+                        {
+                            "payload": payload_name,
+                            "surface": "company_name",
+                            "ok": ok,
+                            "detail": detail,
+                        }
+                    )
                 except Exception as exc:  # noqa: BLE001
-                    results.append({"payload": payload_name,
-                                     "surface": "error", "ok": False,
-                                     "detail": f"{type(exc).__name__}: {exc}"})
+                    results.append(
+                        {
+                            "payload": payload_name,
+                            "surface": "error",
+                            "ok": False,
+                            "detail": f"{type(exc).__name__}: {exc}",
+                        }
+                    )
         finally:
             context.close()
             browser.close()
@@ -192,8 +189,7 @@ def main() -> int:
         return 2
     print(f"[chaos-ui-xss] base_url={BASE_URL}")
     results = run_xss_sweep()
-    out = Path(os.environ.get("E2E_XSS_REPORT",
-                               "tests/e2e/chaos_ui_xss_report.json"))
+    out = Path(os.environ.get("E2E_XSS_REPORT", "tests/e2e/chaos_ui_xss_report.json"))
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(results, indent=2, ensure_ascii=False))
 

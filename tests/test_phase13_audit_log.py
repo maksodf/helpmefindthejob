@@ -133,9 +133,7 @@ class AuditLogEmitterTests(unittest.TestCase):
         self.assertIsNone(self.emitter.hash_id(None))
 
     def test_plaintext_pii_opt_in_disables_hashing(self) -> None:
-        plain = AuditLogEmitter(
-            log_path=self.log_path, salt=self.salt, plaintext_pii=True
-        )
+        plain = AuditLogEmitter(log_path=self.log_path, salt=self.salt, plaintext_pii=True)
         self.assertEqual(plain.hash_id("user-42"), "user-42")
 
     def test_short_hash_is_16_hex_chars(self) -> None:
@@ -147,9 +145,7 @@ class AuditLogEmitterTests(unittest.TestCase):
     def test_rotation_when_exceeds_threshold(self) -> None:
         # Build a tight-rotation emitter so we can trigger rotation
         # without writing megabytes.
-        small_emitter = AuditLogEmitter(
-            log_path=self.log_path, salt=self.salt, rotate_bytes=128
-        )
+        small_emitter = AuditLogEmitter(log_path=self.log_path, salt=self.salt, rotate_bytes=128)
         for i in range(20):
             small_emitter.emit(
                 "system_event",
@@ -264,9 +260,7 @@ class ConvenienceWrappersTests(unittest.TestCase):
         self.assertEqual(rec["event_payload"]["purpose"], "fit_score")
         self.assertEqual(rec["event_payload"]["prompt_hash"], "0123456789abcdef")
         self.assertEqual(rec["event_payload"]["response_hash"], "fedcba9876543210")
-        self.assertAlmostEqual(
-            rec["event_payload"]["score_adjustment_factor"], 0.05
-        )
+        self.assertAlmostEqual(rec["event_payload"]["score_adjustment_factor"], 0.05)
         self.assertEqual(rec["ai_provider"], "openai")
         self.assertEqual(rec["prompt_template_id"], "abcd1234")
         self.assertEqual(rec["tokens_in"], 200)
@@ -296,9 +290,7 @@ class ConvenienceWrappersTests(unittest.TestCase):
         )
         rec = _read_log_lines(self.log_path)[-1]
         self.assertEqual(rec["event_type"], "system_event")
-        self.assertEqual(
-            rec["event_payload"]["system_event_kind"], "kill_switch_activated"
-        )
+        self.assertEqual(rec["event_payload"]["system_event_kind"], "kill_switch_activated")
         self.assertEqual(rec["event_payload"]["details"]["reason"], "manual_operator_action")
 
 
@@ -310,9 +302,7 @@ class MCPServerIntegrationTests(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.log_path = Path(self.tmp.name) / "ai_act_audit.log"
-        self.test_emitter = AuditLogEmitter(
-            log_path=self.log_path, salt=b"\x05" * 32
-        )
+        self.test_emitter = AuditLogEmitter(log_path=self.log_path, salt=b"\x05" * 32)
         # Install the test emitter as the process-wide default for the
         # duration of this test, then reset.
         set_default_emitter(self.test_emitter)
@@ -370,9 +360,7 @@ class AnalysisIntegrationTests(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.log_path = Path(self.tmp.name) / "ai_act_audit.log"
-        self.test_emitter = AuditLogEmitter(
-            log_path=self.log_path, salt=b"\x06" * 32
-        )
+        self.test_emitter = AuditLogEmitter(log_path=self.log_path, salt=b"\x06" * 32)
         set_default_emitter(self.test_emitter)
         self.addCleanup(reset_default_emitter)
 

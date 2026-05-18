@@ -20,13 +20,13 @@ import importlib.util
 import unittest
 from pathlib import Path
 
-
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
 def _load_generator():
     spec = importlib.util.spec_from_file_location(
-        "generate_seo_pages", REPO_ROOT / "scripts" / "generate-seo-pages.py",
+        "generate_seo_pages",
+        REPO_ROOT / "scripts" / "generate-seo-pages.py",
     )
     module = importlib.util.module_from_spec(spec)
     assert spec.loader is not None
@@ -40,8 +40,14 @@ class FanOutTests(unittest.TestCase):
 
     def test_full_cross_product(self) -> None:
         payload = {
-            "cities": [{"slug": "berlin", "label": "Berlin"}, {"slug": "munich", "label": "Munich"}],
-            "roles": [{"slug": "data-engineer", "label": "Data engineer"}, {"slug": "pm", "label": "PM"}],
+            "cities": [
+                {"slug": "berlin", "label": "Berlin"},
+                {"slug": "munich", "label": "Munich"},
+            ],
+            "roles": [
+                {"slug": "data-engineer", "label": "Data engineer"},
+                {"slug": "pm", "label": "PM"},
+            ],
         }
         pages = self.module.fan_out(payload)
         self.assertEqual(len(pages), 4)  # 2 cities × 2 roles
@@ -75,9 +81,9 @@ class FanOutTests(unittest.TestCase):
         payload = {
             "cities": [
                 {"slug": "berlin", "label": "Berlin"},
-                {"slug": "", "label": "no slug"},      # filtered
-                {"slug": "munich"},                     # filtered (no label)
-                "not a dict",                           # filtered
+                {"slug": "", "label": "no slug"},  # filtered
+                {"slug": "munich"},  # filtered (no label)
+                "not a dict",  # filtered
             ],
             "roles": [{"slug": "de", "label": "Data engineer"}],
         }
@@ -98,6 +104,7 @@ class FanOutTests(unittest.TestCase):
         # Spec target: 10 cities × 20 roles = 200 pages. The shipped
         # input JSON is sized to exactly that target.
         import json
+
         path = REPO_ROOT / "deploy" / "seo-pages-input.json.example"
         payload = json.loads(path.read_text(encoding="utf-8"))
         self.assertEqual(len(self.module.fan_out(payload)), 200)

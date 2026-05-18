@@ -30,11 +30,10 @@ from __future__ import annotations
 import json
 import os
 import shutil
+import sys
 import tempfile
 import unittest
 from pathlib import Path
-
-import sys
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(REPO_ROOT) not in sys.path:
@@ -70,8 +69,13 @@ class PersonaRegistryTests(unittest.TestCase):
         # The original five must remain available; later phases add more
         # (education, legal, sales, design, operations, healthcare-clinical).
         self.assertTrue(
-            {"healthcare-management", "tech", "marketing", "finance", "product-management"}
-            .issubset(set(PERSONAS))
+            {
+                "healthcare-management",
+                "tech",
+                "marketing",
+                "finance",
+                "product-management",
+            }.issubset(set(PERSONAS))
         )
 
     def test_personas_summary_contains_required_fields(self) -> None:
@@ -85,7 +89,9 @@ class PersonaRegistryTests(unittest.TestCase):
 
     def test_sector_weights_differ_by_persona(self) -> None:
         # Healthcare and tech don't share their highest-weighted sector.
-        healthcare_top = max(get_persona("healthcare-management").sector_weights.items(), key=lambda kv: kv[1])
+        healthcare_top = max(
+            get_persona("healthcare-management").sector_weights.items(), key=lambda kv: kv[1]
+        )
         tech_top = max(get_persona("tech").sector_weights.items(), key=lambda kv: kv[1])
         self.assertNotEqual(healthcare_top[0], tech_top[0])
 
@@ -168,12 +174,18 @@ class RankingPersonaSwitchTests(unittest.TestCase):
 class CareerLinkTermsTests(unittest.TestCase):
     def test_includes_international_terms(self) -> None:
         for term in (
-            "carrières", "emplois",
-            "vacatures", "werken bij",
-            "empleos", "carreras",
-            "lavoro", "candidati",
-            "kariera", "praca",
-            "carreiras", "vagas",
+            "carrières",
+            "emplois",
+            "vacatures",
+            "werken bij",
+            "empleos",
+            "carreras",
+            "lavoro",
+            "candidati",
+            "kariera",
+            "praca",
+            "carreiras",
+            "vagas",
         ):
             self.assertIn(term, CAREER_LINK_TERMS, msg=f"missing: {term}")
 

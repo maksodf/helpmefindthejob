@@ -27,7 +27,6 @@ import re
 from datetime import date
 from typing import Callable
 
-
 # Caps on user-controlled fields fed into the prompt. A JD or CV
 # pushing 50KB at us isn't useful — most LLMs truncate anyway, and
 # the larger the blob the more room for instructions hiding inside.
@@ -56,17 +55,23 @@ def _sanitize_for_prompt(text: str, limit: int = _MAX_FIELD_CHARS) -> str:
     # it as content not instruction.
     text = re.sub(
         r"(?i)ignore (?:all )?previous (?:instructions?|prompts?)",
-        "[neutralised:ignore-previous]", text,
+        "[neutralised:ignore-previous]",
+        text,
     )
     text = re.sub(
         r"(?i)disregard (?:the )?(?:above|previous)",
-        "[neutralised:disregard]", text,
+        "[neutralised:disregard]",
+        text,
     )
     text = re.sub(
-        r"(?i)you are now an? \w+", "[neutralised:role-play]", text,
+        r"(?i)you are now an? \w+",
+        "[neutralised:role-play]",
+        text,
     )
     text = re.sub(
-        r"(?i)system\s*:", "[neutralised:system-claim]:", text,
+        r"(?i)system\s*:",
+        "[neutralised:system-claim]:",
+        text,
     )
     # Strip raw markdown headers from the CV body so the model
     # doesn't mistake them for our own SECTION markers.
@@ -77,8 +82,14 @@ def _sanitize_for_prompt(text: str, limit: int = _MAX_FIELD_CHARS) -> str:
 
 
 def build_letter_prompt(
-    *, job_title: str, company: str, location: str, job_url: str,
-    cv_text: str, user_name: str = "", user_location: str = "",
+    *,
+    job_title: str,
+    company: str,
+    location: str,
+    job_url: str,
+    cv_text: str,
+    user_name: str = "",
+    user_location: str = "",
 ) -> tuple[str, str]:
     """Return (system, user) prompts for the AI motivation drafter.
 
@@ -151,20 +162,37 @@ def looks_like_dach_letter(text: str) -> bool:
     if t.lower().count("ignore previous") or t.lower().startswith("i'm sorry"):
         # The model refused / was prompt-injected. Treat as failure.
         return False
-    has_anrede = any(needle in t for needle in (
-        "Sehr geehrte", "Sehr geehrter", "Hallo", "Liebe",
-        "Dear ", "To whom",
-    ))
-    has_schluss = any(needle in t for needle in (
-        "Mit freundlichen Grüßen", "Freundliche Grüße",
-        "Yours sincerely", "Sincerely", "Kind regards",
-        "Best regards",
-    ))
+    has_anrede = any(
+        needle in t
+        for needle in (
+            "Sehr geehrte",
+            "Sehr geehrter",
+            "Hallo",
+            "Liebe",
+            "Dear ",
+            "To whom",
+        )
+    )
+    has_schluss = any(
+        needle in t
+        for needle in (
+            "Mit freundlichen Grüßen",
+            "Freundliche Grüße",
+            "Yours sincerely",
+            "Sincerely",
+            "Kind regards",
+            "Best regards",
+        )
+    )
     return has_anrede and has_schluss
 
 
 def draft_with_ai(
-    *, job: dict, cv_text: str, user_name: str, user_location: str,
+    *,
+    job: dict,
+    cv_text: str,
+    user_name: str,
+    user_location: str,
     ai_caller: Callable[[str, str], str | None] | None,
 ) -> str | None:
     """Call the AI to produce a letter. Returns None on any failure
@@ -191,7 +219,10 @@ def draft_with_ai(
 
 
 def templated_fallback(
-    *, job: dict, user_name: str = "", user_location: str = "",
+    *,
+    job: dict,
+    user_name: str = "",
+    user_location: str = "",
 ) -> str:
     """Templated DACH letter skeleton with `<...>` placeholders.
     Always succeeds — used when AI is unavailable. The banner makes

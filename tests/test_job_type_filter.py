@@ -48,8 +48,7 @@ class IdentifyBucketTests(unittest.TestCase):
         self.assertEqual(identify_bucket("Ich suche Pflegehelfer"), "pflegehelfer")
 
     def test_english_nursing_assistant(self):
-        self.assertEqual(identify_bucket("nursing assistant in Berlin"),
-                          "pflegehelfer")
+        self.assertEqual(identify_bucket("nursing assistant in Berlin"), "pflegehelfer")
 
     def test_barista(self):
         self.assertEqual(identify_bucket("Barista jobs near me"), "barista")
@@ -72,21 +71,15 @@ class IdentifyBucketTests(unittest.TestCase):
         # R21: expanded taxonomy — tech-adjacent queries route to
         # specific buckets so the search isn't biased by an unrelated
         # default persona.
-        self.assertEqual(identify_bucket("senior backend engineer"),
-                          "software_engineer")
-        self.assertEqual(identify_bucket("software developer"),
-                          "software_engineer")
-        self.assertEqual(identify_bucket("data scientist Berlin"),
-                          "data_engineer")
-        self.assertEqual(identify_bucket("product owner"),
-                          "product_manager")
+        self.assertEqual(identify_bucket("senior backend engineer"), "software_engineer")
+        self.assertEqual(identify_bucket("software developer"), "software_engineer")
+        self.assertEqual(identify_bucket("data scientist Berlin"), "data_engineer")
+        self.assertEqual(identify_bucket("product owner"), "product_manager")
         self.assertEqual(identify_bucket("UX designer"), "designer")
         self.assertEqual(identify_bucket("content manager"), "marketing")
         self.assertEqual(identify_bucket("controller"), "finance")
-        self.assertEqual(identify_bucket("unternehmensberater"),
-                          "consulting")
-        self.assertEqual(identify_bucket("kundenservice"),
-                          "customer_success")
+        self.assertEqual(identify_bucket("unternehmensberater"), "consulting")
+        self.assertEqual(identify_bucket("kundenservice"), "customer_success")
         self.assertEqual(identify_bucket("sales executive"), "sales")
 
     def test_longest_synonym_wins(self):
@@ -108,10 +101,13 @@ class JobMatchesBucketTests(unittest.TestCase):
         self.assertFalse(job_matches_bucket("Software Developer", "Java team", "bartender"))
 
     def test_description_matches(self):
-        self.assertTrue(job_matches_bucket(
-            "Service Mitarbeiter", "Wir suchen einen Pflegehelfer für Berlin",
-            "pflegehelfer",
-        ))
+        self.assertTrue(
+            job_matches_bucket(
+                "Service Mitarbeiter",
+                "Wir suchen einen Pflegehelfer für Berlin",
+                "pflegehelfer",
+            )
+        )
 
     def test_word_boundary_safety(self):
         # "backseat" must NOT match "bar back" via substring.
@@ -226,8 +222,7 @@ class FilterJobsTests(unittest.TestCase):
 class FilterDictJobsTests(unittest.TestCase):
     def test_dict_payload_filtered(self):
         jobs = [
-            {"title": "Bartender", "description": "Nachtschicht",
-              "location": "Berlin"},
+            {"title": "Bartender", "description": "Nachtschicht", "location": "Berlin"},
             {"title": "Backend Engineer", "description": "Python", "location": "Berlin"},
         ]
         kept = filter_dict_jobs(jobs, job_type="bartender", location=None)
@@ -235,8 +230,11 @@ class FilterDictJobsTests(unittest.TestCase):
 
     def test_dict_camel_case_key_supported(self):
         jobs = [
-            {"title": "Service", "rawDescription": "Wir suchen Pflegehelfer für Berlin",
-              "location": "Berlin"},
+            {
+                "title": "Service",
+                "rawDescription": "Wir suchen Pflegehelfer für Berlin",
+                "location": "Berlin",
+            },
             {"title": "Service", "rawDescription": "Restaurant team", "location": "Berlin"},
         ]
         kept = filter_dict_jobs(jobs, job_type="pflegehelfer", location=None)
@@ -259,6 +257,7 @@ class ExtractKeywordArgsTests(unittest.TestCase):
 
     def test_find_bartender_in_berlin(self):
         from company_discovery.chat_router import extract_keyword_args
+
         args = extract_keyword_args("find_jobs", "find me bartender jobs in Berlin")
         # Use the user's literal term so the aggregator searches it
         # verbatim (preserves language for DACH-native postings).
@@ -267,6 +266,7 @@ class ExtractKeywordArgsTests(unittest.TestCase):
 
     def test_pflegehelfer_in_germany(self):
         from company_discovery.chat_router import extract_keyword_args
+
         args = extract_keyword_args("find_jobs", "Pflegehelfer in Deutschland gesucht")
         # User typed German → keep German for the aggregator. The EN
         # label "Nursing assistant" matches almost nothing on DE job
@@ -277,18 +277,21 @@ class ExtractKeywordArgsTests(unittest.TestCase):
 
     def test_barista_anywhere(self):
         from company_discovery.chat_router import extract_keyword_args
+
         args = extract_keyword_args("find_jobs", "find barista jobs anywhere")
         self.assertEqual(args.get("query"), "barista")
         self.assertEqual(args.get("location"), "anywhere")
 
     def test_no_match_returns_empty(self):
         from company_discovery.chat_router import extract_keyword_args
+
         # Different command — not handled here.
         args = extract_keyword_args("add_company", "add Charité https://x")
         self.assertEqual(args, {})
 
     def test_unknown_role_no_query(self):
         from company_discovery.chat_router import extract_keyword_args
+
         args = extract_keyword_args("find_jobs", "find me a senior backend role")
         # No taxonomy hit → no query extracted (would be re-asked)
         self.assertNotIn("query", args)

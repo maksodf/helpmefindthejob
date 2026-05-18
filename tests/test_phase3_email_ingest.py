@@ -19,7 +19,6 @@ if str(REPO_ROOT) not in sys.path:
 
 from company_discovery.email_ingest import parse_email_to_jobs
 
-
 _LINKEDIN_HTML = """
 <html><body>
 <table><tr><td>
@@ -84,7 +83,10 @@ class EmailIngestTests(unittest.TestCase):
         <a href="https://www.linkedin.com/jobs/view/42">Real job at Co</a>
         """
         out = parse_email_to_jobs(
-            sender="x@y", subject="x", text_body=None, html_body=body_html,
+            sender="x@y",
+            subject="x",
+            text_body=None,
+            html_body=body_html,
         )
         self.assertEqual(len(out), 1)
         self.assertEqual(out[0].source, "email-forward:linkedin")
@@ -95,13 +97,20 @@ class EmailIngestTests(unittest.TestCase):
         <a href="https://www.linkedin.com/jobs/view/42?refId=def">Role A again</a>
         """
         out = parse_email_to_jobs(
-            sender="x@y", subject="x", text_body=None, html_body=body_html,
+            sender="x@y",
+            subject="x",
+            text_body=None,
+            html_body=body_html,
         )
         self.assertEqual(len(out), 1, "URLs differing only by query should dedup to one row")
 
     def test_empty_inputs_return_empty(self) -> None:
-        self.assertEqual(parse_email_to_jobs(sender=None, subject=None, text_body=None, html_body=None), [])
-        self.assertEqual(parse_email_to_jobs(sender="x", subject="x", text_body="", html_body=""), [])
+        self.assertEqual(
+            parse_email_to_jobs(sender=None, subject=None, text_body=None, html_body=None), []
+        )
+        self.assertEqual(
+            parse_email_to_jobs(sender="x", subject="x", text_body="", html_body=""), []
+        )
 
 
 if __name__ == "__main__":

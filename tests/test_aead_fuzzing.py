@@ -35,9 +35,9 @@ import os
 import unittest
 
 from company_discovery.crypto_kit import (
-    EncryptionAtRest,
     _FORMAT_PREFIX,
     _NONCE_BYTES,
+    EncryptionAtRest,
     is_aead_blob,
     resolve_data_key,
 )
@@ -97,15 +97,14 @@ class NonceUniquenessTests(unittest.TestCase):
         plaintext = "constant-string"
         blob_a = aead.encrypt(plaintext)
         blob_b = aead.encrypt(plaintext)
-        self.assertNotEqual(blob_a, blob_b,
-                             "Nonce reuse: same plaintext → same ciphertext")
+        self.assertNotEqual(blob_a, blob_b, "Nonce reuse: same plaintext → same ciphertext")
 
     def test_nonces_distinct_across_1000_encrypts(self):
         aead = _fresh_aead()
         seen_nonces: set[bytes] = set()
         for _ in range(1000):
             blob = aead.encrypt("x")
-            raw = base64.urlsafe_b64decode(blob[len(_FORMAT_PREFIX):])
+            raw = base64.urlsafe_b64decode(blob[len(_FORMAT_PREFIX) :])
             nonce = raw[:_NONCE_BYTES]
             self.assertNotIn(nonce, seen_nonces, "duplicate nonce detected")
             seen_nonces.add(nonce)
@@ -115,7 +114,7 @@ class BitFlipTamperingTests(unittest.TestCase):
     """Flip a single bit in the ciphertext. Decryption must reject."""
 
     def _flip_nth_byte(self, blob: str, byte_index: int, xor_mask: int = 0x01) -> str:
-        raw = bytearray(base64.urlsafe_b64decode(blob[len(_FORMAT_PREFIX):]))
+        raw = bytearray(base64.urlsafe_b64decode(blob[len(_FORMAT_PREFIX) :]))
         raw[byte_index] ^= xor_mask
         return _FORMAT_PREFIX + base64.urlsafe_b64encode(bytes(raw)).decode("ascii")
 
@@ -139,7 +138,7 @@ class BitFlipTamperingTests(unittest.TestCase):
         """The last 16 bytes are the Poly1305 tag."""
         aead = _fresh_aead()
         blob = aead.encrypt("short")
-        raw = base64.urlsafe_b64decode(blob[len(_FORMAT_PREFIX):])
+        raw = base64.urlsafe_b64decode(blob[len(_FORMAT_PREFIX) :])
         # -1 is the last byte of the tag.
         tampered = self._flip_nth_byte(blob, len(raw) - 1)
         with self.assertRaises(ValueError):
@@ -161,7 +160,7 @@ class TruncationTests(unittest.TestCase):
     def test_truncate_last_byte(self):
         aead = _fresh_aead()
         blob = aead.encrypt("important")
-        raw = base64.urlsafe_b64decode(blob[len(_FORMAT_PREFIX):])
+        raw = base64.urlsafe_b64decode(blob[len(_FORMAT_PREFIX) :])
         truncated_raw = raw[:-1]
         truncated_blob = _FORMAT_PREFIX + base64.urlsafe_b64encode(truncated_raw).decode("ascii")
         with self.assertRaises(ValueError):
@@ -170,9 +169,10 @@ class TruncationTests(unittest.TestCase):
     def test_truncate_to_nonce_only(self):
         aead = _fresh_aead()
         blob = aead.encrypt("important")
-        raw = base64.urlsafe_b64decode(blob[len(_FORMAT_PREFIX):])
-        truncated_blob = _FORMAT_PREFIX + base64.urlsafe_b64encode(
-            raw[:_NONCE_BYTES]).decode("ascii")
+        raw = base64.urlsafe_b64decode(blob[len(_FORMAT_PREFIX) :])
+        truncated_blob = _FORMAT_PREFIX + base64.urlsafe_b64encode(raw[:_NONCE_BYTES]).decode(
+            "ascii"
+        )
         with self.assertRaises(ValueError):
             aead.decrypt(truncated_blob)
 
@@ -190,10 +190,9 @@ class AppendedJunkTests(unittest.TestCase):
     def test_append_byte_changes_tag_position(self):
         aead = _fresh_aead()
         blob = aead.encrypt("ok")
-        raw = base64.urlsafe_b64decode(blob[len(_FORMAT_PREFIX):])
+        raw = base64.urlsafe_b64decode(blob[len(_FORMAT_PREFIX) :])
         # Append 16 bytes of garbage so the new "tag" reads from wrong place.
-        polluted = _FORMAT_PREFIX + base64.urlsafe_b64encode(
-            raw + b"\x00" * 16).decode("ascii")
+        polluted = _FORMAT_PREFIX + base64.urlsafe_b64encode(raw + b"\x00" * 16).decode("ascii")
         with self.assertRaises(ValueError):
             aead.decrypt(polluted)
 
@@ -235,14 +234,14 @@ class FormatPrefixTests(unittest.TestCase):
         aead = _fresh_aead()
         blob = aead.encrypt("secret")
         # Strip the prefix entirely.
-        bare = blob[len(_FORMAT_PREFIX):]
+        bare = blob[len(_FORMAT_PREFIX) :]
         with self.assertRaises(ValueError):
             aead.decrypt(bare)
 
     def test_wrong_prefix(self):
         aead = _fresh_aead()
         blob = aead.encrypt("secret")
-        swapped = "aead:v9:" + blob[len(_FORMAT_PREFIX):]
+        swapped = "aead:v9:" + blob[len(_FORMAT_PREFIX) :]
         with self.assertRaises(ValueError):
             aead.decrypt(swapped)
 
@@ -288,8 +287,8 @@ class CrossInstanceTamperingTests(unittest.TestCase):
         aead = _fresh_aead()
         blob_a = aead.encrypt("plaintext A")
         blob_b = aead.encrypt("plaintext B")
-        raw_a = base64.urlsafe_b64decode(blob_a[len(_FORMAT_PREFIX):])
-        raw_b = base64.urlsafe_b64decode(blob_b[len(_FORMAT_PREFIX):])
+        raw_a = base64.urlsafe_b64decode(blob_a[len(_FORMAT_PREFIX) :])
+        raw_b = base64.urlsafe_b64decode(blob_b[len(_FORMAT_PREFIX) :])
         # Take nonce from A, ciphertext+tag from B.
         spliced = raw_a[:_NONCE_BYTES] + raw_b[_NONCE_BYTES:]
         spliced_blob = _FORMAT_PREFIX + base64.urlsafe_b64encode(spliced).decode("ascii")
@@ -338,8 +337,7 @@ class DataKeyDerivationTests(unittest.TestCase):
         valid_key = os.urandom(32)
         try:
             os.environ["DIRECTJOB_DATA_KEY"] = base64.b64encode(valid_key).decode("ascii")
-            self.assertEqual(resolve_data_key("any-secret-key-here"),
-                              valid_key)
+            self.assertEqual(resolve_data_key("any-secret-key-here"), valid_key)
             # invalid base64
             os.environ["DIRECTJOB_DATA_KEY"] = "%%%not base64%%%"
             with self.assertRaises(ValueError):

@@ -30,11 +30,11 @@ import hashlib
 import secrets as _secrets
 import tempfile
 import unittest
+from datetime import timezone
 from pathlib import Path
 
 from company_discovery.auth import AuthStore, _totp_at, verify_totp
 from company_discovery.crypto_kit import is_aead_blob
-
 
 SECRET_KEY = "x" * 64  # >= 32 chars required for HKDF derivation.
 
@@ -170,7 +170,7 @@ class VerifyPathTriggersMigrationTests(_TotpAeadMigrationTestBase):
     code, and confirm the row was upgraded to AEAD on disk."""
 
     def test_verify_user_totp_migrates_legacy_row(self) -> None:
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         # Pin a fixed secret + matching code so we don't depend on time.
         secret = "JBSWY3DPEHPK3PXP"

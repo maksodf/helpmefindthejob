@@ -36,7 +36,6 @@ from tempfile import TemporaryDirectory
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
-
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -85,7 +84,11 @@ class _Client:
             content_type = error.headers.get_content_type() if error.headers else ""
             set_cookie = error.headers.get("Set-Cookie", "") if error.headers else ""
         try:
-            parsed = json.loads(payload) if payload and content_type.startswith("application/json") else payload
+            parsed = (
+                json.loads(payload)
+                if payload and content_type.startswith("application/json")
+                else payload
+            )
         except json.JSONDecodeError:
             parsed = payload
         return code, parsed, set_cookie, content_type
@@ -172,7 +175,12 @@ class HttpPhase2Tests(unittest.TestCase):
         code, payload, _, _ = self.admin.request(
             "/api/saved-searches",
             method="POST",
-            body={"name": "Berlin DH", "targetRoles": ["Digital Health"], "industry": "Healthcare", "location": "Berlin"},
+            body={
+                "name": "Berlin DH",
+                "targetRoles": ["Digital Health"],
+                "industry": "Healthcare",
+                "location": "Berlin",
+            },
         )
         self.assertEqual(code, 200)
         search_id = payload["savedSearch"]["id"]
@@ -188,14 +196,20 @@ class HttpPhase2Tests(unittest.TestCase):
         self.assertEqual(code, 200)
         self.assertEqual(payload["savedSearch"]["name"], "Berlin DH (junior)")
         # Delete
-        code, payload, _, _ = self.admin.request(f"/api/saved-searches/{search_id}", method="DELETE")
+        code, payload, _, _ = self.admin.request(
+            f"/api/saved-searches/{search_id}", method="DELETE"
+        )
         self.assertEqual(code, 200)
 
     def test_discover_companies_returns_curated(self) -> None:
         code, payload, _, _ = self.admin.request(
             "/api/discover-companies",
             method="POST",
-            body={"targetRoles": ["Digital Health"], "industry": "Healthcare", "location": "Berlin"},
+            body={
+                "targetRoles": ["Digital Health"],
+                "industry": "Healthcare",
+                "location": "Berlin",
+            },
         )
         self.assertEqual(code, 200)
         self.assertIsInstance(payload["results"], list)
@@ -237,7 +251,10 @@ class HttpPhase2Tests(unittest.TestCase):
                 "applicationStatus": "applied",
                 "applicationNotes": "Submitted CV",
                 "coverLetterDraft": "Dear hiring team",
-                "documentsChecklist": [{"label": "CV", "complete": True}, {"label": "Transcript", "complete": False}],
+                "documentsChecklist": [
+                    {"label": "CV", "complete": True},
+                    {"label": "Transcript", "complete": False},
+                ],
                 "nextAction": "Follow up on Friday",
             },
         )
@@ -291,7 +308,12 @@ class HttpPhase2Tests(unittest.TestCase):
         code, payload, _, _ = self.admin.request(
             "/api/admin/billing",
             method="POST",
-            body={"planId": "team", "status": "active", "seats": 10, "customerEmail": "ops@example.com"},
+            body={
+                "planId": "team",
+                "status": "active",
+                "seats": 10,
+                "customerEmail": "ops@example.com",
+            },
         )
         self.assertEqual(code, 200)
         self.assertEqual(payload["subscription"]["plan_id"], "team")
@@ -316,7 +338,11 @@ class HttpPhase2Tests(unittest.TestCase):
         code, payload, _, _ = self.admin.request(
             "/api/support",
             method="POST",
-            body={"subject": "Need help with scan", "body": "It returned blocked_or_captcha", "contactEmail": "alex@example.com"},
+            body={
+                "subject": "Need help with scan",
+                "body": "It returned blocked_or_captcha",
+                "contactEmail": "alex@example.com",
+            },
         )
         self.assertEqual(code, 201)
         self.assertEqual(payload["ticket"]["subject"], "Need help with scan")
@@ -352,7 +378,11 @@ class HttpPhase2Tests(unittest.TestCase):
         code, _, _, _ = self.admin.request(
             "/api/admin/users",
             method="POST",
-            body={"email": "alt-admin@example.com", "password": "very-secure-other-9", "role": "admin"},
+            body={
+                "email": "alt-admin@example.com",
+                "password": "very-secure-other-9",
+                "role": "admin",
+            },
         )
         alt = _Client(self.base)
         alt.login("alt-admin@example.com", "very-secure-other-9")

@@ -19,7 +19,6 @@ import json
 import re
 from dataclasses import dataclass, field
 
-
 _VALID_RECOMMENDATIONS = {"apply", "consider", "skip"}
 
 
@@ -98,8 +97,11 @@ def parse_freeform(output: str) -> StructuredFit:
             structured.fit_score = _coerce_float(
                 _first_present(parsed, "fitScore", "fit_score", "score")
             )
-            recommendation = (_first_present(parsed, "recommendation", "decision"))
-            if isinstance(recommendation, str) and recommendation.casefold() in _VALID_RECOMMENDATIONS:
+            recommendation = _first_present(parsed, "recommendation", "decision")
+            if (
+                isinstance(recommendation, str)
+                and recommendation.casefold() in _VALID_RECOMMENDATIONS
+            ):
                 structured.recommendation = recommendation.casefold()
             for src, dst in (
                 ("healthcareRelevance", "healthcare_relevance"),
@@ -119,7 +121,11 @@ def parse_freeform(output: str) -> StructuredFit:
                 if isinstance(items, list):
                     setattr(structured, field_name, [str(item) for item in items if item])
                 elif isinstance(items, str):
-                    setattr(structured, field_name, [item.strip() for item in items.split(",") if item.strip()])
+                    setattr(
+                        structured,
+                        field_name,
+                        [item.strip() for item in items.split(",") if item.strip()],
+                    )
 
     if structured.fit_score is None:
         match = _FIT_RE.search(output)
@@ -130,7 +136,9 @@ def parse_freeform(output: str) -> StructuredFit:
         if match:
             structured.recommendation = match.group(1).casefold()
     if structured.fit_score is not None and structured.fit_score > 1:
-        structured.fit_score = round(structured.fit_score / 100.0, 3) if structured.fit_score <= 100 else 1.0
+        structured.fit_score = (
+            round(structured.fit_score / 100.0, 3) if structured.fit_score <= 100 else 1.0
+        )
 
     return structured
 

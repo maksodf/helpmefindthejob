@@ -122,14 +122,9 @@ class SavedSearchLimitTests(unittest.TestCase):
 
     def test_editing_existing_search_at_limit_is_allowed(self) -> None:
         state, user_id = self._state_with_user("pilot")
-        records = [
-            state.save_saved_search(user_id, {"name": f"search-{n}"})
-            for n in range(3)
-        ]
+        records = [state.save_saved_search(user_id, {"name": f"search-{n}"}) for n in range(3)]
         # User is at the cap. Editing an existing one is fine.
-        renamed = state.save_saved_search(
-            user_id, {"id": records[0].id, "name": "renamed"}
-        )
+        renamed = state.save_saved_search(user_id, {"id": records[0].id, "name": "renamed"})
         self.assertEqual(renamed.name, "renamed")
 
 
@@ -170,19 +165,27 @@ class AiModeLockingTests(unittest.TestCase):
         state = self._state_on_plan("pilot")
         user = state.auth_store.create_user("alice@example.com", "very-secret-pass-1234")
         with self.assertRaises(ValueError) as ctx:
-            state.update_ai_provider(user.id, {
-                "providerId": "openai", "invocationMode": "api",
-                "credentialReference": "OPENAI_API_KEY",
-            })
+            state.update_ai_provider(
+                user.id,
+                {
+                    "providerId": "openai",
+                    "invocationMode": "api",
+                    "credentialReference": "OPENAI_API_KEY",
+                },
+            )
         self.assertEqual(str(ctx.exception), "plan_ai_mode_locked")
 
     def test_update_ai_provider_accepts_byok_on_team(self) -> None:
         state = self._state_on_plan("team")
         user = state.auth_store.create_user("alice@example.com", "very-secret-pass-1234")
-        config = state.update_ai_provider(user.id, {
-            "providerId": "openai", "invocationMode": "api",
-            "credentialReference": "OPENAI_API_KEY",
-        })
+        config = state.update_ai_provider(
+            user.id,
+            {
+                "providerId": "openai",
+                "invocationMode": "api",
+                "credentialReference": "OPENAI_API_KEY",
+            },
+        )
         self.assertEqual(config.invocation_mode, "api")
 
 

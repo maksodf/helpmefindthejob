@@ -42,26 +42,30 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 try:
-    from playwright.sync_api import sync_playwright, TimeoutError as PWTimeout
+    from playwright.sync_api import TimeoutError as PWTimeout
+    from playwright.sync_api import sync_playwright
 except ModuleNotFoundError:
-    print("ERROR: Playwright not installed. pip install playwright && playwright install chromium",
-          file=sys.stderr)
+    print(
+        "ERROR: Playwright not installed. pip install playwright && playwright install chromium",
+        file=sys.stderr,
+    )
     sys.exit(2)
 
 
 @dataclass
 class Persona:
     """A synthetic tester profile."""
-    id: str                         # internal key
-    label: str                      # human display
-    persona_dropdown: str           # value in #wizardPersona select
-    cv_text: str                    # pasted into wizard step 1
-    target_role_query: str          # typed into #findJobsQuery
-    location: str                   # typed into #findJobsLocation (and wizard)
-    accepts_remote: bool            # if False, remote-only listings are a fail
-    expected_seniority: str         # "senior", "junior", "lead", or "" for any
+
+    id: str  # internal key
+    label: str  # human display
+    persona_dropdown: str  # value in #wizardPersona select
+    cv_text: str  # pasted into wizard step 1
+    target_role_query: str  # typed into #findJobsQuery
+    location: str  # typed into #findJobsLocation (and wizard)
+    accepts_remote: bool  # if False, remote-only listings are a fail
+    expected_seniority: str  # "senior", "junior", "lead", or "" for any
     role_family_keywords: tuple[str, ...]  # title must contain at least one
-    forbidden_keywords: tuple[str, ...]    # title must contain none
+    forbidden_keywords: tuple[str, ...]  # title must contain none
 
 
 PERSONAS: tuple[Persona, ...] = (
@@ -79,10 +83,24 @@ PERSONAS: tuple[Persona, ...] = (
         location="Berlin",
         accepts_remote=False,
         expected_seniority="senior",
-        role_family_keywords=("backend", "back-end", "back end",
-                              "software", "engineer", "developer", "python"),
-        forbidden_keywords=("junior", "intern", "internship", "praktikant",
-                            "werkstudent", "trainee", "azubi"),
+        role_family_keywords=(
+            "backend",
+            "back-end",
+            "back end",
+            "software",
+            "engineer",
+            "developer",
+            "python",
+        ),
+        forbidden_keywords=(
+            "junior",
+            "intern",
+            "internship",
+            "praktikant",
+            "werkstudent",
+            "trainee",
+            "azubi",
+        ),
     ),
     Persona(
         id="marketing-manager-munich",
@@ -99,8 +117,7 @@ PERSONAS: tuple[Persona, ...] = (
         accepts_remote=False,
         expected_seniority="",  # mid-level, no explicit band requirement
         role_family_keywords=("marketing", "growth", "demand", "brand"),
-        forbidden_keywords=("intern", "internship", "praktikant",
-                            "werkstudent", "azubi"),
+        forbidden_keywords=("intern", "internship", "praktikant", "werkstudent", "azubi"),
     ),
     Persona(
         id="remote-data-anywhere",
@@ -116,10 +133,15 @@ PERSONAS: tuple[Persona, ...] = (
         location="Remote",
         accepts_remote=True,
         expected_seniority="senior",
-        role_family_keywords=("data", "scientist", "ml", "machine learning",
-                              "analytics", "engineer"),
-        forbidden_keywords=("junior", "intern", "praktikant", "werkstudent",
-                            "trainee", "azubi"),
+        role_family_keywords=(
+            "data",
+            "scientist",
+            "ml",
+            "machine learning",
+            "analytics",
+            "engineer",
+        ),
+        forbidden_keywords=("junior", "intern", "praktikant", "werkstudent", "trainee", "azubi"),
     ),
 )
 
@@ -127,6 +149,7 @@ PERSONAS: tuple[Persona, ...] = (
 @dataclass
 class JobRow:
     """One row scraped from #findJobsResults."""
+
     title: str
     company: str
     location: str
@@ -134,8 +157,13 @@ class JobRow:
     url: str
 
     def to_dict(self) -> dict:
-        return {"title": self.title, "company": self.company,
-                "location": self.location, "source": self.source, "url": self.url}
+        return {
+            "title": self.title,
+            "company": self.company,
+            "location": self.location,
+            "source": self.source,
+            "url": self.url,
+        }
 
 
 @dataclass
@@ -153,10 +181,23 @@ def _fold(s: str) -> str:
     return "".join(ch for ch in decomposed if not unicodedata.combining(ch))
 
 
-_REMOTE_TOKENS: frozenset[str] = frozenset({
-    "remote", "worldwide", "anywhere", "latam", "americas", "usa", "us",
-    "europe", "eu", "emea", "apac", "global", "international",
-})
+_REMOTE_TOKENS: frozenset[str] = frozenset(
+    {
+        "remote",
+        "worldwide",
+        "anywhere",
+        "latam",
+        "americas",
+        "usa",
+        "us",
+        "europe",
+        "eu",
+        "emea",
+        "apac",
+        "global",
+        "international",
+    }
+)
 
 # Known suburbs / metro regions for ambiguous DE city queries. When the
 # user types "München", a job in Hohenbrunn/Unterföhring/etc. is still a
@@ -182,8 +223,7 @@ _DE_METRO: dict[str, dict] = {
 }
 
 
-def _location_ok(persona: Persona, job_location: str,
-                 job_source: str = "") -> tuple[bool, str]:
+def _location_ok(persona: Persona, job_location: str, job_source: str = "") -> tuple[bool, str]:
     """Return (ok, reason).
 
     The evaluator is honest: it accepts everything a real user would
@@ -277,13 +317,15 @@ def evaluate(result: PersonaResult) -> dict:
     """Score a single persona's delivered queue vs the promise."""
     base = {"persona": result.persona.id, "label": result.persona.label}
     if result.error:
-        return {**base, "fatal": result.error, "queue_size": 0,
-                "verdict": "FAIL — fatal"}
+        return {**base, "fatal": result.error, "queue_size": 0, "verdict": "FAIL — fatal"}
     if not result.queue:
-        return {**base, "queue_size": 0,
-                "verdict": "FAIL — empty queue",
-                "status_line": result.status_line,
-                "attribution": result.attributions}
+        return {
+            **base,
+            "queue_size": 0,
+            "verdict": "FAIL — empty queue",
+            "status_line": result.status_line,
+            "attribution": result.attributions,
+        }
     per_job = []
     seniority_fails = 0
     location_fails = 0
@@ -298,12 +340,19 @@ def evaluate(result: PersonaResult) -> dict:
             seniority_fails += 1
         if not rf_ok:
             role_family_fails += 1
-        per_job.append({
-            "title": job.title, "location": job.location, "source": job.source,
-            "location_ok": loc_ok, "location_reason": loc_reason,
-            "seniority_ok": sen_ok, "seniority_reason": sen_reason,
-            "role_family_ok": rf_ok, "role_family_reason": rf_reason,
-        })
+        per_job.append(
+            {
+                "title": job.title,
+                "location": job.location,
+                "source": job.source,
+                "location_ok": loc_ok,
+                "location_reason": loc_reason,
+                "seniority_ok": sen_ok,
+                "seniority_reason": sen_reason,
+                "role_family_ok": rf_ok,
+                "role_family_reason": rf_reason,
+            }
+        )
     # Dedup check
     urls = [j.url for j in result.queue if j.url]
     duplicates = len(urls) - len(set(urls))
@@ -410,8 +459,9 @@ def _scrape_queue(page) -> tuple[list[JobRow], str, str]:
             parts = [p.strip() for p in meta.split("·")]
             company = parts[0] if parts else ""
             location = parts[1] if len(parts) > 1 else ""
-            rows.append(JobRow(title=title, company=company, location=location,
-                                source=source, url=url))
+            rows.append(
+                JobRow(title=title, company=company, location=location, source=source, url=url)
+            )
         except Exception:
             continue
     status = ""
@@ -443,8 +493,7 @@ def run_persona(base_url: str, browser, persona: Persona) -> PersonaResult:
         page.goto(base_url + "/")
         # The auth section is #authGate, not view-auth. Wait for either
         # the gate (unauthenticated) or the main content (already auth'd).
-        page.locator("#authGate, #mainContent").first.wait_for(state="visible",
-                                                                timeout=15000)
+        page.locator("#authGate, #mainContent").first.wait_for(state="visible", timeout=15000)
         # If we're already logged in (shouldn't happen for a fresh
         # context but defensive), there's nothing to do for registration.
         if page.locator("#mainContent").is_visible(timeout=500):
@@ -452,8 +501,7 @@ def run_persona(base_url: str, browser, persona: Persona) -> PersonaResult:
         else:
             # Wait for registerForm to flip visible. registrationOpen=true
             # because the launcher sets DIRECTJOB_ALLOW_REGISTRATION=true.
-            page.locator("#registerForm").wait_for(state="visible",
-                                                    timeout=10000)
+            page.locator("#registerForm").wait_for(state="visible", timeout=10000)
         # Tick consent checkboxes if visible (they only appear after the
         # bootstrap admin exists).
         try:
@@ -500,8 +548,7 @@ def run_persona(base_url: str, browser, persona: Persona) -> PersonaResult:
         # 5. Save a screenshot
         out_dir = Path(os.environ.get("E2E_SCREENSHOTS", "tests/e2e/screenshots"))
         out_dir.mkdir(parents=True, exist_ok=True)
-        page.screenshot(path=str(out_dir / f"synthetic_{persona.id}.png"),
-                        full_page=True)
+        page.screenshot(path=str(out_dir / f"synthetic_{persona.id}.png"), full_page=True)
     except Exception as exc:  # noqa: BLE001
         result.error = f"{type(exc).__name__}: {exc}"
     finally:
@@ -527,8 +574,9 @@ def main() -> int:
                 result = run_persona(base_url, browser, persona)
                 report = evaluate(result)
                 reports.append(report)
-                print(f"  queue_size={report.get('queue_size', 0)}  "
-                      f"verdict={report.get('verdict')}")
+                print(
+                    f"  queue_size={report.get('queue_size', 0)}  verdict={report.get('verdict')}"
+                )
                 if report.get("warnings"):
                     print(f"  warnings: {report['warnings']}")
         finally:
@@ -544,8 +592,7 @@ def main() -> int:
     print("=" * 70)
     for r in reports:
         marker = "✅" if r["verdict"].startswith("PASS") else "❌"
-        print(f"{marker} {r['label']}: {r['verdict']} "
-              f"(queue={r.get('queue_size', 0)})")
+        print(f"{marker} {r['label']}: {r['verdict']} (queue={r.get('queue_size', 0)})")
     failing = [r for r in reports if not r["verdict"].startswith("PASS")]
     return 0 if not failing else 1
 

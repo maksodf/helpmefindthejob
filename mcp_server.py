@@ -20,10 +20,9 @@ import jsonschema
 
 from company_discovery import audit_log
 from company_discovery.http_fetcher import HTTPFetcher
-from company_discovery.mcp_tools import CompanyDiscoveryMCPTools, TOOL_SCHEMAS
+from company_discovery.mcp_tools import TOOL_SCHEMAS, CompanyDiscoveryMCPTools
 from company_discovery.service import CompanyDiscoveryService, ScanConfig
 from company_discovery.sqlite_repository import SqliteCompanyDiscoveryRepository
-
 
 _TOOL_INDEX: dict[str, dict[str, Any]] = {tool["name"]: tool for tool in TOOL_SCHEMAS}
 
@@ -94,7 +93,10 @@ DATA_PATH = DATA_ROOT / "company_discovery.sqlite3"
 def jsonable(value: Any) -> Any:
     if isinstance(value, datetime):
         return value.isoformat()
-    if is_dataclass(value):
+    # ``is_dataclass`` returns True for both dataclass instances and dataclass
+    # classes; ``asdict`` only accepts instances. The class-object case is
+    # narrowed away with ``not isinstance(value, type)``.
+    if is_dataclass(value) and not isinstance(value, type):
         return {key: jsonable(item) for key, item in asdict(value).items()}
     if isinstance(value, list):
         return [jsonable(item) for item in value]
@@ -105,9 +107,14 @@ def jsonable(value: Any) -> Any:
 
 def build_tools(data_path: Path = DATA_PATH) -> CompanyDiscoveryMCPTools:
     repository = SqliteCompanyDiscoveryRepository(data_path)
+    # CompanyDiscoveryService's signature historically declares StaticFetcher
+    # for ergonomics with the test suite; HTTPFetcher satisfies the
+    # duck-typed contract the service relies on (``.fetch(url) -> str``).
+    # Tightening the service signature to a Protocol is a typing-debt
+    # follow-up tracked outside this commit.
     service = CompanyDiscoveryService(
         repository,
-        HTTPFetcher(),
+        HTTPFetcher(),  # type: ignore[arg-type]
         ScanConfig(max_pages_per_scan=5, request_delay_seconds=0.25),
     )
     return CompanyDiscoveryMCPTools(service)
@@ -128,7 +135,9 @@ def rpc_error(message_id: Any, code: int, message: str) -> dict[str, Any]:
     return {"jsonrpc": "2.0", "id": message_id, "error": {"code": code, "message": message}}
 
 
-def handle_request(message: dict[str, Any], tools: CompanyDiscoveryMCPTools) -> dict[str, Any] | None:
+def handle_request(
+    message: dict[str, Any], tools: CompanyDiscoveryMCPTools
+) -> dict[str, Any] | None:
     message_id = message.get("id")
     method = message.get("method")
     params = message.get("params") or {}
@@ -189,9 +198,7 @@ def _handle_tools_call(
         if problem is not None:
             outcome = "declined"
             error_class = (
-                "UnknownTool"
-                if problem.get("status") == "unknown_tool"
-                else "SchemaViolation"
+                "UnknownTool" if problem.get("status") == "unknown_tool" else "SchemaViolation"
             )
             response = rpc_response(message_id, text_result(problem, True))
             return response
@@ -288,6 +295,7 @@ def run_stdio(tools: CompanyDiscoveryMCPTools | None = None) -> None:
         for line in sys.stdin:
             if not line.strip():
                 continue
+            response: dict[str, Any] | None
             try:
                 message = json.loads(line)
             except json.JSONDecodeError as error:

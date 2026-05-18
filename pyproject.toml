@@ -1,0 +1,155 @@
+# Project metadata and tool configuration for DirectJob Scout.
+#
+# Single source of truth for ruff, mypy, coverage, and codespell. The
+# runtime install path (requirements.txt + requirements-dev.txt)
+# remains the way dependencies are pinned; this file is for tool
+# configuration, not for package distribution.
+#
+# See CONTRIBUTING.md for the contributor setup sequence and
+# .github/workflows/quality.yml for the CI invocation.
+
+[project]
+name = "directjob-scout"
+description = "Open-source EU-wide civic employment commons — MCP-composable copilot for users facing structural labor-market friction in Europe."
+license = { text = "Apache-2.0" }
+readme = "README.md"
+# CI matrix covers Python 3.9 + 3.12; 3.10 + 3.11 work by implication.
+# Python 3.9's EOL is October 2025 — when the maintainer's local environment
+# upgrades to 3.11+, this floor moves and the UP017 (datetime.UTC) ruff rule
+# can re-enable.
+requires-python = ">=3.9"
+keywords = ["civic-tech", "employment", "mcp", "ai-act", "anerkennung", "commons"]
+
+# ---------------------------------------------------------------------------
+# Ruff — Python linter + formatter.
+#
+# Starting rule set is deliberately focused: errors, basic flake8 warnings,
+# bugbear, isort. We do not enable every rule available — the existing
+# codebase is large and would otherwise produce a wall of mostly-harmless
+# findings. Rules are added incrementally as the codebase tightens.
+# ---------------------------------------------------------------------------
+[tool.ruff]
+line-length = 100
+# Target the project's minimum supported Python (matches requires-python
+# above). This prevents UP017 (datetime.UTC) and other version-conditional
+# pyupgrade rules from breaking Python 3.9 compatibility.
+target-version = "py39"
+extend-exclude = [
+    "private/",
+    "data/",
+    "build/",
+    "dist/",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "F",    # pyflakes (undefined names, unused imports, etc.)
+    "W",    # pycodestyle warnings
+    "B",    # flake8-bugbear (likely-bug patterns)
+    "I",    # isort import ordering
+    "UP",   # pyupgrade (recommend modern syntax where safe)
+]
+ignore = [
+    "E501",  # line-length is enforced by `ruff format`, not by lint
+    "B008",  # function-call-in-argument-default — used legitimately for env-var defaults
+    "B904",  # raise-without-from-inside-except — pre-existing pattern, drift target
+    "UP007", # PEP 604 union syntax — keep `Optional[X]` working in 3.9
+    "UP035", # typing.X → builtin X — drift target, not a blocker
+    "UP045", # similar typing-modernisation drift target
+    "E701",  # multi-statement-on-one-line — pre-existing pattern in older code, drift target
+    "E702",  # multi-statement-on-one-line semicolon — same as E701
+    "E731",  # lambda-assignment — used intentionally in a handful of resolver helpers
+    "E741",  # ambiguous-variable-name `l` — pre-existing in older modules, drift target
+    "F841",  # unused-local-assignment — used in tests to document intent even when the binding is unused
+    "F842",  # unused-local-annotation — same
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["B011", "E402", "F401"]  # tests legitimately use assert False patterns and order-dependent imports
+"scripts/*" = ["E402"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["company_discovery"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+docstring-code-format = true
+
+# ---------------------------------------------------------------------------
+# mypy — static type checker.
+#
+# Permissive starter posture. The codebase is large and incrementally
+# typed; we strict-check only the modules whose contract surface is
+# small and well-defined (audit_log.py, mcp_server.py, the analysis
+# dispatch helpers). The rest of the codebase is checked for the
+# basics — undefined names, return-type mismatches — without
+# requiring full type annotations.
+# ---------------------------------------------------------------------------
+[tool.mypy]
+python_version = "3.9"
+strict = false
+warn_redundant_casts = true
+warn_unused_ignores = false
+warn_return_any = false
+disallow_untyped_defs = false
+ignore_missing_imports = true
+check_untyped_defs = false
+# Silent on transitive imports so mypy invoked with `mypy <file>` does
+# not surface pre-existing typing-debt errors from modules outside the
+# strict-check subset. CI invokes mypy explicitly on the strict
+# subset; that subset is the file list we hold to a strict bar today,
+# and other modules tighten incrementally.
+follow_imports = "silent"
+exclude = [
+    "build/",
+    "dist/",
+    "private/",
+    "data/",
+    "tests/",
+]
+
+# Strict for modules with clear, tightly-scoped contracts. CI runs:
+#     mypy company_discovery/audit_log.py company_discovery/crypto_kit.py mcp_server.py
+# The list grows as more modules are brought up to the strict bar.
+[[tool.mypy.overrides]]
+module = [
+    "company_discovery.audit_log",
+    "company_discovery.crypto_kit",
+    "mcp_server",
+]
+disallow_untyped_defs = true
+warn_return_any = true
+
+# ---------------------------------------------------------------------------
+# Coverage — line + branch coverage with sensible exclusions.
+# ---------------------------------------------------------------------------
+[tool.coverage.run]
+branch = true
+source = ["company_discovery", "."]
+omit = [
+    "tests/*",
+    "scripts/*",
+    "private/*",
+    "data/*",
+    "build/*",
+    "dist/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+]
+show_missing = true
+precision = 1
+
+# ---------------------------------------------------------------------------
+# Codespell — typo finder. Config lives in .codespellrc at the repo root
+# (some codespell versions choke on pyproject.toml's [tool.codespell] table).
+# See https://github.com/codespell-project/codespell/issues/1853 for the
+# upstream tracking issue.
+# ---------------------------------------------------------------------------

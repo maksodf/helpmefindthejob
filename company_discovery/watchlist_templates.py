@@ -123,7 +123,6 @@ _TEMPLATES: tuple[WatchlistTemplate, ...] = (
             ),
         ),
     ),
-
     # Tech persona
     WatchlistTemplate(
         id="berlin_tech_scene",
@@ -195,7 +194,6 @@ _TEMPLATES: tuple[WatchlistTemplate, ...] = (
             ),
         ),
     ),
-
     # Marketing persona
     WatchlistTemplate(
         id="dtc_consumer_brands_de",
@@ -255,7 +253,6 @@ _TEMPLATES: tuple[WatchlistTemplate, ...] = (
             ),
         ),
     ),
-
     # Finance persona
     WatchlistTemplate(
         id="dax_finance_de",
@@ -321,7 +318,6 @@ _TEMPLATES: tuple[WatchlistTemplate, ...] = (
             ),
         ),
     ),
-
     # Regional templates — France
     WatchlistTemplate(
         id="paris_tech_fr",
@@ -688,7 +684,6 @@ _TEMPLATES: tuple[WatchlistTemplate, ...] = (
             ),
         ),
     ),
-
     # Product-management persona
     WatchlistTemplate(
         id="product_led_saas",
@@ -728,8 +723,10 @@ _TEMPLATES: tuple[WatchlistTemplate, ...] = (
 def list_templates(persona_id: str | None = None) -> list[dict[str, object]]:
     """List templates, optionally filtered to a single persona."""
 
-    matching = _TEMPLATES if persona_id is None else tuple(
-        template for template in _TEMPLATES if persona_id in template.personas
+    matching = (
+        _TEMPLATES
+        if persona_id is None
+        else tuple(template for template in _TEMPLATES if persona_id in template.personas)
     )
     return [
         {

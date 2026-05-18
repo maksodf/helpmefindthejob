@@ -26,9 +26,8 @@ import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from urllib.error import HTTPError
-from urllib.parse import urlparse, parse_qs
+from urllib.parse import parse_qs, urlparse
 from urllib.request import Request, urlopen
-
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -58,7 +57,9 @@ class _Client:
             headers["X-CSRF-Token"] = self.csrf
         return headers
 
-    def request(self, path: str, *, method: str = "GET", body: dict | None = None, send_csrf: bool = True) -> tuple[int, dict, str]:
+    def request(
+        self, path: str, *, method: str = "GET", body: dict | None = None, send_csrf: bool = True
+    ) -> tuple[int, dict, str]:
         data = json.dumps(body or {}).encode("utf-8") if method != "GET" else None
         request = Request(
             f"{self.base}{path}",

@@ -17,8 +17,16 @@ import threading
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
+if TYPE_CHECKING:
+    # Type-only import: the EncryptionAtRest class is annotated in
+    # _totp_crypto's return type and imported at runtime inside the
+    # method body (so cryptography can be lazy-loaded). Keep this
+    # import under TYPE_CHECKING so it's visible to type checkers
+    # (mypy) and to ruff's name-resolution but does not execute at
+    # import time.
+    from .crypto_kit import EncryptionAtRest
 
 PBKDF2_ITERATIONS = 240_000
 MIN_PASSWORD_LENGTH = 12
@@ -41,7 +49,9 @@ def _b32_secret(byte_length: int = 20) -> str:
     return base64.b32encode(raw).decode("ascii").rstrip("=")
 
 
-def _totp_at(secret_b32: str, *, when: datetime, period: int = TOTP_PERIOD_SECONDS, digits: int = TOTP_DIGITS) -> str:
+def _totp_at(
+    secret_b32: str, *, when: datetime, period: int = TOTP_PERIOD_SECONDS, digits: int = TOTP_DIGITS
+) -> str:
     """RFC 6238 TOTP code computation using the stdlib (no pyotp dep)."""
 
     import base64
@@ -67,7 +77,9 @@ def verify_totp(secret_b32: str, code: str, *, when: datetime | None = None) -> 
     for offset in range(-TOTP_DRIFT_WINDOWS, TOTP_DRIFT_WINDOWS + 1):
         from datetime import timedelta
 
-        candidate = _totp_at(secret_b32, when=when + timedelta(seconds=offset * TOTP_PERIOD_SECONDS))
+        candidate = _totp_at(
+            secret_b32, when=when + timedelta(seconds=offset * TOTP_PERIOD_SECONDS)
+        )
         if hmac.compare_digest(candidate, code):
             return True
     return False
@@ -295,7 +307,9 @@ class AuthStore:
         self.connection.commit()
 
     def _add_column_if_missing(self, table: str, column: str, definition: str) -> None:
-        columns = {row[1] for row in self.connection.execute(f"PRAGMA table_info({table})").fetchall()}
+        columns = {
+            row[1] for row in self.connection.execute(f"PRAGMA table_info({table})").fetchall()
+        }
         if column not in columns:
             self.connection.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")
 
@@ -305,9 +319,13 @@ class AuthStore:
         ).fetchone()[0]
         if admin_count:
             return
-        first = self.connection.execute("SELECT id FROM users ORDER BY created_at LIMIT 1").fetchone()
+        first = self.connection.execute(
+            "SELECT id FROM users ORDER BY created_at LIMIT 1"
+        ).fetchone()
         if first:
-            self.connection.execute("UPDATE users SET role = 'admin', active = 1 WHERE id = ?", (first[0],))
+            self.connection.execute(
+                "UPDATE users SET role = 'admin', active = 1 WHERE id = ?", (first[0],)
+            )
 
     def close(self) -> None:
         # Closes the calling thread's connection only. Other threads'
@@ -347,7 +365,14 @@ class AuthStore:
         try:
             self.connection.execute(
                 "INSERT INTO users(id, email, password_hash, role, active, created_at) VALUES(?, ?, ?, ?, ?, ?)",
-                (user.id, user.email, hash_password(password), user.role, 1, user.created_at.isoformat()),
+                (
+                    user.id,
+                    user.email,
+                    hash_password(password),
+                    user.role,
+                    1,
+                    user.created_at.isoformat(),
+                ),
             )
         except sqlite3.IntegrityError as error:
             raise ValueError("email_already_exists") from error
@@ -460,7 +485,9 @@ class AuthStore:
     def delete_session(self, token: str | None) -> None:
         if not token:
             return
-        self.connection.execute("DELETE FROM sessions WHERE token_hash = ?", (_hash_token(self.secret_key, token),))
+        self.connection.execute(
+            "DELETE FROM sessions WHERE token_hash = ?", (_hash_token(self.secret_key, token),)
+        )
         self.connection.commit()
 
     def delete_user_sessions(self, user_id: str) -> None:
@@ -485,7 +512,7 @@ class AuthStore:
 
     # --- TOTP 2FA --------------------------------------------------------
 
-    def _totp_crypto(self) -> "EncryptionAtRest":
+    def _totp_crypto(self) -> EncryptionAtRest:
         """Lazy-init and cache the AEAD helper used for the TOTP-secret
         column. Same key-derivation chain as the CV-text column (HKDF from
         ``self.secret_key`` unless ``DIRECTJOB_DATA_KEY`` is set), so a
@@ -574,8 +601,6 @@ class AuthStore:
     def start_totp_enrollment(self, user_id: str) -> dict[str, str]:
         """Generate a fresh secret and stash it as pending (totp_enabled=0)
         until the user proves they can read codes from it."""
-
-        import json
 
         user = self.get_user(user_id)
         secret = _b32_secret()
@@ -730,7 +755,8 @@ class AuthStore:
         code unless the row has been wiped."""
 
         row = self.connection.execute(
-            "SELECT referral_code FROM users WHERE id = ?", (user_id,),
+            "SELECT referral_code FROM users WHERE id = ?",
+            (user_id,),
         ).fetchone()
         if row and row[0]:
             return str(row[0])
@@ -739,7 +765,8 @@ class AuthStore:
         for _ in range(5):
             candidate = secrets.token_urlsafe(8)[:10]
             existing = self.connection.execute(
-                "SELECT 1 FROM users WHERE referral_code = ?", (candidate,),
+                "SELECT 1 FROM users WHERE referral_code = ?",
+                (candidate,),
             ).fetchone()
             if not existing:
                 self.connection.execute(
@@ -780,7 +807,8 @@ class AuthStore:
 
     def count_referrals(self, user_id: str) -> int:
         row = self.connection.execute(
-            "SELECT referral_code FROM users WHERE id = ?", (user_id,),
+            "SELECT referral_code FROM users WHERE id = ?",
+            (user_id,),
         ).fetchone()
         if not row or not row[0]:
             return 0
@@ -807,8 +835,7 @@ class AuthStore:
             raise ValueError("invalid_drip_column")
         threshold_min = (now or now_utc()) - timedelta(days=min_age_days)
         threshold_max = (
-            (now or now_utc()) - timedelta(days=max_age_days)
-            if max_age_days is not None else None
+            (now or now_utc()) - timedelta(days=max_age_days) if max_age_days is not None else None
         )
         params: list[Any] = [threshold_min.isoformat()]
         sql = (
@@ -832,7 +859,8 @@ class AuthStore:
 
     def is_email_verified(self, user_id: str) -> bool:
         row = self.connection.execute(
-            "SELECT email_verified_at FROM users WHERE id = ?", (user_id,),
+            "SELECT email_verified_at FROM users WHERE id = ?",
+            (user_id,),
         ).fetchone()
         return bool(row and row[0])
 
@@ -855,11 +883,13 @@ class AuthStore:
         now = now_utc().isoformat()
         if tos:
             self.connection.execute(
-                "UPDATE users SET tos_accepted_at = ? WHERE id = ?", (now, user_id),
+                "UPDATE users SET tos_accepted_at = ? WHERE id = ?",
+                (now, user_id),
             )
         if privacy:
             self.connection.execute(
-                "UPDATE users SET privacy_accepted_at = ? WHERE id = ?", (now, user_id),
+                "UPDATE users SET privacy_accepted_at = ? WHERE id = ?",
+                (now, user_id),
             )
         self.connection.commit()
 

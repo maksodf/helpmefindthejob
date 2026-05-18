@@ -29,8 +29,7 @@ def build_digest(
     new_jobs = [
         job
         for job in discovered_jobs
-        if (effective_freshness_at(job) or job.discovered_at) >= since
-        and not job.imported_job_id
+        if (effective_freshness_at(job) or job.discovered_at) >= since and not job.imported_job_id
     ]
     new_jobs.sort(
         key=lambda job: effective_freshness_at(job) or job.discovered_at,
@@ -51,8 +50,14 @@ def build_digest(
         "",
     ]
     for job in new_jobs[:cap]:
-        company_name = company_index.get(job.company_id).name if company_index.get(job.company_id) else "Unknown company"
-        lines.append(f"- {job.title} — {company_name}{(' · ' + job.location) if job.location else ''}")
+        company_name = (
+            company_index.get(job.company_id).name
+            if company_index.get(job.company_id)
+            else "Unknown company"
+        )
+        lines.append(
+            f"- {job.title} — {company_name}{(' · ' + job.location) if job.location else ''}"
+        )
         if job.source_url:
             lines.append(f"  {job.source_url}")
     lines += ["", "Open DirectJob Scout to review and import."]

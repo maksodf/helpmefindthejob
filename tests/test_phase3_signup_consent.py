@@ -19,6 +19,7 @@ operator can prove informed consent later if a complaint comes in.
 
 from __future__ import annotations
 
+import json
 import os
 import socket
 import subprocess
@@ -27,13 +28,10 @@ import time
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
-
-import json
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
 from company_discovery.auth import AuthStore
-
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -89,7 +87,11 @@ class HttpRegisterConsentTests(unittest.TestCase):
         }
         self.proc = subprocess.Popen(
             [sys.executable, str(ROOT / "app.py"), "--port", str(self.port)],
-            cwd=ROOT, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+            cwd=ROOT,
+            env=env,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
         )
         self.addCleanup(self._terminate)
         self.base = f"http://127.0.0.1:{self.port}"

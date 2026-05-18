@@ -26,7 +26,6 @@ from tempfile import TemporaryDirectory
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
-
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -52,7 +51,11 @@ class SiteConfigEndpointTests(unittest.TestCase):
         }
         proc = subprocess.Popen(
             [sys.executable, str(ROOT / "app.py"), "--port", str(port)],
-            cwd=ROOT, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+            cwd=ROOT,
+            env=env,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
         )
         self.addCleanup(self._terminate, proc)
         base = f"http://127.0.0.1:{port}"
@@ -97,7 +100,9 @@ class SiteConfigEndpointTests(unittest.TestCase):
         }
         _, base = self._spawn(env_extra)
         cfg = self._get_site_config(base)
-        self.assertEqual(cfg["analytics"]["scriptUrl"], "https://analytics.directjob-scout.example/js/script.js")
+        self.assertEqual(
+            cfg["analytics"]["scriptUrl"], "https://analytics.directjob-scout.example/js/script.js"
+        )
         self.assertEqual(cfg["analytics"]["domain"], "directjob-scout.example")
 
 

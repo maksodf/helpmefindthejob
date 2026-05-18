@@ -29,23 +29,28 @@ import time
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from typing import TYPE_CHECKING
 from urllib.error import HTTPError
 from urllib.request import urlopen
 
+if TYPE_CHECKING:
+    from app import AppState
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
 class SeoPageConfigTests(unittest.TestCase):
-    def _state_with_config(self, payload: dict) -> "AppState":
+    def _state_with_config(self, payload: dict) -> AppState:
         from app import AppState
+
         tmp = TemporaryDirectory()
         self.addCleanup(tmp.cleanup)
         root = Path(tmp.name)
         # Write the config in the parent dir of the data path because
         # AppState reads from data_path.parent / "seo-pages.json".
         (root / "seo-pages.json").write_text(
-            json.dumps(payload), encoding="utf-8",
+            json.dumps(payload),
+            encoding="utf-8",
         )
         state = AppState(
             root / "company.sqlite3",
@@ -60,6 +65,7 @@ class SeoPageConfigTests(unittest.TestCase):
 
     def test_returns_empty_list_when_config_missing(self) -> None:
         from app import AppState
+
         tmp = TemporaryDirectory()
         self.addCleanup(tmp.cleanup)
         root = Path(tmp.name)
@@ -76,6 +82,7 @@ class SeoPageConfigTests(unittest.TestCase):
 
     def test_malformed_json_returns_empty(self) -> None:
         from app import AppState
+
         tmp = TemporaryDirectory()
         self.addCleanup(tmp.cleanup)
         root = Path(tmp.name)
@@ -92,23 +99,33 @@ class SeoPageConfigTests(unittest.TestCase):
         self.assertEqual(state.list_seo_pages(), [])
 
     def test_filters_invalid_slugs(self) -> None:
-        state = self._state_with_config({
-            "pages": [
-                {"slug": "valid-slug", "title": "T", "role": "R", "city": "C", "intro": "I"},
-                {"slug": "has spaces", "title": "T"},  # filtered (space)
-                {"slug": "has;DROP", "title": "T"},    # filtered (semi)
-                {"slug": "", "title": "T"},            # filtered (empty)
-            ],
-        })
+        state = self._state_with_config(
+            {
+                "pages": [
+                    {"slug": "valid-slug", "title": "T", "role": "R", "city": "C", "intro": "I"},
+                    {"slug": "has spaces", "title": "T"},  # filtered (space)
+                    {"slug": "has;DROP", "title": "T"},  # filtered (semi)
+                    {"slug": "", "title": "T"},  # filtered (empty)
+                ],
+            }
+        )
         slugs = [p["slug"] for p in state.list_seo_pages()]
         self.assertEqual(slugs, ["valid-slug"])
 
     def test_find_seo_page_returns_match_or_none(self) -> None:
-        state = self._state_with_config({
-            "pages": [
-                {"slug": "data-engineer-berlin", "title": "T", "role": "R", "city": "C", "intro": "I"},
-            ],
-        })
+        state = self._state_with_config(
+            {
+                "pages": [
+                    {
+                        "slug": "data-engineer-berlin",
+                        "title": "T",
+                        "role": "R",
+                        "city": "C",
+                        "intro": "I",
+                    },
+                ],
+            }
+        )
         self.assertIsNotNone(state.find_seo_page("data-engineer-berlin"))
         self.assertIsNone(state.find_seo_page("does-not-exist"))
 
@@ -142,7 +159,11 @@ class HttpSeoPageRouteTests(unittest.TestCase):
         }
         self.proc = subprocess.Popen(
             [sys.executable, str(ROOT / "app.py"), "--port", str(self.port)],
-            cwd=ROOT, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+            cwd=ROOT,
+            env=env,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
         )
         self.addCleanup(self._terminate)
         self.base = f"http://127.0.0.1:{self.port}"

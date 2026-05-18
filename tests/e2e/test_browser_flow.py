@@ -50,7 +50,10 @@ def _require_e2e_env() -> tuple[str, Path, bool]:
     return base_url, screenshots, headless
 
 
-@unittest.skipIf(sync_playwright is None, "Playwright is not installed (pip install playwright && playwright install chromium)")
+@unittest.skipIf(
+    sync_playwright is None,
+    "Playwright is not installed (pip install playwright && playwright install chromium)",
+)
 class BrowserFlowTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
@@ -207,7 +210,9 @@ class BrowserFlowTests(unittest.TestCase):
             page.wait_for_selector("#forgotPasswordForm")
             self._fill(page, "#forgotEmail", self.tester_email)
             self._click(page, "#forgotPasswordForm button[type='submit']")
-            page.locator("#forgotPasswordMessage", has_text="If a matching account exists").wait_for(state="visible")
+            page.locator(
+                "#forgotPasswordMessage", has_text="If a matching account exists"
+            ).wait_for(state="visible")
             self._shot(page, "07_forgot_password_desktop")
         finally:
             context.close()

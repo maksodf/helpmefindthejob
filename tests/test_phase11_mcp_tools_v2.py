@@ -116,9 +116,7 @@ class GetUserProfileForConsentTests(unittest.TestCase):
         self.assertEqual(profile["schemaVersion"], "0.1.0")
 
     def test_employment_scope_includes_watchlist_count(self) -> None:
-        result = self.tools.get_user_profile_for_consent(
-            userId="u-1", scopes=["employment"]
-        )
+        result = self.tools.get_user_profile_for_consent(userId="u-1", scopes=["employment"])
         employment = result["profile"]["employment"]
         # Empty repository — zero watched companies. Field present.
         self.assertIn("watchedCompanies", employment)
@@ -126,19 +124,11 @@ class GetUserProfileForConsentTests(unittest.TestCase):
 
     def test_outcomes_scope_reads_persisted_events(self) -> None:
         # Write two outcomes for u-1 and one for u-2 via the public tool.
-        self.tools.record_user_outcome(
-            userId="u-1", jobId="job-1", outcomeType="applied"
-        )
-        self.tools.record_user_outcome(
-            userId="u-1", jobId="job-1", outcomeType="replied"
-        )
-        self.tools.record_user_outcome(
-            userId="u-2", jobId="job-9", outcomeType="applied"
-        )
+        self.tools.record_user_outcome(userId="u-1", jobId="job-1", outcomeType="applied")
+        self.tools.record_user_outcome(userId="u-1", jobId="job-1", outcomeType="replied")
+        self.tools.record_user_outcome(userId="u-2", jobId="job-9", outcomeType="applied")
 
-        result = self.tools.get_user_profile_for_consent(
-            userId="u-1", scopes=["outcomes"]
-        )
+        result = self.tools.get_user_profile_for_consent(userId="u-1", scopes=["outcomes"])
         outcomes = result["profile"]["outcomes"]
         self.assertEqual(outcomes["total"], 2)
         self.assertEqual(outcomes["counts"]["applied"], 1)
@@ -149,7 +139,9 @@ class GetUserProfileForConsentTests(unittest.TestCase):
 
     def test_handle_request_rejects_missing_scopes(self) -> None:
         message = {
-            "jsonrpc": "2.0", "id": 1, "method": "tools/call",
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "tools/call",
             "params": {
                 "name": "get_user_profile_for_consent",
                 "arguments": {"userId": "u-1"},  # scopes missing
@@ -164,7 +156,9 @@ class GetUserProfileForConsentTests(unittest.TestCase):
 
     def test_handle_request_rejects_bad_scope_enum(self) -> None:
         message = {
-            "jsonrpc": "2.0", "id": 1, "method": "tools/call",
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "tools/call",
             "params": {
                 "name": "get_user_profile_for_consent",
                 "arguments": {"userId": "u-1", "scopes": ["not-a-scope"]},
@@ -191,9 +185,17 @@ class ProposeReferralTests(unittest.TestCase):
         self.assertEqual(result["status"], "ok")
         ref = result["referral"]
         for field in (
-            "referralId", "schemaVersion", "issuedAt", "sourceAgent",
-            "targetAgent", "userId", "intent", "priority", "reasonCode",
-            "supportingInfo", "userConsentRequired",
+            "referralId",
+            "schemaVersion",
+            "issuedAt",
+            "sourceAgent",
+            "targetAgent",
+            "userId",
+            "intent",
+            "priority",
+            "reasonCode",
+            "supportingInfo",
+            "userConsentRequired",
         ):
             self.assertIn(field, ref, msg=field)
         self.assertEqual(ref["sourceAgent"], "directjob-scout")
@@ -205,17 +207,19 @@ class ProposeReferralTests(unittest.TestCase):
         self.assertTrue(ref["referralId"].startswith("ref-"))
 
     def test_unique_referral_ids(self) -> None:
-        first = self.tools.propose_referral(
-            userId="u-1", targetAgent="x", reason="r"
-        )["referral"]["referralId"]
-        second = self.tools.propose_referral(
-            userId="u-1", targetAgent="x", reason="r"
-        )["referral"]["referralId"]
+        first = self.tools.propose_referral(userId="u-1", targetAgent="x", reason="r")["referral"][
+            "referralId"
+        ]
+        second = self.tools.propose_referral(userId="u-1", targetAgent="x", reason="r")["referral"][
+            "referralId"
+        ]
         self.assertNotEqual(first, second)
 
     def test_handle_request_rejects_missing_reason(self) -> None:
         message = {
-            "jsonrpc": "2.0", "id": 1, "method": "tools/call",
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "tools/call",
             "params": {
                 "name": "propose_referral",
                 "arguments": {"userId": "u-1", "targetAgent": "housing"},
@@ -267,7 +271,9 @@ class QueryEscoSkillTests(unittest.TestCase):
 
     def test_handle_request_rejects_empty_query(self) -> None:
         message = {
-            "jsonrpc": "2.0", "id": 1, "method": "tools/call",
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "tools/call",
             "params": {
                 "name": "query_esco_skill",
                 "arguments": {"query": ""},  # minLength: 1 violated
@@ -287,9 +293,7 @@ class ExportEuresCompatibleTests(unittest.TestCase):
     def test_returns_not_found_when_job_missing(self) -> None:
         # No discovered job seeded — the tool should report not_found
         # rather than raise.
-        result = self.tools.export_eures_compatible(
-            userId="u-1", discoveredJobId="nope"
-        )
+        result = self.tools.export_eures_compatible(userId="u-1", discoveredJobId="nope")
         self.assertIn(result["status"], {"not_found", "ok"})
         if result["status"] == "ok":
             # Some repository implementations may return a stub object
@@ -301,7 +305,9 @@ class ExportEuresCompatibleTests(unittest.TestCase):
 
     def test_handle_request_rejects_missing_discoveredJobId(self) -> None:
         message = {
-            "jsonrpc": "2.0", "id": 1, "method": "tools/call",
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "tools/call",
             "params": {
                 "name": "export_eures_compatible",
                 "arguments": {"userId": "u-1"},
@@ -322,9 +328,7 @@ class RecordUserOutcomeTests(unittest.TestCase):
         return self.data_dir / "user_outcomes.jsonl"
 
     def test_writes_event_to_jsonl_file(self) -> None:
-        result = self.tools.record_user_outcome(
-            userId="u-1", jobId="job-7", outcomeType="applied"
-        )
+        result = self.tools.record_user_outcome(userId="u-1", jobId="job-7", outcomeType="applied")
         self.assertEqual(result["status"], "ok")
         event = result["event"]
         self.assertEqual(event["userId"], "u-1")
@@ -351,9 +355,7 @@ class RecordUserOutcomeTests(unittest.TestCase):
 
     def test_appends_in_order(self) -> None:
         for outcome in ("applied", "replied", "interviewing"):
-            self.tools.record_user_outcome(
-                userId="u-1", jobId="job-7", outcomeType=outcome
-            )
+            self.tools.record_user_outcome(userId="u-1", jobId="job-7", outcomeType=outcome)
         lines = self._outcomes_file().read_text(encoding="utf-8").strip().splitlines()
         outcomes_in_order = [json.loads(line)["outcomeType"] for line in lines]
         self.assertEqual(outcomes_in_order, ["applied", "replied", "interviewing"])
@@ -361,19 +363,21 @@ class RecordUserOutcomeTests(unittest.TestCase):
     def test_rejects_invalid_outcome_enum_at_method_level(self) -> None:
         # Direct call (bypassing the MCP schema gate). Method must still
         # reject so callers outside the MCP server can't bypass.
-        result = self.tools.record_user_outcome(
-            userId="u-1", jobId="job-7", outcomeType="ghosted"
-        )
+        result = self.tools.record_user_outcome(userId="u-1", jobId="job-7", outcomeType="ghosted")
         self.assertEqual(result["status"], "invalid_arguments")
 
     def test_handle_request_rejects_invalid_outcome_enum(self) -> None:
         # Schema-level enum is enforced before the method body runs.
         message = {
-            "jsonrpc": "2.0", "id": 1, "method": "tools/call",
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "tools/call",
             "params": {
                 "name": "record_user_outcome",
                 "arguments": {
-                    "userId": "u-1", "jobId": "j", "outcomeType": "ghosted",
+                    "userId": "u-1",
+                    "jobId": "j",
+                    "outcomeType": "ghosted",
                 },
             },
         }
@@ -387,9 +391,7 @@ class RecordUserOutcomeTests(unittest.TestCase):
     def test_canonical_outcome_types_covered_by_module_constant(self) -> None:
         # Sanity: the module's _OUTCOME_TYPES must match the schema enum
         # so future additions don't drift the two.
-        schema = next(
-            t["inputSchema"] for t in TOOL_SCHEMAS if t["name"] == "record_user_outcome"
-        )
+        schema = next(t["inputSchema"] for t in TOOL_SCHEMAS if t["name"] == "record_user_outcome")
         enum_in_schema = tuple(schema["properties"]["outcomeType"]["enum"])
         self.assertEqual(enum_in_schema, _OUTCOME_TYPES)
 

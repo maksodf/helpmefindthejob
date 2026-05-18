@@ -33,7 +33,9 @@ class BuildExpansionPromptTests(unittest.TestCase):
             cv_text="20 years of healthcare-policy consulting in DACH.",
         )
         provider = AIProviderConfig(provider_id="openai", invocation_mode="api")
-        result = build_cv_query_expansion_prompt(profile, "I want PPH-style work in Berlin", provider)
+        result = build_cv_query_expansion_prompt(
+            profile, "I want PPH-style work in Berlin", provider
+        )
         prompt = result["prompt"]
         self.assertIn("Healthcare management", prompt)
         self.assertIn("PPH-style work in Berlin", prompt)
@@ -76,7 +78,7 @@ class ParseExpansionOutputTests(unittest.TestCase):
 
     def test_handles_arrays_and_truncation(self) -> None:
         out = parse_query_expansion_output(
-            '{"target_roles":[' + ",".join(['"r' + str(i) + '"' for i in range(20)]) + ']}'
+            '{"target_roles":[' + ",".join(['"r' + str(i) + '"' for i in range(20)]) + "]}"
         )
         assert out is not None
         # Capped at 8 to keep prompt size sane downstream.
@@ -84,12 +86,12 @@ class ParseExpansionOutputTests(unittest.TestCase):
 
     def test_garbage_returns_none(self) -> None:
         self.assertIsNone(parse_query_expansion_output(""))
-        self.assertIsNone(parse_query_expansion_output("the model rambled but produced no JSON at all"))
+        self.assertIsNone(
+            parse_query_expansion_output("the model rambled but produced no JSON at all")
+        )
 
     def test_unsupported_language_blanked(self) -> None:
-        out = parse_query_expansion_output(
-            '{"target_roles":["x"],"language":"klingon"}'
-        )
+        out = parse_query_expansion_output('{"target_roles":["x"],"language":"klingon"}')
         assert out is not None
         self.assertIsNone(out["language"])
 

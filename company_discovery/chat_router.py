@@ -45,8 +45,7 @@ from __future__ import annotations
 import re
 import shlex
 from dataclasses import dataclass, field
-from typing import Any, Callable, Iterable
-
+from typing import Any, Callable
 
 # ---------------- Command schema ----------------
 
@@ -54,8 +53,9 @@ from typing import Any, Callable, Iterable
 @dataclass
 class CommandParam:
     """One typed parameter of a command."""
+
     name: str
-    prompt: str           # what the user sees when we elicit this field
+    prompt: str  # what the user sees when we elicit this field
     required: bool = True
     type: str = "string"  # "string" | "url" | "list" | "bool"
     hint: str | None = None
@@ -66,9 +66,10 @@ class CommandParam:
 @dataclass
 class Command:
     """A typed function-call the chat router can execute."""
+
     name: str
-    label: str            # human-readable
-    description: str      # used by AI / keyword matchers
+    label: str  # human-readable
+    description: str  # used by AI / keyword matchers
     params: list[CommandParam] = field(default_factory=list)
     # Keyword triggers — regex patterns, in priority order. Used by the
     # keyword router before AI is invoked. Each pattern is case-insensitive.
@@ -139,8 +140,7 @@ def _validate_bool(value: str) -> tuple[bool, Any]:
 
 def _validate_application_status(value: str) -> tuple[bool, Any]:
     v = (value or "").strip().casefold()
-    valid = {"saved", "interested", "applied", "interview",
-             "rejected", "archived"}
+    valid = {"saved", "interested", "applied", "interview", "rejected", "archived"}
     if v in valid:
         return True, v
     return False, f"Status must be one of: {', '.join(sorted(valid))}."
@@ -150,447 +150,462 @@ def _validate_application_status(value: str) -> tuple[bool, Any]:
 
 
 def _build_registry() -> dict[str, Command]:
-    return {c.name: c for c in [
-        Command(
-            name="add_company",
-            label="Add a company to your watchlist",
-            description="Watch a company's career page for new openings.",
-            slash_aliases=["/add-company", "/add", "/watch"],
-            keywords=[
-                r"\badd (?:a )?company\b",
-                r"\bwatch\b.*\bcompany\b",
-                r"\bfollow\b.*\bcompany\b",
-            ],
-            params=[
-                CommandParam("name", "What's the company name?",
-                              validator=_validate_string),
-                CommandParam("websiteUrl", "Website URL?",
-                              type="url", validator=_validate_url),
-                CommandParam("careerPageUrl",
-                              "Career page URL (optional, just press Enter to skip)?",
-                              required=False, type="url",
-                              validator=_validate_url),
-            ],
-            confirmation_template=(
-                "I'll add **{name}** ({websiteUrl}) to your watchlist. Confirm?"
-            ),
-        ),
-        Command(
-            name="create_saved_search",
-            label="Create a saved search",
-            description="Create a daily-watched query for a role + location.",
-            slash_aliases=["/new-search", "/search"],
-            keywords=[
-                r"\b(?:create|new|add) (?:a )?(?:saved )?search\b",
-                r"\bwatch\b.*\b(?:role|position|job)\b",
-            ],
-            params=[
-                CommandParam("name", "Give the search a short name (e.g., 'Senior Backend Berlin').",
-                              validator=_validate_string),
-                CommandParam("targetRoles",
-                              "What role(s)? Comma-separated.",
-                              type="list", validator=_validate_list_csv),
-                CommandParam("location",
-                              "Where? (city / 'remote' / blank for any)",
-                              required=False),
-            ],
-            confirmation_template=(
-                "Saved search **{name}**: roles={targetRoles}, "
-                "location={location}. Confirm?"
-            ),
-        ),
-        Command(
-            name="find_jobs",
-            label="Run a one-off job search",
-            description=(
-                "Search aggregators now for a role + location. When the "
-                "role matches a supported job type (bartender, barista, "
-                "café worker, waiter, Pflegehelfer) the results are "
-                "strictly filtered to that role. Read-only — runs "
-                "immediately, no confirmation gate."
-            ),
-            slash_aliases=["/find", "/find-jobs"],
-            keywords=[
-                r"\bfind (?:me )?(?:a )?(?:\w+ )?(?:job|jobs|role|roles|position|positions)\b",
-                r"\bsearch (?:for )?(?:\w+ )?(?:job|jobs|role|roles|position|positions)\b",
-                r"\bshow (?:me )?(?:\w+ )?(?:jobs|roles)\b",
-                # German triggers
-                r"\b(?:suche|finde)\b.*\b(?:job|stelle|arbeit|stellen)\b",
-                # Common role mentions that imply "find jobs"
-                r"\b(?:bartender|barkeeper|barista|kellner|pflegehelfer|pflegeassistent)\b",
-            ],
-            params=[
-                CommandParam("query", "What role do you want?",
-                              validator=_validate_string),
-                CommandParam("location",
-                              "Where? (city / 'remote' / 'anywhere')",
-                              required=False),
-            ],
-            confirmation_template=(
-                "Searching for **{query}** in **{location}**."
-            ),
-            requires_confirmation=False,
-        ),
-        Command(
-            name="update_profile",
-            label="Update your profile",
-            description="Change persona, location, target roles, or seniority.",
-            slash_aliases=["/profile", "/update-profile"],
-            keywords=[
-                # NOTE: "(?:set|change) (?:my )?persona" is owned by the
-                # set_persona command — narrow this trigger to the
-                # location/roles/seniority shapes only so the two
-                # commands don't collide on routing.
-                r"\bupdate (?:my )?profile\b",
-                r"\bchange (?:my )?(?:location|roles|seniority)\b",
-                r"\bset (?:my )?(?:location|roles|seniority)\b",
-            ],
-            params=[
-                CommandParam("persona",
-                              "Which persona? (tech / marketing / data / "
-                              "healthcare-clinical / legal / finance / etc.)",
-                              required=False),
-                CommandParam("location",
-                              "Where are you based? (city or 'remote')",
-                              required=False),
-                CommandParam("targetRoles",
-                              "Target roles? (comma-separated, optional)",
-                              required=False, type="list",
-                              validator=_validate_list_csv),
-            ],
-            confirmation_template=(
-                "Updating profile — persona={persona}, "
-                "location={location}, targetRoles={targetRoles}. Confirm?"
-            ),
-        ),
-        Command(
-            name="mark_applied",
-            label="Mark an application status",
-            description="Update applicationStatus / replied on an imported job.",
-            slash_aliases=["/applied", "/mark"],
-            keywords=[
-                r"\bmark (?:as )?applied\b",
-                r"\bset (?:application )?status\b",
-                r"\bthey replied\b",
-                r"\bgot a reply\b",
-            ],
-            params=[
-                CommandParam("importedJobId",
-                              "Which imported job? (paste the id from the Jobs queue)",
-                              validator=_validate_string),
-                CommandParam("status",
-                              "New status? (saved / interested / applied / "
-                              "interview / rejected / archived)",
-                              validator=_validate_application_status),
-                CommandParam("replied",
-                              "Did the company reply? (yes/no)",
-                              required=False, type="bool",
-                              validator=_validate_bool),
-            ],
-            confirmation_template=(
-                "Marking job **{importedJobId}** as **{status}** "
-                "(replied={replied}). Confirm?"
-            ),
-        ),
-        Command(
-            name="tailor_cv",
-            label="Tailor your CV for a specific job",
-            description="Re-emphasise the CV against a single imported job's JD (fact-grounded — never invents).",
-            slash_aliases=["/tailor", "/tailor-cv"],
-            keywords=[
-                r"\btailor (?:my )?(?:cv|resume)\b",
-                r"\bre[\-_]?write (?:my )?(?:cv|resume)\b",
-                r"\bcustomi[sz]e (?:my )?(?:cv|resume)\b",
-            ],
-            params=[
-                CommandParam("importedJobId",
-                              "Which imported job? (paste the id from the Jobs queue)",
-                              validator=_validate_string),
-            ],
-            confirmation_template=(
-                "Generating a tailored CV for job **{importedJobId}**. Confirm?"
-            ),
-        ),
-        Command(
-            name="run_saved_search",
-            label="Run a saved search now",
-            description="Trigger one of your saved searches immediately.",
-            slash_aliases=["/run-search", "/run"],
-            keywords=[
-                r"\brun (?:a |my |the )?(?:saved )?search\b",
-                r"\bcheck (?:my )?(?:saved )?search (?:now|today)\b",
-            ],
-            params=[
-                CommandParam("searchId",
-                              "Which saved-search id?",
-                              validator=_validate_string),
-            ],
-            confirmation_template=(
-                "Running saved search **{searchId}** now. Confirm?"
-            ),
-        ),
-        Command(
-            name="set_persona",
-            label="Set your persona",
-            description="Switch your persona (tech / marketing / data / legal / healthcare-clinical / etc.).",
-            slash_aliases=["/persona", "/set-persona"],
-            keywords=[
-                r"\b(?:set|change|switch) (?:my )?persona\b",
-                r"\bi (?:work|am) (?:in|as|a)\b.*\b(tech|marketing|data|legal|sales|design)\b",
-            ],
-            params=[
-                CommandParam("persona",
-                              "Which persona? (tech / marketing / data / "
-                              "healthcare-clinical / legal / finance / sales / "
-                              "design / hr / operations / education / media / "
-                              "support / product-management / healthcare-management)",
-                              validator=_validate_string),
-            ],
-            confirmation_template=(
-                "Switching persona to **{persona}**. Confirm?"
-            ),
-        ),
-        Command(
-            name="delete_company",
-            label="Remove a company from your watchlist",
-            description="Stop watching a company. Irreversible — the watchlist row is gone after confirm.",
-            slash_aliases=["/delete-company", "/unwatch", "/remove-company"],
-            keywords=[
-                r"\bremove (?:a )?(?:company|employer)\b",
-                r"\bunwatch\b",
-                r"\bstop watching\b",
-                r"\bdelete (?:a )?(?:company|employer)\b",
-            ],
-            params=[
-                CommandParam("companyId",
-                              "Which company id? (paste from Companies tab)",
-                              validator=_validate_string),
-            ],
-            confirmation_template=(
-                "**Removing** company **{companyId}** from your watchlist. "
-                "This is irreversible. Confirm?"
-            ),
-        ),
-        Command(
-            name="open_cv_builder",
-            label="Open the CV Builder",
-            description="Walk through guided sections to create or update your CV (DACH-style with photo + PDF export). The AI formats, it never invents.",
-            slash_aliases=["/cv", "/build-cv", "/create-cv"],
-            keywords=[
-                r"\b(?:create|generate|build|make|write|start) (?:a |my |me )?(?:new )?(?:cv|resume|lebenslauf)\b",
-                r"\bi need (?:you )?(?:to )?(?:generate|create|build|make|write)\b.*\b(?:cv|resume|lebenslauf)\b",
-                r"\bhelp (?:me )?(?:write|build|create) (?:my )?(?:cv|resume)\b",
-                r"\b(?:open|go to|show me) (?:the )?cv builder\b",
-            ],
-            params=[],
-            confirmation_template="Opening the CV Builder for you.",
-            requires_confirmation=False,
-        ),
-        Command(
-            name="show_view",
-            label="Show a specific view on the canvas",
-            description=(
-                "Surface one of the app's views (dashboard / "
-                "companies / jobs / briefcase / settings / cv-builder) "
-                "on the right-side canvas. Read-only navigation — "
-                "no DB writes, no confirmation gate."
-            ),
-            slash_aliases=["/show", "/open", "/go-to", "/view"],
-            keywords=[
-                # English
-                r"\b(?:show|open|go to|switch to|take me to|view)\b.*\b(?:watchlist|companies|company list)\b",
-                r"\b(?:show|open|go to|switch to|take me to|view)\b.*\b(?:queue|imported|jobs|job list|saved jobs)\b",
-                r"\b(?:show|open|go to|switch to|take me to|view)\b.*\b(?:dashboard|today|home)\b",
-                r"\b(?:show|open|go to|switch to|take me to|view)\b.*\b(?:applications|briefcase|tracker)\b",
-                r"\b(?:show|open|go to|switch to|take me to|view)\b.*\b(?:settings|profile|preferences|config)\b",
-                r"\bmy (?:watchlist|companies|queue|jobs|applications|briefcase)\b",
-                # German
-                r"\b(?:zeig|öffne|gehe zu|geh zu|wechsle)\b.*\b(?:watchlist|firmen|unternehmen|liste)\b",
-                r"\b(?:zeig|öffne|gehe zu|geh zu|wechsle)\b.*\b(?:jobs|stellen|warteschlange)\b",
-                r"\b(?:zeig|öffne|gehe zu|geh zu|wechsle)\b.*\b(?:einstellungen|profil)\b",
-                r"\b(?:zeig|öffne|gehe zu|geh zu|wechsle)\b.*\b(?:heute|dashboard|startseite)\b",
-            ],
-            params=[
-                CommandParam("target",
-                              "Which view? (dashboard / companies / "
-                              "jobs / brief / settings / cvBuilder)",
-                              validator=_validate_string),
-            ],
-            confirmation_template="Opening **{target}**.",
-            requires_confirmation=False,
-        ),
-        Command(
-            name="suggest_cv_enhancements",
-            label="Consult on CV enhancements specific to a JD",
-            description=(
-                "For the job the user picked in their journey, "
-                "compare the JD against the CV and surface 3-5 gap "
-                "questions. AI-backed when configured; otherwise a "
-                "heuristic keyword diff with an honest banner."
-            ),
-            slash_aliases=["/consult", "/enhance-cv", "/cv-gaps"],
-            keywords=[
-                r"\b(?:consult|enhance|improve)\b.*\bcv\b",
-                r"\bcv\b.*\b(?:gaps?|enhancements?|improvements?)\b",
-            ],
-            params=[],
-            confirmation_template=(
-                "Consulting CV vs. picked JD for enhancement ideas."
-            ),
-            requires_confirmation=False,
-        ),
-        Command(
-            name="draft_motivation_letter",
-            label="Draft a DACH-norm motivation letter",
-            description=(
-                "Draft a Bewerbungsschreiben in proper DACH "
-                "structure (Anrede, 3-paragraph Hauptteil, Schluss) "
-                "for a job the user picked in their journey. Uses "
-                "the configured AI when available; otherwise emits "
-                "a structured template with placeholders + an "
-                "honest \"no AI configured\" banner."
-            ),
-            slash_aliases=["/letter", "/draft-letter", "/motivation"],
-            keywords=[
-                r"\bdraft\b.*\b(?:motivation|cover|application)\b.*\bletter\b",
-                r"\bmotivation(?:s)?(?:schreiben)?\b",
-                r"\bbewerbungsschreiben\b",
-                r"\banschreiben\b",
-            ],
-            params=[],
-            confirmation_template=(
-                "Drafting a motivation letter for your picked job."
-            ),
-            requires_confirmation=False,
-        ),
-        Command(
-            name="start_job_journey",
-            label="Start the guided job-search journey",
-            description=(
-                "Walk the user end-to-end: gather role/location/CV, "
-                "suggest lateral roles, run a categorized search, "
-                "drill into a job, draft a motivation letter, and "
-                "consult on CV enhancements specific to that JD. "
-                "Triggers on explicit job-seeking intent only — bare "
-                "greetings do NOT auto-start this."
-            ),
-            slash_aliases=["/start", "/journey", "/find-job", "/help-me-find"],
-            keywords=[
-                r"\b(?:i (?:want|need|wanna)|help me|can you help)"
-                r"\b.*\b(?:find|look|search|get)\b.*\b(?:job|jobs|role|roles|work|position)\b",
-                r"\b(?:find|look for|search for|get|need)\b.*\b(?:a |me a )?\b(?:job|role|position|work)\b",
-                r"\b(?:start|begin)\b.*\b(?:job search|journey|hunt)\b",
-                r"\b(?:suche|finde|brauche)\b.*\b(?:job|stelle|arbeit|position)\b",
-                r"\bhilf mir\b.*\b(?:job|stelle|arbeit)\b",
-                r"\bich (?:will|möchte|brauche)\b.*\b(?:job|stelle|arbeit)\b",
-            ],
-            params=[],
-            confirmation_template="Starting your job-search journey.",
-        ),
-        Command(
-            name="accept_cv_text",
-            label="Capture pasted CV text into your profile",
-            description=(
-                "Save a CV the user pasted directly in chat. Skips the "
-                "wizard. Only available inside the active journey."
-            ),
-            slash_aliases=["/paste-cv"],
-            keywords=[],  # invoked by journey state machine, not freely
-            params=[
-                CommandParam("cvText", "Paste your CV (free text — "
-                              "we'll store it as-is, never invent).",
-                              validator=_validate_string),
-            ],
-            confirmation_template=(
-                "Saving **{cvText}** chars to your profile. Confirm?"
-            ),
-        ),
-        Command(
-            name="build_cv_via_chat",
-            label="Build your CV sectional via chat",
-            description=(
-                "Walk through DACH-CV sections (header → summary → "
-                "experience → education → skills) via plain chat, no "
-                "wizard UI. Each section uses the same fact-ratio "
-                "gate as the visual builder."
-            ),
-            slash_aliases=["/build-cv-chat"],
-            keywords=[],
-            params=[],
-            confirmation_template="Starting CV build — one section at a time.",
-        ),
-        Command(
-            name="download_cv",
-            label="Download your CV as a PDF",
-            description=(
-                "Open the print-styled CV page so the user can "
-                "save it as PDF from their browser. Read-only — "
-                "needs an existing CV on the profile."
-            ),
-            slash_aliases=["/download-cv", "/cv-pdf", "/print-cv"],
-            keywords=[
-                r"\bdownload (?:my )?(?:cv|resume|lebenslauf)\b",
-                r"\bsave (?:my )?(?:cv|resume|lebenslauf) (?:as )?pdf\b",
-                r"\bget (?:my )?(?:cv|resume|lebenslauf) (?:as )?pdf\b",
-                r"\b(?:lebenslauf|cv) (?:als )?pdf herunterladen\b",
-                r"\b(?:herunterladen|drucken|speichern)\b.*\b(?:lebenslauf|cv)\b",
-            ],
-            params=[],
-            confirmation_template="Opening your CV in print view.",
-            requires_confirmation=False,
-        ),
-        Command(
-            name="delete_account",
-            label="Delete your account (GDPR right-to-erasure)",
-            description=(
-                "Start the account-deletion flow. The agent emails "
-                "you a confirmation link. After you click, a 7-day "
-                "grace window starts before your data is erased — "
-                "you can cancel from Settings any time in that "
-                "window. Destructive: keeps the confirmation gate."
-            ),
-            slash_aliases=[
-                "/delete-account", "/delete-my-account", "/erase-account",
-            ],
-            keywords=[
-                r"\bdelete (?:my )?account\b",
-                r"\berase (?:my )?account\b",
-                r"\bclose (?:my )?account\b",
-                r"\bkonto (?:löschen|loeschen)\b",
-                r"\b(?:löschen|loeschen) (?:mein|meines)? konto\b",
-                r"\bgdpr\b.*(?:delete|erase|right to erasure)",
-                r"\bdsgvo\b.*(?:löschen|loeschen|löschung|loeschung)",
-            ],
-            params=[
-                CommandParam(
-                    "email",
-                    "To confirm, type your account email exactly "
-                    "(the one you signed up with):",
-                    validator=_validate_string,
+    return {
+        c.name: c
+        for c in [
+            Command(
+                name="add_company",
+                label="Add a company to your watchlist",
+                description="Watch a company's career page for new openings.",
+                slash_aliases=["/add-company", "/add", "/watch"],
+                keywords=[
+                    r"\badd (?:a )?company\b",
+                    r"\bwatch\b.*\bcompany\b",
+                    r"\bfollow\b.*\bcompany\b",
+                ],
+                params=[
+                    CommandParam("name", "What's the company name?", validator=_validate_string),
+                    CommandParam("websiteUrl", "Website URL?", type="url", validator=_validate_url),
+                    CommandParam(
+                        "careerPageUrl",
+                        "Career page URL (optional, just press Enter to skip)?",
+                        required=False,
+                        type="url",
+                        validator=_validate_url,
+                    ),
+                ],
+                confirmation_template=(
+                    "I'll add **{name}** ({websiteUrl}) to your watchlist. Confirm?"
                 ),
-            ],
-            confirmation_template=(
-                "I'll start deletion for **{email}** — you'll get a "
-                "confirmation email with a link. Clicking the link "
-                "starts a 7-day grace window before any data is "
-                "erased. Confirm?"
             ),
-        ),
-        Command(
-            name="help",
-            label="Show available commands",
-            description="List every command the chat understands.",
-            slash_aliases=["/help", "/?"],
-            keywords=[
-                r"^\s*help\s*$",
-                r"\bwhat can you do\b",
-                r"\bshow (?:me )?commands\b",
-            ],
-            params=[],
-            confirmation_template="Listing the {n} commands I understand.",
-            requires_confirmation=False,
-        ),
-    ]}
+            Command(
+                name="create_saved_search",
+                label="Create a saved search",
+                description="Create a daily-watched query for a role + location.",
+                slash_aliases=["/new-search", "/search"],
+                keywords=[
+                    r"\b(?:create|new|add) (?:a )?(?:saved )?search\b",
+                    r"\bwatch\b.*\b(?:role|position|job)\b",
+                ],
+                params=[
+                    CommandParam(
+                        "name",
+                        "Give the search a short name (e.g., 'Senior Backend Berlin').",
+                        validator=_validate_string,
+                    ),
+                    CommandParam(
+                        "targetRoles",
+                        "What role(s)? Comma-separated.",
+                        type="list",
+                        validator=_validate_list_csv,
+                    ),
+                    CommandParam(
+                        "location", "Where? (city / 'remote' / blank for any)", required=False
+                    ),
+                ],
+                confirmation_template=(
+                    "Saved search **{name}**: roles={targetRoles}, location={location}. Confirm?"
+                ),
+            ),
+            Command(
+                name="find_jobs",
+                label="Run a one-off job search",
+                description=(
+                    "Search aggregators now for a role + location. When the "
+                    "role matches a supported job type (bartender, barista, "
+                    "café worker, waiter, Pflegehelfer) the results are "
+                    "strictly filtered to that role. Read-only — runs "
+                    "immediately, no confirmation gate."
+                ),
+                slash_aliases=["/find", "/find-jobs"],
+                keywords=[
+                    r"\bfind (?:me )?(?:a )?(?:\w+ )?(?:job|jobs|role|roles|position|positions)\b",
+                    r"\bsearch (?:for )?(?:\w+ )?(?:job|jobs|role|roles|position|positions)\b",
+                    r"\bshow (?:me )?(?:\w+ )?(?:jobs|roles)\b",
+                    # German triggers
+                    r"\b(?:suche|finde)\b.*\b(?:job|stelle|arbeit|stellen)\b",
+                    # Common role mentions that imply "find jobs"
+                    r"\b(?:bartender|barkeeper|barista|kellner|pflegehelfer|pflegeassistent)\b",
+                ],
+                params=[
+                    CommandParam("query", "What role do you want?", validator=_validate_string),
+                    CommandParam(
+                        "location", "Where? (city / 'remote' / 'anywhere')", required=False
+                    ),
+                ],
+                confirmation_template=("Searching for **{query}** in **{location}**."),
+                requires_confirmation=False,
+            ),
+            Command(
+                name="update_profile",
+                label="Update your profile",
+                description="Change persona, location, target roles, or seniority.",
+                slash_aliases=["/profile", "/update-profile"],
+                keywords=[
+                    # NOTE: "(?:set|change) (?:my )?persona" is owned by the
+                    # set_persona command — narrow this trigger to the
+                    # location/roles/seniority shapes only so the two
+                    # commands don't collide on routing.
+                    r"\bupdate (?:my )?profile\b",
+                    r"\bchange (?:my )?(?:location|roles|seniority)\b",
+                    r"\bset (?:my )?(?:location|roles|seniority)\b",
+                ],
+                params=[
+                    CommandParam(
+                        "persona",
+                        "Which persona? (tech / marketing / data / "
+                        "healthcare-clinical / legal / finance / etc.)",
+                        required=False,
+                    ),
+                    CommandParam(
+                        "location", "Where are you based? (city or 'remote')", required=False
+                    ),
+                    CommandParam(
+                        "targetRoles",
+                        "Target roles? (comma-separated, optional)",
+                        required=False,
+                        type="list",
+                        validator=_validate_list_csv,
+                    ),
+                ],
+                confirmation_template=(
+                    "Updating profile — persona={persona}, "
+                    "location={location}, targetRoles={targetRoles}. Confirm?"
+                ),
+            ),
+            Command(
+                name="mark_applied",
+                label="Mark an application status",
+                description="Update applicationStatus / replied on an imported job.",
+                slash_aliases=["/applied", "/mark"],
+                keywords=[
+                    r"\bmark (?:as )?applied\b",
+                    r"\bset (?:application )?status\b",
+                    r"\bthey replied\b",
+                    r"\bgot a reply\b",
+                ],
+                params=[
+                    CommandParam(
+                        "importedJobId",
+                        "Which imported job? (paste the id from the Jobs queue)",
+                        validator=_validate_string,
+                    ),
+                    CommandParam(
+                        "status",
+                        "New status? (saved / interested / applied / "
+                        "interview / rejected / archived)",
+                        validator=_validate_application_status,
+                    ),
+                    CommandParam(
+                        "replied",
+                        "Did the company reply? (yes/no)",
+                        required=False,
+                        type="bool",
+                        validator=_validate_bool,
+                    ),
+                ],
+                confirmation_template=(
+                    "Marking job **{importedJobId}** as **{status}** (replied={replied}). Confirm?"
+                ),
+            ),
+            Command(
+                name="tailor_cv",
+                label="Tailor your CV for a specific job",
+                description="Re-emphasise the CV against a single imported job's JD (fact-grounded — never invents).",
+                slash_aliases=["/tailor", "/tailor-cv"],
+                keywords=[
+                    r"\btailor (?:my )?(?:cv|resume)\b",
+                    r"\bre[\-_]?write (?:my )?(?:cv|resume)\b",
+                    r"\bcustomi[sz]e (?:my )?(?:cv|resume)\b",
+                ],
+                params=[
+                    CommandParam(
+                        "importedJobId",
+                        "Which imported job? (paste the id from the Jobs queue)",
+                        validator=_validate_string,
+                    ),
+                ],
+                confirmation_template=(
+                    "Generating a tailored CV for job **{importedJobId}**. Confirm?"
+                ),
+            ),
+            Command(
+                name="run_saved_search",
+                label="Run a saved search now",
+                description="Trigger one of your saved searches immediately.",
+                slash_aliases=["/run-search", "/run"],
+                keywords=[
+                    r"\brun (?:a |my |the )?(?:saved )?search\b",
+                    r"\bcheck (?:my )?(?:saved )?search (?:now|today)\b",
+                ],
+                params=[
+                    CommandParam("searchId", "Which saved-search id?", validator=_validate_string),
+                ],
+                confirmation_template=("Running saved search **{searchId}** now. Confirm?"),
+            ),
+            Command(
+                name="set_persona",
+                label="Set your persona",
+                description="Switch your persona (tech / marketing / data / legal / healthcare-clinical / etc.).",
+                slash_aliases=["/persona", "/set-persona"],
+                keywords=[
+                    r"\b(?:set|change|switch) (?:my )?persona\b",
+                    r"\bi (?:work|am) (?:in|as|a)\b.*\b(tech|marketing|data|legal|sales|design)\b",
+                ],
+                params=[
+                    CommandParam(
+                        "persona",
+                        "Which persona? (tech / marketing / data / "
+                        "healthcare-clinical / legal / finance / sales / "
+                        "design / hr / operations / education / media / "
+                        "support / product-management / healthcare-management)",
+                        validator=_validate_string,
+                    ),
+                ],
+                confirmation_template=("Switching persona to **{persona}**. Confirm?"),
+            ),
+            Command(
+                name="delete_company",
+                label="Remove a company from your watchlist",
+                description="Stop watching a company. Irreversible — the watchlist row is gone after confirm.",
+                slash_aliases=["/delete-company", "/unwatch", "/remove-company"],
+                keywords=[
+                    r"\bremove (?:a )?(?:company|employer)\b",
+                    r"\bunwatch\b",
+                    r"\bstop watching\b",
+                    r"\bdelete (?:a )?(?:company|employer)\b",
+                ],
+                params=[
+                    CommandParam(
+                        "companyId",
+                        "Which company id? (paste from Companies tab)",
+                        validator=_validate_string,
+                    ),
+                ],
+                confirmation_template=(
+                    "**Removing** company **{companyId}** from your watchlist. "
+                    "This is irreversible. Confirm?"
+                ),
+            ),
+            Command(
+                name="open_cv_builder",
+                label="Open the CV Builder",
+                description="Walk through guided sections to create or update your CV (DACH-style with photo + PDF export). The AI formats, it never invents.",
+                slash_aliases=["/cv", "/build-cv", "/create-cv"],
+                keywords=[
+                    r"\b(?:create|generate|build|make|write|start) (?:a |my |me )?(?:new )?(?:cv|resume|lebenslauf)\b",
+                    r"\bi need (?:you )?(?:to )?(?:generate|create|build|make|write)\b.*\b(?:cv|resume|lebenslauf)\b",
+                    r"\bhelp (?:me )?(?:write|build|create) (?:my )?(?:cv|resume)\b",
+                    r"\b(?:open|go to|show me) (?:the )?cv builder\b",
+                ],
+                params=[],
+                confirmation_template="Opening the CV Builder for you.",
+                requires_confirmation=False,
+            ),
+            Command(
+                name="show_view",
+                label="Show a specific view on the canvas",
+                description=(
+                    "Surface one of the app's views (dashboard / "
+                    "companies / jobs / briefcase / settings / cv-builder) "
+                    "on the right-side canvas. Read-only navigation — "
+                    "no DB writes, no confirmation gate."
+                ),
+                slash_aliases=["/show", "/open", "/go-to", "/view"],
+                keywords=[
+                    # English
+                    r"\b(?:show|open|go to|switch to|take me to|view)\b.*\b(?:watchlist|companies|company list)\b",
+                    r"\b(?:show|open|go to|switch to|take me to|view)\b.*\b(?:queue|imported|jobs|job list|saved jobs)\b",
+                    r"\b(?:show|open|go to|switch to|take me to|view)\b.*\b(?:dashboard|today|home)\b",
+                    r"\b(?:show|open|go to|switch to|take me to|view)\b.*\b(?:applications|briefcase|tracker)\b",
+                    r"\b(?:show|open|go to|switch to|take me to|view)\b.*\b(?:settings|profile|preferences|config)\b",
+                    r"\bmy (?:watchlist|companies|queue|jobs|applications|briefcase)\b",
+                    # German
+                    r"\b(?:zeig|öffne|gehe zu|geh zu|wechsle)\b.*\b(?:watchlist|firmen|unternehmen|liste)\b",
+                    r"\b(?:zeig|öffne|gehe zu|geh zu|wechsle)\b.*\b(?:jobs|stellen|warteschlange)\b",
+                    r"\b(?:zeig|öffne|gehe zu|geh zu|wechsle)\b.*\b(?:einstellungen|profil)\b",
+                    r"\b(?:zeig|öffne|gehe zu|geh zu|wechsle)\b.*\b(?:heute|dashboard|startseite)\b",
+                ],
+                params=[
+                    CommandParam(
+                        "target",
+                        "Which view? (dashboard / companies / jobs / brief / settings / cvBuilder)",
+                        validator=_validate_string,
+                    ),
+                ],
+                confirmation_template="Opening **{target}**.",
+                requires_confirmation=False,
+            ),
+            Command(
+                name="suggest_cv_enhancements",
+                label="Consult on CV enhancements specific to a JD",
+                description=(
+                    "For the job the user picked in their journey, "
+                    "compare the JD against the CV and surface 3-5 gap "
+                    "questions. AI-backed when configured; otherwise a "
+                    "heuristic keyword diff with an honest banner."
+                ),
+                slash_aliases=["/consult", "/enhance-cv", "/cv-gaps"],
+                keywords=[
+                    r"\b(?:consult|enhance|improve)\b.*\bcv\b",
+                    r"\bcv\b.*\b(?:gaps?|enhancements?|improvements?)\b",
+                ],
+                params=[],
+                confirmation_template=("Consulting CV vs. picked JD for enhancement ideas."),
+                requires_confirmation=False,
+            ),
+            Command(
+                name="draft_motivation_letter",
+                label="Draft a DACH-norm motivation letter",
+                description=(
+                    "Draft a Bewerbungsschreiben in proper DACH "
+                    "structure (Anrede, 3-paragraph Hauptteil, Schluss) "
+                    "for a job the user picked in their journey. Uses "
+                    "the configured AI when available; otherwise emits "
+                    "a structured template with placeholders + an "
+                    'honest "no AI configured" banner.'
+                ),
+                slash_aliases=["/letter", "/draft-letter", "/motivation"],
+                keywords=[
+                    r"\bdraft\b.*\b(?:motivation|cover|application)\b.*\bletter\b",
+                    r"\bmotivation(?:s)?(?:schreiben)?\b",
+                    r"\bbewerbungsschreiben\b",
+                    r"\banschreiben\b",
+                ],
+                params=[],
+                confirmation_template=("Drafting a motivation letter for your picked job."),
+                requires_confirmation=False,
+            ),
+            Command(
+                name="start_job_journey",
+                label="Start the guided job-search journey",
+                description=(
+                    "Walk the user end-to-end: gather role/location/CV, "
+                    "suggest lateral roles, run a categorized search, "
+                    "drill into a job, draft a motivation letter, and "
+                    "consult on CV enhancements specific to that JD. "
+                    "Triggers on explicit job-seeking intent only — bare "
+                    "greetings do NOT auto-start this."
+                ),
+                slash_aliases=["/start", "/journey", "/find-job", "/help-me-find"],
+                keywords=[
+                    r"\b(?:i (?:want|need|wanna)|help me|can you help)"
+                    r"\b.*\b(?:find|look|search|get)\b.*\b(?:job|jobs|role|roles|work|position)\b",
+                    r"\b(?:find|look for|search for|get|need)\b.*\b(?:a |me a )?\b(?:job|role|position|work)\b",
+                    r"\b(?:start|begin)\b.*\b(?:job search|journey|hunt)\b",
+                    r"\b(?:suche|finde|brauche)\b.*\b(?:job|stelle|arbeit|position)\b",
+                    r"\bhilf mir\b.*\b(?:job|stelle|arbeit)\b",
+                    r"\bich (?:will|möchte|brauche)\b.*\b(?:job|stelle|arbeit)\b",
+                ],
+                params=[],
+                confirmation_template="Starting your job-search journey.",
+            ),
+            Command(
+                name="accept_cv_text",
+                label="Capture pasted CV text into your profile",
+                description=(
+                    "Save a CV the user pasted directly in chat. Skips the "
+                    "wizard. Only available inside the active journey."
+                ),
+                slash_aliases=["/paste-cv"],
+                keywords=[],  # invoked by journey state machine, not freely
+                params=[
+                    CommandParam(
+                        "cvText",
+                        "Paste your CV (free text — we'll store it as-is, never invent).",
+                        validator=_validate_string,
+                    ),
+                ],
+                confirmation_template=("Saving **{cvText}** chars to your profile. Confirm?"),
+            ),
+            Command(
+                name="build_cv_via_chat",
+                label="Build your CV sectional via chat",
+                description=(
+                    "Walk through DACH-CV sections (header → summary → "
+                    "experience → education → skills) via plain chat, no "
+                    "wizard UI. Each section uses the same fact-ratio "
+                    "gate as the visual builder."
+                ),
+                slash_aliases=["/build-cv-chat"],
+                keywords=[],
+                params=[],
+                confirmation_template="Starting CV build — one section at a time.",
+            ),
+            Command(
+                name="download_cv",
+                label="Download your CV as a PDF",
+                description=(
+                    "Open the print-styled CV page so the user can "
+                    "save it as PDF from their browser. Read-only — "
+                    "needs an existing CV on the profile."
+                ),
+                slash_aliases=["/download-cv", "/cv-pdf", "/print-cv"],
+                keywords=[
+                    r"\bdownload (?:my )?(?:cv|resume|lebenslauf)\b",
+                    r"\bsave (?:my )?(?:cv|resume|lebenslauf) (?:as )?pdf\b",
+                    r"\bget (?:my )?(?:cv|resume|lebenslauf) (?:as )?pdf\b",
+                    r"\b(?:lebenslauf|cv) (?:als )?pdf herunterladen\b",
+                    r"\b(?:herunterladen|drucken|speichern)\b.*\b(?:lebenslauf|cv)\b",
+                ],
+                params=[],
+                confirmation_template="Opening your CV in print view.",
+                requires_confirmation=False,
+            ),
+            Command(
+                name="delete_account",
+                label="Delete your account (GDPR right-to-erasure)",
+                description=(
+                    "Start the account-deletion flow. The agent emails "
+                    "you a confirmation link. After you click, a 7-day "
+                    "grace window starts before your data is erased — "
+                    "you can cancel from Settings any time in that "
+                    "window. Destructive: keeps the confirmation gate."
+                ),
+                slash_aliases=[
+                    "/delete-account",
+                    "/delete-my-account",
+                    "/erase-account",
+                ],
+                keywords=[
+                    r"\bdelete (?:my )?account\b",
+                    r"\berase (?:my )?account\b",
+                    r"\bclose (?:my )?account\b",
+                    r"\bkonto (?:löschen|loeschen)\b",
+                    r"\b(?:löschen|loeschen) (?:mein|meines)? konto\b",
+                    r"\bgdpr\b.*(?:delete|erase|right to erasure)",
+                    r"\bdsgvo\b.*(?:löschen|loeschen|löschung|loeschung)",
+                ],
+                params=[
+                    CommandParam(
+                        "email",
+                        "To confirm, type your account email exactly (the one you signed up with):",
+                        validator=_validate_string,
+                    ),
+                ],
+                confirmation_template=(
+                    "I'll start deletion for **{email}** — you'll get a "
+                    "confirmation email with a link. Clicking the link "
+                    "starts a 7-day grace window before any data is "
+                    "erased. Confirm?"
+                ),
+            ),
+            Command(
+                name="help",
+                label="Show available commands",
+                description="List every command the chat understands.",
+                slash_aliases=["/help", "/?"],
+                keywords=[
+                    r"^\s*help\s*$",
+                    r"\bwhat can you do\b",
+                    r"\bshow (?:me )?commands\b",
+                ],
+                params=[],
+                confirmation_template="Listing the {n} commands I understand.",
+                requires_confirmation=False,
+            ),
+        ]
+    }
 
 
 REGISTRY: dict[str, Command] = _build_registry()
@@ -606,8 +621,13 @@ def list_commands() -> list[dict[str, Any]]:
             "description": c.description,
             "slashAliases": list(c.slash_aliases),
             "params": [
-                {"name": p.name, "prompt": p.prompt,
-                  "required": p.required, "type": p.type, "hint": p.hint}
+                {
+                    "name": p.name,
+                    "prompt": p.prompt,
+                    "required": p.required,
+                    "type": p.type,
+                    "hint": p.hint,
+                }
                 for p in c.params
             ],
         }
@@ -651,13 +671,17 @@ def keyword_route(message: str) -> str | None:
 # Patterns that mean "in/at <location>" — covers EN + DE phrasing.
 # Captures the location text up to the next punctuation / EOL / "for".
 _LOCATION_PATTERNS: tuple[re.Pattern[str], ...] = (
-    re.compile(r"\b(?:in|at|around|near)\s+([A-Za-zÄÖÜäöüß ,.\-]+?)"
-                r"(?:[.!?;:\n]|$|\bfor\b)",
-                re.IGNORECASE),
+    re.compile(
+        r"\b(?:in|at|around|near)\s+([A-Za-zÄÖÜäöüß ,.\-]+?)"
+        r"(?:[.!?;:\n]|$|\bfor\b)",
+        re.IGNORECASE,
+    ),
     # German equivalents
-    re.compile(r"\b(?:in|bei)\s+([A-Za-zÄÖÜäöüß ,.\-]+?)"
-                r"(?:[.!?;:\n]|$|\bfür\b)",
-                re.IGNORECASE),
+    re.compile(
+        r"\b(?:in|bei)\s+([A-Za-zÄÖÜäöüß ,.\-]+?)"
+        r"(?:[.!?;:\n]|$|\bfür\b)",
+        re.IGNORECASE,
+    ),
 )
 
 
@@ -716,7 +740,9 @@ def extract_keyword_args(command_name: str, message: str) -> dict[str, str]:
                     # regex didn't catch (e.g. "Berlin gesucht").
                     loc = re.sub(
                         r"\s+(?:gesucht|gesuchten|jetzt|now|m/w/d|\(m/w/d\))\b.*$",
-                        "", loc, flags=re.IGNORECASE,
+                        "",
+                        loc,
+                        flags=re.IGNORECASE,
                     ).strip()
                     if loc and len(loc) <= 80:
                         out["location"] = loc
@@ -731,14 +757,32 @@ def extract_keyword_args(command_name: str, message: str) -> dict[str, str]:
         # major EU cities the aggregator commonly returns.
         if "location" not in out:
             from company_discovery.job_type_filter import _GERMAN_CITIES
-            extra_cities = ("vienna", "wien", "zurich", "zürich",
-                              "london", "paris", "amsterdam", "warsaw",
-                              "prague", "budapest", "lisbon", "madrid",
-                              "barcelona", "rome", "milan", "remote")
+
+            extra_cities = (
+                "vienna",
+                "wien",
+                "zurich",
+                "zürich",
+                "london",
+                "paris",
+                "amsterdam",
+                "warsaw",
+                "prague",
+                "budapest",
+                "lisbon",
+                "madrid",
+                "barcelona",
+                "rome",
+                "milan",
+                "remote",
+            )
             haystack = message.casefold()
             for city in (*_GERMAN_CITIES, *extra_cities):
-                if re.search(rf"(?<![A-Za-zÄÖÜäöüß]){re.escape(city)}"
-                              rf"(?![A-Za-zÄÖÜäöüß])", haystack):
+                if re.search(
+                    rf"(?<![A-Za-zÄÖÜäöüß]){re.escape(city)}"
+                    rf"(?![A-Za-zÄÖÜäöüß])",
+                    haystack,
+                ):
                     # Title-case for display; preserves the user
                     # intent.
                     out["location"] = city.title()
@@ -759,12 +803,8 @@ def build_ai_router_prompt(message: str, history: list[dict[str, str]]) -> str:
     response through ``parse_ai_router_extracted_args`` to get any
     pre-filled params the AI was able to extract from natural language.
     """
-    cmd_lines = "\n".join(
-        f"- {c.name}: {c.description}" for c in REGISTRY.values()
-    )
-    history_text = "\n".join(
-        f"{turn['role']}: {turn['content']}" for turn in history[-6:]
-    )
+    cmd_lines = "\n".join(f"- {c.name}: {c.description}" for c in REGISTRY.values())
+    history_text = "\n".join(f"{turn['role']}: {turn['content']}" for turn in history[-6:])
     return (
         "You are a CHAT ROUTER. Classify the user's latest message into "
         "ONE of the commands listed below.\n\n"
@@ -802,18 +842,20 @@ def parse_ai_router_response(raw: str) -> str | None:
     # Greedy match so the outer {command, args:{...}} wins over the
     # inner args object. The router prompt asks for one JSON object;
     # we accept code-fenced + prose-wrapped variants too.
-    json_block = re.search(r'\{[\s\S]*\}', text)
+    json_block = re.search(r"\{[\s\S]*\}", text)
     if json_block:
         try:
             import json as _json
+
             parsed = _json.loads(json_block.group(0))
-        except (_json.JSONDecodeError if False else ValueError):  # type: ignore[misc]
+        except _json.JSONDecodeError if False else ValueError:  # type: ignore[misc]  # noqa: B030 - conditional except retained for explanation that follows
             parsed = None
         # The previous line trips when ValueError is the wrong base; use
         # a plain try/except below for portability.
         if parsed is None:
             try:
                 import json as _json
+
                 parsed = _json.loads(json_block.group(0))
             except Exception:  # noqa: BLE001
                 parsed = None
@@ -846,11 +888,12 @@ def parse_ai_router_extracted_args(raw: str) -> dict[str, Any]:
     # Greedy match so the outer {command, args:{...}} wins over the
     # inner args object. The router prompt asks for one JSON object;
     # we accept code-fenced + prose-wrapped variants too.
-    json_block = re.search(r'\{[\s\S]*\}', text)
+    json_block = re.search(r"\{[\s\S]*\}", text)
     if not json_block:
         return {}
     try:
         import json as _json
+
         parsed = _json.loads(json_block.group(0))
     except Exception:  # noqa: BLE001
         return {}
@@ -902,13 +945,14 @@ def parse_slash_inline_args(command_name: str, rest: str) -> dict[str, str]:
 
 @dataclass
 class ChatTurn:
-    role: str    # "user" | "assistant"
+    role: str  # "user" | "assistant"
     content: str
 
 
 @dataclass
 class PendingCommand:
     """A command being assembled across multiple turns."""
+
     command_name: str
     args: dict[str, Any] = field(default_factory=dict)
     # The param-name currently being asked of the user.
@@ -922,13 +966,13 @@ class PendingCommand:
 class ChatSession:
     """Per-user chat state. Lives in memory; resets on server restart.
     JSON-serialisable so future persistence is trivial."""
+
     history: list[ChatTurn] = field(default_factory=list)
     pending: PendingCommand | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
-            "history": [{"role": t.role, "content": t.content}
-                         for t in self.history],
+            "history": [{"role": t.role, "content": t.content} for t in self.history],
             "pending": (
                 {
                     "commandName": self.pending.command_name,
@@ -936,7 +980,8 @@ class ChatSession:
                     "awaiting": self.pending.awaiting,
                     "awaitingConfirmation": self.pending.awaiting_confirmation,
                 }
-                if self.pending else None
+                if self.pending
+                else None
             ),
         }
 
@@ -969,16 +1014,49 @@ def is_confirmation_yes(message: str) -> bool:
     v = (message or "").strip().casefold().rstrip("!.?,")
     return v in {
         # EN
-        "yes", "y", "yep", "yeah", "yup", "yah", "yess",
-        "confirm", "confirmed", "ok", "okay", "k", "kk",
-        "go", "go ahead", "do it", "let's go", "lets go",
-        "sure", "absolutely", "definitely", "of course", "ofc",
-        "proceed", "right", "correct", "true",
+        "yes",
+        "y",
+        "yep",
+        "yeah",
+        "yup",
+        "yah",
+        "yess",
+        "confirm",
+        "confirmed",
+        "ok",
+        "okay",
+        "k",
+        "kk",
+        "go",
+        "go ahead",
+        "do it",
+        "let's go",
+        "lets go",
+        "sure",
+        "absolutely",
+        "definitely",
+        "of course",
+        "ofc",
+        "proceed",
+        "right",
+        "correct",
+        "true",
         # DE
-        "ja", "jawohl", "klar", "logisch", "natürlich", "natuerlich",
-        "auf jeden", "auf jeden fall", "passt", "stimmt", "richtig",
+        "ja",
+        "jawohl",
+        "klar",
+        "logisch",
+        "natürlich",
+        "natuerlich",
+        "auf jeden",
+        "auf jeden fall",
+        "passt",
+        "stimmt",
+        "richtig",
         # Common positive emoji as text
-        "👍", "✓", "✔",
+        "👍",
+        "✓",
+        "✔",
     }
 
 
@@ -986,15 +1064,36 @@ def is_confirmation_no(message: str) -> bool:
     """Generous no-detector with similar tolerance."""
     v = (message or "").strip().casefold().rstrip("!.?,")
     return v in {
-        "no", "n", "nope", "nah", "naw", "nay",
-        "cancel", "canceled", "cancelled", "abort", "stop", "skip",
-        "never mind", "nevermind", "nvm",
-        "no thanks", "no thank you",
+        "no",
+        "n",
+        "nope",
+        "nah",
+        "naw",
+        "nay",
+        "cancel",
+        "canceled",
+        "cancelled",
+        "abort",
+        "stop",
+        "skip",
+        "never mind",
+        "nevermind",
+        "nvm",
+        "no thanks",
+        "no thank you",
         # DE
-        "nein", "ne", "nö", "noe", "nope nicht", "abbrechen",
-        "stoppen", "lass es",
+        "nein",
+        "ne",
+        "nö",
+        "noe",
+        "nope nicht",
+        "abbrechen",
+        "stoppen",
+        "lass es",
         # Emoji
-        "👎", "✗", "✘",
+        "👎",
+        "✗",
+        "✘",
     }
 
 
@@ -1008,7 +1107,7 @@ def render_help_text() -> str:
         lines.append(f"• {c.label} ({aliases})")
     lines.append(
         "\nYou can describe what you want in plain language too — "
-        "e.g., \"watch Charité, career page karriere.charite.de\" or "
-        "\"I need to build a CV\"."
+        'e.g., "watch Charité, career page karriere.charite.de" or '
+        '"I need to build a CV".'
     )
     return "\n".join(lines)

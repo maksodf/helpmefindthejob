@@ -26,12 +26,12 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+from datetime import timezone
 from difflib import SequenceMatcher
 from typing import Iterable
 from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
 from .models import DiscoveredJob
-
 
 _DESCRIPTION_SHINGLE_MIN_CHARS = 300
 _DESCRIPTION_SHINGLE_THRESHOLD = 0.80
@@ -65,9 +65,9 @@ _TRACKING_KEYS = {
     "trk",
     "trkinfo",
     # Aggregator click-through identifiers.
-    "vjk",     # Indeed view-job key (changes per session)
-    "from",    # Indeed / StepStone share-from
-    "tk",      # Indeed token
+    "vjk",  # Indeed view-job key (changes per session)
+    "from",  # Indeed / StepStone share-from
+    "tk",  # Indeed token
     "promoted",
 }
 
@@ -223,7 +223,7 @@ def effective_freshness_at(job: DiscoveredJob):
     not "3-weeks-stale." We pick the max of ``discovered_at`` and any
     ``also_seen_at[*].seen_at`` timestamps.
     """
-    from datetime import datetime, timezone  # local import to keep top-of-file lean
+    from datetime import datetime  # local import to keep top-of-file lean
 
     candidates = []
     if job.discovered_at is not None:
@@ -246,7 +246,9 @@ def effective_freshness_at(job: DiscoveredJob):
     return max(norm)
 
 
-def find_duplicate(candidate: DiscoveredJob, existing: Iterable[DiscoveredJob]) -> DuplicateMatch | None:
+def find_duplicate(
+    candidate: DiscoveredJob, existing: Iterable[DiscoveredJob]
+) -> DuplicateMatch | None:
     candidate_url = normalize_url(candidate.source_url)
     candidate_title = normalize_title(candidate.title)
     candidate_title_cross = normalize_title_cross_locale(candidate.title)
@@ -311,7 +313,8 @@ def find_duplicate(candidate: DiscoveredJob, existing: Iterable[DiscoveredJob]) 
             and candidate_title_cross == other_title_cross
             and candidate_location
             and candidate_location == other_location
-            and candidate_title_cross != candidate_title  # only fire when folding actually changed something
+            and candidate_title_cross
+            != candidate_title  # only fire when folding actually changed something
         ):
             return DuplicateMatch(
                 duplicate_id=other.id,
@@ -322,9 +325,13 @@ def find_duplicate(candidate: DiscoveredJob, existing: Iterable[DiscoveredJob]) 
             other_description = (other.raw_description or "").strip()
             if len(other_description) >= _DESCRIPTION_SHINGLE_MIN_CHARS:
                 similarity = jaccard(candidate_shingles, shingles(other_description))
-                title_similarity = SequenceMatcher(
-                    None, candidate_title, other_title or normalize_title(other.title)
-                ).ratio() if candidate_title else 0.0
+                title_similarity = (
+                    SequenceMatcher(
+                        None, candidate_title, other_title or normalize_title(other.title)
+                    ).ratio()
+                    if candidate_title
+                    else 0.0
+                )
                 if (
                     similarity >= _DESCRIPTION_SHINGLE_THRESHOLD
                     and title_similarity >= _DESCRIPTION_TITLE_THRESHOLD

@@ -78,12 +78,16 @@ class HTTPFetcher:
 
             response = self._fetch_once(current_url, user_agent)
             if response.status_code in {301, 302, 303, 307, 308}:
-                location = (response.headers or {}).get("Location") or (response.headers or {}).get("location")
+                location = (response.headers or {}).get("Location") or (response.headers or {}).get(
+                    "location"
+                )
                 if not location:
                     return response
                 redirects += 1
                 if redirects > self.max_redirects:
-                    return FetchResult(url=current_url, status_code=508, text="redirect_limit_exceeded")
+                    return FetchResult(
+                        url=current_url, status_code=508, text="redirect_limit_exceeded"
+                    )
                 current_url = urljoin(current_url, location)
                 continue
             return response

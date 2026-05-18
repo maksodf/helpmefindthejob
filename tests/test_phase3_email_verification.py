@@ -33,7 +33,6 @@ from urllib.request import Request, urlopen
 
 from company_discovery.auth import AuthStore
 
-
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -91,7 +90,11 @@ class HttpEmailVerificationTests(unittest.TestCase):
         }
         self.proc = subprocess.Popen(
             [sys.executable, str(ROOT / "app.py"), "--port", str(self.port)],
-            cwd=ROOT, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+            cwd=ROOT,
+            env=env,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
         )
         self.addCleanup(self._terminate)
         self.base = f"http://127.0.0.1:{self.port}"
@@ -134,6 +137,7 @@ class HttpEmailVerificationTests(unittest.TestCase):
 
     def _outbox_url_for(self, marker: str) -> str | None:
         import re
+
         log = Path(self.tmp.name) / "email_outbox.log"
         if not log.exists():
             return None
@@ -143,7 +147,7 @@ class HttpEmailVerificationTests(unittest.TestCase):
                 # The outbox writes JSON-encoded text where literal
                 # newlines appear as ``\n``. Extract the URL up to the
                 # first whitespace / quote / backslash.
-                match = pattern.search(line[line.index(marker):])
+                match = pattern.search(line[line.index(marker) :])
                 if match:
                     return match.group(0)
         return None
@@ -192,7 +196,7 @@ class HttpEmailVerificationTests(unittest.TestCase):
         self.assertIsNotNone(verify_url, "verify-email URL not found in outbox")
         # The URL is absolute (DIRECTJOB_PUBLIC_URL); strip the host so
         # we hit the test server on the assigned port.
-        path_with_query = verify_url[len(self.base):]
+        path_with_query = verify_url[len(self.base) :]
         code = self._get_status(path_with_query)
         self.assertEqual(code, 200)
         # Now login succeeds.

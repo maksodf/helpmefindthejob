@@ -26,8 +26,12 @@ class SlackNotifyTests(unittest.TestCase):
         for url in ["", "http://example.test/wrong", "javascript:alert(1)"]:
             res = post_high_fit_notification(
                 webhook_url=url,
-                job_title="X", company_name="Y", location=None,
-                fit_score=0.9, fit_reason=None, job_url=None,
+                job_title="X",
+                company_name="Y",
+                location=None,
+                fit_score=0.9,
+                fit_reason=None,
+                job_url=None,
             )
             self.assertEqual(res["status"], "skipped")
 
@@ -36,9 +40,15 @@ class SlackNotifyTests(unittest.TestCase):
 
         class FakeResp:
             status = 200
-            def __enter__(self): return self
-            def __exit__(self, *a): return False
-            def read(self): return b""
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *a):
+                return False
+
+            def read(self):
+                return b""
 
         def fake_urlopen(req, timeout=5.0):
             captured["url"] = req.full_url
@@ -72,8 +82,12 @@ class SlackNotifyTests(unittest.TestCase):
         with patch("company_discovery.slack_notify.urllib.request.urlopen", boom):
             res = post_high_fit_notification(
                 webhook_url="https://hooks.slack.com/services/X",
-                job_title="X", company_name="Y", location=None,
-                fit_score=0.9, fit_reason=None, job_url=None,
+                job_title="X",
+                company_name="Y",
+                location=None,
+                fit_score=0.9,
+                fit_reason=None,
+                job_url=None,
             )
         self.assertEqual(res["status"], "error")
         self.assertEqual(res["code"], 500)

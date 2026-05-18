@@ -50,14 +50,20 @@ def _company(user_id: str = "u1") -> Company:
 
 def _discovered(user_id: str = "u1") -> DiscoveredJob:
     return DiscoveredJob(
-        user_id=user_id, source_url="https://example.com/job", title="Engineer",
+        user_id=user_id,
+        source_url="https://example.com/job",
+        title="Engineer",
     )
 
 
 def _imported(user_id: str = "u1") -> ImportedJob:
     return ImportedJob(
-        user_id=user_id, company_id="c1", discovered_job_id="d1",
-        source_url="https://example.com/job", title="Engineer", company_name="Acme",
+        user_id=user_id,
+        company_id="c1",
+        discovered_job_id="d1",
+        source_url="https://example.com/job",
+        title="Engineer",
+        company_name="Acme",
     )
 
 

@@ -22,7 +22,6 @@ from tempfile import TemporaryDirectory
 
 from company_discovery.readiness import build_report
 
-
 _VARS = (
     "DIRECTJOB_EMAIL_BACKEND",
     "DIRECTJOB_PUBLIC_URL",

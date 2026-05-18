@@ -93,7 +93,11 @@ def rank_candidates(
         role_score = min(1.0, 0.4 + role_overlap * 0.15) if role_overlap else 0.3
         industry_score = 0.6 if industry_token and industry_token in haystack else 0.4
         location_score = 0.0
-        if location_token and isinstance(location_hint, str) and location_token in _normalise(location_hint):
+        if (
+            location_token
+            and isinstance(location_hint, str)
+            and location_token in _normalise(location_hint)
+        ):
             location_score = 0.15
         curated_boost = 0.05 if candidate.get("type") == "company" else 0.0
 
@@ -127,9 +131,9 @@ def rank_candidates(
         new_candidate = dict(candidate)
         new_candidate["relevanceScore"] = composite
         new_candidate["relevanceBreakdown"] = breakdown
-        existing_reason = (
-            str(candidate.get("relevance_reason") or candidate.get("relevanceReason") or "").strip()
-        )
+        existing_reason = str(
+            candidate.get("relevance_reason") or candidate.get("relevanceReason") or ""
+        ).strip()
         new_candidate["relevanceReason"] = (
             f"{existing_reason} ({explanation})" if existing_reason else explanation
         )

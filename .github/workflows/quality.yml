@@ -1,0 +1,137 @@
+# Code quality workflow.
+#
+# Single workflow running ruff (lint + format-check), mypy on the
+# strict-checked module subset, codespell, pip-audit (dependency
+# vulnerability scan), and pytest with coverage upload to Codecov.
+#
+# The README's "quality" badge reflects this workflow's status.
+#
+# Security note: no untrusted GitHub event payload fields (issue
+# titles, PR bodies, commit messages, head refs, etc.) flow into any
+# ``run:`` step in this workflow. See
+# https://github.blog/security/vulnerability-research/how-to-catch-github-actions-workflow-injections-before-attackers-do/
+
+name: quality
+
+on:
+  push:
+    branches:
+      - main
+      - "claude/**"
+  pull_request:
+    branches:
+      - main
+      - "claude/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ruff-lint:
+    name: ruff (lint + format-check)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install dev tooling
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -r requirements-dev.txt
+      - name: ruff check
+        run: ruff check .
+      - name: ruff format --check
+        run: ruff format --check .
+
+  mypy-strict-subset:
+    name: mypy (strict-checked subset)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install runtime + dev tooling
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -r requirements-dev.txt
+      - name: mypy on the strict-checked subset
+        # The subset listed here matches pyproject.toml
+        # [[tool.mypy.overrides]] module list. The list grows as more
+        # modules are brought up to the strict bar.
+        run: |
+          mypy \
+            company_discovery/audit_log.py \
+            company_discovery/crypto_kit.py \
+            mcp_server.py
+
+  codespell:
+    name: codespell
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install codespell
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+      - name: codespell
+        run: codespell
+
+  pip-audit:
+    name: pip-audit (dependency vulnerability scan)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install runtime + dev tooling
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -r requirements-dev.txt
+      - name: pip-audit
+        # Strict mode fails on any vulnerability. Pinned ranges in
+        # requirements.txt are reviewed quarterly to refresh the
+        # security posture.
+        run: pip-audit -r requirements.txt -r requirements-dev.txt --strict
+
+  coverage:
+    name: coverage (unittest + Codecov upload)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install runtime + dev tooling
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -r requirements-dev.txt
+      - name: Run unittest under coverage
+        run: |
+          coverage run -m unittest discover -s tests
+          coverage xml -o coverage.xml
+          coverage report
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          files: coverage.xml
+          fail_ci_if_error: false
+          # Codecov uploads succeed without a token for public repos.
+          # If the repo is set to private the maintainer adds CODECOV_TOKEN
+          # to the repo secrets.

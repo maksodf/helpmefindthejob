@@ -32,9 +32,9 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from app import (
-    AppState,
     PASSWORD_RESET_REQUEST_LIMIT,
     REGISTER_REQUEST_LIMIT,
+    AppState,
 )
 
 

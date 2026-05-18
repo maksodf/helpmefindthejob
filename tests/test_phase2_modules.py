@@ -14,14 +14,13 @@ exports, onboarding, watchlist_templates, digests, billing.
 from __future__ import annotations
 
 import json
+import os
 import unittest
 from datetime import datetime, timezone
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from company_discovery.ai_providers import AIProviderConfig
-import os
-
 from company_discovery.billing import (
     ManualBillingBackend,
     StripeBillingBackend,
@@ -96,8 +95,18 @@ class PersonaRankingTests(unittest.TestCase):
 
     def test_location_boost(self) -> None:
         candidates = [
-            {"name": "BerlinCo", "sector": "Hospital", "location_hint": "Berlin", "type": "company"},
-            {"name": "MunichCo", "sector": "Hospital", "location_hint": "Munich", "type": "company"},
+            {
+                "name": "BerlinCo",
+                "sector": "Hospital",
+                "location_hint": "Berlin",
+                "type": "company",
+            },
+            {
+                "name": "MunichCo",
+                "sector": "Hospital",
+                "location_hint": "Munich",
+                "type": "company",
+            },
         ]
         ranked = rank_candidates(
             candidates, target_roles=["Project Manager"], industry="Healthcare", location="Berlin"
@@ -107,50 +116,98 @@ class PersonaRankingTests(unittest.TestCase):
 
 class DiscoveryProviderTests(unittest.TestCase):
     def test_mock_provider_filters_and_scores(self) -> None:
-        provider = MockSearchProvider(fixture_companies=[
-            DiscoveryResult(name="DigitalHealthCo", website_url="https://digital.example",
-                            sector="Digital Health", relevance_score=0.5, relevance_reason="Digital health products"),
-            DiscoveryResult(name="GenericCo", website_url="https://generic.example",
-                            sector="Other", relevance_score=0.5, relevance_reason="general business"),
-        ])
-        results = provider.discover(target_roles=["Digital Health"], industry="Healthcare", location=None, limit=10)
+        provider = MockSearchProvider(
+            fixture_companies=[
+                DiscoveryResult(
+                    name="DigitalHealthCo",
+                    website_url="https://digital.example",
+                    sector="Digital Health",
+                    relevance_score=0.5,
+                    relevance_reason="Digital health products",
+                ),
+                DiscoveryResult(
+                    name="GenericCo",
+                    website_url="https://generic.example",
+                    sector="Other",
+                    relevance_score=0.5,
+                    relevance_reason="general business",
+                ),
+            ]
+        )
+        results = provider.discover(
+            target_roles=["Digital Health"], industry="Healthcare", location=None, limit=10
+        )
         self.assertEqual(results[0].name, "DigitalHealthCo")
 
     def test_greenhouse_feed_provider_counts_matches(self) -> None:
-        body = json.dumps({
-            "jobs": [
-                {"title": "Healthcare Project Manager", "absolute_url": "https://boards.greenhouse.io/acme/jobs/1"},
-                {"title": "Backend Engineer", "absolute_url": "https://boards.greenhouse.io/acme/jobs/2"},
-            ]
-        })
-        provider = GreenhouseFeedProvider(company_name="Acme", board_url="https://boards.greenhouse.io/acme")
+        body = json.dumps(
+            {
+                "jobs": [
+                    {
+                        "title": "Healthcare Project Manager",
+                        "absolute_url": "https://boards.greenhouse.io/acme/jobs/1",
+                    },
+                    {
+                        "title": "Backend Engineer",
+                        "absolute_url": "https://boards.greenhouse.io/acme/jobs/2",
+                    },
+                ]
+            }
+        )
+        provider = GreenhouseFeedProvider(
+            company_name="Acme", board_url="https://boards.greenhouse.io/acme"
+        )
         results = provider.discover(
-            target_roles=["healthcare"], industry="Healthcare", location=None, limit=5, body=body,
+            target_roles=["healthcare"],
+            industry="Healthcare",
+            location=None,
+            limit=5,
+            body=body,
         )
         self.assertEqual(results[0].source, "greenhouse_feed")
         self.assertGreater(results[0].relevance_score, 0.55)
         self.assertEqual(results[0].raw["match_count"], 1)
 
     def test_lever_feed_provider(self) -> None:
-        body = json.dumps([
-            {"text": "Health Consultant", "categories": {"location": "Berlin"}},
-            {"text": "Designer", "categories": {"location": "Remote"}},
-        ])
+        body = json.dumps(
+            [
+                {"text": "Health Consultant", "categories": {"location": "Berlin"}},
+                {"text": "Designer", "categories": {"location": "Remote"}},
+            ]
+        )
         provider = LeverFeedProvider(company_name="Acme", board_url="https://jobs.lever.co/acme")
         results = provider.discover(
-            target_roles=["health"], industry="Healthcare", location="Berlin", limit=5, body=body,
+            target_roles=["health"],
+            industry="Healthcare",
+            location="Berlin",
+            limit=5,
+            body=body,
         )
         self.assertEqual(results[0].source, "lever_feed")
 
     def test_engine_dedups_by_host(self) -> None:
-        a = MockSearchProvider(fixture_companies=[
-            DiscoveryResult(name="Same", website_url="https://same.example", sector="Hospital",
-                            relevance_score=0.8, relevance_reason="..."),
-        ])
-        b = MockSearchProvider(fixture_companies=[
-            DiscoveryResult(name="Same Twin", website_url="https://same.example", sector="Hospital",
-                            relevance_score=0.7, relevance_reason="..."),
-        ])
+        a = MockSearchProvider(
+            fixture_companies=[
+                DiscoveryResult(
+                    name="Same",
+                    website_url="https://same.example",
+                    sector="Hospital",
+                    relevance_score=0.8,
+                    relevance_reason="...",
+                ),
+            ]
+        )
+        b = MockSearchProvider(
+            fixture_companies=[
+                DiscoveryResult(
+                    name="Same Twin",
+                    website_url="https://same.example",
+                    sector="Hospital",
+                    relevance_score=0.7,
+                    relevance_reason="...",
+                ),
+            ]
+        )
         engine = DiscoveryEngine(providers=[a, b])
         results = engine.discover(target_roles=[], industry="Healthcare", location=None, limit=5)
         self.assertEqual(len(results), 1)
@@ -229,11 +286,27 @@ class ExportsTests(unittest.TestCase):
 
 class OnboardingTests(unittest.TestCase):
     def test_checklist_marks_completion_correctly(self) -> None:
-        company = Company(user_id="u1", name="X", website_url="https://x.example", career_page_url="https://x.example/c")
-        discovered = DiscoveredJob(user_id="u1", company_id=company.id, source_url="https://x.example/j", title="Healthcare")
-        imported = ImportedJob(user_id="u1", company_id=company.id, discovered_job_id=discovered.id,
-                                source_url="https://x.example/j", title="Healthcare", company_name="X",
-                                analysis_status="completed")
+        company = Company(
+            user_id="u1",
+            name="X",
+            website_url="https://x.example",
+            career_page_url="https://x.example/c",
+        )
+        discovered = DiscoveredJob(
+            user_id="u1",
+            company_id=company.id,
+            source_url="https://x.example/j",
+            title="Healthcare",
+        )
+        imported = ImportedJob(
+            user_id="u1",
+            company_id=company.id,
+            discovered_job_id=discovered.id,
+            source_url="https://x.example/j",
+            title="Healthcare",
+            company_name="X",
+            analysis_status="completed",
+        )
         steps = build_checklist(
             companies=[company],
             discovered_jobs=[discovered],
@@ -274,7 +347,9 @@ class DigestsTests(unittest.TestCase):
             location="Berlin",
             discovered_at=datetime.now(timezone.utc),
         )
-        text = build_digest(user_email="alex@example.com", companies=[company], discovered_jobs=[recent])
+        text = build_digest(
+            user_email="alex@example.com", companies=[company], discovered_jobs=[recent]
+        )
         self.assertIn("Hi alex", text)
         self.assertIn("Healthcare Project Manager", text)
         self.assertIn("X", text)
@@ -289,7 +364,11 @@ class BillingTests(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             backend = ManualBillingBackend(path=Path(tmp) / "billing.json")
             self.assertEqual(backend.load().plan_id, "pilot")
-            sub = backend.save(Subscription(plan_id="team", status="active", seats=5, customer_email="x@example.com"))
+            sub = backend.save(
+                Subscription(
+                    plan_id="team", status="active", seats=5, customer_email="x@example.com"
+                )
+            )
             again = backend.load()
             self.assertEqual(again.plan_id, "team")
             self.assertEqual(again.seats, 5)
@@ -323,7 +402,11 @@ class BillingTests(unittest.TestCase):
             captured["method"] = method
             captured["url"] = url
             captured["form"] = dict(form)
-            return {"id": "cs_test_123", "url": "https://checkout.stripe.test/cs_test_123", "expires_at": 1234567890}
+            return {
+                "id": "cs_test_123",
+                "url": "https://checkout.stripe.test/cs_test_123",
+                "expires_at": 1234567890,
+            }
 
         with TemporaryDirectory() as tmp:
             os.environ["DIRECTJOB_STRIPE_API_KEY"] = "sk_test_dummy"
@@ -331,11 +414,19 @@ class BillingTests(unittest.TestCase):
             os.environ["DIRECTJOB_STRIPE_SUCCESS_URL"] = "https://example/ok"
             os.environ["DIRECTJOB_STRIPE_CANCEL_URL"] = "https://example/cancel"
             try:
-                backend = StripeBillingBackend(path=Path(tmp) / "billing.json", transport=fake_transport)
-                session = backend.create_checkout_session(plan_id="team", customer_email="x@example.com")
+                backend = StripeBillingBackend(
+                    path=Path(tmp) / "billing.json", transport=fake_transport
+                )
+                session = backend.create_checkout_session(
+                    plan_id="team", customer_email="x@example.com"
+                )
             finally:
-                for key in ("DIRECTJOB_STRIPE_API_KEY", "DIRECTJOB_STRIPE_PRICE_TEAM",
-                            "DIRECTJOB_STRIPE_SUCCESS_URL", "DIRECTJOB_STRIPE_CANCEL_URL"):
+                for key in (
+                    "DIRECTJOB_STRIPE_API_KEY",
+                    "DIRECTJOB_STRIPE_PRICE_TEAM",
+                    "DIRECTJOB_STRIPE_SUCCESS_URL",
+                    "DIRECTJOB_STRIPE_CANCEL_URL",
+                ):
                     os.environ.pop(key, None)
         self.assertEqual(session["id"], "cs_test_123")
         self.assertEqual(captured["method"], "POST")

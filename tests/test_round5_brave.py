@@ -40,16 +40,28 @@ class BraveSearchProviderTests(unittest.TestCase):
 
     def test_no_api_key_returns_empty(self) -> None:
         provider = BraveSearchProvider(api_key="")
-        out = provider.discover(target_roles=["backend"], industry="Tech", location="Berlin", limit=5)
+        out = provider.discover(
+            target_roles=["backend"], industry="Tech", location="Berlin", limit=5
+        )
         self.assertEqual(out, [])
 
     def test_filters_restricted_hosts(self) -> None:
         body = self._payload(
-            {"url": "https://www.linkedin.com/jobs/123", "title": "On LinkedIn", "description": "noise"},
-            {"url": "https://acme.example.com/careers", "title": "Careers - Acme", "description": "Backend role at Acme"},
+            {
+                "url": "https://www.linkedin.com/jobs/123",
+                "title": "On LinkedIn",
+                "description": "noise",
+            },
+            {
+                "url": "https://acme.example.com/careers",
+                "title": "Careers - Acme",
+                "description": "Backend role at Acme",
+            },
         )
         provider = BraveSearchProvider(api_key="key", fetcher=_FakeFetcher(body=body))
-        out = provider.discover(target_roles=["backend"], industry="Tech", location="Berlin", limit=5)
+        out = provider.discover(
+            target_roles=["backend"], industry="Tech", location="Berlin", limit=5
+        )
         self.assertEqual(len(out), 1)
         self.assertEqual(out[0].name, "Careers")  # split on " - " keeps left side
 
@@ -63,14 +75,18 @@ class BraveSearchProviderTests(unittest.TestCase):
         self.assertEqual(out[0].source, "brave_search")
 
     def test_falls_back_to_host_when_no_separator(self) -> None:
-        body = self._payload({"url": "https://widgets.example/careers", "title": "Plain title", "description": ""})
+        body = self._payload(
+            {"url": "https://widgets.example/careers", "title": "Plain title", "description": ""}
+        )
         provider = BraveSearchProvider(api_key="key", fetcher=_FakeFetcher(body=body))
         out = provider.discover(target_roles=["pm"], industry="Tech", location="Madrid", limit=5)
         # No separator in title → fall back to the hostname's first segment.
         self.assertEqual(out[0].name, "Widgets")
 
     def test_query_includes_roles_industry_location(self) -> None:
-        body = self._payload({"url": "https://acme.example/careers", "title": "Careers - Acme", "description": ""})
+        body = self._payload(
+            {"url": "https://acme.example/careers", "title": "Careers - Acme", "description": ""}
+        )
         fetcher = _FakeFetcher(body=body)
         provider = BraveSearchProvider(api_key="key", fetcher=fetcher)
         provider.discover(
@@ -88,10 +104,16 @@ class BraveSearchProviderTests(unittest.TestCase):
         self.assertEqual(out, [])
 
     def test_respects_limit(self) -> None:
-        body = self._payload(*[
-            {"url": f"https://acme{i}.example/careers", "title": f"Careers - Acme{i}", "description": ""}
-            for i in range(5)
-        ])
+        body = self._payload(
+            *[
+                {
+                    "url": f"https://acme{i}.example/careers",
+                    "title": f"Careers - Acme{i}",
+                    "description": "",
+                }
+                for i in range(5)
+            ]
+        )
         provider = BraveSearchProvider(api_key="key", fetcher=_FakeFetcher(body=body))
         out = provider.discover(target_roles=["backend"], industry="Tech", location=None, limit=2)
         self.assertEqual(len(out), 2)

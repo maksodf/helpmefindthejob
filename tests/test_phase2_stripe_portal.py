@@ -55,13 +55,17 @@ class StripePortalSessionTests(unittest.TestCase):
 
         self.assertEqual(result["id"], "bps_test_123")
         self.assertEqual(result["url"], "https://billing.stripe.example/p/bps_test_123")
-        self.assertEqual(result["returnUrl"], "https://app.directjob-scout.example/?billing=portal-return")
+        self.assertEqual(
+            result["returnUrl"], "https://app.directjob-scout.example/?billing=portal-return"
+        )
         # Verify the form fields posted upstream.
         method, url, form = transport.calls[0]
         self.assertEqual(method, "POST")
         self.assertEqual(url, "https://api.stripe.com/v1/billing_portal/sessions")
         self.assertEqual(form["customer"], "cus_test_123")
-        self.assertEqual(form["return_url"], "https://app.directjob-scout.example/?billing=portal-return")
+        self.assertEqual(
+            form["return_url"], "https://app.directjob-scout.example/?billing=portal-return"
+        )
 
     def test_missing_api_key_raises(self) -> None:
         backend = StripeBillingBackend(transport=FakeStripeTransport({}))
@@ -87,13 +91,17 @@ class CustomerIdPropagationTests(unittest.TestCase):
         before = Subscription()
         event = {
             "type": "checkout.session.completed",
-            "data": {"object": {
-                "customer": "cus_alice",
-                "customer_email": "alice@example.com",
-                "line_items": [{"price": {"id": "price_team"}}],
-            }},
+            "data": {
+                "object": {
+                    "customer": "cus_alice",
+                    "customer_email": "alice@example.com",
+                    "line_items": [{"price": {"id": "price_team"}}],
+                }
+            },
         }
-        after = apply_stripe_event(event, before, plan_resolver=lambda p: "team" if p == "price_team" else "")
+        after = apply_stripe_event(
+            event, before, plan_resolver=lambda p: "team" if p == "price_team" else ""
+        )
         self.assertEqual(after.customer_id, "cus_alice")
         self.assertEqual(after.customer_email, "alice@example.com")
         self.assertEqual(after.plan_id, "team")
@@ -102,11 +110,13 @@ class CustomerIdPropagationTests(unittest.TestCase):
         before = Subscription(customer_id="cus_existing", plan_id="team")
         event = {
             "type": "customer.subscription.updated",
-            "data": {"object": {
-                "customer": "cus_existing",
-                "status": "active",
-                "items": {"data": [{"price": {"id": "price_team"}}]},
-            }},
+            "data": {
+                "object": {
+                    "customer": "cus_existing",
+                    "status": "active",
+                    "items": {"data": [{"price": {"id": "price_team"}}]},
+                }
+            },
         }
         after = apply_stripe_event(event, before, plan_resolver=lambda p: "team")
         self.assertEqual(after.customer_id, "cus_existing")

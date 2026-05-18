@@ -32,7 +32,6 @@ import base64
 import re
 from typing import Final
 
-
 MAX_RAW_BYTES: Final[int] = 512 * 1024  # 512KB raw image (~700KB b64)
 
 
@@ -99,7 +98,7 @@ def _strip_jpeg_exif(raw: bytes) -> bytes:
             return raw
         # Standalone markers (no length field): SOI/EOI/RSTn.
         if marker in {0xD8, 0xD9} or 0xD0 <= marker <= 0xD7:
-            out.extend(raw[i:i + 2])
+            out.extend(raw[i : i + 2])
             i += 2
             continue
         # SOS (FFDA) signals start-of-scan; everything after is image
@@ -138,8 +137,8 @@ def _strip_png_metadata(raw: bytes) -> bytes:
     while i < n:
         if i + 8 > n:
             return raw
-        length = int.from_bytes(raw[i:i + 4], "big")
-        chunk_type = raw[i + 4:i + 8]
+        length = int.from_bytes(raw[i : i + 4], "big")
+        chunk_type = raw[i + 4 : i + 8]
         chunk_end = i + 8 + length + 4
         if chunk_end > n:
             return raw

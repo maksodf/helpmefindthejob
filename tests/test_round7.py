@@ -58,7 +58,9 @@ class StripeWebhookSignatureTests(unittest.TestCase):
         payload = b"{}"
         secret = "whsec_test"
         header = self._sign(payload, secret, ts=int(time.time()) - 600)
-        self.assertFalse(verify_stripe_webhook_signature(payload, header, secret, tolerance_seconds=300))
+        self.assertFalse(
+            verify_stripe_webhook_signature(payload, header, secret, tolerance_seconds=300)
+        )
 
 
 class StripeEventApplyTests(unittest.TestCase):
@@ -73,7 +75,9 @@ class StripeEventApplyTests(unittest.TestCase):
             },
         }
         current = Subscription(plan_id="pilot", status="pending")
-        next_state = apply_stripe_event(event, current, plan_resolver=lambda p: "team" if "team" in p else "")
+        next_state = apply_stripe_event(
+            event, current, plan_resolver=lambda p: "team" if "team" in p else ""
+        )
         self.assertEqual(next_state.status, "active")
         self.assertEqual(next_state.plan_id, "team")
         self.assertEqual(next_state.customer_email, "buyer@example.com")

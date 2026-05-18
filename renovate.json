@@ -1,0 +1,76 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":dependencyDashboard",
+    ":semanticCommits",
+    ":separateMajorReleases",
+    ":automergeMinor",
+    ":automergeLinters",
+    ":automergeTesters"
+  ],
+  "description": [
+    "DirectJob Scout dependency-automation config. Renovate watches",
+    "requirements.txt and requirements-dev.txt for outdated pins and",
+    "opens PRs when updates are available.",
+    "",
+    "Activation: install the Renovate GitHub App on the repository.",
+    "This config file is the contract between the project and the app;",
+    "without the app installed nothing happens.",
+    "",
+    "Groupings: minor and patch updates of dev tooling and runtime",
+    "dependencies are grouped weekly. Major releases get their own PRs",
+    "with explicit reviewer attention. Security updates land",
+    "immediately regardless of schedule.",
+    "",
+    "Auto-merge is enabled for minor + patch updates of linters",
+    "(ruff, codespell, mypy) and test tools (coverage, pip-audit) —",
+    "these are low-risk and unblock CI without manual review."
+  ],
+  "schedule": [
+    "before 6am on monday"
+  ],
+  "timezone": "Europe/Berlin",
+  "packageRules": [
+    {
+      "description": "Group dev-tooling minor/patch updates into a single weekly PR.",
+      "matchManagers": ["pip_requirements"],
+      "matchFileNames": ["requirements-dev.txt"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "dev-tooling-weekly",
+      "schedule": ["before 6am on monday"]
+    },
+    {
+      "description": "Group runtime minor/patch updates into a single weekly PR.",
+      "matchManagers": ["pip_requirements"],
+      "matchFileNames": ["requirements.txt"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "runtime-weekly",
+      "schedule": ["before 6am on monday"]
+    },
+    {
+      "description": "cryptography major releases get explicit reviewer attention because the encryption-at-rest format and the AI-Act audit-log salt hashing depend on this dependency.",
+      "matchManagers": ["pip_requirements"],
+      "matchPackageNames": ["cryptography"],
+      "matchUpdateTypes": ["major"],
+      "labels": ["security-review-needed"],
+      "automerge": false
+    },
+    {
+      "description": "Pin GitHub Actions to commit SHAs to satisfy OpenSSF Scorecard.",
+      "matchManagers": ["github-actions"],
+      "pinDigests": true
+    }
+  ],
+  "vulnerabilityAlerts": {
+    "labels": ["security", "high-priority"],
+    "automerge": false
+  },
+  "prConcurrentLimit": 5,
+  "prHourlyLimit": 4,
+  "dependencyDashboardTitle": "Renovate dependency dashboard",
+  "rebaseWhen": "behind-base-branch",
+  "lockFileMaintenance": {
+    "enabled": false
+  }
+}

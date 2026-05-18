@@ -38,14 +38,27 @@ class RegistryShapeTests(unittest.TestCase):
         names = set(REGISTRY)
         self.assertEqual(
             names,
-            {"add_company", "create_saved_search", "find_jobs",
-             "update_profile", "mark_applied",
-             "tailor_cv", "run_saved_search", "set_persona",
-             "delete_company", "open_cv_builder",
-             "start_job_journey", "accept_cv_text", "build_cv_via_chat",
-             "draft_motivation_letter", "suggest_cv_enhancements",
-             "show_view", "delete_account", "download_cv",
-             "help"},
+            {
+                "add_company",
+                "create_saved_search",
+                "find_jobs",
+                "update_profile",
+                "mark_applied",
+                "tailor_cv",
+                "run_saved_search",
+                "set_persona",
+                "delete_company",
+                "open_cv_builder",
+                "start_job_journey",
+                "accept_cv_text",
+                "build_cv_via_chat",
+                "draft_motivation_letter",
+                "suggest_cv_enhancements",
+                "show_view",
+                "delete_account",
+                "download_cv",
+                "help",
+            },
         )
 
     def test_every_command_has_label_and_description(self):
@@ -55,8 +68,7 @@ class RegistryShapeTests(unittest.TestCase):
 
     def test_every_command_has_at_least_one_slash_alias(self):
         for cmd in REGISTRY.values():
-            self.assertTrue(cmd.slash_aliases,
-                              f"{cmd.name} has no slash aliases")
+            self.assertTrue(cmd.slash_aliases, f"{cmd.name} has no slash aliases")
 
     def test_list_commands_payload_shape(self):
         payload = list_commands()
@@ -104,18 +116,15 @@ class V2CommandRoutingTests(unittest.TestCase):
         self.assertEqual(result[1], "job_abc123")
 
     def test_tailor_keyword(self):
-        self.assertEqual(keyword_route("tailor my CV for this role"),
-                          "tailor_cv")
-        self.assertEqual(keyword_route("rewrite my resume"),
-                          "tailor_cv")
+        self.assertEqual(keyword_route("tailor my CV for this role"), "tailor_cv")
+        self.assertEqual(keyword_route("rewrite my resume"), "tailor_cv")
 
     def test_run_search_alias(self):
         result = parse_slash_command("/run-search search_xyz")
         self.assertEqual(result[0], "run_saved_search")
 
     def test_run_search_keyword(self):
-        self.assertEqual(keyword_route("run my saved search"),
-                          "run_saved_search")
+        self.assertEqual(keyword_route("run my saved search"), "run_saved_search")
 
     def test_set_persona_alias(self):
         result = parse_slash_command("/persona tech")
@@ -123,32 +132,26 @@ class V2CommandRoutingTests(unittest.TestCase):
         self.assertEqual(result[1], "tech")
 
     def test_set_persona_keyword(self):
-        self.assertEqual(keyword_route("change my persona"),
-                          "set_persona")
-        self.assertEqual(keyword_route("set my persona"),
-                          "set_persona")
+        self.assertEqual(keyword_route("change my persona"), "set_persona")
+        self.assertEqual(keyword_route("set my persona"), "set_persona")
 
     def test_delete_company_alias(self):
         result = parse_slash_command("/unwatch company_abc")
         self.assertEqual(result[0], "delete_company")
 
     def test_delete_company_keyword(self):
-        self.assertEqual(keyword_route("stop watching"),
-                          "delete_company")
-        self.assertEqual(keyword_route("remove a company"),
-                          "delete_company")
+        self.assertEqual(keyword_route("stop watching"), "delete_company")
+        self.assertEqual(keyword_route("remove a company"), "delete_company")
 
 
 class SlashInlineArgsTests(unittest.TestCase):
     def test_two_positional_args(self):
-        args = parse_slash_inline_args(
-            "add_company", "Charité https://charite.de")
+        args = parse_slash_inline_args("add_company", "Charité https://charite.de")
         self.assertEqual(args["name"], "Charité")
         self.assertEqual(args["websiteUrl"], "https://charite.de")
 
     def test_quoted_arg_preserves_spaces(self):
-        args = parse_slash_inline_args(
-            "add_company", '"Acme Corp Berlin" https://acme.example')
+        args = parse_slash_inline_args("add_company", '"Acme Corp Berlin" https://acme.example')
         self.assertEqual(args["name"], "Acme Corp Berlin")
         self.assertEqual(args["websiteUrl"], "https://acme.example")
 
@@ -157,23 +160,19 @@ class SlashInlineArgsTests(unittest.TestCase):
 
     def test_optional_param_filled_when_provided(self):
         args = parse_slash_inline_args(
-            "add_company", "Acme https://x.example https://x.example/careers")
-        self.assertEqual(args.get("careerPageUrl"),
-                          "https://x.example/careers")
+            "add_company", "Acme https://x.example https://x.example/careers"
+        )
+        self.assertEqual(args.get("careerPageUrl"), "https://x.example/careers")
 
 
 class KeywordRouteTests(unittest.TestCase):
     def test_add_company_intent(self):
-        self.assertEqual(keyword_route("I want to add a company"),
-                          "add_company")
-        self.assertEqual(keyword_route("can you watch a company for me"),
-                          "add_company")
+        self.assertEqual(keyword_route("I want to add a company"), "add_company")
+        self.assertEqual(keyword_route("can you watch a company for me"), "add_company")
 
     def test_find_jobs_intent(self):
-        self.assertEqual(keyword_route("find me jobs in Berlin"),
-                          "find_jobs")
-        self.assertEqual(keyword_route("search for senior roles"),
-                          "find_jobs")
+        self.assertEqual(keyword_route("find me jobs in Berlin"), "find_jobs")
+        self.assertEqual(keyword_route("search for senior roles"), "find_jobs")
 
     def test_help_intent(self):
         self.assertEqual(keyword_route("help"), "help")
@@ -185,19 +184,18 @@ class KeywordRouteTests(unittest.TestCase):
 
 class AIRouterResponseTests(unittest.TestCase):
     def test_clean_response(self):
-        self.assertEqual(parse_ai_router_response("add_company"),
-                          "add_company")
+        self.assertEqual(parse_ai_router_response("add_company"), "add_company")
 
     def test_quoted_response(self):
-        self.assertEqual(parse_ai_router_response("`add_company`"),
-                          "add_company")
-        self.assertEqual(parse_ai_router_response("'add_company'"),
-                          "add_company")
+        self.assertEqual(parse_ai_router_response("`add_company`"), "add_company")
+        self.assertEqual(parse_ai_router_response("'add_company'"), "add_company")
 
     def test_first_token_only(self):
         # AI returns trailing prose — first token wins.
-        self.assertEqual(parse_ai_router_response("add_company because the user wants to watch a company"),
-                          "add_company")
+        self.assertEqual(
+            parse_ai_router_response("add_company because the user wants to watch a company"),
+            "add_company",
+        )
 
     def test_unknown_response(self):
         self.assertIsNone(parse_ai_router_response("unknown"))
@@ -205,39 +203,42 @@ class AIRouterResponseTests(unittest.TestCase):
         self.assertIsNone(parse_ai_router_response(""))
 
     def test_json_command_only(self):
-        self.assertEqual(parse_ai_router_response(
-            '{"command": "find_jobs"}'), "find_jobs")
+        self.assertEqual(parse_ai_router_response('{"command": "find_jobs"}'), "find_jobs")
 
     def test_json_with_args(self):
-        self.assertEqual(parse_ai_router_response(
-            '{"command": "add_company", "args": {"name": "Acme"}}'),
-            "add_company")
+        self.assertEqual(
+            parse_ai_router_response('{"command": "add_company", "args": {"name": "Acme"}}'),
+            "add_company",
+        )
 
     def test_json_unknown_command(self):
-        self.assertIsNone(parse_ai_router_response(
-            '{"command": "do_anything"}'))
+        self.assertIsNone(parse_ai_router_response('{"command": "do_anything"}'))
 
     def test_json_malformed_falls_back_to_first_token(self):
         # Truncated JSON; the regex grabs nothing usable. First-token
         # path also fails because there's no bare command id. → None.
-        self.assertIsNone(parse_ai_router_response(
-            '{"command":'))
+        self.assertIsNone(parse_ai_router_response('{"command":'))
 
 
 class AIRouterArgExtractionTests(unittest.TestCase):
     def test_extracts_string_args(self):
         from company_discovery.chat_router import parse_ai_router_extracted_args
+
         out = parse_ai_router_extracted_args(
             '{"command": "add_company", "args": '
             '{"name": "Acme Corp", "websiteUrl": "https://acme.example"}}'
         )
-        self.assertEqual(out, {
-            "name": "Acme Corp",
-            "websiteUrl": "https://acme.example",
-        })
+        self.assertEqual(
+            out,
+            {
+                "name": "Acme Corp",
+                "websiteUrl": "https://acme.example",
+            },
+        )
 
     def test_no_args_returns_empty_dict(self):
         from company_discovery.chat_router import parse_ai_router_extracted_args
+
         self.assertEqual(
             parse_ai_router_extracted_args('{"command": "find_jobs"}'),
             {},
@@ -245,21 +246,24 @@ class AIRouterArgExtractionTests(unittest.TestCase):
 
     def test_legacy_bare_name_returns_empty(self):
         from company_discovery.chat_router import parse_ai_router_extracted_args
+
         self.assertEqual(parse_ai_router_extracted_args("find_jobs"), {})
 
     def test_null_arg_values_filtered_out(self):
         from company_discovery.chat_router import parse_ai_router_extracted_args
+
         out = parse_ai_router_extracted_args(
-            '{"command": "add_company", "args": '
-            '{"name": "X", "careerPageUrl": null}}'
+            '{"command": "add_company", "args": {"name": "X", "careerPageUrl": null}}'
         )
         self.assertEqual(out, {"name": "X"})
 
     def test_malformed_json_returns_empty(self):
         from company_discovery.chat_router import parse_ai_router_extracted_args
-        self.assertEqual(parse_ai_router_extracted_args(
-            '{"command": "add_company", "args": {NOT VALID JSON}'),
-            {})
+
+        self.assertEqual(
+            parse_ai_router_extracted_args('{"command": "add_company", "args": {NOT VALID JSON}'),
+            {},
+        )
 
 
 class ValidatorTests(unittest.TestCase):

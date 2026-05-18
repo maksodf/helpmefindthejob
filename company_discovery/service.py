@@ -18,10 +18,16 @@ from urllib.parse import urljoin, urlparse
 
 from . import ats_adapters
 from .curated_companies import suggest_curated_companies
-from .models import CareerPageScan, Company, CompanyDiscoveryRun, DiscoveredJob, ImportedJob, now_utc
+from .models import (
+    CareerPageScan,
+    Company,
+    CompanyDiscoveryRun,
+    DiscoveredJob,
+    ImportedJob,
+    now_utc,
+)
 from .personas import DEFAULT_PERSONA_ID, get_persona
 from .repository import InMemoryCompanyDiscoveryRepository
-
 
 CAREER_LINK_TERMS = (
     # English
@@ -350,7 +356,11 @@ def robots_allows(robots_txt: str, target_url: str, user_agent: str) -> bool:
             continue
         if _pattern_matches(path, pattern):
             specificity = len(pattern.replace("*", "").replace("$", ""))
-            if best is None or specificity > best[0] or (specificity == best[0] and directive == "allow"):
+            if (
+                best is None
+                or specificity > best[0]
+                or (specificity == best[0] and directive == "allow")
+            ):
                 best = (specificity, directive)
     if best is None:
         return True
@@ -391,7 +401,12 @@ def extract_location_from_structured_data(data: dict[str, Any]) -> str | None:
         return str(data["jobLocationType"])
     location = data.get("jobLocation") or data.get("applicantLocationRequirements")
     if isinstance(location, list):
-        return ", ".join(filter(None, (extract_location_from_structured_data({"jobLocation": item}) for item in location)))
+        return ", ".join(
+            filter(
+                None,
+                (extract_location_from_structured_data({"jobLocation": item}) for item in location),
+            )
+        )
     if isinstance(location, dict):
         address = location.get("address")
         if isinstance(address, dict):
@@ -478,7 +493,11 @@ class CompanyDiscoveryService:
         role_text = " ".join(target_roles).casefold()
         industry_text = industry.casefold()
         concrete = suggest_curated_companies(
-            target_roles, industry, location, limit=8, persona_id=persona.id,
+            target_roles,
+            industry,
+            location,
+            limit=8,
+            persona_id=persona.id,
         )
         suggestions: list[dict[str, object]] = []
         for category in persona.category_suggestions:
@@ -500,14 +519,20 @@ class CompanyDiscoveryService:
                 }
             )
         ranked_categories = sorted(
-            suggestions, key=lambda item: item["relevanceScore"], reverse=True,
+            suggestions,
+            key=lambda item: item["relevanceScore"],
+            reverse=True,
         )
         return concrete + ranked_categories
 
     def find_company_career_page(self, user_id: str, company_id: str) -> dict[str, object]:
         company = self.repository.get_company(user_id, company_id)
         if is_restricted_platform(company.website_url):
-            return {"status": "blocked", "careerPageUrl": None, "errors": [{"code": "restricted_platform"}]}
+            return {
+                "status": "blocked",
+                "careerPageUrl": None,
+                "errors": [{"code": "restricted_platform"}],
+            }
         response, errors = self._fetch_allowed_page(company.website_url)
         if response is None:
             return {"status": "blocked", "careerPageUrl": None, "errors": errors}
@@ -518,17 +543,26 @@ class CompanyDiscoveryService:
                 "errors": [{"code": "homepage_unavailable", "statusCode": response.status_code}],
             }
         if looks_blocked(response.text):
-            return {"status": "blocked", "careerPageUrl": None, "errors": [{"code": "blocked_or_captcha"}]}
+            return {
+                "status": "blocked",
+                "careerPageUrl": None,
+                "errors": [{"code": "blocked_or_captcha"}],
+            }
         anchors = self._extract_anchors(response.text, company.website_url)
         candidates = [
             anchor
             for anchor in anchors
-            if any(term in f"{anchor['text']} {anchor['href']}".casefold() for term in CAREER_LINK_TERMS)
+            if any(
+                term in f"{anchor['text']} {anchor['href']}".casefold()
+                for term in CAREER_LINK_TERMS
+            )
             and not is_restricted_platform(anchor["absolute_url"])
         ]
         if not candidates:
             return {"status": "not_found", "careerPageUrl": None, "errors": []}
-        best = sorted(candidates, key=lambda anchor: self._career_link_score(anchor), reverse=True)[0]
+        best = sorted(candidates, key=lambda anchor: self._career_link_score(anchor), reverse=True)[
+            0
+        ]
         company.career_page_url = best["absolute_url"]
         self.repository.save_company(company)
         return {
@@ -584,7 +618,9 @@ class CompanyDiscoveryService:
             return self.repository.save_scan(scan)
 
         if run is None:
-            run = CompanyDiscoveryRun(user_id=user_id, company_id=company.id, source_type="career_page_scan")
+            run = CompanyDiscoveryRun(
+                user_id=user_id, company_id=company.id, source_type="career_page_scan"
+            )
         run.status = "running"
         self.repository.save_discovery_run(run)
         errors: list[dict[str, Any]] = []
@@ -592,7 +628,11 @@ class CompanyDiscoveryService:
         source_urls: list[str] = []
         response, fetch_errors = self._fetch_allowed_page(scan_url)
         if response is None:
-            status = "blocked_by_robots" if any(error.get("code") == "robots_disallowed" for error in fetch_errors) else "blocked_or_unavailable"
+            status = (
+                "blocked_by_robots"
+                if any(error.get("code") == "robots_disallowed" for error in fetch_errors)
+                else "blocked_or_unavailable"
+            )
             scan = CareerPageScan(
                 user_id=user_id,
                 company_id=company.id,
@@ -612,15 +652,45 @@ class CompanyDiscoveryService:
         pages_checked += 1
         source_urls.append(response.url)
         if response.status_code in {401, 403, 429} or response.status_code >= 500:
-            errors.append({"code": "page_unavailable_or_blocked", "statusCode": response.status_code, "url": scan_url})
-            return self._finish_scan(company, run, scan_url, "blocked_or_unavailable", True, True, pages_checked, 0, errors, source_urls)
+            errors.append(
+                {
+                    "code": "page_unavailable_or_blocked",
+                    "statusCode": response.status_code,
+                    "url": scan_url,
+                }
+            )
+            return self._finish_scan(
+                company,
+                run,
+                scan_url,
+                "blocked_or_unavailable",
+                True,
+                True,
+                pages_checked,
+                0,
+                errors,
+                source_urls,
+            )
         if looks_blocked(response.text):
             errors.append({"code": "blocked_or_captcha", "url": scan_url})
-            return self._finish_scan(company, run, scan_url, "blocked_or_captcha", True, True, pages_checked, 0, errors, source_urls)
+            return self._finish_scan(
+                company,
+                run,
+                scan_url,
+                "blocked_or_captcha",
+                True,
+                True,
+                pages_checked,
+                0,
+                errors,
+                source_urls,
+            )
 
         discovered = self.extract_direct_jobs_from_company_site(company, scan_url, response.text)
         if self.config.fetch_same_host_job_details:
-            discovered, detail_pages_checked, detail_urls, detail_errors = self._enrich_with_detail_pages(company, discovered, scan_url)
+            discovered, detail_pages_checked, detail_urls, detail_errors = (
+                self._enrich_with_detail_pages(company, discovered, scan_url)
+            )
             pages_checked += detail_pages_checked
             source_urls.extend(detail_urls)
             errors.extend(detail_errors)
@@ -632,6 +702,7 @@ class CompanyDiscoveryService:
         profile = self.repository.get_user_profile(user_id)
         if profile is not None and getattr(profile, "job_type_filter", ""):
             from company_discovery.job_type_filter import filter_jobs as _filter_jobs_by_type
+
             discovered = _filter_jobs_by_type(
                 discovered,
                 job_type=profile.job_type_filter,
@@ -656,15 +727,19 @@ class CompanyDiscoveryService:
                 }
                 duplicate.also_seen_at = existing_map
                 self.repository.save_discovered_job(duplicate)
-                merged_sources.append({
-                    "duplicateId": duplicate.id,
-                    "sourceUrl": job.source_url,
-                    "sourceHost": source_host,
-                })
+                merged_sources.append(
+                    {
+                        "duplicateId": duplicate.id,
+                        "sourceUrl": job.source_url,
+                        "sourceHost": source_host,
+                    }
+                )
                 continue
             saved_jobs.append(self.repository.save_discovered_job(job))
 
-        status = "completed" if (saved_jobs or merged_sources or not errors) else "completed_with_errors"
+        status = (
+            "completed" if (saved_jobs or merged_sources or not errors) else "completed_with_errors"
+        )
         scan = self._finish_scan(
             company,
             run,
@@ -680,14 +755,14 @@ class CompanyDiscoveryService:
         # Surface merge information through the scan record so the UI can
         # render a useful summary even when no new jobs landed.
         scan.errors = list(scan.errors)
-        scan.errors.extend(
-            {"code": "source_merged", **entry} for entry in merged_sources
-        )
+        scan.errors.extend({"code": "source_merged", **entry} for entry in merged_sources)
         if merged_sources:
             scan.errors.append({"code": "merged_sources_total", "count": len(merged_sources)})
         return scan
 
-    def extract_direct_jobs_from_company_site(self, company: Company, page_url: str, html: str) -> list[DiscoveredJob]:
+    def extract_direct_jobs_from_company_site(
+        self, company: Company, page_url: str, html: str
+    ) -> list[DiscoveredJob]:
         ats_result = ats_adapters.extract_jobs(company, page_url, html)
         if ats_result and ats_result.jobs:
             return ats_result.jobs
@@ -770,8 +845,10 @@ class CompanyDiscoveryService:
         return imported
 
     def _placeholder_company_for(
-        self, user_id: str, discovered: "DiscoveredJob",
-    ) -> "Company":
+        self,
+        user_id: str,
+        discovered: DiscoveredJob,
+    ) -> Company:
         """Derive a company from a discovered job's metadata and persist it.
 
         Order of preference for the company name:
@@ -796,7 +873,7 @@ class CompanyDiscoveryService:
             # Strip leading 'www.' and 'careers.' / 'jobs.' subdomain noise.
             for prefix in ("www.", "careers.", "career.", "jobs."):
                 if host.startswith(prefix):
-                    host = host[len(prefix):]
+                    host = host[len(prefix) :]
                     break
             name = host or "Unknown employer"
         for existing in self.repository.list_companies(user_id):
@@ -841,7 +918,9 @@ class CompanyDiscoveryService:
 
         for job in jobs:
             if pages_checked + 1 >= self.config.max_pages_per_scan:
-                errors.append({"code": "max_pages_reached", "limit": self.config.max_pages_per_scan})
+                errors.append(
+                    {"code": "max_pages_reached", "limit": self.config.max_pages_per_scan}
+                )
                 enriched.append(job)
                 continue
             if job.structured_data or not same_host(career_page_url, job.source_url):
@@ -857,10 +936,18 @@ class CompanyDiscoveryService:
             pages_checked += 1
             source_urls.append(response.url)
             if response.status_code >= 400 or looks_blocked(response.text):
-                errors.append({"code": "job_detail_unavailable", "statusCode": response.status_code, "url": job.source_url})
+                errors.append(
+                    {
+                        "code": "job_detail_unavailable",
+                        "statusCode": response.status_code,
+                        "url": job.source_url,
+                    }
+                )
                 enriched.append(job)
                 continue
-            structured = self.extract_direct_jobs_from_company_site(company, job.source_url, response.text)
+            structured = self.extract_direct_jobs_from_company_site(
+                company, job.source_url, response.text
+            )
             structured = [item for item in structured if item.structured_data]
             if structured:
                 enriched.extend(structured)
@@ -919,7 +1006,9 @@ class CompanyDiscoveryService:
             response.text = response.text[: self.config.max_response_chars]
         return response
 
-    def _fetch_allowed_page(self, target_url: str) -> tuple[FetchResult | None, list[dict[str, Any]]]:
+    def _fetch_allowed_page(
+        self, target_url: str
+    ) -> tuple[FetchResult | None, list[dict[str, Any]]]:
         errors: list[dict[str, Any]] = []
         current_url = target_url
         for redirect_count in range(self.config.max_redirects_per_fetch + 1):
@@ -930,7 +1019,9 @@ class CompanyDiscoveryService:
                 return None, [error]
             response = self._fetch_no_redirect(current_url)
             if response.status_code in {301, 302, 303, 307, 308}:
-                location = (response.headers or {}).get("Location") or (response.headers or {}).get("location")
+                location = (response.headers or {}).get("Location") or (response.headers or {}).get(
+                    "location"
+                )
                 if not location:
                     return response, errors
                 if redirect_count >= self.config.max_redirects_per_fetch:
@@ -948,9 +1039,17 @@ class CompanyDiscoveryService:
         if response.status_code == 404:
             return True, {}
         if response.status_code in {301, 302, 303, 307, 308}:
-            return False, {"code": "robots_redirect_not_followed", "statusCode": response.status_code, "url": robots_url}
+            return False, {
+                "code": "robots_redirect_not_followed",
+                "statusCode": response.status_code,
+                "url": robots_url,
+            }
         if response.status_code != 200:
-            return False, {"code": "robots_unavailable_or_blocked", "statusCode": response.status_code, "url": robots_url}
+            return False, {
+                "code": "robots_unavailable_or_blocked",
+                "statusCode": response.status_code,
+                "url": robots_url,
+            }
         allowed = robots_allows(response.text, target_url, self.config.user_agent)
         if allowed:
             return True, {}
@@ -973,15 +1072,35 @@ class CompanyDiscoveryService:
         href = str(anchor["href"]).casefold()
         score = 0.4
         text_terms = (
-            "karriere", "career", "careers", "jobs",
-            "carrieres", "carrières", "carriere", "carreras",
-            "vacatures", "vacancies", "empleos", "lavoro",
-            "kariera", "praca", "carreiras",
+            "karriere",
+            "career",
+            "careers",
+            "jobs",
+            "carrieres",
+            "carrières",
+            "carriere",
+            "carreras",
+            "vacatures",
+            "vacancies",
+            "empleos",
+            "lavoro",
+            "kariera",
+            "praca",
+            "carreiras",
         )
         href_terms = (
-            "karriere", "career", "careers", "jobs", "stellen",
-            "carrieres", "carrieres", "vacatures", "empleos",
-            "lavoro", "kariera", "carreiras",
+            "karriere",
+            "career",
+            "careers",
+            "jobs",
+            "stellen",
+            "carrieres",
+            "carrieres",
+            "vacatures",
+            "empleos",
+            "lavoro",
+            "kariera",
+            "carreiras",
         )
         if any(term in text for term in text_terms):
             score += 0.35
@@ -994,8 +1113,22 @@ class CompanyDiscoveryService:
         return any(term in searchable for term in JOB_TITLE_TERMS) and any(
             path_term in searchable
             for path_term in (
-                "job", "jobs", "stellen", "career", "careers", "karriere",
-                "position", "vacancy", "vacancies", "vacatures", "carrieres",
-                "carriere", "empleos", "lavoro", "kariera", "praca", "carreiras",
+                "job",
+                "jobs",
+                "stellen",
+                "career",
+                "careers",
+                "karriere",
+                "position",
+                "vacancy",
+                "vacancies",
+                "vacatures",
+                "carrieres",
+                "carriere",
+                "empleos",
+                "lavoro",
+                "kariera",
+                "praca",
+                "carreiras",
             )
         )

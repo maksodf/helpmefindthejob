@@ -52,7 +52,6 @@ import os
 import secrets
 from typing import Final
 
-
 _FORMAT_PREFIX: Final[str] = "aead:v1:"
 _NONCE_BYTES: Final[int] = 12  # ChaCha20-Poly1305 nonce length
 _KEY_BYTES: Final[int] = 32
@@ -101,7 +100,7 @@ def is_aead_blob(value: str | None) -> bool:
     """Returns True when ``value`` was written by :class:`EncryptionAtRest`.
     Anything else — empty, None, legacy XOR-base64 — returns False."""
 
-    return bool(value) and value.startswith(_FORMAT_PREFIX)
+    return value is not None and value.startswith(_FORMAT_PREFIX)
 
 
 class EncryptionAtRest:
@@ -120,7 +119,7 @@ class EncryptionAtRest:
         self._aead = ChaCha20Poly1305(key)
 
     @classmethod
-    def from_secret_key(cls, secret_key: str) -> "EncryptionAtRest":
+    def from_secret_key(cls, secret_key: str) -> EncryptionAtRest:
         return cls(resolve_data_key(secret_key))
 
     def encrypt(self, plaintext: str, *, aad: bytes = b"") -> str:
@@ -131,7 +130,7 @@ class EncryptionAtRest:
     def decrypt(self, blob: str, *, aad: bytes = b"") -> str:
         if not is_aead_blob(blob):
             raise ValueError("not_aead_format")
-        raw = base64.urlsafe_b64decode(blob[len(_FORMAT_PREFIX):])
+        raw = base64.urlsafe_b64decode(blob[len(_FORMAT_PREFIX) :])
         if len(raw) < _NONCE_BYTES + 16:  # 16-byte tag minimum
             raise ValueError("blob_too_short")
         nonce, ciphertext = raw[:_NONCE_BYTES], raw[_NONCE_BYTES:]

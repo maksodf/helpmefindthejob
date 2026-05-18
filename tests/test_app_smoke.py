@@ -19,7 +19,6 @@ from tempfile import TemporaryDirectory
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
-
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -70,7 +69,9 @@ class AppSmokeTests(unittest.TestCase):
 
                 request = Request(
                     f"{base}/api/auth/register",
-                    data=json.dumps({"email": "tester@example.com", "password": "very-secure-password"}).encode("utf-8"),
+                    data=json.dumps(
+                        {"email": "tester@example.com", "password": "very-secure-password"}
+                    ).encode("utf-8"),
                     headers={"Content-Type": "application/json"},
                     method="POST",
                 )
@@ -88,7 +89,9 @@ class AppSmokeTests(unittest.TestCase):
 
                 request = Request(
                     f"{base}/api/suggest-companies",
-                    data=json.dumps({"targetRoles": ["Digital Health"], "industry": "Healthcare"}).encode("utf-8"),
+                    data=json.dumps(
+                        {"targetRoles": ["Digital Health"], "industry": "Healthcare"}
+                    ).encode("utf-8"),
                     headers=authed_headers,
                     method="POST",
                 )
@@ -116,7 +119,9 @@ class AppSmokeTests(unittest.TestCase):
                 with urlopen(request, timeout=1) as response:
                     watchlist_scan = json.loads(response.read().decode("utf-8"))
                 self.assertEqual(watchlist_scan["result"]["status"], "nothing_to_scan")
-                self.assertEqual(watchlist_scan["result"]["skipped"][0]["reason"], "demo_fixture_not_scanned")
+                self.assertEqual(
+                    watchlist_scan["result"]["skipped"][0]["reason"], "demo_fixture_not_scanned"
+                )
 
                 request = Request(
                     f"{base}/api/watchlist/schedule",

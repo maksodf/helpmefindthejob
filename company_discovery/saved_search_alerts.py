@@ -27,7 +27,6 @@ from typing import Iterable, Mapping
 
 from .models import Company, DiscoveredJob, SavedSearch
 
-
 _TOKEN_RE = re.compile(r"\w+", re.UNICODE)
 
 
@@ -100,9 +99,7 @@ def unseen_matches_for_search(
     if threshold is None:
         return matched
     return [
-        job
-        for job in matched
-        if (effective_freshness_at(job) or job.discovered_at) > threshold
+        job for job in matched if (effective_freshness_at(job) or job.discovered_at) > threshold
     ]
 
 

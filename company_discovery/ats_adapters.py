@@ -166,7 +166,9 @@ def _extract_greenhouse(company: Company, page_url: str, body: str) -> AdapterRe
                 continue
             absolute = entry.get("absolute_url") or entry.get("url") or page_url
             location = entry.get("location")
-            location_text = location.get("name") if isinstance(location, dict) else _location_string(location)
+            location_text = (
+                location.get("name") if isinstance(location, dict) else _location_string(location)
+            )
             description = _strip_html(entry.get("content"))
             structured = {
                 "ats": "greenhouse",
@@ -267,7 +269,11 @@ def _extract_personio(company: Company, page_url: str, body: str) -> AdapterResu
     jobs: list[DiscoveredJob] = []
     notes: list[dict[str, str]] = []
     body_stripped = body.strip()
-    if body_stripped.startswith("<?xml") or body_stripped.startswith("<workzag-jobs") or "<position " in body_stripped:
+    if (
+        body_stripped.startswith("<?xml")
+        or body_stripped.startswith("<workzag-jobs")
+        or "<position " in body_stripped
+    ):
         try:
             root = ElementTree.fromstring(body)
         except ElementTree.ParseError as error:
@@ -341,7 +347,9 @@ def _extract_smartrecruiters(company: Company, page_url: str, body: str) -> Adap
                 if isinstance(location, dict)
                 else None
             )
-            description = _strip_html(entry.get("jobAd", {}).get("sections", {}).get("jobDescription", {}).get("text"))
+            description = _strip_html(
+                entry.get("jobAd", {}).get("sections", {}).get("jobDescription", {}).get("text")
+            )
             url = entry.get("ref") or entry.get("applyUrl") or page_url
             structured = {"ats": "smartrecruiters", "ats_id": ext_id, "raw": entry}
             jobs.append(
@@ -396,7 +404,9 @@ def _extract_teamtailor(company: Company, page_url: str, body: str) -> AdapterRe
         title = str(attributes.get("title") or "").strip()
         if not title:
             continue
-        location = attributes.get("locations") or attributes.get("location") or attributes.get("city")
+        location = (
+            attributes.get("locations") or attributes.get("location") or attributes.get("city")
+        )
         if isinstance(location, list):
             location_text = ", ".join(str(item) for item in location if item)
         elif isinstance(location, dict):
@@ -459,7 +469,9 @@ def _extract_recruitee(company: Company, page_url: str, body: str) -> AdapterRes
             absolute = entry.get("careers_url") or entry.get("url") or page_url
             location = entry.get("location") or entry.get("city") or entry.get("country")
             location_text = _location_string(location)
-            description = _strip_html(str(entry.get("description") or entry.get("requirements") or ""))
+            description = _strip_html(
+                str(entry.get("description") or entry.get("requirements") or "")
+            )
             structured = {"ats": "recruitee", "ats_id": ext_id, "raw": entry}
             jobs.append(
                 _build_job(
@@ -476,20 +488,23 @@ def _extract_recruitee(company: Company, page_url: str, body: str) -> AdapterRes
         # HTML fallback: Recruitee careers pages render `<a class="vacancy">` rows.
         for match in re.finditer(
             r'<a[^>]+href="([^"]*?/o/[^"]+)"[^>]*class="[^"]*vacancy[^"]*"[^>]*>([^<]+)</a>',
-            body, re.I,
+            body,
+            re.I,
         ):
             href, title = match.group(1), match.group(2).strip()
             if not title:
                 continue
-            jobs.append(_build_job(
-                company=company,
-                source_url=urljoin(page_url, href),
-                title=title,
-                location=None,
-                description=None,
-                structured={"ats": "recruitee"},
-                confidence=0.6,
-            ))
+            jobs.append(
+                _build_job(
+                    company=company,
+                    source_url=urljoin(page_url, href),
+                    title=title,
+                    location=None,
+                    description=None,
+                    structured={"ats": "recruitee"},
+                    confidence=0.6,
+                )
+            )
     return AdapterResult(adapter="recruitee", jobs=jobs, notes=[])
 
 
@@ -521,12 +536,15 @@ def _extract_ashby(company: Company, page_url: str, body: str) -> AdapterResult:
         slug = entry.get("slug") or entry.get("urlSlug")
         org_slug = entry.get("organizationSlug") or ""
         absolute = (
-            f"https://jobs.ashbyhq.com/{org_slug}/{slug}" if slug and org_slug
+            f"https://jobs.ashbyhq.com/{org_slug}/{slug}"
+            if slug and org_slug
             else entry.get("applicationUrl") or page_url
         )
         loc_text = entry.get("locationName") or entry.get("location")
         location_text = _location_string(loc_text)
-        description = _strip_html(str(entry.get("descriptionHtml") or entry.get("description") or ""))
+        description = _strip_html(
+            str(entry.get("descriptionHtml") or entry.get("description") or "")
+        )
         structured = {"ats": "ashby", "ats_id": ext_id, "raw": entry}
         jobs.append(
             _build_job(
@@ -542,20 +560,23 @@ def _extract_ashby(company: Company, page_url: str, body: str) -> AdapterResult:
     if not jobs:
         for match in re.finditer(
             r'<a[^>]+href="(/[^"/]+/[^"#?]+)"[^>]*class="[^"]*JobPosting[^"]*"[^>]*>([^<]+)</a>',
-            body, re.I,
+            body,
+            re.I,
         ):
             href, title = match.group(1), match.group(2).strip()
             if not title:
                 continue
-            jobs.append(_build_job(
-                company=company,
-                source_url=urljoin(page_url, href),
-                title=title,
-                location=None,
-                description=None,
-                structured={"ats": "ashby"},
-                confidence=0.6,
-            ))
+            jobs.append(
+                _build_job(
+                    company=company,
+                    source_url=urljoin(page_url, href),
+                    title=title,
+                    location=None,
+                    description=None,
+                    structured={"ats": "ashby"},
+                    confidence=0.6,
+                )
+            )
     return AdapterResult(adapter="ashby", jobs=jobs, notes=[])
 
 
@@ -596,18 +617,21 @@ def _extract_bamboohr(company: Company, page_url: str, body: str) -> AdapterResu
         # HTML embed: <a href="...?id=N" class="BambooHR-ATS-Jobs-Item">Title</a>
         for match in re.finditer(
             r'<a[^>]+href="([^"]*\?id=(\d+))"[^>]*class="[^"]*BambooHR[^"]*"[^>]*>([^<]+)</a>',
-            body, re.I,
+            body,
+            re.I,
         ):
             href, ext_id, title = match.group(1), match.group(2), match.group(3).strip()
             if not title:
                 continue
-            jobs.append(_build_job(
-                company=company,
-                source_url=urljoin(page_url, href),
-                title=title,
-                location=None,
-                description=None,
-                structured={"ats": "bamboohr", "ats_id": ext_id},
-                confidence=0.65,
-            ))
+            jobs.append(
+                _build_job(
+                    company=company,
+                    source_url=urljoin(page_url, href),
+                    title=title,
+                    location=None,
+                    description=None,
+                    structured={"ats": "bamboohr", "ats_id": ext_id},
+                    confidence=0.65,
+                )
+            )
     return AdapterResult(adapter="bamboohr", jobs=jobs, notes=[])

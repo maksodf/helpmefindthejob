@@ -95,7 +95,8 @@ def parse_email_to_jobs(
     if visible_html:
         for match in re.finditer(
             r'<a[^>]+href="([^"]+)"[^>]*>(.*?)</a>',
-            visible_html, re.DOTALL | re.IGNORECASE,
+            visible_html,
+            re.DOTALL | re.IGNORECASE,
         ):
             url = match.group(1).strip()
             title = _strip_html(match.group(2)).strip()

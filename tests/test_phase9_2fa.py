@@ -21,7 +21,6 @@ if str(REPO_ROOT) not in sys.path:
 
 from company_discovery.auth import AuthStore, _totp_at, verify_totp
 
-
 SECRET = "X" * 64  # >= 32 chars per AuthStore guard
 
 

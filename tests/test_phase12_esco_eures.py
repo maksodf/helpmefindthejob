@@ -38,7 +38,6 @@ from pathlib import Path
 import mcp_server
 from company_discovery.mcp_tools import _load_esco_reference_dataset
 
-
 REPO_ROOT = Path(__file__).resolve().parent.parent
 REFERENCE_DIR = REPO_ROOT / "reference" / "esco"
 
@@ -55,8 +54,7 @@ class CuratedDatasetCoverageTests(unittest.TestCase):
         with (REFERENCE_DIR / "occupations.json").open(encoding="utf-8") as handle:
             data = json.load(handle)
         self.assertEqual(data["license"], "CC-BY-4.0")
-        self.assertGreaterEqual(len(data["entries"]), 30,
-                                 msg="§2.4 plan requires ≥30 occupations")
+        self.assertGreaterEqual(len(data["entries"]), 30, msg="§2.4 plan requires ≥30 occupations")
         for entry in data["entries"]:
             self.assertIn("code", entry)
             self.assertIn("label_en", entry)
@@ -66,8 +64,7 @@ class CuratedDatasetCoverageTests(unittest.TestCase):
         with (REFERENCE_DIR / "skills.json").open(encoding="utf-8") as handle:
             data = json.load(handle)
         self.assertEqual(data["license"], "CC-BY-4.0")
-        self.assertGreaterEqual(len(data["entries"]), 50,
-                                 msg="§2.4 plan requires ≥50 skills")
+        self.assertGreaterEqual(len(data["entries"]), 50, msg="§2.4 plan requires ≥50 skills")
         for entry in data["entries"]:
             self.assertIn("code", entry)
             self.assertIn("label_en", entry)
@@ -78,8 +75,7 @@ class CuratedDatasetCoverageTests(unittest.TestCase):
         for path in ("occupations.json", "skills.json"):
             with (REFERENCE_DIR / path).open(encoding="utf-8") as handle:
                 data = json.load(handle)
-            self.assertIn("Creative Commons Attribution 4.0",
-                          data["attribution"])
+            self.assertIn("Creative Commons Attribution 4.0", data["attribution"])
 
 
 class LoaderResolutionTests(unittest.TestCase):
@@ -106,6 +102,7 @@ class PersonaPanelQueryTests(unittest.TestCase):
     def setUp(self) -> None:
         # Ensure the curated dataset is loaded.
         import company_discovery.mcp_tools as mt
+
         mt._ESCO_DATASET_CACHE = None
         _load_esco_reference_dataset()
         self.tools = _new_tools_for_test()
@@ -141,6 +138,7 @@ class GermanLabelMatchingTests(unittest.TestCase):
 
     def setUp(self) -> None:
         import company_discovery.mcp_tools as mt
+
         mt._ESCO_DATASET_CACHE = None
         _load_esco_reference_dataset()
         self.tools = _new_tools_for_test()
@@ -160,6 +158,7 @@ class GermanLabelMatchingTests(unittest.TestCase):
 class DatasetVersionFlagTests(unittest.TestCase):
     def setUp(self) -> None:
         import company_discovery.mcp_tools as mt
+
         mt._ESCO_DATASET_CACHE = None
         _load_esco_reference_dataset()
         self.tools = _new_tools_for_test()
@@ -181,16 +180,16 @@ class EURESProjectionShapeTests(unittest.TestCase):
         self.tools = _new_tools_for_test()
 
     def test_not_found_branch_keeps_status_status_field(self) -> None:
-        result = self.tools.export_eures_compatible(
-            userId="u-1", discoveredJobId="does-not-exist"
-        )
+        result = self.tools.export_eures_compatible(userId="u-1", discoveredJobId="does-not-exist")
         # In an empty repository the job will not resolve. The tool must
         # return a structured status rather than raise.
         self.assertIn(result["status"], {"not_found", "ok"})
 
     def test_handle_request_validates_discoveredJobId(self) -> None:
         message = {
-            "jsonrpc": "2.0", "id": 1, "method": "tools/call",
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "tools/call",
             "params": {
                 "name": "export_eures_compatible",
                 "arguments": {"userId": "u-1"},

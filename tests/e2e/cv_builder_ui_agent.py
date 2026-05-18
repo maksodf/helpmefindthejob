@@ -39,9 +39,11 @@ BASE_URL = os.environ.get("E2E_BASE_URL", "").rstrip("/")
 
 def _make_png() -> bytes:
     sig = b"\x89PNG\r\n\x1a\n"
+
     def _ch(ty, data):
         crc = zlib.crc32(ty + data) & 0xFFFFFFFF
         return struct.pack(">I", len(data)) + ty + data + struct.pack(">I", crc)
+
     ihdr = _ch(b"IHDR", struct.pack(">IIBBBBB", 1, 1, 8, 2, 0, 0, 0))
     idat = _ch(b"IDAT", zlib.compress(b"\x00\xff\xff\xff"))
     iend = _ch(b"IEND", b"")
@@ -104,9 +106,11 @@ def main() -> int:
             page.locator("#cvBuilderStartBtn").click()
             page.locator("#cvBuilderSectionHost h3").wait_for(state="visible", timeout=5000)
             heading = page.locator("#cvBuilderSectionHost h3").inner_text()
-            report("section_one_renders_header",
-                    heading.lower().startswith("personal header"),
-                    f"got '{heading}'")
+            report(
+                "section_one_renders_header",
+                heading.lower().startswith("personal header"),
+                f"got '{heading}'",
+            )
 
             # 2. Fill header
             page.locator("#cvb_full_name").fill("Anna Müller")
@@ -116,28 +120,33 @@ def main() -> int:
             page.wait_for_timeout(500)
             page.locator("#cvBuilderSectionHost h3").wait_for(state="visible")
             heading = page.locator("#cvBuilderSectionHost h3").inner_text()
-            report("advances_to_summary",
-                    heading.lower().startswith("professional summary"),
-                    f"got '{heading}'")
+            report(
+                "advances_to_summary",
+                heading.lower().startswith("professional summary"),
+                f"got '{heading}'",
+            )
 
             # 3. Upload photo via the file input (Playwright trick).
             png = _make_png()
-            page.locator("#cvBuilderPhotoInput").set_input_files({
-                "name": "photo.png",
-                "mimeType": "image/png",
-                "buffer": png,
-            })
+            page.locator("#cvBuilderPhotoInput").set_input_files(
+                {
+                    "name": "photo.png",
+                    "mimeType": "image/png",
+                    "buffer": png,
+                }
+            )
             page.wait_for_timeout(800)
             photo_visible = page.locator("#cvBuilderPhotoPreview").is_visible()
             report("photo_preview_renders", photo_visible)
             photo_status = page.locator("#cvBuilderPhotoStatus").inner_text()
-            report("photo_status_reports_size",
-                    "Photo saved" in photo_status,
-                    f"status='{photo_status}'")
+            report(
+                "photo_status_reports_size",
+                "Photo saved" in photo_status,
+                f"status='{photo_status}'",
+            )
 
             # 4. Fill summary
-            page.locator("#cvb_summary_raw").fill(
-                "Senior backend engineer. 8 years Python.")
+            page.locator("#cvb_summary_raw").fill("Senior backend engineer. 8 years Python.")
             page.locator("#cvBuilderSaveBtn").click()
             page.wait_for_timeout(500)
             # 5. Experience
@@ -148,7 +157,8 @@ def main() -> int:
             page.locator("#cvb_end_date").fill("present")
             page.locator("#cvb_location").fill("Berlin")
             page.locator("#cvb_achievements_raw").fill(
-                "Led migration to k8s. Built payments microservice.")
+                "Led migration to k8s. Built payments microservice."
+            )
             page.locator("#cvBuilderSaveBtn").click()
             page.wait_for_timeout(500)
             # 6. Education
@@ -162,8 +172,7 @@ def main() -> int:
             page.wait_for_timeout(500)
             # 7. Skills
             page.locator("#cvBuilderSectionHost h3").wait_for(state="visible")
-            page.locator("#cvb_skills_raw").fill(
-                "Python, Postgres, Kubernetes, AWS")
+            page.locator("#cvb_skills_raw").fill("Python, Postgres, Kubernetes, AWS")
             page.locator("#cvBuilderSaveBtn").click()
             page.wait_for_timeout(500)
 
@@ -191,8 +200,7 @@ def main() -> int:
             finish_btn.click()
             page.wait_for_timeout(800)
             msg = page.locator("#cvBuilderMessage").inner_text()
-            report("finish_message_persisted",
-                    "CV saved" in msg and "chars" in msg, f"msg='{msg}'")
+            report("finish_message_persisted", "CV saved" in msg and "chars" in msg, f"msg='{msg}'")
 
             # Take a screenshot for the record.
             out_dir = Path(os.environ.get("E2E_SCREENSHOTS", "tests/e2e/screenshots"))

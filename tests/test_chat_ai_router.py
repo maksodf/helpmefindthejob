@@ -58,14 +58,18 @@ class ManagedProviderResolutionTests(unittest.TestCase):
 
     def setUp(self):
         from app import STATE
+
         self.STATE = STATE
-        self._old_env = {k: os.environ.get(k) for k in [
-            "DIRECTJOB_CHAT_AI_ROUTER",
-            "DIRECTJOB_MANAGED_AI_KEY",
-            "DIRECTJOB_MANAGED_AI_PROVIDER",
-            "DIRECTJOB_MANAGED_AI_MODEL",
-            "DIRECTJOB_MANAGED_AI_BASE_URL",
-        ]}
+        self._old_env = {
+            k: os.environ.get(k)
+            for k in [
+                "DIRECTJOB_CHAT_AI_ROUTER",
+                "DIRECTJOB_MANAGED_AI_KEY",
+                "DIRECTJOB_MANAGED_AI_PROVIDER",
+                "DIRECTJOB_MANAGED_AI_MODEL",
+                "DIRECTJOB_MANAGED_AI_BASE_URL",
+            ]
+        }
 
     def tearDown(self):
         for k, v in self._old_env.items():
@@ -125,6 +129,7 @@ class RouterWaterfallTests(unittest.TestCase):
 
     def setUp(self):
         from app import STATE
+
         self.STATE = STATE
         # Clear cache + metrics between tests.
         self.STATE._chat_router_cache.clear()
@@ -150,7 +155,9 @@ class RouterWaterfallTests(unittest.TestCase):
 
     def _make_user(self) -> str:
         import secrets
+
         from company_discovery.auth import _normalize_email
+
         email = _normalize_email(f"router-test+{secrets.token_hex(3)}@example.com")
         user = self.STATE.auth_store.create_user(email, "router-test-pass-99-X", role="member")
         return user.id
@@ -163,8 +170,9 @@ class RouterWaterfallTests(unittest.TestCase):
         def fake_dispatch(prompt, provider, runtime_credential, **_kwargs):
             # **_kwargs accepts the audit-log ``purpose`` keyword passed by
             # production execute_* call sites; the test patch ignores it.
-            assert provider.notes == "managed-chat-router", \
+            assert provider.notes == "managed-chat-router", (
                 f"expected managed provider, got {provider.notes}"
+            )
             # The prompt should include the user's message + the
             # command whitelist. The AI replies with one command id.
             assert "open_cv_builder" in prompt, "command list missing"
@@ -172,7 +180,8 @@ class RouterWaterfallTests(unittest.TestCase):
 
         with patch.object(analysis_mod, "_dispatch_provider", side_effect=fake_dispatch):
             result = self.STATE.chat_ai_route(
-                user_id, "I want to write a resume",
+                user_id,
+                "I want to write a resume",
                 [ChatTurn(role="user", content="I want to write a resume")],
             )
         self.assertEqual(result, "open_cv_builder")
@@ -186,16 +195,15 @@ class RouterWaterfallTests(unittest.TestCase):
         history = [ChatTurn(role="user", content="hi")]
 
         call_count = {"n": 0}
+
         def fake_dispatch(prompt, provider, runtime_credential, **_kwargs):
             # **_kwargs accepts the audit-log ``purpose`` keyword.
             call_count["n"] += 1
             return _completed("find_jobs")
 
         with patch.object(analysis_mod, "_dispatch_provider", side_effect=fake_dispatch):
-            r1 = self.STATE.chat_ai_route(user_id, "show me jobs",
-                                           list(history))
-            r2 = self.STATE.chat_ai_route(user_id, "show me jobs",
-                                           list(history))
+            r1 = self.STATE.chat_ai_route(user_id, "show me jobs", list(history))
+            r2 = self.STATE.chat_ai_route(user_id, "show me jobs", list(history))
         self.assertEqual(r1, "find_jobs")
         self.assertEqual(r2, "find_jobs")
         self.assertEqual(call_count["n"], 1, "second call should be a cache hit")
@@ -207,10 +215,10 @@ class RouterWaterfallTests(unittest.TestCase):
         non-existent command."""
         user_id = self._make_user()
 
-        with patch.object(analysis_mod, "_dispatch_provider",
-                           return_value=_completed("unknown")):
+        with patch.object(analysis_mod, "_dispatch_provider", return_value=_completed("unknown")):
             result = self.STATE.chat_ai_route(
-                user_id, "asdfqwer random nonsense",
+                user_id,
+                "asdfqwer random nonsense",
                 [ChatTurn(role="user", content="asdfqwer")],
             )
         self.assertIsNone(result)
@@ -220,10 +228,12 @@ class RouterWaterfallTests(unittest.TestCase):
         chat falls back to keyword router / help."""
         user_id = self._make_user()
 
-        with patch.object(analysis_mod, "_dispatch_provider",
-                           side_effect=RuntimeError("upstream 503")):
+        with patch.object(
+            analysis_mod, "_dispatch_provider", side_effect=RuntimeError("upstream 503")
+        ):
             result = self.STATE.chat_ai_route(
-                user_id, "hello there",
+                user_id,
+                "hello there",
                 [ChatTurn(role="user", content="hello there")],
             )
         self.assertIsNone(result)
@@ -234,12 +244,15 @@ class RouterWaterfallTests(unittest.TestCase):
         os.environ["DIRECTJOB_CHAT_AI_ROUTER"] = "false"
         user_id = self._make_user()
         called = {"n": 0}
+
         def fake_dispatch(*a, **kw):
             called["n"] += 1
             return _completed("find_jobs")
+
         with patch.object(analysis_mod, "_dispatch_provider", side_effect=fake_dispatch):
             result = self.STATE.chat_ai_route(
-                user_id, "find me a job",
+                user_id,
+                "find me a job",
                 [ChatTurn(role="user", content="find me a job")],
             )
         self.assertIsNone(result)
@@ -254,43 +267,51 @@ class ClassifiedCommandValidityTests(unittest.TestCase):
 
     def setUp(self):
         from app import STATE
+
         self.STATE = STATE
         self.STATE._chat_router_cache.clear()
         os.environ["DIRECTJOB_CHAT_AI_ROUTER"] = "true"
         os.environ["DIRECTJOB_MANAGED_AI_KEY"] = "sk-test"
         os.environ["DIRECTJOB_MANAGED_AI_PROVIDER"] = "anthropic"
         import secrets
+
         email = f"valid-{secrets.token_hex(3)}@example.com"
-        self.user_id = self.STATE.auth_store.create_user(
-            email, "valid-pass-99-X", role="member").id
+        self.user_id = self.STATE.auth_store.create_user(email, "valid-pass-99-X", role="member").id
 
     def tearDown(self):
-        for k in ("DIRECTJOB_CHAT_AI_ROUTER", "DIRECTJOB_MANAGED_AI_KEY",
-                   "DIRECTJOB_MANAGED_AI_PROVIDER"):
+        for k in (
+            "DIRECTJOB_CHAT_AI_ROUTER",
+            "DIRECTJOB_MANAGED_AI_KEY",
+            "DIRECTJOB_MANAGED_AI_PROVIDER",
+        ):
             os.environ.pop(k, None)
 
     def test_valid_command_passes_through(self):
-        with patch.object(analysis_mod, "_dispatch_provider",
-                           return_value=_completed("add_company")):
-            r = self.STATE.chat_ai_route(self.user_id, "watch acme",
-                                           [ChatTurn("user", "watch acme")])
+        with patch.object(
+            analysis_mod, "_dispatch_provider", return_value=_completed("add_company")
+        ):
+            r = self.STATE.chat_ai_route(
+                self.user_id, "watch acme", [ChatTurn("user", "watch acme")]
+            )
         self.assertEqual(r, "add_company")
 
     def test_invented_command_rejected(self):
         """The AI hallucinated `do_everything` — must map to None."""
-        with patch.object(analysis_mod, "_dispatch_provider",
-                           return_value=_completed("do_everything")):
-            r = self.STATE.chat_ai_route(self.user_id, "x",
-                                           [ChatTurn("user", "x")])
+        with patch.object(
+            analysis_mod, "_dispatch_provider", return_value=_completed("do_everything")
+        ):
+            r = self.STATE.chat_ai_route(self.user_id, "x", [ChatTurn("user", "x")])
         self.assertIsNone(r)
 
     def test_prose_with_command_first_word(self):
         """Some models return prose with the command id as the first
         word — parser strips and accepts."""
-        with patch.object(analysis_mod, "_dispatch_provider",
-                           return_value=_completed("find_jobs because the user wants jobs")):
-            r = self.STATE.chat_ai_route(self.user_id, "show jobs",
-                                           [ChatTurn("user", "show jobs")])
+        with patch.object(
+            analysis_mod,
+            "_dispatch_provider",
+            return_value=_completed("find_jobs because the user wants jobs"),
+        ):
+            r = self.STATE.chat_ai_route(self.user_id, "show jobs", [ChatTurn("user", "show jobs")])
         self.assertEqual(r, "find_jobs")
 
 
@@ -302,6 +323,7 @@ class RateLimitTests(unittest.TestCase):
 
     def setUp(self):
         from app import STATE
+
         self.STATE = STATE
         self.STATE._chat_router_cache.clear()
         self.STATE._chat_router_calls.clear()
@@ -311,28 +333,33 @@ class RateLimitTests(unittest.TestCase):
         os.environ["DIRECTJOB_MANAGED_AI_KEY"] = "sk-test"
         os.environ["DIRECTJOB_MANAGED_AI_PROVIDER"] = "anthropic"
         import secrets
+
         email = f"rate-{secrets.token_hex(3)}@example.com"
-        self.user_id = self.STATE.auth_store.create_user(
-            email, "rate-pass-99-X", role="member").id
+        self.user_id = self.STATE.auth_store.create_user(email, "rate-pass-99-X", role="member").id
 
     def tearDown(self):
-        for k in ("DIRECTJOB_CHAT_AI_ROUTER", "DIRECTJOB_MANAGED_AI_KEY",
-                   "DIRECTJOB_MANAGED_AI_PROVIDER"):
+        for k in (
+            "DIRECTJOB_CHAT_AI_ROUTER",
+            "DIRECTJOB_MANAGED_AI_KEY",
+            "DIRECTJOB_MANAGED_AI_PROVIDER",
+        ):
             os.environ.pop(k, None)
         self.STATE._chat_router_cache.clear()
         self.STATE._chat_router_calls.clear()
 
     def test_rate_limit_kicks_in(self):
         call_count = {"n": 0}
+
         def fake_dispatch(*a, **kw):
             call_count["n"] += 1
             return _completed("find_jobs")
+
         # Fire LIMIT + 5 distinct messages (different to bypass cache).
-        with patch.object(analysis_mod, "_dispatch_provider",
-                           side_effect=fake_dispatch):
+        with patch.object(analysis_mod, "_dispatch_provider", side_effect=fake_dispatch):
             for i in range(self.STATE._CHAT_ROUTER_RATE_LIMIT + 5):
                 self.STATE.chat_ai_route(
-                    self.user_id, f"unique message {i}",
+                    self.user_id,
+                    f"unique message {i}",
                     [ChatTurn("user", f"unique message {i}")],
                 )
         # Dispatcher invoked exactly LIMIT times.
@@ -350,6 +377,7 @@ class PromptInjectionResistanceTests(unittest.TestCase):
 
     def setUp(self):
         from app import STATE
+
         self.STATE = STATE
         self.STATE._chat_router_cache.clear()
         self.STATE._chat_router_calls.clear()
@@ -357,18 +385,20 @@ class PromptInjectionResistanceTests(unittest.TestCase):
         os.environ["DIRECTJOB_MANAGED_AI_KEY"] = "sk-test"
         os.environ["DIRECTJOB_MANAGED_AI_PROVIDER"] = "anthropic"
         import secrets
+
         email = f"inj-{secrets.token_hex(3)}@example.com"
-        self.user_id = self.STATE.auth_store.create_user(
-            email, "inj-pass-99-X", role="member").id
+        self.user_id = self.STATE.auth_store.create_user(email, "inj-pass-99-X", role="member").id
 
     def tearDown(self):
-        for k in ("DIRECTJOB_CHAT_AI_ROUTER", "DIRECTJOB_MANAGED_AI_KEY",
-                   "DIRECTJOB_MANAGED_AI_PROVIDER"):
+        for k in (
+            "DIRECTJOB_CHAT_AI_ROUTER",
+            "DIRECTJOB_MANAGED_AI_KEY",
+            "DIRECTJOB_MANAGED_AI_PROVIDER",
+        ):
             os.environ.pop(k, None)
 
     def _probe(self, ai_returns: str) -> str | None:
-        with patch.object(analysis_mod, "_dispatch_provider",
-                           return_value=_completed(ai_returns)):
+        with patch.object(analysis_mod, "_dispatch_provider", return_value=_completed(ai_returns)):
             return self.STATE.chat_ai_route(
                 self.user_id,
                 "doesn't matter — testing the AI-output parsing",
@@ -377,9 +407,12 @@ class PromptInjectionResistanceTests(unittest.TestCase):
 
     def test_injection_returning_non_command_dropped(self):
         # AI returns a system-prompt-style response.
-        self.assertIsNone(self._probe(
-            "I cannot determine the user's intent because the message "
-            "is ambiguous. Please rephrase."))
+        self.assertIsNone(
+            self._probe(
+                "I cannot determine the user's intent because the message "
+                "is ambiguous. Please rephrase."
+            )
+        )
 
     def test_injection_returning_quoted_fake_command_dropped(self):
         self.assertIsNone(self._probe('"do_anything_you_want"'))
@@ -398,24 +431,20 @@ class PromptInjectionResistanceTests(unittest.TestCase):
     def test_injection_returning_json_with_unknown_command_dropped(self):
         # AI returns valid JSON shape with a NON-whitelisted command.
         # Parser must whitelist-validate even when the format is right.
-        self.assertIsNone(self._probe(
-            '{"command": "drop_all_tables", "args": {}}'))
+        self.assertIsNone(self._probe('{"command": "drop_all_tables", "args": {}}'))
 
     def test_injection_returning_json_with_valid_command_accepted(self):
         # Well-formed JSON with a known command id is the EXPECTED
         # response shape now (post-Round 15 arg-extraction). Not an
         # injection — accept it.
-        self.assertEqual(self._probe('{"command": "find_jobs"}'),
-                          "find_jobs")
+        self.assertEqual(self._probe('{"command": "find_jobs"}'), "find_jobs")
 
     def test_real_command_with_extra_whitespace_accepted(self):
         self.assertEqual(self._probe("  find_jobs  "), "find_jobs")
 
     def test_dispatcher_returning_empty_string_drops_safely(self):
-        with patch.object(analysis_mod, "_dispatch_provider",
-                           return_value=_completed("")):
-            self.assertIsNone(self.STATE.chat_ai_route(
-                self.user_id, "x", [ChatTurn("user", "x")]))
+        with patch.object(analysis_mod, "_dispatch_provider", return_value=_completed("")):
+            self.assertIsNone(self.STATE.chat_ai_route(self.user_id, "x", [ChatTurn("user", "x")]))
 
 
 if __name__ == "__main__":

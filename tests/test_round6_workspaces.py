@@ -67,11 +67,13 @@ class CrossWorkspaceReadTests(unittest.TestCase):
                 label="Alice's workspace",
             )
         )
-        self.state.repository.save_company(Company(
-            user_id=alice.id,
-            name="Acme",
-            website_url="https://acme.example.com",
-        ))
+        self.state.repository.save_company(
+            Company(
+                user_id=alice.id,
+                name="Acme",
+                website_url="https://acme.example.com",
+            )
+        )
         return alice, bob, alice_ws
 
     def test_default_effective_user_is_session_user(self) -> None:

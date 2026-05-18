@@ -34,10 +34,12 @@ BASE_URL = os.environ.get("E2E_BASE_URL", "").rstrip("/")
 # (probe, expected_command, optional_arg_assert)
 PROBES: list[tuple[str, str, dict | None]] = [
     ("I need you to generate a CV for me", "open_cv_builder", None),
-    ("Watch Charité, their career page is https://karriere.charite.de",
-     "add_company", {"name": "Charité"}),
-    ("Find me senior backend roles in Berlin", "find_jobs",
-     {"query": "senior backend"}),
+    (
+        "Watch Charité, their career page is https://karriere.charite.de",
+        "add_company",
+        {"name": "Charité"},
+    ),
+    ("Find me senior backend roles in Berlin", "find_jobs", {"query": "senior backend"}),
     ("Switch my persona to tech", "set_persona", {"persona": "tech"}),
     ("Show me what you can do", "help", None),
 ]
@@ -58,30 +60,35 @@ class _C:
             headers["Cookie"] = self.cookie
         if self.csrf and m != "GET":
             headers["X-CSRF-Token"] = self.csrf
-        req = urllib.request.Request(BASE_URL + p, data=data, method=m,
-                                       headers=headers)
+        req = urllib.request.Request(BASE_URL + p, data=data, method=m, headers=headers)
         try:
             with urllib.request.urlopen(req, timeout=30) as resp:
                 sc = resp.headers.get("Set-Cookie", "")
                 if sc:
                     self.cookie = sc.split(";", 1)[0]
                 raw = resp.read().decode("utf-8", errors="replace")
-                try: p = json.loads(raw) if raw else {}
-                except json.JSONDecodeError: p = raw
+                try:
+                    p = json.loads(raw) if raw else {}
+                except json.JSONDecodeError:
+                    p = raw
                 if isinstance(p, dict):
                     for k in ("csrfToken", "csrf_token"):
                         if isinstance(p.get(k), str) and p[k]:
-                            self.csrf = p[k]; break
+                            self.csrf = p[k]
+                            break
                     u = p.get("user") or {}
                     if isinstance(u, dict):
                         for k in ("csrfToken", "csrf_token"):
                             if isinstance(u.get(k), str) and u[k]:
-                                self.csrf = u[k]; break
+                                self.csrf = u[k]
+                                break
                 return resp.status, p
         except urllib.error.HTTPError as e:
             raw = e.read().decode() if e.fp else ""
-            try: return e.code, json.loads(raw) if raw else {}
-            except json.JSONDecodeError: return e.code, raw
+            try:
+                return e.code, json.loads(raw) if raw else {}
+            except json.JSONDecodeError:
+                return e.code, raw
 
 
 def main() -> int:
@@ -90,17 +97,22 @@ def main() -> int:
         return 2
     c = _C()
     c._req("GET", "/")
-    s, p = c._req("POST", "/api/auth/register", {
-        "email": f"llm-probe+{secrets.token_hex(3)}@example.com",
-        "password": "llm-probe-pass-99-X",
-        "tosAccepted": True, "privacyAccepted": True,
-    })
+    s, p = c._req(
+        "POST",
+        "/api/auth/register",
+        {
+            "email": f"llm-probe+{secrets.token_hex(3)}@example.com",
+            "password": "llm-probe-pass-99-X",
+            "tosAccepted": True,
+            "privacyAccepted": True,
+        },
+    )
     if s not in (200, 201):
         print(f"ERROR: register {s} {p}", file=sys.stderr)
         return 1
 
     correct = 0
-    print(f"\nProbing real LLM via configured managed provider...\n")
+    print("\nProbing real LLM via configured managed provider...\n")
     for i, (probe, expected, arg_check) in enumerate(PROBES, 1):
         # Reset chat state between probes so no cross-talk.
         c._req("POST", "/api/chat/reset", {})
@@ -110,7 +122,7 @@ def main() -> int:
             continue
 
         # Inspect the session.pending to see what command was queued.
-        session = (resp.get("session") or {})
+        session = resp.get("session") or {}
         pending = session.get("pending") or {}
         routed_command = pending.get("commandName")
         routed_args = pending.get("args") or {}

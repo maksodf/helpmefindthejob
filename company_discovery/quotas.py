@@ -159,7 +159,9 @@ class QuotaStore:
         with self._lock:
             day = _today_key()
             if self._user_count(user_id, "scans", day) >= self.limits.scans_per_day:
-                raise QuotaError("scan_quota_exhausted", "Daily scan limit reached. Try again tomorrow.")
+                raise QuotaError(
+                    "scan_quota_exhausted", "Daily scan limit reached. Try again tomorrow."
+                )
             if self._active_per_user.get(user_id, 0) >= self.limits.active_scans:
                 raise QuotaError(
                     "scan_concurrency_limit",
@@ -167,7 +169,10 @@ class QuotaStore:
                 )
             if target_url:
                 domain = (urlparse(target_url).netloc or "").casefold()
-                if domain and self._domain_count(domain, _hour_key()) >= self.limits.domain_per_hour:
+                if (
+                    domain
+                    and self._domain_count(domain, _hour_key()) >= self.limits.domain_per_hour
+                ):
                     raise QuotaError(
                         "domain_rate_limited",
                         "This domain is being scanned a lot right now. Try again later.",
@@ -191,7 +196,9 @@ class QuotaStore:
     def can_run_ai(self, user_id: str) -> None:
         with self._lock:
             if self._user_count(user_id, "ai", _today_key()) >= self.limits.ai_per_day:
-                raise QuotaError("ai_quota_exhausted", "Daily AI analysis limit reached. Try again tomorrow.")
+                raise QuotaError(
+                    "ai_quota_exhausted", "Daily AI analysis limit reached. Try again tomorrow."
+                )
 
     def record_ai_run(self, user_id: str) -> None:
         with self._lock:

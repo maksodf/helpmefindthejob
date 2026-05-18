@@ -71,7 +71,8 @@ class RecordReferralTests(unittest.TestCase):
         new_user = store.create_user("alice@example.com", "very-secret-pass-1234")
         store.record_referral(new_user.id, code)
         row = store.connection.execute(
-            "SELECT referred_by FROM users WHERE id = ?", (new_user.id,),
+            "SELECT referred_by FROM users WHERE id = ?",
+            (new_user.id,),
         ).fetchone()
         self.assertEqual(row[0], code)
         self.assertEqual(store.count_referrals(referrer_id), 1)
@@ -81,7 +82,8 @@ class RecordReferralTests(unittest.TestCase):
         new_user = store.create_user("alice@example.com", "very-secret-pass-1234")
         store.record_referral(new_user.id, "totally-bogus-code")
         row = store.connection.execute(
-            "SELECT referred_by FROM users WHERE id = ?", (new_user.id,),
+            "SELECT referred_by FROM users WHERE id = ?",
+            (new_user.id,),
         ).fetchone()
         self.assertIsNone(row[0])
 
@@ -89,20 +91,23 @@ class RecordReferralTests(unittest.TestCase):
         store, referrer_id, code = self._store_with_referrer()
         store.record_referral(referrer_id, code)
         row = store.connection.execute(
-            "SELECT referred_by FROM users WHERE id = ?", (referrer_id,),
+            "SELECT referred_by FROM users WHERE id = ?",
+            (referrer_id,),
         ).fetchone()
         self.assertIsNone(row[0])
 
     def test_inactive_referrer_rejected(self) -> None:
         store, referrer_id, code = self._store_with_referrer()
         store.connection.execute(
-            "UPDATE users SET active = 0 WHERE id = ?", (referrer_id,),
+            "UPDATE users SET active = 0 WHERE id = ?",
+            (referrer_id,),
         )
         store.connection.commit()
         new_user = store.create_user("alice@example.com", "very-secret-pass-1234")
         store.record_referral(new_user.id, code)
         row = store.connection.execute(
-            "SELECT referred_by FROM users WHERE id = ?", (new_user.id,),
+            "SELECT referred_by FROM users WHERE id = ?",
+            (new_user.id,),
         ).fetchone()
         self.assertIsNone(row[0])
 
@@ -114,7 +119,8 @@ class RecordReferralTests(unittest.TestCase):
         store.record_referral(b.id, code)
         self.assertEqual(store.count_referrals(referrer_id), 2)
         store.connection.execute(
-            "UPDATE users SET active = 0 WHERE id = ?", (a.id,),
+            "UPDATE users SET active = 0 WHERE id = ?",
+            (a.id,),
         )
         store.connection.commit()
         self.assertEqual(store.count_referrals(referrer_id), 1)

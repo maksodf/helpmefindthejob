@@ -26,7 +26,15 @@ class PwaArtifactTests(unittest.TestCase):
         manifest = self.STATIC / "manifest.webmanifest"
         self.assertTrue(manifest.exists(), "manifest.webmanifest missing")
         data = json.loads(manifest.read_text())
-        for required in ("name", "short_name", "start_url", "scope", "display", "theme_color", "icons"):
+        for required in (
+            "name",
+            "short_name",
+            "start_url",
+            "scope",
+            "display",
+            "theme_color",
+            "icons",
+        ):
             self.assertIn(required, data, f"manifest missing required field: {required}")
         self.assertGreaterEqual(len(data["icons"]), 1)
 
@@ -35,7 +43,11 @@ class PwaArtifactTests(unittest.TestCase):
         self.assertTrue(sw.exists(), "sw.js missing")
         body = sw.read_text()
         # Hard requirements: install/activate/fetch listeners + a SHELL_PATHS list.
-        for marker in ("addEventListener(\"install\"", "addEventListener(\"activate\"", "addEventListener(\"fetch\""):
+        for marker in (
+            'addEventListener("install"',
+            'addEventListener("activate"',
+            'addEventListener("fetch"',
+        ):
             self.assertIn(marker, body, f"sw.js missing: {marker}")
         # Should not cache /api/* responses.
         self.assertIn("/api/", body)

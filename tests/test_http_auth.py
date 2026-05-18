@@ -27,7 +27,6 @@ from tempfile import TemporaryDirectory
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
-
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -90,7 +89,7 @@ class _Client:
             parsed = {}
         if capture_set_cookie and set_cookie:
             self.cookie = set_cookie.split(";", 1)[0]
-            if self.cookie.endswith("=") or self.cookie.endswith("=\""):
+            if self.cookie.endswith("=") or self.cookie.endswith('="'):
                 # logout sends an empty session cookie
                 self.cookie = None
         return code, parsed, set_cookie

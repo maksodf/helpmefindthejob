@@ -42,7 +42,6 @@ from .aggregators import (
     title_matches_query_family,
 )
 
-
 _USER_AGENT = "DirectJobScout/0.19 (+https://app.directjob-scout.example/about)"
 
 
@@ -89,8 +88,9 @@ def _matches(haystack_parts: list[str], tokens: list[str]) -> bool:
 
 
 class _StdlibFetcher:
-    def get(self, url: str, headers: dict[str, str] | None = None,
-            params: dict[str, str] | None = None) -> tuple[int, str]:
+    def get(
+        self, url: str, headers: dict[str, str] | None = None, params: dict[str, str] | None = None
+    ) -> tuple[int, str]:
         merged = {"User-Agent": _USER_AGENT, "Accept": "application/json,*/*;q=0.5"}
         if headers:
             merged.update(headers)
@@ -121,8 +121,9 @@ class ArbeitnowProvider:
     )
     fetcher: object = field(default_factory=_StdlibFetcher)
 
-    def search(self, *, query: str, location: str | None, limit: int = 25,
-               persona_id: str | None = None) -> list[AggregatedJob]:
+    def search(
+        self, *, query: str, location: str | None, limit: int = 25, persona_id: str | None = None
+    ) -> list[AggregatedJob]:
         status, body = self.fetcher.get(self.base_url)  # type: ignore[attr-defined]
         if status != 200 or not body:
             return []
@@ -169,16 +170,18 @@ class ArbeitnowProvider:
                 posted = datetime.fromtimestamp(int(posted_iso), tz=timezone.utc)
             elif isinstance(posted_iso, str):
                 posted = _parse_iso(posted_iso)
-            out.append(AggregatedJob(
-                title=title,
-                company_name=company,
-                source=self.name,
-                source_url=str(item.get("url") or ""),
-                location=loc or None,
-                description=description or None,
-                posted_at=posted,
-                raw={"slug": item.get("slug"), "tags": tag_list},
-            ))
+            out.append(
+                AggregatedJob(
+                    title=title,
+                    company_name=company,
+                    source=self.name,
+                    source_url=str(item.get("url") or ""),
+                    location=loc or None,
+                    description=description or None,
+                    posted_at=posted,
+                    raw={"slug": item.get("slug"), "tags": tag_list},
+                )
+            )
             if len(out) >= limit:
                 break
         return out
@@ -200,8 +203,9 @@ class MuseProvider:
     )
     fetcher: object = field(default_factory=_StdlibFetcher)
 
-    def search(self, *, query: str, location: str | None, limit: int = 25,
-               persona_id: str | None = None) -> list[AggregatedJob]:
+    def search(
+        self, *, query: str, location: str | None, limit: int = 25, persona_id: str | None = None
+    ) -> list[AggregatedJob]:
         params = {"page": "0", "descending": "true"}
         if location:
             params["location"] = location
@@ -236,16 +240,18 @@ class MuseProvider:
             if not title_matches_query_family(query, title):
                 continue
             posted = _parse_iso(item.get("publication_date"))
-            out.append(AggregatedJob(
-                title=title,
-                company_name=company,
-                source=self.name,
-                source_url=str(item.get("refs", {}).get("landing_page") or ""),
-                location=loc,
-                description=description or None,
-                posted_at=posted,
-                raw={"id": item.get("id"), "categories": item.get("categories")},
-            ))
+            out.append(
+                AggregatedJob(
+                    title=title,
+                    company_name=company,
+                    source=self.name,
+                    source_url=str(item.get("refs", {}).get("landing_page") or ""),
+                    location=loc,
+                    description=description or None,
+                    posted_at=posted,
+                    raw={"id": item.get("id"), "categories": item.get("categories")},
+                )
+            )
             if len(out) >= limit:
                 break
         return out
@@ -270,8 +276,9 @@ class RemotiveProvider:
     remote_only: bool = True
     fetcher: object = field(default_factory=_StdlibFetcher)
 
-    def search(self, *, query: str, location: str | None, limit: int = 25,
-               persona_id: str | None = None) -> list[AggregatedJob]:
+    def search(
+        self, *, query: str, location: str | None, limit: int = 25, persona_id: str | None = None
+    ) -> list[AggregatedJob]:
         params = {}
         if query:
             params["search"] = query
@@ -301,17 +308,19 @@ class RemotiveProvider:
             if not title_matches_query_family(query, title):
                 continue
             posted = _parse_iso(item.get("publication_date"))
-            out.append(AggregatedJob(
-                title=title,
-                company_name=str(item.get("company_name") or ""),
-                source=self.name,
-                source_url=str(item.get("url") or ""),
-                location=str(item.get("candidate_required_location") or "Remote"),
-                description=_strip_html(str(item.get("description") or "")),
-                posted_at=posted,
-                salary_hint=str(item.get("salary") or "") or None,
-                raw={"id": item.get("id"), "category": item.get("category")},
-            ))
+            out.append(
+                AggregatedJob(
+                    title=title,
+                    company_name=str(item.get("company_name") or ""),
+                    source=self.name,
+                    source_url=str(item.get("url") or ""),
+                    location=str(item.get("candidate_required_location") or "Remote"),
+                    description=_strip_html(str(item.get("description") or "")),
+                    posted_at=posted,
+                    salary_hint=str(item.get("salary") or "") or None,
+                    raw={"id": item.get("id"), "category": item.get("category")},
+                )
+            )
             if len(out) >= limit:
                 break
         return out
@@ -341,8 +350,9 @@ class WeWorkRemotelyProvider:
     remote_only: bool = True
     fetcher: object = field(default_factory=_StdlibFetcher)
 
-    def search(self, *, query: str, location: str | None, limit: int = 25,
-               persona_id: str | None = None) -> list[AggregatedJob]:
+    def search(
+        self, *, query: str, location: str | None, limit: int = 25, persona_id: str | None = None
+    ) -> list[AggregatedJob]:
         tokens = _query_tokens(query)
         out: list[AggregatedJob] = []
         for feed in self.feeds:
@@ -376,19 +386,22 @@ class WeWorkRemotelyProvider:
                     try:
                         # RSS pubDate format: "Sat, 09 May 2026 17:30:00 +0000"
                         from email.utils import parsedate_to_datetime
+
                         posted = parsedate_to_datetime(pub)
                     except (TypeError, ValueError):
                         posted = None
-                out.append(AggregatedJob(
-                    title=role,
-                    company_name=company,
-                    source=self.name,
-                    source_url=link,
-                    location="Remote",
-                    description=description or None,
-                    posted_at=posted,
-                    raw={"feed": feed},
-                ))
+                out.append(
+                    AggregatedJob(
+                        title=role,
+                        company_name=company,
+                        source=self.name,
+                        source_url=link,
+                        location="Remote",
+                        description=description or None,
+                        posted_at=posted,
+                        raw={"feed": feed},
+                    )
+                )
                 if len(out) >= limit:
                     return out
         return out
@@ -416,14 +429,18 @@ class HackerNewsHiringProvider:
     )
     fetcher: object = field(default_factory=_StdlibFetcher)
 
-    def search(self, *, query: str, location: str | None, limit: int = 25,
-               persona_id: str | None = None) -> list[AggregatedJob]:
+    def search(
+        self, *, query: str, location: str | None, limit: int = 25, persona_id: str | None = None
+    ) -> list[AggregatedJob]:
         # Find the latest "Ask HN: Who is hiring?" thread.
-        status, body = self.fetcher.get(self.search_url, params={  # type: ignore[attr-defined]
-            "query": "Ask HN: Who is hiring?",
-            "tags": "story,author_whoishiring",
-            "hitsPerPage": "1",
-        })
+        status, body = self.fetcher.get(
+            self.search_url,
+            params={  # type: ignore[attr-defined]
+                "query": "Ask HN: Who is hiring?",
+                "tags": "story,author_whoishiring",
+                "hitsPerPage": "1",
+            },
+        )
         if status != 200 or not body:
             return []
         try:
@@ -470,10 +487,26 @@ class HackerNewsHiringProvider:
             company = parts[0] if parts else "Hacker News listing"
             role = parts[1] if len(parts) > 1 else first_line[:120]
             non_location_words = {
-                "full-time", "full time", "fulltime", "part-time", "part time",
-                "parttime", "contract", "contractor", "freelance", "permanent",
-                "temporary", "intern", "internship", "h1b", "visa", "onsite",
-                "on-site", "on site", "hybrid", "remote",
+                "full-time",
+                "full time",
+                "fulltime",
+                "part-time",
+                "part time",
+                "parttime",
+                "contract",
+                "contractor",
+                "freelance",
+                "permanent",
+                "temporary",
+                "intern",
+                "internship",
+                "h1b",
+                "visa",
+                "onsite",
+                "on-site",
+                "on site",
+                "hybrid",
+                "remote",
             }
             loc_str: str | None = None
             for candidate in parts[2:]:
@@ -488,16 +521,18 @@ class HackerNewsHiringProvider:
             created_iso = comment.get("created_at")
             if isinstance(created_iso, str):
                 posted = _parse_iso(created_iso)
-            out.append(AggregatedJob(
-                title=role[:160],
-                company_name=company[:120],
-                source=self.name,
-                source_url=f"https://news.ycombinator.com/item?id={comment.get('id', story_id)}",
-                location=loc_str,
-                description=text[:1500],
-                posted_at=posted,
-                raw={"thread_id": story_id, "comment_id": comment.get("id")},
-            ))
+            out.append(
+                AggregatedJob(
+                    title=role[:160],
+                    company_name=company[:120],
+                    source=self.name,
+                    source_url=f"https://news.ycombinator.com/item?id={comment.get('id', story_id)}",
+                    location=loc_str,
+                    description=text[:1500],
+                    posted_at=posted,
+                    raw={"thread_id": story_id, "comment_id": comment.get("id")},
+                )
+            )
             if len(out) >= limit:
                 break
         return out
@@ -549,8 +584,9 @@ class EuresProvider:
     )
     fetcher: object = field(default_factory=_StdlibFetcher)
 
-    def search(self, *, query: str, location: str | None, limit: int = 25,
-               persona_id: str | None = None) -> list[AggregatedJob]:
+    def search(
+        self, *, query: str, location: str | None, limit: int = 25, persona_id: str | None = None
+    ) -> list[AggregatedJob]:
         # EURES POST endpoint expects JSON; many integrations use the
         # GET search front-end. We use the GET HTML+JSON-LD path to keep
         # this dependency-free and resilient to API changes.
@@ -566,7 +602,8 @@ class EuresProvider:
         jobs: list[AggregatedJob] = []
         for match in re.finditer(
             r'<script type="application/ld\+json">(.*?)</script>',
-            body, re.DOTALL | re.IGNORECASE,
+            body,
+            re.DOTALL | re.IGNORECASE,
         ):
             try:
                 payload = json.loads(match.group(1))
@@ -596,21 +633,31 @@ class EuresProvider:
                         continue
                     addr = loc.get("address") or {}
                     if isinstance(addr, dict):
-                        bits = [addr.get("addressLocality"), addr.get("addressRegion"), addr.get("addressCountry")]
+                        bits = [
+                            addr.get("addressLocality"),
+                            addr.get("addressRegion"),
+                            addr.get("addressCountry"),
+                        ]
                         loc_text = ", ".join(str(b) for b in bits if b)
                         break
                 description = _strip_html(str(entry.get("description") or ""))
                 posted = _parse_iso(entry.get("datePosted"))
-                jobs.append(AggregatedJob(
-                    title=title,
-                    company_name=str(company),
-                    source=self.name,
-                    source_url=str(entry.get("url") or entry.get("hiringOrganization", {}).get("sameAs", "") or ""),
-                    location=loc_text,
-                    description=description or None,
-                    posted_at=posted,
-                    raw={"identifier": entry.get("identifier")},
-                ))
+                jobs.append(
+                    AggregatedJob(
+                        title=title,
+                        company_name=str(company),
+                        source=self.name,
+                        source_url=str(
+                            entry.get("url")
+                            or entry.get("hiringOrganization", {}).get("sameAs", "")
+                            or ""
+                        ),
+                        location=loc_text,
+                        description=description or None,
+                        posted_at=posted,
+                        raw={"identifier": entry.get("identifier")},
+                    )
+                )
                 if len(jobs) >= limit:
                     return jobs
         return jobs
@@ -641,8 +688,9 @@ class BundesagenturProvider:
     )
     fetcher: object = field(default_factory=_StdlibFetcher)
 
-    def search(self, *, query: str, location: str | None, limit: int = 25,
-               persona_id: str | None = None) -> list[AggregatedJob]:
+    def search(
+        self, *, query: str, location: str | None, limit: int = 25, persona_id: str | None = None
+    ) -> list[AggregatedJob]:
         params: dict[str, str] = {"size": str(min(limit, 50))}
         if query:
             params["was"] = query[:120]
@@ -675,25 +723,31 @@ class BundesagenturProvider:
             company = str(entry.get("arbeitgeber") or "").strip()
             ext_id = str(entry.get("hashId") or entry.get("refnr") or "")
             absolute = (
-                f"https://www.arbeitsagentur.de/jobsuche/jobdetail/{ext_id}"
-                if ext_id else ""
+                f"https://www.arbeitsagentur.de/jobsuche/jobdetail/{ext_id}" if ext_id else ""
             )
             loc_obj = entry.get("arbeitsort") or {}
             loc_text = None
             if isinstance(loc_obj, dict):
-                bits = [loc_obj.get("ort"), loc_obj.get("plz"), loc_obj.get("region"), loc_obj.get("land")]
+                bits = [
+                    loc_obj.get("ort"),
+                    loc_obj.get("plz"),
+                    loc_obj.get("region"),
+                    loc_obj.get("land"),
+                ]
                 loc_text = ", ".join(str(b) for b in bits if b) or None
             posted = _parse_iso(entry.get("aktuelleVeroeffentlichungsdatum"))
-            out.append(AggregatedJob(
-                title=title,
-                company_name=company,
-                source=self.name,
-                source_url=absolute,
-                location=loc_text,
-                description=str(entry.get("kundennummerHash") or "") or None,
-                posted_at=posted,
-                raw={"hashId": ext_id},
-            ))
+            out.append(
+                AggregatedJob(
+                    title=title,
+                    company_name=company,
+                    source=self.name,
+                    source_url=absolute,
+                    location=loc_text,
+                    description=str(entry.get("kundennummerHash") or "") or None,
+                    posted_at=posted,
+                    raw={"hashId": ext_id},
+                )
+            )
             if len(out) >= limit:
                 break
         return out
@@ -724,8 +778,9 @@ class AdzunaProvider:
     )
     fetcher: object = field(default_factory=_StdlibFetcher)
 
-    def search(self, *, query: str, location: str | None, limit: int = 25,
-               persona_id: str | None = None) -> list[AggregatedJob]:
+    def search(
+        self, *, query: str, location: str | None, limit: int = 25, persona_id: str | None = None
+    ) -> list[AggregatedJob]:
         if not self.app_id or not self.app_key:
             return []
         country = (self.country or "de").lower()
@@ -758,24 +813,32 @@ class AdzunaProvider:
             if not title_matches_query_family(query, title):
                 continue
             company_obj = item.get("company") or {}
-            company = str(company_obj.get("display_name") or "") if isinstance(company_obj, dict) else ""
+            company = (
+                str(company_obj.get("display_name") or "") if isinstance(company_obj, dict) else ""
+            )
             loc_obj = item.get("location") or {}
             loc = (
                 str(loc_obj.get("display_name") or "")
-                if isinstance(loc_obj, dict) else (str(loc_obj) if loc_obj else "")
+                if isinstance(loc_obj, dict)
+                else (str(loc_obj) if loc_obj else "")
             ) or None
             description = _strip_html(str(item.get("description") or ""))
             posted = _parse_iso(item.get("created"))
-            out.append(AggregatedJob(
-                title=title,
-                company_name=company,
-                source=self.name,
-                source_url=str(item.get("redirect_url") or ""),
-                location=loc,
-                description=description or None,
-                posted_at=posted,
-                raw={"id": item.get("id"), "category": (item.get("category") or {}).get("label")},
-            ))
+            out.append(
+                AggregatedJob(
+                    title=title,
+                    company_name=company,
+                    source=self.name,
+                    source_url=str(item.get("redirect_url") or ""),
+                    location=loc,
+                    description=description or None,
+                    posted_at=posted,
+                    raw={
+                        "id": item.get("id"),
+                        "category": (item.get("category") or {}).get("label"),
+                    },
+                )
+            )
             if len(out) >= limit:
                 break
         return out

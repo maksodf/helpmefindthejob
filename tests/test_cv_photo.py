@@ -35,8 +35,7 @@ from company_discovery.cv_photo import (
 def _png_chunk(chunk_type: bytes, data: bytes) -> bytes:
     """Build a PNG chunk: length(4) + type(4) + data + crc(4)."""
     crc = zlib.crc32(chunk_type + data) & 0xFFFFFFFF
-    return (struct.pack(">I", len(data)) + chunk_type + data
-            + struct.pack(">I", crc))
+    return struct.pack(">I", len(data)) + chunk_type + data + struct.pack(">I", crc)
 
 
 def _make_png(width: int = 1, height: int = 1) -> bytes:
@@ -55,10 +54,15 @@ def _make_png(width: int = 1, height: int = 1) -> bytes:
 # Minimal valid JPEG byte sequences for testing.
 _MINIMAL_JPEG = (
     b"\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01\x01\x00\x00\x01\x00\x01\x00\x00"
-    b"\xff\xdb\x00C\x00" + b"\x08" * 64  # quantisation
+    b"\xff\xdb\x00C\x00"
+    + b"\x08" * 64  # quantisation
     + b"\xff\xc0\x00\x0b\x08\x00\x01\x00\x01\x01\x01\x11\x00"
-    + b"\xff\xc4\x00\x14\x00\x01" + b"\x00" * 12 + b"\x01"
-    + b"\xff\xc4\x00\x14\x10\x01" + b"\x00" * 12 + b"\x01"
+    + b"\xff\xc4\x00\x14\x00\x01"
+    + b"\x00" * 12
+    + b"\x01"
+    + b"\xff\xc4\x00\x14\x10\x01"
+    + b"\x00" * 12
+    + b"\x01"
     + b"\xff\xda\x00\x08\x01\x01\x00\x00?\x00\xfc\xff\xd9"
 )
 _MINIMAL_PNG = _make_png()
@@ -136,11 +140,7 @@ class ExifStrippingTests(unittest.TestCase):
         # Build a JPEG with an APP1 EXIF segment carrying fake GPS text.
         exif_payload = b"Exif\x00\x00" + b"FAKE_GPS_COORDS_BLOCK" * 5
         seg_len = len(exif_payload) + 2  # length includes the 2 length bytes
-        app1_seg = (
-            b"\xff\xe1"
-            + struct.pack(">H", seg_len)
-            + exif_payload
-        )
+        app1_seg = b"\xff\xe1" + struct.pack(">H", seg_len) + exif_payload
         jpeg_with_exif = (
             b"\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01\x01\x00\x00\x01\x00\x01\x00\x00"
             + app1_seg
@@ -157,8 +157,7 @@ class ExifStrippingTests(unittest.TestCase):
         """Inject a tEXt chunk and verify it's removed."""
         # Splice a proper-CRC tEXt chunk between IHDR (33 bytes incl sig)
         # and IDAT in the freshly-built PNG.
-        text_chunk = _png_chunk(b"tEXt",
-                                  b"Comment\x00sensitive_metadata_here")
+        text_chunk = _png_chunk(b"tEXt", b"Comment\x00sensitive_metadata_here")
         # Signature(8) + IHDR(4+4+13+4 = 25) = 33 bytes.
         png_with_text = _MINIMAL_PNG[:33] + text_chunk + _MINIMAL_PNG[33:]
         # Sanity: the injected raw definitely contains the marker.

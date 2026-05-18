@@ -62,8 +62,7 @@ class DiscoveryProvider(Protocol):
         location: str | None,
         limit: int,
         persona_id: str | None = None,
-    ) -> list[DiscoveryResult]:
-        ...
+    ) -> list[DiscoveryResult]: ...
 
 
 @dataclass
@@ -91,19 +90,25 @@ class MockSearchProvider:
                 score = min(1.0, score + 0.15)
             if industry and industry.casefold() in haystack:
                 score = min(1.0, score + 0.05)
-            if location and item.location_hint and location.casefold() in item.location_hint.casefold():
+            if (
+                location
+                and item.location_hint
+                and location.casefold() in item.location_hint.casefold()
+            ):
                 score = min(1.0, score + 0.05)
-            results.append(DiscoveryResult(
-                name=item.name,
-                website_url=item.website_url,
-                career_page_url=item.career_page_url,
-                sector=item.sector,
-                location_hint=item.location_hint,
-                relevance_score=round(score, 3),
-                relevance_reason=item.relevance_reason or "",
-                source="mock",
-                raw=dict(item.raw),
-            ))
+            results.append(
+                DiscoveryResult(
+                    name=item.name,
+                    website_url=item.website_url,
+                    career_page_url=item.career_page_url,
+                    sector=item.sector,
+                    location_hint=item.location_hint,
+                    relevance_score=round(score, 3),
+                    relevance_reason=item.relevance_reason or "",
+                    source="mock",
+                    raw=dict(item.raw),
+                )
+            )
         results.sort(key=lambda item: item.relevance_score, reverse=True)
         return results[:limit]
 
@@ -122,21 +127,27 @@ class CuratedSearchProvider:
         persona_id: str | None = None,
     ) -> list[DiscoveryResult]:
         seeds = suggest_curated_companies(
-            target_roles, industry, location, limit=limit, persona_id=persona_id,
+            target_roles,
+            industry,
+            location,
+            limit=limit,
+            persona_id=persona_id,
         )
         results: list[DiscoveryResult] = []
         for entry in seeds:
-            results.append(DiscoveryResult(
-                name=str(entry.get("name") or ""),
-                website_url=str(entry.get("website_url") or ""),
-                career_page_url=entry.get("career_page_url"),
-                sector=entry.get("sector"),
-                location_hint=entry.get("location_hint") or entry.get("locationHint"),
-                relevance_score=float(entry.get("relevanceScore") or 0.5),
-                relevance_reason=str(entry.get("relevanceReason") or ""),
-                source="curated",
-                raw=dict(entry),
-            ))
+            results.append(
+                DiscoveryResult(
+                    name=str(entry.get("name") or ""),
+                    website_url=str(entry.get("website_url") or ""),
+                    career_page_url=entry.get("career_page_url"),
+                    sector=entry.get("sector"),
+                    location_hint=entry.get("location_hint") or entry.get("locationHint"),
+                    relevance_score=float(entry.get("relevanceScore") or 0.5),
+                    relevance_reason=str(entry.get("relevanceReason") or ""),
+                    source="curated",
+                    raw=dict(entry),
+                )
+            )
         return results
 
 
@@ -183,7 +194,9 @@ class GreenhouseFeedProvider:
             if any(token in title.casefold() for token in roles_text.split() if token):
                 match_count += 1
         score = 0.55 + min(0.4, match_count * 0.05)
-        sample_titles = ", ".join(str(job.get("title") or "")[:60] for job in jobs[:3] if job.get("title"))
+        sample_titles = ", ".join(
+            str(job.get("title") or "")[:60] for job in jobs[:3] if job.get("title")
+        )
         return [
             DiscoveryResult(
                 name=self.company_name or "Greenhouse board",
@@ -192,7 +205,8 @@ class GreenhouseFeedProvider:
                 sector=None,
                 location_hint=location,
                 relevance_score=round(score, 2),
-                relevance_reason=f"{len(jobs)} public roles via Greenhouse" + (f" — e.g. {sample_titles}" if sample_titles else ""),
+                relevance_reason=f"{len(jobs)} public roles via Greenhouse"
+                + (f" — e.g. {sample_titles}" if sample_titles else ""),
                 source="greenhouse_feed",
                 raw={"jobs": jobs, "match_count": match_count},
             )
@@ -223,7 +237,11 @@ class LeverFeedProvider:
             1
             for entry in payload
             if isinstance(entry, dict)
-            and any(token in str(entry.get("text") or "").casefold() for token in roles_text.split() if token)
+            and any(
+                token in str(entry.get("text") or "").casefold()
+                for token in roles_text.split()
+                if token
+            )
         )
         score = 0.55 + min(0.4, match_count * 0.05)
         return [
@@ -267,8 +285,13 @@ class DuckDuckGoSearchProvider:
     timeout_seconds: int = 10
 
     _RESTRICTED_HOSTS: tuple[str, ...] = (
-        "linkedin.com", "indeed.com", "stepstone.", "xing.com",
-        "monster.com", "glassdoor.com", "ziprecruiter.com",
+        "linkedin.com",
+        "indeed.com",
+        "stepstone.",
+        "xing.com",
+        "monster.com",
+        "glassdoor.com",
+        "ziprecruiter.com",
         "duckduckgo.com",
     )
 
@@ -288,21 +311,27 @@ class DuckDuckGoSearchProvider:
         return self._parse(body, location=location, query=query, limit=limit)
 
     def _build_query(self, target_roles: list[str], industry: str, location: str | None) -> str:
-        parts = [r for r in target_roles if r] + [industry, location or "", "careers OR jobs site:com"]
+        parts = [r for r in target_roles if r] + [
+            industry,
+            location or "",
+            "careers OR jobs site:com",
+        ]
         return " ".join(p for p in parts if p)
 
     def _fetch(self, query: str) -> str:
         if self.fetcher is not None:
             try:
                 _, body = self.fetcher.get(  # type: ignore[attr-defined]
-                    self.base_url, {}, {"q": query, "kl": "wt-wt"},
+                    self.base_url,
+                    {},
+                    {"q": query, "kl": "wt-wt"},
                 )
                 return body
             except Exception:  # noqa: BLE001
                 return ""
+        from urllib.error import HTTPError, URLError
         from urllib.parse import urlencode
         from urllib.request import Request, urlopen
-        from urllib.error import HTTPError, URLError
 
         url = f"{self.base_url}?{urlencode({'q': query, 'kl': 'wt-wt'})}"
         request = Request(
@@ -319,7 +348,9 @@ class DuckDuckGoSearchProvider:
         except (HTTPError, URLError, OSError):
             return ""
 
-    def _parse(self, body: str, *, location: str | None, query: str, limit: int) -> list[DiscoveryResult]:
+    def _parse(
+        self, body: str, *, location: str | None, query: str, limit: int
+    ) -> list[DiscoveryResult]:
         # DDG HTML wraps each hit in <a class="result__a" href="...">title</a>
         # plus a sibling <a class="result__snippet">…</a>. Capture both.
         link_pattern = re.compile(
@@ -343,7 +374,9 @@ class DuckDuckGoSearchProvider:
             href = match.group(1)
             # DDG sometimes wraps URLs in /l/?uddg=<urlencoded>; unwrap.
             if href.startswith("//duckduckgo.com/l/?") or href.startswith("/l/?"):
-                from urllib.parse import parse_qs, urlparse as _urlparse, unquote as _unquote
+                from urllib.parse import parse_qs
+                from urllib.parse import unquote as _unquote
+                from urllib.parse import urlparse as _urlparse
 
                 try:
                     qs = parse_qs(_urlparse(href).query)
@@ -364,17 +397,19 @@ class DuckDuckGoSearchProvider:
             seen_hosts.add(host)
             title = _strip(match.group(2))
             description = _strip(snippets[idx].group(1)) if idx < len(snippets) else ""
-            out.append(DiscoveryResult(
-                name=self._extract_company_name(title, host),
-                website_url=f"https://{host}",
-                career_page_url=href,
-                sector=None,
-                location_hint=location,
-                relevance_score=0.6,
-                relevance_reason=description[:280] or f"Found via DuckDuckGo for: {query}",
-                source="duckduckgo",
-                raw={"url": href, "host": host},
-            ))
+            out.append(
+                DiscoveryResult(
+                    name=self._extract_company_name(title, host),
+                    website_url=f"https://{host}",
+                    career_page_url=href,
+                    sector=None,
+                    location_hint=location,
+                    relevance_score=0.6,
+                    relevance_reason=description[:280] or f"Found via DuckDuckGo for: {query}",
+                    source="duckduckgo",
+                    raw={"url": href, "host": host},
+                )
+            )
             if len(out) >= limit:
                 break
         return out
@@ -408,13 +443,20 @@ class BraveSearchProvider:
     name: str = "brave_search"
     api_key: str = ""
     base_url: str = "https://api.search.brave.com/res/v1"
-    fetcher: object | None = None  # injectable for tests; expects .get(url, headers) -> (status, body_str)
+    fetcher: object | None = (
+        None  # injectable for tests; expects .get(url, headers) -> (status, body_str)
+    )
     max_calls_per_run: int = 1
     timeout_seconds: int = 10
 
     _RESTRICTED_HOSTS: tuple[str, ...] = (
-        "linkedin.com", "indeed.com", "stepstone.", "xing.com",
-        "monster.com", "glassdoor.com", "ziprecruiter.com",
+        "linkedin.com",
+        "indeed.com",
+        "stepstone.",
+        "xing.com",
+        "monster.com",
+        "glassdoor.com",
+        "ziprecruiter.com",
     )
 
     def discover(
@@ -450,17 +492,19 @@ class BraveSearchProvider:
                 continue
             title = str(entry.get("title") or host)
             description = str(entry.get("description") or "")
-            out.append(DiscoveryResult(
-                name=self._extract_company_name(title, host),
-                website_url=f"https://{host}" if host else url,
-                career_page_url=url,
-                sector=None,
-                location_hint=location,
-                relevance_score=0.6,  # neutral; rank_candidates re-scores by persona
-                relevance_reason=description[:280] or f"Found via Brave Search for: {query}",
-                source="brave_search",
-                raw={"url": url, "host": host},
-            ))
+            out.append(
+                DiscoveryResult(
+                    name=self._extract_company_name(title, host),
+                    website_url=f"https://{host}" if host else url,
+                    career_page_url=url,
+                    sector=None,
+                    location_hint=location,
+                    relevance_score=0.6,  # neutral; rank_candidates re-scores by persona
+                    relevance_reason=description[:280] or f"Found via Brave Search for: {query}",
+                    source="brave_search",
+                    raw={"url": url, "host": host},
+                )
+            )
             if len(out) >= limit:
                 break
         return out
@@ -480,9 +524,9 @@ class BraveSearchProvider:
                 return body
             except Exception:  # noqa: BLE001
                 return ""
+        from urllib.error import HTTPError, URLError
         from urllib.parse import urlencode
         from urllib.request import Request, urlopen
-        from urllib.error import HTTPError, URLError
 
         url = f"{self.base_url}/web/search?{urlencode({'q': query, 'count': '10'})}"
         request = Request(

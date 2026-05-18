@@ -35,6 +35,7 @@ class _StatelessApp:
 
     def __init__(self) -> None:
         from app import AppState
+
         self._state_class = AppState
 
 
@@ -43,6 +44,7 @@ def _state():
     actually need the helper bound to an instance."""
 
     from app import AppState
+
     tmp = TemporaryDirectory()
     state = AppState(
         Path(tmp.name) / "company.sqlite3",
@@ -59,11 +61,13 @@ class AssignVariantTests(unittest.TestCase):
         state, tmp = _state()
         try:
             v1 = state.assign_variant(
-                experiment_id="hero_cta", identity="anon-uuid-1234",
+                experiment_id="hero_cta",
+                identity="anon-uuid-1234",
                 variants=("control", "treatment"),
             )
             v2 = state.assign_variant(
-                experiment_id="hero_cta", identity="anon-uuid-1234",
+                experiment_id="hero_cta",
+                identity="anon-uuid-1234",
                 variants=("control", "treatment"),
             )
             self.assertEqual(v1, v2)
@@ -81,14 +85,20 @@ class AssignVariantTests(unittest.TestCase):
             seen_b: set[str] = set()
             for i in range(200):
                 identity = f"u{i}"
-                seen_a.add(state.assign_variant(
-                    experiment_id="exp_a", identity=identity,
-                    variants=("control", "treatment"),
-                ))
-                seen_b.add(state.assign_variant(
-                    experiment_id="exp_b", identity=identity,
-                    variants=("control", "treatment"),
-                ))
+                seen_a.add(
+                    state.assign_variant(
+                        experiment_id="exp_a",
+                        identity=identity,
+                        variants=("control", "treatment"),
+                    )
+                )
+                seen_b.add(
+                    state.assign_variant(
+                        experiment_id="exp_b",
+                        identity=identity,
+                        variants=("control", "treatment"),
+                    )
+                )
             self.assertEqual(seen_a, {"control", "treatment"})
             self.assertEqual(seen_b, {"control", "treatment"})
         finally:
@@ -105,7 +115,8 @@ class AssignVariantTests(unittest.TestCase):
             n = 10_000
             for i in range(n):
                 v = state.assign_variant(
-                    experiment_id="big_exp", identity=f"id-{i}",
+                    experiment_id="big_exp",
+                    identity=f"id-{i}",
                     variants=("control", "treatment"),
                 )
                 counts[v] += 1
@@ -113,7 +124,8 @@ class AssignVariantTests(unittest.TestCase):
             tolerance = n * 0.05  # 5%
             for variant, count in counts.items():
                 self.assertLess(
-                    abs(count - mean), tolerance,
+                    abs(count - mean),
+                    tolerance,
                     f"variant {variant} got {count}, expected within ±{tolerance:g} of {mean}",
                 )
         finally:
@@ -131,7 +143,8 @@ class AssignVariantTests(unittest.TestCase):
             variants = ("control", "treatment_a", "treatment_b")
             for i in range(n):
                 v = state.assign_variant(
-                    experiment_id="three_way", identity=f"id-{i}",
+                    experiment_id="three_way",
+                    identity=f"id-{i}",
                     variants=variants,
                 )
                 counts[v] += 1
@@ -139,7 +152,8 @@ class AssignVariantTests(unittest.TestCase):
             tolerance = n * 0.05
             for variant in variants:
                 self.assertLess(
-                    abs(counts[variant] - mean), tolerance,
+                    abs(counts[variant] - mean),
+                    tolerance,
                     f"variant {variant} got {counts[variant]}, expected within ±{tolerance:g} of {mean}",
                 )
         finally:
@@ -165,6 +179,7 @@ class AssignVariantTests(unittest.TestCase):
 class ExperimentConfigTests(unittest.TestCase):
     def _state_with_config(self, payload: dict):
         from app import AppState
+
         tmp = TemporaryDirectory()
         root = Path(tmp.name)
         (root / "experiments.json").write_text(json.dumps(payload), encoding="utf-8")
@@ -179,6 +194,7 @@ class ExperimentConfigTests(unittest.TestCase):
 
     def test_missing_file_returns_empty(self) -> None:
         from app import AppState
+
         tmp = TemporaryDirectory()
         try:
             state = AppState(
@@ -197,14 +213,16 @@ class ExperimentConfigTests(unittest.TestCase):
             tmp.cleanup()
 
     def test_filters_invalid_entries(self) -> None:
-        state, tmp = self._state_with_config({
-            "experiments": [
-                {"id": "valid_exp", "variants": ["a", "b"]},
-                {"id": "no variants", "variants": []},  # filtered (no variants)
-                {"id": "bad chars!", "variants": ["a"]},  # filtered (bad id)
-                {"variants": ["a"]},  # filtered (no id)
-            ],
-        })
+        state, tmp = self._state_with_config(
+            {
+                "experiments": [
+                    {"id": "valid_exp", "variants": ["a", "b"]},
+                    {"id": "no variants", "variants": []},  # filtered (no variants)
+                    {"id": "bad chars!", "variants": ["a"]},  # filtered (bad id)
+                    {"variants": ["a"]},  # filtered (no id)
+                ],
+            }
+        )
         try:
             ids = [e["id"] for e in state.experiment_config()]
             self.assertEqual(ids, ["valid_exp"])

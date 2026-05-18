@@ -92,7 +92,8 @@ DESKTOP_PDF_PATH = Path(
     )
 )
 PHOTO_URL = os.environ.get(
-    "E2E_PHOTO_URL", "https://picsum.photos/seed/directjob/240/240.jpg",
+    "E2E_PHOTO_URL",
+    "https://picsum.photos/seed/directjob/240/240.jpg",
 )
 RESULTS: list[tuple[str, bool, str]] = []
 
@@ -105,14 +106,16 @@ def report(name: str, ok: bool, detail: str = "") -> None:
 
 # ---------------- HTTP helpers (cookie + CSRF aware) ----------------
 
+
 class _Client:
     def __init__(self, base: str):
         self.base = base
         self.cookie = ""
         self.csrf = ""
 
-    def request(self, method: str, path: str, body: dict | None = None,
-                 expect_json: bool = True) -> tuple[int, dict | str]:
+    def request(
+        self, method: str, path: str, body: dict | None = None, expect_json: bool = True
+    ) -> tuple[int, dict | str]:
         data = None
         headers = {"Accept": "application/json"}
         if body is not None:
@@ -123,7 +126,10 @@ class _Client:
         if self.csrf and method != "GET":
             headers["X-CSRF-Token"] = self.csrf
         req = urllib.request.Request(
-            self.base + path, data=data, method=method, headers=headers,
+            self.base + path,
+            data=data,
+            method=method,
+            headers=headers,
         )
         try:
             with urllib.request.urlopen(req, timeout=30) as resp:
@@ -161,12 +167,14 @@ class _Client:
 
 # ---------------- Phase 1: download a real photo from the web --------
 
+
 def download_photo(url: str) -> bytes:
     """Pull a real JPEG. We exercise the live network path on purpose —
     the user asked us to prove that "download a personal picture"
     works end-to-end, not just that a fixture can be uploaded."""
     req = urllib.request.Request(
-        url, headers={"User-Agent": "DirectJobScoutVerifier/1.0"},
+        url,
+        headers={"User-Agent": "DirectJobScoutVerifier/1.0"},
     )
     with urllib.request.urlopen(req, timeout=30) as resp:
         if resp.status != 200:
@@ -188,59 +196,74 @@ USER_NAME = "Alex Bartender"
 USER_EMAIL = "alex.bartender@example.com"
 
 SECTION_PAYLOADS: list[tuple[str, dict]] = [
-    ("header", {
-        "answers": {
-            "full_name": USER_NAME,
-            "email": USER_EMAIL,
-            "phone": "+49 30 1234 5678",
-            "location": "Berlin, Deutschland",
-            "linkedin": "https://www.linkedin.com/in/alex-bartender",
-            "portfolio": "",
+    (
+        "header",
+        {
+            "answers": {
+                "full_name": USER_NAME,
+                "email": USER_EMAIL,
+                "phone": "+49 30 1234 5678",
+                "location": "Berlin, Deutschland",
+                "linkedin": "https://www.linkedin.com/in/alex-bartender",
+                "portfolio": "",
+            },
         },
-    }),
-    ("summary", {
-        "answers": {
-            "summary_raw": (
-                "Bartender with three years of cocktail bar experience in "
-                "Berlin. Comfortable with high-volume service, classic "
-                "and signature cocktails, and training new staff."
-            ),
+    ),
+    (
+        "summary",
+        {
+            "answers": {
+                "summary_raw": (
+                    "Bartender with three years of cocktail bar experience in "
+                    "Berlin. Comfortable with high-volume service, classic "
+                    "and signature cocktails, and training new staff."
+                ),
+            },
         },
-    }),
-    ("experience", {
-        "answers": {
-            "company_name": "Berliner Bar GmbH",
-            "job_title": "Bartender",
-            "start_date": "01.01.2022",
-            "end_date": "31.12.2024",
-            "location": "Berlin",
-            "achievements_raw": (
-                "Mixed classic and signature cocktails for up to 200 guests "
-                "per night. Trained two junior bartenders on speed and "
-                "consistency. Maintained zero glassware breakage record "
-                "for six months."
-            ),
+    ),
+    (
+        "experience",
+        {
+            "answers": {
+                "company_name": "Berliner Bar GmbH",
+                "job_title": "Bartender",
+                "start_date": "01.01.2022",
+                "end_date": "31.12.2024",
+                "location": "Berlin",
+                "achievements_raw": (
+                    "Mixed classic and signature cocktails for up to 200 guests "
+                    "per night. Trained two junior bartenders on speed and "
+                    "consistency. Maintained zero glassware breakage record "
+                    "for six months."
+                ),
+            },
         },
-    }),
-    ("education", {
-        "answers": {
-            "school": "Berufsschule Berlin",
-            "degree": "Ausbildung",
-            "field": "Hotel und Gastronomie",
-            "start_date": "01.09.2018",
-            "end_date": "30.06.2021",
-            "honors": "",
+    ),
+    (
+        "education",
+        {
+            "answers": {
+                "school": "Berufsschule Berlin",
+                "degree": "Ausbildung",
+                "field": "Hotel und Gastronomie",
+                "start_date": "01.09.2018",
+                "end_date": "30.06.2021",
+                "honors": "",
+            },
         },
-    }),
-    ("skills", {
-        "answers": {
-            "skills_raw": (
-                "Classic cocktails, signature menu development, "
-                "high-volume bar service, POS systems, inventory, "
-                "wine knowledge, English, Deutsch"
-            ),
+    ),
+    (
+        "skills",
+        {
+            "answers": {
+                "skills_raw": (
+                    "Classic cocktails, signature menu development, "
+                    "high-volume bar service, POS systems, inventory, "
+                    "wine knowledge, English, Deutsch"
+                ),
+            },
         },
-    }),
+    ),
 ]
 
 
@@ -268,6 +291,7 @@ def drive_cv_builder(client: _Client) -> None:
 
 # ---------------- Phase 3: render + save PDF via Playwright ----------
 
+
 def save_pdf_to_desktop(client: _Client) -> None:
     """Drive Chromium to the print page and capture the PDF via
     ``page.pdf()``. The cookie + CSRF set on ``client`` are
@@ -284,10 +308,15 @@ def save_pdf_to_desktop(client: _Client) -> None:
         # "dj_session=abc..." — split on "=" for cookie name/value.
         if client.cookie:
             name, _, value = client.cookie.partition("=")
-            context.add_cookies([{
-                "name": name, "value": value,
-                "url": client.base + "/",
-            }])
+            context.add_cookies(
+                [
+                    {
+                        "name": name,
+                        "value": value,
+                        "url": client.base + "/",
+                    }
+                ]
+            )
         page = context.new_page()
         # The print page renders the CV with an embedded photo data
         # URI and a one-button toolbar. We don't auto-print (we'd race
@@ -300,12 +329,13 @@ def save_pdf_to_desktop(client: _Client) -> None:
         # @media print rules hide the toolbar. We strip it before
         # page.pdf() so the saved PDF matches the user-visible output.
         page.evaluate(
-            "() => { const t = document.querySelector('.toolbar');"
-            "        if (t) t.remove(); }"
+            "() => { const t = document.querySelector('.toolbar');        if (t) t.remove(); }"
         )
-        pdf_bytes = page.pdf(format="A4", print_background=True,
-                              margin={"top": "18mm", "bottom": "18mm",
-                                      "left": "16mm", "right": "16mm"})
+        pdf_bytes = page.pdf(
+            format="A4",
+            print_background=True,
+            margin={"top": "18mm", "bottom": "18mm", "left": "16mm", "right": "16mm"},
+        )
         DESKTOP_PDF_PATH.write_bytes(pdf_bytes)
         # Also capture the rendered HTML so we can assert the photo
         # was embedded as a data URI (PDF parsing doesn't preserve
@@ -317,6 +347,7 @@ def save_pdf_to_desktop(client: _Client) -> None:
 
 
 # ---------------- Phase 4: parse + assert DACH layout ----------------
+
 
 def parse_pdf_text(path: Path) -> str:
     reader = PdfReader(str(path))
@@ -331,15 +362,16 @@ def parse_pdf_text(path: Path) -> str:
 
 def assert_dach_layout(pdf_text: str, print_html: str) -> None:
     # 1. Non-empty
-    report("pdf_non_empty", bool(pdf_text.strip()),
-            f"{len(pdf_text)} chars extracted")
+    report("pdf_non_empty", bool(pdf_text.strip()), f"{len(pdf_text)} chars extracted")
     # 2. User name appears
-    report("pdf_contains_user_name", USER_NAME in pdf_text,
-            f"looking for {USER_NAME!r}")
+    report("pdf_contains_user_name", USER_NAME in pdf_text, f"looking for {USER_NAME!r}")
     # 3. DACH date format (DD.MM.YYYY) appears at least 2× (start + end)
     dach_dates = re.findall(r"\b\d{2}\.\d{2}\.\d{4}\b", pdf_text)
-    report("pdf_dach_date_format", len(dach_dates) >= 2,
-            f"found {len(dach_dates)} TT.MM.JJJJ tokens: {dach_dates[:4]}")
+    report(
+        "pdf_dach_date_format",
+        len(dach_dates) >= 2,
+        f"found {len(dach_dates)} TT.MM.JJJJ tokens: {dach_dates[:4]}",
+    )
     # 4. Section ordering: Summary → Experience → Education → Skills
     order_ok = True
     last_pos = -1
@@ -354,25 +386,29 @@ def assert_dach_layout(pdf_text: str, print_html: str) -> None:
     # 5. Photo embedded (check the print-page HTML — pypdf doesn't
     # surface raster image data reliably)
     has_photo = "data:image/" in print_html
-    report("photo_embedded_in_print_html", has_photo,
-            "data:image/ URI present in the print HTML")
+    report("photo_embedded_in_print_html", has_photo, "data:image/ URI present in the print HTML")
     # 6. No AI-invented content. We never said "Microsoft", "Google",
     # or "Amazon" — these MUST NOT appear in the PDF. The fact-ratio
     # gate is the live defence; this is a witness.
-    forbidden = [t for t in ("Microsoft", "Google", "Amazon")
-                  if t.lower() in pdf_text.lower()]
-    report("no_invented_companies", not forbidden,
-            f"forbidden hits: {forbidden}" if forbidden else "none")
+    forbidden = [t for t in ("Microsoft", "Google", "Amazon") if t.lower() in pdf_text.lower()]
+    report(
+        "no_invented_companies",
+        not forbidden,
+        f"forbidden hits: {forbidden}" if forbidden else "none",
+    )
     # 7. No print-page chrome leaks. The toolbar buttons are stripped
     # before page.pdf() so the saved PDF matches what the user sees in
     # the print dialog.
-    chrome_leaks = [t for t in ("Download as PDF", "Back to app")
-                     if t in pdf_text]
-    report("no_print_chrome_in_pdf", not chrome_leaks,
-            f"toolbar leaks: {chrome_leaks}" if chrome_leaks else "clean")
+    chrome_leaks = [t for t in ("Download as PDF", "Back to app") if t in pdf_text]
+    report(
+        "no_print_chrome_in_pdf",
+        not chrome_leaks,
+        f"toolbar leaks: {chrome_leaks}" if chrome_leaks else "clean",
+    )
 
 
 # ---------------- Phase 5: strict job-type filter via chat ----------
+
 
 def assert_filter_via_chat(client: _Client) -> None:
     cases: list[tuple[str, str, str, str]] = [
@@ -381,13 +417,12 @@ def assert_filter_via_chat(client: _Client) -> None:
         #  typed — we preserve the language for the aggregator query so
         #  German postings on DE job boards match.
         ("find bartender jobs in Berlin", "bartender", "bartender", "Berlin"),
-        ("Pflegehelfer in Deutschland gesucht", "pflegehelfer",
-         "Pflegehelfer", "Germany"),
+        ("Pflegehelfer in Deutschland gesucht", "pflegehelfer", "Pflegehelfer", "Germany"),
     ]
     for probe, bucket, label, location in cases:
         client.request("POST", "/api/chat/reset", {})
         s, p = client.request("POST", "/api/chat/message", {"message": probe})
-        ok = (s == 200)
+        ok = s == 200
         report(f"chat_routes:{probe[:40]}", ok, f"HTTP {s}")
         if not ok:
             continue
@@ -397,21 +432,25 @@ def assert_filter_via_chat(client: _Client) -> None:
         executed = (p or {}).get("executed", "")
         result = (p or {}).get("result", {}) or {}
         reply = (p or {}).get("reply", "")
-        report(f"find_jobs_executed:{bucket}", executed == "find_jobs",
-                f"executed={executed!r}")
+        report(f"find_jobs_executed:{bucket}", executed == "find_jobs", f"executed={executed!r}")
         # The user-facing reply echoes the literal role + location
         # (preserves the user's language). When the role matched a
         # taxonomy bucket, the reply also announces the strict filter.
-        report(f"role_in_reply:{bucket}",
-                label.lower() in reply.lower(),
-                f"reply tail: {reply[-160:]!r}")
-        report(f"location_in_reply:{bucket}",
-                location.lower() in reply.lower(),
-                f"want {location!r} in reply")
-        report(f"strict_filter_announced:{bucket}",
-                "strict role filter" in reply.lower()
-                or "no matches for" in reply.lower(),
-                "looking for 'Strict role filter applied' OR no-matches fallback")
+        report(
+            f"role_in_reply:{bucket}",
+            label.lower() in reply.lower(),
+            f"reply tail: {reply[-160:]!r}",
+        )
+        report(
+            f"location_in_reply:{bucket}",
+            location.lower() in reply.lower(),
+            f"want {location!r} in reply",
+        )
+        report(
+            f"strict_filter_announced:{bucket}",
+            "strict role filter" in reply.lower() or "no matches for" in reply.lower(),
+            "looking for 'Strict role filter applied' OR no-matches fallback",
+        )
         # The handler stamped the journey state so review/drill works
         # the same regardless of trigger path. We also expect
         # navigateTo='searchResults' so the canvas auto-switches.
@@ -419,12 +458,15 @@ def assert_filter_via_chat(client: _Client) -> None:
         # Only expect navigation when there were matches (no-results
         # path intentionally keeps the user where they were).
         if result.get("totalJobs", 0) > 0:
-            report(f"navigate_to_search_results:{bucket}",
-                    nav == "searchResults",
-                    f"navigateTo={nav!r}")
+            report(
+                f"navigate_to_search_results:{bucket}",
+                nav == "searchResults",
+                f"navigateTo={nav!r}",
+            )
 
 
 # ---------------- Entry ----------------
+
 
 def main() -> int:
     if not BASE_URL:
@@ -436,11 +478,16 @@ def main() -> int:
     # Boot a session via register.
     email = f"verifier+{secrets.token_hex(3)}@example.com"
     client.request("GET", "/")
-    s, p = client.request("POST", "/api/auth/register", {
-        "email": email,
-        "password": "verifier-pass-99-X",
-        "tosAccepted": True, "privacyAccepted": True,
-    })
+    s, p = client.request(
+        "POST",
+        "/api/auth/register",
+        {
+            "email": email,
+            "password": "verifier-pass-99-X",
+            "tosAccepted": True,
+            "privacyAccepted": True,
+        },
+    )
     if s not in (200, 201):
         print(f"ERROR: register {s} {p}", file=sys.stderr)
         return 1
@@ -449,27 +496,33 @@ def main() -> int:
     # 1. Download photo from a public CDN.
     try:
         blob = download_photo(PHOTO_URL)
-        report("download_personal_photo", True,
-                f"{len(blob)} bytes from {PHOTO_URL}")
+        report("download_personal_photo", True, f"{len(blob)} bytes from {PHOTO_URL}")
     except Exception as exc:  # noqa: BLE001
         report("download_personal_photo", False, str(exc))
         return _verdict()
 
     # 2. Upload photo to the profile.
     import base64 as _b64
-    s, p = client.request("POST", "/api/profile/photo-upload", {
-        "contentBase64": _b64.b64encode(blob).decode("ascii"),
-    })
-    report("upload_photo_to_profile", s == 200,
-            f"HTTP {s} sizeBytes={p.get('sizeBytes') if isinstance(p, dict) else '?'}")
+
+    s, p = client.request(
+        "POST",
+        "/api/profile/photo-upload",
+        {
+            "contentBase64": _b64.b64encode(blob).decode("ascii"),
+        },
+    )
+    report(
+        "upload_photo_to_profile",
+        s == 200,
+        f"HTTP {s} sizeBytes={p.get('sizeBytes') if isinstance(p, dict) else '?'}",
+    )
     if s != 200:
         return _verdict()
 
     # 3. Fill the CV Builder.
     try:
         drive_cv_builder(client)
-        report("cv_builder_completed", True,
-                "all sections submitted + finish OK")
+        report("cv_builder_completed", True, "all sections submitted + finish OK")
     except Exception as exc:  # noqa: BLE001
         report("cv_builder_completed", False, str(exc))
         return _verdict()
@@ -477,9 +530,11 @@ def main() -> int:
     # 4. Render print page + save PDF to Desktop.
     try:
         print_html = save_pdf_to_desktop(client)
-        report("pdf_saved_to_desktop",
-                DESKTOP_PDF_PATH.exists() and DESKTOP_PDF_PATH.stat().st_size > 1024,
-                f"path={DESKTOP_PDF_PATH} size={DESKTOP_PDF_PATH.stat().st_size if DESKTOP_PDF_PATH.exists() else 0}B")
+        report(
+            "pdf_saved_to_desktop",
+            DESKTOP_PDF_PATH.exists() and DESKTOP_PDF_PATH.stat().st_size > 1024,
+            f"path={DESKTOP_PDF_PATH} size={DESKTOP_PDF_PATH.stat().st_size if DESKTOP_PDF_PATH.exists() else 0}B",
+        )
     except Exception as exc:  # noqa: BLE001
         report("pdf_saved_to_desktop", False, str(exc))
         return _verdict()
@@ -504,13 +559,11 @@ def _verdict() -> int:
         for n, _, d in failed:
             print(f"  FAIL {n}: {d}")
         print()
-        print(f"PDF on Desktop: {DESKTOP_PDF_PATH}"
-              f" (exists={DESKTOP_PDF_PATH.exists()})")
+        print(f"PDF on Desktop: {DESKTOP_PDF_PATH} (exists={DESKTOP_PDF_PATH.exists()})")
         return 1
     print(f"FULL USER FLOW — ALL {len(RESULTS)}/{len(RESULTS)} CHECKS PASS")
     print("=" * 70)
-    print(f"Runtime proof: PDF at {DESKTOP_PDF_PATH}"
-          f" (size={DESKTOP_PDF_PATH.stat().st_size}B)")
+    print(f"Runtime proof: PDF at {DESKTOP_PDF_PATH} (size={DESKTOP_PDF_PATH.stat().st_size}B)")
     return 0
 
 

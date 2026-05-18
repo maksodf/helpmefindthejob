@@ -7,7 +7,7 @@
 
 """Safe company-discovery reference slice."""
 
-from .models import Company, CompanyDiscoveryRun, CareerPageScan, DiscoveredJob, ImportedJob
+from .models import CareerPageScan, Company, CompanyDiscoveryRun, DiscoveredJob, ImportedJob
 from .repository import InMemoryCompanyDiscoveryRepository
 from .service import CompanyDiscoveryService, ScanConfig, StaticFetcher
 from .sqlite_repository import SqliteCompanyDiscoveryRepository

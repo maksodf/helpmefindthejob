@@ -17,7 +17,6 @@ from company_discovery.motivation_letter import (
     templated_fallback,
 )
 
-
 _JOB = {
     "title": "Pflegehelfer/in (m/w/d)",
     "company": "Charité",
@@ -35,17 +34,28 @@ _CV = (
 class BuildPromptTests(unittest.TestCase):
     def test_system_prompt_contains_dach_structure(self):
         system, _ = build_letter_prompt(
-            job_title="Bartender", company="Berliner Bar",
-            location="Berlin", job_url="", cv_text="",
+            job_title="Bartender",
+            company="Berliner Bar",
+            location="Berlin",
+            job_url="",
+            cv_text="",
         )
-        for needed in ("Anrede", "Hauptteil", "Schluss", "Sehr geehrte",
-                        "TT.MM.JJJJ", "Mit freundlichen Grüßen"):
+        for needed in (
+            "Anrede",
+            "Hauptteil",
+            "Schluss",
+            "Sehr geehrte",
+            "TT.MM.JJJJ",
+            "Mit freundlichen Grüßen",
+        ):
             self.assertIn(needed, system, msg=f"missing: {needed}")
 
     def test_user_prompt_carries_job_and_cv(self):
         _, user = build_letter_prompt(
-            job_title="Bartender", company="Berliner Bar",
-            location="Berlin", job_url="https://x",
+            job_title="Bartender",
+            company="Berliner Bar",
+            location="Berlin",
+            job_url="https://x",
             cv_text="some cv",
         )
         self.assertIn("Berliner Bar", user)
@@ -57,8 +67,10 @@ class BuildPromptTests(unittest.TestCase):
 class DraftWithAiTests(unittest.TestCase):
     def test_none_caller_returns_none(self):
         result = draft_with_ai(
-            job=_JOB, cv_text=_CV,
-            user_name="Maria", user_location="Berlin",
+            job=_JOB,
+            cv_text=_CV,
+            user_name="Maria",
+            user_location="Berlin",
             ai_caller=None,
         )
         self.assertIsNone(result)
@@ -75,9 +87,12 @@ class DraftWithAiTests(unittest.TestCase):
                 "Mein Engagement und meine Empathie …\n\n"
                 "Mit freundlichen Grüßen,\n\nMaria Schmidt"
             )
+
         result = draft_with_ai(
-            job=_JOB, cv_text=_CV,
-            user_name="Maria", user_location="Berlin",
+            job=_JOB,
+            cv_text=_CV,
+            user_name="Maria",
+            user_location="Berlin",
             ai_caller=fake_ai,
         )
         self.assertIsNotNone(result)
@@ -87,9 +102,12 @@ class DraftWithAiTests(unittest.TestCase):
     def test_caller_error_returns_none(self):
         def crashing(system, user):
             raise RuntimeError("api down")
+
         result = draft_with_ai(
-            job=_JOB, cv_text=_CV,
-            user_name="Maria", user_location="Berlin",
+            job=_JOB,
+            cv_text=_CV,
+            user_name="Maria",
+            user_location="Berlin",
             ai_caller=crashing,
         )
         self.assertIsNone(result)
@@ -98,7 +116,9 @@ class DraftWithAiTests(unittest.TestCase):
 class TemplatedFallbackTests(unittest.TestCase):
     def test_template_includes_banner_and_structure(self):
         text = templated_fallback(
-            job=_JOB, user_name="Maria", user_location="Berlin",
+            job=_JOB,
+            user_name="Maria",
+            user_location="Berlin",
         )
         # The honesty banner.
         self.assertIn("without an AI", text)
@@ -116,9 +136,9 @@ class TemplatedFallbackTests(unittest.TestCase):
 
     def test_template_with_missing_company_falls_to_placeholder(self):
         text = templated_fallback(
-            job={"title": "Pflegehelfer", "company": "",
-                  "location": "", "url": ""},
-            user_name="", user_location="",
+            job={"title": "Pflegehelfer", "company": "", "location": "", "url": ""},
+            user_name="",
+            user_location="",
         )
         self.assertIn("<Firma>", text)
         self.assertIn("<Ort der Firma>", text)

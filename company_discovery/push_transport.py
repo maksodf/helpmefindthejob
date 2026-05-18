@@ -58,12 +58,16 @@ class PushPayload:
 
     def to_json(self) -> str:
         return json.dumps(
-            {k: v for k, v in {
-                "title": self.title,
-                "body": self.body,
-                "url": self.url,
-                "icon": self.icon,
-            }.items() if v is not None}
+            {
+                k: v
+                for k, v in {
+                    "title": self.title,
+                    "body": self.body,
+                    "url": self.url,
+                    "icon": self.icon,
+                }.items()
+                if v is not None
+            }
         )
 
 

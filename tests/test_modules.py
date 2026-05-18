@@ -27,7 +27,6 @@ from company_discovery.quotas import QuotaError, QuotaLimits, QuotaStore
 from company_discovery.scheduler import DurableScheduler
 from company_discovery.tokens import TokenStore
 
-
 SECRET = "tests-secret-key-with-enough-bytes-1234"
 
 
@@ -43,7 +42,9 @@ class EmailTransportTests(unittest.TestCase):
                 from_address="bot@example.com",
             )
             transport.send(email)
-            transport.send(Email(to="user2@example.com", subject="x", text="y", from_address="bot@example.com"))
+            transport.send(
+                Email(to="user2@example.com", subject="x", text="y", from_address="bot@example.com")
+            )
             self.assertEqual(len(transport.outbox), 2)
             self.assertEqual(transport.last_for("USER@example.com").subject, "hello")
             lines = outbox.read_text().splitlines()
@@ -63,7 +64,9 @@ class TokenStoreTests(unittest.TestCase):
         self.addCleanup(self.store.close)
 
     def test_invitation_round_trip(self) -> None:
-        issued = self.store.issue(kind="invitation", email="Tester@Example.com", role="member", created_by="admin")
+        issued = self.store.issue(
+            kind="invitation", email="Tester@Example.com", role="member", created_by="admin"
+        )
         record = self.store.lookup("invitation", issued.raw_token)
         self.assertIsNotNone(record)
         self.assertEqual(record.email, "tester@example.com")
@@ -113,7 +116,9 @@ class DurableSchedulerTests(unittest.TestCase):
 
     def test_upsert_then_run_due_then_persist(self) -> None:
         calls: list[str] = []
-        scheduler = self._build(lambda user_id, trigger: (calls.append(user_id), {"status": "completed"})[1])
+        scheduler = self._build(
+            lambda user_id, trigger: (calls.append(user_id), {"status": "completed"})[1]
+        )
         record = scheduler.upsert("u1", enabled=True, interval_minutes=1)
         self.assertTrue(record.enabled)
         self.assertEqual(record.interval_minutes, 1)
@@ -212,12 +217,23 @@ class AtsAdapterTests(unittest.TestCase):
         )
 
     def test_detect_supported_and_unsupported(self) -> None:
-        self.assertEqual(ats_adapters.detect_ats("https://boards-api.greenhouse.io/v1/boards/acme/jobs"), "greenhouse")
+        self.assertEqual(
+            ats_adapters.detect_ats("https://boards-api.greenhouse.io/v1/boards/acme/jobs"),
+            "greenhouse",
+        )
         self.assertEqual(ats_adapters.detect_ats("https://api.lever.co/v0/postings/acme"), "lever")
         self.assertEqual(ats_adapters.detect_ats("https://acme.jobs.personio.de/xml"), "personio")
-        self.assertEqual(ats_adapters.detect_ats("https://api.smartrecruiters.com/v1/companies/acme/postings"), "smartrecruiters")
-        self.assertEqual(ats_adapters.detect_ats("https://acme.teamtailor.com/job-board.json"), "teamtailor")
-        self.assertEqual(ats_adapters.detect_unsupported_ats("https://acme.wd1.myworkdayjobs.com/External"), "workday")
+        self.assertEqual(
+            ats_adapters.detect_ats("https://api.smartrecruiters.com/v1/companies/acme/postings"),
+            "smartrecruiters",
+        )
+        self.assertEqual(
+            ats_adapters.detect_ats("https://acme.teamtailor.com/job-board.json"), "teamtailor"
+        )
+        self.assertEqual(
+            ats_adapters.detect_unsupported_ats("https://acme.wd1.myworkdayjobs.com/External"),
+            "workday",
+        )
 
     def test_greenhouse_extraction(self) -> None:
         body = """
@@ -229,7 +245,9 @@ class AtsAdapterTests(unittest.TestCase):
           ]
         }
         """
-        result = ats_adapters.extract_jobs(self.company, "https://boards-api.greenhouse.io/v1/boards/acme/jobs", body)
+        result = ats_adapters.extract_jobs(
+            self.company, "https://boards-api.greenhouse.io/v1/boards/acme/jobs", body
+        )
         self.assertIsNotNone(result)
         self.assertEqual(result.adapter, "greenhouse")
         self.assertEqual(len(result.jobs), 1)
@@ -245,7 +263,9 @@ class AtsAdapterTests(unittest.TestCase):
            "hostedUrl": "https://jobs.lever.co/acme/abc-123"}
         ]
         """
-        result = ats_adapters.extract_jobs(self.company, "https://api.lever.co/v0/postings/acme", body)
+        result = ats_adapters.extract_jobs(
+            self.company, "https://api.lever.co/v0/postings/acme", body
+        )
         self.assertIsNotNone(result)
         self.assertEqual(result.jobs[0].title, "Market Access Manager")
         self.assertEqual(result.jobs[0].structured_data["ats"], "lever")
@@ -281,7 +301,9 @@ class AtsAdapterTests(unittest.TestCase):
           ]
         }
         """
-        result = ats_adapters.extract_jobs(self.company, "https://api.smartrecruiters.com/v1/companies/acme/postings", body)
+        result = ats_adapters.extract_jobs(
+            self.company, "https://api.smartrecruiters.com/v1/companies/acme/postings", body
+        )
         self.assertIsNotNone(result)
         self.assertEqual(result.jobs[0].title, "Quality Manager")
 
@@ -297,7 +319,9 @@ class AtsAdapterTests(unittest.TestCase):
           ]
         }
         """
-        result = ats_adapters.extract_jobs(self.company, "https://acme.teamtailor.com/job-board.json", body)
+        result = ats_adapters.extract_jobs(
+            self.company, "https://acme.teamtailor.com/job-board.json", body
+        )
         self.assertIsNotNone(result)
         self.assertEqual(result.jobs[0].title, "Healthcare Consultant")
         self.assertEqual(result.jobs[0].structured_data["ats"], "teamtailor")
@@ -305,7 +329,14 @@ class AtsAdapterTests(unittest.TestCase):
 
 class DedupTests(unittest.TestCase):
     def _job(self, **kwargs) -> DiscoveredJob:
-        defaults = dict(user_id="u1", company_id="c1", source_url="", title="", raw_description=None, structured_data=None)
+        defaults = dict(
+            user_id="u1",
+            company_id="c1",
+            source_url="",
+            title="",
+            raw_description=None,
+            structured_data=None,
+        )
         defaults.update(kwargs)
         return DiscoveredJob(**defaults)
 
@@ -315,7 +346,9 @@ class DedupTests(unittest.TestCase):
         self.assertEqual(a, b)
 
     def test_url_match_is_duplicate(self) -> None:
-        a = self._job(id="a", source_url="https://example.org/jobs/1?utm_source=foo", title="Manager")
+        a = self._job(
+            id="a", source_url="https://example.org/jobs/1?utm_source=foo", title="Manager"
+        )
         b = self._job(id="b", source_url="https://example.org/jobs/1", title="Different title")
         match = find_duplicate(b, [a])
         self.assertIsNotNone(match)
@@ -346,8 +379,18 @@ class DedupTests(unittest.TestCase):
         self.assertEqual(match.reason, "title_company")
 
     def test_short_descriptions_dont_trigger_shingle(self) -> None:
-        a = self._job(id="a", title="A", source_url="https://x.example/a", raw_description="Short shared text" * 2)
-        b = self._job(id="b", title="B", source_url="https://x.example/b", raw_description="Short shared text" * 2)
+        a = self._job(
+            id="a",
+            title="A",
+            source_url="https://x.example/a",
+            raw_description="Short shared text" * 2,
+        )
+        b = self._job(
+            id="b",
+            title="B",
+            source_url="https://x.example/b",
+            raw_description="Short shared text" * 2,
+        )
         self.assertIsNone(find_duplicate(b, [a]))
 
     def test_long_descriptions_with_similar_titles_trigger_shingle(self) -> None:

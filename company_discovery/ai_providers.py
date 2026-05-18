@@ -124,12 +124,16 @@ def provider_options_payload() -> list[dict[str, object]]:
 
 def validate_provider_config(config: AIProviderConfig) -> list[dict[str, str]]:
     errors: list[dict[str, str]] = []
-    provider = next((option for option in PROVIDER_OPTIONS if option.id == config.provider_id), None)
+    provider = next(
+        (option for option in PROVIDER_OPTIONS if option.id == config.provider_id), None
+    )
     if provider is None:
         errors.append({"code": "unknown_provider", "field": "provider_id"})
         return errors
     if config.invocation_mode not in provider.invocation_modes:
         errors.append({"code": "unsupported_invocation_mode", "field": "invocation_mode"})
-    if config.credential_reference and any(secret in config.credential_reference.casefold() for secret in ("sk-", "key=", "token=")):
+    if config.credential_reference and any(
+        secret in config.credential_reference.casefold() for secret in ("sk-", "key=", "token=")
+    ):
         errors.append({"code": "raw_secret_not_allowed", "field": "credential_reference"})
     return errors

@@ -1,0 +1,28 @@
+[codespell]
+# Codespell config — the pyproject.toml [tool.codespell] table is read
+# by some codespell versions but not others; this file is the canonical
+# config for the version pinned in requirements-dev.txt.
+#
+# Skip rules: paths are matched with fnmatch glob-style; directory
+# entries match the directory itself, so e.g. ``private`` excludes
+# everything under that tree.
+#
+# What's intentionally skipped:
+#   * Locale bundles, outreach drafts, glossary, German legal pages —
+#     German content is intentional and triggers codespell's
+#     English-only dictionary.
+#   * private/ — gitignored commercial-vision docs (German content).
+#   * PDF binary files — extraction noise produces false positives.
+#   * Lock files, JSON fixtures, SVG/CSS/minified assets, data —
+#     no contributor-written text.
+skip = *.lock,*.json,*.svg,*.css,*.min.js,*.pdf,private,data,build,static/i18n,static/impressum.html,static/datenschutz.html,docs/grant/06-glossary.md,docs/grant/outreach-drafts,docs/grant/11-institutional-outreach.md,docs/grant/commons-conservancy-application-2026-05-18.md,*.pyc,__pycache__,.git,Strategie*.pdf
+
+# Ignore-words rules:
+#   * Common German vocabulary that codespell's English dictionary
+#     misclassifies.
+#   * Project-specific bureaucratic terms (Adresse, Programm, etc.).
+#   * Hyphenated style-preferences that codespell flags as typos
+#     ("re-using", "Pre-empt", "pre-selected") — local style varies
+#     and these are not actual typos.
+ignore-words-list = te,ihr,hte,ot,fo,ist,nin,zustand,wirklich,wahr,falsch,ans,nd,sie,vor,zwei,herr,wir,mit,zur,bei,den,des,dem,bzw,iam,jet,oder,muss,nur,fro,uhr,viel,seid,mage,finde,passt,als,bund,titel,egal,noe,lokal,lokale,alternativ,unter,offen,programm,absolut,deines,relativ,alle,deine,tage,unser,methoden,adresse,prozess,re-using,re-uses,re-used,pre-empt,pre-selected,explizit,aktive,algorithmus,klicks,klick,foto,plattform,autors
+quiet-level = 3

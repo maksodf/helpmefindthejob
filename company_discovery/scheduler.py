@@ -34,7 +34,6 @@ from __future__ import annotations
 
 import sqlite3
 import threading
-import time
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -126,9 +125,7 @@ class DurableScheduler:
 
     def _reset_orphans(self) -> None:
         with self._lock:
-            self._connection.execute(
-                "UPDATE schedules SET state = 'idle' WHERE state = 'running'"
-            )
+            self._connection.execute("UPDATE schedules SET state = 'idle' WHERE state = 'running'")
             self._connection.commit()
 
     # ---- read/write ----
@@ -192,7 +189,9 @@ class DurableScheduler:
         ]
 
     def upsert(self, user_id: str, *, enabled: bool, interval_minutes: int) -> ScheduleRecord:
-        clamped = max(self.min_interval_minutes, min(int(interval_minutes), self.max_interval_minutes))
+        clamped = max(
+            self.min_interval_minutes, min(int(interval_minutes), self.max_interval_minutes)
+        )
         existing = self.get(user_id)
         if enabled:
             base = existing.last_run_at or _now() - timedelta(minutes=clamped)
@@ -313,7 +312,9 @@ class DurableScheduler:
             except Exception as error:  # noqa: BLE001 - resilient worker
                 status = f"failed: {error}"
                 success = False
-            results.append(self.record_run(record.user_id, status=status, trigger="scheduled", success=success))
+            results.append(
+                self.record_run(record.user_id, status=status, trigger="scheduled", success=success)
+            )
         return results
 
     def start(self) -> None:

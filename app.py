@@ -17,18 +17,27 @@ import secrets
 import time
 from dataclasses import asdict, fields, is_dataclass
 from datetime import datetime, timezone
-from http.cookies import SimpleCookie
 from http import HTTPStatus
+from http.cookies import SimpleCookie
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from threading import Lock, Thread
 from typing import Any
-from urllib.parse import parse_qs, unquote, urlparse
+from urllib.parse import unquote, urlparse
 
+from company_discovery.aggregator_providers import default_no_auth_providers
+from company_discovery.aggregators import (
+    AggregatorResultCache,
+    JobAggregationEngine,
+    rank_aggregated,
+)
+from company_discovery.ai_providers import (
+    AIProviderConfig,
+    provider_options_payload,
+    validate_provider_config,
+)
 from company_discovery.analysis import (
-    build_auto_fit_prompt,
     build_cover_letter_brief_prompt,
-    build_cv_tailoring_prompt,
     build_job_decision_brief_prompt,
     execute_auto_fit,
     execute_cover_letter_brief,
@@ -36,10 +45,23 @@ from company_discovery.analysis import (
     execute_job_decision_brief,
     parse_auto_fit_output,
 )
-from company_discovery.ai_providers import AIProviderConfig, provider_options_payload, validate_provider_config
-from company_discovery import chat_router as chat_router_mod
+from company_discovery.auth import AuthSession, AuthStore, AuthUser
+from company_discovery.billing import (
+    Plan,
+    StripeBillingBackend,
+    Subscription,
+    apply_stripe_event,
+    find_plan,
+    plans_payload,
+    verify_stripe_webhook_signature,
+)
+from company_discovery.billing import (
+    build_backend as build_billing_backend,
+)
 from company_discovery.chat_router import (
     REGISTRY as CHAT_REGISTRY,
+)
+from company_discovery.chat_router import (
     ChatSession,
     ChatTurn,
     PendingCommand,
@@ -49,7 +71,6 @@ from company_discovery.chat_router import (
     is_confirmation_no,
     is_confirmation_yes,
     keyword_route,
-    list_commands as list_chat_commands,
     next_missing_param,
     parse_ai_router_extracted_args,
     parse_ai_router_response,
@@ -57,11 +78,12 @@ from company_discovery.chat_router import (
     parse_slash_inline_args,
     render_help_text,
 )
-from company_discovery import cv_builder as cv_builder_mod
+from company_discovery.chat_router import (
+    list_commands as list_chat_commands,
+)
 from company_discovery.cv_builder import (
-    CvBuilderState,
     SECTIONS,
-    SECTIONS_BY_ID,
+    CvBuilderState,
     assemble_cv_markdown,
     build_format_prompt,
     get_section,
@@ -69,35 +91,21 @@ from company_discovery.cv_builder import (
     render_cv_print_html,
     validate_ai_format_output,
 )
-from company_discovery.auth import AuthSession, AuthStore, AuthUser, hash_password
-from company_discovery.billing import (
-    Plan,
-    StripeBillingBackend,
-    Subscription,
-    apply_stripe_event,
-    build_backend as build_billing_backend,
-    find_plan,
-    plans_payload,
-    verify_stripe_webhook_signature,
-)
+from company_discovery.cv_extract import CvExtractError
+from company_discovery.cv_extract import extract_text as extract_cv_text
 from company_discovery.digests import build_digest
-from company_discovery.aggregators import (
-    AggregatorResultCache,
-    JobAggregationEngine,
-    canonical_query,
-    rank_aggregated,
-)
-from company_discovery.aggregator_providers import default_no_auth_providers
 from company_discovery.discovery_providers import (
     BraveSearchProvider,
     CuratedSearchProvider,
     DiscoveryEngine,
     DuckDuckGoSearchProvider,
-    GreenhouseFeedProvider,
-    LeverFeedProvider,
-    MockSearchProvider,
 )
-from company_discovery.email_transport import Email, EmailTransport, build_transport, email_from_address
+from company_discovery.email_transport import (
+    Email,
+    EmailTransport,
+    build_transport,
+    email_from_address,
+)
 from company_discovery.exports import (
     discovered_jobs_to_csv,
     discovered_jobs_to_markdown,
@@ -117,10 +125,17 @@ from company_discovery.models import (
     SavedSearch,
     SupportTicket,
     UserProfile,
-    WORKSPACE_ROLES,
     WorkspaceMembership,
     new_id,
     now_utc,
+)
+from company_discovery.onboarding import build_checklist, checklist_progress
+from company_discovery.persona_ranking import rank_candidates
+from company_discovery.personas import (
+    DEFAULT_PERSONA_ID,
+    PERSONAS,
+    get_persona,
+    list_personas_summary,
 )
 from company_discovery.push_transport import (
     PushPayload,
@@ -129,31 +144,21 @@ from company_discovery.push_transport import (
     send_push,
     vapid_public_key,
 )
-from company_discovery.personas import (
-    DEFAULT_PERSONA_ID,
-    PERSONAS,
-    get_persona,
-    list_personas_summary,
-)
-from company_discovery.onboarding import build_checklist, checklist_progress
-from company_discovery.cv_extract import CvExtractError, extract_text as extract_cv_text
-from company_discovery.persona_ranking import rank_candidates
+from company_discovery.quotas import QuotaError, QuotaStore
+from company_discovery.readiness import build_report as build_readiness_report
 from company_discovery.saved_search_alerts import (
     alert_summary_for_search,
     matches_for_search,
     saved_search_matches_job,
     unseen_matches_for_search,
 )
-from company_discovery.quotas import QuotaError, QuotaStore
-from company_discovery.readiness import build_report as build_readiness_report
 from company_discovery.scheduler import DurableScheduler
-from company_discovery.slack_notify import post_high_fit_notification
 from company_discovery.service import CompanyDiscoveryService, ScanConfig
+from company_discovery.slack_notify import post_high_fit_notification
 from company_discovery.sqlite_repository import SqliteCompanyDiscoveryRepository
 from company_discovery.structured_analysis import parse_freeform
 from company_discovery.tokens import TokenStore
 from company_discovery.watchlist_templates import get_template, list_templates
-
 
 ROOT = Path(__file__).parent
 STATIC_ROOT = ROOT / "static"
@@ -174,16 +179,13 @@ PASSWORD_RESET_REQUEST_WINDOW = 600
 # register 7+ throwaway accounts in quick succession). Production
 # stays at the default of 3.
 try:
-    REGISTER_REQUEST_LIMIT = int(
-        os.environ.get("DIRECTJOB_REGISTER_LIMIT") or 3
-    )
+    REGISTER_REQUEST_LIMIT = int(os.environ.get("DIRECTJOB_REGISTER_LIMIT") or 3)
 except ValueError:
     REGISTER_REQUEST_LIMIT = 3
 REGISTER_REQUEST_WINDOW = 600
 REQUIRE_EMAIL_VERIFICATION = (
-    (os.environ.get("DIRECTJOB_REQUIRE_EMAIL_VERIFICATION") or "").strip().casefold()
-    in ("true", "1", "yes")
-)
+    os.environ.get("DIRECTJOB_REQUIRE_EMAIL_VERIFICATION") or ""
+).strip().casefold() in ("true", "1", "yes")
 APP_PUBLIC_URL = os.environ.get("DIRECTJOB_PUBLIC_URL") or ""
 LOCAL_USER_ID = "local-user"
 MAX_JSON_BODY_BYTES = 5_000_000
@@ -197,8 +199,15 @@ APP_VERSION = "0.79.4"
 EXPORT_SCHEMA_VERSION = 1
 SESSION_COOKIE_NAME = "directjob_session"
 APP_ENV = os.environ.get("COMPANY_DISCOVERY_ENV", "development").strip().casefold()
-COOKIE_SECURE = os.environ.get("DIRECTJOB_COOKIE_SECURE", "true" if APP_ENV == "production" else "false").strip().casefold() == "true"
-ALLOW_REGISTRATION = os.environ.get("DIRECTJOB_ALLOW_REGISTRATION", "false").strip().casefold() == "true"
+COOKIE_SECURE = (
+    os.environ.get("DIRECTJOB_COOKIE_SECURE", "true" if APP_ENV == "production" else "false")
+    .strip()
+    .casefold()
+    == "true"
+)
+ALLOW_REGISTRATION = (
+    os.environ.get("DIRECTJOB_ALLOW_REGISTRATION", "false").strip().casefold() == "true"
+)
 SECRET_KEY = os.environ.get("DIRECTJOB_SECRET_KEY") or ("dev-" + secrets.token_urlsafe(48))
 ADMIN_EMAIL = os.environ.get("DIRECTJOB_ADMIN_EMAIL")
 ADMIN_PASSWORD = os.environ.get("DIRECTJOB_ADMIN_PASSWORD")
@@ -343,8 +352,7 @@ def _serialise_cv_section(section) -> dict[str, Any]:
         "label": section.label,
         "repeatable": section.repeatable,
         "questions": [
-            {"key": q.key, "prompt": q.prompt, "required": q.required,
-              "hint": q.hint}
+            {"key": q.key, "prompt": q.prompt, "required": q.required, "hint": q.hint}
             for q in section.questions
         ],
     }
@@ -355,9 +363,13 @@ def validate_production_config(auth_store: AuthStore) -> None:
         return
     errors = []
     if len(SECRET_KEY) < 32 or SECRET_KEY.startswith("dev-"):
-        errors.append("DIRECTJOB_SECRET_KEY must be set to a stable random value with at least 32 characters.")
+        errors.append(
+            "DIRECTJOB_SECRET_KEY must be set to a stable random value with at least 32 characters."
+        )
     if not auth_store.has_users() and (not ADMIN_EMAIL or not ADMIN_PASSWORD):
-        errors.append("DIRECTJOB_ADMIN_EMAIL and DIRECTJOB_ADMIN_PASSWORD are required for first production startup.")
+        errors.append(
+            "DIRECTJOB_ADMIN_EMAIL and DIRECTJOB_ADMIN_PASSWORD are required for first production startup."
+        )
     if not COOKIE_SECURE:
         errors.append("DIRECTJOB_COOKIE_SECURE must stay true in production behind HTTPS.")
     if errors:
@@ -394,14 +406,18 @@ class AppState:
         # so DB compromise no longer reveals plaintext.
         try:
             from company_discovery.crypto_kit import EncryptionAtRest
-            self.encryption_at_rest: "EncryptionAtRest | None" = EncryptionAtRest.from_secret_key(SECRET_KEY)
+
+            self.encryption_at_rest: EncryptionAtRest | None = EncryptionAtRest.from_secret_key(
+                SECRET_KEY
+            )
         except Exception:
             # cryptography import failed (e.g. minimal sandbox). Fall
             # back to plain storage — production deploys must have
             # the dep available; this is a tests-only safety net.
             self.encryption_at_rest = None
         self.repository = SqliteCompanyDiscoveryRepository(
-            self.data_path, crypto=self.encryption_at_rest,
+            self.data_path,
+            crypto=self.encryption_at_rest,
         )
         self.auth_store = AuthStore(self.auth_path, SECRET_KEY)
         self.auth_store.bootstrap_admin_from_env(ADMIN_EMAIL, ADMIN_PASSWORD)
@@ -432,7 +448,11 @@ class AppState:
         )
         self.billing_backend = build_billing_backend(data_dir=self.data_path.parent)
         providers: list = [CuratedSearchProvider()]
-        if os.environ.get("DIRECTJOB_DUCKDUCKGO_DISABLED", "").strip().lower() not in ("1", "true", "yes"):
+        if os.environ.get("DIRECTJOB_DUCKDUCKGO_DISABLED", "").strip().lower() not in (
+            "1",
+            "true",
+            "yes",
+        ):
             providers.append(DuckDuckGoSearchProvider())
         brave_key = os.environ.get("DIRECTJOB_BRAVE_API_KEY", "").strip()
         if brave_key:
@@ -465,6 +485,7 @@ class AppState:
             import threading
 
             self._retention_last_run = now_utc()
+
             def _retention_loop():
                 import time as _time
 
@@ -565,7 +586,7 @@ class AppState:
         return {
             "appVersion": APP_VERSION,
             "daysAway": int(gap.total_seconds() // 86_400),
-            "message": f"Welcome back. We shipped a few things while you were away.",
+            "message": "Welcome back. We shipped a few things while you were away.",
             "link": "/changelog",
         }
 
@@ -576,10 +597,14 @@ class AppState:
         treated as belonging to ``ws_<owner>`` without backfill.
         """
 
-        suffix = owner_user_id.split("_", 1)[-1] if owner_user_id.startswith("user_") else owner_user_id
+        suffix = (
+            owner_user_id.split("_", 1)[-1] if owner_user_id.startswith("user_") else owner_user_id
+        )
         return f"ws_{suffix}"
 
-    def ensure_owner_membership(self, user_id: str, label: str | None = None) -> WorkspaceMembership:
+    def ensure_owner_membership(
+        self, user_id: str, label: str | None = None
+    ) -> WorkspaceMembership:
         workspace_id = self.workspace_id_for_owner(user_id)
         existing = self.repository.find_workspace_membership(user_id, workspace_id)
         if existing is not None:
@@ -606,12 +631,14 @@ class AppState:
             memberships = self.repository.list_workspace_memberships(user_id)
         results: list[dict[str, Any]] = []
         for m in memberships:
-            results.append({
-                "id": m.workspace_id,
-                "ownerUserId": m.workspace_owner_id,
-                "role": m.role,
-                "label": m.label or "Workspace",
-            })
+            results.append(
+                {
+                    "id": m.workspace_id,
+                    "ownerUserId": m.workspace_owner_id,
+                    "role": m.role,
+                    "label": m.label or "Workspace",
+                }
+            )
         return results
 
     def effective_user_id(self, session_user_id: str) -> str:
@@ -668,7 +695,12 @@ class AppState:
             user_id=user_id, persona_id=DEFAULT_PERSONA_ID
         )
         previous_persona = existing.persona_id
-        persona_id = str(payload.get("personaId") or payload.get("persona_id") or existing.persona_id or DEFAULT_PERSONA_ID)
+        persona_id = str(
+            payload.get("personaId")
+            or payload.get("persona_id")
+            or existing.persona_id
+            or DEFAULT_PERSONA_ID
+        )
         if persona_id not in PERSONAS:
             raise ValueError("unknown_persona")
         existing.persona_id = persona_id
@@ -693,22 +725,27 @@ class AppState:
                 cleared += 1
             if cleared:
                 self.log_analytics(
-                    user_id, "persona_changed_rescore",
+                    user_id,
+                    "persona_changed_rescore",
                     {"from": previous_persona, "to": persona_id, "cleared": cleared},
                 )
 
-        target_roles = payload.get("targetRoles") if "targetRoles" in payload else payload.get("target_roles")
+        target_roles = (
+            payload.get("targetRoles") if "targetRoles" in payload else payload.get("target_roles")
+        )
         if isinstance(target_roles, str):
             target_roles = [item.strip() for item in target_roles.split(",") if item.strip()]
         if target_roles is not None:
-            existing.target_roles = [str(item).strip() for item in target_roles if str(item).strip()][:25]
+            existing.target_roles = [
+                str(item).strip() for item in target_roles if str(item).strip()
+            ][:25]
 
         if "industry" in payload:
-            existing.industry = (str(payload.get("industry") or "").strip() or None)
+            existing.industry = str(payload.get("industry") or "").strip() or None
         if "location" in payload:
-            existing.location = (str(payload.get("location") or "").strip() or None)
+            existing.location = str(payload.get("location") or "").strip() or None
         if "seniority" in payload:
-            existing.seniority = (str(payload.get("seniority") or "").strip() or None)
+            existing.seniority = str(payload.get("seniority") or "").strip() or None
         if "yearsExperience" in payload or "years_experience" in payload:
             raw_years = payload.get("yearsExperience", payload.get("years_experience"))
             if raw_years in (None, ""):
@@ -730,7 +767,7 @@ class AppState:
                 raise ValueError("cv_too_long")
             existing.cv_text = cv_text.strip() or None
         if "notes" in payload:
-            existing.notes = (str(payload.get("notes") or "").strip() or None)
+            existing.notes = str(payload.get("notes") or "").strip() or None
         if "locale" in payload:
             from company_discovery.models import SUPPORTED_LOCALES
 
@@ -803,9 +840,12 @@ class AppState:
             if consent.get("granted"):
                 existing.ai_consent_at = now_utc()
                 existing.ai_consent_provider_id = (
-                    str(consent.get("providerId") or consent.get("provider_id") or "").strip() or None
+                    str(consent.get("providerId") or consent.get("provider_id") or "").strip()
+                    or None
                 )
-                self.log_analytics(user_id, "ai_consent_granted", {"providerId": existing.ai_consent_provider_id})
+                self.log_analytics(
+                    user_id, "ai_consent_granted", {"providerId": existing.ai_consent_provider_id}
+                )
             else:
                 existing.ai_consent_at = None
                 existing.ai_consent_provider_id = None
@@ -849,7 +889,9 @@ class AppState:
             "retentionDays": int(getattr(profile, "retention_days", 90) or 0),
             "slackWebhookConfigured": bool(getattr(profile, "slack_webhook_url", "") or ""),
             "slackFitThreshold": float(getattr(profile, "slack_fit_threshold", 0.70) or 0.0),
-            "aiConsentAt": profile.ai_consent_at.isoformat() if getattr(profile, "ai_consent_at", None) else None,
+            "aiConsentAt": profile.ai_consent_at.isoformat()
+            if getattr(profile, "ai_consent_at", None)
+            else None,
             "aiConsentProviderId": getattr(profile, "ai_consent_provider_id", None),
             "updatedAt": profile.updated_at.isoformat() if profile.updated_at else None,
         }
@@ -860,9 +902,13 @@ class AppState:
     def update_ai_provider(self, user_id: str, payload: dict[str, Any]) -> AIProviderConfig:
         config = AIProviderConfig(
             provider_id=payload.get("providerId") or payload.get("provider_id") or "manual",
-            invocation_mode=payload.get("invocationMode") or payload.get("invocation_mode") or "manual",
+            invocation_mode=payload.get("invocationMode")
+            or payload.get("invocation_mode")
+            or "manual",
             model=payload.get("model") or "",
-            credential_reference=payload.get("credentialReference") or payload.get("credential_reference") or "",
+            credential_reference=payload.get("credentialReference")
+            or payload.get("credential_reference")
+            or "",
             base_url=payload.get("baseUrl") or payload.get("base_url") or "",
             command=payload.get("command") or "",
             notes=payload.get("notes") or "",
@@ -885,7 +931,10 @@ class AppState:
         self.ai_providers[user_id] = config
         self.ai_config_path.parent.mkdir(parents=True, exist_ok=True)
         self.ai_config_path.write_text(
-            json.dumps({"users": {key: value.public_dict() for key, value in self.ai_providers.items()}}, indent=2),
+            json.dumps(
+                {"users": {key: value.public_dict() for key, value in self.ai_providers.items()}},
+                indent=2,
+            ),
             encoding="utf-8",
         )
         return config
@@ -912,9 +961,13 @@ class AppState:
     def _provider_from_payload(self, payload: dict[str, Any]) -> AIProviderConfig:
         return AIProviderConfig(
             provider_id=payload.get("provider_id") or payload.get("providerId") or "manual",
-            invocation_mode=payload.get("invocation_mode") or payload.get("invocationMode") or "manual",
+            invocation_mode=payload.get("invocation_mode")
+            or payload.get("invocationMode")
+            or "manual",
             model=payload.get("model") or "",
-            credential_reference=payload.get("credential_reference") or payload.get("credentialReference") or "",
+            credential_reference=payload.get("credential_reference")
+            or payload.get("credentialReference")
+            or "",
             base_url=payload.get("base_url") or payload.get("baseUrl") or "",
             command=payload.get("command") or "",
             notes=payload.get("notes") or "",
@@ -922,7 +975,9 @@ class AppState:
 
     def update_watchlist_schedule(self, user_id: str, payload: dict[str, Any]) -> dict[str, Any]:
         interval = int(payload.get("intervalMinutes") or payload.get("interval_minutes") or 360)
-        record = self.scheduler.upsert(user_id, enabled=bool(payload.get("enabled")), interval_minutes=interval)
+        record = self.scheduler.upsert(
+            user_id, enabled=bool(payload.get("enabled")), interval_minutes=interval
+        )
         return self._schedule_payload(record)
 
     def schedule_for(self, user_id: str) -> dict[str, Any]:
@@ -950,7 +1005,9 @@ class AppState:
         return {}
 
     def _normalize_schedule(self, payload: dict[str, Any]) -> dict[str, Any]:
-        interval = int(payload.get("intervalMinutes") or DEFAULT_WATCHLIST_SCHEDULE["intervalMinutes"])
+        interval = int(
+            payload.get("intervalMinutes") or DEFAULT_WATCHLIST_SCHEDULE["intervalMinutes"]
+        )
         return {
             **DEFAULT_WATCHLIST_SCHEDULE,
             **payload,
@@ -960,7 +1017,9 @@ class AppState:
 
     def _save_watchlist_schedules(self) -> None:
         self.schedule_path.parent.mkdir(parents=True, exist_ok=True)
-        self.schedule_path.write_text(json.dumps({"users": self.watchlist_schedules}, indent=2), encoding="utf-8")
+        self.schedule_path.write_text(
+            json.dumps({"users": self.watchlist_schedules}, indent=2), encoding="utf-8"
+        )
 
     def record_admin_action(
         self,
@@ -1019,8 +1078,9 @@ class AppState:
         backup_backend = os.environ.get("DIRECTJOB_BACKUP_BACKEND", "").strip() or "local"
         push_configured = is_push_configured()
         brave_configured = bool(os.environ.get("DIRECTJOB_BRAVE_API_KEY", "").strip())
-        stripe_active = (os.environ.get("DIRECTJOB_BILLING_BACKEND", "").strip() == "stripe"
-                         and bool(os.environ.get("DIRECTJOB_STRIPE_API_KEY", "").strip()))
+        stripe_active = os.environ.get(
+            "DIRECTJOB_BILLING_BACKEND", ""
+        ).strip() == "stripe" and bool(os.environ.get("DIRECTJOB_STRIPE_API_KEY", "").strip())
         webhook_configured = bool(os.environ.get("DIRECTJOB_STRIPE_WEBHOOK_SECRET", "").strip())
         # Subscription / membership counts (cheap; in-memory).
         push_subs = sum(1 for _ in self.repository.push_subscriptions.values())
@@ -1031,7 +1091,9 @@ class AppState:
             backup_dir = Path("/var/backups/directjob")
             archives = sorted(backup_dir.glob("directjob-scout-*.tar.gz"))
             if archives:
-                last_backup = datetime.fromtimestamp(archives[-1].stat().st_mtime, tz=timezone.utc).isoformat()
+                last_backup = datetime.fromtimestamp(
+                    archives[-1].stat().st_mtime, tz=timezone.utc
+                ).isoformat()
         except (OSError, ValueError):
             last_backup = None
         return {
@@ -1041,19 +1103,29 @@ class AppState:
                 "brave": brave_configured,
                 "curated": True,
             },
-            "billing": {"backend": backup_backend if False else (os.environ.get("DIRECTJOB_BILLING_BACKEND") or "manual"),
-                        "stripeActive": stripe_active,
-                        "webhookConfigured": webhook_configured},
-            "backup": {"backend": backup_backend, "remoteConfigured": bool(backup_remote),
-                       "lastArchiveAt": last_backup},
+            "billing": {
+                "backend": backup_backend
+                if False
+                else (os.environ.get("DIRECTJOB_BILLING_BACKEND") or "manual"),
+                "stripeActive": stripe_active,
+                "webhookConfigured": webhook_configured,
+            },
+            "backup": {
+                "backend": backup_backend,
+                "remoteConfigured": bool(backup_remote),
+                "lastArchiveAt": last_backup,
+            },
             "workspaces": {"membershipsTotal": memberships},
             "i18n": {"locales": ["en", "de"]},
-            "legalReviewed": os.environ.get("DIRECTJOB_LEGAL_REVIEWED", "false").strip().lower() == "true",
+            "legalReviewed": os.environ.get("DIRECTJOB_LEGAL_REVIEWED", "false").strip().lower()
+            == "true",
         }
 
     def admin_metrics(self) -> dict[str, Any]:
         users = self.auth_store.list_users()
-        scheduler_state = [record.public_dict() | {"userId": record.user_id} for record in self.scheduler.all()]
+        scheduler_state = [
+            record.public_dict() | {"userId": record.user_id} for record in self.scheduler.all()
+        ]
         recent_tickets = self.repository.list_support_tickets()[:5]
         return {
             "users": {
@@ -1117,7 +1189,11 @@ class AppState:
         outbox_path = self.data_path.parent / "email_outbox.log"
         if outbox_path.exists():
             try:
-                outbox_count = sum(1 for line in outbox_path.read_text(encoding="utf-8").splitlines() if line.strip())
+                outbox_count = sum(
+                    1
+                    for line in outbox_path.read_text(encoding="utf-8").splitlines()
+                    if line.strip()
+                )
             except OSError:
                 outbox_count = 0
         return {
@@ -1149,7 +1225,7 @@ class AppState:
                     from_address=email_from_address(),
                 )
             )
-        except Exception as error:  # noqa: BLE001 - test-email path is best-effort
+        except Exception:  # noqa: BLE001 - test-email path is best-effort
             return {"status": "failed", "error": "smtp_failure"}
         self.record_admin_action(
             actor=actor,
@@ -1159,7 +1235,9 @@ class AppState:
         )
         return {"status": "sent", "target": target, "backend": self.email_status()["backend"]}
 
-    def request_account_deletion(self, *, user: AuthUser, reason: str | None = None) -> SupportTicket:
+    def request_account_deletion(
+        self, *, user: AuthUser, reason: str | None = None
+    ) -> SupportTicket:
         ticket = SupportTicket(
             user_id=user.id,
             subject="Account deletion request",
@@ -1209,7 +1287,9 @@ class AppState:
 
     def confirm_account_deletion(self, token: str) -> dict[str, Any]:
         user_id, scheduled_at = self.auth_store.confirm_account_deletion(token)
-        self.log_analytics(user_id, "account_deletion_confirmed", {"scheduledAt": scheduled_at.isoformat()})
+        self.log_analytics(
+            user_id, "account_deletion_confirmed", {"scheduledAt": scheduled_at.isoformat()}
+        )
         return {"userId": user_id, "scheduledAt": scheduled_at.isoformat()}
 
     def cancel_account_deletion(self, user: AuthUser) -> dict[str, Any]:
@@ -1234,8 +1314,6 @@ class AppState:
         produce 5×N rows. A single global lock is fine here because
         seeding is rare + bounded."""
 
-        from company_discovery.models import DiscoveredJob
-
         with self._demo_seed_lock:
             return self._seed_demo_data_locked(user_id)
 
@@ -1249,28 +1327,53 @@ class AppState:
         }
         samples: tuple[tuple[str, str, str, str, str, float, float, str], ...] = (
             (
-                "Senior Backend Engineer", "Acme Health (Demo)", "https://demo.directjob-scout.example/acme-health",
-                "Berlin", "https://demo.directjob-scout.example/jobs/senior-backend", 0.92, 0.88,
+                "Senior Backend Engineer",
+                "Acme Health (Demo)",
+                "https://demo.directjob-scout.example/acme-health",
+                "Berlin",
+                "https://demo.directjob-scout.example/jobs/senior-backend",
+                0.92,
+                0.88,
                 "High overlap on Python + healthcare-management keywords; remote-friendly.",
             ),
             (
-                "Frontend Engineer", "Sample SaaS (Demo)", "https://demo.directjob-scout.example/sample-saas",
-                "Remote — DACH", "https://demo.directjob-scout.example/jobs/frontend", 0.85, 0.82,
+                "Frontend Engineer",
+                "Sample SaaS (Demo)",
+                "https://demo.directjob-scout.example/sample-saas",
+                "Remote — DACH",
+                "https://demo.directjob-scout.example/jobs/frontend",
+                0.85,
+                0.82,
                 "Demo lead — TypeScript + design-system fit. Remote.",
             ),
             (
-                "DevOps Engineer", "Demo Insurance (Demo)", "https://demo.directjob-scout.example/demo-insurance",
-                "München", "https://demo.directjob-scout.example/jobs/devops", 0.78, 0.75,
+                "DevOps Engineer",
+                "Demo Insurance (Demo)",
+                "https://demo.directjob-scout.example/demo-insurance",
+                "München",
+                "https://demo.directjob-scout.example/jobs/devops",
+                0.78,
+                0.75,
                 "Demo lead — Kubernetes / Terraform / SRE focus. Hybrid.",
             ),
             (
-                "Data Engineer", "Mock Analytics (Demo)", "https://demo.directjob-scout.example/mock-analytics",
-                "Hamburg", "https://demo.directjob-scout.example/jobs/data", 0.88, 0.84,
+                "Data Engineer",
+                "Mock Analytics (Demo)",
+                "https://demo.directjob-scout.example/mock-analytics",
+                "Hamburg",
+                "https://demo.directjob-scout.example/jobs/data",
+                0.88,
+                0.84,
                 "Demo lead — dbt + Snowflake + CDC; bilingual EN/DE team.",
             ),
             (
-                "Product Manager", "Test Tech (Demo)", "https://demo.directjob-scout.example/test-tech",
-                "Berlin", "https://demo.directjob-scout.example/jobs/product", 0.74, 0.71,
+                "Product Manager",
+                "Test Tech (Demo)",
+                "https://demo.directjob-scout.example/test-tech",
+                "Berlin",
+                "https://demo.directjob-scout.example/jobs/product",
+                0.74,
+                0.71,
                 "Demo lead — early-stage SaaS; PM-of-one with engineering background.",
             ),
         )
@@ -1319,7 +1422,9 @@ class AppState:
         # Day-3 window is [3d, 7d) so users only get the day-3 email once
         # and don't get spammed if the sweep runs late.
         for user in self.auth_store.users_due_for_drip(
-            column="drip_day3_sent_at", min_age_days=3, max_age_days=14,
+            column="drip_day3_sent_at",
+            min_age_days=3,
+            max_age_days=14,
         ):
             try:
                 self._send_drip_day3(user)
@@ -1332,7 +1437,9 @@ class AppState:
         # doesn't email someone who signed up six months ago and never
         # came back.
         for user in self.auth_store.users_due_for_drip(
-            column="drip_day7_sent_at", min_age_days=7, max_age_days=30,
+            column="drip_day7_sent_at",
+            min_age_days=7,
+            max_age_days=30,
         ):
             try:
                 self._send_drip_day7(user)
@@ -1370,7 +1477,7 @@ class AppState:
         body = (
             "Hi,\n\n"
             "One week in. Two questions:\n\n"
-            "1. Did you find any roles worth applying to? If yes, did you tick the \"Got a reply?\" "
+            '1. Did you find any roles worth applying to? If yes, did you tick the "Got a reply?" '
             "checkbox on the application form when companies wrote back? That's what populates "
             "your reply-rate card on the dashboard.\n\n"
             "2. What's been frustrating? Reply to this email with one sentence — it goes straight "
@@ -1427,7 +1534,9 @@ class AppState:
 
         public_url = self.public_url_for("/")
         help_url = self.public_url_for("/help")
-        bookmarklet_url = self.public_url_for("/")  # bookmarklet card lives in Settings → Bookmarklet
+        bookmarklet_url = self.public_url_for(
+            "/"
+        )  # bookmarklet card lives in Settings → Bookmarklet
         body = (
             f"Welcome to DirectJob Scout.\n\n"
             "You signed in for the first time — here are three quick wins to make the product useful in 5 minutes:\n\n"
@@ -1475,31 +1584,57 @@ class AppState:
             raise ValueError("last_admin_required")
         for company in list(self.repository.list_companies(target_id)):
             self.repository.delete_company(target_id, company.id)
-        for kind in ("imported_jobs", "discovered_jobs", "scans", "discovery_runs",
-                     "saved_searches", "support_tickets", "analytics_events"):
+        for kind in (
+            "imported_jobs",
+            "discovered_jobs",
+            "scans",
+            "discovery_runs",
+            "saved_searches",
+            "support_tickets",
+            "analytics_events",
+        ):
             store = getattr(self.repository, kind, {})
-            for record_id in [k for k, item in list(store.items()) if getattr(item, "user_id", None) == target_id]:
+            for record_id in [
+                k for k, item in list(store.items()) if getattr(item, "user_id", None) == target_id
+            ]:
                 store.pop(record_id, None)
         if hasattr(self.repository, "_connection"):
             for table in (
-                "companies", "discovery_runs", "scans", "discovered_jobs",
-                "imported_jobs", "saved_searches", "analytics_events", "support_tickets",
+                "companies",
+                "discovery_runs",
+                "scans",
+                "discovered_jobs",
+                "imported_jobs",
+                "saved_searches",
+                "analytics_events",
+                "support_tickets",
             ):
-                self.repository._connection.execute(f"DELETE FROM {table} WHERE user_id = ?", (target_id,))
+                self.repository._connection.execute(
+                    f"DELETE FROM {table} WHERE user_id = ?", (target_id,)
+                )
             self.repository._connection.commit()
         self.auth_store.delete_user_sessions(target_id)
         self.auth_store.connection.execute("DELETE FROM users WHERE id = ?", (target_id,))
         self.auth_store.connection.commit()
         self.scheduler._connection.execute("DELETE FROM schedules WHERE user_id = ?", (target_id,))
         self.scheduler._connection.commit()
-        self.quota_store.connection.execute("DELETE FROM user_counters WHERE user_id = ?", (target_id,))
+        self.quota_store.connection.execute(
+            "DELETE FROM user_counters WHERE user_id = ?", (target_id,)
+        )
         self.quota_store.connection.commit()
         self.token_store.revoke_all_for(target.email)
         if target_id in self.ai_providers:
             del self.ai_providers[target_id]
             self.ai_config_path.parent.mkdir(parents=True, exist_ok=True)
             self.ai_config_path.write_text(
-                json.dumps({"users": {key: value.public_dict() for key, value in self.ai_providers.items()}}, indent=2),
+                json.dumps(
+                    {
+                        "users": {
+                            key: value.public_dict() for key, value in self.ai_providers.items()
+                        }
+                    },
+                    indent=2,
+                ),
                 encoding="utf-8",
             )
         self.record_admin_action(
@@ -1529,7 +1664,9 @@ class AppState:
 
         now = time.time()
         with self._login_lock:
-            attempts = [item for item in self._login_attempts.get(client_id, []) if now - item < 600]
+            attempts = [
+                item for item in self._login_attempts.get(client_id, []) if now - item < 600
+            ]
             if len(attempts) >= 10:
                 self._login_attempts[client_id] = attempts
                 return False
@@ -1552,7 +1689,9 @@ class AppState:
     def login_allowed(self, client_id: str) -> bool:
         now = time.time()
         with self._login_lock:
-            attempts = [item for item in self._login_attempts.get(client_id, []) if now - item < 600]
+            attempts = [
+                item for item in self._login_attempts.get(client_id, []) if now - item < 600
+            ]
             self._login_attempts[client_id] = attempts
             return len(attempts) < 10
 
@@ -1581,11 +1720,17 @@ class AppState:
     def import_data(self, user_id: str, payload: dict[str, Any]) -> dict[str, Any]:
         if int(payload.get("schemaVersion") or 0) != EXPORT_SCHEMA_VERSION:
             raise ValueError("unsupported_export_schema")
-        company_id_map = {item.get("id"): new_id("company") for item in payload.get("companies") or []}
+        company_id_map = {
+            item.get("id"): new_id("company") for item in payload.get("companies") or []
+        }
         run_id_map = {item.get("id"): new_id("run") for item in payload.get("discoveryRuns") or []}
         scan_id_map = {item.get("id"): new_id("scan") for item in payload.get("scans") or []}
-        discovered_id_map = {item.get("id"): new_id("discovered_job") for item in payload.get("discoveredJobs") or []}
-        imported_id_map = {item.get("id"): new_id("job") for item in payload.get("importedJobs") or []}
+        discovered_id_map = {
+            item.get("id"): new_id("discovered_job") for item in payload.get("discoveredJobs") or []
+        }
+        imported_id_map = {
+            item.get("id"): new_id("job") for item in payload.get("importedJobs") or []
+        }
         imported_counts = {
             "companies": 0,
             "discoveredJobs": 0,
@@ -1594,7 +1739,11 @@ class AppState:
             "discoveryRuns": 0,
         }
         for item in payload.get("companies") or []:
-            item = {**item, "id": company_id_map.get(item.get("id"), new_id("company")), "user_id": user_id}
+            item = {
+                **item,
+                "id": company_id_map.get(item.get("id"), new_id("company")),
+                "user_id": user_id,
+            }
             self.repository.save_company(dataclass_from_payload(Company, item))
             imported_counts["companies"] += 1
         for item in payload.get("discoveryRuns") or []:
@@ -1631,7 +1780,9 @@ class AppState:
                 "id": imported_id_map.get(item.get("id"), new_id("job")),
                 "user_id": user_id,
                 "company_id": company_id_map.get(item.get("company_id"), item.get("company_id")),
-                "discovered_job_id": discovered_id_map.get(item.get("discovered_job_id"), item.get("discovered_job_id")),
+                "discovered_job_id": discovered_id_map.get(
+                    item.get("discovered_job_id"), item.get("discovered_job_id")
+                ),
             }
             self.repository.save_imported_job(dataclass_from_payload(ImportedJob, item))
             imported_counts["importedJobs"] += 1
@@ -1653,27 +1804,47 @@ class AppState:
         skipped: list[dict[str, Any]] = []
         for company in watched:
             if not company.career_page_url:
-                skipped.append({"companyId": company.id, "name": company.name, "reason": "missing_career_page"})
+                skipped.append(
+                    {"companyId": company.id, "name": company.name, "reason": "missing_career_page"}
+                )
                 continue
             hostname = urlparse(company.career_page_url).hostname or ""
             if hostname == "demo.example" or hostname.endswith(".example"):
-                skipped.append({"companyId": company.id, "name": company.name, "reason": "demo_fixture_not_scanned"})
+                skipped.append(
+                    {
+                        "companyId": company.id,
+                        "name": company.name,
+                        "reason": "demo_fixture_not_scanned",
+                    }
+                )
                 continue
             try:
                 runs.append(self.start_scan(user_id, company.id, company.career_page_url))
             except QuotaError as error:
-                skipped.append({"companyId": company.id, "name": company.name, "reason": error.code})
+                skipped.append(
+                    {"companyId": company.id, "name": company.name, "reason": error.code}
+                )
         status = "queued" if runs else "nothing_to_scan"
         if trigger == "scheduled":
             # The DurableScheduler records the run on its own; we just return.
-            self.scheduler.record_run(user_id, status=status, trigger=trigger, success=bool(runs) or status == "nothing_to_scan")
+            self.scheduler.record_run(
+                user_id,
+                status=status,
+                trigger=trigger,
+                success=bool(runs) or status == "nothing_to_scan",
+            )
         # Auto-push: notify the user about new saved-search matches found
         # by this batch. Cheap (in-memory diff against profile.last_push_notified_at).
         try:
             self.notify_new_matches(user_id)
         except Exception:  # noqa: BLE001 — push side-effects must never break a scan
             pass
-        return {"status": status, "runs": runs, "skipped": skipped, "schedule": self.schedule_for(user_id)}
+        return {
+            "status": status,
+            "runs": runs,
+            "skipped": skipped,
+            "schedule": self.schedule_for(user_id),
+        }
 
     def run_saved_search(self, user_id: str, search_id: str, *, cap: int = 25) -> dict[str, Any]:
         """Run a SavedSearch through the aggregator pipeline.
@@ -1712,6 +1883,7 @@ class AppState:
         profile = self.profile_for(user_id)
         if profile.job_type_filter:
             from company_discovery.job_type_filter import filter_jobs as _filter_jobs_by_type
+
             agg_jobs = _filter_jobs_by_type(
                 agg_jobs,
                 job_type=profile.job_type_filter,
@@ -1750,14 +1922,18 @@ class AppState:
         search.last_seen_at = now_utc()
         search.updated_at = now_utc()
         self.repository.save_saved_search(search)
-        self.log_analytics(user_id, "saved_search_run", {
-            "searchId": search.id,
-            "query": query[:120],
-            "location": location,
-            "newJobs": len(new_jobs),
-            "mergedSources": len(merged_sources),
-            "candidates": len(agg_jobs),
-        })
+        self.log_analytics(
+            user_id,
+            "saved_search_run",
+            {
+                "searchId": search.id,
+                "query": query[:120],
+                "location": location,
+                "newJobs": len(new_jobs),
+                "mergedSources": len(merged_sources),
+                "candidates": len(agg_jobs),
+            },
+        )
         return {
             "searchId": search.id,
             "query": query,
@@ -1766,7 +1942,12 @@ class AppState:
             "mergedSources": len(merged_sources),
             "candidates": len(agg_jobs),
             "providerOutcomes": [
-                {"provider": o.provider, "jobCount": o.job_count, "cached": o.cached, "error": o.error}
+                {
+                    "provider": o.provider,
+                    "jobCount": o.job_count,
+                    "cached": o.cached,
+                    "error": o.error,
+                }
                 for o in outcomes
             ],
         }
@@ -1814,7 +1995,7 @@ class AppState:
             push_payload = PushPayload(
                 title=f"New match: {job.title}",
                 body=f"{company_name} · matches saved search “{search_name}”",
-                url=f"/?queue=highlight",
+                url="/?queue=highlight",
             )
             for sub in subs:
                 try:
@@ -1831,7 +2012,11 @@ class AppState:
 
     def seed_demo(self, user_id: str) -> dict[str, Any]:
         company = next(
-            (item for item in self.repository.list_companies(user_id) if item.name == "Demo Klinikgruppe"),
+            (
+                item
+                for item in self.repository.list_companies(user_id)
+                if item.name == "Demo Klinikgruppe"
+            ),
             None,
         )
         if company is None:
@@ -1889,7 +2074,9 @@ class AppState:
         )
         return {"company": company, "job": saved_job, "run": run}
 
-    def start_scan(self, user_id: str, company_id: str, career_page_url: str | None) -> CompanyDiscoveryRun:
+    def start_scan(
+        self, user_id: str, company_id: str, career_page_url: str | None
+    ) -> CompanyDiscoveryRun:
         self.repository.get_company(user_id, company_id)
         self.quota_store.can_start_scan(user_id, target_url=career_page_url)
         active_key = (user_id, company_id)
@@ -1917,11 +2104,15 @@ class AppState:
                 status="queued",
             )
         )
-        thread = Thread(target=self._run_scan, args=(user_id, run, company_id, career_page_url), daemon=True)
+        thread = Thread(
+            target=self._run_scan, args=(user_id, run, company_id, career_page_url), daemon=True
+        )
         thread.start()
         return run
 
-    def _run_scan(self, user_id: str, run: CompanyDiscoveryRun, company_id: str, career_page_url: str | None) -> None:
+    def _run_scan(
+        self, user_id: str, run: CompanyDiscoveryRun, company_id: str, career_page_url: str | None
+    ) -> None:
         try:
             self.service.scan_company_career_page(user_id, company_id, career_page_url, run)
         except Exception as error:  # noqa: BLE001 - background boundary
@@ -1943,7 +2134,11 @@ class AppState:
 
         now = time.time()
         with self._reset_request_lock:
-            attempts = [t for t in self._reset_requests.get(client_id, []) if now - t < PASSWORD_RESET_REQUEST_WINDOW]
+            attempts = [
+                t
+                for t in self._reset_requests.get(client_id, [])
+                if now - t < PASSWORD_RESET_REQUEST_WINDOW
+            ]
             if len(attempts) >= PASSWORD_RESET_REQUEST_LIMIT:
                 self._reset_requests[client_id] = attempts
                 return False
@@ -1957,7 +2152,11 @@ class AppState:
 
         now = time.time()
         with self._register_request_lock:
-            attempts = [t for t in self._register_requests.get(client_id, []) if now - t < REGISTER_REQUEST_WINDOW]
+            attempts = [
+                t
+                for t in self._register_requests.get(client_id, [])
+                if now - t < REGISTER_REQUEST_WINDOW
+            ]
             if len(attempts) >= REGISTER_REQUEST_LIMIT:
                 self._register_requests[client_id] = attempts
                 return False
@@ -1969,7 +2168,11 @@ class AppState:
     def password_reset_allowed(self, client_id: str) -> bool:
         now = time.time()
         with self._reset_request_lock:
-            attempts = [t for t in self._reset_requests.get(client_id, []) if now - t < PASSWORD_RESET_REQUEST_WINDOW]
+            attempts = [
+                t
+                for t in self._reset_requests.get(client_id, [])
+                if now - t < PASSWORD_RESET_REQUEST_WINDOW
+            ]
             self._reset_requests[client_id] = attempts
             return len(attempts) < PASSWORD_RESET_REQUEST_LIMIT
 
@@ -1980,7 +2183,11 @@ class AppState:
     def register_allowed(self, client_id: str) -> bool:
         now = time.time()
         with self._register_request_lock:
-            attempts = [t for t in self._register_requests.get(client_id, []) if now - t < REGISTER_REQUEST_WINDOW]
+            attempts = [
+                t
+                for t in self._register_requests.get(client_id, [])
+                if now - t < REGISTER_REQUEST_WINDOW
+            ]
             self._register_requests[client_id] = attempts
             return len(attempts) < REGISTER_REQUEST_LIMIT
 
@@ -2053,9 +2260,12 @@ class AppState:
             if existing is None:
                 # Force-reset the password to the new one (admin path)
                 target_id = self.auth_store.connection.execute(
-                    "SELECT id FROM users WHERE email = ?", (record.email,),
+                    "SELECT id FROM users WHERE email = ?",
+                    (record.email,),
                 ).fetchone()[0]
-                self.auth_store.update_user(target_id, password=password, role=record.role, active=True)
+                self.auth_store.update_user(
+                    target_id, password=password, role=record.role, active=True
+                )
                 user = self.auth_store.get_user(target_id)
             else:
                 user = existing
@@ -2080,6 +2290,7 @@ class AppState:
             # Do not leak existence; pretend success
             return None
         from datetime import timedelta as _td
+
         issued = self.token_store.issue(
             kind="password_reset",
             email=normalized,
@@ -2120,8 +2331,10 @@ class AppState:
         if job.id in notified:
             return
         company = self.repository.companies.get(job.company_id)
-        company_name = company.name if company else (
-            (job.also_seen_at and next(iter(job.also_seen_at), "")) or ""
+        company_name = (
+            company.name
+            if company
+            else ((job.also_seen_at and next(iter(job.also_seen_at), "")) or "")
         )
         public_url = os.environ.get("DIRECTJOB_PUBLIC_URL") or "https://app.directjob-scout.example"
         result = post_high_fit_notification(
@@ -2140,7 +2353,8 @@ class AppState:
             profile.slack_notified_job_ids = notified[-200:]
             self.repository.save_user_profile(profile)
             self.log_analytics(
-                user_id, "slack_notified",
+                user_id,
+                "slack_notified",
                 {"discoveredJobId": job.id, "score": score},
             )
 
@@ -2171,7 +2385,8 @@ class AppState:
             if removed:
                 results[user.id] = removed
                 self.log_analytics(
-                    user.id, "retention_purge",
+                    user.id,
+                    "retention_purge",
                     {"removed": removed, "days": days, "cutoff": cutoff.isoformat()},
                 )
         deletions = self.purge_due_account_deletions()
@@ -2255,8 +2470,8 @@ class AppState:
 
         from collections import Counter
 
-        per_index_total: "Counter[int]" = Counter()
-        per_index_replied: "Counter[int]" = Counter()
+        per_index_total: Counter[int] = Counter()
+        per_index_replied: Counter[int] = Counter()
         total_variants = 0
         for job in self.repository.list_imported_jobs(user_id):
             for variant in job.cv_variants or []:
@@ -2272,12 +2487,14 @@ class AppState:
         for idx, total in sorted(per_index_total.items()):
             replied = per_index_replied.get(idx, 0)
             rate = replied / total if total else 0.0
-            breakdown.append({
-                "index": idx,
-                "tailored": total,
-                "replied": replied,
-                "rate": round(rate, 4),
-            })
+            breakdown.append(
+                {
+                    "index": idx,
+                    "tailored": total,
+                    "replied": replied,
+                    "rate": round(rate, 4),
+                }
+            )
         winner = max(breakdown, key=lambda row: (row["rate"], row["replied"]), default=None)
         return {
             "ready": ready,
@@ -2287,7 +2504,11 @@ class AppState:
         }
 
     def assign_variant(
-        self, *, experiment_id: str, identity: str, variants: tuple[str, ...] | list[str],
+        self,
+        *,
+        experiment_id: str,
+        identity: str,
+        variants: tuple[str, ...] | list[str],
     ) -> str:
         """Deterministic A/B (or A/B/n) variant assignment (Phase 7 #61).
 
@@ -2312,9 +2533,7 @@ class AppState:
         # different variants across different experiments (rather than
         # all the same — a "consistently lucky" visitor would skew our
         # results otherwise).
-        digest = hashlib.sha256(
-            f"{experiment_id}|{identity}".encode("utf-8")
-        ).digest()
+        digest = hashlib.sha256(f"{experiment_id}|{identity}".encode()).digest()
         bucket = int.from_bytes(digest[:8], "big") % len(variants)
         return variants[bucket]
 
@@ -2350,11 +2569,13 @@ class AppState:
                     cleaned_variants.append(v)
             if not cleaned_variants:
                 continue
-            result.append({
-                "id": exp_id,
-                "description": str(entry.get("description") or "").strip(),
-                "variants": cleaned_variants,
-            })
+            result.append(
+                {
+                    "id": exp_id,
+                    "description": str(entry.get("description") or "").strip(),
+                    "variants": cleaned_variants,
+                }
+            )
         return result
 
     def list_seo_pages(self) -> list[dict[str, Any]]:
@@ -2383,13 +2604,15 @@ class AppState:
             slug = str(entry.get("slug") or "").strip()
             if not slug or not all(c.isalnum() or c == "-" for c in slug):
                 continue
-            result.append({
-                "slug": slug,
-                "title": str(entry.get("title") or "").strip(),
-                "role": str(entry.get("role") or "").strip(),
-                "city": str(entry.get("city") or "").strip(),
-                "intro": str(entry.get("intro") or "").strip(),
-            })
+            result.append(
+                {
+                    "slug": slug,
+                    "title": str(entry.get("title") or "").strip(),
+                    "role": str(entry.get("role") or "").strip(),
+                    "city": str(entry.get("city") or "").strip(),
+                    "intro": str(entry.get("intro") or "").strip(),
+                }
+            )
         return result
 
     def find_seo_page(self, slug: str) -> dict[str, Any] | None:
@@ -2401,7 +2624,9 @@ class AppState:
                 return page
         return None
 
-    def aggregate_skill_gaps(self, user_id: str, *, top_k: int = 3, min_jobs: int = 3) -> dict[str, Any]:
+    def aggregate_skill_gaps(
+        self, user_id: str, *, top_k: int = 3, min_jobs: int = 3
+    ) -> dict[str, Any]:
         """Top-K skill gaps across the user's imported queue (Phase 4 #41).
 
         Returns ``{ready, top: [{skill, jobs, examples}, ...]}``. ``ready``
@@ -2423,7 +2648,7 @@ class AppState:
 
         from collections import Counter
 
-        counter: "Counter[str]" = Counter()
+        counter: Counter[str] = Counter()
         examples: dict[str, list[str]] = {}
         jobs_with_gaps = 0
         for job in self.repository.list_imported_jobs(user_id):
@@ -2442,7 +2667,12 @@ class AppState:
         top: list[dict[str, Any]] = []
         for key, jobs in counter.most_common(top_k):
             display = next(
-                (g for job in self.repository.list_imported_jobs(user_id) for g in (job.gaps or []) if g.strip().lower() == key),
+                (
+                    g
+                    for job in self.repository.list_imported_jobs(user_id)
+                    for g in (job.gaps or [])
+                    if g.strip().lower() == key
+                ),
                 key,
             )
             top.append({"skill": display, "jobs": jobs, "examples": examples[key]})
@@ -2450,7 +2680,9 @@ class AppState:
         # Stage 2: heuristic fallback for Manual-mode users.
         if not top:
             top, jobs_with_gaps, ready = self._heuristic_skill_gaps(
-                user_id, top_k=top_k, min_jobs=min_jobs,
+                user_id,
+                top_k=top_k,
+                min_jobs=min_jobs,
             )
         return {"ready": ready, "jobsWithGaps": jobs_with_gaps, "top": top}
 
@@ -2458,41 +2690,139 @@ class AppState:
     # surface forms. Order is preserved for display ranking ties.
     _SKILL_VOCAB: tuple[str, ...] = (
         # Languages
-        "python", "java", "javascript", "typescript", "golang", "rust",
-        "ruby", "php", "scala", "kotlin", "swift", "c++", "c#",
+        "python",
+        "java",
+        "javascript",
+        "typescript",
+        "golang",
+        "rust",
+        "ruby",
+        "php",
+        "scala",
+        "kotlin",
+        "swift",
+        "c++",
+        "c#",
         # Role / area categories (common in DACH titles)
-        "devops", "sre", "site reliability", "data engineering",
-        "machine learning", "ml", "ai", "frontend", "backend", "fullstack",
-        "full-stack", "mobile", "ios", "android", "embedded", "platform",
-        "security", "qa", "quality assurance",
+        "devops",
+        "sre",
+        "site reliability",
+        "data engineering",
+        "machine learning",
+        "ml",
+        "ai",
+        "frontend",
+        "backend",
+        "fullstack",
+        "full-stack",
+        "mobile",
+        "ios",
+        "android",
+        "embedded",
+        "platform",
+        "security",
+        "qa",
+        "quality assurance",
         # Frontend frameworks
-        "react", "vue", "angular", "svelte", "tailwind", "next.js", "redux",
+        "react",
+        "vue",
+        "angular",
+        "svelte",
+        "tailwind",
+        "next.js",
+        "redux",
         # Backend frameworks
-        "django", "fastapi", "flask", "spring", "rails", "node.js", "express",
-        "graphql", "rest", "grpc",
+        "django",
+        "fastapi",
+        "flask",
+        "spring",
+        "rails",
+        "node.js",
+        "express",
+        "graphql",
+        "rest",
+        "grpc",
         # Data
-        "postgres", "postgresql", "mysql", "mongodb", "redis", "elasticsearch",
-        "snowflake", "bigquery", "kafka", "rabbitmq", "sql", "nosql",
-        "data warehouse", "dbt", "airflow", "spark", "hadoop",
+        "postgres",
+        "postgresql",
+        "mysql",
+        "mongodb",
+        "redis",
+        "elasticsearch",
+        "snowflake",
+        "bigquery",
+        "kafka",
+        "rabbitmq",
+        "sql",
+        "nosql",
+        "data warehouse",
+        "dbt",
+        "airflow",
+        "spark",
+        "hadoop",
         # Cloud / Infra
-        "aws", "azure", "gcp", "kubernetes", "docker", "terraform", "ansible",
-        "helm", "prometheus", "grafana", "ci/cd", "jenkins", "github actions",
-        "linux", "microsoft", "cloud",
+        "aws",
+        "azure",
+        "gcp",
+        "kubernetes",
+        "docker",
+        "terraform",
+        "ansible",
+        "helm",
+        "prometheus",
+        "grafana",
+        "ci/cd",
+        "jenkins",
+        "github actions",
+        "linux",
+        "microsoft",
+        "cloud",
         # ML / AI
-        "tensorflow", "pytorch", "scikit-learn", "pandas", "numpy",
-        "llm", "langchain", "embeddings", "vector database", "rag",
+        "tensorflow",
+        "pytorch",
+        "scikit-learn",
+        "pandas",
+        "numpy",
+        "llm",
+        "langchain",
+        "embeddings",
+        "vector database",
+        "rag",
         # DevOps / Security
-        "oauth", "jwt", "soc2", "gdpr", "dsgvo", "iso 27001",
+        "oauth",
+        "jwt",
+        "soc2",
+        "gdpr",
+        "dsgvo",
+        "iso 27001",
         # Marketing / Sales / Ops
-        "hubspot", "salesforce", "marketo", "google ads", "google analytics",
-        "looker", "tableau", "power bi", "ga4", "seo", "sem", "b2b saas",
-        "demand generation", "performance marketing", "brand marketing",
+        "hubspot",
+        "salesforce",
+        "marketo",
+        "google ads",
+        "google analytics",
+        "looker",
+        "tableau",
+        "power bi",
+        "ga4",
+        "seo",
+        "sem",
+        "b2b saas",
+        "demand generation",
+        "performance marketing",
+        "brand marketing",
         # Soft / methodology
-        "agile", "scrum", "kanban",
+        "agile",
+        "scrum",
+        "kanban",
     )
 
     def _heuristic_skill_gaps(
-        self, user_id: str, *, top_k: int, min_jobs: int,
+        self,
+        user_id: str,
+        *,
+        top_k: int,
+        min_jobs: int,
     ) -> tuple[list[dict[str, Any]], int, bool]:
         """Keyword-frequency skill gap extraction. No AI required."""
         from collections import Counter
@@ -2503,7 +2833,7 @@ class AppState:
         # Threshold: at least 1 imported job must exist to surface anything.
         if not jobs:
             return [], 0, False
-        counter: "Counter[str]" = Counter()
+        counter: Counter[str] = Counter()
         examples: dict[str, list[str]] = {}
         jobs_with_gap_count = 0
         for job in jobs:
@@ -2536,8 +2866,7 @@ class AppState:
             # Title-case for terms that aren't acronyms in the vocab.
             if display == display.casefold():
                 display = display.title()
-            top.append({"skill": display, "jobs": jobs_count,
-                        "examples": examples[key]})
+            top.append({"skill": display, "jobs": jobs_count, "examples": examples[key]})
         # Ready when we have ≥1 imported job AND at least 1 skill surfaced.
         # min_jobs threshold from AI path doesn't apply — the heuristic is
         # cheaper signal so we don't need 3+ jobs to be honest about it.
@@ -2557,8 +2886,7 @@ class AppState:
             if saved and isinstance(saved, dict):
                 # Reconstruct from on-disk JSON. Mirror of ChatSession.to_dict.
                 history = [
-                    ChatTurn(role=str(t.get("role", "")),
-                              content=str(t.get("content", "")))
+                    ChatTurn(role=str(t.get("role", "")), content=str(t.get("content", "")))
                     for t in (saved.get("history") or [])
                     if isinstance(t, dict)
                 ]
@@ -2570,10 +2898,10 @@ class AppState:
                         args=dict(pending_raw.get("args") or {}),
                         awaiting=pending_raw.get("awaiting"),
                         awaiting_confirmation=bool(
-                            pending_raw.get("awaitingConfirmation") or False),
+                            pending_raw.get("awaitingConfirmation") or False
+                        ),
                     )
-                self._chat_sessions[user_id] = ChatSession(
-                    history=history, pending=pending)
+                self._chat_sessions[user_id] = ChatSession(history=history, pending=pending)
             else:
                 self._chat_sessions[user_id] = ChatSession()
         return self._chat_sessions[user_id]
@@ -2620,16 +2948,17 @@ class AppState:
     _CHAT_ROUTER_RATE_LIMIT = 20
     _CHAT_ROUTER_RATE_WINDOW = 60
     chat_router_metrics: dict[str, int] = {
-        "calls": 0, "cache_hits": 0, "errors": 0,
-        "via_user_provider": 0, "via_managed": 0,
-        "no_provider_available": 0, "rate_limited": 0,
+        "calls": 0,
+        "cache_hits": 0,
+        "errors": 0,
+        "via_user_provider": 0,
+        "via_managed": 0,
+        "no_provider_available": 0,
+        "rate_limited": 0,
     }
 
-    def _chat_router_cache_key(self, message: str,
-                                 history: list[ChatTurn]) -> tuple:
-        recent = " | ".join(
-            t.content[:120] for t in history[-3:] if t.role == "assistant"
-        )
+    def _chat_router_cache_key(self, message: str, history: list[ChatTurn]) -> tuple:
+        recent = " | ".join(t.content[:120] for t in history[-3:] if t.role == "assistant")
         return ((message or "").strip().casefold(), recent)
 
     def _chat_router_managed_provider(self) -> AIProviderConfig | None:
@@ -2657,8 +2986,9 @@ class AppState:
             notes="managed-chat-router",
         )
 
-    def chat_ai_route_full(self, user_id: str, message: str,
-                            history: list[ChatTurn]) -> tuple[str | None, dict]:
+    def chat_ai_route_full(
+        self, user_id: str, message: str, history: list[ChatTurn]
+    ) -> tuple[str | None, dict]:
         """Like :meth:`chat_ai_route` but ALSO returns extracted args
         from the AI's JSON response. Returns ``(command_id, args_dict)``;
         empty args dict when the AI used the legacy bare-name format or
@@ -2672,8 +3002,7 @@ class AppState:
         args = parse_ai_router_extracted_args(raw)
         return cmd, args
 
-    def chat_ai_route(self, user_id: str, message: str,
-                      history: list[ChatTurn]) -> str | None:
+    def chat_ai_route(self, user_id: str, message: str, history: list[ChatTurn]) -> str | None:
         """Classify the user's free-form intent into ONE of the known
         chat commands. Never executes — only proposes a command id.
 
@@ -2706,9 +3035,11 @@ class AppState:
         source = ""
         user_provider = self.ai_provider_for(user_id)
         profile = self.profile_for(user_id)
-        if user_provider.invocation_mode != "manual" and \
-                user_provider.provider_id != "manual" and \
-                _ai_consent_satisfied(profile, user_provider):
+        if (
+            user_provider.invocation_mode != "manual"
+            and user_provider.provider_id != "manual"
+            and _ai_consent_satisfied(profile, user_provider)
+        ):
             provider = user_provider
             source = "user"
         else:
@@ -2736,11 +3067,12 @@ class AppState:
         bucket.append(now)
 
         # Bounded prompt — the AI must return only a command id.
-        prompt = build_ai_router_prompt(message, [
-            {"role": t.role, "content": t.content} for t in history
-        ])
+        prompt = build_ai_router_prompt(
+            message, [{"role": t.role, "content": t.content} for t in history]
+        )
         try:
             from company_discovery.analysis import _dispatch_provider
+
             result = _dispatch_provider(prompt, provider, "")
             if result.status != "completed" or not result.output:
                 self.chat_router_metrics["errors"] += 1
@@ -2754,11 +3086,15 @@ class AppState:
                 "via_user_provider" if source == "user" else "via_managed"
             ] += 1
             # Audit-log the classification (input first 120 chars, output id).
-            self.log_analytics(user_id, "chat_ai_route", {
-                "source": source,
-                "message": (message or "")[:120],
-                "classified": command,
-            })
+            self.log_analytics(
+                user_id,
+                "chat_ai_route",
+                {
+                    "source": source,
+                    "message": (message or "")[:120],
+                    "classified": command,
+                },
+            )
             self._chat_router_cache_put(cache_key, command)
             return command
         except Exception:  # noqa: BLE001 — router failure must not break chat
@@ -2779,6 +3115,7 @@ class AppState:
 
     def chat_handler_add_company(self, user_id: str, args: dict) -> dict:
         from company_discovery.models import Company
+
         company = Company(
             user_id=user_id,
             name=args["name"],
@@ -2787,24 +3124,23 @@ class AppState:
             watch_enabled=True,
         )
         saved = self.repository.save_company(company)
-        self.log_analytics(user_id, "chat_cmd",
-                            {"name": "add_company", "company_id": saved.id})
-        return {"ok": True, "id": saved.id,
-                 "message": f"Added **{saved.name}** to your watchlist."}
+        self.log_analytics(user_id, "chat_cmd", {"name": "add_company", "company_id": saved.id})
+        return {"ok": True, "id": saved.id, "message": f"Added **{saved.name}** to your watchlist."}
 
     def chat_handler_create_saved_search(self, user_id: str, args: dict) -> dict:
         try:
-            record = self.save_saved_search(user_id, {
-                "name": args["name"],
-                "targetRoles": args["targetRoles"],
-                "location": args.get("location") or None,
-            })
+            record = self.save_saved_search(
+                user_id,
+                {
+                    "name": args["name"],
+                    "targetRoles": args["targetRoles"],
+                    "location": args.get("location") or None,
+                },
+            )
         except ValueError as exc:
             return {"ok": False, "message": f"Couldn't save: {exc}"}
-        self.log_analytics(user_id, "chat_cmd",
-                            {"name": "create_saved_search", "id": record.id})
-        return {"ok": True, "id": record.id,
-                 "message": f"Saved search **{record.name}** created."}
+        self.log_analytics(user_id, "chat_cmd", {"name": "create_saved_search", "id": record.id})
+        return {"ok": True, "id": record.id, "message": f"Saved search **{record.name}** created."}
 
     def chat_handler_find_jobs(self, user_id: str, args: dict) -> dict:
         """Run a job search and ALWAYS engage the journey's review
@@ -2816,18 +3152,22 @@ class AppState:
         interact with the results.
         """
         from company_discovery.aggregators import rank_aggregated
-        from company_discovery.personas import get_persona
         from company_discovery.job_type_filter import (
             filter_jobs as filter_jobs_by_type,
+        )
+        from company_discovery.job_type_filter import (
             filter_malformed_jobs,
             identify_bucket,
             normalize_location,
             persona_for_bucket,
         )
         from company_discovery.journey import (
-            cluster_jobs, PHASE_REVIEW, PHASE_DONE,
             MAX_SEARCH_JOBS_CARRIED,
+            PHASE_DONE,
+            PHASE_REVIEW,
+            cluster_jobs,
         )
+        from company_discovery.personas import get_persona
 
         profile = self.profile_for(user_id)
         query = args["query"]
@@ -2835,42 +3175,45 @@ class AppState:
 
         bucket_key = identify_bucket(query)
         jobs, _outcomes = self.aggregator_engine.search(
-            query=query, location=location,
-            limit_per_provider=10, persona_id=profile.persona_id,
+            query=query,
+            location=location,
+            limit_per_provider=10,
+            persona_id=profile.persona_id,
         )
         if bucket_key:
-            jobs = filter_jobs_by_type(jobs, job_type=bucket_key,
-                                          location=location)
+            jobs = filter_jobs_by_type(jobs, job_type=bucket_key, location=location)
         elif normalize_location(location):
-            jobs = filter_jobs_by_type(jobs, job_type=None,
-                                          location=location)
+            jobs = filter_jobs_by_type(jobs, job_type=None, location=location)
         persona = get_persona(profile.persona_id)
         keyword_tokens: list[str] = []
         for chunk in (query, *persona.default_target_roles):
             keyword_tokens.extend(re.findall(r"\w+", chunk.casefold()))
-        ranked = rank_aggregated(jobs, keyword_tokens=keyword_tokens,
-                                  location=location, cap=30)
+        ranked = rank_aggregated(jobs, keyword_tokens=keyword_tokens, location=location, cap=30)
 
         # Build the journey-style payload — same shape regardless of
         # caller — so the chat journey state has real continuation
         # data and the canvas can render the result cards.
         raw_dicts = [
-            {"title": (j.title or "")[:200],
-              "company": (j.company_name or "")[:120],
-              "location": (j.location or "")[:120],
-              "url": (j.source_url or "")[:300],
-              "source": (j.source or "")[:60],
-              "description": (j.description or "")[:600]}
-            for j, _ in ranked[:MAX_SEARCH_JOBS_CARRIED * 2]
+            {
+                "title": (j.title or "")[:200],
+                "company": (j.company_name or "")[:120],
+                "location": (j.location or "")[:120],
+                "url": (j.source_url or "")[:300],
+                "source": (j.source or "")[:60],
+                "description": (j.description or "")[:600],
+            }
+            for j, _ in ranked[: MAX_SEARCH_JOBS_CARRIED * 2]
         ]
         # R21.3: drop jobs with swapped fields / garbage URLs.
         # Aggregator parsers sometimes get title↔location reversed
         # and surface garbage cards on the canvas.
         job_dicts = filter_malformed_jobs(raw_dicts)[:MAX_SEARCH_JOBS_CARRIED]
         if len(raw_dicts) != len(job_dicts):
-            self.log_analytics(user_id, "aggregator_malformed_jobs_dropped",
-                                {"raw": len(raw_dicts),
-                                 "kept": len(job_dicts)})
+            self.log_analytics(
+                user_id,
+                "aggregator_malformed_jobs_dropped",
+                {"raw": len(raw_dicts), "kept": len(job_dicts)},
+            )
         clusters = cluster_jobs(job_dicts)
         categorized: dict[str, list[str]] = {}
         jobs_by_id: dict[str, dict] = {}
@@ -2900,6 +3243,7 @@ class AppState:
         # and the user's next message got the contextual fallback
         # instead of the new-search-intent interrupt.
         from company_discovery.journey import UserJourney
+
         journey = UserJourney.from_dict(
             (profile.chat_state or {}).get("journey"),
         )
@@ -2926,21 +3270,27 @@ class AppState:
             profile.job_type_filter = bucket_key
             profile.job_type_location_filter = location or ""
             mapped_persona = persona_for_bucket(bucket_key)
-            if (mapped_persona
-                    and profile.persona_id != mapped_persona):
+            if mapped_persona and profile.persona_id != mapped_persona:
                 profile.persona_id = mapped_persona
-                self.log_analytics(user_id, "auto_persona_switch",
-                                    {"from_bucket": bucket_key,
-                                     "to_persona": mapped_persona})
+                self.log_analytics(
+                    user_id,
+                    "auto_persona_switch",
+                    {"from_bucket": bucket_key, "to_persona": mapped_persona},
+                )
         # ONE save — chat_state + filter + persona all together.
         self.repository.save_user_profile(profile)
 
-        self.log_analytics(user_id, "chat_cmd",
-                            {"name": "find_jobs",
-                             "query": query[:120],
-                             "jobCount": len(job_dicts),
-                             "jobType": bucket_key or None,
-                             "categories": len(categorized)})
+        self.log_analytics(
+            user_id,
+            "chat_cmd",
+            {
+                "name": "find_jobs",
+                "query": query[:120],
+                "jobCount": len(job_dicts),
+                "jobType": bucket_key or None,
+                "categories": len(categorized),
+            },
+        )
 
         # Reply uses the user's own language (matches R16.1 fix).
         role_label = query
@@ -2953,7 +3303,9 @@ class AppState:
                     "Try a different role or widen the location — "
                     "type **find a job** to start fresh."
                 ),
-                "jobs": [], "totalJobs": 0, "jobType": bucket_key,
+                "jobs": [],
+                "totalJobs": 0,
+                "jobType": bucket_key,
                 # No navigateTo — the canvas stays where it was.
             }
 
@@ -2964,8 +3316,7 @@ class AppState:
         msg = (
             f"Found **{len(job_dicts)}** {role_label} result(s)"
             f"{' in ' + location if location else ''}."
-            + (" (Strict role filter applied — only this job type.)"
-               if bucket_key else "")
+            + (" (Strict role filter applied — only this job type.)" if bucket_key else "")
             + f"\n\n{cats_md}\n\n"
             "Reply with a **category name** to drill in, or look at "
             "the right panel to see all the cards."
@@ -2992,24 +3343,21 @@ class AppState:
         if args.get("targetRoles"):
             updates["targetRoles"] = args["targetRoles"]
         if not updates:
-            return {"ok": False, "message": "Nothing to update — you "
-                                               "didn't fill any field."}
+            return {"ok": False, "message": "Nothing to update — you didn't fill any field."}
         try:
             self.update_profile(user_id, updates)
         except ValueError as exc:
             return {"ok": False, "message": f"Couldn't update: {exc}"}
-        self.log_analytics(user_id, "chat_cmd",
-                            {"name": "update_profile",
-                             "fields": list(updates.keys())})
-        return {"ok": True,
-                 "message": f"Updated: {', '.join(updates.keys())}."}
+        self.log_analytics(
+            user_id, "chat_cmd", {"name": "update_profile", "fields": list(updates.keys())}
+        )
+        return {"ok": True, "message": f"Updated: {', '.join(updates.keys())}."}
 
     def chat_handler_mark_applied(self, user_id: str, args: dict) -> dict:
         imported_id = args["importedJobId"]
         imported = self.repository.imported_jobs.get(imported_id)
         if not imported or imported.user_id != user_id:
-            return {"ok": False,
-                     "message": f"Imported job {imported_id!r} not found."}
+            return {"ok": False, "message": f"Imported job {imported_id!r} not found."}
         imported.application_status = args["status"]
         if "replied" in args and args["replied"] and not imported.replied_at:
             imported.replied_at = now_utc()
@@ -3017,11 +3365,16 @@ class AppState:
             imported.replied_at = None
         imported.updated_at = now_utc()
         self.repository.save_imported_job(imported)
-        self.log_analytics(user_id, "chat_cmd",
-                            {"name": "mark_applied", "id": imported_id,
-                             "status": args["status"]})
-        return {"ok": True, "id": imported_id,
-                 "message": f"Marked **{imported.title}** as **{args['status']}**."}
+        self.log_analytics(
+            user_id,
+            "chat_cmd",
+            {"name": "mark_applied", "id": imported_id, "status": args["status"]},
+        )
+        return {
+            "ok": True,
+            "id": imported_id,
+            "message": f"Marked **{imported.title}** as **{args['status']}**.",
+        }
 
     def chat_handler_help(self, user_id: str, args: dict) -> dict:
         self.log_analytics(user_id, "chat_cmd", {"name": "help"})
@@ -3046,89 +3399,93 @@ class AppState:
         imported_id = args["importedJobId"]
         imported = self.repository.imported_jobs.get(imported_id)
         if not imported or imported.user_id != user_id:
-            return {"ok": False,
-                     "message": f"Imported job {imported_id!r} not found."}
+            return {"ok": False, "message": f"Imported job {imported_id!r} not found."}
         profile = self.profile_for(user_id)
         if not (profile.cv_text or "").strip():
-            return {"ok": False,
-                     "message": "Add a CV first (CV Builder or Settings)."}
+            return {"ok": False, "message": "Add a CV first (CV Builder or Settings)."}
         provider = self.ai_provider_for(user_id)
         if not _ai_consent_satisfied(profile, provider):
-            return {"ok": False,
-                     "message": "AI consent required — confirm in Settings first."}
+            return {"ok": False, "message": "AI consent required — confirm in Settings first."}
         from company_discovery.analysis import execute_cv_tailoring
+
         result = execute_cv_tailoring(imported, provider, "", profile)
-        self.log_analytics(user_id, "chat_cmd",
-                            {"name": "tailor_cv", "id": imported_id,
-                             "status": result.status})
-        return {"ok": result.status == "completed",
-                 "message": (
-                     f"Tailored CV {result.status} for **{imported.title}**"
-                     if result.status == "completed"
-                     else f"Tailor result: {result.status}. "
-                            f"{(result.error or '')[:120]}"
-                 ),
-                 "tailoredExcerpt": (result.output or "")[:400]}
+        self.log_analytics(
+            user_id, "chat_cmd", {"name": "tailor_cv", "id": imported_id, "status": result.status}
+        )
+        return {
+            "ok": result.status == "completed",
+            "message": (
+                f"Tailored CV {result.status} for **{imported.title}**"
+                if result.status == "completed"
+                else f"Tailor result: {result.status}. {(result.error or '')[:120]}"
+            ),
+            "tailoredExcerpt": (result.output or "")[:400],
+        }
 
     def chat_handler_run_saved_search(self, user_id: str, args: dict) -> dict:
         search_id = args["searchId"]
         try:
             result = self.run_saved_search(user_id, search_id)
         except KeyError:
-            return {"ok": False,
-                     "message": f"Saved search {search_id!r} not found."}
-        self.log_analytics(user_id, "chat_cmd",
-                            {"name": "run_saved_search", "id": search_id,
-                             "newJobs": result.get("newJobs"),
-                             "mergedSources": result.get("mergedSources")})
-        return {"ok": True,
-                 "message": (
-                     f"Saved search ran: **{result.get('newJobs', 0)}** new, "
-                     f"**{result.get('mergedSources', 0)}** merged sources."
-                 )}
+            return {"ok": False, "message": f"Saved search {search_id!r} not found."}
+        self.log_analytics(
+            user_id,
+            "chat_cmd",
+            {
+                "name": "run_saved_search",
+                "id": search_id,
+                "newJobs": result.get("newJobs"),
+                "mergedSources": result.get("mergedSources"),
+            },
+        )
+        return {
+            "ok": True,
+            "message": (
+                f"Saved search ran: **{result.get('newJobs', 0)}** new, "
+                f"**{result.get('mergedSources', 0)}** merged sources."
+            ),
+        }
 
     def chat_handler_set_persona(self, user_id: str, args: dict) -> dict:
         persona = args["persona"]
         from company_discovery.personas import PERSONAS
+
         if persona not in PERSONAS:
-            return {"ok": False,
-                     "message": (
-                         f"Unknown persona {persona!r}. Valid: "
-                         f"{', '.join(sorted(PERSONAS))}"
-                     )}
+            return {
+                "ok": False,
+                "message": (f"Unknown persona {persona!r}. Valid: {', '.join(sorted(PERSONAS))}"),
+            }
         try:
             self.update_profile(user_id, {"personaId": persona})
         except ValueError as exc:
             return {"ok": False, "message": f"Couldn't switch: {exc}"}
-        self.log_analytics(user_id, "chat_cmd",
-                            {"name": "set_persona", "persona": persona})
-        return {"ok": True,
-                 "message": f"Persona is now **{persona}**."}
+        self.log_analytics(user_id, "chat_cmd", {"name": "set_persona", "persona": persona})
+        return {"ok": True, "message": f"Persona is now **{persona}**."}
 
     def chat_handler_delete_company(self, user_id: str, args: dict) -> dict:
         company_id = args["companyId"]
         try:
             self.repository.delete_company(user_id, company_id)
         except KeyError:
-            return {"ok": False,
-                     "message": f"Company {company_id!r} not found in your watchlist."}
-        self.log_analytics(user_id, "chat_cmd",
-                            {"name": "delete_company", "id": company_id})
-        return {"ok": True,
-                 "message": f"Removed company **{company_id}** from your watchlist."}
+            return {"ok": False, "message": f"Company {company_id!r} not found in your watchlist."}
+        self.log_analytics(user_id, "chat_cmd", {"name": "delete_company", "id": company_id})
+        return {"ok": True, "message": f"Removed company **{company_id}** from your watchlist."}
 
     # ---------------- Guided job-search journey (R17) ----------------
 
-    def _build_contextual_fallback(self, user_id: str,
-                                     user_message: str) -> str:
+    def _build_contextual_fallback(self, user_id: str, user_message: str) -> str:
         """Build a contextual no-route reply that knows the journey
         state, so the user is never left guessing. Replaces the
         generic "I'm not sure" dead-end (R19).
         """
         from company_discovery.journey import (
-            PHASE_REVIEW, PHASE_DRILL, PHASE_TAILOR, PHASE_LETTER,
-            PHASE_CV_CONSULT, PHASE_DONE, PHASE_GREET,
+            PHASE_CV_CONSULT,
+            PHASE_DRILL,
+            PHASE_LETTER,
+            PHASE_REVIEW,
+            PHASE_TAILOR,
         )
+
         journey = self._journey_load(user_id)
 
         # In review phase: surface the categories the user can drill
@@ -3147,8 +3504,7 @@ class AppState:
 
         # In drill phase: ask for a number.
         if journey.phase == PHASE_DRILL:
-            ids = journey.search_results_by_category.get(
-                journey.picked_category, [])
+            ids = journey.search_results_by_category.get(journey.picked_category, [])
             if ids:
                 return (
                     "Reply with the **number** of the job you want to "
@@ -3168,10 +3524,7 @@ class AppState:
 
         # In letter / cv_consult: short menu.
         if journey.phase in (PHASE_LETTER, PHASE_CV_CONSULT):
-            return (
-                "Reply **save** to wrap up, or **letter** / "
-                "**consult** to see the other option."
-            )
+            return "Reply **save** to wrap up, or **letter** / **consult** to see the other option."
 
         # No active journey OR fresh after sign-in: surface 3 starter
         # actions, not the abstract "help" command.
@@ -3180,14 +3533,15 @@ class AppState:
             "do right now:\n"
             "  - **find a job** — I'll ask a few questions and "
             "search for you\n"
-            "  - **add a company** like *\"watch Charité, career "
-            "page karriere.charite.de\"*\n"
+            '  - **add a company** like *"watch Charité, career '
+            'page karriere.charite.de"*\n'
             "  - **build my CV** — guided sectional walk\n\n"
             "Or type **help** for the full command list."
         )
 
     def _journey_load(self, user_id: str):
         from company_discovery.journey import UserJourney
+
         profile = self.profile_for(user_id)
         chat_state = profile.chat_state or {}
         return UserJourney.from_dict(chat_state.get("journey"))
@@ -3199,8 +3553,7 @@ class AppState:
         profile.chat_state = chat_state
         self.repository.save_user_profile(profile)
 
-    def _journey_apply_profile_updates(self, user_id: str,
-                                         updates: dict) -> None:
+    def _journey_apply_profile_updates(self, user_id: str, updates: dict) -> None:
         if not updates:
             return
         profile = self.profile_for(user_id)
@@ -3219,6 +3572,7 @@ class AppState:
         if not _ai_consent_satisfied(profile, provider):
             return None
         from company_discovery.analysis import _dispatch_provider
+
         def _call(system: str, user_msg: str) -> str | None:
             # We bundle system + user into one prompt since the
             # existing _dispatch_provider takes a single string. The
@@ -3232,15 +3586,16 @@ class AppState:
                 return result.output
             except Exception:  # noqa: BLE001
                 return None
+
         return _call
 
     def chat_handler_start_job_journey(self, user_id: str, args: dict) -> dict:
-        from company_discovery.journey import UserJourney, PHASE_GREET
+        from company_discovery.journey import PHASE_GREET, UserJourney
+
         # Fresh journey — overwrite whatever the user had before.
         journey = UserJourney(phase=PHASE_GREET)
         self._journey_save(user_id, journey)
-        self.log_analytics(user_id, "chat_cmd",
-                            {"name": "start_job_journey"})
+        self.log_analytics(user_id, "chat_cmd", {"name": "start_job_journey"})
         # Run advance() once so the first reply is the welcome + first
         # discover question.
         return self.chat_journey_step(user_id, "")
@@ -3253,19 +3608,20 @@ class AppState:
         handler result shape.
         """
         from company_discovery.journey import advance
+
         journey = self._journey_load(user_id)
         profile = self.profile_for(user_id)
         has_cv = bool((profile.cv_text or "").strip())
         ai_caller = self._journey_ai_caller(user_id)
         result = advance(
-            journey, message,
+            journey,
+            message,
             has_existing_cv=has_cv,
             ai_available=ai_caller is not None,
             ai_caller=ai_caller,
         )
         if result.profile_updates:
-            self._journey_apply_profile_updates(user_id,
-                                                  result.profile_updates)
+            self._journey_apply_profile_updates(user_id, result.profile_updates)
         if result.persist:
             self._journey_save(user_id, result.journey)
         # When the journey asks us to run a search, dispatch to
@@ -3285,27 +3641,33 @@ class AppState:
                     {"query": primary_query, "location": location},
                 )
             except Exception as exc:  # noqa: BLE001
-                self.log_analytics(user_id, "chat_journey_step",
-                                    {"phase": "search",
-                                     "searchError": str(exc)[:200]})
+                self.log_analytics(
+                    user_id, "chat_journey_step", {"phase": "search", "searchError": str(exc)[:200]}
+                )
                 journey_err = self._journey_load(user_id)
                 from company_discovery.journey import PHASE_DONE
+
                 journey_err.phase = PHASE_DONE
                 self._journey_save(user_id, journey_err)
-                return {"ok": False,
-                         "message": (
-                             "The job search hit a snag (aggregator "
-                             "issue). Try again in a minute — type "
-                             "`find a job` to restart."
-                         ),
-                         "journeyPhase": "done",
-                         "totalJobs": 0}
+                return {
+                    "ok": False,
+                    "message": (
+                        "The job search hit a snag (aggregator "
+                        "issue). Try again in a minute — type "
+                        "`find a job` to restart."
+                    ),
+                    "journeyPhase": "done",
+                    "totalJobs": 0,
+                }
             jobs = search_result.get("jobs") or []
             # Cluster by category using the new R17.5 helper.
             from company_discovery.journey import (
-                PHASE_REVIEW, PHASE_DONE, cluster_jobs,
                 MAX_SEARCH_JOBS_CARRIED,
+                PHASE_DONE,
+                PHASE_REVIEW,
+                cluster_jobs,
             )
+
             clusters = cluster_jobs(jobs)
             categorized: dict[str, list[str]] = {}
             jobs_by_id: dict[str, dict] = {}
@@ -3352,8 +3714,7 @@ class AppState:
                 )
             else:
                 jobs_summary = "\n".join(
-                    f"  - **{c}**: {len(ids)} job(s)"
-                    for c, ids in categorized.items()
+                    f"  - **{c}**: {len(ids)} job(s)" for c, ids in categorized.items()
                 )
                 summary_msg = (
                     f"**Found {len(jobs)} job(s) total.**\n"
@@ -3393,49 +3754,54 @@ class AppState:
             # should never bypass the confirmation gate.
             allowed = {"draft_motivation_letter", "suggest_cv_enhancements"}
             if cmd_name not in allowed:
-                self.log_analytics(user_id, "chat_journey_step",
-                                    {"phase": result.journey.phase,
-                                     "invokeRejected": cmd_name})
-                return {"ok": False,
-                         "message": (
-                             f"Sorry — I can't auto-invoke `{cmd_name}` "
-                             "from inside the journey."
-                         ),
-                         "journeyPhase": result.journey.phase}
+                self.log_analytics(
+                    user_id,
+                    "chat_journey_step",
+                    {"phase": result.journey.phase, "invokeRejected": cmd_name},
+                )
+                return {
+                    "ok": False,
+                    "message": (
+                        f"Sorry — I can't auto-invoke `{cmd_name}` from inside the journey."
+                    ),
+                    "journeyPhase": result.journey.phase,
+                }
             cmd_result = self.chat_execute_command(user_id, cmd_name, {})
-            self.log_analytics(user_id, "chat_journey_step",
-                                {"phase": result.journey.phase,
-                                 "invoked": cmd_name})
-            return {"ok": cmd_result.get("ok", True),
-                     "message": cmd_result.get("message", "(done)"),
-                     "journeyPhase": result.journey.phase,
-                     "done": result.done,
-                     "invoked": cmd_name,
-                     "letter": cmd_result.get("letter"),
-                     "suggestions": cmd_result.get("suggestions")}
-        self.log_analytics(user_id, "chat_journey_step",
-                            {"phase": result.journey.phase})
-        return {"ok": True, "message": result.reply,
-                 "journeyPhase": result.journey.phase,
-                 "done": result.done}
+            self.log_analytics(
+                user_id, "chat_journey_step", {"phase": result.journey.phase, "invoked": cmd_name}
+            )
+            return {
+                "ok": cmd_result.get("ok", True),
+                "message": cmd_result.get("message", "(done)"),
+                "journeyPhase": result.journey.phase,
+                "done": result.done,
+                "invoked": cmd_name,
+                "letter": cmd_result.get("letter"),
+                "suggestions": cmd_result.get("suggestions"),
+            }
+        self.log_analytics(user_id, "chat_journey_step", {"phase": result.journey.phase})
+        return {
+            "ok": True,
+            "message": result.reply,
+            "journeyPhase": result.journey.phase,
+            "done": result.done,
+        }
 
     def chat_handler_accept_cv_text(self, user_id: str, args: dict) -> dict:
-        from company_discovery.cv_builder import validate_ai_format_output
         cv_text = (args.get("cvText") or "").strip()
         if len(cv_text) < 40:
-            return {"ok": False,
-                     "message": "That's very short — paste the full CV text."}
+            return {"ok": False, "message": "That's very short — paste the full CV text."}
         profile = self.profile_for(user_id)
         profile.cv_text = cv_text
         self.repository.save_user_profile(profile)
-        self.log_analytics(user_id, "chat_cmd",
-                            {"name": "accept_cv_text",
-                             "chars": len(cv_text)})
-        return {"ok": True,
-                 "message": (
-                     f"Saved **{len(cv_text)} chars** to your profile. "
-                     "You can `/tailor` it for a specific job any time."
-                 )}
+        self.log_analytics(user_id, "chat_cmd", {"name": "accept_cv_text", "chars": len(cv_text)})
+        return {
+            "ok": True,
+            "message": (
+                f"Saved **{len(cv_text)} chars** to your profile. "
+                "You can `/tailor` it for a specific job any time."
+            ),
+        }
 
     # build_cv_via_chat — sectional walk handled by the journey;
     # this entry point sets cv_status='building' inside the journey
@@ -3450,18 +3816,42 @@ class AppState:
         raw = (args.get("target") or "").strip().lower()
         # Map synonyms → view id.
         synonyms: dict[str, tuple[str, ...]] = {
-            "dashboard": ("dashboard", "today", "home", "heute",
-                           "startseite", "übersicht", "uebersicht"),
-            "companies": ("companies", "watchlist", "watch list",
-                           "company list", "firmen", "unternehmen"),
-            "jobs": ("jobs", "queue", "imported", "saved jobs",
-                      "job list", "stellen", "warteschlange"),
-            "brief": ("brief", "briefcase", "applications", "tracker",
-                       "bewerbungen", "anwendungen"),
-            "settings": ("settings", "profile", "preferences", "config",
-                          "einstellungen", "profil"),
-            "cvBuilder": ("cvbuilder", "cv builder", "cv-builder",
-                            "lebenslauf"),
+            "dashboard": (
+                "dashboard",
+                "today",
+                "home",
+                "heute",
+                "startseite",
+                "übersicht",
+                "uebersicht",
+            ),
+            "companies": (
+                "companies",
+                "watchlist",
+                "watch list",
+                "company list",
+                "firmen",
+                "unternehmen",
+            ),
+            "jobs": (
+                "jobs",
+                "queue",
+                "imported",
+                "saved jobs",
+                "job list",
+                "stellen",
+                "warteschlange",
+            ),
+            "brief": (
+                "brief",
+                "briefcase",
+                "applications",
+                "tracker",
+                "bewerbungen",
+                "anwendungen",
+            ),
+            "settings": ("settings", "profile", "preferences", "config", "einstellungen", "profil"),
+            "cvBuilder": ("cvbuilder", "cv builder", "cv-builder", "lebenslauf"),
             "assistant": ("assistant", "chat"),
         }
         target_id = ""
@@ -3471,46 +3861,42 @@ class AppState:
                 break
         if not target_id:
             allowed = ", ".join(synonyms.keys())
-            return {"ok": False,
-                     "message": (
-                         f"I don't know which view {raw!r} maps to. "
-                         f"Try one of: {allowed}."
-                     )}
-        self.log_analytics(user_id, "chat_cmd",
-                            {"name": "show_view", "view": target_id})
-        return {"ok": True,
-                 "navigateTo": target_id,
-                 "message": f"Opening **{target_id}**."}
+            return {
+                "ok": False,
+                "message": (f"I don't know which view {raw!r} maps to. Try one of: {allowed}."),
+            }
+        self.log_analytics(user_id, "chat_cmd", {"name": "show_view", "view": target_id})
+        return {"ok": True, "navigateTo": target_id, "message": f"Opening **{target_id}**."}
 
-    def chat_handler_download_cv(self, user_id: str,
-                                    args: dict) -> dict:
+    def chat_handler_download_cv(self, user_id: str, args: dict) -> dict:
         """Surface the print-view URL for the user's CV. The user
         clicks it → browser opens /api/cv/print?autoprint=1 → print
         dialog → Save as PDF. Read-only; no DB write."""
         profile = self.profile_for(user_id)
         cv_text = (profile.cv_text or "").strip()
         if not cv_text:
-            return {"ok": False,
-                     "message": (
-                         "There's no CV on your profile yet. Type "
-                         "**build my CV** to create one (5 quick "
-                         "questions), or paste your CV here."
-                     )}
-        self.log_analytics(user_id, "chat_cmd",
-                            {"name": "download_cv",
-                             "cvChars": len(cv_text)})
-        return {"ok": True,
-                 "message": (
-                     "Your CV is ready to print. **Click here to "
-                     "open the print view:** "
-                     "[Download CV as PDF](/api/cv/print?autoprint=1)\n\n"
-                     "Your browser's print dialog will open — pick "
-                     "*Save as PDF* and you're set."
-                 ),
-                 "navigateTo": "cvPrint"}
+            return {
+                "ok": False,
+                "message": (
+                    "There's no CV on your profile yet. Type "
+                    "**build my CV** to create one (5 quick "
+                    "questions), or paste your CV here."
+                ),
+            }
+        self.log_analytics(user_id, "chat_cmd", {"name": "download_cv", "cvChars": len(cv_text)})
+        return {
+            "ok": True,
+            "message": (
+                "Your CV is ready to print. **Click here to "
+                "open the print view:** "
+                "[Download CV as PDF](/api/cv/print?autoprint=1)\n\n"
+                "Your browser's print dialog will open — pick "
+                "*Save as PDF* and you're set."
+            ),
+            "navigateTo": "cvPrint",
+        }
 
-    def chat_handler_delete_account(self, user_id: str,
-                                      args: dict) -> dict:
+    def chat_handler_delete_account(self, user_id: str, args: dict) -> dict:
         """Start GDPR right-to-erasure. We never erase in-chat — the
         flow always goes through the emailed confirmation link + a
         7-day grace window so the user can recover from a typo or a
@@ -3518,145 +3904,174 @@ class AppState:
         typed_email = (args.get("email") or "").strip().casefold()
         user = self.auth_store.get_user(user_id)
         if user is None:
-            return {"ok": False,
-                     "message": "Auth state lost — please sign in again."}
+            return {"ok": False, "message": "Auth state lost — please sign in again."}
         if typed_email != (user.email or "").casefold():
-            return {"ok": False,
-                     "message": (
-                         "That email doesn't match the one on your "
-                         "account. Deletion not started. Try again "
-                         "if you want to proceed."
-                     )}
+            return {
+                "ok": False,
+                "message": (
+                    "That email doesn't match the one on your "
+                    "account. Deletion not started. Try again "
+                    "if you want to proceed."
+                ),
+            }
         try:
             ticket = self.request_account_deletion(
                 user=user,
                 reason="Requested via chat",
             )
         except Exception as exc:  # noqa: BLE001
-            self.log_analytics(user_id, "chat_cmd",
-                                {"name": "delete_account",
-                                 "status": "error",
-                                 "error": str(exc)[:200]})
-            return {"ok": False,
-                     "message": (
-                         "Couldn't start deletion right now — "
-                         "please try again in a few minutes or "
-                         "reach out via support."
-                     )}
-        self.log_analytics(user_id, "chat_cmd",
-                            {"name": "delete_account",
-                             "ticketId": ticket.id})
-        return {"ok": True,
-                 "message": (
-                     "Deletion started. Check your email for a "
-                     "confirmation link — click it within 7 days to "
-                     "schedule the deletion. After confirming, a "
-                     "second 7-day grace window starts before your "
-                     "data is erased; you can cancel any time in "
-                     "Settings → Privacy."
-                 )}
+            self.log_analytics(
+                user_id,
+                "chat_cmd",
+                {"name": "delete_account", "status": "error", "error": str(exc)[:200]},
+            )
+            return {
+                "ok": False,
+                "message": (
+                    "Couldn't start deletion right now — "
+                    "please try again in a few minutes or "
+                    "reach out via support."
+                ),
+            }
+        self.log_analytics(user_id, "chat_cmd", {"name": "delete_account", "ticketId": ticket.id})
+        return {
+            "ok": True,
+            "message": (
+                "Deletion started. Check your email for a "
+                "confirmation link — click it within 7 days to "
+                "schedule the deletion. After confirming, a "
+                "second 7-day grace window starts before your "
+                "data is erased; you can cancel any time in "
+                "Settings → Privacy."
+            ),
+        }
 
-    def chat_handler_suggest_cv_enhancements(self, user_id: str,
-                                                args: dict) -> dict:
+    def chat_handler_suggest_cv_enhancements(self, user_id: str, args: dict) -> dict:
         """Compare the user's CV against their picked job's JD and
         surface 3-5 gap-questions they can answer to strengthen
         their CV. Never auto-edits the CV — the user has the final
         say on every addition."""
         from company_discovery.cv_consult import consult
+
         journey = self._journey_load(user_id)
         if not journey.picked_job_id:
-            return {"ok": False,
-                     "message": (
-                         "Pick a job first (via the journey: type "
-                         "`find a job`, drill into a category, pick a "
-                         "number)."
-                     )}
+            return {
+                "ok": False,
+                "message": (
+                    "Pick a job first (via the journey: type "
+                    "`find a job`, drill into a category, pick a "
+                    "number)."
+                ),
+            }
         job = journey.search_jobs_by_id.get(journey.picked_job_id, {})
         if not job:
-            return {"ok": False,
-                     "message": "Picked job missing — type /start to refresh."}
+            return {"ok": False, "message": "Picked job missing — type /start to refresh."}
         profile = self.profile_for(user_id)
         cv_text = (profile.cv_text or "").strip()
         if not cv_text:
-            return {"ok": False,
-                     "message": (
-                         "I need a CV to consult. Type "
-                         "**build my CV** and I'll walk you through "
-                         "5 quick questions, or paste your CV here."
-                     )}
+            return {
+                "ok": False,
+                "message": (
+                    "I need a CV to consult. Type "
+                    "**build my CV** and I'll walk you through "
+                    "5 quick questions, or paste your CV here."
+                ),
+            }
         ai_caller = self._journey_ai_caller(user_id)
         gaps, used_ai = consult(
-            job=job, cv_text=cv_text, ai_caller=ai_caller,
+            job=job,
+            cv_text=cv_text,
+            ai_caller=ai_caller,
         )
-        self.log_analytics(user_id, "chat_cmd",
-                            {"name": "suggest_cv_enhancements",
-                             "jobUrl": job.get("url", "")[:120],
-                             "gapCount": len(gaps),
-                             "aiUsed": used_ai})
+        self.log_analytics(
+            user_id,
+            "chat_cmd",
+            {
+                "name": "suggest_cv_enhancements",
+                "jobUrl": job.get("url", "")[:120],
+                "gapCount": len(gaps),
+                "aiUsed": used_ai,
+            },
+        )
         if not gaps:
-            return {"ok": True,
-                     "message": (
-                         "Your CV already covers the visible JD "
-                         "requirements. No gap suggestions for this "
-                         "posting."
-                     ),
-                     "suggestions": []}
-        banner = ("" if used_ai
-                   else "_(I'm running without an AI right now — these "
-                        "are heuristic keyword diffs. Configure a "
-                        "provider for richer suggestions.)_\n\n")
-        lines = [f"  {i}. **{g['gap']}** — {g['question']}"
-                  for i, g in enumerate(gaps, 1)]
+            return {
+                "ok": True,
+                "message": (
+                    "Your CV already covers the visible JD "
+                    "requirements. No gap suggestions for this "
+                    "posting."
+                ),
+                "suggestions": [],
+            }
+        banner = (
+            ""
+            if used_ai
+            else "_(I'm running without an AI right now — these "
+            "are heuristic keyword diffs. Configure a "
+            "provider for richer suggestions.)_\n\n"
+        )
+        lines = [f"  {i}. **{g['gap']}** — {g['question']}" for i, g in enumerate(gaps, 1)]
         listing = "\n".join(lines)
-        return {"ok": True,
-                 "message": (
-                     f"{banner}Here's what I'd strengthen on your CV "
-                     f"for **{job.get('title', '')}** at "
-                     f"**{job.get('company', '')}**:\n\n"
-                     f"{listing}\n\n"
-                     "Reply to each one with your one-sentence story "
-                     "(or 'skip' if you don't have it). Type **save** "
-                     "when you're done to wrap up."
-                 ),
-                 "suggestions": gaps}
+        return {
+            "ok": True,
+            "message": (
+                f"{banner}Here's what I'd strengthen on your CV "
+                f"for **{job.get('title', '')}** at "
+                f"**{job.get('company', '')}**:\n\n"
+                f"{listing}\n\n"
+                "Reply to each one with your one-sentence story "
+                "(or 'skip' if you don't have it). Type **save** "
+                "when you're done to wrap up."
+            ),
+            "suggestions": gaps,
+        }
 
-    def chat_handler_draft_motivation_letter(self, user_id: str,
-                                                args: dict) -> dict:
+    def chat_handler_draft_motivation_letter(self, user_id: str, args: dict) -> dict:
         """Draft a DACH-norm motivation letter for the user's picked
         job. The job comes from the journey state (R17.5 stored
         search_jobs_by_id). When no AI is configured, returns the
         templated skeleton with an honest banner — the journey never
         gets stuck."""
         from company_discovery.motivation_letter import (
-            draft_with_ai, templated_fallback,
+            draft_with_ai,
+            templated_fallback,
         )
+
         journey = self._journey_load(user_id)
         if not journey.picked_job_id:
-            return {"ok": False,
-                     "message": (
-                         "I don't know which job to write about yet. "
-                         "Pick one from the journey first (type "
-                         "`find a job`, drill into a category, then "
-                         "pick a number)."
-                     )}
+            return {
+                "ok": False,
+                "message": (
+                    "I don't know which job to write about yet. "
+                    "Pick one from the journey first (type "
+                    "`find a job`, drill into a category, then "
+                    "pick a number)."
+                ),
+            }
         job = journey.search_jobs_by_id.get(journey.picked_job_id, {})
         if not job:
-            return {"ok": False,
-                     "message": "Picked job's details are missing — try /start to refresh."}
+            return {
+                "ok": False,
+                "message": "Picked job's details are missing — try /start to refresh.",
+            }
         profile = self.profile_for(user_id)
         cv_text = (profile.cv_text or "").strip()
         if not cv_text:
-            return {"ok": False,
-                     "message": (
-                         "I need a CV to draft a letter. Type "
-                         "**build my CV** and I'll walk you through "
-                         "5 quick questions, or paste your full CV "
-                         "text here right now."
-                     )}
+            return {
+                "ok": False,
+                "message": (
+                    "I need a CV to draft a letter. Type "
+                    "**build my CV** and I'll walk you through "
+                    "5 quick questions, or paste your full CV "
+                    "text here right now."
+                ),
+            }
         ai_caller = self._journey_ai_caller(user_id)
         letter = draft_with_ai(
-            job=job, cv_text=cv_text,
-            user_name="", user_location=profile.location or "",
+            job=job,
+            cv_text=cv_text,
+            user_name="",
+            user_location=profile.location or "",
             ai_caller=ai_caller,
         )
         if not letter:
@@ -3668,21 +4083,28 @@ class AppState:
         # Persist to the journey for the next phase to consult against.
         # We don't auto-write to imported_job here because the user
         # hasn't imported the job yet — that's a separate /save step.
-        self.log_analytics(user_id, "chat_cmd",
-                            {"name": "draft_motivation_letter",
-                             "jobUrl": job.get("url", "")[:120],
-                             "aiUsed": ai_caller is not None,
-                             "chars": len(letter)})
-        return {"ok": True,
-                 "message": (
-                     f"Here's the draft for **{job.get('title', '')}** "
-                     f"at **{job.get('company', '')}**:\n\n"
-                     f"---\n\n{letter}\n\n---\n\n"
-                     "Reply **save** to keep it on your applications, or "
-                     "**consult** to get CV enhancement ideas for this JD."
-                 ),
-                 "letter": letter,
-                 "letterChars": len(letter)}
+        self.log_analytics(
+            user_id,
+            "chat_cmd",
+            {
+                "name": "draft_motivation_letter",
+                "jobUrl": job.get("url", "")[:120],
+                "aiUsed": ai_caller is not None,
+                "chars": len(letter),
+            },
+        )
+        return {
+            "ok": True,
+            "message": (
+                f"Here's the draft for **{job.get('title', '')}** "
+                f"at **{job.get('company', '')}**:\n\n"
+                f"---\n\n{letter}\n\n---\n\n"
+                "Reply **save** to keep it on your applications, or "
+                "**consult** to get CV enhancement ideas for this JD."
+            ),
+            "letter": letter,
+            "letterChars": len(letter),
+        }
 
     def chat_handler_build_cv_via_chat(self, user_id: str, args: dict) -> dict:
         """Start the sectional CV-build flow. Works from ANY journey
@@ -3690,9 +4112,11 @@ class AppState:
         a user stuck in PHASE_TAILOR from creating a CV when they
         needed one for the letter draft. R79.3 fix."""
         from company_discovery.journey import (
-            PHASE_CV_CHECK, UserJourney,
-            cv_build_prompt_for, _CV_BUILD_ORDER,
+            _CV_BUILD_ORDER,
+            PHASE_CV_CHECK,
+            cv_build_prompt_for,
         )
+
         # Reset journey to a fresh CV_CHECK state regardless of where
         # the user was before. Any in-flight search results are
         # preserved by NOT clearing search_jobs_by_id — but the
@@ -3703,16 +4127,16 @@ class AppState:
         journey.cv_build_step = _CV_BUILD_ORDER[0]
         journey.cv_build_answers = {}
         self._journey_save(user_id, journey)
-        self.log_analytics(user_id, "chat_cmd",
-                            {"name": "build_cv_via_chat"})
-        return {"ok": True,
-                 "message": (
-                     "OK — 5 quick questions and you'll have a CV "
-                     "ready. " + cv_build_prompt_for(_CV_BUILD_ORDER[0])
-                 )}
+        self.log_analytics(user_id, "chat_cmd", {"name": "build_cv_via_chat"})
+        return {
+            "ok": True,
+            "message": (
+                "OK — 5 quick questions and you'll have a CV "
+                "ready. " + cv_build_prompt_for(_CV_BUILD_ORDER[0])
+            ),
+        }
 
-    def chat_execute_command(self, user_id: str, command_name: str,
-                              args: dict) -> dict:
+    def chat_execute_command(self, user_id: str, command_name: str, args: dict) -> dict:
         """Dispatch a confirmed command. The router never calls
         handlers directly — execution always goes through this single
         choke point so we can centralise audit logging + future
@@ -3739,8 +4163,7 @@ class AppState:
             "help": self.chat_handler_help,
         }
         if command_name not in handlers:
-            return {"ok": False,
-                     "message": f"Unknown command: {command_name}."}
+            return {"ok": False, "message": f"Unknown command: {command_name}."}
         return handlers[command_name](user_id, args)
 
     # ---------------- CV builder session storage ----------------
@@ -3761,7 +4184,11 @@ class AppState:
         self._cv_builder_sessions.pop(user_id, None)
 
     def cv_builder_format_section(
-        self, user_id: str, section_id: str, raw_field: str, raw_text: str,
+        self,
+        user_id: str,
+        section_id: str,
+        raw_field: str,
+        raw_text: str,
     ) -> tuple[str, float, bool]:
         """Run the bounded AI-format prompt for ``raw_text``. Returns
         (output, fact_ratio, was_accepted). If the AI is not configured
@@ -3780,6 +4207,7 @@ class AppState:
         if not _ai_consent_satisfied(profile, provider):
             return raw_text, 1.0, False
         from company_discovery.analysis import _dispatch_provider
+
         result = _dispatch_provider(prompt, provider, "")
         if result.status != "completed" or not result.output:
             return raw_text, 1.0, False
@@ -3824,7 +4252,9 @@ class AppState:
         imported.updated_at = now_utc()
         self.repository.save_imported_job(imported)
         self.log_analytics(
-            user_id, "share_link_toggled", {"importedJobId": imported_job_id, "enabled": bool(enabled)},
+            user_id,
+            "share_link_toggled",
+            {"importedJobId": imported_job_id, "enabled": bool(enabled)},
         )
         return imported
 
@@ -3870,7 +4300,9 @@ class AppState:
                 imported.reminder_at = None
             else:
                 try:
-                    imported.reminder_at = datetime.fromisoformat(str(raw_reminder).replace("Z", "+00:00"))
+                    imported.reminder_at = datetime.fromisoformat(
+                        str(raw_reminder).replace("Z", "+00:00")
+                    )
                 except ValueError:
                     raise ValueError("invalid_reminder_at")
         if "replied" in payload or "repliedAt" in payload or "replied_at" in payload:
@@ -3891,7 +4323,9 @@ class AppState:
                     imported.replied_at = None
                 else:
                     try:
-                        imported.replied_at = datetime.fromisoformat(str(raw_replied).replace("Z", "+00:00"))
+                        imported.replied_at = datetime.fromisoformat(
+                            str(raw_replied).replace("Z", "+00:00")
+                        )
                     except ValueError:
                         raise ValueError("invalid_replied_at")
             # CV-variant attribution (#44): on the transition from None
@@ -3903,9 +4337,7 @@ class AppState:
                 variants[-1] = {**variants[-1], "attributedReply": True}
                 imported.cv_variants = variants
             elif imported.replied_at is None and previous_replied_at is not None and variants:
-                imported.cv_variants = [
-                    {**v, "attributedReply": False} for v in variants
-                ]
+                imported.cv_variants = [{**v, "attributedReply": False} for v in variants]
         if "historyNote" in payload:
             history_note = str(payload.get("historyNote") or "").strip() or None
         if "documentsChecklist" in payload:
@@ -3965,7 +4397,9 @@ class AppState:
                 watch_enabled=True,
             )
             added.append(company)
-        self.log_analytics(user_id, "watchlist_template_applied", {"templateId": template_id, "added": len(added)})
+        self.log_analytics(
+            user_id, "watchlist_template_applied", {"templateId": template_id, "added": len(added)}
+        )
         return {"added": added, "skipped": skipped, "templateId": template_id}
 
     def save_saved_search(self, user_id: str, payload: dict[str, Any]) -> SavedSearch:
@@ -4092,10 +4526,12 @@ class AppState:
             try:
                 per_search.append(self.run_saved_search(user_id, search.id))
             except Exception as exc:  # noqa: BLE001 - scheduler must keep running
-                per_search.append({
-                    "searchId": search.id,
-                    "error": f"{type(exc).__name__}: {exc}"[:200],
-                })
+                per_search.append(
+                    {
+                        "searchId": search.id,
+                        "error": f"{type(exc).__name__}: {exc}"[:200],
+                    }
+                )
         digest_text = ""
         try:
             user = self.auth_store.get_user(user_id)
@@ -4172,7 +4608,9 @@ class AppState:
         )
         return result
 
-    def log_analytics(self, user_id: str, kind: str, payload: dict[str, Any] | None = None) -> AnalyticsEvent:
+    def log_analytics(
+        self, user_id: str, kind: str, payload: dict[str, Any] | None = None
+    ) -> AnalyticsEvent:
         event = AnalyticsEvent(user_id=user_id, kind=kind, payload=payload or {})
         return self.repository.save_analytics_event(event)
 
@@ -4197,11 +4635,7 @@ class AppState:
                 Email(
                     to=email_from_address(),
                     subject=f"[DirectJob Scout support] {saved.subject}",
-                    text=(
-                        f"From: {saved.contact_email}\n"
-                        f"User id: {user.id}\n\n"
-                        f"{saved.body}\n"
-                    ),
+                    text=(f"From: {saved.contact_email}\nUser id: {user.id}\n\n{saved.body}\n"),
                     from_address=email_from_address(),
                 )
             )
@@ -4336,9 +4770,15 @@ class Handler(BaseHTTPRequestHandler):
                 else:
                     STATE.repository.save_discovered_job(candidate)
                     captured_status = "captured"
-                STATE.log_analytics(user_id, "captured_job", {
-                    "host": host, "source": source_label, "status": captured_status,
-                })
+                STATE.log_analytics(
+                    user_id,
+                    "captured_job",
+                    {
+                        "host": host,
+                        "source": source_label,
+                        "status": captured_status,
+                    },
+                )
                 self.send_response(HTTPStatus.SEE_OTHER)
                 self.send_header("Location", f"/?capture={captured_status}")
                 self.end_headers()
@@ -4361,15 +4801,15 @@ class Handler(BaseHTTPRequestHandler):
                 #    the user can self-rescue if JS is disabled or
                 #    everything goes sideways.
                 html = (
-                    "<!doctype html><html><head><meta charset=\"utf-8\">"
+                    '<!doctype html><html><head><meta charset="utf-8">'
                     "<title>Resetting…</title>"
                     "<style>body{font-family:sans-serif;padding:40px;max-width:560px;"
                     "background:#0f1014;color:#e8e8f0}h1{margin:0 0 12px}p{color:#a0a0b0;line-height:1.5}"
                     "a{color:#5fa8ff}</style>"
                     "</head><body>"
                     "<h1>Refreshing the app…</h1>"
-                    "<p id=\"s\">Clearing the old cached version, then reloading.</p>"
-                    "<p><a href=\"/?_=manual\" id=\"manual\">If this doesn't redirect in 2 seconds, click here.</a></p>"
+                    '<p id="s">Clearing the old cached version, then reloading.</p>'
+                    '<p><a href="/?_=manual" id="manual">If this doesn\'t redirect in 2 seconds, click here.</a></p>'
                     "<script>\n"
                     "// Schedule the redirect UNCONDITIONALLY — even if SW awaits hang.\n"
                     "setTimeout(function(){\n"
@@ -4410,9 +4850,12 @@ class Handler(BaseHTTPRequestHandler):
             if parsed.path == "/api/health":
                 session = self.current_session()
                 from urllib.parse import parse_qs
+
                 qs = parse_qs(parsed.query or "")
                 detailed = (qs.get("detailed", ["0"])[0] or "0").lower() in ("1", "true", "yes")
-                self.send_json(STATE.health(session.user.id if session else None, detailed=detailed))
+                self.send_json(
+                    STATE.health(session.user.id if session else None, detailed=detailed)
+                )
                 return
             if parsed.path == "/api/site-config":
                 # Public, no-auth endpoint that surfaces the operator-set
@@ -4423,12 +4866,14 @@ class Handler(BaseHTTPRequestHandler):
                 # default (see docs/cookie-audit.md).
                 analytics_url = (os.environ.get("DIRECTJOB_ANALYTICS_SCRIPT_URL") or "").strip()
                 analytics_domain = (os.environ.get("DIRECTJOB_ANALYTICS_DOMAIN") or "").strip()
-                self.send_json({
-                    "analytics": {
-                        "scriptUrl": analytics_url or None,
-                        "domain": analytics_domain or None,
+                self.send_json(
+                    {
+                        "analytics": {
+                            "scriptUrl": analytics_url or None,
+                            "domain": analytics_domain or None,
+                        }
                     }
-                })
+                )
                 return
             if parsed.path == "/api/auth/status":
                 session = self.current_session()
@@ -4439,7 +4884,9 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json(
                     {
                         "authenticated": session is not None,
-                        "user": make_user_payload(session.user, session.csrf_token) if session else None,
+                        "user": make_user_payload(session.user, session.csrf_token)
+                        if session
+                        else None,
                         "registrationOpen": STATE.registration_open(),
                         "hasUsers": STATE.auth_store.has_users(),
                     }
@@ -4449,7 +4896,9 @@ class Handler(BaseHTTPRequestHandler):
                 raw_token = parsed.path.split("/api/auth/accept-invite/", 1)[1]
                 record = STATE.token_store.lookup("invitation", unquote(raw_token))
                 if record is None:
-                    self.send_error_json(HTTPStatus.GONE, "invalid_token", "Invitation is expired or already used")
+                    self.send_error_json(
+                        HTTPStatus.GONE, "invalid_token", "Invitation is expired or already used"
+                    )
                     return
                 self.send_json(
                     {
@@ -4465,7 +4914,9 @@ class Handler(BaseHTTPRequestHandler):
                 raw_token = parsed.path.split("/api/auth/reset-password/", 1)[1]
                 record = STATE.token_store.lookup("password_reset", unquote(raw_token))
                 if record is None:
-                    self.send_error_json(HTTPStatus.GONE, "invalid_token", "Reset link is expired or already used")
+                    self.send_error_json(
+                        HTTPStatus.GONE, "invalid_token", "Reset link is expired or already used"
+                    )
                     return
                 self.send_json(
                     {
@@ -4477,7 +4928,7 @@ class Handler(BaseHTTPRequestHandler):
                 )
                 return
             if parsed.path.startswith("/share/job/"):
-                job_id = parsed.path[len("/share/job/"):].strip("/")
+                job_id = parsed.path[len("/share/job/") :].strip("/")
                 imported = STATE.repository.imported_jobs.get(job_id)
                 if imported is None or not imported.share_enabled:
                     self._send_share_not_found_page()
@@ -4485,7 +4936,7 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_share_job_page(imported)
                 return
             if parsed.path.startswith("/jobs/"):
-                slug = parsed.path[len("/jobs/"):].strip("/").split("/", 1)[0]
+                slug = parsed.path[len("/jobs/") :].strip("/").split("/", 1)[0]
                 if not slug or not all(c.isalnum() or c == "-" for c in slug) or len(slug) > 80:
                     self._send_seo_page_not_found()
                     return
@@ -4502,7 +4953,7 @@ class Handler(BaseHTTPRequestHandler):
                 # redirect the visitor to the home page so they can sign
                 # up. Code is sanitised to URL-safe characters only —
                 # anything else falls through to the static handler 404.
-                code = parsed.path[len("/r/"):].strip("/").split("/", 1)[0]
+                code = parsed.path[len("/r/") :].strip("/").split("/", 1)[0]
                 if not code or not all(c.isalnum() or c in "-_" for c in code) or len(code) > 32:
                     self.send_error_json(HTTPStatus.NOT_FOUND, "not_found", "Unknown referral code")
                     return
@@ -4518,6 +4969,7 @@ class Handler(BaseHTTPRequestHandler):
                 return
             if parsed.path == "/account/verify-email":
                 from urllib.parse import parse_qs as _parse_qs
+
                 qs = _parse_qs(parsed.query or "")
                 raw_token = (qs.get("token", [""])[0] or "").strip()
                 if not raw_token:
@@ -4547,6 +4999,7 @@ class Handler(BaseHTTPRequestHandler):
                 return
             if parsed.path == "/account/deletion-confirm":
                 from urllib.parse import parse_qs as _parse_qs
+
                 qs = _parse_qs(parsed.query or "")
                 raw_token = (qs.get("token", [""])[0] or "").strip()
                 if not raw_token:
@@ -4595,11 +5048,13 @@ class Handler(BaseHTTPRequestHandler):
             if parsed.path == "/api/account/referral":
                 code = STATE.auth_store.ensure_referral_code(session.user.id)
                 count = STATE.auth_store.count_referrals(session.user.id)
-                self.send_json({
-                    "code": code,
-                    "url": STATE.public_url_for(f"/r/{code}"),
-                    "referredCount": count,
-                })
+                self.send_json(
+                    {
+                        "code": code,
+                        "url": STATE.public_url_for(f"/r/{code}"),
+                        "referredCount": count,
+                    }
+                )
                 return
             if parsed.path == "/api/bootstrap":
                 self.send_json(STATE.bootstrap(user_id))
@@ -4656,14 +5111,17 @@ class Handler(BaseHTTPRequestHandler):
                 # We log it via analytics_event so admin can read the list
                 # later. Real Stripe billing wiring is operator-pending.
                 already = [
-                    e for e in STATE.repository.list_analytics_events(user_id=user_id, limit=20)
-                    if (e.get("kind") if isinstance(e, dict) else getattr(e, "kind", None)) == "managed_ai_waitlist"
+                    e
+                    for e in STATE.repository.list_analytics_events(user_id=user_id, limit=20)
+                    if (e.get("kind") if isinstance(e, dict) else getattr(e, "kind", None))
+                    == "managed_ai_waitlist"
                 ]
                 if already:
                     self.send_json({"status": "already_on_waitlist"})
                     return
                 STATE.log_analytics(
-                    user_id, "managed_ai_waitlist",
+                    user_id,
+                    "managed_ai_waitlist",
                     {"email": session.user.email, "requestedAt": now_utc().isoformat()},
                 )
                 self.send_json({"status": "added"})
@@ -4672,9 +5130,13 @@ class Handler(BaseHTTPRequestHandler):
                 profile = STATE.profile_for(user_id)
                 url = (profile.slack_webhook_url or "").strip()
                 if not url:
-                    self.send_error_json(HTTPStatus.BAD_REQUEST, "no_webhook", "Set a Slack webhook URL first.")
+                    self.send_error_json(
+                        HTTPStatus.BAD_REQUEST, "no_webhook", "Set a Slack webhook URL first."
+                    )
                     return
-                public_url = os.environ.get("DIRECTJOB_PUBLIC_URL") or "https://app.directjob-scout.example"
+                public_url = (
+                    os.environ.get("DIRECTJOB_PUBLIC_URL") or "https://app.directjob-scout.example"
+                )
                 result = post_high_fit_notification(
                     webhook_url=url,
                     job_title="Test notification",
@@ -4699,14 +5161,27 @@ class Handler(BaseHTTPRequestHandler):
                 # only the privacy-relevant kinds (auth, AI, exports,
                 # consent changes). Cap at 50 most recent.
                 relevant = {
-                    "ai_analyze", "cv_tailoring", "cover_letter_draft", "auto_fit", "auto_fit_batch",
-                    "totp_enabled", "totp_disabled",
-                    "cv_uploaded", "ai_consent_granted", "ai_consent_revoked",
-                    "saved_search_run", "captured_job", "inbound_email",
+                    "ai_analyze",
+                    "cv_tailoring",
+                    "cover_letter_draft",
+                    "auto_fit",
+                    "auto_fit_batch",
+                    "totp_enabled",
+                    "totp_disabled",
+                    "cv_uploaded",
+                    "ai_consent_granted",
+                    "ai_consent_revoked",
+                    "saved_search_run",
+                    "captured_job",
+                    "inbound_email",
                     "account_deletion_requested",
                 }
                 rows = STATE.repository.list_analytics_events(user_id=user_id, limit=200)
-                visible = [r for r in rows if (r.get("kind") if isinstance(r, dict) else r.kind) in relevant][:50]
+                visible = [
+                    r
+                    for r in rows
+                    if (r.get("kind") if isinstance(r, dict) else r.kind) in relevant
+                ][:50]
                 self.send_json({"events": visible})
                 return
             if parsed.path == "/api/admin/support":
@@ -4739,7 +5214,7 @@ class Handler(BaseHTTPRequestHandler):
                         }
                     )
                     return
-                limit_raw = (parsed.query and parse_qs(parsed.query).get("limit", ["100"]))
+                limit_raw = parsed.query and parse_qs(parsed.query).get("limit", ["100"])
                 try:
                     limit = max(1, min(int(limit_raw[0]), 1000))
                 except (ValueError, IndexError):
@@ -4749,20 +5224,26 @@ class Handler(BaseHTTPRequestHandler):
                     qs = parse_qs(parsed.query)
                     if "event_type" in qs and qs["event_type"]:
                         event_type_filter = qs["event_type"][0]
-                events = _read_ai_act_audit_tail(DATA_ROOT / "ai_act_audit.log", limit, event_type_filter)
-                self.send_json({
-                    "status": "enabled",
-                    "mode": "enabled",
-                    "events": events,
-                    "filter": {"limit": limit, "event_type": event_type_filter},
-                    "totalReturned": len(events),
-                })
+                events = _read_ai_act_audit_tail(
+                    DATA_ROOT / "ai_act_audit.log", limit, event_type_filter
+                )
+                self.send_json(
+                    {
+                        "status": "enabled",
+                        "mode": "enabled",
+                        "events": events,
+                        "filter": {"limit": limit, "event_type": event_type_filter},
+                        "totalReturned": len(events),
+                    }
+                )
                 return
             if parsed.path == "/api/saved-searches":
                 self.send_json({"savedSearches": STATE._saved_searches_with_alerts(user_id)})
                 return
             if parsed.path == "/api/billing":
-                self.send_json({"subscription": STATE.get_subscription().to_dict(), "plans": plans_payload()})
+                self.send_json(
+                    {"subscription": STATE.get_subscription().to_dict(), "plans": plans_payload()}
+                )
                 return
             if parsed.path == "/api/watchlist-templates":
                 profile = STATE.profile_for(user_id)
@@ -4775,17 +5256,28 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json({"workspaces": STATE.list_user_workspaces(user_id)})
                 return
             if parsed.path == "/api/push/key":
-                self.send_json({
-                    "configured": is_push_configured(),
-                    "publicKey": vapid_public_key() or "",
-                })
+                self.send_json(
+                    {
+                        "configured": is_push_configured(),
+                        "publicKey": vapid_public_key() or "",
+                    }
+                )
                 return
             if parsed.path == "/api/push/subscriptions":
                 subs = STATE.repository.list_push_subscriptions(user_id)
-                self.send_json({"subscriptions": [
-                    {"id": s.id, "endpoint": s.endpoint, "userAgent": s.user_agent, "createdAt": s.created_at.isoformat()}
-                    for s in subs
-                ]})
+                self.send_json(
+                    {
+                        "subscriptions": [
+                            {
+                                "id": s.id,
+                                "endpoint": s.endpoint,
+                                "userAgent": s.user_agent,
+                                "createdAt": s.created_at.isoformat(),
+                            }
+                            for s in subs
+                        ]
+                    }
+                )
                 return
             if parsed.path == "/api/profile":
                 profile = STATE.profile_for(user_id)
@@ -4810,14 +5302,18 @@ class Handler(BaseHTTPRequestHandler):
                 # the header health pill at "Error".
                 eff_user_id = STATE.effective_user_id(user_id)
                 state = STATE.cv_builder_state_for(eff_user_id)
-                section_obj = (get_section(state.current_section_id)
-                                if state.current_section_id else None)
-                self.send_json({
-                    "state": state.to_dict(),
-                    "currentSection": (_serialise_cv_section(section_obj)
-                                         if section_obj else None),
-                    "sectionOrder": [s.section_id for s in SECTIONS],
-                })
+                section_obj = (
+                    get_section(state.current_section_id) if state.current_section_id else None
+                )
+                self.send_json(
+                    {
+                        "state": state.to_dict(),
+                        "currentSection": (
+                            _serialise_cv_section(section_obj) if section_obj else None
+                        ),
+                        "sectionOrder": [s.section_id for s in SECTIONS],
+                    }
+                )
                 return
             if parsed.path == "/api/cv/print":
                 # Print-styled HTML of the user's saved CV. Browser
@@ -4838,7 +5334,9 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_text(html, content_type="text/html")
                 return
             if parsed.path == "/api/digest/preview":
-                self.send_json({"digest": STATE.build_user_digest(user_id, email=session.user.email)})
+                self.send_json(
+                    {"digest": STATE.build_user_digest(user_id, email=session.user.email)}
+                )
                 return
             if parsed.path == "/api/exports/imported.csv":
                 csv_body = imported_jobs_to_csv(STATE.repository.list_imported_jobs(user_id))
@@ -4853,7 +5351,9 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_text(csv_body, content_type="text/csv", filename="discovered-jobs.csv")
                 return
             if parsed.path == "/api/exports/discovered.md":
-                md_body = discovered_jobs_to_markdown(STATE.repository.list_discovered_jobs(user_id))
+                md_body = discovered_jobs_to_markdown(
+                    STATE.repository.list_discovered_jobs(user_id)
+                )
                 self.send_text(md_body, content_type="text/markdown", filename="discovered-jobs.md")
                 return
             if parsed.path == "/api/data/export":
@@ -4862,7 +5362,7 @@ class Handler(BaseHTTPRequestHandler):
             if parsed.path.startswith("/api/admin/users/") and parsed.path.endswith("/export"):
                 if not self.require_admin(session):
                     return
-                target_id = parsed.path[len("/api/admin/users/"):-len("/export")]
+                target_id = parsed.path[len("/api/admin/users/") : -len("/export")]
                 try:
                     target = STATE.auth_store.get_user(target_id)
                 except KeyError:
@@ -4903,11 +5403,15 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json(STATE.health(None), include_body=False)
                 return
             if parsed.path.startswith("/api/"):
-                self.send_error_json(HTTPStatus.NOT_FOUND, "not_found", "Unknown endpoint", include_body=False)
+                self.send_error_json(
+                    HTTPStatus.NOT_FOUND, "not_found", "Unknown endpoint", include_body=False
+                )
                 return
             self.serve_static(parsed.path, include_body=False)
         except Exception as error:  # noqa: BLE001 - top-level HTTP boundary
-            self.send_error_json(HTTPStatus.INTERNAL_SERVER_ERROR, "internal_error", str(error), include_body=False)
+            self.send_error_json(
+                HTTPStatus.INTERNAL_SERVER_ERROR, "internal_error", str(error), include_body=False
+            )
 
     def do_POST(self) -> None:
         try:
@@ -4928,31 +5432,42 @@ class Handler(BaseHTTPRequestHandler):
                 #   3. Configure the provider's webhook to POST here.
                 length = int(self.headers.get("Content-Length", "0"))
                 if length <= 0 or length > MAX_JSON_BODY_BYTES:
-                    self.send_error_json(HTTPStatus.BAD_REQUEST, "bad_body", "Webhook body required")
+                    self.send_error_json(
+                        HTTPStatus.BAD_REQUEST, "bad_body", "Webhook body required"
+                    )
                     return
                 raw = self.rfile.read(length)
                 expected_secret = os.environ.get("DIRECTJOB_INBOUND_EMAIL_SECRET", "").strip()
                 if not expected_secret:
-                    self.send_error_json(HTTPStatus.SERVICE_UNAVAILABLE, "inbound_email_unconfigured",
-                                         "Inbound email is not configured. Set DIRECTJOB_INBOUND_EMAIL_SECRET.")
+                    self.send_error_json(
+                        HTTPStatus.SERVICE_UNAVAILABLE,
+                        "inbound_email_unconfigured",
+                        "Inbound email is not configured. Set DIRECTJOB_INBOUND_EMAIL_SECRET.",
+                    )
                     return
                 provided_secret = self.headers.get("X-DirectJob-Inbound-Secret", "")
                 # Constant-time comparison to avoid timing attacks.
                 import hmac as _hmac
 
                 if not _hmac.compare_digest(expected_secret, provided_secret):
-                    self.send_error_json(HTTPStatus.UNAUTHORIZED, "bad_inbound_secret", "Invalid inbound secret")
+                    self.send_error_json(
+                        HTTPStatus.UNAUTHORIZED, "bad_inbound_secret", "Invalid inbound secret"
+                    )
                     return
                 try:
                     event = json.loads(raw.decode("utf-8"))
                 except (UnicodeDecodeError, json.JSONDecodeError):
-                    self.send_error_json(HTTPStatus.BAD_REQUEST, "bad_json", "Inbound body is not valid JSON")
+                    self.send_error_json(
+                        HTTPStatus.BAD_REQUEST, "bad_json", "Inbound body is not valid JSON"
+                    )
                     return
                 # Resend / Postmark / Mailgun all expose roughly the
                 # same shape; we read defensively.
                 to_field = event.get("to") or event.get("ToFull") or event.get("recipient") or ""
-                to_addresses = [to_field] if isinstance(to_field, str) else (
-                    [t.get("Email") if isinstance(t, dict) else str(t) for t in to_field]
+                to_addresses = (
+                    [to_field]
+                    if isinstance(to_field, str)
+                    else ([t.get("Email") if isinstance(t, dict) else str(t) for t in to_field])
                 )
                 token = ""
                 for addr in to_addresses:
@@ -4965,7 +5480,11 @@ class Handler(BaseHTTPRequestHandler):
                     profile_user = self.repository_user_by_token(token)  # type: ignore[attr-defined]
                     target_user_id = profile_user
                 if target_user_id is None:
-                    self.send_error_json(HTTPStatus.NOT_FOUND, "no_user", "Could not resolve recipient token to a user")
+                    self.send_error_json(
+                        HTTPStatus.NOT_FOUND,
+                        "no_user",
+                        "Could not resolve recipient token to a user",
+                    )
                     return
                 from company_discovery.email_ingest import parse_email_to_jobs
                 from company_discovery.models import DiscoveredJob
@@ -4985,7 +5504,10 @@ class Handler(BaseHTTPRequestHandler):
                         title=ingested.title[:160] or "Captured listing",
                         confidence_score=0.5,
                         location=ingested.location,
-                        structured_data={"captured_via": ingested.source, "company_hint": ingested.company},
+                        structured_data={
+                            "captured_via": ingested.source,
+                            "company_hint": ingested.company,
+                        },
                     )
                     duplicate = STATE.repository.find_duplicate_discovered_job(candidate)
                     if duplicate:
@@ -5002,30 +5524,55 @@ class Handler(BaseHTTPRequestHandler):
                     else:
                         STATE.repository.save_discovered_job(candidate)
                         new_count += 1
-                STATE.log_analytics(target_user_id, "inbound_email", {
-                    "newJobs": new_count, "merged": merged_count, "candidates": len(jobs),
-                })
-                self.send_json({"status": "ok", "newJobs": new_count, "mergedSources": merged_count, "candidates": len(jobs)})
+                STATE.log_analytics(
+                    target_user_id,
+                    "inbound_email",
+                    {
+                        "newJobs": new_count,
+                        "merged": merged_count,
+                        "candidates": len(jobs),
+                    },
+                )
+                self.send_json(
+                    {
+                        "status": "ok",
+                        "newJobs": new_count,
+                        "mergedSources": merged_count,
+                        "candidates": len(jobs),
+                    }
+                )
                 return
 
             if parsed.path == "/api/billing/webhook":
                 length = int(self.headers.get("Content-Length", "0"))
                 if length <= 0 or length > MAX_JSON_BODY_BYTES:
-                    self.send_error_json(HTTPStatus.BAD_REQUEST, "bad_body", "Webhook body required")
+                    self.send_error_json(
+                        HTTPStatus.BAD_REQUEST, "bad_body", "Webhook body required"
+                    )
                     return
                 raw = self.rfile.read(length)
                 signature_header = self.headers.get("Stripe-Signature", "")
                 secret = os.environ.get("DIRECTJOB_STRIPE_WEBHOOK_SECRET", "").strip()
                 if not secret:
-                    self.send_error_json(HTTPStatus.SERVICE_UNAVAILABLE, "webhook_unconfigured", "DIRECTJOB_STRIPE_WEBHOOK_SECRET not set.")
+                    self.send_error_json(
+                        HTTPStatus.SERVICE_UNAVAILABLE,
+                        "webhook_unconfigured",
+                        "DIRECTJOB_STRIPE_WEBHOOK_SECRET not set.",
+                    )
                     return
                 if not verify_stripe_webhook_signature(raw, signature_header, secret):
-                    self.send_error_json(HTTPStatus.BAD_REQUEST, "bad_signature", "Webhook signature verification failed.")
+                    self.send_error_json(
+                        HTTPStatus.BAD_REQUEST,
+                        "bad_signature",
+                        "Webhook signature verification failed.",
+                    )
                     return
                 try:
                     event = json.loads(raw.decode("utf-8"))
                 except (UnicodeDecodeError, json.JSONDecodeError):
-                    self.send_error_json(HTTPStatus.BAD_REQUEST, "bad_json", "Webhook body is not valid JSON.")
+                    self.send_error_json(
+                        HTTPStatus.BAD_REQUEST, "bad_json", "Webhook body is not valid JSON."
+                    )
                     return
                 price_to_plan = {
                     os.environ.get("DIRECTJOB_STRIPE_PRICE_TEAM", ""): "team",
@@ -5051,11 +5598,19 @@ class Handler(BaseHTTPRequestHandler):
                 # handful of attempts slip past). Refund on success so
                 # the cap counts failures only.
                 if not STATE.claim_login_slot(client_id):
-                    self.send_error_json(HTTPStatus.TOO_MANY_REQUESTS, "rate_limited", "Too many failed login attempts")
+                    self.send_error_json(
+                        HTTPStatus.TOO_MANY_REQUESTS,
+                        "rate_limited",
+                        "Too many failed login attempts",
+                    )
                     return
-                user = STATE.auth_store.authenticate(payload.get("email", ""), payload.get("password", ""))
+                user = STATE.auth_store.authenticate(
+                    payload.get("email", ""), payload.get("password", "")
+                )
                 if user is None:
-                    self.send_error_json(HTTPStatus.UNAUTHORIZED, "invalid_login", "Invalid email or password")
+                    self.send_error_json(
+                        HTTPStatus.UNAUTHORIZED, "invalid_login", "Invalid email or password"
+                    )
                     return
                 STATE.refund_login_slot(client_id)
                 STATE.clear_login_failures(client_id)
@@ -5073,7 +5628,10 @@ class Handler(BaseHTTPRequestHandler):
                 session = STATE.auth_store.create_session(user)
                 max_age = int((session.expires_at - now_utc()).total_seconds())
                 self.send_json(
-                    {"user": make_user_payload(user, session.csrf_token), "bootstrap": STATE.bootstrap(user.id)},
+                    {
+                        "user": make_user_payload(user, session.csrf_token),
+                        "bootstrap": STATE.bootstrap(user.id),
+                    },
                     headers={"Set-Cookie": session_cookie_header(session.token, max_age)},
                 )
                 return
@@ -5083,25 +5641,36 @@ class Handler(BaseHTTPRequestHandler):
                 code = str(payload.get("code") or "").strip()
                 user_id = STATE.auth_store.consume_2fa_challenge(challenge_token)
                 if not user_id:
-                    self.send_error_json(HTTPStatus.UNAUTHORIZED, "invalid_challenge", "Challenge expired or invalid")
+                    self.send_error_json(
+                        HTTPStatus.UNAUTHORIZED, "invalid_challenge", "Challenge expired or invalid"
+                    )
                     return
                 # Try TOTP first, then recovery codes (which look different — usually 10 hex chars).
-                ok = STATE.auth_store.verify_user_totp(user_id, code) or STATE.auth_store.consume_recovery_code(user_id, code)
+                ok = STATE.auth_store.verify_user_totp(
+                    user_id, code
+                ) or STATE.auth_store.consume_recovery_code(user_id, code)
                 if not ok:
-                    self.send_error_json(HTTPStatus.UNAUTHORIZED, "invalid_2fa_code", "Invalid 2FA code")
+                    self.send_error_json(
+                        HTTPStatus.UNAUTHORIZED, "invalid_2fa_code", "Invalid 2FA code"
+                    )
                     return
                 user = STATE.auth_store.get_user(user_id)
                 session = STATE.auth_store.create_session(user)
                 max_age = int((session.expires_at - now_utc()).total_seconds())
                 self.send_json(
-                    {"user": make_user_payload(user, session.csrf_token), "bootstrap": STATE.bootstrap(user.id)},
+                    {
+                        "user": make_user_payload(user, session.csrf_token),
+                        "bootstrap": STATE.bootstrap(user.id),
+                    },
                     headers={"Set-Cookie": session_cookie_header(session.token, max_age)},
                 )
                 return
 
             if parsed.path == "/api/auth/register":
                 if not STATE.registration_open():
-                    self.send_error_json(HTTPStatus.FORBIDDEN, "registration_closed", "Registration is closed")
+                    self.send_error_json(
+                        HTTPStatus.FORBIDDEN, "registration_closed", "Registration is closed"
+                    )
                     return
                 # Rate-limit registration except for the first-account
                 # bootstrap path (no users yet → admin gets created). Without
@@ -5112,7 +5681,11 @@ class Handler(BaseHTTPRequestHandler):
                     client_id = self.client_address[0] if self.client_address else "unknown"
                     # Atomic claim — strict cap under burst.
                     if not STATE.claim_register_slot(client_id):
-                        self.send_error_json(HTTPStatus.TOO_MANY_REQUESTS, "rate_limited", "Too many registration attempts. Try again later.")
+                        self.send_error_json(
+                            HTTPStatus.TOO_MANY_REQUESTS,
+                            "rate_limited",
+                            "Too many registration attempts. Try again later.",
+                        )
                         return
                     # DSGVO consent (#30). Public sign-ups must tick
                     # both the Terms and the Privacy boxes — otherwise
@@ -5129,7 +5702,9 @@ class Handler(BaseHTTPRequestHandler):
                         )
                         return
                 role = "admin" if is_bootstrap else "member"
-                user = STATE.auth_store.create_user(payload.get("email", ""), payload.get("password", ""), role=role)
+                user = STATE.auth_store.create_user(
+                    payload.get("email", ""), payload.get("password", ""), role=role
+                )
                 # Stamp the very first sign-in (register doesn't go through authenticate()).
                 login_at = now_utc()
                 STATE.auth_store.connection.execute(
@@ -5166,7 +5741,10 @@ class Handler(BaseHTTPRequestHandler):
                 session = STATE.auth_store.create_session(user)
                 max_age = int((session.expires_at - now_utc()).total_seconds())
                 self.send_json(
-                    {"user": make_user_payload(user, session.csrf_token), "bootstrap": STATE.bootstrap(user.id)},
+                    {
+                        "user": make_user_payload(user, session.csrf_token),
+                        "bootstrap": STATE.bootstrap(user.id),
+                    },
                     HTTPStatus.CREATED,
                     headers={"Set-Cookie": session_cookie_header(session.token, max_age)},
                 )
@@ -5185,7 +5763,11 @@ class Handler(BaseHTTPRequestHandler):
             if parsed.path == "/api/auth/forgot-password":
                 client_id = self.client_address[0] if self.client_address else "unknown"
                 if not STATE.claim_password_reset_slot(client_id):
-                    self.send_error_json(HTTPStatus.TOO_MANY_REQUESTS, "rate_limited", "Too many reset requests. Try again later.")
+                    self.send_error_json(
+                        HTTPStatus.TOO_MANY_REQUESTS,
+                        "rate_limited",
+                        "Too many reset requests. Try again later.",
+                    )
                     return
                 STATE.request_password_reset(payload.get("email", ""))
                 # Always return 202 to avoid leaking which emails exist.
@@ -5198,12 +5780,19 @@ class Handler(BaseHTTPRequestHandler):
                 # already have an account.
                 client_id = self.client_address[0] if self.client_address else "unknown"
                 if not STATE.claim_password_reset_slot(client_id):
-                    self.send_error_json(HTTPStatus.TOO_MANY_REQUESTS, "rate_limited", "Too many requests. Try again later.")
+                    self.send_error_json(
+                        HTTPStatus.TOO_MANY_REQUESTS,
+                        "rate_limited",
+                        "Too many requests. Try again later.",
+                    )
                     return
                 email = str(payload.get("email") or "").strip().lower()
                 if email:
                     for candidate in STATE.auth_store.list_users():
-                        if candidate.email.lower() == email and not STATE.auth_store.is_email_verified(candidate.id):
+                        if (
+                            candidate.email.lower() == email
+                            and not STATE.auth_store.is_email_verified(candidate.id)
+                        ):
                             try:
                                 STATE.send_email_verification(candidate)
                             except Exception:  # noqa: BLE001
@@ -5216,7 +5805,9 @@ class Handler(BaseHTTPRequestHandler):
                 raw_token = parsed.path.split("/api/auth/reset-password/", 1)[1]
                 new_password = str(payload.get("newPassword") or "")
                 try:
-                    STATE.complete_password_reset(raw_token=unquote(raw_token), password=new_password)
+                    STATE.complete_password_reset(
+                        raw_token=unquote(raw_token), password=new_password
+                    )
                 except ValueError as error:
                     code = str(error)
                     status = HTTPStatus.GONE if code == "invalid_token" else HTTPStatus.BAD_REQUEST
@@ -5229,7 +5820,9 @@ class Handler(BaseHTTPRequestHandler):
                 raw_token = parsed.path.split("/api/auth/accept-invite/", 1)[1]
                 new_password = str(payload.get("newPassword") or "")
                 try:
-                    user = STATE.accept_invitation(raw_token=unquote(raw_token), password=new_password)
+                    user = STATE.accept_invitation(
+                        raw_token=unquote(raw_token), password=new_password
+                    )
                 except ValueError as error:
                     code = str(error)
                     status = HTTPStatus.GONE if code == "invalid_token" else HTTPStatus.BAD_REQUEST
@@ -5258,7 +5851,11 @@ class Handler(BaseHTTPRequestHandler):
                 current_password = str(payload.get("currentPassword") or "")
                 new_password = str(payload.get("newPassword") or "")
                 if STATE.auth_store.authenticate(session.user.email, current_password) is None:
-                    self.send_error_json(HTTPStatus.FORBIDDEN, "invalid_current_password", "Current password is incorrect")
+                    self.send_error_json(
+                        HTTPStatus.FORBIDDEN,
+                        "invalid_current_password",
+                        "Current password is incorrect",
+                    )
                     return
                 STATE.auth_store.update_user(user_id, password=new_password)
                 self.send_json(
@@ -5269,7 +5866,11 @@ class Handler(BaseHTTPRequestHandler):
 
             if parsed.path == "/api/auth/totp/enroll":
                 if STATE.auth_store.has_totp_enabled(user_id):
-                    self.send_error_json(HTTPStatus.CONFLICT, "totp_already_enabled", "2FA is already enabled. Disable it first to re-enroll.")
+                    self.send_error_json(
+                        HTTPStatus.CONFLICT,
+                        "totp_already_enabled",
+                        "2FA is already enabled. Disable it first to re-enroll.",
+                    )
                     return
                 enrollment = STATE.auth_store.start_totp_enrollment(user_id)
                 self.send_json(enrollment)
@@ -5312,7 +5913,12 @@ class Handler(BaseHTTPRequestHandler):
                     details={"role": user.role},
                 )
                 self.send_json(
-                    {"user": make_admin_user_payload(user), "users": [make_admin_user_payload(item) for item in STATE.auth_store.list_users()]},
+                    {
+                        "user": make_admin_user_payload(user),
+                        "users": [
+                            make_admin_user_payload(item) for item in STATE.auth_store.list_users()
+                        ],
+                    },
                     HTTPStatus.CREATED,
                 )
                 return
@@ -5342,14 +5948,20 @@ class Handler(BaseHTTPRequestHandler):
                     notes=payload.get("notes") or None,
                     watch_enabled=bool(payload.get("watchEnabled", True)),
                 )
-                self.send_json({"company": company, "bootstrap": STATE.bootstrap(user_id)}, HTTPStatus.CREATED)
+                self.send_json(
+                    {"company": company, "bootstrap": STATE.bootstrap(user_id)}, HTTPStatus.CREATED
+                )
                 return
 
             if parsed.path == "/api/suggest-companies":
                 profile = STATE.profile_for(user_id)
-                persona_id = str(payload.get("personaId") or profile.persona_id or DEFAULT_PERSONA_ID)
+                persona_id = str(
+                    payload.get("personaId") or profile.persona_id or DEFAULT_PERSONA_ID
+                )
                 persona = get_persona(persona_id)
-                target_roles = payload.get("targetRoles") or list(profile.target_roles or persona.default_target_roles)
+                target_roles = payload.get("targetRoles") or list(
+                    profile.target_roles or persona.default_target_roles
+                )
                 industry = payload.get("industry") or profile.industry or persona.default_industry
                 location = payload.get("location") or profile.location or None
                 suggestions = STATE.service.suggest_relevant_companies(
@@ -5376,7 +5988,9 @@ class Handler(BaseHTTPRequestHandler):
                 title = str(payload.get("title") or "").strip()
                 description = str(payload.get("description") or "").strip()
                 if not target_url or not target_url.startswith(("http://", "https://")):
-                    self.send_error_json(HTTPStatus.BAD_REQUEST, "bad_url", "Valid http(s) URL required")
+                    self.send_error_json(
+                        HTTPStatus.BAD_REQUEST, "bad_url", "Valid http(s) URL required"
+                    )
                     return
                 host = (urlparse(target_url).hostname or "").lower()
                 source_label = "bookmarklet:other"
@@ -5420,16 +6034,22 @@ class Handler(BaseHTTPRequestHandler):
                 else:
                     saved = STATE.repository.save_discovered_job(candidate)
                     status_code = "captured"
-                STATE.log_analytics(user_id, "captured_job", {
-                    "host": host,
-                    "source": source_label,
-                    "status": status_code,
-                })
-                self.send_json({
-                    "status": status_code,
-                    "discoveredJobId": saved.id,
-                    "source": source_label,
-                })
+                STATE.log_analytics(
+                    user_id,
+                    "captured_job",
+                    {
+                        "host": host,
+                        "source": source_label,
+                        "status": status_code,
+                    },
+                )
+                self.send_json(
+                    {
+                        "status": status_code,
+                        "discoveredJobId": saved.id,
+                        "source": source_label,
+                    }
+                )
                 return
 
             if parsed.path == "/api/jobs/search":
@@ -5473,48 +6093,58 @@ class Handler(BaseHTTPRequestHandler):
                     {"name": a.name, "label": a.label, "url": a.url}
                     for a in STATE.aggregator_engine.attributions()
                 ]
-                STATE.log_analytics(user_id, "jobs_search", {
-                    "query": query[:120],
-                    "location": location,
-                    "providerCount": len(outcomes),
-                    "jobCount": len(jobs),
-                })
-                self.send_json({
-                    "query": query,
-                    "location": location,
-                    "totalCandidates": len(jobs),
-                    "jobs": [
-                        {
-                            "title": j.title,
-                            "companyName": j.company_name,
-                            "source": j.source,
-                            "sourceUrl": j.source_url,
-                            "location": j.location,
-                            "description": j.description,
-                            "postedAt": j.posted_at.isoformat() if j.posted_at else None,
-                            "salaryHint": j.salary_hint,
-                            "score": score,
-                        }
-                        for j, score in ranked
-                    ],
-                    "outcomes": [
-                        {
-                            "provider": o.provider,
-                            "jobCount": o.job_count,
-                            "cached": o.cached,
-                            "error": o.error,
-                        }
-                        for o in outcomes
-                    ],
-                    "attributions": attributions,
-                })
+                STATE.log_analytics(
+                    user_id,
+                    "jobs_search",
+                    {
+                        "query": query[:120],
+                        "location": location,
+                        "providerCount": len(outcomes),
+                        "jobCount": len(jobs),
+                    },
+                )
+                self.send_json(
+                    {
+                        "query": query,
+                        "location": location,
+                        "totalCandidates": len(jobs),
+                        "jobs": [
+                            {
+                                "title": j.title,
+                                "companyName": j.company_name,
+                                "source": j.source,
+                                "sourceUrl": j.source_url,
+                                "location": j.location,
+                                "description": j.description,
+                                "postedAt": j.posted_at.isoformat() if j.posted_at else None,
+                                "salaryHint": j.salary_hint,
+                                "score": score,
+                            }
+                            for j, score in ranked
+                        ],
+                        "outcomes": [
+                            {
+                                "provider": o.provider,
+                                "jobCount": o.job_count,
+                                "cached": o.cached,
+                                "error": o.error,
+                            }
+                            for o in outcomes
+                        ],
+                        "attributions": attributions,
+                    }
+                )
                 return
 
             if parsed.path == "/api/discover-companies":
                 profile = STATE.profile_for(user_id)
-                persona_id = str(payload.get("personaId") or profile.persona_id or DEFAULT_PERSONA_ID)
+                persona_id = str(
+                    payload.get("personaId") or profile.persona_id or DEFAULT_PERSONA_ID
+                )
                 persona = get_persona(persona_id)
-                target_roles = payload.get("targetRoles") or list(profile.target_roles or persona.default_target_roles)
+                target_roles = payload.get("targetRoles") or list(
+                    profile.target_roles or persona.default_target_roles
+                )
                 industry = payload.get("industry") or profile.industry or persona.default_industry
                 location = payload.get("location") or profile.location or None
                 results = STATE.discover_companies(
@@ -5532,7 +6162,12 @@ class Handler(BaseHTTPRequestHandler):
                 except ValueError as error:
                     self.send_error_json(HTTPStatus.BAD_REQUEST, str(error), str(error))
                     return
-                self.send_json({"profile": STATE._profile_payload(profile), "bootstrap": STATE.bootstrap(user_id)})
+                self.send_json(
+                    {
+                        "profile": STATE._profile_payload(profile),
+                        "bootstrap": STATE.bootstrap(user_id),
+                    }
+                )
                 return
             if parsed.path == "/api/profile/photo-upload":
                 # CV photo upload. Accept base64 just like cv-upload.
@@ -5544,23 +6179,26 @@ class Handler(BaseHTTPRequestHandler):
                 # also surfaced to the CV builder's header section.
                 import base64 as _b64
                 import binascii as _bx
+
                 from company_discovery.cv_photo import (
-                    PhotoValidationError, normalise_photo_upload,
+                    PhotoValidationError,
+                    normalise_photo_upload,
                 )
 
-                content_b64 = str(payload.get("contentBase64")
-                                    or payload.get("content_base64") or "")
+                content_b64 = str(
+                    payload.get("contentBase64") or payload.get("content_base64") or ""
+                )
                 if not content_b64:
-                    self.send_error_json(HTTPStatus.BAD_REQUEST,
-                                          "missing_fields",
-                                          "contentBase64 required")
+                    self.send_error_json(
+                        HTTPStatus.BAD_REQUEST, "missing_fields", "contentBase64 required"
+                    )
                     return
                 try:
                     raw = _b64.b64decode(content_b64, validate=False)
                 except (_bx.Error, ValueError):
-                    self.send_error_json(HTTPStatus.BAD_REQUEST,
-                                          "invalid_base64",
-                                          "Could not decode upload")
+                    self.send_error_json(
+                        HTTPStatus.BAD_REQUEST, "invalid_base64", "Could not decode upload"
+                    )
                     return
                 try:
                     data_uri = normalise_photo_upload(raw)
@@ -5576,19 +6214,22 @@ class Handler(BaseHTTPRequestHandler):
                 profile = STATE.profile_for(user_id)
                 profile.cv_photo_data_uri = data_uri
                 STATE.repository.save_user_profile(profile)
-                STATE.log_analytics(user_id, "cv_photo_uploaded",
-                                     {"sizeBytes": len(raw)})
-                self.send_json({
-                    "cvPhotoDataUri": data_uri,
-                    "sizeBytes": len(raw),
-                })
+                STATE.log_analytics(user_id, "cv_photo_uploaded", {"sizeBytes": len(raw)})
+                self.send_json(
+                    {
+                        "cvPhotoDataUri": data_uri,
+                        "sizeBytes": len(raw),
+                    }
+                )
                 return
             if parsed.path == "/api/profile/photo":
                 # DELETE-via-POST shortcut (avoid second handler).
                 if str(payload.get("action") or "").lower() != "remove":
-                    self.send_error_json(HTTPStatus.BAD_REQUEST,
-                                          "unknown_action",
-                                          "Set action='remove' to clear the photo.")
+                    self.send_error_json(
+                        HTTPStatus.BAD_REQUEST,
+                        "unknown_action",
+                        "Set action='remove' to clear the photo.",
+                    )
                     return
                 profile = STATE.profile_for(user_id)
                 profile.cv_photo_data_uri = None
@@ -5600,14 +6241,22 @@ class Handler(BaseHTTPRequestHandler):
                 import binascii
 
                 filename = str(payload.get("filename") or "").strip()
-                content_b64 = str(payload.get("contentBase64") or payload.get("content_base64") or "")
+                content_b64 = str(
+                    payload.get("contentBase64") or payload.get("content_base64") or ""
+                )
                 if not filename or not content_b64:
-                    self.send_error_json(HTTPStatus.BAD_REQUEST, "missing_fields", "filename and contentBase64 required")
+                    self.send_error_json(
+                        HTTPStatus.BAD_REQUEST,
+                        "missing_fields",
+                        "filename and contentBase64 required",
+                    )
                     return
                 try:
                     blob = base64.b64decode(content_b64, validate=True)
                 except binascii.Error:
-                    self.send_error_json(HTTPStatus.BAD_REQUEST, "invalid_base64", "Could not decode upload")
+                    self.send_error_json(
+                        HTTPStatus.BAD_REQUEST, "invalid_base64", "Could not decode upload"
+                    )
                     return
                 try:
                     text = extract_cv_text(filename, blob)
@@ -5619,8 +6268,11 @@ class Handler(BaseHTTPRequestHandler):
                 except ValueError as error:
                     self.send_error_json(HTTPStatus.BAD_REQUEST, str(error), str(error))
                     return
-                STATE.log_analytics(user_id, "cv_uploaded", {"filename": filename, "chars": len(text)})
+                STATE.log_analytics(
+                    user_id, "cv_uploaded", {"filename": filename, "chars": len(text)}
+                )
                 from company_discovery.personas import PERSONAS, suggest_persona_from_text
+
                 ranked = suggest_persona_from_text(text, top_k=3)
                 personaSuggestions = [
                     {
@@ -5630,12 +6282,14 @@ class Handler(BaseHTTPRequestHandler):
                     }
                     for pid, score in ranked
                 ]
-                self.send_json({
-                    "profile": STATE._profile_payload(profile),
-                    "bootstrap": STATE.bootstrap(user_id),
-                    "extractedChars": len(text),
-                    "personaSuggestions": personaSuggestions,
-                })
+                self.send_json(
+                    {
+                        "profile": STATE._profile_payload(profile),
+                        "bootstrap": STATE.bootstrap(user_id),
+                        "extractedChars": len(text),
+                        "personaSuggestions": personaSuggestions,
+                    }
+                )
                 return
             if parsed.path == "/api/profile/persona-suggest":
                 # Used by the UI when the user wants to re-evaluate the
@@ -5643,17 +6297,20 @@ class Handler(BaseHTTPRequestHandler):
                 profile = STATE.repository.get_user_profile(user_id)
                 cv_text = (profile.cv_text or "") if profile else ""
                 from company_discovery.personas import PERSONAS, suggest_persona_from_text
+
                 ranked = suggest_persona_from_text(cv_text, top_k=5)
-                self.send_json({
-                    "personaSuggestions": [
-                        {
-                            "personaId": pid,
-                            "label": PERSONAS[pid].label if pid in PERSONAS else pid,
-                            "score": score,
-                        }
-                        for pid, score in ranked
-                    ],
-                })
+                self.send_json(
+                    {
+                        "personaSuggestions": [
+                            {
+                                "personaId": pid,
+                                "label": PERSONAS[pid].label if pid in PERSONAS else pid,
+                                "score": score,
+                            }
+                            for pid, score in ranked
+                        ],
+                    }
+                )
                 return
             # ---------------- Chat-router API ----------------
             #
@@ -5681,12 +6338,11 @@ class Handler(BaseHTTPRequestHandler):
                     )
                 )
                 if not user_message and not awaiting_optional:
-                    self.send_error_json(HTTPStatus.BAD_REQUEST,
-                                          "empty_message",
-                                          "Empty chat message.")
+                    self.send_error_json(
+                        HTTPStatus.BAD_REQUEST, "empty_message", "Empty chat message."
+                    )
                     return
-                session.history.append(ChatTurn(role="user",
-                                                  content=user_message))
+                session.history.append(ChatTurn(role="user", content=user_message))
 
                 # ── R17 guided journey: if the user has an active
                 # journey (not GREET/DONE), keep routing messages
@@ -5694,11 +6350,14 @@ class Handler(BaseHTTPRequestHandler):
                 # naturally without slash commands. Also auto-start a
                 # journey on explicit job-seeking intent.
                 from company_discovery.journey import (
-                    PHASE_GREET, PHASE_DONE, PHASE_CV_CHECK,
-                    should_auto_start,
-                    looks_like_new_search_intent,
+                    PHASE_CV_CHECK,
+                    PHASE_DONE,
+                    PHASE_GREET,
                     looks_like_cv_creation_intent,
+                    looks_like_new_search_intent,
+                    should_auto_start,
                 )
+
                 journey_now = STATE._journey_load(data_user_id)
                 in_journey = journey_now.phase not in (PHASE_GREET, PHASE_DONE)
                 # R21.x: a user in a post-search phase (REVIEW / DRILL /
@@ -5716,14 +6375,18 @@ class Handler(BaseHTTPRequestHandler):
                 # — currently stuck in the tailor letter/consult/save
                 # menu. This routes them straight to the sectional
                 # CV-build flow regardless of journey phase.
-                if (looks_like_cv_creation_intent(
-                        user_message, journey_now.phase)):
-                    STATE.log_analytics(data_user_id, "chat_cmd",
-                                          {"name": "cv_creation_interrupt",
-                                           "from_phase": journey_now.phase})
-                    from company_discovery.journey import (
-                        UserJourney, _CV_BUILD_ORDER, cv_build_prompt_for,
+                if looks_like_cv_creation_intent(user_message, journey_now.phase):
+                    STATE.log_analytics(
+                        data_user_id,
+                        "chat_cmd",
+                        {"name": "cv_creation_interrupt", "from_phase": journey_now.phase},
                     )
+                    from company_discovery.journey import (
+                        _CV_BUILD_ORDER,
+                        UserJourney,
+                        cv_build_prompt_for,
+                    )
+
                     # Set journey into the sectional-build state so the
                     # next user message answers the first question.
                     fresh = UserJourney()
@@ -5735,38 +6398,40 @@ class Handler(BaseHTTPRequestHandler):
                         "OK — 5 quick questions and you'll have a CV "
                         "ready. " + cv_build_prompt_for(_CV_BUILD_ORDER[0])
                     )
-                    session.history.append(ChatTurn(
-                        role="assistant", content=reply))
+                    session.history.append(ChatTurn(role="assistant", content=reply))
                     STATE.chat_session_persist(data_user_id)
-                    self.send_json({
-                        "reply": reply,
-                        "journeyPhase": fresh.phase,
-                        "session": session.to_dict(),
-                    })
+                    self.send_json(
+                        {
+                            "reply": reply,
+                            "journeyPhase": fresh.phase,
+                            "session": session.to_dict(),
+                        }
+                    )
                     return
-                if (in_journey
-                        and looks_like_new_search_intent(
-                            user_message, journey_now.phase)):
-                    STATE.log_analytics(data_user_id, "chat_cmd",
-                                          {"name": "new_search_interrupt",
-                                           "from_phase": journey_now.phase})
+                if in_journey and looks_like_new_search_intent(user_message, journey_now.phase):
+                    STATE.log_analytics(
+                        data_user_id,
+                        "chat_cmd",
+                        {"name": "new_search_interrupt", "from_phase": journey_now.phase},
+                    )
                     from company_discovery.journey import UserJourney
+
                     STATE._journey_save(data_user_id, UserJourney())
                     # If we can extract a role from the message,
                     # fire find_jobs directly — no need to ask the
                     # questions again. Otherwise kick off the
                     # journey at the role-question.
-                    nl_args = extract_keyword_args(
-                        "find_jobs", user_message)
+                    nl_args = extract_keyword_args("find_jobs", user_message)
                     if nl_args.get("query"):
                         result = STATE.chat_handler_find_jobs(
                             data_user_id,
-                            {"query": nl_args["query"],
-                             "location": nl_args.get("location") or None},
+                            {
+                                "query": nl_args["query"],
+                                "location": nl_args.get("location") or None,
+                            },
                         )
                         reply = result.get("message") or "Done."
-                        session.history.append(ChatTurn(
-                            role="assistant", content=reply))
+                        session.history.append(ChatTurn(role="assistant", content=reply))
                         STATE.chat_session_persist(data_user_id)
                         payload_out = {
                             "reply": reply,
@@ -5774,8 +6439,7 @@ class Handler(BaseHTTPRequestHandler):
                             "result": result,
                             "session": session.to_dict(),
                         }
-                        for key in ("navigateTo", "totalJobs", "jobs",
-                                      "jobType", "categories"):
+                        for key in ("navigateTo", "totalJobs", "jobs", "jobType", "categories"):
                             if key in result:
                                 payload_out[key] = result[key]
                         self.send_json(payload_out)
@@ -5783,72 +6447,81 @@ class Handler(BaseHTTPRequestHandler):
                     # No role extracted — start the journey at
                     # PHASE_DISCOVER so it asks "what kind of role?".
                     journey_result = STATE.chat_journey_step(
-                        data_user_id, "",
+                        data_user_id,
+                        "",
                     )
                     reply = journey_result.get("message") or "(continuing)"
-                    session.history.append(ChatTurn(
-                        role="assistant", content=reply))
+                    session.history.append(ChatTurn(role="assistant", content=reply))
                     STATE.chat_session_persist(data_user_id)
-                    self.send_json({
-                        "reply": reply,
-                        "journeyPhase": journey_result.get("journeyPhase"),
-                        "session": session.to_dict(),
-                    })
+                    self.send_json(
+                        {
+                            "reply": reply,
+                            "journeyPhase": journey_result.get("journeyPhase"),
+                            "session": session.to_dict(),
+                        }
+                    )
                     return
                 if not in_journey and should_auto_start(journey_now, user_message):
                     # Start fresh journey + dispatch the very first
                     # turn so the user sees the welcome immediately.
-                    STATE.log_analytics(data_user_id, "chat_cmd",
-                                          {"name": "start_job_journey"})
+                    STATE.log_analytics(data_user_id, "chat_cmd", {"name": "start_job_journey"})
                     from company_discovery.journey import UserJourney
+
                     STATE._journey_save(data_user_id, UserJourney())
                     journey_result = STATE.chat_journey_step(
-                        data_user_id, user_message,
+                        data_user_id,
+                        user_message,
                     )
                     reply = journey_result.get("message") or "(continuing)"
                     session.history.append(
                         ChatTurn(role="assistant", content=reply),
                     )
                     STATE.chat_session_persist(data_user_id)
-                    self.send_json({
-                        "reply": reply,
-                        "journeyPhase": journey_result.get("journeyPhase"),
-                        "invoked": journey_result.get("invoked"),
-                        "letter": journey_result.get("letter"),
-                        "suggestions": journey_result.get("suggestions"),
-                        "totalJobs": journey_result.get("totalJobs"),
-                        "jobs": journey_result.get("jobs"),
-                        "categories": journey_result.get("categories"),
-                        "navigateTo": journey_result.get("navigateTo"),
-                        "session": session.to_dict(),
-                    })
+                    self.send_json(
+                        {
+                            "reply": reply,
+                            "journeyPhase": journey_result.get("journeyPhase"),
+                            "invoked": journey_result.get("invoked"),
+                            "letter": journey_result.get("letter"),
+                            "suggestions": journey_result.get("suggestions"),
+                            "totalJobs": journey_result.get("totalJobs"),
+                            "jobs": journey_result.get("jobs"),
+                            "categories": journey_result.get("categories"),
+                            "navigateTo": journey_result.get("navigateTo"),
+                            "session": session.to_dict(),
+                        }
+                    )
                     return
-                if in_journey and (session.pending is None
-                                     or not session.pending.awaiting_confirmation):
+                if in_journey and (
+                    session.pending is None or not session.pending.awaiting_confirmation
+                ):
                     # Route the message through the journey state
                     # machine. Skip when a pending command is awaiting
                     # explicit confirmation (yes/no) — that's part of
                     # the typed-command flow and takes priority.
                     journey_result = STATE.chat_journey_step(
-                        data_user_id, user_message,
+                        data_user_id,
+                        user_message,
                     )
                     reply = journey_result.get("message") or "(continuing)"
                     session.history.append(
                         ChatTurn(role="assistant", content=reply),
                     )
                     STATE.chat_session_persist(data_user_id)
-                    self.send_json({
-                        "reply": reply,
-                        "journeyPhase": journey_result.get("journeyPhase"),
-                        "invoked": journey_result.get("invoked"),
-                        "letter": journey_result.get("letter"),
-                        "suggestions": journey_result.get("suggestions"),
-                        "totalJobs": journey_result.get("totalJobs"),
-                        "jobs": journey_result.get("jobs"),
-                        "categories": journey_result.get("categories"),
-                        "navigateTo": journey_result.get("navigateTo"),
-                        "session": session.to_dict(),
-                    })
+                    self.send_json(
+                        {
+                            "reply": reply,
+                            "journeyPhase": journey_result.get("journeyPhase"),
+                            "invoked": journey_result.get("invoked"),
+                            "letter": journey_result.get("letter"),
+                            "suggestions": journey_result.get("suggestions"),
+                            "totalJobs": journey_result.get("totalJobs"),
+                            "jobs": journey_result.get("jobs"),
+                            "categories": journey_result.get("categories"),
+                            "navigateTo": journey_result.get("navigateTo"),
+                            "session": session.to_dict(),
+                        }
+                    )
                     return
 
                 # ── If a command is pending confirmation, the next user
@@ -5857,32 +6530,33 @@ class Handler(BaseHTTPRequestHandler):
                     if is_confirmation_yes(user_message):
                         cmd_name = session.pending.command_name
                         args = dict(session.pending.args)
-                        result = STATE.chat_execute_command(
-                            data_user_id, cmd_name, args)
+                        result = STATE.chat_execute_command(data_user_id, cmd_name, args)
                         session.pending = None
                         reply = result.get("message") or "Done."
-                        session.history.append(ChatTurn(role="assistant",
-                                                          content=reply))
+                        session.history.append(ChatTurn(role="assistant", content=reply))
                         STATE.chat_session_persist(data_user_id)
-                        self.send_json({
-                            "reply": reply,
-                            "executed": cmd_name,
-                            "result": result,
-                            "session": session.to_dict(),
-                        })
+                        self.send_json(
+                            {
+                                "reply": reply,
+                                "executed": cmd_name,
+                                "result": result,
+                                "session": session.to_dict(),
+                            }
+                        )
                         return
                     if is_confirmation_no(user_message):
                         cancelled = session.pending.command_name
                         session.pending = None
                         reply = f"Cancelled — {cancelled} not run."
-                        session.history.append(ChatTurn(role="assistant",
-                                                          content=reply))
+                        session.history.append(ChatTurn(role="assistant", content=reply))
                         STATE.chat_session_persist(data_user_id)
-                        self.send_json({
-                            "reply": reply,
-                            "cancelled": cancelled,
-                            "session": session.to_dict(),
-                        })
+                        self.send_json(
+                            {
+                                "reply": reply,
+                                "cancelled": cancelled,
+                                "session": session.to_dict(),
+                            }
+                        )
                         return
                     # Anything else mid-confirmation is treated as "user
                     # changed their mind / wants to edit" — restart the
@@ -5895,9 +6569,9 @@ class Handler(BaseHTTPRequestHandler):
                 # param and either advance or re-prompt.
                 if session.pending and session.pending.awaiting:
                     cmd = CHAT_REGISTRY[session.pending.command_name]
-                    param = next((p for p in cmd.params
-                                   if p.name == session.pending.awaiting),
-                                  None)
+                    param = next(
+                        (p for p in cmd.params if p.name == session.pending.awaiting), None
+                    )
                     if param is None:
                         # Defensive — should not happen.
                         session.pending = None
@@ -5907,18 +6581,18 @@ class Handler(BaseHTTPRequestHandler):
                             session.pending.args[param.name] = None
                             session.pending.awaiting = None
                         else:
-                            ok, val = fill_param_from_message(
-                                cmd, param, user_message)
+                            ok, val = fill_param_from_message(cmd, param, user_message)
                             if not ok:
                                 reply = f"{val} {param.prompt}"
-                                session.history.append(ChatTurn(
-                                    role="assistant", content=reply))
+                                session.history.append(ChatTurn(role="assistant", content=reply))
                                 STATE.chat_session_persist(data_user_id)
-                                self.send_json({
-                                    "reply": reply,
-                                    "awaiting": param.name,
-                                    "session": session.to_dict(),
-                                })
+                                self.send_json(
+                                    {
+                                        "reply": reply,
+                                        "awaiting": param.name,
+                                        "session": session.to_dict(),
+                                    }
+                                )
                                 return
                             session.pending.args[param.name] = val
                             session.pending.awaiting = None
@@ -5939,8 +6613,7 @@ class Handler(BaseHTTPRequestHandler):
                             # E.g. "find bartender jobs in Berlin" → pre-fill
                             # query=Bartender, location=Berlin so the server
                             # only needs the confirmation prompt.
-                            _ai_extracted_args = extract_keyword_args(
-                                kw, user_message)
+                            _ai_extracted_args = extract_keyword_args(kw, user_message)
                         else:
                             # AI router as last resort. The ``_full``
                             # variant ALSO returns any args the AI was
@@ -5952,7 +6625,8 @@ class Handler(BaseHTTPRequestHandler):
                             # per-param validator below, so a malformed
                             # URL still re-prompts cleanly.
                             ai_name, ai_args = STATE.chat_ai_route_full(
-                                data_user_id, user_message, session.history)
+                                data_user_id, user_message, session.history
+                            )
                             if ai_name:
                                 routed = (ai_name, "")
                                 # Stash for the rest-pre-fill below.
@@ -5964,15 +6638,17 @@ class Handler(BaseHTTPRequestHandler):
                         # (drill into a category) instead of the
                         # generic "type help" dead-end.
                         reply = STATE._build_contextual_fallback(
-                            data_user_id, user_message,
+                            data_user_id,
+                            user_message,
                         )
-                        session.history.append(ChatTurn(role="assistant",
-                                                          content=reply))
+                        session.history.append(ChatTurn(role="assistant", content=reply))
                         STATE.chat_session_persist(data_user_id)
-                        self.send_json({
-                            "reply": reply,
-                            "session": session.to_dict(),
-                        })
+                        self.send_json(
+                            {
+                                "reply": reply,
+                                "session": session.to_dict(),
+                            }
+                        )
                         return
                     cmd_name, rest = routed
                     session.pending = PendingCommand(command_name=cmd_name)
@@ -5981,12 +6657,10 @@ class Handler(BaseHTTPRequestHandler):
                         inline = parse_slash_inline_args(cmd_name, rest)
                         for k, v in inline.items():
                             cmd = CHAT_REGISTRY[cmd_name]
-                            param = next((p for p in cmd.params
-                                            if p.name == k), None)
+                            param = next((p for p in cmd.params if p.name == k), None)
                             if param is None:
                                 continue
-                            ok, val = fill_param_from_message(
-                                cmd, param, v)
+                            ok, val = fill_param_from_message(cmd, param, v)
                             if ok:
                                 session.pending.args[k] = val
                     # Pre-fill args the AI extracted from natural language.
@@ -5998,13 +6672,11 @@ class Handler(BaseHTTPRequestHandler):
                         for k, v in ai_args.items():
                             if not isinstance(k, str):
                                 continue
-                            param = next((p for p in cmd.params
-                                            if p.name == k), None)
+                            param = next((p for p in cmd.params if p.name == k), None)
                             if param is None:
                                 continue
                             # Coerce non-strings to string for the validator.
-                            ok, val = fill_param_from_message(
-                                cmd, param, str(v))
+                            ok, val = fill_param_from_message(cmd, param, str(v))
                             if ok and k not in session.pending.args:
                                 session.pending.args[k] = val
 
@@ -6015,37 +6687,43 @@ class Handler(BaseHTTPRequestHandler):
                 # without a confirmation step.
                 if not cmd.params:
                     result = STATE.chat_execute_command(
-                        data_user_id, cmd.name, session.pending.args)
+                        data_user_id, cmd.name, session.pending.args
+                    )
                     session.pending = None
                     reply = result.get("message") or "Done."
-                    session.history.append(ChatTurn(role="assistant",
-                                                      content=reply))
+                    session.history.append(ChatTurn(role="assistant", content=reply))
                     STATE.chat_session_persist(data_user_id)
-                    self.send_json({
-                        "reply": reply,
-                        "executed": cmd.name,
-                        "result": result,
-                        "session": session.to_dict(),
-                    })
+                    self.send_json(
+                        {
+                            "reply": reply,
+                            "executed": cmd.name,
+                            "result": result,
+                            "session": session.to_dict(),
+                        }
+                    )
                     return
                 if missing:
                     session.pending.awaiting = missing.name
                     reply = missing.prompt
                     if missing.hint:
                         reply += f"\n_({missing.hint})_"
-                    session.history.append(ChatTurn(role="assistant",
-                                                      content=reply))
+                    session.history.append(ChatTurn(role="assistant", content=reply))
                     STATE.chat_session_persist(data_user_id)
-                    self.send_json({
-                        "reply": reply,
-                        "awaiting": missing.name,
-                        "session": session.to_dict(),
-                    })
+                    self.send_json(
+                        {
+                            "reply": reply,
+                            "awaiting": missing.name,
+                            "session": session.to_dict(),
+                        }
+                    )
                     return
                 # All required params filled — also offer optional ones.
                 next_optional = next(
-                    (p for p in cmd.params
-                      if not p.required and p.name not in session.pending.args),
+                    (
+                        p
+                        for p in cmd.params
+                        if not p.required and p.name not in session.pending.args
+                    ),
                     None,
                 )
                 if next_optional:
@@ -6053,15 +6731,16 @@ class Handler(BaseHTTPRequestHandler):
                     reply = next_optional.prompt
                     if next_optional.hint:
                         reply += f"\n_({next_optional.hint})_"
-                    session.history.append(ChatTurn(role="assistant",
-                                                      content=reply))
+                    session.history.append(ChatTurn(role="assistant", content=reply))
                     STATE.chat_session_persist(data_user_id)
-                    self.send_json({
-                        "reply": reply,
-                        "awaiting": next_optional.name,
-                        "optional": True,
-                        "session": session.to_dict(),
-                    })
+                    self.send_json(
+                        {
+                            "reply": reply,
+                            "awaiting": next_optional.name,
+                            "optional": True,
+                            "session": session.to_dict(),
+                        }
+                    )
                     return
                 # R19: read-only commands (find_jobs, show_view,
                 # suggest_*, draft_*) skip the confirmation gate.
@@ -6069,11 +6748,11 @@ class Handler(BaseHTTPRequestHandler):
                 # destructive operations need the yes/no prompt.
                 if not cmd.requires_confirmation:
                     result = STATE.chat_execute_command(
-                        data_user_id, cmd.name, session.pending.args)
+                        data_user_id, cmd.name, session.pending.args
+                    )
                     session.pending = None
                     reply = result.get("message") or "Done."
-                    session.history.append(ChatTurn(role="assistant",
-                                                      content=reply))
+                    session.history.append(ChatTurn(role="assistant", content=reply))
                     STATE.chat_session_persist(data_user_id)
                     payload_out = {
                         "reply": reply,
@@ -6083,8 +6762,14 @@ class Handler(BaseHTTPRequestHandler):
                     }
                     # Surface navigateTo + extra payload fields the
                     # handler returned so the client can react.
-                    for key in ("navigateTo", "totalJobs", "letter",
-                                  "suggestions", "jobs", "jobType"):
+                    for key in (
+                        "navigateTo",
+                        "totalJobs",
+                        "letter",
+                        "suggestions",
+                        "jobs",
+                        "jobType",
+                    ):
                         if key in result:
                             payload_out[key] = result[key]
                     self.send_json(payload_out)
@@ -6092,15 +6777,16 @@ class Handler(BaseHTTPRequestHandler):
                 # Show confirmation prompt.
                 session.pending.awaiting_confirmation = True
                 reply = cmd.confirmation_message(session.pending.args)
-                session.history.append(ChatTurn(role="assistant",
-                                                  content=reply))
+                session.history.append(ChatTurn(role="assistant", content=reply))
                 STATE.chat_session_persist(data_user_id)
-                self.send_json({
-                    "reply": reply,
-                    "awaitingConfirmation": True,
-                    "pendingArgs": session.pending.args,
-                    "session": session.to_dict(),
-                })
+                self.send_json(
+                    {
+                        "reply": reply,
+                        "awaitingConfirmation": True,
+                        "pendingArgs": session.pending.args,
+                        "session": session.to_dict(),
+                    }
+                )
                 return
 
             if parsed.path == "/api/chat/reset":
@@ -6117,27 +6803,35 @@ class Handler(BaseHTTPRequestHandler):
                 state = STATE.cv_builder_state_for(data_user_id)
                 state.current_section_id = next_section_id(None)
                 section = get_section(state.current_section_id)
-                self.send_json({
-                    "state": state.to_dict(),
-                    "currentSection": _serialise_cv_section(section),
-                    "sectionOrder": [s.section_id for s in SECTIONS],
-                })
+                self.send_json(
+                    {
+                        "state": state.to_dict(),
+                        "currentSection": _serialise_cv_section(section),
+                        "sectionOrder": [s.section_id for s in SECTIONS],
+                    }
+                )
                 return
 
             if parsed.path == "/api/cv-builder/state":
                 state = STATE.cv_builder_state_for(data_user_id)
-                section = (get_section(state.current_section_id)
-                            if state.current_section_id else None)
-                self.send_json({
-                    "state": state.to_dict(),
-                    "currentSection": _serialise_cv_section(section)
-                        if section else None,
-                    "sectionOrder": [s.section_id for s in SECTIONS],
-                })
+                section = (
+                    get_section(state.current_section_id) if state.current_section_id else None
+                )
+                self.send_json(
+                    {
+                        "state": state.to_dict(),
+                        "currentSection": _serialise_cv_section(section) if section else None,
+                        "sectionOrder": [s.section_id for s in SECTIONS],
+                    }
+                )
                 return
 
-            if (len(parts) == 4 and parts[:2] == ["api", "cv-builder"]
-                    and parts[2] == "section" and parts[3] not in {"finish"}):
+            if (
+                len(parts) == 4
+                and parts[:2] == ["api", "cv-builder"]
+                and parts[2] == "section"
+                and parts[3] not in {"finish"}
+            ):
                 # /api/cv-builder/section/{section_id} — submit one
                 # section's user answers. AI format runs on the
                 # designated 'raw' field(s); fact-ratio gate decides
@@ -6151,36 +6845,49 @@ class Handler(BaseHTTPRequestHandler):
                 try:
                     section = get_section(section_id)
                 except KeyError:
-                    self.send_error_json(HTTPStatus.BAD_REQUEST,
-                                          "unknown_section",
-                                          f"Unknown CV section: {section_id}")
+                    self.send_error_json(
+                        HTTPStatus.BAD_REQUEST,
+                        "unknown_section",
+                        f"Unknown CV section: {section_id}",
+                    )
                     return
                 state = STATE.cv_builder_state_for(data_user_id)
                 if str(payload.get("action") or "").lower() == "skip":
                     state.current_section_id = next_section_id(section.section_id)
-                    next_section_obj = (get_section(state.current_section_id)
-                                         if state.current_section_id else None)
-                    self.send_json({
-                        "state": state.to_dict(),
-                        "currentSection": (_serialise_cv_section(next_section_obj)
-                                             if next_section_obj else None),
-                        "aiMeta": {},
-                        "finished": state.current_section_id is None,
-                    })
+                    next_section_obj = (
+                        get_section(state.current_section_id) if state.current_section_id else None
+                    )
+                    self.send_json(
+                        {
+                            "state": state.to_dict(),
+                            "currentSection": (
+                                _serialise_cv_section(next_section_obj)
+                                if next_section_obj
+                                else None
+                            ),
+                            "aiMeta": {},
+                            "finished": state.current_section_id is None,
+                        }
+                    )
                     return
                 answers = payload.get("answers")
                 if not isinstance(answers, dict):
-                    self.send_error_json(HTTPStatus.BAD_REQUEST,
-                                          "invalid_answers",
-                                          "answers must be a JSON object")
+                    self.send_error_json(
+                        HTTPStatus.BAD_REQUEST, "invalid_answers", "answers must be a JSON object"
+                    )
                     return
                 # Validate required fields are present.
-                missing = [q.key for q in section.questions
-                            if q.required and not str(answers.get(q.key) or "").strip()]
+                missing = [
+                    q.key
+                    for q in section.questions
+                    if q.required and not str(answers.get(q.key) or "").strip()
+                ]
                 if missing:
-                    self.send_error_json(HTTPStatus.BAD_REQUEST,
-                                          "missing_required",
-                                          f"Missing required fields: {', '.join(missing)}")
+                    self.send_error_json(
+                        HTTPStatus.BAD_REQUEST,
+                        "missing_required",
+                        f"Missing required fields: {', '.join(missing)}",
+                    )
                     return
                 # Run AI format on each *_raw field.
                 stored: dict[str, Any] = {}
@@ -6194,7 +6901,10 @@ class Handler(BaseHTTPRequestHandler):
                     stored[q.key] = val
                     if isinstance(val, str) and q.key.endswith("_raw") and val:
                         formatted, ratio, accepted = STATE.cv_builder_format_section(
-                            data_user_id, section.section_id, q.key, val,
+                            data_user_id,
+                            section.section_id,
+                            q.key,
+                            val,
                         )
                         # The formatted output is stored under the 'formatted' key
                         # so the assembly step prefers it over the raw text.
@@ -6211,33 +6921,40 @@ class Handler(BaseHTTPRequestHandler):
                 advance = bool(payload.get("advance", True))
                 if advance:
                     state.current_section_id = next_section_id(section.section_id)
-                next_section_obj = (get_section(state.current_section_id)
-                                     if state.current_section_id else None)
-                self.send_json({
-                    "state": state.to_dict(),
-                    "currentSection": (_serialise_cv_section(next_section_obj)
-                                         if next_section_obj else None),
-                    "aiMeta": ai_meta,
-                    "finished": state.current_section_id is None,
-                })
+                next_section_obj = (
+                    get_section(state.current_section_id) if state.current_section_id else None
+                )
+                self.send_json(
+                    {
+                        "state": state.to_dict(),
+                        "currentSection": (
+                            _serialise_cv_section(next_section_obj) if next_section_obj else None
+                        ),
+                        "aiMeta": ai_meta,
+                        "finished": state.current_section_id is None,
+                    }
+                )
                 return
 
             if parsed.path == "/api/cv-builder/finish":
                 state = STATE.cv_builder_state_for(data_user_id)
                 profile = STATE.profile_for(user_id)
                 cv_markdown = assemble_cv_markdown(
-                    state, photo_data_uri=profile.cv_photo_data_uri,
+                    state,
+                    photo_data_uri=profile.cv_photo_data_uri,
                 )
                 # Persist into the user's profile.cv_text so the rest
                 # of the product (Fit, Tailor, Skill-gap) picks it up.
                 profile.cv_text = cv_markdown
                 STATE.repository.save_user_profile(profile)
                 STATE.cv_builder_reset(data_user_id)
-                self.send_json({
-                    "cvText": cv_markdown,
-                    "cvLength": len(cv_markdown),
-                    "bootstrap": STATE.bootstrap(user_id),
-                })
+                self.send_json(
+                    {
+                        "cvText": cv_markdown,
+                        "cvLength": len(cv_markdown),
+                        "bootstrap": STATE.bootstrap(user_id),
+                    }
+                )
                 return
 
             if parsed.path == "/api/saved-searches":
@@ -6254,7 +6971,12 @@ class Handler(BaseHTTPRequestHandler):
                     else:
                         self.send_error_json(HTTPStatus.BAD_REQUEST, code, code)
                     return
-                self.send_json({"savedSearch": record, "savedSearches": STATE._saved_searches_with_alerts(user_id)})
+                self.send_json(
+                    {
+                        "savedSearch": record,
+                        "savedSearches": STATE._saved_searches_with_alerts(user_id),
+                    }
+                )
                 return
             if parsed.path == "/api/push/subscribe":
                 endpoint = str(payload.get("endpoint") or "").strip()
@@ -6262,12 +6984,20 @@ class Handler(BaseHTTPRequestHandler):
                 p256dh = str(keys.get("p256dh") or "").strip()
                 auth_key = str(keys.get("auth") or "").strip()
                 if not endpoint or not p256dh or not auth_key:
-                    self.send_error_json(HTTPStatus.BAD_REQUEST, "missing_keys", "endpoint + keys.p256dh + keys.auth required")
+                    self.send_error_json(
+                        HTTPStatus.BAD_REQUEST,
+                        "missing_keys",
+                        "endpoint + keys.p256dh + keys.auth required",
+                    )
                     return
                 existing = STATE.repository.find_push_subscription(endpoint)
                 if existing is not None:
                     if existing.user_id != user_id:
-                        self.send_error_json(HTTPStatus.FORBIDDEN, "endpoint_owned_by_other", "Subscription belongs to another user")
+                        self.send_error_json(
+                            HTTPStatus.FORBIDDEN,
+                            "endpoint_owned_by_other",
+                            "Subscription belongs to another user",
+                        )
                         return
                     existing.p256dh = p256dh
                     existing.auth = auth_key
@@ -6289,7 +7019,9 @@ class Handler(BaseHTTPRequestHandler):
             if parsed.path == "/api/push/unsubscribe":
                 endpoint = str(payload.get("endpoint") or "").strip()
                 if not endpoint:
-                    self.send_error_json(HTTPStatus.BAD_REQUEST, "missing_endpoint", "endpoint required")
+                    self.send_error_json(
+                        HTTPStatus.BAD_REQUEST, "missing_endpoint", "endpoint required"
+                    )
                     return
                 existing = STATE.repository.find_push_subscription(endpoint)
                 if existing is not None and existing.user_id == user_id:
@@ -6306,7 +7038,11 @@ class Handler(BaseHTTPRequestHandler):
                     return
                 subs = STATE.repository.list_push_subscriptions(user_id)
                 if not subs:
-                    self.send_error_json(HTTPStatus.NOT_FOUND, "no_subscriptions", "No push subscriptions for this user.")
+                    self.send_error_json(
+                        HTTPStatus.NOT_FOUND,
+                        "no_subscriptions",
+                        "No push subscriptions for this user.",
+                    )
                     return
                 payload_obj = PushPayload(
                     title=str(payload.get("title") or "DirectJob Scout"),
@@ -6319,39 +7055,61 @@ class Handler(BaseHTTPRequestHandler):
                         send_push(sub, payload_obj)
                         outcomes.append({"id": sub.id, "status": "sent"})
                     except PushUnavailableError as error:
-                        outcomes.append({"id": sub.id, "status": "unavailable", "error": str(error)})
+                        outcomes.append(
+                            {"id": sub.id, "status": "unavailable", "error": str(error)}
+                        )
                     except Exception as error:  # noqa: BLE001 — push service may 404/410
-                        outcomes.append({"id": sub.id, "status": "error", "error": str(error)[:200]})
+                        outcomes.append(
+                            {"id": sub.id, "status": "error", "error": str(error)[:200]}
+                        )
                 self.send_json({"outcomes": outcomes})
                 return
             if parsed.path == "/api/workspaces/active":
-                workspace_id = str(payload.get("workspaceId") or payload.get("workspace_id") or "").strip()
+                workspace_id = str(
+                    payload.get("workspaceId") or payload.get("workspace_id") or ""
+                ).strip()
                 if not workspace_id:
-                    self.send_error_json(HTTPStatus.BAD_REQUEST, "missing_workspace", "workspaceId is required")
+                    self.send_error_json(
+                        HTTPStatus.BAD_REQUEST, "missing_workspace", "workspaceId is required"
+                    )
                     return
                 try:
                     STATE.resolve_workspace_owner(user_id, workspace_id)
                 except ValueError:
-                    self.send_error_json(HTTPStatus.FORBIDDEN, "workspace_forbidden", "You are not a member of that workspace.")
+                    self.send_error_json(
+                        HTTPStatus.FORBIDDEN,
+                        "workspace_forbidden",
+                        "You are not a member of that workspace.",
+                    )
                     return
                 profile = STATE.profile_for(user_id)
                 profile.active_workspace_id = workspace_id
                 STATE.repository.save_user_profile(profile)
-                self.send_json({
-                    "profile": STATE._profile_payload(profile),
-                    "bootstrap": STATE.bootstrap(user_id),
-                })
+                self.send_json(
+                    {
+                        "profile": STATE._profile_payload(profile),
+                        "bootstrap": STATE.bootstrap(user_id),
+                    }
+                )
                 return
 
             if len(parts) == 4 and parts[:2] == ["api", "workspaces"] and parts[3] == "invite":
                 workspace_id = parts[2]
-                inviter_membership = STATE.repository.find_workspace_membership(user_id, workspace_id)
+                inviter_membership = STATE.repository.find_workspace_membership(
+                    user_id, workspace_id
+                )
                 if inviter_membership is None or inviter_membership.role not in ("owner", "admin"):
-                    self.send_error_json(HTTPStatus.FORBIDDEN, "workspace_forbidden", "Only workspace owners or admins can invite.")
+                    self.send_error_json(
+                        HTTPStatus.FORBIDDEN,
+                        "workspace_forbidden",
+                        "Only workspace owners or admins can invite.",
+                    )
                     return
                 invitee_email = str(payload.get("email") or "").strip().lower()
                 if not invitee_email or "@" not in invitee_email:
-                    self.send_error_json(HTTPStatus.BAD_REQUEST, "invalid_email", "email is required")
+                    self.send_error_json(
+                        HTTPStatus.BAD_REQUEST, "invalid_email", "email is required"
+                    )
                     return
                 # v2 invite: target user must already exist on the platform.
                 target_user = next(
@@ -6382,29 +7140,37 @@ class Handler(BaseHTTPRequestHandler):
                     "workspace_invite",
                     {"workspaceId": workspace_id, "email": invitee_email},
                 )
-                self.send_json({
-                    "status": "added",
-                    "membershipId": membership.id,
-                    "userId": target_user.id,
-                })
+                self.send_json(
+                    {
+                        "status": "added",
+                        "membershipId": membership.id,
+                        "userId": target_user.id,
+                    }
+                )
                 return
 
             if len(parts) == 4 and parts[:2] == ["api", "saved-searches"] and parts[3] == "run-now":
                 try:
                     result = STATE.run_saved_search(data_user_id, parts[2])
                 except KeyError:
-                    self.send_error_json(HTTPStatus.NOT_FOUND, "not_found", "Saved search not found")
+                    self.send_error_json(
+                        HTTPStatus.NOT_FOUND, "not_found", "Saved search not found"
+                    )
                     return
-                self.send_json({
-                    "result": result,
-                    "savedSearches": STATE._saved_searches_with_alerts(data_user_id),
-                    "bootstrap": STATE.bootstrap(user_id),
-                })
+                self.send_json(
+                    {
+                        "result": result,
+                        "savedSearches": STATE._saved_searches_with_alerts(data_user_id),
+                        "bootstrap": STATE.bootstrap(user_id),
+                    }
+                )
                 return
             if len(parts) == 4 and parts[:2] == ["api", "saved-searches"] and parts[3] == "matches":
                 search = STATE.repository.saved_searches.get(parts[2])
                 if not search or search.user_id != user_id:
-                    self.send_error_json(HTTPStatus.NOT_FOUND, "not_found", "Saved search not found")
+                    self.send_error_json(
+                        HTTPStatus.NOT_FOUND, "not_found", "Saved search not found"
+                    )
                     return
                 jobs = STATE.repository.list_discovered_jobs(user_id)
                 companies_by_id = {c.id: c for c in STATE.repository.list_companies(user_id)}
@@ -6413,22 +7179,32 @@ class Handler(BaseHTTPRequestHandler):
                     matches = unseen_matches_for_search(search, jobs, companies_by_id)
                 else:
                     matches = matches_for_search(search, jobs, companies_by_id)
-                self.send_json({
-                    "matches": [asdict(job) for job in matches],
-                    "alerts": alert_summary_for_search(search, jobs, companies_by_id),
-                })
+                self.send_json(
+                    {
+                        "matches": [asdict(job) for job in matches],
+                        "alerts": alert_summary_for_search(search, jobs, companies_by_id),
+                    }
+                )
                 return
-            if len(parts) == 4 and parts[:2] == ["api", "saved-searches"] and parts[3] == "mark-seen":
+            if (
+                len(parts) == 4
+                and parts[:2] == ["api", "saved-searches"]
+                and parts[3] == "mark-seen"
+            ):
                 search = STATE.repository.saved_searches.get(parts[2])
                 if not search or search.user_id != user_id:
-                    self.send_error_json(HTTPStatus.NOT_FOUND, "not_found", "Saved search not found")
+                    self.send_error_json(
+                        HTTPStatus.NOT_FOUND, "not_found", "Saved search not found"
+                    )
                     return
                 search.last_seen_at = now_utc()
                 STATE.repository.save_saved_search(search)
-                self.send_json({
-                    "savedSearch": asdict(search),
-                    "savedSearches": STATE._saved_searches_with_alerts(user_id),
-                })
+                self.send_json(
+                    {
+                        "savedSearch": asdict(search),
+                        "savedSearches": STATE._saved_searches_with_alerts(user_id),
+                    }
+                )
                 return
             if parsed.path == "/api/digest/send":
                 text = STATE.send_user_digest(user=session.user)
@@ -6474,7 +7250,9 @@ class Handler(BaseHTTPRequestHandler):
                     return
                 plan_id = str(payload.get("planId") or "")
                 if not plan_id:
-                    self.send_error_json(HTTPStatus.BAD_REQUEST, "missing_plan", "planId is required")
+                    self.send_error_json(
+                        HTTPStatus.BAD_REQUEST, "missing_plan", "planId is required"
+                    )
                     return
                 try:
                     result = STATE.billing_backend.create_checkout_session(
@@ -6515,7 +7293,9 @@ class Handler(BaseHTTPRequestHandler):
                 return
             if parsed.path == "/api/demo-data/seed":
                 created = STATE.seed_demo_data(STATE.effective_user_id(user_id))
-                self.send_json({"seeded": created, "bootstrap": STATE.bootstrap(user_id)}, HTTPStatus.CREATED)
+                self.send_json(
+                    {"seeded": created, "bootstrap": STATE.bootstrap(user_id)}, HTTPStatus.CREATED
+                )
                 return
             if parsed.path == "/api/billing/portal":
                 if not isinstance(STATE.billing_backend, StripeBillingBackend):
@@ -6537,7 +7317,8 @@ class Handler(BaseHTTPRequestHandler):
                 return_url = STATE.public_url_for("/?billing=portal-return")
                 try:
                     result = STATE.billing_backend.create_portal_session(
-                        customer_id=customer_id, return_url=return_url,
+                        customer_id=customer_id,
+                        return_url=return_url,
                     )
                 except ValueError as error:
                     code = str(error)
@@ -6546,17 +7327,22 @@ class Handler(BaseHTTPRequestHandler):
                 except RuntimeError as error:
                     raw_code = str(error).split(":", 1)[0].strip() or "billing_backend_error"
                     self.send_error_json(
-                        HTTPStatus.SERVICE_UNAVAILABLE, raw_code,
+                        HTTPStatus.SERVICE_UNAVAILABLE,
+                        raw_code,
                         "Stripe portal call failed. Operator has been notified.",
                     )
                     return
-                STATE.log_analytics(user_id, "billing_portal_opened", {"sessionId": result.get("id")})
+                STATE.log_analytics(
+                    user_id, "billing_portal_opened", {"sessionId": result.get("id")}
+                )
                 self.send_json({"portal": result})
                 return
             if parsed.path == "/api/analytics/event":
                 kind = str(payload.get("kind") or "").strip()
                 if not kind:
-                    self.send_error_json(HTTPStatus.BAD_REQUEST, "missing_kind", "Event kind is required")
+                    self.send_error_json(
+                        HTTPStatus.BAD_REQUEST, "missing_kind", "Event kind is required"
+                    )
                     return
                 event = STATE.log_analytics(user_id, kind, payload.get("payload") or {})
                 self.send_json({"event": event}, HTTPStatus.CREATED)
@@ -6570,7 +7356,11 @@ class Handler(BaseHTTPRequestHandler):
                 )
                 self.send_json({"ticket": ticket}, HTTPStatus.CREATED)
                 return
-            if len(parts) == 4 and parts[:2] == ["api", "watchlist-templates"] and parts[3] == "apply":
+            if (
+                len(parts) == 4
+                and parts[:2] == ["api", "watchlist-templates"]
+                and parts[3] == "apply"
+            ):
                 try:
                     result = STATE.apply_watchlist_template(data_user_id, parts[2])
                 except ValueError as error:
@@ -6578,11 +7368,17 @@ class Handler(BaseHTTPRequestHandler):
                     return
                 self.send_json({"result": result, "bootstrap": STATE.bootstrap(user_id)})
                 return
-            if len(parts) == 4 and parts[:2] == ["api", "imported-jobs"] and parts[3] == "application":
+            if (
+                len(parts) == 4
+                and parts[:2] == ["api", "imported-jobs"]
+                and parts[3] == "application"
+            ):
                 try:
                     job = STATE.update_application_state(data_user_id, parts[2], payload)
                 except KeyError:
-                    self.send_error_json(HTTPStatus.NOT_FOUND, "not_found", "Imported job not found")
+                    self.send_error_json(
+                        HTTPStatus.NOT_FOUND, "not_found", "Imported job not found"
+                    )
                     return
                 except ValueError as error:
                     self.send_error_json(HTTPStatus.BAD_REQUEST, str(error), str(error))
@@ -6591,12 +7387,20 @@ class Handler(BaseHTTPRequestHandler):
                 return
             if len(parts) == 4 and parts[:2] == ["api", "imported-jobs"] and parts[3] == "share":
                 try:
-                    job = STATE.set_share_enabled(data_user_id, parts[2], bool(payload.get("enabled")))
+                    job = STATE.set_share_enabled(
+                        data_user_id, parts[2], bool(payload.get("enabled"))
+                    )
                 except KeyError:
-                    self.send_error_json(HTTPStatus.NOT_FOUND, "not_found", "Imported job not found")
+                    self.send_error_json(
+                        HTTPStatus.NOT_FOUND, "not_found", "Imported job not found"
+                    )
                     return
-                share_url = STATE.public_url_for(f"/share/job/{job.id}") if job.share_enabled else None
-                self.send_json({"job": job, "shareUrl": share_url, "bootstrap": STATE.bootstrap(user_id)})
+                share_url = (
+                    STATE.public_url_for(f"/share/job/{job.id}") if job.share_enabled else None
+                )
+                self.send_json(
+                    {"job": job, "shareUrl": share_url, "bootstrap": STATE.bootstrap(user_id)}
+                )
                 return
 
             if parsed.path == "/api/ai-provider":
@@ -6613,7 +7417,9 @@ class Handler(BaseHTTPRequestHandler):
                     else:
                         self.send_error_json(HTTPStatus.BAD_REQUEST, code, code)
                     return
-                self.send_json({"aiProvider": config.public_dict(), "bootstrap": STATE.bootstrap(user_id)})
+                self.send_json(
+                    {"aiProvider": config.public_dict(), "bootstrap": STATE.bootstrap(user_id)}
+                )
                 return
 
             if parsed.path == "/api/watchlist/scan":
@@ -6623,12 +7429,16 @@ class Handler(BaseHTTPRequestHandler):
 
             if parsed.path == "/api/watchlist/schedule":
                 schedule = STATE.update_watchlist_schedule(user_id, payload)
-                self.send_json({"watchlistSchedule": schedule, "bootstrap": STATE.bootstrap(user_id)})
+                self.send_json(
+                    {"watchlistSchedule": schedule, "bootstrap": STATE.bootstrap(user_id)}
+                )
                 return
 
             if parsed.path == "/api/demo/seed":
                 demo = STATE.seed_demo(user_id)
-                self.send_json({"demo": demo, "bootstrap": STATE.bootstrap(user_id)}, HTTPStatus.CREATED)
+                self.send_json(
+                    {"demo": demo, "bootstrap": STATE.bootstrap(user_id)}, HTTPStatus.CREATED
+                )
                 return
 
             if parsed.path == "/api/data/import":
@@ -6636,7 +7446,11 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json({"result": result, "bootstrap": STATE.bootstrap(user_id)})
                 return
 
-            if len(parts) == 4 and parts[:2] == ["api", "companies"] and parts[3] == "find-career-page":
+            if (
+                len(parts) == 4
+                and parts[:2] == ["api", "companies"]
+                and parts[3] == "find-career-page"
+            ):
                 result = STATE.service.find_company_career_page(data_user_id, parts[2])
                 self.send_json({"result": result, "bootstrap": STATE.bootstrap(user_id)})
                 return
@@ -6644,7 +7458,9 @@ class Handler(BaseHTTPRequestHandler):
             if len(parts) == 4 and parts[:2] == ["api", "companies"] and parts[3] == "scan":
                 career_page_url = payload.get("careerPageUrl") or None
                 if career_page_url:
-                    STATE.service.update_company(data_user_id, parts[2], career_page_url=career_page_url)
+                    STATE.service.update_company(
+                        data_user_id, parts[2], career_page_url=career_page_url
+                    )
                 run = STATE.start_scan(data_user_id, parts[2], career_page_url)
                 self.send_json({"run": run, "bootstrap": STATE.bootstrap(user_id)})
                 return
@@ -6671,7 +7487,9 @@ class Handler(BaseHTTPRequestHandler):
                         )
                     else:
                         saved.append(STATE.repository.save_discovered_job(job))
-                self.send_json({"jobs": saved, "errors": errors, "bootstrap": STATE.bootstrap(user_id)})
+                self.send_json(
+                    {"jobs": saved, "errors": errors, "bootstrap": STATE.bootstrap(user_id)}
+                )
                 return
 
             if len(parts) == 4 and parts[:2] == ["api", "discovered-jobs"] and parts[3] == "import":
@@ -6685,7 +7503,9 @@ class Handler(BaseHTTPRequestHandler):
                 # so the client can show a partial-success toast.
                 ids = payload.get("ids") or []
                 if not isinstance(ids, list):
-                    self.send_error_json(HTTPStatus.BAD_REQUEST, "invalid_ids", "ids must be a list")
+                    self.send_error_json(
+                        HTTPStatus.BAD_REQUEST, "invalid_ids", "ids must be a list"
+                    )
                     return
                 ids = [str(x) for x in ids if str(x).strip()][:100]
                 outcomes: list[dict[str, Any]] = []
@@ -6693,43 +7513,60 @@ class Handler(BaseHTTPRequestHandler):
                 for did in ids:
                     try:
                         imported = STATE.service.import_discovered_job(data_user_id, did)
-                        outcomes.append({"id": did, "status": "imported", "importedJobId": imported.id})
+                        outcomes.append(
+                            {"id": did, "status": "imported", "importedJobId": imported.id}
+                        )
                         imported_count += 1
                     except KeyError:
                         outcomes.append({"id": did, "status": "error", "code": "not_found"})
                     except ValueError as error:
                         outcomes.append({"id": did, "status": "error", "code": str(error)})
                 STATE.log_analytics(
-                    user_id, "bulk_import",
+                    user_id,
+                    "bulk_import",
                     {"requested": len(ids), "imported": imported_count},
                 )
-                self.send_json({
-                    "outcomes": outcomes,
-                    "imported": imported_count,
-                    "bootstrap": STATE.bootstrap(user_id),
-                })
+                self.send_json(
+                    {
+                        "outcomes": outcomes,
+                        "imported": imported_count,
+                        "bootstrap": STATE.bootstrap(user_id),
+                    }
+                )
                 return
 
-            if len(parts) == 4 and parts[:2] == ["api", "imported-jobs"] and parts[3] == "prepare-brief":
+            if (
+                len(parts) == 4
+                and parts[:2] == ["api", "imported-jobs"]
+                and parts[3] == "prepare-brief"
+            ):
                 imported = STATE.repository.imported_jobs[parts[2]]
                 if imported.user_id != data_user_id:
                     raise KeyError(parts[2])
                 profile = STATE.profile_for(user_id)
                 brief = build_job_decision_brief_prompt(
-                    imported, STATE.ai_provider_for(user_id), profile,
+                    imported,
+                    STATE.ai_provider_for(user_id),
+                    profile,
                 )
                 imported.analysis_status = "brief_ready"
                 STATE.repository.save_imported_job(imported)
                 self.send_json({"brief": brief, "bootstrap": STATE.bootstrap(user_id)})
                 return
 
-            if len(parts) == 4 and parts[:2] == ["api", "imported-jobs"] and parts[3] == "prepare-cover-letter":
+            if (
+                len(parts) == 4
+                and parts[:2] == ["api", "imported-jobs"]
+                and parts[3] == "prepare-cover-letter"
+            ):
                 imported = STATE.repository.imported_jobs[parts[2]]
                 if imported.user_id != data_user_id:
                     raise KeyError(parts[2])
                 profile = STATE.profile_for(user_id)
                 brief = build_cover_letter_brief_prompt(
-                    imported, STATE.ai_provider_for(user_id), profile,
+                    imported,
+                    STATE.ai_provider_for(user_id),
+                    profile,
                 )
                 self.send_json({"brief": brief})
                 return
@@ -6738,18 +7575,29 @@ class Handler(BaseHTTPRequestHandler):
                 imported = STATE.repository.imported_jobs[parts[2]]
                 if imported.user_id != data_user_id:
                     raise KeyError(parts[2])
-                runtime_credential = str(payload.get("credentialValue") or payload.get("runtimeCredential") or "")
+                runtime_credential = str(
+                    payload.get("credentialValue") or payload.get("runtimeCredential") or ""
+                )
                 if len(runtime_credential) > 4096:
-                    self.send_error_json(HTTPStatus.BAD_REQUEST, "bad_request", "Credential value is too long")
+                    self.send_error_json(
+                        HTTPStatus.BAD_REQUEST, "bad_request", "Credential value is too long"
+                    )
                     return
                 STATE.quota_store.can_run_ai(user_id)
                 profile = STATE.profile_for(user_id)
                 provider = STATE.ai_provider_for(user_id)
                 if not _ai_consent_satisfied(profile, provider):
-                    self.send_error_json(HTTPStatus.PRECONDITION_FAILED, "ai_consent_required", "Confirm consent in Settings before running AI on your CV.")
+                    self.send_error_json(
+                        HTTPStatus.PRECONDITION_FAILED,
+                        "ai_consent_required",
+                        "Confirm consent in Settings before running AI on your CV.",
+                    )
                     return
                 result = execute_job_decision_brief(
-                    imported, provider, runtime_credential, profile,
+                    imported,
+                    provider,
+                    runtime_credential,
+                    profile,
                 )
                 STATE.quota_store.record_ai_run(user_id)
                 imported.analysis_status = result.status
@@ -6764,26 +7612,45 @@ class Handler(BaseHTTPRequestHandler):
                     imported.fit_score = structured.fit_score
                     imported.recommendation = structured.recommendation
                 STATE.repository.save_imported_job(imported)
-                STATE.log_analytics(user_id, "ai_analyze", {"providerId": imported.analysis_provider_id, "status": result.status})
+                STATE.log_analytics(
+                    user_id,
+                    "ai_analyze",
+                    {"providerId": imported.analysis_provider_id, "status": result.status},
+                )
                 self.send_json({"analysis": asdict(result), "bootstrap": STATE.bootstrap(user_id)})
                 return
 
-            if len(parts) == 4 and parts[:2] == ["api", "imported-jobs"] and parts[3] == "draft-cover-letter":
+            if (
+                len(parts) == 4
+                and parts[:2] == ["api", "imported-jobs"]
+                and parts[3] == "draft-cover-letter"
+            ):
                 imported = STATE.repository.imported_jobs[parts[2]]
                 if imported.user_id != data_user_id:
                     raise KeyError(parts[2])
-                runtime_credential = str(payload.get("credentialValue") or payload.get("runtimeCredential") or "")
+                runtime_credential = str(
+                    payload.get("credentialValue") or payload.get("runtimeCredential") or ""
+                )
                 if len(runtime_credential) > 4096:
-                    self.send_error_json(HTTPStatus.BAD_REQUEST, "bad_request", "Credential value is too long")
+                    self.send_error_json(
+                        HTTPStatus.BAD_REQUEST, "bad_request", "Credential value is too long"
+                    )
                     return
                 STATE.quota_store.can_run_ai(user_id)
                 profile = STATE.profile_for(user_id)
                 provider = STATE.ai_provider_for(user_id)
                 if not _ai_consent_satisfied(profile, provider):
-                    self.send_error_json(HTTPStatus.PRECONDITION_FAILED, "ai_consent_required", "Confirm consent in Settings before running AI on your CV.")
+                    self.send_error_json(
+                        HTTPStatus.PRECONDITION_FAILED,
+                        "ai_consent_required",
+                        "Confirm consent in Settings before running AI on your CV.",
+                    )
                     return
                 result = execute_cover_letter_brief(
-                    imported, provider, runtime_credential, profile,
+                    imported,
+                    provider,
+                    runtime_credential,
+                    profile,
                 )
                 STATE.quota_store.record_ai_run(user_id)
                 if result.status == "completed" and result.output:
@@ -6797,13 +7664,21 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json({"draft": asdict(result), "bootstrap": STATE.bootstrap(user_id)})
                 return
 
-            if len(parts) == 4 and parts[:2] == ["api", "imported-jobs"] and parts[3] == "tailor-cv":
+            if (
+                len(parts) == 4
+                and parts[:2] == ["api", "imported-jobs"]
+                and parts[3] == "tailor-cv"
+            ):
                 imported = STATE.repository.imported_jobs[parts[2]]
                 if imported.user_id != data_user_id:
                     raise KeyError(parts[2])
-                runtime_credential = str(payload.get("credentialValue") or payload.get("runtimeCredential") or "")
+                runtime_credential = str(
+                    payload.get("credentialValue") or payload.get("runtimeCredential") or ""
+                )
                 if len(runtime_credential) > 4096:
-                    self.send_error_json(HTTPStatus.BAD_REQUEST, "bad_request", "Credential value is too long")
+                    self.send_error_json(
+                        HTTPStatus.BAD_REQUEST, "bad_request", "Credential value is too long"
+                    )
                     return
                 STATE.quota_store.can_run_ai(user_id)
                 profile = STATE.profile_for(user_id)
@@ -6816,10 +7691,17 @@ class Handler(BaseHTTPRequestHandler):
                     return
                 provider = STATE.ai_provider_for(user_id)
                 if not _ai_consent_satisfied(profile, provider):
-                    self.send_error_json(HTTPStatus.PRECONDITION_FAILED, "ai_consent_required", "Confirm consent in Settings before running AI on your CV.")
+                    self.send_error_json(
+                        HTTPStatus.PRECONDITION_FAILED,
+                        "ai_consent_required",
+                        "Confirm consent in Settings before running AI on your CV.",
+                    )
                     return
                 result = execute_cv_tailoring(
-                    imported, provider, runtime_credential, profile,
+                    imported,
+                    provider,
+                    runtime_credential,
+                    profile,
                 )
                 STATE.quota_store.record_ai_run(user_id)
                 # CV variant attribution (#44): persist a small record
@@ -6829,12 +7711,14 @@ class Handler(BaseHTTPRequestHandler):
                 if result.status == "completed" and result.output:
                     next_index = len(imported.cv_variants or []) + 1
                     excerpt = (result.output or "")[:400]
-                    imported.cv_variants = list(imported.cv_variants or []) + [{
-                        "index": next_index,
-                        "createdAt": now_utc().isoformat(),
-                        "excerpt": excerpt,
-                        "attributedReply": False,
-                    }]
+                    imported.cv_variants = list(imported.cv_variants or []) + [
+                        {
+                            "index": next_index,
+                            "createdAt": now_utc().isoformat(),
+                            "excerpt": excerpt,
+                            "attributedReply": False,
+                        }
+                    ]
                     imported.updated_at = now_utc()
                     STATE.repository.save_imported_job(imported)
                 STATE.log_analytics(
@@ -6846,22 +7730,36 @@ class Handler(BaseHTTPRequestHandler):
                         "variantIndex": len(imported.cv_variants or []),
                     },
                 )
-                self.send_json({
-                    "tailored": asdict(result),
-                    "variantIndex": len(imported.cv_variants or []) if result.status == "completed" else None,
-                })
+                self.send_json(
+                    {
+                        "tailored": asdict(result),
+                        "variantIndex": len(imported.cv_variants or [])
+                        if result.status == "completed"
+                        else None,
+                    }
+                )
                 return
 
-            if len(parts) == 4 and parts[:2] == ["api", "discovered-jobs"] and parts[3] == "auto-fit":
+            if (
+                len(parts) == 4
+                and parts[:2] == ["api", "discovered-jobs"]
+                and parts[3] == "auto-fit"
+            ):
                 discovered = STATE.repository.discovered_jobs.get(parts[2])
                 if not discovered or discovered.user_id != data_user_id:
                     raise KeyError(parts[2])
-                runtime_credential = str(payload.get("credentialValue") or payload.get("runtimeCredential") or "")
+                runtime_credential = str(
+                    payload.get("credentialValue") or payload.get("runtimeCredential") or ""
+                )
                 STATE.quota_store.can_run_ai(user_id)
                 profile = STATE.profile_for(user_id)
                 provider = STATE.ai_provider_for(user_id)
                 if not _ai_consent_satisfied(profile, provider):
-                    self.send_error_json(HTTPStatus.PRECONDITION_FAILED, "ai_consent_required", "Confirm consent in Settings before running AI on your CV.")
+                    self.send_error_json(
+                        HTTPStatus.PRECONDITION_FAILED,
+                        "ai_consent_required",
+                        "Confirm consent in Settings before running AI on your CV.",
+                    )
                     return
                 company = STATE.repository.companies.get(discovered.company_id)
                 company_name = company.name if company else "Unknown company"
@@ -6893,25 +7791,34 @@ class Handler(BaseHTTPRequestHandler):
                         "score": discovered.auto_fit_score,
                     },
                 )
-                self.send_json({
-                    "result": asdict(result),
-                    "discoveredJob": asdict(discovered),
-                    "bootstrap": STATE.bootstrap(user_id),
-                })
+                self.send_json(
+                    {
+                        "result": asdict(result),
+                        "discoveredJob": asdict(discovered),
+                        "bootstrap": STATE.bootstrap(user_id),
+                    }
+                )
                 return
 
             if parsed.path == "/api/discovered-jobs/auto-fit-all":
-                runtime_credential = str(payload.get("credentialValue") or payload.get("runtimeCredential") or "")
+                runtime_credential = str(
+                    payload.get("credentialValue") or payload.get("runtimeCredential") or ""
+                )
                 limit = int(payload.get("limit") or 10)
                 limit = max(1, min(25, limit))
                 profile = STATE.profile_for(user_id)
                 provider = STATE.ai_provider_for(user_id)
                 if not _ai_consent_satisfied(profile, provider):
-                    self.send_error_json(HTTPStatus.PRECONDITION_FAILED, "ai_consent_required", "Confirm consent in Settings before running AI on your CV.")
+                    self.send_error_json(
+                        HTTPStatus.PRECONDITION_FAILED,
+                        "ai_consent_required",
+                        "Confirm consent in Settings before running AI on your CV.",
+                    )
                     return
                 companies_by_id = {c.id: c for c in STATE.repository.list_companies(user_id)}
                 jobs = [
-                    j for j in STATE.repository.list_discovered_jobs(user_id)
+                    j
+                    for j in STATE.repository.list_discovered_jobs(user_id)
                     if not j.imported_job_id and j.auto_fit_score is None
                 ][:limit]
                 outcomes: list[dict[str, Any]] = []
@@ -6919,7 +7826,13 @@ class Handler(BaseHTTPRequestHandler):
                     try:
                         STATE.quota_store.can_run_ai(user_id)
                     except QuotaError as error:
-                        outcomes.append({"discoveredJobId": job.id, "status": "quota_exhausted", "code": error.code})
+                        outcomes.append(
+                            {
+                                "discoveredJobId": job.id,
+                                "status": "quota_exhausted",
+                                "code": error.code,
+                            }
+                        )
                         break
                     company = companies_by_id.get(job.company_id)
                     company_name = company.name if company else "Unknown company"
@@ -6936,16 +7849,21 @@ class Handler(BaseHTTPRequestHandler):
                                 job.gaps = gaps
                             STATE.repository.save_discovered_job(job)
                             STATE.maybe_notify_slack(user_id, job)
-                    outcomes.append({
-                        "discoveredJobId": job.id,
-                        "status": res.status,
-                        "score": job.auto_fit_score,
-                        "error": res.error or None,
-                    })
+                    outcomes.append(
+                        {
+                            "discoveredJobId": job.id,
+                            "status": res.status,
+                            "score": job.auto_fit_score,
+                            "error": res.error or None,
+                        }
+                    )
                 STATE.log_analytics(
                     user_id,
                     "auto_fit_batch",
-                    {"requested": len(jobs), "completed": sum(1 for o in outcomes if o["status"] == "completed")},
+                    {
+                        "requested": len(jobs),
+                        "completed": sum(1 for o in outcomes if o["status"] == "completed"),
+                    },
                 )
                 self.send_json({"outcomes": outcomes, "bootstrap": STATE.bootstrap(user_id)})
                 return
@@ -6954,7 +7872,9 @@ class Handler(BaseHTTPRequestHandler):
         except QuotaError as error:
             self.send_error_json(HTTPStatus.TOO_MANY_REQUESTS, error.code, error.message)
         except (KeyError, ValueError) as error:
-            self.send_error_json(HTTPStatus.BAD_REQUEST, "bad_request", f"Missing or invalid field: {error}")
+            self.send_error_json(
+                HTTPStatus.BAD_REQUEST, "bad_request", f"Missing or invalid field: {error}"
+            )
         except Exception as error:  # noqa: BLE001 - top-level HTTP boundary
             self.send_error_json(HTTPStatus.INTERNAL_SERVER_ERROR, "internal_error", str(error))
 
@@ -7012,7 +7932,12 @@ class Handler(BaseHTTPRequestHandler):
                         action="reset_password",
                     )
                 self.send_json(
-                    {"user": make_admin_user_payload(user), "users": [make_admin_user_payload(item) for item in STATE.auth_store.list_users()]}
+                    {
+                        "user": make_admin_user_payload(user),
+                        "users": [
+                            make_admin_user_payload(item) for item in STATE.auth_store.list_users()
+                        ],
+                    }
                 )
                 return
             if len(parts) == 3 and parts[:2] == ["api", "companies"]:
@@ -7022,7 +7947,9 @@ class Handler(BaseHTTPRequestHandler):
                 return
             self.send_error_json(HTTPStatus.NOT_FOUND, "not_found", "Unknown endpoint")
         except (KeyError, ValueError) as error:
-            self.send_error_json(HTTPStatus.BAD_REQUEST, "bad_request", f"Missing or invalid field: {error}")
+            self.send_error_json(
+                HTTPStatus.BAD_REQUEST, "bad_request", f"Missing or invalid field: {error}"
+            )
         except Exception as error:  # noqa: BLE001 - top-level HTTP boundary
             self.send_error_json(HTTPStatus.INTERNAL_SERVER_ERROR, "internal_error", str(error))
 
@@ -7042,8 +7969,7 @@ class Handler(BaseHTTPRequestHandler):
                 try:
                     STATE.repository.delete_company(data_user_id, parts[2])
                 except KeyError:
-                    self.send_error_json(HTTPStatus.NOT_FOUND, "not_found",
-                                          "Company not found")
+                    self.send_error_json(HTTPStatus.NOT_FOUND, "not_found", "Company not found")
                     return
                 self.send_json({"bootstrap": STATE.bootstrap(user_id)})
                 return
@@ -7051,7 +7977,9 @@ class Handler(BaseHTTPRequestHandler):
                 try:
                     STATE.delete_saved_search(data_user_id, parts[2])
                 except KeyError:
-                    self.send_error_json(HTTPStatus.NOT_FOUND, "not_found", "Saved search not found")
+                    self.send_error_json(
+                        HTTPStatus.NOT_FOUND, "not_found", "Saved search not found"
+                    )
                     return
                 self.send_json({"savedSearches": STATE._saved_searches_with_alerts(user_id)})
                 return
@@ -7060,7 +7988,11 @@ class Handler(BaseHTTPRequestHandler):
                     return
                 target_id = parts[3]
                 if target_id == session.user.id:
-                    self.send_error_json(HTTPStatus.FORBIDDEN, "self_modify_forbidden", "Admins cannot delete themselves")
+                    self.send_error_json(
+                        HTTPStatus.FORBIDDEN,
+                        "self_modify_forbidden",
+                        "Admins cannot delete themselves",
+                    )
                     return
                 try:
                     result = STATE.delete_user_account(actor=session.user, target_id=target_id)
@@ -7070,11 +8002,20 @@ class Handler(BaseHTTPRequestHandler):
                 except ValueError as error:
                     self.send_error_json(HTTPStatus.FORBIDDEN, str(error), str(error))
                     return
-                self.send_json(result | {"users": [make_admin_user_payload(item) for item in STATE.auth_store.list_users()]})
+                self.send_json(
+                    result
+                    | {
+                        "users": [
+                            make_admin_user_payload(item) for item in STATE.auth_store.list_users()
+                        ]
+                    }
+                )
                 return
             self.send_error_json(HTTPStatus.NOT_FOUND, "not_found", "Unknown endpoint")
         except KeyError as error:
-            self.send_error_json(HTTPStatus.BAD_REQUEST, "bad_request", f"Missing or invalid field: {error}")
+            self.send_error_json(
+                HTTPStatus.BAD_REQUEST, "bad_request", f"Missing or invalid field: {error}"
+            )
         except Exception as error:  # noqa: BLE001 - top-level HTTP boundary
             self.send_error_json(HTTPStatus.INTERNAL_SERVER_ERROR, "internal_error", str(error))
 
@@ -7105,8 +8046,12 @@ class Handler(BaseHTTPRequestHandler):
         if include_body:
             self.wfile.write(body)
 
-    def send_error_json(self, status: HTTPStatus, code: str, message: str, include_body: bool = True) -> None:
-        self.send_json({"error": {"code": code, "message": message}}, status, include_body=include_body)
+    def send_error_json(
+        self, status: HTTPStatus, code: str, message: str, include_body: bool = True
+    ) -> None:
+        self.send_json(
+            {"error": {"code": code, "message": message}}, status, include_body=include_body
+        )
 
     def send_text(
         self,
@@ -7129,20 +8074,20 @@ class Handler(BaseHTTPRequestHandler):
     def _send_seo_page_not_found(self) -> None:
         body = (
             "<!doctype html>\n"
-            "<html lang=\"en\">\n"
+            '<html lang="en">\n'
             "<head>\n"
-            "  <meta charset=\"utf-8\" />\n"
-            "  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n"
-            "  <meta name=\"robots\" content=\"noindex,nofollow\" />\n"
+            '  <meta charset="utf-8" />\n'
+            '  <meta name="viewport" content="width=device-width, initial-scale=1" />\n'
+            '  <meta name="robots" content="noindex,nofollow" />\n'
             "  <title>Job alert not found — DirectJob Scout</title>\n"
-            "  <link rel=\"stylesheet\" href=\"/styles.css\" />\n"
+            '  <link rel="stylesheet" href="/styles.css" />\n'
             "</head>\n"
-            "<body class=\"legal-body\">\n"
-            "  <main class=\"legal-page\">\n"
-            "    <a href=\"/\" class=\"legal-back\">← DirectJob Scout</a>\n"
+            '<body class="legal-body">\n'
+            '  <main class="legal-page">\n'
+            '    <a href="/" class="legal-back">← DirectJob Scout</a>\n'
             "    <h1>Job alert not found</h1>\n"
             "    <p>This job-alert page does not exist. Head to "
-            "<a href=\"/\">directjob-scout.example</a> to set up your own saved search — we watch the "
+            '<a href="/">directjob-scout.example</a> to set up your own saved search — we watch the '
             "company pages + the major aggregators daily.</p>\n"
             "  </main>\n"
             "</body>\n"
@@ -7169,23 +8114,23 @@ class Handler(BaseHTTPRequestHandler):
         og_description = intro[:280]
         body = (
             "<!doctype html>\n"
-            "<html lang=\"en\">\n"
+            '<html lang="en">\n'
             "<head>\n"
-            "  <meta charset=\"utf-8\" />\n"
-            "  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n"
-            "  <meta name=\"robots\" content=\"index,follow\" />\n"
+            '  <meta charset="utf-8" />\n'
+            '  <meta name="viewport" content="width=device-width, initial-scale=1" />\n'
+            '  <meta name="robots" content="index,follow" />\n'
             f"  <title>{_escape(title)} — DirectJob Scout</title>\n"
-            f"  <meta name=\"description\" content=\"{_escape(og_description)}\" />\n"
-            f"  <link rel=\"canonical\" href=\"{_escape(canonical)}\" />\n"
-            "  <meta property=\"og:type\" content=\"article\" />\n"
-            f"  <meta property=\"og:title\" content=\"{_escape(title)}\" />\n"
-            f"  <meta property=\"og:description\" content=\"{_escape(og_description)}\" />\n"
-            f"  <meta property=\"og:url\" content=\"{_escape(canonical)}\" />\n"
-            "  <link rel=\"stylesheet\" href=\"/styles.css\" />\n"
+            f'  <meta name="description" content="{_escape(og_description)}" />\n'
+            f'  <link rel="canonical" href="{_escape(canonical)}" />\n'
+            '  <meta property="og:type" content="article" />\n'
+            f'  <meta property="og:title" content="{_escape(title)}" />\n'
+            f'  <meta property="og:description" content="{_escape(og_description)}" />\n'
+            f'  <meta property="og:url" content="{_escape(canonical)}" />\n'
+            '  <link rel="stylesheet" href="/styles.css" />\n'
             "</head>\n"
-            "<body class=\"legal-body\">\n"
-            "  <main class=\"legal-page\">\n"
-            "    <a href=\"/\" class=\"legal-back\">← DirectJob Scout</a>\n"
+            '<body class="legal-body">\n'
+            '  <main class="legal-page">\n'
+            '    <a href="/" class="legal-back">← DirectJob Scout</a>\n'
             f"    <h1>{_escape(title)}</h1>\n"
             f"    <p>{_escape(intro)}</p>\n"
             "    <section>\n"
@@ -7205,14 +8150,14 @@ class Handler(BaseHTTPRequestHandler):
             "with the public aggregators (Indeed, StepStone, Arbeitnow, Bundesagentur, Muse).</p>\n"
             "    </section>\n"
             "    <section>\n"
-            f"      <p><a class=\"btn btn-primary\" href=\"{_escape(signup_url)}\">"
+            f'      <p><a class="btn btn-primary" href="{_escape(signup_url)}">'
             "Sign up — start your saved search</a></p>\n"
             "    </section>\n"
-            "    <p class=\"legal-footer\">\n"
-            "      <a href=\"/privacy\">Privacy</a>\n"
-            "      <a href=\"/terms\">Terms</a>\n"
-            "      <a href=\"/data-retention\">Data retention</a>\n"
-            "      <a href=\"/impressum\">Impressum</a>\n"
+            '    <p class="legal-footer">\n'
+            '      <a href="/privacy">Privacy</a>\n'
+            '      <a href="/terms">Terms</a>\n'
+            '      <a href="/data-retention">Data retention</a>\n'
+            '      <a href="/impressum">Impressum</a>\n'
             "    </p>\n"
             "  </main>\n"
             "</body>\n"
@@ -7231,20 +8176,20 @@ class Handler(BaseHTTPRequestHandler):
     def _send_share_not_found_page(self) -> None:
         body = (
             "<!doctype html>\n"
-            "<html lang=\"en\">\n"
+            '<html lang="en">\n'
             "<head>\n"
-            "  <meta charset=\"utf-8\" />\n"
-            "  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n"
-            "  <meta name=\"robots\" content=\"noindex,nofollow\" />\n"
+            '  <meta charset="utf-8" />\n'
+            '  <meta name="viewport" content="width=device-width, initial-scale=1" />\n'
+            '  <meta name="robots" content="noindex,nofollow" />\n'
             "  <title>Job not available — DirectJob Scout</title>\n"
-            "  <link rel=\"stylesheet\" href=\"/styles.css\" />\n"
+            '  <link rel="stylesheet" href="/styles.css" />\n'
             "</head>\n"
-            "<body class=\"legal-body\">\n"
-            "  <main class=\"legal-page\">\n"
-            "    <a href=\"/\" class=\"legal-back\">← DirectJob Scout</a>\n"
+            '<body class="legal-body">\n'
+            '  <main class="legal-page">\n'
+            '    <a href="/" class="legal-back">← DirectJob Scout</a>\n'
             "    <h1>Job not available</h1>\n"
             "    <p>This job's share link has been disabled by its owner, or the link is wrong. "
-            "If you arrived here by mistake, head to <a href=\"/\">directjob-scout.example</a>.</p>\n"
+            'If you arrived here by mistake, head to <a href="/">directjob-scout.example</a>.</p>\n'
             "  </main>\n"
             "</body>\n"
             "</html>\n"
@@ -7271,25 +8216,25 @@ class Handler(BaseHTTPRequestHandler):
         og_description = description[:280]
         body = (
             "<!doctype html>\n"
-            "<html lang=\"en\">\n"
+            '<html lang="en">\n'
             "<head>\n"
-            "  <meta charset=\"utf-8\" />\n"
-            "  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n"
-            "  <meta name=\"robots\" content=\"index,follow\" />\n"
+            '  <meta charset="utf-8" />\n'
+            '  <meta name="viewport" content="width=device-width, initial-scale=1" />\n'
+            '  <meta name="robots" content="index,follow" />\n'
             f"  <title>{_escape(title)} at {_escape(company)} — DirectJob Scout</title>\n"
-            f"  <meta name=\"description\" content=\"{_escape(og_description)}\" />\n"
-            f"  <link rel=\"canonical\" href=\"{_escape(canonical)}\" />\n"
-            "  <meta property=\"og:type\" content=\"article\" />\n"
-            f"  <meta property=\"og:title\" content=\"{_escape(title)} at {_escape(company)}\" />\n"
-            f"  <meta property=\"og:description\" content=\"{_escape(og_description)}\" />\n"
-            f"  <meta property=\"og:url\" content=\"{_escape(canonical)}\" />\n"
-            "  <link rel=\"stylesheet\" href=\"/styles.css\" />\n"
+            f'  <meta name="description" content="{_escape(og_description)}" />\n'
+            f'  <link rel="canonical" href="{_escape(canonical)}" />\n'
+            '  <meta property="og:type" content="article" />\n'
+            f'  <meta property="og:title" content="{_escape(title)} at {_escape(company)}" />\n'
+            f'  <meta property="og:description" content="{_escape(og_description)}" />\n'
+            f'  <meta property="og:url" content="{_escape(canonical)}" />\n'
+            '  <link rel="stylesheet" href="/styles.css" />\n'
             "</head>\n"
-            "<body class=\"legal-body\">\n"
-            "  <main class=\"legal-page\">\n"
-            "    <a href=\"/\" class=\"legal-back\">← DirectJob Scout</a>\n"
+            '<body class="legal-body">\n'
+            '  <main class="legal-page">\n'
+            '    <a href="/" class="legal-back">← DirectJob Scout</a>\n'
             f"    <h1>{_escape(title)}</h1>\n"
-            f"    <p class=\"muted\"><strong>{_escape(company)}</strong>"
+            f'    <p class="muted"><strong>{_escape(company)}</strong>'
             + (f" · {_escape(location)}" if location else "")
             + "</p>\n"
             "    <section>\n"
@@ -7300,14 +8245,14 @@ class Handler(BaseHTTPRequestHandler):
             "      <p>DirectJob Scout watches direct career pages plus the major aggregators "
             "(Indeed, StepStone, Arbeitnow, Bundesagentur, Muse) and dedupes the queue. "
             "No LinkedIn feed, no algorithm, no surveillance.</p>\n"
-            f"      <p><a class=\"btn btn-primary\" href=\"{_escape(signup_url)}\">Sign up — it's free</a></p>\n"
+            f'      <p><a class="btn btn-primary" href="{_escape(signup_url)}">Sign up — it\'s free</a></p>\n'
             "    </section>\n"
-            f"    <p class=\"muted small\">Original job listing: <a rel=\"noopener nofollow\" target=\"_blank\" href=\"{_escape(imported.source_url)}\">{_escape(imported.source_url)}</a></p>\n"
-            "    <p class=\"legal-footer\">\n"
-            "      <a href=\"/privacy\">Privacy</a>\n"
-            "      <a href=\"/terms\">Terms</a>\n"
-            "      <a href=\"/data-retention\">Data retention</a>\n"
-            "      <a href=\"/impressum\">Impressum</a>\n"
+            f'    <p class="muted small">Original job listing: <a rel="noopener nofollow" target="_blank" href="{_escape(imported.source_url)}">{_escape(imported.source_url)}</a></p>\n'
+            '    <p class="legal-footer">\n'
+            '      <a href="/privacy">Privacy</a>\n'
+            '      <a href="/terms">Terms</a>\n'
+            '      <a href="/data-retention">Data retention</a>\n'
+            '      <a href="/impressum">Impressum</a>\n'
             "    </p>\n"
             "  </main>\n"
             "</body>\n"
@@ -7333,20 +8278,20 @@ class Handler(BaseHTTPRequestHandler):
 
         body = (
             "<!doctype html>\n"
-            "<html lang=\"en\">\n"
+            '<html lang="en">\n'
             "<head>\n"
-            "  <meta charset=\"utf-8\" />\n"
-            "  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n"
-            "  <meta name=\"robots\" content=\"noindex,nofollow\" />\n"
+            '  <meta charset="utf-8" />\n'
+            '  <meta name="viewport" content="width=device-width, initial-scale=1" />\n'
+            '  <meta name="robots" content="noindex,nofollow" />\n'
             f"  <title>{_escape(title)} — DirectJob Scout</title>\n"
-            "  <link rel=\"stylesheet\" href=\"/styles.css\" />\n"
+            '  <link rel="stylesheet" href="/styles.css" />\n'
             "</head>\n"
-            "<body class=\"legal-body\">\n"
-            "  <main class=\"legal-page\">\n"
-            "    <a href=\"/\" class=\"legal-back\">← Back to DirectJob Scout</a>\n"
-            f"    <h1 style=\"color: {accent}\">{_escape(title)}</h1>\n"
+            '<body class="legal-body">\n'
+            '  <main class="legal-page">\n'
+            '    <a href="/" class="legal-back">← Back to DirectJob Scout</a>\n'
+            f'    <h1 style="color: {accent}">{_escape(title)}</h1>\n'
             f"    <p>{_escape(message)}</p>\n"
-            "    <p class=\"muted small\">If something is wrong, contact <a href=\"mailto:support@directjob-scout.example\">support@directjob-scout.example</a>.</p>\n"
+            '    <p class="muted small">If something is wrong, contact <a href="mailto:support@directjob-scout.example">support@directjob-scout.example</a>.</p>\n'
             "  </main>\n"
             "</body>\n"
             "</html>\n"
@@ -7402,7 +8347,9 @@ class Handler(BaseHTTPRequestHandler):
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--host", default=os.environ.get("COMPANY_DISCOVERY_HOST", "127.0.0.1"))
-    parser.add_argument("--port", type=int, default=int(os.environ.get("COMPANY_DISCOVERY_PORT", "8765")))
+    parser.add_argument(
+        "--port", type=int, default=int(os.environ.get("COMPANY_DISCOVERY_PORT", "8765"))
+    )
     args = parser.parse_args()
     server = ThreadingHTTPServer((args.host, args.port), Handler)
     visible_host = "127.0.0.1" if args.host in {"0.0.0.0", ""} else args.host

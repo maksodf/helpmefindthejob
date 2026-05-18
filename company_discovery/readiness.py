@@ -29,7 +29,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-
 READINESS_LEVELS = ("ok", "partial", "missing", "unknown")
 TRUE_VALUES = {"yes", "true", "1"}
 
@@ -84,9 +83,7 @@ def _redact_email_backend() -> ReadinessSignal:
                 id="email",
                 label="Email (SMTP, incomplete)",
                 status="partial",
-                summary=(
-                    "SMTP backend selected but missing: " + ", ".join(missing) + "."
-                ),
+                summary=("SMTP backend selected but missing: " + ", ".join(missing) + "."),
                 detail={
                     "backend": "smtp",
                     "host": host or None,
@@ -271,7 +268,9 @@ def _legal_signal() -> ReadinessSignal:
 
 
 def _allow_uninitialized_runtime() -> bool:
-    return (os.environ.get("DIRECTJOB_READINESS_ALLOW_UNINITIALIZED_RUNTIME") or "").strip().casefold() in TRUE_VALUES
+    return (
+        os.environ.get("DIRECTJOB_READINESS_ALLOW_UNINITIALIZED_RUNTIME") or ""
+    ).strip().casefold() in TRUE_VALUES
 
 
 def _scheduler_signal(*, scheduler_path: Path | None, active_jobs: int | None) -> ReadinessSignal:
@@ -300,7 +299,12 @@ def _scheduler_signal(*, scheduler_path: Path | None, active_jobs: int | None) -
 
 
 def _quota_signal() -> ReadinessSignal:
-    keys = ("DIRECTJOB_QUOTA_SCANS_PER_DAY", "DIRECTJOB_QUOTA_AI_PER_DAY", "DIRECTJOB_QUOTA_DOMAIN_PER_HOUR", "DIRECTJOB_QUOTA_ACTIVE_SCANS")
+    keys = (
+        "DIRECTJOB_QUOTA_SCANS_PER_DAY",
+        "DIRECTJOB_QUOTA_AI_PER_DAY",
+        "DIRECTJOB_QUOTA_DOMAIN_PER_HOUR",
+        "DIRECTJOB_QUOTA_ACTIVE_SCANS",
+    )
     detail = {key: os.environ.get(key) or "default" for key in keys}
     return ReadinessSignal(
         id="quotas",

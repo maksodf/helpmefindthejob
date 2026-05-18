@@ -76,7 +76,8 @@ class PushSubscriptionRepoTests(unittest.TestCase):
         sub = PushSubscription(
             user_id="u1",
             endpoint="https://push.example/ep1",
-            p256dh="x", auth="y",
+            p256dh="x",
+            auth="y",
         )
         repo.save_push_subscription(sub)
         self.assertEqual(len(repo.list_push_subscriptions("u1")), 1)

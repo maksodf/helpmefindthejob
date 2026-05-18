@@ -40,9 +40,13 @@ from typing import Any
 
 SCHEMA_VERSION = "v1"
 
-_caller_ctx: contextvars.ContextVar[dict[str, Any]] = contextvars.ContextVar(
+# ContextVar default is None (not an empty dict) so concurrent contexts
+# cannot accidentally share the same mutable default instance — see
+# ruff B039 and the underlying CPython documentation. All call sites
+# below normalise None to an empty dict on read.
+_caller_ctx: contextvars.ContextVar[dict[str, Any] | None] = contextvars.ContextVar(
     "audit_caller_ctx",
-    default={},
+    default=None,
 )
 
 
@@ -239,12 +243,13 @@ def default_emitter() -> AuditLogEmitter:
         data_root = Path(os.environ.get("DIRECTJOB_DATA_ROOT", "data"))
         log_path = data_root / "ai_act_audit.log"
         salt = _resolve_salt(os.environ.get("DIRECTJOB_AUDIT_SALT", ""))
-        plaintext_pii = os.environ.get(
-            "DIRECTJOB_AUDIT_PLAINTEXT_PII", "false"
-        ).lower() in {"true", "1", "yes", "on"}
-        rotate_bytes = int(
-            os.environ.get("DIRECTJOB_AUDIT_ROTATE_BYTES", str(64 * 1024 * 1024))
-        )
+        plaintext_pii = os.environ.get("DIRECTJOB_AUDIT_PLAINTEXT_PII", "false").lower() in {
+            "true",
+            "1",
+            "yes",
+            "on",
+        }
+        rotate_bytes = int(os.environ.get("DIRECTJOB_AUDIT_ROTATE_BYTES", str(64 * 1024 * 1024)))
         _default_emitter = AuditLogEmitter(
             log_path=log_path,
             salt=salt,

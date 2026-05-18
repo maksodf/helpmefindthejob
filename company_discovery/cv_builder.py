@@ -47,25 +47,84 @@ from __future__ import annotations
 import re
 import unicodedata
 from dataclasses import dataclass, field
-from typing import Iterable
-
 
 # ---------------- Fact-grounding ----------------
 
 # Words too generic to contribute to fact-grounding. The user might say
 # "i worked at acme" and the AI emits "worked as engineer at acme"; we
 # shouldn't reward the AI for keeping common verbs like "worked".
-_STOPWORDS: frozenset[str] = frozenset({
-    "a", "an", "the", "and", "or", "but", "in", "on", "at", "to", "for",
-    "of", "with", "by", "from", "as", "is", "was", "were", "be", "been",
-    "being", "have", "has", "had", "do", "does", "did", "will", "would",
-    "shall", "should", "can", "could", "may", "might", "must", "i",
-    "you", "we", "they", "he", "she", "it", "my", "your", "our", "their",
-    "this", "that", "these", "those", "there", "here",
-    # Action-verb pairs we treat as equivalent (work↔develop, lead↔manage)
-    "worked", "develop", "developed", "build", "built", "create", "created",
-    "led", "lead", "manage", "managed", "shipped", "delivered",
-})
+_STOPWORDS: frozenset[str] = frozenset(
+    {
+        "a",
+        "an",
+        "the",
+        "and",
+        "or",
+        "but",
+        "in",
+        "on",
+        "at",
+        "to",
+        "for",
+        "of",
+        "with",
+        "by",
+        "from",
+        "as",
+        "is",
+        "was",
+        "were",
+        "be",
+        "been",
+        "being",
+        "have",
+        "has",
+        "had",
+        "do",
+        "does",
+        "did",
+        "will",
+        "would",
+        "shall",
+        "should",
+        "can",
+        "could",
+        "may",
+        "might",
+        "must",
+        "i",
+        "you",
+        "we",
+        "they",
+        "he",
+        "she",
+        "it",
+        "my",
+        "your",
+        "our",
+        "their",
+        "this",
+        "that",
+        "these",
+        "those",
+        "there",
+        "here",
+        # Action-verb pairs we treat as equivalent (work↔develop, lead↔manage)
+        "worked",
+        "develop",
+        "developed",
+        "build",
+        "built",
+        "create",
+        "created",
+        "led",
+        "lead",
+        "manage",
+        "managed",
+        "shipped",
+        "delivered",
+    }
+)
 
 
 def _tokenise(text: str) -> set[str]:
@@ -132,8 +191,9 @@ def score_recommendation_inconsistent(
 @dataclass
 class SectionQuestion:
     """One question in a section's elicitation schema."""
-    key: str           # field key, e.g. "company_name"
-    prompt: str        # what the UI shows the user
+
+    key: str  # field key, e.g. "company_name"
+    prompt: str  # what the UI shows the user
     required: bool = True
     hint: str | None = None
 
@@ -141,6 +201,7 @@ class SectionQuestion:
 @dataclass
 class CvSection:
     """A section of the CV with its elicitation schema."""
+
     section_id: str
     label: str
     questions: list[SectionQuestion]
@@ -158,11 +219,10 @@ SECTIONS: list[CvSection] = [
             SectionQuestion("email", "What's your contact email?"),
             SectionQuestion("phone", "Phone number (optional)?", required=False),
             SectionQuestion("location", "What city / region are you in?"),
-            SectionQuestion("linkedin", "LinkedIn URL (optional)?",
-                             required=False),
-            SectionQuestion("portfolio",
-                             "Personal website / GitHub / portfolio (optional)?",
-                             required=False),
+            SectionQuestion("linkedin", "LinkedIn URL (optional)?", required=False),
+            SectionQuestion(
+                "portfolio", "Personal website / GitHub / portfolio (optional)?", required=False
+            ),
         ],
     ),
     CvSection(
@@ -187,10 +247,8 @@ SECTIONS: list[CvSection] = [
             SectionQuestion("company_name", "Company name?"),
             SectionQuestion("job_title", "Your job title there?"),
             SectionQuestion("start_date", "Start date (MM/YYYY)?"),
-            SectionQuestion("end_date",
-                             "End date (MM/YYYY) or 'present'?"),
-            SectionQuestion("location",
-                             "Location (city) or 'remote'?"),
+            SectionQuestion("end_date", "End date (MM/YYYY) or 'present'?"),
+            SectionQuestion("location", "Location (city) or 'remote'?"),
             SectionQuestion(
                 "achievements_raw",
                 "What were your 3–5 main responsibilities or achievements? "
@@ -210,11 +268,8 @@ SECTIONS: list[CvSection] = [
             SectionQuestion("degree", "Degree (e.g., BSc, MSc, MBA)?"),
             SectionQuestion("field", "Field of study?"),
             SectionQuestion("start_date", "Start year?"),
-            SectionQuestion("end_date",
-                             "End year (or expected graduation)?"),
-            SectionQuestion("honors",
-                             "Honours / GPA / distinction (optional)?",
-                             required=False),
+            SectionQuestion("end_date", "End year (or expected graduation)?"),
+            SectionQuestion("honors", "Honours / GPA / distinction (optional)?", required=False),
         ],
     ),
     CvSection(
@@ -251,9 +306,7 @@ SECTIONS: list[CvSection] = [
                 "1–2 sentence description — what does it do, what was "
                 "your role, what tech did you use?",
             ),
-            SectionQuestion("project_url",
-                             "Link (GitHub / live URL, optional)?",
-                             required=False),
+            SectionQuestion("project_url", "Link (GitHub / live URL, optional)?", required=False),
         ],
     ),
 ]
@@ -343,6 +396,7 @@ class CvBuilderState:
     raw user answers and the (optional) AI-formatted text. A section
     is "approved" only after the user explicitly accepts (or edits) it.
     """
+
     current_section_id: str | None = None
     # section_id → list of payload dicts. For repeatable sections, the
     # list has one entry per instance (job, school, etc.).
@@ -355,7 +409,7 @@ class CvBuilderState:
         }
 
     @classmethod
-    def from_dict(cls, data: dict | None) -> "CvBuilderState":
+    def from_dict(cls, data: dict | None) -> CvBuilderState:
         if not isinstance(data, dict):
             return cls()
         raw_sections = data.get("sections")
@@ -518,7 +572,7 @@ def _md_inline(text: str) -> str:
     # Pre-extract HTML tags we explicitly let through (e.g., the
     # ``<img>`` photo tag the assembler emits at the top). We swap
     # them for a placeholder, escape the rest, then restore.
-    img_re = re.compile(r'<img\b[^>]*/?>', re.IGNORECASE)
+    img_re = re.compile(r"<img\b[^>]*/?>", re.IGNORECASE)
     placeholders: list[str] = []
 
     def _stash(match: re.Match) -> str:
@@ -574,7 +628,7 @@ def cv_markdown_to_html(markdown: str) -> str:
             continue
         # Pass-through if the line is *only* an <img …> tag.
         stripped = line.strip()
-        if re.match(r'^<img\b[^>]*/?>$', stripped, re.IGNORECASE):
+        if re.match(r"^<img\b[^>]*/?>$", stripped, re.IGNORECASE):
             _close_ul()
             out.append(stripped)
             continue
@@ -604,11 +658,11 @@ def render_cv_print_html(cv_markdown: str, *, auto_print: bool = False) -> str:
         )
     return (
         "<!doctype html>\n"
-        "<html lang=\"en\">\n"
+        '<html lang="en">\n'
         "<head>\n"
-        "<meta charset=\"utf-8\" />\n"
-        "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\" />\n"
-        "<meta name=\"robots\" content=\"noindex\" />\n"
+        '<meta charset="utf-8" />\n'
+        '<meta name="viewport" content="width=device-width,initial-scale=1" />\n'
+        '<meta name="robots" content="noindex" />\n'
         "<title>CV — DirectJob Scout</title>\n"
         "<style>\n"
         "@page { size: A4; margin: 18mm 16mm; }\n"
@@ -667,9 +721,9 @@ def render_cv_print_html(cv_markdown: str, *, auto_print: bool = False) -> str:
         f"{auto_print_script}\n"
         "</head>\n"
         "<body>\n"
-        "<div class=\"toolbar\" role=\"toolbar\">\n"
-        "  <button type=\"button\" onclick=\"window.print()\">Download as PDF</button>\n"
-        "  <a href=\"/\">Back to app</a>\n"
+        '<div class="toolbar" role="toolbar">\n'
+        '  <button type="button" onclick="window.print()">Download as PDF</button>\n'
+        '  <a href="/">Back to app</a>\n'
         "</div>\n"
         f"<main>{body_html}</main>\n"
         "</body>\n"

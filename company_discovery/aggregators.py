@@ -46,11 +46,10 @@ import sqlite3
 import time
 import unicodedata
 from dataclasses import asdict, dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from pathlib import Path
 from threading import RLock
 from typing import Iterable, Protocol
-
 
 # ---------- locale-tolerant location matching ----------------------------
 
@@ -93,11 +92,25 @@ def _fold_diacritics(text: str) -> str:
 # one of these (without a country qualifier), we reject jobs whose
 # location text looks like a US listing — i.e. ends in a US state code
 # pattern or contains ", USA" / ", US".
-_DE_EU_AMBIGUOUS_CITIES: frozenset[str] = frozenset({
-    "berlin", "hamburg", "frankfurt", "munich", "munchen",
-    "vienna", "wien", "paris", "athens", "bremen",
-    "cologne", "koln", "koeln", "dresden", "essen",
-})
+_DE_EU_AMBIGUOUS_CITIES: frozenset[str] = frozenset(
+    {
+        "berlin",
+        "hamburg",
+        "frankfurt",
+        "munich",
+        "munchen",
+        "vienna",
+        "wien",
+        "paris",
+        "athens",
+        "bremen",
+        "cologne",
+        "koln",
+        "koeln",
+        "dresden",
+        "essen",
+    }
+)
 
 # US-state-code pattern: ", XX" where XX is a 2-letter postal code, or
 # ", USA" / ", US" / ", United States" anywhere in the text.
@@ -159,16 +172,28 @@ def location_matches(user_location: str | None, job_location: str | None) -> boo
     user_has_country_hint = bool(
         _US_HINT_RE.search(user_location)
         or _US_COUNTRY_RE.search(user_location)
-        or any(hint in user_raw for hint in (
-            "germany", "deutschland", "austria", "österreich", "osterreich",
-            "switzerland", "schweiz", "france", "italy", "spain",
-            "netherlands", "belgium", "denmark", "poland", "czech",
-        ))
+        or any(
+            hint in user_raw
+            for hint in (
+                "germany",
+                "deutschland",
+                "austria",
+                "österreich",
+                "osterreich",
+                "switzerland",
+                "schweiz",
+                "france",
+                "italy",
+                "spain",
+                "netherlands",
+                "belgium",
+                "denmark",
+                "poland",
+                "czech",
+            )
+        )
     )
-    is_ambiguous_de_city = (
-        not user_has_country_hint
-        and user_norm in _DE_EU_AMBIGUOUS_CITIES
-    )
+    is_ambiguous_de_city = not user_has_country_hint and user_norm in _DE_EU_AMBIGUOUS_CITIES
 
     if user_norm in job_norm:
         if is_ambiguous_de_city and _looks_like_us_listing(job_raw):
@@ -193,22 +218,103 @@ def location_matches(user_location: str | None, job_location: str | None) -> boo
 # seniority band. The values are the conflicting bands — if a job
 # title contains any of those, we treat it as a seniority mismatch.
 _SENIORITY_CONFLICTS: dict[str, tuple[str, ...]] = {
-    "senior": ("junior", "intern", "internship", "trainee", "praktikant",
-               "working student", "werkstudent", "apprentice", "azubi"),
-    "lead": ("junior", "intern", "internship", "trainee", "praktikant",
-             "working student", "werkstudent", "apprentice", "azubi"),
-    "staff": ("junior", "intern", "internship", "trainee", "praktikant",
-              "working student", "werkstudent", "apprentice", "azubi"),
-    "principal": ("junior", "intern", "internship", "trainee", "praktikant",
-                  "working student", "werkstudent", "apprentice", "azubi"),
-    "head of": ("junior", "intern", "internship", "trainee", "praktikant",
-                "working student", "werkstudent", "apprentice", "azubi"),
-    "junior": ("senior", "lead", "staff", "principal", "head of",
-               "director", "vp ", "chief", "cto", "cfo", "cmo", "ceo"),
-    "intern": ("senior", "lead", "staff", "principal", "head of",
-               "director", "vp ", "chief", "cto", "cfo", "cmo", "ceo"),
-    "trainee": ("senior", "lead", "staff", "principal", "head of",
-                "director", "vp ", "chief", "cto", "cfo", "cmo", "ceo"),
+    "senior": (
+        "junior",
+        "intern",
+        "internship",
+        "trainee",
+        "praktikant",
+        "working student",
+        "werkstudent",
+        "apprentice",
+        "azubi",
+    ),
+    "lead": (
+        "junior",
+        "intern",
+        "internship",
+        "trainee",
+        "praktikant",
+        "working student",
+        "werkstudent",
+        "apprentice",
+        "azubi",
+    ),
+    "staff": (
+        "junior",
+        "intern",
+        "internship",
+        "trainee",
+        "praktikant",
+        "working student",
+        "werkstudent",
+        "apprentice",
+        "azubi",
+    ),
+    "principal": (
+        "junior",
+        "intern",
+        "internship",
+        "trainee",
+        "praktikant",
+        "working student",
+        "werkstudent",
+        "apprentice",
+        "azubi",
+    ),
+    "head of": (
+        "junior",
+        "intern",
+        "internship",
+        "trainee",
+        "praktikant",
+        "working student",
+        "werkstudent",
+        "apprentice",
+        "azubi",
+    ),
+    "junior": (
+        "senior",
+        "lead",
+        "staff",
+        "principal",
+        "head of",
+        "director",
+        "vp ",
+        "chief",
+        "cto",
+        "cfo",
+        "cmo",
+        "ceo",
+    ),
+    "intern": (
+        "senior",
+        "lead",
+        "staff",
+        "principal",
+        "head of",
+        "director",
+        "vp ",
+        "chief",
+        "cto",
+        "cfo",
+        "cmo",
+        "ceo",
+    ),
+    "trainee": (
+        "senior",
+        "lead",
+        "staff",
+        "principal",
+        "head of",
+        "director",
+        "vp ",
+        "chief",
+        "cto",
+        "cfo",
+        "cmo",
+        "ceo",
+    ),
 }
 
 
@@ -218,18 +324,45 @@ _SENIORITY_CONFLICTS: dict[str, tuple[str, ...]] = {
 # mismatch — the user typed "marketing manager", not "marketing
 # internship", so Praktikum/Werkstudent rows are wrong by default.
 _TRAINEE_MARKERS: tuple[str, ...] = (
-    "praktikant", "praktikum", "werkstudent", "azubi", "auszubildende",
-    "auszubildender", "trainee", "internship",
+    "praktikant",
+    "praktikum",
+    "werkstudent",
+    "azubi",
+    "auszubildende",
+    "auszubildender",
+    "trainee",
+    "internship",
 )
 _PROFESSIONAL_ROLE_TRIGGERS: tuple[str, ...] = (
-    "manager", "director", "specialist", "engineer", "developer",
-    "scientist", "analyst", "consultant", "architect", "designer",
-    "lead", "head", "principal", "staff",
+    "manager",
+    "director",
+    "specialist",
+    "engineer",
+    "developer",
+    "scientist",
+    "analyst",
+    "consultant",
+    "architect",
+    "designer",
+    "lead",
+    "head",
+    "principal",
+    "staff",
 )
 _JUNIOR_BAND_OPT_INS: tuple[str, ...] = (
-    "intern", "internship", "trainee", "praktikant", "praktikum",
-    "werkstudent", "azubi", "auszubild", "apprentice", "graduate",
-    "junior", "entry-level", "entry level",
+    "intern",
+    "internship",
+    "trainee",
+    "praktikant",
+    "praktikum",
+    "werkstudent",
+    "azubi",
+    "auszubild",
+    "apprentice",
+    "graduate",
+    "junior",
+    "entry-level",
+    "entry level",
 )
 
 
@@ -271,23 +404,78 @@ def seniority_conflicts(query: str | None, job_title: str | None) -> bool:
 # just because they share the word 'manager'. The same trap caught a
 # 'data scientist' search returning 'Freelance Writer' because both
 # titles satisfied OR-token matching on common stop-y role words.
-_GENERIC_ROLE_WORDS: frozenset[str] = frozenset({
-    "manager", "specialist", "engineer", "developer", "lead", "analyst",
-    "coordinator", "consultant", "assistant", "associate", "officer",
-    "executive", "professional", "professional", "expert", "scientist",
-    "leader", "head", "director", "vp", "supervisor", "owner", "operator",
-    "representative", "agent",
-})
-_QUERY_STOPWORDS: frozenset[str] = frozenset({
-    "the", "a", "an", "of", "for", "in", "at", "to", "and", "or",
-    "with", "without", "on", "by", "as",
-})
-_SENIORITY_WORDS: frozenset[str] = frozenset({
-    "senior", "sr", "junior", "jr", "lead", "staff", "principal",
-    "head", "mid", "mid-level", "intermediate", "entry", "entry-level",
-    "intern", "internship", "trainee", "praktikant", "werkstudent",
-    "apprentice", "azubi", "graduate",
-})
+_GENERIC_ROLE_WORDS: frozenset[str] = frozenset(
+    {
+        "manager",
+        "specialist",
+        "engineer",
+        "developer",
+        "lead",
+        "analyst",
+        "coordinator",
+        "consultant",
+        "assistant",
+        "associate",
+        "officer",
+        "executive",
+        "professional",
+        "expert",
+        "scientist",
+        "leader",
+        "head",
+        "director",
+        "vp",
+        "supervisor",
+        "owner",
+        "operator",
+        "representative",
+        "agent",
+    }
+)
+_QUERY_STOPWORDS: frozenset[str] = frozenset(
+    {
+        "the",
+        "a",
+        "an",
+        "of",
+        "for",
+        "in",
+        "at",
+        "to",
+        "and",
+        "or",
+        "with",
+        "without",
+        "on",
+        "by",
+        "as",
+    }
+)
+_SENIORITY_WORDS: frozenset[str] = frozenset(
+    {
+        "senior",
+        "sr",
+        "junior",
+        "jr",
+        "lead",
+        "staff",
+        "principal",
+        "head",
+        "mid",
+        "mid-level",
+        "intermediate",
+        "entry",
+        "entry-level",
+        "intern",
+        "internship",
+        "trainee",
+        "praktikant",
+        "werkstudent",
+        "apprentice",
+        "azubi",
+        "graduate",
+    }
+)
 
 
 def query_distinctive_tokens(query: str | None) -> list[str]:
@@ -304,11 +492,15 @@ def query_distinctive_tokens(query: str | None) -> list[str]:
         return []
     folded = _fold_diacritics(query.casefold())
     tokens = re.findall(r"\w+", folded)
-    return [tok for tok in tokens
-            if tok and len(tok) > 2
-            and tok not in _GENERIC_ROLE_WORDS
-            and tok not in _QUERY_STOPWORDS
-            and tok not in _SENIORITY_WORDS]
+    return [
+        tok
+        for tok in tokens
+        if tok
+        and len(tok) > 2
+        and tok not in _GENERIC_ROLE_WORDS
+        and tok not in _QUERY_STOPWORDS
+        and tok not in _SENIORITY_WORDS
+    ]
 
 
 def title_matches_query_family(query: str | None, job_title: str | None) -> bool:
@@ -379,8 +571,7 @@ class JobAggregatorProvider(Protocol):
         location: str | None,
         limit: int = 25,
         persona_id: str | None = None,
-    ) -> list[AggregatedJob]:
-        ...
+    ) -> list[AggregatedJob]: ...
 
 
 def _user_wants_remote(location: str | None) -> bool:
@@ -469,7 +660,8 @@ class AggregatorResultCache:
         now = int(time.time())
         with self._lock:
             cur = self._connection.execute(
-                "DELETE FROM aggregator_cache WHERE expires_at < ?", (now,),
+                "DELETE FROM aggregator_cache WHERE expires_at < ?",
+                (now,),
             )
             self._connection.commit()
             return cur.rowcount
@@ -586,9 +778,16 @@ def score_job(
     """
 
     score = 0.0
-    haystack = " ".join(part.casefold() for part in (
-        job.title, job.company_name, job.description or "", job.location or "",
-    ) if part)
+    haystack = " ".join(
+        part.casefold()
+        for part in (
+            job.title,
+            job.company_name,
+            job.description or "",
+            job.location or "",
+        )
+        if part
+    )
     if keyword_tokens:
         hits = sum(1 for tok in keyword_tokens if tok and tok.casefold() in haystack)
         score += min(0.50, 0.10 * hits)
@@ -648,9 +847,17 @@ def rank_aggregated(
 
     tokens = list(keyword_tokens)
     dismissed = list(dismissed_terms)
-    scored = [(job, score_job(job, keyword_tokens=tokens, location=location, now=now, dismissed_terms=dismissed)) for job in jobs]
+    scored = [
+        (
+            job,
+            score_job(
+                job, keyword_tokens=tokens, location=location, now=now, dismissed_terms=dismissed
+            ),
+        )
+        for job in jobs
+    ]
     scored.sort(key=lambda pair: pair[1], reverse=True)
-    return scored[:max(1, cap)]
+    return scored[: max(1, cap)]
 
 
 class JobAggregationEngine:
@@ -684,12 +891,14 @@ class JobAggregationEngine:
             # skill-gap analytics. The user opts into remote feeds by
             # leaving location empty or putting "remote" in it.
             if not accepts_remote and getattr(provider, "remote_only", False):
-                outcomes.append(AggregationOutcome(
-                    provider=provider.name,
-                    job_count=0,
-                    cached=False,
-                    error="skipped_remote_only_for_location_search",
-                ))
+                outcomes.append(
+                    AggregationOutcome(
+                        provider=provider.name,
+                        job_count=0,
+                        cached=False,
+                        error="skipped_remote_only_for_location_search",
+                    )
+                )
                 continue
             cached = False
             jobs: list[AggregatedJob] = []
@@ -701,23 +910,27 @@ class JobAggregationEngine:
                     cached = True
             if not cached:
                 try:
-                    jobs = list(provider.search(
-                        query=query,
-                        location=location,
-                        limit=limit_per_provider,
-                        persona_id=persona_id,
-                    ))
+                    jobs = list(
+                        provider.search(
+                            query=query,
+                            location=location,
+                            limit=limit_per_provider,
+                            persona_id=persona_id,
+                        )
+                    )
                 except Exception as exc:  # noqa: BLE001
                     error = f"{type(exc).__name__}: {exc}"[:200]
                     jobs = []
                 if self.cache is not None and jobs:
                     self.cache.put(provider.name, query_hash, jobs)
-            outcomes.append(AggregationOutcome(
-                provider=provider.name,
-                job_count=len(jobs),
-                cached=cached,
-                error=error,
-            ))
+            outcomes.append(
+                AggregationOutcome(
+                    provider=provider.name,
+                    job_count=len(jobs),
+                    cached=cached,
+                    error=error,
+                )
+            )
             all_jobs.extend(jobs)
         # Cross-provider host-priority dedup: collapse identical canonical
         # source URLs, prefer the provider with the longest description.

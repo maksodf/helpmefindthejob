@@ -91,15 +91,11 @@ class ParseAutoFitOutputTests(unittest.TestCase):
         self.assertEqual(gaps, ["Kubernetes", "Terraform", "dbt"])
 
     def test_caps_gaps_at_three(self) -> None:
-        _, _, gaps = parse_auto_fit_output(
-            "SCORE: 65\nREASON: ok\nGAPS: a, b, c, d, e, f"
-        )
+        _, _, gaps = parse_auto_fit_output("SCORE: 65\nREASON: ok\nGAPS: a, b, c, d, e, f")
         self.assertEqual(gaps, ["a", "b", "c"])
 
     def test_empty_gaps_line_is_empty_list(self) -> None:
-        _, _, gaps = parse_auto_fit_output(
-            "SCORE: 92\nREASON: very strong fit\nGAPS:"
-        )
+        _, _, gaps = parse_auto_fit_output("SCORE: 92\nREASON: very strong fit\nGAPS:")
         self.assertEqual(gaps, [])
 
 

@@ -47,8 +47,9 @@ class _RemoteOnlyFakeProvider:
     canned_jobs: list[AggregatedJob] = field(default_factory=list)
     search_called: bool = False
 
-    def search(self, *, query: str, location: str | None, limit: int = 25,
-               persona_id: str | None = None) -> list[AggregatedJob]:
+    def search(
+        self, *, query: str, location: str | None, limit: int = 25, persona_id: str | None = None
+    ) -> list[AggregatedJob]:
         self.search_called = True
         return list(self.canned_jobs)
 
@@ -61,8 +62,9 @@ class _RegularFakeProvider:
     canned_jobs: list[AggregatedJob] = field(default_factory=list)
     search_called: bool = False
 
-    def search(self, *, query: str, location: str | None, limit: int = 25,
-               persona_id: str | None = None) -> list[AggregatedJob]:
+    def search(
+        self, *, query: str, location: str | None, limit: int = 25, persona_id: str | None = None
+    ) -> list[AggregatedJob]:
         self.search_called = True
         return list(self.canned_jobs)
 
@@ -99,12 +101,26 @@ class UserWantsRemoteHelperTests(unittest.TestCase):
 
 class EngineSkipsRemoteOnlyForLocationSearchTests(unittest.TestCase):
     def test_specific_location_skips_remote_only_provider(self) -> None:
-        remote = _RemoteOnlyFakeProvider(canned_jobs=[
-            _job("Senior Backend Engineer", "https://remotive.com/x", "fake_remote_only", "Remote (Anywhere)"),
-        ])
-        regular = _RegularFakeProvider(canned_jobs=[
-            _job("Senior Backend Engineer", "https://acme.example/job/1", "fake_regular", "Berlin, DE"),
-        ])
+        remote = _RemoteOnlyFakeProvider(
+            canned_jobs=[
+                _job(
+                    "Senior Backend Engineer",
+                    "https://remotive.com/x",
+                    "fake_remote_only",
+                    "Remote (Anywhere)",
+                ),
+            ]
+        )
+        regular = _RegularFakeProvider(
+            canned_jobs=[
+                _job(
+                    "Senior Backend Engineer",
+                    "https://acme.example/job/1",
+                    "fake_regular",
+                    "Berlin, DE",
+                ),
+            ]
+        )
         engine = JobAggregationEngine(providers=[remote, regular])
 
         jobs, outcomes = engine.search(query="senior backend engineer", location="Berlin")
@@ -122,9 +138,16 @@ class EngineSkipsRemoteOnlyForLocationSearchTests(unittest.TestCase):
         self.assertIn("fake_regular", sources)
 
     def test_empty_location_includes_remote_only_provider(self) -> None:
-        remote = _RemoteOnlyFakeProvider(canned_jobs=[
-            _job("Senior Backend Engineer", "https://remotive.com/x", "fake_remote_only", "Remote"),
-        ])
+        remote = _RemoteOnlyFakeProvider(
+            canned_jobs=[
+                _job(
+                    "Senior Backend Engineer",
+                    "https://remotive.com/x",
+                    "fake_remote_only",
+                    "Remote",
+                ),
+            ]
+        )
         engine = JobAggregationEngine(providers=[remote])
 
         jobs, _ = engine.search(query="senior backend engineer", location=None)
@@ -132,9 +155,16 @@ class EngineSkipsRemoteOnlyForLocationSearchTests(unittest.TestCase):
         self.assertEqual(len(jobs), 1)
 
     def test_remote_in_location_includes_remote_only_provider(self) -> None:
-        remote = _RemoteOnlyFakeProvider(canned_jobs=[
-            _job("Senior Backend Engineer", "https://remotive.com/x", "fake_remote_only", "Remote"),
-        ])
+        remote = _RemoteOnlyFakeProvider(
+            canned_jobs=[
+                _job(
+                    "Senior Backend Engineer",
+                    "https://remotive.com/x",
+                    "fake_remote_only",
+                    "Remote",
+                ),
+            ]
+        )
         engine = JobAggregationEngine(providers=[remote])
 
         jobs, _ = engine.search(query="senior backend engineer", location="Remote — DACH")
@@ -153,28 +183,31 @@ class ArbeitnowSubstringFilterTightenedTests(unittest.TestCase):
         class FakeFetcher:
             def get(self, url, params=None):
                 import json as _json
-                payload = {"data": [
-                    {
-                        "slug": "berlin-job",
-                        "title": "Senior Backend Engineer",
-                        "company_name": "Acme Berlin",
-                        "description": "Senior Python role",
-                        "location": "Berlin, Germany",
-                        "tags": ["python"],
-                        "url": "https://example.com/berlin-job",
-                        "created_at": "2026-05-01T10:00:00+00:00",
-                    },
-                    {
-                        "slug": "remote-job",
-                        "title": "Senior Backend Engineer",
-                        "company_name": "Acme Anywhere",
-                        "description": "Remote-friendly role across EU",
-                        "location": "Remote",
-                        "tags": ["python"],
-                        "url": "https://example.com/remote-job",
-                        "created_at": "2026-05-01T10:00:00+00:00",
-                    },
-                ]}
+
+                payload = {
+                    "data": [
+                        {
+                            "slug": "berlin-job",
+                            "title": "Senior Backend Engineer",
+                            "company_name": "Acme Berlin",
+                            "description": "Senior Python role",
+                            "location": "Berlin, Germany",
+                            "tags": ["python"],
+                            "url": "https://example.com/berlin-job",
+                            "created_at": "2026-05-01T10:00:00+00:00",
+                        },
+                        {
+                            "slug": "remote-job",
+                            "title": "Senior Backend Engineer",
+                            "company_name": "Acme Anywhere",
+                            "description": "Remote-friendly role across EU",
+                            "location": "Remote",
+                            "tags": ["python"],
+                            "url": "https://example.com/remote-job",
+                            "created_at": "2026-05-01T10:00:00+00:00",
+                        },
+                    ]
+                }
                 return 200, _json.dumps(payload)
 
         provider = ArbeitnowProvider(fetcher=FakeFetcher())
@@ -228,13 +261,21 @@ class LocationMatcherDiacriticAndAliasTests(unittest.TestCase):
         class FakeFetcher:
             def get(self, url, params=None, headers=None):
                 import json as _json
-                payload = {"data": [
-                    {"slug": "muc-job", "title": "Senior Backend",
-                     "company_name": "Acme", "description": "Senior Python role",
-                     "location": "München, Deutschland", "tags": ["python"],
-                     "url": "https://example.com/muc-job",
-                     "created_at": "2026-05-01T10:00:00+00:00"},
-                ]}
+
+                payload = {
+                    "data": [
+                        {
+                            "slug": "muc-job",
+                            "title": "Senior Backend",
+                            "company_name": "Acme",
+                            "description": "Senior Python role",
+                            "location": "München, Deutschland",
+                            "tags": ["python"],
+                            "url": "https://example.com/muc-job",
+                            "created_at": "2026-05-01T10:00:00+00:00",
+                        },
+                    ]
+                }
                 return 200, _json.dumps(payload)
 
         provider = ArbeitnowProvider(fetcher=FakeFetcher())
@@ -296,43 +337,31 @@ class SeniorityConflictsTests(unittest.TestCase):
     def test_senior_query_rejects_junior_title(self) -> None:
         from company_discovery.aggregators import seniority_conflicts
 
-        self.assertTrue(seniority_conflicts("senior backend engineer",
-                                            "Junior Backend Engineer"))
-        self.assertTrue(seniority_conflicts("senior python developer",
-                                            "Praktikant Python"))
-        self.assertTrue(seniority_conflicts("senior data scientist",
-                                            "Working Student — Data"))
-        self.assertTrue(seniority_conflicts("lead backend engineer",
-                                            "Junior Backend Engineer"))
+        self.assertTrue(seniority_conflicts("senior backend engineer", "Junior Backend Engineer"))
+        self.assertTrue(seniority_conflicts("senior python developer", "Praktikant Python"))
+        self.assertTrue(seniority_conflicts("senior data scientist", "Working Student — Data"))
+        self.assertTrue(seniority_conflicts("lead backend engineer", "Junior Backend Engineer"))
 
     def test_senior_query_accepts_senior_title(self) -> None:
         from company_discovery.aggregators import seniority_conflicts
 
-        self.assertFalse(seniority_conflicts("senior backend engineer",
-                                             "Senior Backend Engineer"))
-        self.assertFalse(seniority_conflicts("senior backend engineer",
-                                             "Lead Backend Engineer"))
-        self.assertFalse(seniority_conflicts("senior backend engineer",
-                                             "Staff Backend Engineer"))
+        self.assertFalse(seniority_conflicts("senior backend engineer", "Senior Backend Engineer"))
+        self.assertFalse(seniority_conflicts("senior backend engineer", "Lead Backend Engineer"))
+        self.assertFalse(seniority_conflicts("senior backend engineer", "Staff Backend Engineer"))
 
     def test_junior_query_rejects_senior_title(self) -> None:
         from company_discovery.aggregators import seniority_conflicts
 
-        self.assertTrue(seniority_conflicts("junior backend engineer",
-                                            "Senior Backend Engineer"))
-        self.assertTrue(seniority_conflicts("internship marketing",
-                                            "Head of Marketing"))
+        self.assertTrue(seniority_conflicts("junior backend engineer", "Senior Backend Engineer"))
+        self.assertTrue(seniority_conflicts("internship marketing", "Head of Marketing"))
 
     def test_unband_query_passes_everything(self) -> None:
         """A query with no seniority signal should not filter on band."""
         from company_discovery.aggregators import seniority_conflicts
 
-        self.assertFalse(seniority_conflicts("backend engineer",
-                                             "Senior Backend Engineer"))
-        self.assertFalse(seniority_conflicts("backend engineer",
-                                             "Junior Backend Engineer"))
-        self.assertFalse(seniority_conflicts("data scientist",
-                                             "Working Student — Data"))
+        self.assertFalse(seniority_conflicts("backend engineer", "Senior Backend Engineer"))
+        self.assertFalse(seniority_conflicts("backend engineer", "Junior Backend Engineer"))
+        self.assertFalse(seniority_conflicts("data scientist", "Working Student — Data"))
 
     def test_arbeitnow_senior_query_rejects_junior_listing(self) -> None:
         """End-to-end: the seniority filter runs inside the Arbeitnow
@@ -342,23 +371,35 @@ class SeniorityConflictsTests(unittest.TestCase):
         class FakeFetcher:
             def get(self, url, params=None, headers=None):
                 import json as _json
-                payload = {"data": [
-                    {"slug": "junior", "title": "Junior Backend Engineer",
-                     "company_name": "Acme", "description": "Junior role",
-                     "location": "Berlin, Germany", "tags": ["python"],
-                     "url": "https://example.com/junior",
-                     "created_at": "2026-05-01T10:00:00+00:00"},
-                    {"slug": "senior", "title": "Senior Backend Engineer",
-                     "company_name": "Acme", "description": "5+ years",
-                     "location": "Berlin, Germany", "tags": ["python"],
-                     "url": "https://example.com/senior",
-                     "created_at": "2026-05-01T10:00:00+00:00"},
-                ]}
+
+                payload = {
+                    "data": [
+                        {
+                            "slug": "junior",
+                            "title": "Junior Backend Engineer",
+                            "company_name": "Acme",
+                            "description": "Junior role",
+                            "location": "Berlin, Germany",
+                            "tags": ["python"],
+                            "url": "https://example.com/junior",
+                            "created_at": "2026-05-01T10:00:00+00:00",
+                        },
+                        {
+                            "slug": "senior",
+                            "title": "Senior Backend Engineer",
+                            "company_name": "Acme",
+                            "description": "5+ years",
+                            "location": "Berlin, Germany",
+                            "tags": ["python"],
+                            "url": "https://example.com/senior",
+                            "created_at": "2026-05-01T10:00:00+00:00",
+                        },
+                    ]
+                }
                 return 200, _json.dumps(payload)
 
         provider = ArbeitnowProvider(fetcher=FakeFetcher())
-        results = provider.search(query="senior backend engineer",
-                                  location="Berlin")
+        results = provider.search(query="senior backend engineer", location="Berlin")
         urls = [j.source_url for j in results]
         self.assertIn("https://example.com/senior", urls)
         self.assertNotIn("https://example.com/junior", urls)
@@ -373,9 +414,12 @@ class DedupCanonicalisationTests(unittest.TestCase):
 
     def _engine(self, *url_pairs):
         from dataclasses import dataclass
-        from datetime import datetime, timezone
+        from datetime import datetime
+
         from company_discovery.aggregators import (
-            AggregatedJob, JobAggregationEngine, ProviderAttribution,
+            AggregatedJob,
+            JobAggregationEngine,
+            ProviderAttribution,
         )
 
         @dataclass
@@ -391,14 +435,24 @@ class DedupCanonicalisationTests(unittest.TestCase):
         now = datetime.now(timezone.utc)
         providers = []
         for i, (url, desc) in enumerate(url_pairs):
-            providers.append(_P(
-                name=f"p{i}", attribution=None, remote_only=False,
-                _jobs=[AggregatedJob(
-                    title="Senior Backend", company_name="Acme",
-                    source=f"p{i}", source_url=url, location="Berlin",
-                    description=desc, posted_at=now,
-                )],
-            ))
+            providers.append(
+                _P(
+                    name=f"p{i}",
+                    attribution=None,
+                    remote_only=False,
+                    _jobs=[
+                        AggregatedJob(
+                            title="Senior Backend",
+                            company_name="Acme",
+                            source=f"p{i}",
+                            source_url=url,
+                            location="Berlin",
+                            description=desc,
+                            posted_at=now,
+                        )
+                    ],
+                )
+            )
         return JobAggregationEngine(providers=providers)
 
     def test_www_prefix_dedupes(self) -> None:
@@ -453,42 +507,34 @@ class TitleFamilyMatchTests(unittest.TestCase):
     def test_marketing_manager_rejects_hr_manager(self) -> None:
         from company_discovery.aggregators import title_matches_query_family
 
-        self.assertFalse(title_matches_query_family("marketing manager",
-                                                     "HR Manager"))
-        self.assertFalse(title_matches_query_family("marketing manager",
-                                                     "Property Manager"))
-        self.assertFalse(title_matches_query_family("marketing manager",
-                                                     "Projektmanager Sanierung"))
+        self.assertFalse(title_matches_query_family("marketing manager", "HR Manager"))
+        self.assertFalse(title_matches_query_family("marketing manager", "Property Manager"))
+        self.assertFalse(
+            title_matches_query_family("marketing manager", "Projektmanager Sanierung")
+        )
 
     def test_marketing_manager_accepts_marketing_titles(self) -> None:
         from company_discovery.aggregators import title_matches_query_family
 
-        self.assertTrue(title_matches_query_family("marketing manager",
-                                                    "Marketing Manager"))
-        self.assertTrue(title_matches_query_family("marketing manager",
-                                                    "Brand Marketing Specialist"))
-        self.assertTrue(title_matches_query_family("marketing manager",
-                                                    "Marketing Lead"))
+        self.assertTrue(title_matches_query_family("marketing manager", "Marketing Manager"))
+        self.assertTrue(
+            title_matches_query_family("marketing manager", "Brand Marketing Specialist")
+        )
+        self.assertTrue(title_matches_query_family("marketing manager", "Marketing Lead"))
 
     def test_data_scientist_rejects_freelance_writer(self) -> None:
         from company_discovery.aggregators import title_matches_query_family
 
-        self.assertFalse(title_matches_query_family("data scientist",
-                                                     "Freelance Writer"))
-        self.assertFalse(title_matches_query_family("data scientist",
-                                                     "Copywriter"))
-        self.assertFalse(title_matches_query_family("data scientist",
-                                                     "Customer Support Manager"))
+        self.assertFalse(title_matches_query_family("data scientist", "Freelance Writer"))
+        self.assertFalse(title_matches_query_family("data scientist", "Copywriter"))
+        self.assertFalse(title_matches_query_family("data scientist", "Customer Support Manager"))
 
     def test_data_scientist_accepts_data_titles(self) -> None:
         from company_discovery.aggregators import title_matches_query_family
 
-        self.assertTrue(title_matches_query_family("data scientist",
-                                                    "Senior Data Scientist"))
-        self.assertTrue(title_matches_query_family("data scientist",
-                                                    "Data Engineer"))
-        self.assertTrue(title_matches_query_family("senior data scientist",
-                                                    "ML Data Analyst"))
+        self.assertTrue(title_matches_query_family("data scientist", "Senior Data Scientist"))
+        self.assertTrue(title_matches_query_family("data scientist", "Data Engineer"))
+        self.assertTrue(title_matches_query_family("senior data scientist", "ML Data Analyst"))
 
     def test_purely_generic_query_passes_everything(self) -> None:
         """If the user typed only generic words, fall back to OR-match
@@ -496,10 +542,8 @@ class TitleFamilyMatchTests(unittest.TestCase):
         discriminate — let other layers decide."""
         from company_discovery.aggregators import title_matches_query_family
 
-        self.assertTrue(title_matches_query_family("engineer",
-                                                    "Software Developer"))
-        self.assertTrue(title_matches_query_family("manager",
-                                                    "Sales Lead"))
+        self.assertTrue(title_matches_query_family("engineer", "Software Developer"))
+        self.assertTrue(title_matches_query_family("manager", "Sales Lead"))
 
     def test_arbeitnow_marketing_query_rejects_hr_manager(self) -> None:
         """End-to-end: the title-family rule runs inside the Arbeitnow
@@ -509,18 +553,31 @@ class TitleFamilyMatchTests(unittest.TestCase):
         class FakeFetcher:
             def get(self, url, params=None, headers=None):
                 import json as _json
-                payload = {"data": [
-                    {"slug": "hr", "title": "HR Manager - Recruiting",
-                     "company_name": "X", "description": "manager role",
-                     "location": "Berlin, Germany", "tags": [],
-                     "url": "https://example.com/hr",
-                     "created_at": "2026-05-01T10:00:00+00:00"},
-                    {"slug": "mkt", "title": "Marketing Manager",
-                     "company_name": "Y", "description": "marketing role",
-                     "location": "Berlin, Germany", "tags": [],
-                     "url": "https://example.com/mkt",
-                     "created_at": "2026-05-01T10:00:00+00:00"},
-                ]}
+
+                payload = {
+                    "data": [
+                        {
+                            "slug": "hr",
+                            "title": "HR Manager - Recruiting",
+                            "company_name": "X",
+                            "description": "manager role",
+                            "location": "Berlin, Germany",
+                            "tags": [],
+                            "url": "https://example.com/hr",
+                            "created_at": "2026-05-01T10:00:00+00:00",
+                        },
+                        {
+                            "slug": "mkt",
+                            "title": "Marketing Manager",
+                            "company_name": "Y",
+                            "description": "marketing role",
+                            "location": "Berlin, Germany",
+                            "tags": [],
+                            "url": "https://example.com/mkt",
+                            "created_at": "2026-05-01T10:00:00+00:00",
+                        },
+                    ]
+                }
                 return 200, _json.dumps(payload)
 
         provider = ArbeitnowProvider(fetcher=FakeFetcher())
@@ -542,25 +599,36 @@ class SeniorityDefenseInDepthTests(unittest.TestCase):
         class FakeFetcher:
             def get(self, url, params=None, headers=None):
                 import json as _json
-                payload = {"stellenangebote": [
-                    {"titel": "Junior Backend Engineer", "arbeitgeber": "A",
-                     "hashId": "h1",
-                     "arbeitsort": {"ort": "Berlin", "land": "DE"},
-                     "aktuelleVeroeffentlichungsdatum": "2026-05-01"},
-                    {"titel": "Senior Backend Engineer", "arbeitgeber": "B",
-                     "hashId": "h2",
-                     "arbeitsort": {"ort": "Berlin", "land": "DE"},
-                     "aktuelleVeroeffentlichungsdatum": "2026-05-01"},
-                    {"titel": "Werkstudent Backend", "arbeitgeber": "C",
-                     "hashId": "h3",
-                     "arbeitsort": {"ort": "Berlin", "land": "DE"},
-                     "aktuelleVeroeffentlichungsdatum": "2026-05-01"},
-                ]}
+
+                payload = {
+                    "stellenangebote": [
+                        {
+                            "titel": "Junior Backend Engineer",
+                            "arbeitgeber": "A",
+                            "hashId": "h1",
+                            "arbeitsort": {"ort": "Berlin", "land": "DE"},
+                            "aktuelleVeroeffentlichungsdatum": "2026-05-01",
+                        },
+                        {
+                            "titel": "Senior Backend Engineer",
+                            "arbeitgeber": "B",
+                            "hashId": "h2",
+                            "arbeitsort": {"ort": "Berlin", "land": "DE"},
+                            "aktuelleVeroeffentlichungsdatum": "2026-05-01",
+                        },
+                        {
+                            "titel": "Werkstudent Backend",
+                            "arbeitgeber": "C",
+                            "hashId": "h3",
+                            "arbeitsort": {"ort": "Berlin", "land": "DE"},
+                            "aktuelleVeroeffentlichungsdatum": "2026-05-01",
+                        },
+                    ]
+                }
                 return 200, _json.dumps(payload)
 
         provider = BundesagenturProvider(fetcher=FakeFetcher())
-        results = provider.search(query="senior backend engineer",
-                                  location="Berlin")
+        results = provider.search(query="senior backend engineer", location="Berlin")
         titles = [r.title for r in results]
         self.assertIn("Senior Backend Engineer", titles)
         self.assertNotIn("Junior Backend Engineer", titles)
@@ -572,24 +640,29 @@ class SeniorityDefenseInDepthTests(unittest.TestCase):
         class FakeFetcher:
             def get(self, url, params=None, headers=None):
                 import json as _json
-                payload = {"results": [
-                    {"title": "Junior Python Developer",
-                     "company": {"display_name": "A"},
-                     "location": {"display_name": "Berlin"},
-                     "created": "2026-05-01T00:00:00Z",
-                     "redirect_url": "https://adzuna.example/1"},
-                    {"title": "Senior Python Developer",
-                     "company": {"display_name": "B"},
-                     "location": {"display_name": "Berlin"},
-                     "created": "2026-05-01T00:00:00Z",
-                     "redirect_url": "https://adzuna.example/2"},
-                ]}
+
+                payload = {
+                    "results": [
+                        {
+                            "title": "Junior Python Developer",
+                            "company": {"display_name": "A"},
+                            "location": {"display_name": "Berlin"},
+                            "created": "2026-05-01T00:00:00Z",
+                            "redirect_url": "https://adzuna.example/1",
+                        },
+                        {
+                            "title": "Senior Python Developer",
+                            "company": {"display_name": "B"},
+                            "location": {"display_name": "Berlin"},
+                            "created": "2026-05-01T00:00:00Z",
+                            "redirect_url": "https://adzuna.example/2",
+                        },
+                    ]
+                }
                 return 200, _json.dumps(payload)
 
-        provider = AdzunaProvider(app_id="x", app_key="y",
-                                  fetcher=FakeFetcher())
-        results = provider.search(query="senior python developer",
-                                  location="Berlin")
+        provider = AdzunaProvider(app_id="x", app_key="y", fetcher=FakeFetcher())
+        results = provider.search(query="senior python developer", location="Berlin")
         urls = [r.source_url for r in results]
         self.assertIn("https://adzuna.example/2", urls)
         self.assertNotIn("https://adzuna.example/1", urls)

@@ -22,10 +22,10 @@ from __future__ import annotations
 import unittest
 
 from company_discovery.cv_builder import (
-    CvBuilderState,
     FACT_RATIO_THRESHOLD,
     SECTIONS,
     SECTIONS_BY_ID,
+    CvBuilderState,
     assemble_cv_markdown,
     build_format_prompt,
     compute_fact_ratio,
@@ -138,8 +138,7 @@ class FactRatioGateTests(unittest.TestCase):
 
     def test_diacritic_folded_match(self):
         # User typed 'München'; AI typed 'Munchen' — must be treated equal.
-        ratio = compute_fact_ratio("Senior Engineer in München",
-                                    "Senior Engineer in Munchen")
+        ratio = compute_fact_ratio("Senior Engineer in München", "Senior Engineer in Munchen")
         self.assertGreaterEqual(ratio, 0.8)
 
 
@@ -155,9 +154,9 @@ class StateSerialisationTests(unittest.TestCase):
         state = CvBuilderState(
             current_section_id="experience",
             sections={
-                "header": [{"full_name": "Anna",
-                             "email": "anna@example.com",
-                             "location": "Berlin"}],
+                "header": [
+                    {"full_name": "Anna", "email": "anna@example.com", "location": "Berlin"}
+                ],
                 "experience": [
                     {"company_name": "Acme", "job_title": "Senior Engineer"},
                 ],
@@ -172,8 +171,7 @@ class StateSerialisationTests(unittest.TestCase):
         self.assertEqual(s.current_section_id, None)
 
     def test_from_dict_handles_garbage(self):
-        s = CvBuilderState.from_dict({"sections": "not-a-dict",
-                                       "currentSectionId": 42})
+        s = CvBuilderState.from_dict({"sections": "not-a-dict", "currentSectionId": 42})
         # Should not crash; sections becomes empty.
         self.assertEqual(s.sections, {})
 
@@ -184,58 +182,70 @@ class AssemblyTests(unittest.TestCase):
     that output via the fact-ratio gate before storing here)."""
 
     def test_minimal_cv(self):
-        state = CvBuilderState(sections={
-            "header": [{
-                "full_name": "Anna Müller",
-                "email": "anna@example.com",
-                "location": "Berlin",
-            }],
-        })
+        state = CvBuilderState(
+            sections={
+                "header": [
+                    {
+                        "full_name": "Anna Müller",
+                        "email": "anna@example.com",
+                        "location": "Berlin",
+                    }
+                ],
+            }
+        )
         md = assemble_cv_markdown(state)
         self.assertIn("# Anna Müller", md)
         self.assertIn("anna@example.com", md)
         self.assertIn("Berlin", md)
 
     def test_full_cv_round_trip(self):
-        state = CvBuilderState(sections={
-            "header": [{
-                "full_name": "Anna Müller",
-                "email": "anna@example.com",
-                "location": "Berlin",
-                "linkedin": "linkedin.com/in/anna",
-            }],
-            "summary": [{
-                "summary_raw": "Senior backend engineer. 8 years Python.",
-                "formatted": "Senior backend engineer with 8 years of Python "
-                              "and microservices experience.",
-            }],
-            "experience": [
-                {
-                    "company_name": "Acme Corp",
-                    "job_title": "Senior Backend Engineer",
-                    "start_date": "2022-01",
-                    "end_date": "present",
-                    "location": "Berlin",
-                    "achievements_raw": "Led migration to k8s.",
-                    "formatted": "- Led migration to Kubernetes.",
-                },
-            ],
-            "education": [
-                {
-                    "school": "TU Berlin",
-                    "degree": "MSc",
-                    "field": "Computer Science",
-                    "start_date": "2016",
-                    "end_date": "2019",
-                },
-            ],
-            "skills": [{
-                "skills_raw": "python, kubernetes, postgres, aws",
-                "formatted": "**Languages:** Python\n"
-                              "**Cloud:** AWS, Kubernetes\n"
-                              "**Data:** Postgres",
-            }],
-        })
+        state = CvBuilderState(
+            sections={
+                "header": [
+                    {
+                        "full_name": "Anna Müller",
+                        "email": "anna@example.com",
+                        "location": "Berlin",
+                        "linkedin": "linkedin.com/in/anna",
+                    }
+                ],
+                "summary": [
+                    {
+                        "summary_raw": "Senior backend engineer. 8 years Python.",
+                        "formatted": "Senior backend engineer with 8 years of Python "
+                        "and microservices experience.",
+                    }
+                ],
+                "experience": [
+                    {
+                        "company_name": "Acme Corp",
+                        "job_title": "Senior Backend Engineer",
+                        "start_date": "2022-01",
+                        "end_date": "present",
+                        "location": "Berlin",
+                        "achievements_raw": "Led migration to k8s.",
+                        "formatted": "- Led migration to Kubernetes.",
+                    },
+                ],
+                "education": [
+                    {
+                        "school": "TU Berlin",
+                        "degree": "MSc",
+                        "field": "Computer Science",
+                        "start_date": "2016",
+                        "end_date": "2019",
+                    },
+                ],
+                "skills": [
+                    {
+                        "skills_raw": "python, kubernetes, postgres, aws",
+                        "formatted": "**Languages:** Python\n"
+                        "**Cloud:** AWS, Kubernetes\n"
+                        "**Data:** Postgres",
+                    }
+                ],
+            }
+        )
         md = assemble_cv_markdown(state)
         # Header
         self.assertIn("Anna Müller", md)
@@ -258,22 +268,28 @@ class AssemblyTests(unittest.TestCase):
         self.assertIn("Kubernetes", md)
 
     def test_assembly_uses_formatted_when_present(self):
-        state = CvBuilderState(sections={
-            "header": [{"full_name": "X"}],
-            "summary": [{
-                "summary_raw": "raw text",
-                "formatted": "polished text",
-            }],
-        })
+        state = CvBuilderState(
+            sections={
+                "header": [{"full_name": "X"}],
+                "summary": [
+                    {
+                        "summary_raw": "raw text",
+                        "formatted": "polished text",
+                    }
+                ],
+            }
+        )
         md = assemble_cv_markdown(state)
         self.assertIn("polished text", md)
         self.assertNotIn("raw text", md)
 
     def test_assembly_falls_back_to_raw_when_no_formatted(self):
-        state = CvBuilderState(sections={
-            "header": [{"full_name": "X"}],
-            "summary": [{"summary_raw": "raw fallback text"}],
-        })
+        state = CvBuilderState(
+            sections={
+                "header": [{"full_name": "X"}],
+                "summary": [{"summary_raw": "raw fallback text"}],
+            }
+        )
         md = assemble_cv_markdown(state)
         self.assertIn("raw fallback text", md)
 
@@ -315,18 +331,13 @@ class PrintHtmlRenderTests(unittest.TestCase):
 
     def test_img_passes_through(self):
         """The assembler's <img …> photo line is allowed through verbatim."""
-        md = (
-            '<img src="data:image/png;base64,AAAA" alt="x" />\n'
-            "# Anna Müller"
-        )
+        md = '<img src="data:image/png;base64,AAAA" alt="x" />\n# Anna Müller'
         html = cv_markdown_to_html(md)
         self.assertIn('<img src="data:image/png;base64,AAAA" alt="x" />', html)
         self.assertIn("<h1>Anna Müller</h1>", html)
 
     def test_lists_close_on_blank_line(self):
-        html = cv_markdown_to_html(
-            "## Skills\n- Python\n- AWS\n\n## Education\n**TU Berlin**"
-        )
+        html = cv_markdown_to_html("## Skills\n- Python\n- AWS\n\n## Education\n**TU Berlin**")
         # The first <ul> must close before the next section's heading.
         idx_close = html.find("</ul>")
         idx_h2_edu = html.find("Education")

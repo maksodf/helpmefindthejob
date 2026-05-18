@@ -62,8 +62,7 @@ class JourneyTriggerTests(unittest.TestCase):
 
     def test_bare_greetings_do_not_trigger(self):
         # Per scope decision: greetings do NOT auto-start the journey.
-        for msg in ("hi", "hello", "hey", "yo", "hallo", "servus",
-                     "good morning", "guten tag"):
+        for msg in ("hi", "hello", "hey", "yo", "hallo", "servus", "good morning", "guten tag"):
             self.assertFalse(looks_like_journey_trigger(msg), msg=msg)
 
     def test_irrelevant_messages_do_not_trigger(self):
@@ -113,8 +112,7 @@ class DiscoverPhaseTests(unittest.TestCase):
         self.assertEqual(r.journey.bucket_key, "pflegehelfer")
         self.assertEqual(r.journey.discover_step, DISCOVER_ASK_LOCATION)
         # Persists the job-type filter on profile.
-        self.assertEqual(r.profile_updates.get("job_type_filter"),
-                          "pflegehelfer")
+        self.assertEqual(r.profile_updates.get("job_type_filter"), "pflegehelfer")
         self.assertIn("Where", r.reply)
 
     def test_role_with_no_taxonomy_hit(self):
@@ -133,8 +131,7 @@ class DiscoverPhaseTests(unittest.TestCase):
         j = UserJourney(phase=PHASE_DISCOVER, discover_step=DISCOVER_ASK_ROLE)
         r = advance(j, "senior backend engineer")
         self.assertEqual(r.journey.bucket_key, "software_engineer")
-        self.assertEqual(r.profile_updates.get("job_type_filter"),
-                          "software_engineer")
+        self.assertEqual(r.profile_updates.get("job_type_filter"), "software_engineer")
 
     def test_location_advance(self):
         j = UserJourney(phase=PHASE_DISCOVER, discover_step=DISCOVER_ASK_LOCATION)
@@ -165,8 +162,12 @@ class DiscoverPhaseTests(unittest.TestCase):
         self.assertEqual(r.journey.discover_step, DISCOVER_ASK_LANGS)
 
     def test_languages_split(self):
-        j = UserJourney(phase=PHASE_DISCOVER, discover_step=DISCOVER_ASK_LANGS,
-                          role_text="Bartender", location="Berlin")
+        j = UserJourney(
+            phase=PHASE_DISCOVER,
+            discover_step=DISCOVER_ASK_LANGS,
+            role_text="Bartender",
+            location="Berlin",
+        )
         r = advance(j, "Deutsch, English, Türkçe")
         self.assertEqual(r.journey.languages, ["Deutsch", "English", "Türkçe"])
         self.assertEqual(r.journey.phase, PHASE_CV_CHECK)
@@ -219,34 +220,48 @@ class CvSectionalBuildTests(unittest.TestCase):
 
     def test_build_kickoff_asks_first_question(self):
         from company_discovery.journey import (
-            UserJourney, PHASE_CV_CHECK, _CV_BUILD_ORDER,
+            _CV_BUILD_ORDER,
+            PHASE_CV_CHECK,
+            UserJourney,
         )
-        j = UserJourney(phase=PHASE_CV_CHECK, cv_status="building",
-                          cv_build_step=_CV_BUILD_ORDER[0])
+
+        j = UserJourney(
+            phase=PHASE_CV_CHECK, cv_status="building", cv_build_step=_CV_BUILD_ORDER[0]
+        )
         r = advance(j, "")
         # Empty msg at the very first step — just re-asks.
         self.assertIn("full name", r.reply.lower())
 
     def test_each_step_advances(self):
         from company_discovery.journey import (
-            UserJourney, PHASE_CV_CHECK, PHASE_INSPIRE, _CV_BUILD_ORDER,
+            _CV_BUILD_ORDER,
+            PHASE_CV_CHECK,
+            PHASE_INSPIRE,
+            UserJourney,
         )
-        j = UserJourney(phase=PHASE_CV_CHECK, cv_status="building",
-                          cv_build_step=_CV_BUILD_ORDER[0])
+
+        j = UserJourney(
+            phase=PHASE_CV_CHECK, cv_status="building", cv_build_step=_CV_BUILD_ORDER[0]
+        )
         # Answer each step in sequence.
         r = advance(j, "Maria Schmidt")
         self.assertEqual(j.cv_build_answers["name"], "Maria Schmidt")
         self.assertIn("city", r.reply.lower())
         r = advance(j, "Berlin")
         self.assertEqual(j.cv_build_answers["location"], "Berlin")
-        r = advance(j, "Senior Pflegehelferin with 6 years experience in "
-                       "elderly care across two clinics in Berlin.")
+        r = advance(
+            j,
+            "Senior Pflegehelferin with 6 years experience in "
+            "elderly care across two clinics in Berlin.",
+        )
         self.assertIn("recent role", r.reply.lower())
-        r = advance(j, "Charité 2020-2024 — Pflegehelferin. Cared for "
-                       "12 residents per shift, led handover meetings.")
+        r = advance(
+            j,
+            "Charité 2020-2024 — Pflegehelferin. Cared for "
+            "12 residents per shift, led handover meetings.",
+        )
         self.assertIn("skills", r.reply.lower())
-        r = advance(j, "Pflege, Erste Hilfe, Deutsch, English, "
-                       "Dokumentation, Empathie")
+        r = advance(j, "Pflege, Erste Hilfe, Deutsch, English, Dokumentation, Empathie")
         # Sequence complete → phase advances + cv_text persisted.
         self.assertEqual(j.phase, PHASE_INSPIRE)
         self.assertIn("cv_text", r.profile_updates)
@@ -258,13 +273,16 @@ class CvSectionalBuildTests(unittest.TestCase):
 
     def test_assemble_omits_empty_sections(self):
         from company_discovery.journey import assemble_cv_from_build
-        text = assemble_cv_from_build({
-            "name": "Lars",
-            "location": "",  # skipped
-            "summary": "Backend engineer.",
-            "recent_role": "",
-            "skills": "Python, Go",
-        })
+
+        text = assemble_cv_from_build(
+            {
+                "name": "Lars",
+                "location": "",  # skipped
+                "summary": "Backend engineer.",
+                "recent_role": "",
+                "skills": "Python, Go",
+            }
+        )
         self.assertIn("# Lars", text)
         self.assertIn("Summary", text)
         self.assertIn("Skills", text)
@@ -273,8 +291,7 @@ class CvSectionalBuildTests(unittest.TestCase):
 
 class InspirePhaseTests(unittest.TestCase):
     def test_fallback_suggestions_when_no_ai(self):
-        j = UserJourney(phase=PHASE_INSPIRE, role_text="Pflegehelfer",
-                          bucket_key="pflegehelfer")
+        j = UserJourney(phase=PHASE_INSPIRE, role_text="Pflegehelfer", bucket_key="pflegehelfer")
         r = advance(j, "", ai_available=False)
         self.assertGreaterEqual(len(r.journey.lateral_roles), 3)
         # Templated honesty.
@@ -282,10 +299,12 @@ class InspirePhaseTests(unittest.TestCase):
         self.assertIn("Pflegeassistent", r.reply)
 
     def test_user_accepts_all_suggestions(self):
-        j = UserJourney(phase=PHASE_INSPIRE,
-                          role_text="Pflegehelfer",
-                          bucket_key="pflegehelfer",
-                          lateral_roles=["Pflegeassistent", "Altenpflegehelfer"])
+        j = UserJourney(
+            phase=PHASE_INSPIRE,
+            role_text="Pflegehelfer",
+            bucket_key="pflegehelfer",
+            lateral_roles=["Pflegeassistent", "Altenpflegehelfer"],
+        )
         r = advance(j, "yes", ai_available=False)
         self.assertEqual(
             r.journey.target_roles,
@@ -294,19 +313,23 @@ class InspirePhaseTests(unittest.TestCase):
         self.assertEqual(r.journey.phase, PHASE_PREFS)
 
     def test_user_declines_suggestions(self):
-        j = UserJourney(phase=PHASE_INSPIRE,
-                          role_text="Bartender",
-                          bucket_key="bartender",
-                          lateral_roles=["Barista", "Server"])
+        j = UserJourney(
+            phase=PHASE_INSPIRE,
+            role_text="Bartender",
+            bucket_key="bartender",
+            lateral_roles=["Barista", "Server"],
+        )
         r = advance(j, "no")
         self.assertEqual(r.journey.target_roles, ["Bartender"])
         self.assertEqual(r.journey.phase, PHASE_PREFS)
 
     def test_user_cherry_picks_via_csv(self):
-        j = UserJourney(phase=PHASE_INSPIRE,
-                          role_text="Bartender",
-                          bucket_key="bartender",
-                          lateral_roles=["Barista", "Server", "Bar Manager"])
+        j = UserJourney(
+            phase=PHASE_INSPIRE,
+            role_text="Bartender",
+            bucket_key="bartender",
+            lateral_roles=["Barista", "Server", "Bar Manager"],
+        )
         r = advance(j, "Barista, Bar Manager")
         self.assertEqual(
             r.journey.target_roles,
@@ -322,11 +345,16 @@ class InspirePhaseTests(unittest.TestCase):
             called["user"] = user_msg
             return '["Senior Pflegehelfer", "OTA", "Krankenpflegehelfer"]'
 
-        j = UserJourney(phase=PHASE_INSPIRE, role_text="Pflegehelfer",
-                          bucket_key="pflegehelfer", years_experience=6)
+        j = UserJourney(
+            phase=PHASE_INSPIRE,
+            role_text="Pflegehelfer",
+            bucket_key="pflegehelfer",
+            years_experience=6,
+        )
         r = advance(j, "", ai_available=True, ai_caller=fake_ai)
-        self.assertEqual(r.journey.lateral_roles,
-                          ["Senior Pflegehelfer", "OTA", "Krankenpflegehelfer"])
+        self.assertEqual(
+            r.journey.lateral_roles, ["Senior Pflegehelfer", "OTA", "Krankenpflegehelfer"]
+        )
         # No templated honesty banner when AI succeeded.
         self.assertNotIn("templated", r.reply.lower())
         self.assertIn("Pflegehelfer", called["user"])
@@ -335,8 +363,7 @@ class InspirePhaseTests(unittest.TestCase):
         def crashing_ai(system, user_msg):
             raise RuntimeError("api down")
 
-        j = UserJourney(phase=PHASE_INSPIRE, role_text="Bartender",
-                          bucket_key="bartender")
+        j = UserJourney(phase=PHASE_INSPIRE, role_text="Bartender", bucket_key="bartender")
         r = advance(j, "", ai_available=True, ai_caller=crashing_ai)
         # Falls through to template.
         self.assertIn("Barista", r.reply)
@@ -345,7 +372,8 @@ class InspirePhaseTests(unittest.TestCase):
 class PrefsPhaseTests(unittest.TestCase):
     def test_skip(self):
         j = UserJourney(
-            phase=PHASE_PREFS, role_text="Bartender",
+            phase=PHASE_PREFS,
+            role_text="Bartender",
             location="Berlin",
             target_roles=["Bartender"],
         )
@@ -356,7 +384,8 @@ class PrefsPhaseTests(unittest.TestCase):
 
     def test_remote_required(self):
         j = UserJourney(
-            phase=PHASE_PREFS, role_text="Backend",
+            phase=PHASE_PREFS,
+            role_text="Backend",
             location="anywhere",
             target_roles=["Backend"],
         )
@@ -413,29 +442,29 @@ class ReviewDrillPhaseTests(unittest.TestCase):
 class CategorizationTests(unittest.TestCase):
     def test_categorize_clinical(self):
         from company_discovery.journey import categorize_job
-        self.assertEqual(categorize_job("Pflegehelfer Berlin"),
-                          "Clinical / Pflege")
-        self.assertEqual(categorize_job("Senior Nurse"),
-                          "Clinical / Pflege")
+
+        self.assertEqual(categorize_job("Pflegehelfer Berlin"), "Clinical / Pflege")
+        self.assertEqual(categorize_job("Senior Nurse"), "Clinical / Pflege")
 
     def test_categorize_hospitality(self):
         from company_discovery.journey import categorize_job
-        self.assertEqual(categorize_job("Bartender"),
-                          "Hospitality / Bar")
-        self.assertEqual(categorize_job("Barista (m/w/d)"),
-                          "Hospitality / Bar")
+
+        self.assertEqual(categorize_job("Bartender"), "Hospitality / Bar")
+        self.assertEqual(categorize_job("Barista (m/w/d)"), "Hospitality / Bar")
 
     def test_categorize_tech(self):
         from company_discovery.journey import categorize_job
-        self.assertEqual(categorize_job("Senior Backend Engineer"),
-                          "Tech / Engineering")
+
+        self.assertEqual(categorize_job("Senior Backend Engineer"), "Tech / Engineering")
 
     def test_categorize_other(self):
         from company_discovery.journey import categorize_job
+
         self.assertEqual(categorize_job("Astronaut"), "Other")
 
     def test_cluster_jobs_distributes_by_title(self):
         from company_discovery.journey import cluster_jobs
+
         jobs = [
             {"title": "Bartender", "url": "u1"},
             {"title": "Backend Engineer", "url": "u2"},
@@ -477,8 +506,7 @@ class JourneySerialisationTests(unittest.TestCase):
         self.assertEqual(j.discover_step, DISCOVER_ASK_ROLE)
 
     def test_from_partial_dict(self):
-        j = UserJourney.from_dict({"phase": PHASE_DISCOVER,
-                                       "roleText": "Bartender"})
+        j = UserJourney.from_dict({"phase": PHASE_DISCOVER, "roleText": "Bartender"})
         self.assertEqual(j.phase, PHASE_DISCOVER)
         self.assertEqual(j.role_text, "Bartender")
         # Defaults fill the rest.

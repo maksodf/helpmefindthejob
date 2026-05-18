@@ -41,7 +41,6 @@ from company_discovery.ai_providers import AIProviderConfig
 from company_discovery.analysis import AnalysisExecutionResult
 from company_discovery.models import ImportedJob, UserProfile
 
-
 # ---------------- Test fixtures ----------------
 
 
@@ -91,10 +90,9 @@ class _ScriptedDispatch:
     """Context manager: patches analysis._dispatch_provider to return a
     canned AnalysisExecutionResult."""
 
-    def __init__(self, *,
-                 status: str = "completed",
-                 output: str | None = None,
-                 error: str | None = None):
+    def __init__(
+        self, *, status: str = "completed", output: str | None = None, error: str | None = None
+    ):
         self.status = status
         self.output = output
         self.error = error
@@ -105,10 +103,9 @@ class _ScriptedDispatch:
         self._original = analysis._dispatch_provider
         outer = self
 
-        def patched(prompt: str,
-                    provider: AIProviderConfig,
-                    runtime_credential: str,
-                    **_kwargs) -> AnalysisExecutionResult:
+        def patched(
+            prompt: str, provider: AIProviderConfig, runtime_credential: str, **_kwargs
+        ) -> AnalysisExecutionResult:
             # **_kwargs accepts the audit-log ``purpose`` keyword passed by
             # the production execute_* call sites; the patched dispatcher
             # ignores it because it short-circuits the AI call entirely.
@@ -148,7 +145,10 @@ class HighFitJsonTests(unittest.TestCase):
         imported = _make_imported_job("hi")
         with _ScriptedDispatch(output=scripted) as dispatch:
             result = analysis.execute_job_decision_brief(
-                imported, _make_provider(), "", _make_profile(),
+                imported,
+                _make_provider(),
+                "",
+                _make_profile(),
             )
             # The prompt was built correctly — must contain CV + job title.
             self.assertIn("Senior Backend Engineer", dispatch.last_prompt)
@@ -156,6 +156,7 @@ class HighFitJsonTests(unittest.TestCase):
         self.assertEqual(result.status, "completed")
         # Now simulate the persistence step that the route handler does.
         from company_discovery.structured_analysis import parse_freeform
+
         parsed = parse_freeform(result.output)
         self.assertAlmostEqual(parsed.fit_score, 0.88, places=3)
         self.assertEqual(parsed.recommendation, "apply")
@@ -173,9 +174,12 @@ class MidFitConsiderTests(unittest.TestCase):
         with _ScriptedDispatch(output=scripted):
             result = analysis.execute_job_decision_brief(
                 _make_imported_job("mid"),
-                _make_provider(), "", _make_profile(),
+                _make_provider(),
+                "",
+                _make_profile(),
             )
         from company_discovery.structured_analysis import parse_freeform
+
         parsed = parse_freeform(result.output)
         self.assertAlmostEqual(parsed.fit_score, 0.55, places=3)
         self.assertEqual(parsed.recommendation, "consider")
@@ -192,9 +196,12 @@ class LowFitSkipTests(unittest.TestCase):
         with _ScriptedDispatch(output=scripted):
             result = analysis.execute_job_decision_brief(
                 _make_imported_job("lo"),
-                _make_provider(), "", _make_profile(),
+                _make_provider(),
+                "",
+                _make_profile(),
             )
         from company_discovery.structured_analysis import parse_freeform
+
         parsed = parse_freeform(result.output)
         self.assertAlmostEqual(parsed.fit_score, 0.2, places=3)
         self.assertEqual(parsed.recommendation, "skip")
@@ -213,9 +220,12 @@ class RegexRescuedScoreTests(unittest.TestCase):
         with _ScriptedDispatch(output=scripted):
             result = analysis.execute_job_decision_brief(
                 _make_imported_job("re"),
-                _make_provider(), "", _make_profile(),
+                _make_provider(),
+                "",
+                _make_profile(),
             )
         from company_discovery.structured_analysis import parse_freeform
+
         parsed = parse_freeform(result.output)
         self.assertAlmostEqual(parsed.fit_score, 0.75, places=3)
         self.assertEqual(parsed.recommendation, "apply")
@@ -233,10 +243,13 @@ class AiRefusalTests(unittest.TestCase):
         with _ScriptedDispatch(output=scripted):
             result = analysis.execute_job_decision_brief(
                 _make_imported_job("rf"),
-                _make_provider(), "", _make_profile(),
+                _make_provider(),
+                "",
+                _make_profile(),
             )
         self.assertEqual(result.status, "completed")
         from company_discovery.structured_analysis import parse_freeform
+
         parsed = parse_freeform(result.output)
         # No JSON, no "Fit score: X" pattern → score is None
         self.assertIsNone(parsed.fit_score)
@@ -250,15 +263,16 @@ class MalformedJsonTests(unittest.TestCase):
     rescue the score via regex."""
 
     def test_trailing_comma_recovers(self):
-        scripted = (
-            '{"fitScore": 0.6, "recommendation": "consider",}'
-        )
+        scripted = '{"fitScore": 0.6, "recommendation": "consider",}'
         with _ScriptedDispatch(output=scripted):
             result = analysis.execute_job_decision_brief(
                 _make_imported_job("mj"),
-                _make_provider(), "", _make_profile(),
+                _make_provider(),
+                "",
+                _make_profile(),
             )
         from company_discovery.structured_analysis import parse_freeform
+
         parsed = parse_freeform(result.output)
         self.assertAlmostEqual(parsed.fit_score, 0.6, places=3)
         self.assertEqual(parsed.recommendation, "consider")
@@ -269,17 +283,17 @@ class VeryLongResponseTests(unittest.TestCase):
     must still find the embedded JSON."""
 
     def test_50kb_response_with_json(self):
-        prose = (
-            "The candidate has many strengths. Let me elaborate. "
-        ) * 1500  # ~70KB
-        scripted = prose + ('\n\n{"fitScore": 0.81, '
-                             '"recommendation": "apply"}')
+        prose = ("The candidate has many strengths. Let me elaborate. ") * 1500  # ~70KB
+        scripted = prose + ('\n\n{"fitScore": 0.81, "recommendation": "apply"}')
         with _ScriptedDispatch(output=scripted):
             result = analysis.execute_job_decision_brief(
                 _make_imported_job("lg"),
-                _make_provider(), "", _make_profile(),
+                _make_provider(),
+                "",
+                _make_profile(),
             )
         from company_discovery.structured_analysis import parse_freeform
+
         parsed = parse_freeform(result.output)
         self.assertAlmostEqual(parsed.fit_score, 0.81, places=3)
         self.assertEqual(parsed.recommendation, "apply")
@@ -290,11 +304,12 @@ class ProviderErrorTests(unittest.TestCase):
     upstream 500). The route must not crash; analysis_error is set."""
 
     def test_provider_error_propagates(self):
-        with _ScriptedDispatch(status="provider_error",
-                                error="upstream returned 503"):
+        with _ScriptedDispatch(status="provider_error", error="upstream returned 503"):
             result = analysis.execute_job_decision_brief(
                 _make_imported_job("er"),
-                _make_provider(), "", _make_profile(),
+                _make_provider(),
+                "",
+                _make_profile(),
             )
         self.assertEqual(result.status, "provider_error")
         self.assertEqual(result.error, "upstream returned 503")
@@ -306,11 +321,14 @@ class EmptyOutputTests(unittest.TestCase):
         with _ScriptedDispatch(output=""):
             result = analysis.execute_job_decision_brief(
                 _make_imported_job("em"),
-                _make_provider(), "", _make_profile(),
+                _make_provider(),
+                "",
+                _make_profile(),
             )
         self.assertEqual(result.status, "completed")
         self.assertEqual(result.output, "")
         from company_discovery.structured_analysis import parse_freeform
+
         parsed = parse_freeform(result.output)
         self.assertIsNone(parsed.fit_score)
         self.assertIsNone(parsed.recommendation)
@@ -330,7 +348,9 @@ class CvTailoringPipelineTests(unittest.TestCase):
         with _ScriptedDispatch(output=scripted) as dispatch:
             result = analysis.execute_cv_tailoring(
                 _make_imported_job("ct"),
-                _make_provider(), "", _make_profile(),
+                _make_provider(),
+                "",
+                _make_profile(),
             )
             # The tailor prompt must reference both the user's CV and the
             # job title (so the AI knows what to tailor TO).
@@ -355,8 +375,7 @@ class AutoFitGapsExtractionTests(unittest.TestCase):
             source_url="https://acme.example/jobs/af",
             title="Senior Backend Engineer",
             raw_description=(
-                "5+ years of Python on Kubernetes. Terraform and Helm "
-                "experience required."
+                "5+ years of Python on Kubernetes. Terraform and Helm experience required."
             ),
             location="Berlin, Germany",
         )
@@ -368,8 +387,11 @@ class AutoFitGapsExtractionTests(unittest.TestCase):
         )
         with _ScriptedDispatch(output=scripted):
             result = analysis.execute_auto_fit(
-                discovered, "Acme Corp",
-                _make_provider(), "", _make_profile(),
+                discovered,
+                "Acme Corp",
+                _make_provider(),
+                "",
+                _make_profile(),
             )
         self.assertEqual(result.status, "completed")
         self.assertIn("Terraform", result.output)

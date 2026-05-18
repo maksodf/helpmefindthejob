@@ -21,7 +21,6 @@ from tempfile import TemporaryDirectory
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
-
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -145,7 +144,18 @@ class HttpAdminExtrasTests(unittest.TestCase):
         self.assertEqual(code, 200)
         self.assertIn("signals", payload)
         signal_ids = {signal["id"] for signal in payload["signals"]}
-        for required in ("deployment", "public_url", "email", "backups", "monitoring", "billing", "legal", "scheduler", "quotas", "admin_audit"):
+        for required in (
+            "deployment",
+            "public_url",
+            "email",
+            "backups",
+            "monitoring",
+            "billing",
+            "legal",
+            "scheduler",
+            "quotas",
+            "admin_audit",
+        ):
             self.assertIn(required, signal_ids)
         self.assertIn(payload["overallStatus"], {"ok", "partial", "missing"})
         # Member is forbidden
@@ -274,7 +284,11 @@ class HttpAdminExtrasTests(unittest.TestCase):
         code, _, _ = self.admin.request(
             "/api/admin/users",
             method="POST",
-            body={"email": "second-admin@example.com", "password": "very-secure-pass-9", "role": "admin"},
+            body={
+                "email": "second-admin@example.com",
+                "password": "very-secure-pass-9",
+                "role": "admin",
+            },
         )
         admin_users = self.admin.request("/api/admin/users")[1]["users"]
         original_id = next(u["id"] for u in admin_users if u["email"] == "admin@example.com")
@@ -282,7 +296,9 @@ class HttpAdminExtrasTests(unittest.TestCase):
         second = _Client(self.base)
         second.login("second-admin@example.com", "very-secure-pass-9")
         # Second admin demotes original
-        code, _, _ = second.request(f"/api/admin/users/{original_id}", method="PATCH", body={"role": "member"})
+        code, _, _ = second.request(
+            f"/api/admin/users/{original_id}", method="PATCH", body={"role": "member"}
+        )
         self.assertEqual(code, 200)
         # Now second admin is the last admin and cannot be deleted by themselves (self-modify forbidden)
         code, _, _ = second.request(f"/api/admin/users/{second_id}", method="DELETE")

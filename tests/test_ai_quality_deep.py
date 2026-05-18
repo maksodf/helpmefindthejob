@@ -128,6 +128,7 @@ class FactRatioTests(unittest.TestCase):
 
     def test_perfect_grounding(self):
         from company_discovery.cv_builder import compute_fact_ratio
+
         user = "I worked at Acme as a Senior Backend Engineer building Python microservices."
         ai_out = "Senior Backend Engineer at Acme — built Python microservices."
         ratio = compute_fact_ratio(user, ai_out)
@@ -135,6 +136,7 @@ class FactRatioTests(unittest.TestCase):
 
     def test_hallucination_low_ratio(self):
         from company_discovery.cv_builder import compute_fact_ratio
+
         user = "I worked at Acme."
         ai_out = (
             "Senior Backend Engineer at Acme, leading a team of 12, "
@@ -147,6 +149,7 @@ class FactRatioTests(unittest.TestCase):
 
     def test_pure_formatting_high_ratio(self):
         from company_discovery.cv_builder import compute_fact_ratio
+
         user = "managed a team of 5 engineers, deployed AWS infrastructure"
         ai_out = "Managed a team of 5 engineers; deployed AWS infrastructure."
         ratio = compute_fact_ratio(user, ai_out)
@@ -158,6 +161,7 @@ class FactRatioTests(unittest.TestCase):
         phrase is preserved — the FACT (working on the project) is the
         same, only the verb is more CV-appropriate."""
         from company_discovery.cv_builder import compute_fact_ratio
+
         user = "worked on the payments microservice for two years"
         ai_out = "Developed the payments microservice over two years"
         ratio = compute_fact_ratio(user, ai_out)
@@ -172,6 +176,7 @@ class ScoreSanityInvariantTests(unittest.TestCase):
 
     def test_score_recommendation_consistency_check(self):
         from company_discovery.cv_builder import score_recommendation_inconsistent
+
         # apply with score 0.1 → inconsistent
         self.assertTrue(score_recommendation_inconsistent(0.1, "apply"))
         # skip with score 0.9 → inconsistent

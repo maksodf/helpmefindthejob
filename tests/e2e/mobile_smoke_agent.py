@@ -105,9 +105,11 @@ def main() -> int:
                 "        return r.width; }"
             )
             if dialog_width is not None:
-                report("wizard_within_viewport",
-                        dialog_width <= VIEWPORT["width"],
-                        f"wizard width={dialog_width:.0f}px (≤{VIEWPORT['width']})")
+                report(
+                    "wizard_within_viewport",
+                    dialog_width <= VIEWPORT["width"],
+                    f"wizard width={dialog_width:.0f}px (≤{VIEWPORT['width']})",
+                )
 
             # Assistant view — chat surface fits
             page.locator(".nav-item[data-view='assistant']").click()
@@ -115,12 +117,16 @@ def main() -> int:
             page.wait_for_timeout(300)
             chat_box = page.locator("#chatTranscript").bounding_box()
             input_box = page.locator("#chatInput").bounding_box()
-            report("chat_transcript_within_viewport",
-                    chat_box and chat_box["width"] <= VIEWPORT["width"],
-                    f"transcript width={chat_box['width']:.0f}px" if chat_box else "missing")
-            report("chat_input_within_viewport",
-                    input_box and input_box["width"] <= VIEWPORT["width"],
-                    f"input width={input_box['width']:.0f}px" if input_box else "missing")
+            report(
+                "chat_transcript_within_viewport",
+                chat_box and chat_box["width"] <= VIEWPORT["width"],
+                f"transcript width={chat_box['width']:.0f}px" if chat_box else "missing",
+            )
+            report(
+                "chat_input_within_viewport",
+                input_box and input_box["width"] <= VIEWPORT["width"],
+                f"input width={input_box['width']:.0f}px" if input_box else "missing",
+            )
 
             # Send a message via the input; assert the typing bubble appears.
             page.locator("#chatInput").fill("/help")
@@ -129,9 +135,11 @@ def main() -> int:
             transcript_text = page.evaluate(
                 "() => document.querySelector('#chatTranscript')?.textContent || ''"
             )
-            report("chat_help_renders_on_mobile",
-                    "Add a company" in transcript_text,
-                    "help reply present in transcript")
+            report(
+                "chat_help_renders_on_mobile",
+                "Add a company" in transcript_text,
+                "help reply present in transcript",
+            )
 
             # CV Builder view — single-column collapse
             page.locator(".nav-item[data-view='cvBuilder']").click()
@@ -143,10 +151,11 @@ def main() -> int:
                 "() => { const el = document.querySelector('.cv-builder-layout');"
                 "        return el ? getComputedStyle(el).gridTemplateColumns : null; }"
             )
-            report("cv_builder_collapsed_to_single_column",
-                    cols is not None and "1fr" in cols
-                    and len(cols.split(" ")) == 1,
-                    f"grid-template-columns: {cols}")
+            report(
+                "cv_builder_collapsed_to_single_column",
+                cols is not None and "1fr" in cols and len(cols.split(" ")) == 1,
+                f"grid-template-columns: {cols}",
+            )
 
             # Save screenshots.
             out = Path(os.environ.get("E2E_SCREENSHOTS", "tests/e2e/screenshots"))

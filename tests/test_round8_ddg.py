@@ -59,7 +59,10 @@ class DuckDuckGoSearchProviderTests(unittest.TestCase):
     def test_parses_results_filters_restricted_dedupes(self) -> None:
         provider = DuckDuckGoSearchProvider(fetcher=_FakeFetcher(body=_DDG_HTML))
         out = provider.discover(
-            target_roles=["backend"], industry="Tech", location="Berlin", limit=5,
+            target_roles=["backend"],
+            industry="Tech",
+            location="Berlin",
+            limit=5,
         )
         names = [r.name for r in out]
         sources = {r.source for r in out}
@@ -87,7 +90,9 @@ class DuckDuckGoSearchProviderTests(unittest.TestCase):
 
     def test_handles_empty_body_gracefully(self) -> None:
         provider = DuckDuckGoSearchProvider(fetcher=_FakeFetcher(body=""))
-        self.assertEqual(provider.discover(target_roles=["x"], industry="y", location=None, limit=5), [])
+        self.assertEqual(
+            provider.discover(target_roles=["x"], industry="y", location=None, limit=5), []
+        )
 
     def test_respects_limit(self) -> None:
         body = "".join(

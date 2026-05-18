@@ -49,16 +49,20 @@ def _state_with_imported_job(test):
     )
     discovered = state.repository.save_discovered_job(
         DiscoveredJob(
-            user_id=user.id, company_id=company.id,
-            source_url="https://acme.example.com/job/42", title="Senior Engineer",
+            user_id=user.id,
+            company_id=company.id,
+            source_url="https://acme.example.com/job/42",
+            title="Senior Engineer",
         ),
     )
     imported = state.repository.save_imported_job(
         ImportedJob(
-            user_id=user.id, company_id=company.id,
+            user_id=user.id,
+            company_id=company.id,
             discovered_job_id=discovered.id,
             source_url=discovered.source_url,
-            title=discovered.title, company_name=company.name,
+            title=discovered.title,
+            company_name=company.name,
             application_status="applied",
         ),
     )
@@ -70,8 +74,18 @@ class ReplyAttributesLatestVariantTests(unittest.TestCase):
         state, user_id, imported = _state_with_imported_job(self)
         # Simulate two tailoring runs persisted on the imported job.
         imported.cv_variants = [
-            {"index": 1, "createdAt": "2026-04-01T10:00:00+00:00", "excerpt": "v1", "attributedReply": False},
-            {"index": 2, "createdAt": "2026-04-02T10:00:00+00:00", "excerpt": "v2", "attributedReply": False},
+            {
+                "index": 1,
+                "createdAt": "2026-04-01T10:00:00+00:00",
+                "excerpt": "v1",
+                "attributedReply": False,
+            },
+            {
+                "index": 2,
+                "createdAt": "2026-04-02T10:00:00+00:00",
+                "excerpt": "v2",
+                "attributedReply": False,
+            },
         ]
         state.repository.save_imported_job(imported)
 
@@ -83,7 +97,12 @@ class ReplyAttributesLatestVariantTests(unittest.TestCase):
     def test_replied_false_clears_attribution(self) -> None:
         state, user_id, imported = _state_with_imported_job(self)
         imported.cv_variants = [
-            {"index": 1, "createdAt": "2026-04-01T10:00:00+00:00", "excerpt": "v1", "attributedReply": True},
+            {
+                "index": 1,
+                "createdAt": "2026-04-01T10:00:00+00:00",
+                "excerpt": "v1",
+                "attributedReply": True,
+            },
         ]
         imported.replied_at = datetime.now(timezone.utc)
         state.repository.save_imported_job(imported)
@@ -120,17 +139,20 @@ class CvVariantOutcomesTests(unittest.TestCase):
         for index, variants in enumerate(jobs_spec):
             discovered = state.repository.save_discovered_job(
                 DiscoveredJob(
-                    user_id=user.id, company_id=company.id,
+                    user_id=user.id,
+                    company_id=company.id,
                     source_url=f"https://acme.example.com/job/{index}",
                     title=f"Role {index}",
                 ),
             )
             state.repository.save_imported_job(
                 ImportedJob(
-                    user_id=user.id, company_id=company.id,
+                    user_id=user.id,
+                    company_id=company.id,
                     discovered_job_id=discovered.id,
                     source_url=discovered.source_url,
-                    title=discovered.title, company_name=company.name,
+                    title=discovered.title,
+                    company_name=company.name,
                     cv_variants=list(variants),
                 ),
             )
@@ -146,8 +168,7 @@ class CvVariantOutcomesTests(unittest.TestCase):
 
     def test_below_threshold_not_ready(self) -> None:
         state, user_id = self._state_with_jobs(
-            [[{"index": 1, "attributedReply": False}],
-             [{"index": 1, "attributedReply": True}]],
+            [[{"index": 1, "attributedReply": False}], [{"index": 1, "attributedReply": True}]],
         )
         result = state.cv_variant_outcomes(user_id)
         self.assertFalse(result["ready"])

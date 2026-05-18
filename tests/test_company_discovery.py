@@ -9,22 +9,33 @@ from __future__ import annotations
 
 import json
 import unittest
-from tempfile import TemporaryDirectory
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
+from app import AppState, jsonable
 from company_discovery.ai_providers import AIProviderConfig, validate_provider_config
 from company_discovery.analysis import build_job_decision_brief_prompt, execute_job_decision_brief
 from company_discovery.auth import AuthStore
 from company_discovery.http_fetcher import validate_public_http_url
-from company_discovery.models import CareerPageScan, Company, CompanyDiscoveryRun, DiscoveredJob, ImportedJob
-from company_discovery.mcp_tools import CompanyDiscoveryMCPTools, TOOL_SCHEMAS
+from company_discovery.mcp_tools import TOOL_SCHEMAS, CompanyDiscoveryMCPTools
+from company_discovery.models import (
+    CareerPageScan,
+    Company,
+    CompanyDiscoveryRun,
+    DiscoveredJob,
+    ImportedJob,
+)
 from company_discovery.repository import InMemoryCompanyDiscoveryRepository
-from company_discovery.service import CompanyDiscoveryService, FetchResult, ScanConfig, StaticFetcher, robots_allows
+from company_discovery.service import (
+    CompanyDiscoveryService,
+    FetchResult,
+    ScanConfig,
+    StaticFetcher,
+    robots_allows,
+)
 from company_discovery.sqlite_repository import SqliteCompanyDiscoveryRepository
-from app import AppState, jsonable
 from mcp_server import handle_request
-
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -34,7 +45,9 @@ def fixture(name: str) -> str:
 
 
 class CompanyDiscoveryTests(unittest.TestCase):
-    def build_service(self, routes: dict[str, str | tuple[int, str]], max_pages: int = 5) -> CompanyDiscoveryService:
+    def build_service(
+        self, routes: dict[str, str | tuple[int, str]], max_pages: int = 5
+    ) -> CompanyDiscoveryService:
         return CompanyDiscoveryService(
             InMemoryCompanyDiscoveryRepository(),
             StaticFetcher(routes),
@@ -50,7 +63,9 @@ class CompanyDiscoveryTests(unittest.TestCase):
         )
         self.assertEqual(suggestions[0]["type"], "company")
         self.assertIn("career_page_url", suggestions[0])
-        self.assertTrue(any(item.get("category") == "Digital Health startups" for item in suggestions))
+        self.assertTrue(
+            any(item.get("category") == "Digital Health startups" for item in suggestions)
+        )
         self.assertGreaterEqual(suggestions[0]["relevanceScore"], 0.65)
 
     def test_find_company_career_page_from_homepage_link(self) -> None:
@@ -60,15 +75,21 @@ class CompanyDiscoveryTests(unittest.TestCase):
                 "https://demo.example": fixture("home_with_career_link.html"),
             }
         )
-        company = service.create_company(user_id="u1", name="Demo", website_url="https://demo.example")
+        company = service.create_company(
+            user_id="u1", name="Demo", website_url="https://demo.example"
+        )
         result = service.find_company_career_page("u1", company.id)
         self.assertEqual(result["status"], "found")
         self.assertEqual(result["careerPageUrl"], "https://demo.example/karriere")
 
     def test_robots_allow_and_disallow_handling(self) -> None:
         robots = fixture("robots_disallow.txt")
-        self.assertFalse(robots_allows(robots, "https://demo.example/karriere", "CompanyDiscoveryBot"))
-        self.assertFalse(robots_allows(robots, "https://demo.example/jobs/123", "CompanyDiscoveryBot"))
+        self.assertFalse(
+            robots_allows(robots, "https://demo.example/karriere", "CompanyDiscoveryBot")
+        )
+        self.assertFalse(
+            robots_allows(robots, "https://demo.example/jobs/123", "CompanyDiscoveryBot")
+        )
         self.assertTrue(robots_allows(robots, "https://demo.example/about", "CompanyDiscoveryBot"))
 
     def test_jobposting_json_ld_extraction_and_scan(self) -> None:
@@ -97,7 +118,9 @@ class CompanyDiscoveryTests(unittest.TestCase):
             {
                 "https://demo.example/robots.txt": fixture("robots_allow.txt"),
                 "https://demo.example/karriere": fixture("career_plain_cards.html"),
-                "https://demo.example/jobs/digital-health-project-coordinator": fixture("detail_plain_job.html"),
+                "https://demo.example/jobs/digital-health-project-coordinator": fixture(
+                    "detail_plain_job.html"
+                ),
                 "https://demo.example/jobs/market-access-analyst": fixture("detail_plain_job.html"),
             }
         )
@@ -118,7 +141,9 @@ class CompanyDiscoveryTests(unittest.TestCase):
             {
                 "https://demo.example/robots.txt": fixture("robots_allow.txt"),
                 "https://demo.example/karriere": fixture("duplicate_jobs.html"),
-                "https://demo.example/jobs/project-manager-healthcare": fixture("detail_plain_job.html"),
+                "https://demo.example/jobs/project-manager-healthcare": fixture(
+                    "detail_plain_job.html"
+                ),
             }
         )
         company = service.create_company(
@@ -149,7 +174,9 @@ class CompanyDiscoveryTests(unittest.TestCase):
         imported = service.import_discovered_job("u1", discovered.id)
         self.assertEqual(imported.source_type, "direct_company")
         self.assertEqual(imported.analysis_status, "pending")
-        self.assertEqual(service.repository.discovered_jobs[discovered.id].imported_job_id, imported.id)
+        self.assertEqual(
+            service.repository.discovered_jobs[discovered.id].imported_job_id, imported.id
+        )
 
     def test_safe_failure_when_page_blocked(self) -> None:
         service = self.build_service(
@@ -192,14 +219,18 @@ class CompanyDiscoveryTests(unittest.TestCase):
                 if url == "https://demo.example/robots.txt":
                     return FetchResult(url=url, status_code=200, text="User-agent: *\nAllow: /\n")
                 if url == "https://other.example/robots.txt":
-                    return FetchResult(url=url, status_code=200, text="User-agent: *\nDisallow: /jobs\n")
+                    return FetchResult(
+                        url=url, status_code=200, text="User-agent: *\nDisallow: /jobs\n"
+                    )
                 return FetchResult(url=url, status_code=404, text="")
 
             def fetch_no_redirect(self, url: str, user_agent: str) -> FetchResult:
                 if url == "https://demo.example/robots.txt":
                     return FetchResult(url=url, status_code=200, text="User-agent: *\nAllow: /\n")
                 if url == "https://other.example/robots.txt":
-                    return FetchResult(url=url, status_code=200, text="User-agent: *\nDisallow: /jobs\n")
+                    return FetchResult(
+                        url=url, status_code=200, text="User-agent: *\nDisallow: /jobs\n"
+                    )
                 if url == "https://demo.example/karriere":
                     return FetchResult(
                         url=url,
@@ -208,7 +239,9 @@ class CompanyDiscoveryTests(unittest.TestCase):
                         headers={"Location": "https://other.example/jobs"},
                     )
                 if url == "https://other.example/jobs":
-                    return FetchResult(url=url, status_code=200, text=fixture("career_jobposting.html"))
+                    return FetchResult(
+                        url=url, status_code=200, text=fixture("career_jobposting.html")
+                    )
                 return FetchResult(url=url, status_code=404, text="")
 
         service = CompanyDiscoveryService(
@@ -234,7 +267,12 @@ class CompanyDiscoveryTests(unittest.TestCase):
 
             def fetch_no_redirect(self, url: str, user_agent: str) -> FetchResult:
                 if url == "https://demo.example/robots.txt":
-                    return FetchResult(url=url, status_code=302, text="", headers={"Location": "https://other.example/robots.txt"})
+                    return FetchResult(
+                        url=url,
+                        status_code=302,
+                        text="",
+                        headers={"Location": "https://other.example/robots.txt"},
+                    )
                 return FetchResult(url=url, status_code=200, text=fixture("career_jobposting.html"))
 
         service = CompanyDiscoveryService(
@@ -250,14 +288,18 @@ class CompanyDiscoveryTests(unittest.TestCase):
         )
         scan = service.scan_company_career_page("u1", company.id)
         self.assertEqual(scan.status, "blocked_or_unavailable")
-        self.assertTrue(any(error["code"] == "robots_redirect_not_followed" for error in scan.errors))
+        self.assertTrue(
+            any(error["code"] == "robots_redirect_not_followed" for error in scan.errors)
+        )
 
     def test_rate_limit_max_page_guard(self) -> None:
         service = self.build_service(
             {
                 "https://demo.example/robots.txt": fixture("robots_allow.txt"),
                 "https://demo.example/karriere": fixture("career_plain_cards.html"),
-                "https://demo.example/jobs/digital-health-project-coordinator": fixture("detail_plain_job.html"),
+                "https://demo.example/jobs/digital-health-project-coordinator": fixture(
+                    "detail_plain_job.html"
+                ),
                 "https://demo.example/jobs/market-access-analyst": fixture("detail_plain_job.html"),
             },
             max_pages=2,
@@ -324,7 +366,11 @@ class CompanyDiscoveryTests(unittest.TestCase):
                 "method": "tools/call",
                 "params": {
                     "name": "suggest_relevant_companies",
-                    "arguments": {"targetRoles": ["Digital Health"], "industry": "Healthcare", "location": "Berlin"},
+                    "arguments": {
+                        "targetRoles": ["Digital Health"],
+                        "industry": "Healthcare",
+                        "location": "Berlin",
+                    },
                 },
             },
             tools,
@@ -340,7 +386,9 @@ class CompanyDiscoveryTests(unittest.TestCase):
     def test_provider_config_is_provider_neutral_and_rejects_raw_secrets(self) -> None:
         valid = AIProviderConfig(provider_id="codex_cli", invocation_mode="cli", command="codex")
         self.assertEqual(validate_provider_config(valid), [])
-        invalid = AIProviderConfig(provider_id="openai", invocation_mode="api", credential_reference="sk-secret")
+        invalid = AIProviderConfig(
+            provider_id="openai", invocation_mode="api", credential_reference="sk-secret"
+        )
         self.assertEqual(validate_provider_config(invalid)[0]["code"], "raw_secret_not_allowed")
 
     def test_job_decision_brief_prompt_is_provider_neutral(self) -> None:
@@ -375,7 +423,9 @@ class CompanyDiscoveryTests(unittest.TestCase):
         self.assertEqual(manual.status, "handoff_required")
         missing_key = execute_job_decision_brief(
             job,
-            AIProviderConfig(provider_id="openai", invocation_mode="api", credential_reference="MISSING_TEST_KEY"),
+            AIProviderConfig(
+                provider_id="openai", invocation_mode="api", credential_reference="MISSING_TEST_KEY"
+            ),
         )
         self.assertEqual(missing_key.status, "configuration_error")
 
@@ -391,14 +441,16 @@ class CompanyDiscoveryTests(unittest.TestCase):
         seen: dict[str, str | None] = {}
 
         class FakeResponse:
-            def __enter__(self) -> "FakeResponse":
+            def __enter__(self) -> FakeResponse:
                 return self
 
             def __exit__(self, *args: object) -> None:
                 return None
 
             def read(self) -> bytes:
-                return json.dumps({"choices": [{"message": {"content": "Fit score: 82"}}]}).encode("utf-8")
+                return json.dumps({"choices": [{"message": {"content": "Fit score: 82"}}]}).encode(
+                    "utf-8"
+                )
 
         def fake_urlopen(request: object, timeout: int) -> FakeResponse:
             seen["authorization"] = request.get_header("Authorization")  # type: ignore[attr-defined]
@@ -416,8 +468,12 @@ class CompanyDiscoveryTests(unittest.TestCase):
 
     def test_delete_company_cascades_related_records(self) -> None:
         repo = InMemoryCompanyDiscoveryRepository()
-        company = repo.save_company(Company(user_id="u1", name="Demo", website_url="https://demo.example"))
-        repo.save_discovery_run(CompanyDiscoveryRun(user_id="u1", company_id=company.id, source_type="career_page_scan"))
+        company = repo.save_company(
+            Company(user_id="u1", name="Demo", website_url="https://demo.example")
+        )
+        repo.save_discovery_run(
+            CompanyDiscoveryRun(user_id="u1", company_id=company.id, source_type="career_page_scan")
+        )
         repo.save_scan(
             CareerPageScan(
                 user_id="u1",
@@ -429,7 +485,12 @@ class CompanyDiscoveryTests(unittest.TestCase):
             )
         )
         discovered = repo.save_discovered_job(
-            DiscoveredJob(user_id="u1", company_id=company.id, source_url="https://demo.example/jobs/1", title="Role")
+            DiscoveredJob(
+                user_id="u1",
+                company_id=company.id,
+                source_url="https://demo.example/jobs/1",
+                title="Role",
+            )
         )
         repo.save_imported_job(
             ImportedJob(
@@ -452,7 +513,9 @@ class CompanyDiscoveryTests(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             db_path = Path(tmp) / "pilot.sqlite3"
             repo = SqliteCompanyDiscoveryRepository(db_path)
-            company = repo.save_company(Company(user_id="u1", name="Demo", website_url="https://demo.example"))
+            company = repo.save_company(
+                Company(user_id="u1", name="Demo", website_url="https://demo.example")
+            )
             discovered = repo.save_discovered_job(
                 DiscoveredJob(
                     user_id="u1",
@@ -502,7 +565,9 @@ class CompanyDiscoveryTests(unittest.TestCase):
                 root / "restored_schedule.json",
                 start_scheduler=False,
             )
-            restored_user = restored.auth_store.create_user("restored@example.com", "very-secure-password")
+            restored_user = restored.auth_store.create_user(
+                "restored@example.com", "very-secure-password"
+            )
             result = restored.import_data(restored_user.id, exported)
             self.assertEqual(result["counts"]["companies"], 1)
             self.assertEqual(restored.health(restored_user.id)["counts"]["discoveredJobs"], 1)
@@ -545,7 +610,9 @@ class CompanyDiscoveryTests(unittest.TestCase):
             store.update_user(tester.id, active=True, password="new-secure-password")
             self.assertIsNone(store.authenticate("tester@example.com", "very-secure-password"))
             self.assertIsNotNone(store.authenticate("tester@example.com", "new-secure-password"))
-            session = store.create_session(store.authenticate("tester@example.com", "new-secure-password"))
+            session = store.create_session(
+                store.authenticate("tester@example.com", "new-secure-password")
+            )
             store.update_user(tester.id, password="newer-secure-password")
             self.assertIsNone(store.get_session(session.token))
 

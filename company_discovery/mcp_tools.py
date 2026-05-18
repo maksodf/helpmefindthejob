@@ -8,14 +8,13 @@
 from __future__ import annotations
 
 import json
-import time
 import uuid
 from dataclasses import asdict
+from datetime import timezone
 from pathlib import Path
 from typing import Any
 
 from .service import CompanyDiscoveryService
-
 
 # ---------------------------------------------------------------------------
 # Reference ESCO dataset.
@@ -37,13 +36,38 @@ from .service import CompanyDiscoveryService
 
 _ESCO_REFERENCE_DATASET_FALLBACK: list[dict[str, str]] = [
     {"code": "2221.1", "label": "Registered nurse (general)", "type": "occupation", "isco": "2221"},
-    {"code": "2221.2", "label": "Specialist nurse (clinical / Pflege)", "type": "occupation", "isco": "2221"},
-    {"code": "5321.1", "label": "Healthcare assistant / Pflegehelfer", "type": "occupation", "isco": "5321"},
+    {
+        "code": "2221.2",
+        "label": "Specialist nurse (clinical / Pflege)",
+        "type": "occupation",
+        "isco": "2221",
+    },
+    {
+        "code": "5321.1",
+        "label": "Healthcare assistant / Pflegehelfer",
+        "type": "occupation",
+        "isco": "5321",
+    },
     {"code": "2144.1", "label": "Mechanical engineer", "type": "occupation", "isco": "2144"},
     {"code": "2512.1", "label": "Software developer", "type": "occupation", "isco": "2512"},
-    {"code": "2513.1", "label": "Frontend developer / Web developer", "type": "occupation", "isco": "2513"},
-    {"code": "7126.1", "label": "Plumbing trade apprentice / Anlagenmechaniker SHK", "type": "occupation", "isco": "7126"},
-    {"code": "5322.1", "label": "Home-based personal-care worker / Häusliche Pflegehilfe", "type": "occupation", "isco": "5322"},
+    {
+        "code": "2513.1",
+        "label": "Frontend developer / Web developer",
+        "type": "occupation",
+        "isco": "2513",
+    },
+    {
+        "code": "7126.1",
+        "label": "Plumbing trade apprentice / Anlagenmechaniker SHK",
+        "type": "occupation",
+        "isco": "7126",
+    },
+    {
+        "code": "5322.1",
+        "label": "Home-based personal-care worker / Häusliche Pflegehilfe",
+        "type": "occupation",
+        "isco": "5322",
+    },
     {"code": "S1.0.1", "label": "Clinical-German communication", "type": "skill"},
     {"code": "S1.0.2", "label": "Patient documentation", "type": "skill"},
     {"code": "S5.0.1", "label": "TypeScript / React frontend development", "type": "skill"},
@@ -90,8 +114,14 @@ def _load_esco_reference_dataset() -> list[dict[str, Any]]:
                 "label_de": entry.get("label_de") or "",
                 "type": kind,
             }
-            for optional_key in ("isco", "category", "cefr", "personas",
-                                 "shortageDE2024", "esco_uri"):
+            for optional_key in (
+                "isco",
+                "category",
+                "cefr",
+                "personas",
+                "shortageDE2024",
+                "esco_uri",
+            ):
                 if optional_key in entry:
                     record[optional_key] = entry[optional_key]
             combined.append(record)
@@ -337,7 +367,9 @@ class CompanyDiscoveryMCPTools:
     def __init__(self, service: CompanyDiscoveryService) -> None:
         self.service = service
 
-    def suggest_relevant_companies(self, targetRoles: list[str], industry: str, location: str | None = None) -> dict[str, Any]:
+    def suggest_relevant_companies(
+        self, targetRoles: list[str], industry: str, location: str | None = None
+    ) -> dict[str, Any]:
         return {
             "status": "ok",
             "suggestions": self.service.suggest_relevant_companies(
@@ -362,11 +394,15 @@ class CompanyDiscoveryMCPTools:
     def find_company_career_page(self, userId: str, companyId: str) -> dict[str, Any]:
         return self.service.find_company_career_page(userId, companyId)
 
-    def scan_company_career_page(self, userId: str, companyId: str, careerPageUrl: str | None = None) -> dict[str, Any]:
+    def scan_company_career_page(
+        self, userId: str, companyId: str, careerPageUrl: str | None = None
+    ) -> dict[str, Any]:
         scan = self.service.scan_company_career_page(userId, companyId, careerPageUrl)
         return {"status": scan.status, "scan": asdict(scan)}
 
-    def extract_direct_jobs_from_company_site(self, userId: str, companyId: str, pageUrl: str, html: str) -> dict[str, Any]:
+    def extract_direct_jobs_from_company_site(
+        self, userId: str, companyId: str, pageUrl: str, html: str
+    ) -> dict[str, Any]:
         company = self.service.repository.get_company(userId, companyId)
         jobs = self.service.extract_direct_jobs_from_company_site(company, pageUrl, html)
         return {"status": "ok", "jobs": [asdict(job) for job in jobs]}
@@ -383,9 +419,7 @@ class CompanyDiscoveryMCPTools:
 
     # ----- §2.3 composition-oriented tools (catalogue v0.2.0) -----
 
-    def get_user_profile_for_consent(
-        self, userId: str, scopes: list[str]
-    ) -> dict[str, Any]:
+    def get_user_profile_for_consent(self, userId: str, scopes: list[str]) -> dict[str, Any]:
         """Return the user's portable civic profile, filtered to ``scopes``.
 
         The profile shape is deliberately stable across deployments so other
@@ -496,13 +530,12 @@ class CompanyDiscoveryMCPTools:
         dataset = _load_esco_reference_dataset()
         lowered = (query or "").strip().lower()
         kind = (type or "any").lower()
-        candidates = (
-            entry for entry in dataset
-            if kind in ("any", entry["type"])
-        )
+        candidates = (entry for entry in dataset if kind in ("any", entry["type"]))
         matches = [
-            entry for entry in candidates
-            if lowered and (
+            entry
+            for entry in candidates
+            if lowered
+            and (
                 lowered in entry.get("label_en", entry.get("label", "")).lower()
                 or lowered in entry.get("label_de", "").lower()
             )
@@ -520,9 +553,7 @@ class CompanyDiscoveryMCPTools:
             "matches": matches,
         }
 
-    def export_eures_compatible(
-        self, userId: str, discoveredJobId: str
-    ) -> dict[str, Any]:
+    def export_eures_compatible(self, userId: str, discoveredJobId: str) -> dict[str, Any]:
         """Project a stored discovered job into EURES-compatible fields.
 
         The EURES standard defines a JSON-LD-adjacent JobPosting shape that
@@ -607,11 +638,12 @@ class CompanyDiscoveryMCPTools:
 # Module-level helpers used by §2.3 tools.
 # ---------------------------------------------------------------------------
 
+
 def _now_iso() -> str:
     """ISO-8601 timestamp in UTC, second precision. Stable across calls
     so test fixtures can compare exactly when needed."""
 
-    from datetime import datetime, timezone
+    from datetime import datetime
 
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
 
@@ -631,9 +663,7 @@ def _outcomes_path(service: CompanyDiscoveryService) -> Path:
     return base / "user_outcomes.jsonl"
 
 
-def _read_user_outcomes(
-    service: CompanyDiscoveryService, user_id: str
-) -> dict[str, Any]:
+def _read_user_outcomes(service: CompanyDiscoveryService, user_id: str) -> dict[str, Any]:
     """Read the outcome-events file and return a per-user summary plus the
     full event list for the user. Designed to be cheap on small files; if
     the file grows beyond a few thousand events we'll move to a SQLite

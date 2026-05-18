@@ -32,7 +32,12 @@ CURATED_COMPANIES: tuple[CuratedCompany, ...] = (
         career_page_url="https://karriere.charite.de",
         sector="University hospital",
         location_hint="Berlin",
-        role_families=("public health", "health services research", "quality/process management", "project management"),
+        role_families=(
+            "public health",
+            "health services research",
+            "quality/process management",
+            "project management",
+        ),
         relevance_reason="Large university hospital with management, research, quality, and public-sector healthcare roles.",
         personas=("healthcare-management",),
     ),
@@ -52,7 +57,12 @@ CURATED_COMPANIES: tuple[CuratedCompany, ...] = (
         career_page_url="https://www.helios-gesundheit.de/karriere/alle-jobs/",
         sector="Hospital / clinic group",
         location_hint="Germany",
-        role_families=("project management", "quality/process management", "controlling", "management trainee"),
+        role_families=(
+            "project management",
+            "quality/process management",
+            "controlling",
+            "management trainee",
+        ),
         relevance_reason="Major private hospital group with management, controlling, trainee, and operational healthcare roles.",
         personas=("healthcare-management",),
     ),
@@ -112,11 +122,15 @@ CURATED_COMPANIES: tuple[CuratedCompany, ...] = (
         career_page_url="https://www.iqvia.com/de-de/locations/germany/career-opportunities",
         sector="Healthcare consulting / data",
         location_hint="Germany",
-        role_families=("healthcare consulting", "market access", "health services research", "analytics"),
+        role_families=(
+            "healthcare consulting",
+            "market access",
+            "health services research",
+            "analytics",
+        ),
         relevance_reason="Healthcare data and consulting employer with analyst, consulting, market access, and real-world evidence roles.",
         personas=("healthcare-management",),
     ),
-
     # Tech persona seeds
     CuratedCompany(
         name="Datadog",
@@ -208,7 +222,6 @@ CURATED_COMPANIES: tuple[CuratedCompany, ...] = (
         relevance_reason="Berlin travel marketplace with engineering, data, product, and growth roles.",
         personas=("tech", "product-management", "marketing"),
     ),
-
     # Marketing persona seeds
     CuratedCompany(
         name="Zalando",
@@ -270,7 +283,6 @@ CURATED_COMPANIES: tuple[CuratedCompany, ...] = (
         relevance_reason="Fintech with brand, growth, performance, and product-marketing roles across Europe.",
         personas=("marketing", "finance", "tech", "product-management"),
     ),
-
     # Finance persona seeds
     CuratedCompany(
         name="Deutsche Bank",
@@ -352,7 +364,6 @@ CURATED_COMPANIES: tuple[CuratedCompany, ...] = (
         relevance_reason="Berlin neobroker with treasury, risk, compliance, and finance roles, plus product/engineering.",
         personas=("finance", "tech", "product-management"),
     ),
-
     # Product-management persona seeds (additional ones beyond cross-listed)
     CuratedCompany(
         name="Stripe",
@@ -374,7 +385,6 @@ CURATED_COMPANIES: tuple[CuratedCompany, ...] = (
         relevance_reason="European e-health platform with engineering and product roles in Berlin, Paris, and remote.",
         personas=("tech", "product-management", "healthcare-management"),
     ),
-
     # Education persona seeds
     CuratedCompany(
         name="Coursera",
@@ -416,7 +426,6 @@ CURATED_COMPANIES: tuple[CuratedCompany, ...] = (
         relevance_reason="German research network with postdoc, research-associate, and academic-coordinator roles.",
         personas=("education",),
     ),
-
     # Legal persona seeds
     CuratedCompany(
         name="Freshfields Bruckhaus Deringer",
@@ -448,7 +457,6 @@ CURATED_COMPANIES: tuple[CuratedCompany, ...] = (
         relevance_reason="UK legal-tech with legal-ops, contracts, engineering, and product roles.",
         personas=("legal", "tech", "product-management"),
     ),
-
     # Sales persona seeds
     CuratedCompany(
         name="Salesforce",
@@ -480,7 +488,6 @@ CURATED_COMPANIES: tuple[CuratedCompany, ...] = (
         relevance_reason="HR-tech SaaS with strong sales hiring across DACH and EU.",
         personas=("sales", "tech"),
     ),
-
     # Design persona seeds
     CuratedCompany(
         name="Figma",
@@ -512,7 +519,6 @@ CURATED_COMPANIES: tuple[CuratedCompany, ...] = (
         relevance_reason="Global design consultancy with designer, research, and innovation roles.",
         personas=("design",),
     ),
-
     # Operations persona seeds
     CuratedCompany(
         name="DHL",
@@ -554,7 +560,6 @@ CURATED_COMPANIES: tuple[CuratedCompany, ...] = (
         relevance_reason="Global shipping line with supply-chain, ops, and logistics roles.",
         personas=("operations",),
     ),
-
     # Healthcare-clinical persona seeds (extends healthcare-management roster)
     CuratedCompany(
         name="Vivantes (clinical)",
@@ -791,11 +796,36 @@ def suggest_curated_companies(
             score += 0.10
         # Generic role-keyword bonus across personas.
         for term in (
-            "digital health", "public health", "market access", "public affairs",
-            "project", "quality", "process", "consulting", "analytics", "policy",
-            "backend", "frontend", "platform", "sre", "ml", "data", "security",
-            "product", "growth", "brand", "performance", "content", "seo", "crm",
-            "audit", "risk", "actuarial", "controlling", "treasury", "fp&a",
+            "digital health",
+            "public health",
+            "market access",
+            "public affairs",
+            "project",
+            "quality",
+            "process",
+            "consulting",
+            "analytics",
+            "policy",
+            "backend",
+            "frontend",
+            "platform",
+            "sre",
+            "ml",
+            "data",
+            "security",
+            "product",
+            "growth",
+            "brand",
+            "performance",
+            "content",
+            "seo",
+            "crm",
+            "audit",
+            "risk",
+            "actuarial",
+            "controlling",
+            "treasury",
+            "fp&a",
         ):
             if term in role_text and term in family_text:
                 score += 0.12
@@ -808,7 +838,10 @@ def suggest_curated_companies(
             ):
                 score += boost
         # Legacy healthcare-specific boosts retained for back-compat.
-        if any(term in role_text for term in ("insurance", "krankenkasse", "payer")) and "insurer" in sector_text:
+        if (
+            any(term in role_text for term in ("insurance", "krankenkasse", "payer"))
+            and "insurer" in sector_text
+        ):
             score += 0.15
         if "medtech" in role_text and "medtech" in sector_text:
             score += 0.15

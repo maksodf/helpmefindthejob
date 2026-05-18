@@ -43,11 +43,13 @@ class I18nParityTests(unittest.TestCase):
         only_in_en = en - de
         only_in_de = de - en
         self.assertEqual(
-            only_in_en, set(),
+            only_in_en,
+            set(),
             f"keys present in en.json but missing from de.json: {sorted(only_in_en)}",
         )
         self.assertEqual(
-            only_in_de, set(),
+            only_in_de,
+            set(),
             f"keys present in de.json but missing from en.json: {sorted(only_in_de)}",
         )
 
@@ -59,11 +61,13 @@ class I18nParityTests(unittest.TestCase):
         missing_en = sorted(k for k in keys_in_html if k not in en)
         missing_de = sorted(k for k in keys_in_html if k not in de)
         self.assertEqual(
-            missing_en, [],
+            missing_en,
+            [],
             f"data-i18n keys referenced in HTML but absent from en.json: {missing_en}",
         )
         self.assertEqual(
-            missing_de, [],
+            missing_de,
+            [],
             f"data-i18n keys referenced in HTML but absent from de.json: {missing_de}",
         )
 
@@ -72,7 +76,8 @@ class I18nParityTests(unittest.TestCase):
             data = json.loads((I18N_DIR / bundle).read_text())
             blanks = [k for k, v in data.items() if not isinstance(v, str) or not v.strip()]
             self.assertEqual(
-                blanks, [],
+                blanks,
+                [],
                 f"{bundle} has blank or non-string values for: {blanks}",
             )
 

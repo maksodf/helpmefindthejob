@@ -53,11 +53,17 @@ def _candidate_profile_block(
     persona = get_persona(persona_id)
     lines: list[str] = [f"- Persona: {persona.label} — {persona.description}"]
 
-    target_roles = list(profile.target_roles) if profile and profile.target_roles else list(persona.default_target_roles)
+    target_roles = (
+        list(profile.target_roles)
+        if profile and profile.target_roles
+        else list(persona.default_target_roles)
+    )
     if target_roles:
         lines.append("- Target roles: " + ", ".join(target_roles))
 
-    industry = (profile.industry if profile and profile.industry else persona.default_industry) or ""
+    industry = (
+        profile.industry if profile and profile.industry else persona.default_industry
+    ) or ""
     if industry:
         lines.append(f"- Industry preference: {industry}")
 
@@ -78,7 +84,9 @@ def _candidate_profile_block(
             cv = cv[:4000] + "\n…(CV truncated to 4000 characters)"
         lines.append("\nCandidate CV (free-text, possibly partial):\n" + cv)
     else:
-        lines.append("- No CV uploaded yet — be cautious about claims of fit beyond what the role description supports.")
+        lines.append(
+            "- No CV uploaded yet — be cautious about claims of fit beyond what the role description supports."
+        )
 
     return persona.label, "\n".join(lines)
 
@@ -91,7 +99,11 @@ def build_job_decision_brief_prompt(
     persona_label, profile_block = _candidate_profile_block(profile)
     provider_label = provider.provider_id.replace("_", " ").title()
     persona_id = profile.persona_id if profile and profile.persona_id else "healthcare-management"
-    section_label = _HEALTHCARE_SECTION_LABEL if persona_id == "healthcare-management" else _GENERIC_SECTION_LABEL
+    section_label = (
+        _HEALTHCARE_SECTION_LABEL
+        if persona_id == "healthcare-management"
+        else _GENERIC_SECTION_LABEL
+    )
     prompt = f"""You are helping evaluate a job opportunity for a {persona_label} candidate.
 
 Create a concise Job Decision Brief for this role.
@@ -222,7 +234,9 @@ Snippet / partial description (may be empty):
     }
 
 
-_QUERY_EXPANSION_FENCED_RE = re.compile(r"```(?:json)?\s*(\{.*?\})\s*```", re.IGNORECASE | re.DOTALL)
+_QUERY_EXPANSION_FENCED_RE = re.compile(
+    r"```(?:json)?\s*(\{.*?\})\s*```", re.IGNORECASE | re.DOTALL
+)
 _QUERY_EXPANSION_BARE_RE = re.compile(r"(\{(?:[^{}]|\{[^{}]*\})*\})", re.DOTALL)
 
 
@@ -313,10 +327,14 @@ def parse_query_expansion_output(output: str) -> dict[str, object] | None:
         # Coerce types defensively.
         cleaned: dict[str, object] = {}
         cleaned["persona_id"] = str(data.get("persona_id") or "").strip() or None
-        cleaned["target_roles"] = [str(r).strip() for r in (data.get("target_roles") or []) if str(r).strip()][:8]
+        cleaned["target_roles"] = [
+            str(r).strip() for r in (data.get("target_roles") or []) if str(r).strip()
+        ][:8]
         cleaned["industry"] = str(data.get("industry") or "").strip() or None
         cleaned["location"] = str(data.get("location") or "").strip() or None
-        cleaned["keywords"] = [str(k).strip() for k in (data.get("keywords") or []) if str(k).strip()][:10]
+        cleaned["keywords"] = [
+            str(k).strip() for k in (data.get("keywords") or []) if str(k).strip()
+        ][:10]
         lang = str(data.get("language") or "").strip().lower()
         cleaned["language"] = lang if lang in ("en", "de") else None
         return cleaned
@@ -368,7 +386,7 @@ def parse_auto_fit_output(output: str) -> tuple[float | None, str | None, list[s
     if gaps_match:
         raw = gaps_match.group(1).strip()
         # Strip a wrapping pair of quotes if the model added them
-        if len(raw) >= 2 and raw[0] in '"\'' and raw[-1] == raw[0]:
+        if len(raw) >= 2 and raw[0] in "\"'" and raw[-1] == raw[0]:
             raw = raw[1:-1]
         for chunk in raw.split(","):
             cleaned = chunk.strip().strip(".").strip()
@@ -387,9 +405,7 @@ def execute_auto_fit(
     profile: UserProfile | None = None,
 ) -> AnalysisExecutionResult:
     brief = build_auto_fit_prompt(job, company_name, provider, profile)
-    return _dispatch_provider(
-        brief["prompt"], provider, runtime_credential, purpose="fit_score"
-    )
+    return _dispatch_provider(brief["prompt"], provider, runtime_credential, purpose="fit_score")
 
 
 def build_cv_tailoring_prompt(
@@ -452,9 +468,7 @@ def execute_cv_tailoring(
     profile: UserProfile | None = None,
 ) -> AnalysisExecutionResult:
     brief = build_cv_tailoring_prompt(job, provider, profile)
-    return _dispatch_provider(
-        brief["prompt"], provider, runtime_credential, purpose="tailor_cv"
-    )
+    return _dispatch_provider(brief["prompt"], provider, runtime_credential, purpose="tailor_cv")
 
 
 def execute_job_decision_brief(
@@ -476,9 +490,7 @@ def execute_cover_letter_brief(
     profile: UserProfile | None = None,
 ) -> AnalysisExecutionResult:
     brief = build_cover_letter_brief_prompt(job, provider, profile)
-    return _dispatch_provider(
-        brief["prompt"], provider, runtime_credential, purpose="cover_letter"
-    )
+    return _dispatch_provider(brief["prompt"], provider, runtime_credential, purpose="cover_letter")
 
 
 def _dispatch_provider(
@@ -619,11 +631,21 @@ def _dispatch_provider_impl(
         )
     if provider.invocation_mode == "local_http" and provider.provider_id == "ollama":
         return _execute_ollama(prompt, provider)
-    if provider.invocation_mode == "api" and provider.provider_id in {"openai", "deepseek", "openrouter", "custom"}:
+    if provider.invocation_mode == "api" and provider.provider_id in {
+        "openai",
+        "deepseek",
+        "openrouter",
+        "custom",
+    }:
         return _execute_openai_compatible(prompt, provider, runtime_credential)
     if provider.invocation_mode == "api" and provider.provider_id == "google_gemini":
         return _execute_google_gemini(prompt, provider, runtime_credential)
-    if provider.invocation_mode == "cli" and provider.provider_id in {"codex_cli", "claude_code", "anthropic", "custom"}:
+    if provider.invocation_mode == "cli" and provider.provider_id in {
+        "codex_cli",
+        "claude_code",
+        "anthropic",
+        "custom",
+    }:
         return _execute_cli(prompt, provider)
     return AnalysisExecutionResult(
         status="unsupported",
@@ -644,12 +666,22 @@ def _resolve_api_key(provider: AIProviderConfig, runtime_credential: str) -> tup
     return os.environ.get(key_name, ""), key_name
 
 
-def _credential_error(provider: AIProviderConfig, prompt: str, source: str) -> AnalysisExecutionResult:
+def _credential_error(
+    provider: AIProviderConfig, prompt: str, source: str
+) -> AnalysisExecutionResult:
     if source == "missing":
         message = "Missing API key. Enter a session-only key or configure an environment variable reference."
     else:
-        message = f"Environment variable {source} is not set and no session-only API key was provided."
-    return AnalysisExecutionResult("configuration_error", provider.provider_id, provider.invocation_mode, prompt=prompt, error=message)
+        message = (
+            f"Environment variable {source} is not set and no session-only API key was provided."
+        )
+    return AnalysisExecutionResult(
+        "configuration_error",
+        provider.provider_id,
+        provider.invocation_mode,
+        prompt=prompt,
+        error=message,
+    )
 
 
 def _execute_openai_compatible(
@@ -668,7 +700,13 @@ def _execute_openai_compatible(
     }
     base_url = (provider.base_url or default_base_urls.get(provider.provider_id) or "").rstrip("/")
     if not base_url.startswith("https://") and provider.provider_id != "custom":
-        return AnalysisExecutionResult("configuration_error", provider.provider_id, provider.invocation_mode, prompt=prompt, error="Provider base URL must use HTTPS.")
+        return AnalysisExecutionResult(
+            "configuration_error",
+            provider.provider_id,
+            provider.invocation_mode,
+            prompt=prompt,
+            error="Provider base URL must use HTTPS.",
+        )
 
     payload = {
         "model": provider.model or "gpt-4o-mini",
@@ -688,15 +726,34 @@ def _execute_openai_compatible(
         with urlopen(request, timeout=45) as response:
             body = json.loads(response.read().decode("utf-8"))
     except HTTPError as error:
-        return AnalysisExecutionResult("provider_error", provider.provider_id, provider.invocation_mode, prompt=prompt, error=f"Provider HTTP {error.code}")
+        return AnalysisExecutionResult(
+            "provider_error",
+            provider.provider_id,
+            provider.invocation_mode,
+            prompt=prompt,
+            error=f"Provider HTTP {error.code}",
+        )
     except (OSError, URLError, json.JSONDecodeError) as error:
-        return AnalysisExecutionResult("provider_error", provider.provider_id, provider.invocation_mode, prompt=prompt, error=str(error))
+        return AnalysisExecutionResult(
+            "provider_error",
+            provider.provider_id,
+            provider.invocation_mode,
+            prompt=prompt,
+            error=str(error),
+        )
 
     output = ""
     choices = body.get("choices") or []
     if choices:
         output = choices[0].get("message", {}).get("content", "") or choices[0].get("text", "")
-    return AnalysisExecutionResult("completed" if output else "provider_error", provider.provider_id, provider.invocation_mode, output=output, prompt=prompt, error="" if output else "Provider returned no text.")
+    return AnalysisExecutionResult(
+        "completed" if output else "provider_error",
+        provider.provider_id,
+        provider.invocation_mode,
+        output=output,
+        prompt=prompt,
+        error="" if output else "Provider returned no text.",
+    )
 
 
 def _execute_google_gemini(
@@ -709,7 +766,10 @@ def _execute_google_gemini(
         return _credential_error(provider, prompt, credential_source)
     model = provider.model or "gemini-1.5-flash"
     base_url = (provider.base_url or "https://generativelanguage.googleapis.com/v1beta").rstrip("/")
-    payload = {"contents": [{"parts": [{"text": prompt}]}], "generationConfig": {"temperature": 0.2}}
+    payload = {
+        "contents": [{"parts": [{"text": prompt}]}],
+        "generationConfig": {"temperature": 0.2},
+    }
     request = Request(
         f"{base_url}/models/{model}:generateContent?key={api_key}",
         data=json.dumps(payload).encode("utf-8"),
@@ -720,21 +780,46 @@ def _execute_google_gemini(
         with urlopen(request, timeout=45) as response:
             body = json.loads(response.read().decode("utf-8"))
     except HTTPError as error:
-        return AnalysisExecutionResult("provider_error", provider.provider_id, provider.invocation_mode, prompt=prompt, error=f"Provider HTTP {error.code}")
+        return AnalysisExecutionResult(
+            "provider_error",
+            provider.provider_id,
+            provider.invocation_mode,
+            prompt=prompt,
+            error=f"Provider HTTP {error.code}",
+        )
     except (OSError, URLError, json.JSONDecodeError) as error:
-        return AnalysisExecutionResult("provider_error", provider.provider_id, provider.invocation_mode, prompt=prompt, error=str(error))
+        return AnalysisExecutionResult(
+            "provider_error",
+            provider.provider_id,
+            provider.invocation_mode,
+            prompt=prompt,
+            error=str(error),
+        )
 
     candidates = body.get("candidates") or []
     parts = candidates[0].get("content", {}).get("parts", []) if candidates else []
     output = "\n".join(part.get("text", "") for part in parts if part.get("text"))
-    return AnalysisExecutionResult("completed" if output else "provider_error", provider.provider_id, provider.invocation_mode, output=output, prompt=prompt, error="" if output else "Gemini returned no text.")
+    return AnalysisExecutionResult(
+        "completed" if output else "provider_error",
+        provider.provider_id,
+        provider.invocation_mode,
+        output=output,
+        prompt=prompt,
+        error="" if output else "Gemini returned no text.",
+    )
 
 
 def _execute_ollama(prompt: str, provider: AIProviderConfig) -> AnalysisExecutionResult:
     base_url = (provider.base_url or "http://127.0.0.1:11434").rstrip("/")
     parsed = urlparse(base_url)
     if parsed.scheme != "http" or parsed.hostname not in {"127.0.0.1", "localhost"}:
-        return AnalysisExecutionResult("configuration_error", provider.provider_id, provider.invocation_mode, prompt=prompt, error="Ollama execution is limited to local http://127.0.0.1 or localhost.")
+        return AnalysisExecutionResult(
+            "configuration_error",
+            provider.provider_id,
+            provider.invocation_mode,
+            prompt=prompt,
+            error="Ollama execution is limited to local http://127.0.0.1 or localhost.",
+        )
     payload = {"model": provider.model or "llama3.1", "prompt": prompt, "stream": False}
     request = Request(
         f"{base_url}/api/generate",
@@ -746,15 +831,34 @@ def _execute_ollama(prompt: str, provider: AIProviderConfig) -> AnalysisExecutio
         with urlopen(request, timeout=90) as response:
             body = json.loads(response.read().decode("utf-8"))
     except (HTTPError, OSError, URLError, json.JSONDecodeError) as error:
-        return AnalysisExecutionResult("provider_error", provider.provider_id, provider.invocation_mode, prompt=prompt, error=str(error))
+        return AnalysisExecutionResult(
+            "provider_error",
+            provider.provider_id,
+            provider.invocation_mode,
+            prompt=prompt,
+            error=str(error),
+        )
     output = body.get("response", "")
-    return AnalysisExecutionResult("completed" if output else "provider_error", provider.provider_id, provider.invocation_mode, output=output, prompt=prompt, error="" if output else "Ollama returned no text.")
+    return AnalysisExecutionResult(
+        "completed" if output else "provider_error",
+        provider.provider_id,
+        provider.invocation_mode,
+        output=output,
+        prompt=prompt,
+        error="" if output else "Ollama returned no text.",
+    )
 
 
 def _execute_cli(prompt: str, provider: AIProviderConfig) -> AnalysisExecutionResult:
     command = provider.command.strip()
     if not command:
-        return AnalysisExecutionResult("configuration_error", provider.provider_id, provider.invocation_mode, prompt=prompt, error="Missing CLI command.")
+        return AnalysisExecutionResult(
+            "configuration_error",
+            provider.provider_id,
+            provider.invocation_mode,
+            prompt=prompt,
+            error="Missing CLI command.",
+        )
     parts = command.split()
     allowed = {
         "codex": "codex",
@@ -762,7 +866,13 @@ def _execute_cli(prompt: str, provider: AIProviderConfig) -> AnalysisExecutionRe
         "gemini": "gemini",
     }
     if parts[0] not in allowed:
-        return AnalysisExecutionResult("configuration_error", provider.provider_id, provider.invocation_mode, prompt=prompt, error="CLI command must start with an allowed local AI binary.")
+        return AnalysisExecutionResult(
+            "configuration_error",
+            provider.provider_id,
+            provider.invocation_mode,
+            prompt=prompt,
+            error="CLI command must start with an allowed local AI binary.",
+        )
     try:
         completed = subprocess.run(
             parts,
@@ -773,7 +883,25 @@ def _execute_cli(prompt: str, provider: AIProviderConfig) -> AnalysisExecutionRe
             check=False,
         )
     except (OSError, subprocess.TimeoutExpired) as error:
-        return AnalysisExecutionResult("provider_error", provider.provider_id, provider.invocation_mode, prompt=prompt, error=str(error))
+        return AnalysisExecutionResult(
+            "provider_error",
+            provider.provider_id,
+            provider.invocation_mode,
+            prompt=prompt,
+            error=str(error),
+        )
     if completed.returncode != 0:
-        return AnalysisExecutionResult("provider_error", provider.provider_id, provider.invocation_mode, prompt=prompt, error=completed.stderr[-1000:])
-    return AnalysisExecutionResult("completed", provider.provider_id, provider.invocation_mode, output=completed.stdout, prompt=prompt)
+        return AnalysisExecutionResult(
+            "provider_error",
+            provider.provider_id,
+            provider.invocation_mode,
+            prompt=prompt,
+            error=completed.stderr[-1000:],
+        )
+    return AnalysisExecutionResult(
+        "completed",
+        provider.provider_id,
+        provider.invocation_mode,
+        output=completed.stdout,
+        prompt=prompt,
+    )

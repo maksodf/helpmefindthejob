@@ -84,11 +84,22 @@ class SqliteCompanyDiscoveryRepository(InMemoryCompanyDiscoveryRepository):
     def delete_company(self, user_id: str, company_id: str) -> None:
         with self._lock:
             super().delete_company(user_id, company_id)
-            for table in ("companies", "discovery_runs", "scans", "discovered_jobs", "imported_jobs"):
+            for table in (
+                "companies",
+                "discovery_runs",
+                "scans",
+                "discovered_jobs",
+                "imported_jobs",
+            ):
                 if table == "companies":
-                    self._connection.execute("DELETE FROM companies WHERE id = ? AND user_id = ?", (company_id, user_id))
+                    self._connection.execute(
+                        "DELETE FROM companies WHERE id = ? AND user_id = ?", (company_id, user_id)
+                    )
                 else:
-                    self._connection.execute("DELETE FROM " + table + " WHERE company_id = ? AND user_id = ?", (company_id, user_id))
+                    self._connection.execute(
+                        "DELETE FROM " + table + " WHERE company_id = ? AND user_id = ?",
+                        (company_id, user_id),
+                    )
             self._connection.commit()
 
     def save_discovery_run(self, run: CompanyDiscoveryRun) -> CompanyDiscoveryRun:
@@ -151,10 +162,15 @@ class SqliteCompanyDiscoveryRepository(InMemoryCompanyDiscoveryRepository):
                 # Encrypt before persisting; in-memory ``profile.cv_text``
                 # stays plaintext so the rest of the app sees no change.
                 payload["cv_text"] = self._crypto.encrypt(
-                    cv, aad=profile.user_id.encode("utf-8"),
+                    cv,
+                    aad=profile.user_id.encode("utf-8"),
                 )
             self._upsert(
-                "user_profiles", profile.user_id, profile.user_id, None, payload,
+                "user_profiles",
+                profile.user_id,
+                profile.user_id,
+                None,
+                payload,
             )
             return result
 
@@ -213,7 +229,9 @@ class SqliteCompanyDiscoveryRepository(InMemoryCompanyDiscoveryRepository):
         with self._lock:
             return list(super().list_companies(user_id))
 
-    def list_discovered_jobs(self, user_id: str, company_id: str | None = None) -> list[DiscoveredJob]:
+    def list_discovered_jobs(
+        self, user_id: str, company_id: str | None = None
+    ) -> list[DiscoveredJob]:
         with self._lock:
             return list(super().list_discovered_jobs(user_id, company_id))
 
@@ -266,11 +284,22 @@ class SqliteCompanyDiscoveryRepository(InMemoryCompanyDiscoveryRepository):
                 )
                 """
             )
-            self._connection.execute(f"CREATE INDEX IF NOT EXISTS idx_{table}_user ON {table}(user_id)")
-            self._connection.execute(f"CREATE INDEX IF NOT EXISTS idx_{table}_company ON {table}(company_id)")
+            self._connection.execute(
+                f"CREATE INDEX IF NOT EXISTS idx_{table}_user ON {table}(user_id)"
+            )
+            self._connection.execute(
+                f"CREATE INDEX IF NOT EXISTS idx_{table}_company ON {table}(company_id)"
+            )
         self._connection.commit()
 
-    def _upsert(self, table: str, item_id: str, user_id: str, company_id: str | None, payload: dict[str, Any]) -> None:
+    def _upsert(
+        self,
+        table: str,
+        item_id: str,
+        user_id: str,
+        company_id: str | None,
+        payload: dict[str, Any],
+    ) -> None:
         self._connection.execute(
             f"""
             INSERT INTO {table}(id, user_id, company_id, payload, updated_at)
@@ -404,7 +433,8 @@ class SqliteCompanyDiscoveryRepository(InMemoryCompanyDiscoveryRepository):
                 else:
                     try:
                         payload["cv_text"] = self._crypto.decrypt(
-                            cv, aad=payload["user_id"].encode("utf-8"),
+                            cv,
+                            aad=payload["user_id"].encode("utf-8"),
                         )
                     except ValueError:
                         payload["cv_text"] = None
@@ -414,7 +444,9 @@ class SqliteCompanyDiscoveryRepository(InMemoryCompanyDiscoveryRepository):
                         **payload,
                         "created_at": _parse_datetime(payload.get("created_at")),
                         "updated_at": _parse_datetime(payload.get("updated_at")),
-                        "last_push_notified_at": _parse_datetime(payload.get("last_push_notified_at")),
+                        "last_push_notified_at": _parse_datetime(
+                            payload.get("last_push_notified_at")
+                        ),
                     }
                 )
             )

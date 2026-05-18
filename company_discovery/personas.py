@@ -54,9 +54,9 @@ class Persona:
     industry_match_terms: tuple[str, ...]
     sector_weights: Mapping[str, float]
     category_suggestions: tuple[CategorySuggestion, ...]
-    role_to_sector_boosts: tuple[
-        tuple[tuple[str, ...], tuple[str, ...], float], ...
-    ] = field(default_factory=tuple)
+    role_to_sector_boosts: tuple[tuple[tuple[str, ...], tuple[str, ...], float], ...] = field(
+        default_factory=tuple
+    )
 
 
 _HEALTHCARE_MANAGEMENT = Persona(
@@ -98,9 +98,7 @@ _HEALTHCARE_MANAGEMENT = Persona(
         CategorySuggestion(
             label="Hospitals and clinic groups",
             reason="Strong fit for healthcare project, quality, and process-management roles.",
-            role_keyword_boosts=(
-                (("quality", "process", "projekt", "project"), 0.15),
-            ),
+            role_keyword_boosts=((("quality", "process", "projekt", "project"), 0.15),),
         ),
         CategorySuggestion(
             label="University hospitals",
@@ -109,23 +107,17 @@ _HEALTHCARE_MANAGEMENT = Persona(
         CategorySuggestion(
             label="Statutory health insurers",
             reason="Strong fit for public health, digital health, care management, and policy roles.",
-            role_keyword_boosts=(
-                (("market access", "public affairs", "policy"), 0.20),
-            ),
+            role_keyword_boosts=((("market access", "public affairs", "policy"), 0.20),),
         ),
         CategorySuggestion(
             label="Private health insurers",
             reason="Strong fit for product, quality, process, and healthcare analytics roles.",
-            role_keyword_boosts=(
-                (("market access", "public affairs", "policy"), 0.20),
-            ),
+            role_keyword_boosts=((("market access", "public affairs", "policy"), 0.20),),
         ),
         CategorySuggestion(
             label="Public-health institutions",
             reason="Strong fit for public-health, prevention, population health, and policy work.",
-            role_keyword_boosts=(
-                (("market access", "public affairs", "policy"), 0.20),
-            ),
+            role_keyword_boosts=((("market access", "public affairs", "policy"), 0.20),),
         ),
         CategorySuggestion(
             label="Research institutes",
@@ -134,30 +126,22 @@ _HEALTHCARE_MANAGEMENT = Persona(
         CategorySuggestion(
             label="Pharma and MedTech companies",
             reason="Strong fit for market access, public affairs, and healthcare project roles.",
-            role_keyword_boosts=(
-                (("market access", "public affairs", "policy"), 0.20),
-            ),
+            role_keyword_boosts=((("market access", "public affairs", "policy"), 0.20),),
         ),
         CategorySuggestion(
             label="Digital Health startups",
             reason="Strong fit for digital health, product operations, implementation, and customer success roles.",
-            role_keyword_boosts=(
-                (("digital", "it", "software"), 0.25),
-            ),
+            role_keyword_boosts=((("digital", "it", "software"), 0.25),),
         ),
         CategorySuggestion(
             label="Healthcare IT companies",
             reason="Strong fit for implementation, process management, and healthcare software roles.",
-            role_keyword_boosts=(
-                (("digital", "it", "software"), 0.25),
-            ),
+            role_keyword_boosts=((("digital", "it", "software"), 0.25),),
         ),
         CategorySuggestion(
             label="Consulting firms with healthcare practices",
             reason="Strong fit for junior consulting and healthcare transformation roles.",
-            role_keyword_boosts=(
-                (("quality", "process", "projekt", "project"), 0.15),
-            ),
+            role_keyword_boosts=((("quality", "process", "projekt", "project"), 0.15),),
         ),
     ),
 )
@@ -199,23 +183,17 @@ _TECH = Persona(
         CategorySuggestion(
             label="European SaaS companies",
             reason="Strong fit for backend, frontend, full-stack, and platform engineering roles.",
-            role_keyword_boosts=(
-                (("backend", "frontend", "full stack", "platform"), 0.20),
-            ),
+            role_keyword_boosts=((("backend", "frontend", "full stack", "platform"), 0.20),),
         ),
         CategorySuggestion(
             label="Cloud infrastructure & DevOps",
             reason="Strong fit for SRE, platform, infra, Kubernetes, and observability roles.",
-            role_keyword_boosts=(
-                (("sre", "devops", "platform", "infra", "kubernetes"), 0.25),
-            ),
+            role_keyword_boosts=((("sre", "devops", "platform", "infra", "kubernetes"), 0.25),),
         ),
         CategorySuggestion(
             label="AI / ML companies",
             reason="Strong fit for ML engineering, applied research, MLOps, and data engineering roles.",
-            role_keyword_boosts=(
-                (("ml", "machine learning", "ai", "data"), 0.25),
-            ),
+            role_keyword_boosts=((("ml", "machine learning", "ai", "data"), 0.25),),
         ),
         CategorySuggestion(
             label="Developer-tools companies",
@@ -224,16 +202,12 @@ _TECH = Persona(
         CategorySuggestion(
             label="Cybersecurity vendors",
             reason="Strong fit for security engineering, detection, and AppSec roles.",
-            role_keyword_boosts=(
-                (("security", "appsec", "detection"), 0.25),
-            ),
+            role_keyword_boosts=((("security", "appsec", "detection"), 0.25),),
         ),
         CategorySuggestion(
             label="Fintech & neobanks",
             reason="Strong fit for payment, ledger, risk, and high-throughput backend engineers.",
-            role_keyword_boosts=(
-                (("payment", "ledger", "risk", "backend"), 0.20),
-            ),
+            role_keyword_boosts=((("payment", "ledger", "risk", "backend"), 0.20),),
         ),
         CategorySuggestion(
             label="Open-source companies",
@@ -284,30 +258,22 @@ _MARKETING = Persona(
         CategorySuggestion(
             label="DTC consumer brands",
             reason="Strong fit for brand, growth, content, and lifecycle marketing roles.",
-            role_keyword_boosts=(
-                (("brand", "growth", "content", "social"), 0.20),
-            ),
+            role_keyword_boosts=((("brand", "growth", "content", "social"), 0.20),),
         ),
         CategorySuggestion(
             label="B2B SaaS marketing teams",
             reason="Strong fit for product marketing, demand gen, and content roles in software.",
-            role_keyword_boosts=(
-                (("product marketing", "demand gen", "content", "seo"), 0.25),
-            ),
+            role_keyword_boosts=((("product marketing", "demand gen", "content", "seo"), 0.25),),
         ),
         CategorySuggestion(
             label="Performance / growth agencies",
             reason="Strong fit for paid acquisition, performance marketing, and analytics-heavy roles.",
-            role_keyword_boosts=(
-                (("performance", "paid", "growth", "acquisition"), 0.25),
-            ),
+            role_keyword_boosts=((("performance", "paid", "growth", "acquisition"), 0.25),),
         ),
         CategorySuggestion(
             label="E-commerce & marketplaces",
             reason="Strong fit for CRM, lifecycle, retention, and merchandising roles.",
-            role_keyword_boosts=(
-                (("crm", "lifecycle", "retention", "ecommerce"), 0.20),
-            ),
+            role_keyword_boosts=((("crm", "lifecycle", "retention", "ecommerce"), 0.20),),
         ),
         CategorySuggestion(
             label="Media & streaming",
@@ -316,9 +282,7 @@ _MARKETING = Persona(
         CategorySuggestion(
             label="FMCG & lifestyle brands",
             reason="Strong fit for traditional brand marketing, integrated campaigns, and trade marketing roles.",
-            role_keyword_boosts=(
-                (("brand", "campaign", "trade"), 0.15),
-            ),
+            role_keyword_boosts=((("brand", "campaign", "trade"), 0.15),),
         ),
     ),
 )
@@ -361,44 +325,32 @@ _FINANCE = Persona(
         CategorySuggestion(
             label="Universal & investment banks",
             reason="Strong fit for analyst, FP&A, M&A, risk, treasury, and compliance roles.",
-            role_keyword_boosts=(
-                (("analyst", "fp&a", "risk", "treasury", "m&a"), 0.20),
-            ),
+            role_keyword_boosts=((("analyst", "fp&a", "risk", "treasury", "m&a"), 0.20),),
         ),
         CategorySuggestion(
             label="Asset managers & private capital",
             reason="Strong fit for investment analyst, portfolio operations, and reporting roles.",
-            role_keyword_boosts=(
-                (("investment", "portfolio", "fund"), 0.25),
-            ),
+            role_keyword_boosts=((("investment", "portfolio", "fund"), 0.25),),
         ),
         CategorySuggestion(
             label="Insurers & reinsurers",
             reason="Strong fit for risk, actuarial, compliance, controlling, and reporting roles.",
-            role_keyword_boosts=(
-                (("risk", "actuarial", "compliance", "controlling"), 0.20),
-            ),
+            role_keyword_boosts=((("risk", "actuarial", "compliance", "controlling"), 0.20),),
         ),
         CategorySuggestion(
             label="Big-4 audit & advisory",
             reason="Strong fit for auditor, transaction services, and advisory roles.",
-            role_keyword_boosts=(
-                (("audit", "advisory", "transaction"), 0.25),
-            ),
+            role_keyword_boosts=((("audit", "advisory", "transaction"), 0.25),),
         ),
         CategorySuggestion(
             label="Fintech",
             reason="Strong fit for finance, ledger, treasury, and risk roles in tech-led finance.",
-            role_keyword_boosts=(
-                (("ledger", "treasury", "risk", "fintech"), 0.20),
-            ),
+            role_keyword_boosts=((("ledger", "treasury", "risk", "fintech"), 0.20),),
         ),
         CategorySuggestion(
             label="Corporate finance teams (DAX 40 / large caps)",
             reason="Strong fit for controlling, FP&A, treasury, and internal-audit roles inside large corporates.",
-            role_keyword_boosts=(
-                (("controlling", "fp&a", "treasury"), 0.20),
-            ),
+            role_keyword_boosts=((("controlling", "fp&a", "treasury"), 0.20),),
         ),
         CategorySuggestion(
             label="Management consulting (financial-services practice)",
@@ -443,44 +395,32 @@ _PRODUCT_MANAGEMENT = Persona(
         CategorySuggestion(
             label="B2B SaaS product teams",
             reason="Strong fit for product managers shipping to other businesses.",
-            role_keyword_boosts=(
-                (("b2b", "platform", "api", "integration"), 0.25),
-            ),
+            role_keyword_boosts=((("b2b", "platform", "api", "integration"), 0.25),),
         ),
         CategorySuggestion(
             label="Consumer tech",
             reason="Strong fit for PMs working on growth, engagement, and consumer features.",
-            role_keyword_boosts=(
-                (("growth", "consumer", "mobile"), 0.20),
-            ),
+            role_keyword_boosts=((("growth", "consumer", "mobile"), 0.20),),
         ),
         CategorySuggestion(
             label="Fintech product teams",
             reason="Strong fit for PMs on payments, lending, banking, and risk products.",
-            role_keyword_boosts=(
-                (("payment", "lending", "banking", "risk"), 0.25),
-            ),
+            role_keyword_boosts=((("payment", "lending", "banking", "risk"), 0.25),),
         ),
         CategorySuggestion(
             label="Marketplaces",
             reason="Strong fit for PMs on supply, demand, search, and trust-and-safety problems.",
-            role_keyword_boosts=(
-                (("supply", "demand", "marketplace", "search", "trust"), 0.25),
-            ),
+            role_keyword_boosts=((("supply", "demand", "marketplace", "search", "trust"), 0.25),),
         ),
         CategorySuggestion(
             label="AI / ML product",
             reason="Strong fit for PMs shipping ML-powered features or AI products.",
-            role_keyword_boosts=(
-                (("ai", "ml", "model", "llm"), 0.25),
-            ),
+            role_keyword_boosts=((("ai", "ml", "model", "llm"), 0.25),),
         ),
         CategorySuggestion(
             label="Developer tools / platform",
             reason="Strong fit for technical PMs serving an engineer audience.",
-            role_keyword_boosts=(
-                (("technical", "platform", "developer", "api"), 0.25),
-            ),
+            role_keyword_boosts=((("technical", "platform", "developer", "api"), 0.25),),
         ),
     ),
 )
@@ -777,7 +717,9 @@ _HEALTHCARE_CLINICAL = Persona(
         CategorySuggestion(
             label="Hospitals & clinic groups",
             reason="Strong fit for nursing, doctor, therapist, and direct-care roles.",
-            role_keyword_boosts=((("krankenpfleger", "nurse", "arzt", "physician", "therapist"), 0.30),),
+            role_keyword_boosts=(
+                (("krankenpfleger", "nurse", "arzt", "physician", "therapist"), 0.30),
+            ),
         ),
         CategorySuggestion(
             label="Elderly & home care",
@@ -938,7 +880,9 @@ _SUPPORT = Persona(
         CategorySuggestion(
             label="Tier-2 / technical support",
             reason="Strong fit for technical support, support engineer, and integration roles.",
-            role_keyword_boosts=((("support engineer", "tier 2", "integration", "technical support"), 0.25),),
+            role_keyword_boosts=(
+                (("support engineer", "tier 2", "integration", "technical support"), 0.25),
+            ),
         ),
         CategorySuggestion(
             label="Consumer support hubs",

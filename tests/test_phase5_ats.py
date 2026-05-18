@@ -44,16 +44,28 @@ class DetectExpansionTests(unittest.TestCase):
 
 class RecruiteeAdapterTests(unittest.TestCase):
     def test_json_feed_extracts_jobs(self) -> None:
-        body = json.dumps({"offers": [
-            {"id": 1, "slug": "backend-eng", "title": "Backend Engineer",
-             "careers_url": "https://acme.recruitee.com/o/backend-eng",
-             "location": "Berlin",
-             "description": "<p>build it</p>"},
-            {"id": 2, "slug": "frontend-eng", "title": "Frontend Engineer",
-             "careers_url": "https://acme.recruitee.com/o/frontend-eng",
-             "location": "Munich",
-             "description": "<p>react</p>"},
-        ]})
+        body = json.dumps(
+            {
+                "offers": [
+                    {
+                        "id": 1,
+                        "slug": "backend-eng",
+                        "title": "Backend Engineer",
+                        "careers_url": "https://acme.recruitee.com/o/backend-eng",
+                        "location": "Berlin",
+                        "description": "<p>build it</p>",
+                    },
+                    {
+                        "id": 2,
+                        "slug": "frontend-eng",
+                        "title": "Frontend Engineer",
+                        "careers_url": "https://acme.recruitee.com/o/frontend-eng",
+                        "location": "Munich",
+                        "description": "<p>react</p>",
+                    },
+                ]
+            }
+        )
         company = _company("acme.recruitee.com")
         result = extract_jobs(company, "https://acme.recruitee.com/api/offers/", body)
         assert result is not None
@@ -82,12 +94,24 @@ class RecruiteeAdapterTests(unittest.TestCase):
 
 class AshbyAdapterTests(unittest.TestCase):
     def test_graphql_payload_extracts(self) -> None:
-        body = json.dumps({"data": {"jobBoard": {"jobPostings": [
-            {"id": "abc", "title": "Senior Engineer",
-             "slug": "senior-engineer", "organizationSlug": "acme",
-             "locationName": "Remote — Worldwide",
-             "descriptionHtml": "<p>desc</p>"},
-        ]}}})
+        body = json.dumps(
+            {
+                "data": {
+                    "jobBoard": {
+                        "jobPostings": [
+                            {
+                                "id": "abc",
+                                "title": "Senior Engineer",
+                                "slug": "senior-engineer",
+                                "organizationSlug": "acme",
+                                "locationName": "Remote — Worldwide",
+                                "descriptionHtml": "<p>desc</p>",
+                            },
+                        ]
+                    }
+                }
+            }
+        )
         company = _company("jobs.ashbyhq.com")
         result = extract_jobs(company, "https://jobs.ashbyhq.com/acme", body)
         assert result is not None
@@ -100,12 +124,19 @@ class AshbyAdapterTests(unittest.TestCase):
 
 class BambooHRAdapterTests(unittest.TestCase):
     def test_json_variant(self) -> None:
-        body = json.dumps({"result": [
-            {"id": 11, "jobOpeningName": "QA Engineer",
-             "jobOpeningURL": "https://acme.bamboohr.com/jobs/view.php?id=11",
-             "location": "Berlin",
-             "jobOpeningDescription": "<p>QA work</p>"},
-        ]})
+        body = json.dumps(
+            {
+                "result": [
+                    {
+                        "id": 11,
+                        "jobOpeningName": "QA Engineer",
+                        "jobOpeningURL": "https://acme.bamboohr.com/jobs/view.php?id=11",
+                        "location": "Berlin",
+                        "jobOpeningDescription": "<p>QA work</p>",
+                    },
+                ]
+            }
+        )
         company = _company("acme.bamboohr.com")
         result = extract_jobs(company, "https://acme.bamboohr.com/jobs/embed2.php?json=true", body)
         assert result is not None

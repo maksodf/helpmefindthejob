@@ -87,20 +87,27 @@ def main() -> int:
             page.wait_for_timeout(400)
             greeting = page.locator("#chatTranscript .chat-bubble").first
             greeting_visible = greeting.is_visible(timeout=2000)
-            report("greeting_bubble_renders", greeting_visible,
-                    greeting.inner_text() if greeting_visible else "")
+            report(
+                "greeting_bubble_renders",
+                greeting_visible,
+                greeting.inner_text() if greeting_visible else "",
+            )
 
             # 3. Click "Show commands" button — should send /help and
             # render two new bubbles (user + assistant reply).
             page.locator("#chatHelpBtn").click()
             page.wait_for_timeout(600)
             bubble_count = page.locator("#chatTranscript .chat-bubble").count()
-            report("help_button_renders_bubbles", bubble_count >= 3,
-                    f"transcript has {bubble_count} bubbles after /help")
+            report(
+                "help_button_renders_bubbles",
+                bubble_count >= 3,
+                f"transcript has {bubble_count} bubbles after /help",
+            )
             # The latest assistant bubble must include known command names.
             transcript_text = page.locator("#chatTranscript").inner_text()
-            has_help = ("Add a company" in transcript_text
-                         and "Create a saved search" in transcript_text)
+            has_help = (
+                "Add a company" in transcript_text and "Create a saved search" in transcript_text
+            )
             report("help_lists_commands", has_help)
 
             # 4. Type a slash command via the input + Enter.
@@ -109,9 +116,12 @@ def main() -> int:
             page.wait_for_timeout(700)
             transcript_text = page.locator("#chatTranscript").inner_text()
             asks_optional = "Career page URL" in transcript_text
-            report("slash_pre_fills_required", asks_optional,
-                    "server asked for the optional careerPageUrl, "
-                    "meaning required fields were pre-filled from inline args")
+            report(
+                "slash_pre_fills_required",
+                asks_optional,
+                "server asked for the optional careerPageUrl, "
+                "meaning required fields were pre-filled from inline args",
+            )
 
             # 5. Skip optional with a space → confirmation prompt.
             page.locator("#chatInput").fill(" ")
@@ -119,23 +129,26 @@ def main() -> int:
             page.wait_for_timeout(1500)
             # Use textContent (not inner_text) — bubbles are appended
             # as plain text nodes, no HTML semantics to render.
-            tc = page.evaluate(
-                "() => document.querySelector('#chatTranscript')?.textContent || ''"
-            )
+            tc = page.evaluate("() => document.querySelector('#chatTranscript')?.textContent || ''")
             asks_confirm = ("UI-Corp" in tc) and ("Confirm" in tc)
-            report("confirmation_prompt_renders", asks_confirm,
-                    f"transcript len={len(tc)}, has 'UI-Corp'={('UI-Corp' in tc)}, "
-                    f"has 'Confirm'={('Confirm' in tc)}")
+            report(
+                "confirmation_prompt_renders",
+                asks_confirm,
+                f"transcript len={len(tc)}, has 'UI-Corp'={('UI-Corp' in tc)}, "
+                f"has 'Confirm'={('Confirm' in tc)}",
+            )
 
             # 6. Confirm with "yes"
             page.locator("#chatInput").fill("yes")
             page.locator("#chatInput").press("Enter")
             page.wait_for_timeout(900)
             transcript_text = page.locator("#chatTranscript").inner_text()
-            executed = ("watchlist" in transcript_text
-                         and "UI-Corp" in transcript_text)
-            report("confirmation_executes_command", executed,
-                    "transcript shows success reply with UI-Corp")
+            executed = "watchlist" in transcript_text and "UI-Corp" in transcript_text
+            report(
+                "confirmation_executes_command",
+                executed,
+                "transcript shows success reply with UI-Corp",
+            )
 
             # 7. Reset button clears the transcript.
             page.locator("#chatResetBtn").click()
@@ -143,8 +156,11 @@ def main() -> int:
             after_reset = page.locator("#chatTranscript .chat-bubble").count()
             # After reset we render an assistant bubble saying "Chat reset.";
             # so 1 bubble is expected.
-            report("reset_clears_transcript", after_reset == 1,
-                    f"transcript had {after_reset} bubbles after reset")
+            report(
+                "reset_clears_transcript",
+                after_reset == 1,
+                f"transcript had {after_reset} bubbles after reset",
+            )
 
             # 8. Keyboard-driven flow — natural-language intent.
             page.locator("#chatInput").fill("I want to add a company")
@@ -152,8 +168,11 @@ def main() -> int:
             page.wait_for_timeout(600)
             transcript_text = page.locator("#chatTranscript").inner_text()
             asks_name = "company name" in transcript_text.lower()
-            report("keyword_router_via_ui", asks_name,
-                    "natural-language intent → keyword router → asks for name")
+            report(
+                "keyword_router_via_ui",
+                asks_name,
+                "natural-language intent → keyword router → asks for name",
+            )
 
             # 9. Cancel mid-flow with /help — should reset focus to help.
             # (Our current behaviour: any non-confirmation reply during a
@@ -164,8 +183,7 @@ def main() -> int:
             report("input_stays_enabled", input_enabled)
 
             # Screenshot for the record.
-            out_dir = Path(os.environ.get("E2E_SCREENSHOTS",
-                                            "tests/e2e/screenshots"))
+            out_dir = Path(os.environ.get("E2E_SCREENSHOTS", "tests/e2e/screenshots"))
             out_dir.mkdir(parents=True, exist_ok=True)
             page.screenshot(path=str(out_dir / "chat_ui.png"), full_page=True)
         finally:

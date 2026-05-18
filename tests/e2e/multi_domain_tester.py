@@ -66,8 +66,7 @@ class Client:
             headers["Cookie"] = self.cookie
         if self.csrf and method != "GET":
             headers["X-CSRF-Token"] = self.csrf
-        req = urllib.request.Request(BASE_URL + path, data=data,
-                                       method=method, headers=headers)
+        req = urllib.request.Request(BASE_URL + path, data=data, method=method, headers=headers)
         try:
             with urllib.request.urlopen(req, timeout=30) as resp:
                 sc = resp.headers.get("Set-Cookie", "")
@@ -111,11 +110,15 @@ class Client:
 def signup() -> Client:
     c = Client()
     c.get("/")
-    s, p = c.post("/api/auth/register", {
-        "email": f"multidomain+{secrets.token_hex(3)}@example.com",
-        "password": "multidomain-tester-99-X",
-        "tosAccepted": True, "privacyAccepted": True,
-    })
+    s, p = c.post(
+        "/api/auth/register",
+        {
+            "email": f"multidomain+{secrets.token_hex(3)}@example.com",
+            "password": "multidomain-tester-99-X",
+            "tosAccepted": True,
+            "privacyAccepted": True,
+        },
+    )
     if s not in (200, 201):
         raise RuntimeError(f"signup: {s} {p}")
     return c
@@ -132,8 +135,7 @@ def reset(c: Client) -> None:
     c.post("/api/chat/reset", {})
 
 
-def chat_until_confirm(c: Client, opener: str,
-                        skip_optionals: bool = True) -> dict:
+def chat_until_confirm(c: Client, opener: str, skip_optionals: bool = True) -> dict:
     """Drive a single chat command from opener until either:
       - the confirmation prompt arrives (destructive commands), OR
       - the command executes directly (R19: read-only commands
@@ -151,12 +153,8 @@ def chat_until_confirm(c: Client, opener: str,
             r = chat(c, " ")
             continue
         if r.get("awaiting"):
-            raise RuntimeError(
-                f"unexpected required slot {r['awaiting']}; reply={r['reply']!r}"
-            )
-        raise RuntimeError(
-            f"chat did not reach confirmation OR execution: {r}"
-        )
+            raise RuntimeError(f"unexpected required slot {r['awaiting']}; reply={r['reply']!r}")
+        raise RuntimeError(f"chat did not reach confirmation OR execution: {r}")
     raise RuntimeError("too many turns without reaching terminal state")
 
 
@@ -182,31 +180,26 @@ def domain_database(c: Client) -> None:
     confirm = chat(c, "yes")
     assert confirm.get("executed") == "add_company", confirm
     s, boot = c.get("/api/bootstrap")
-    has = any(co.get("name") == "DB-Corp"
-               for co in (boot.get("companies") or []))
+    has = any(co.get("name") == "DB-Corp" for co in (boot.get("companies") or []))
     record("database", has, f"company persisted: {has}")
 
 
 def domain_security(c: Client) -> None:
     reset(c)
     payload = "<script>alert('xss')</script>"
-    r = chat_until_confirm(
-        c, f'/add-company "Sec-Co {payload}" https://sec-co.example')
+    r = chat_until_confirm(c, f'/add-company "Sec-Co {payload}" https://sec-co.example')
     assert r.get("awaitingConfirmation"), r
     chat(c, "yes")
     s, boot = c.get("/api/bootstrap")
-    stored = any(payload in (co.get("name") or "")
-                  for co in (boot.get("companies") or []))
-    record("security", stored,
-            "XSS payload stored as text in JSON; no HTML execution path")
+    stored = any(payload in (co.get("name") or "") for co in (boot.get("companies") or []))
+    record("security", stored, "XSS payload stored as text in JSON; no HTML execution path")
 
 
 def domain_ai_router(c: Client) -> None:
     reset(c)
     r = chat(c, "I want to add a company")
     awaiting = r.get("awaiting")
-    record("ai_router", awaiting == "name",
-            f"keyword router → add_company; awaiting={awaiting!r}")
+    record("ai_router", awaiting == "name", f"keyword router → add_company; awaiting={awaiting!r}")
 
 
 def domain_data_analytics(c: Client) -> None:
@@ -217,10 +210,12 @@ def domain_data_analytics(c: Client) -> None:
     if r.get("awaitingConfirmation"):
         r = chat(c, "yes")
     result = r.get("result", {})
-    record("data_analytics",
-            result.get("ok") is True and "jobs" in result,
-            f"find_jobs returned {len(result.get('jobs') or [])} sample, "
-            f"total {result.get('totalJobs')}")
+    record(
+        "data_analytics",
+        result.get("ok") is True and "jobs" in result,
+        f"find_jobs returned {len(result.get('jobs') or [])} sample, "
+        f"total {result.get('totalJobs')}",
+    )
 
 
 def domain_product_ux(c: Client) -> None:
@@ -229,10 +224,8 @@ def domain_product_ux(c: Client) -> None:
     cancel = chat(c, "no")
     assert "cancelled" in cancel, cancel
     s, boot = c.get("/api/bootstrap")
-    has = any(co.get("name") == "UX-Co"
-               for co in (boot.get("companies") or []))
-    record("product_ux", not has,
-            f"'no' cancelled the add; UX-Co not persisted: {not has}")
+    has = any(co.get("name") == "UX-Co" for co in (boot.get("companies") or []))
+    record("product_ux", not has, f"'no' cancelled the add; UX-Co not persisted: {not has}")
 
 
 def domain_gdpr_audit(c: Client) -> None:
@@ -240,6 +233,7 @@ def domain_gdpr_audit(c: Client) -> None:
     in the SQLite analytics_events table on disk. No 'trust me' —
     runtime proof on the actual DB file."""
     import sqlite3 as _sql
+
     reset(c)
     r = chat_until_confirm(c, "/find Audit-Query-Marker Berlin")
     # R19: find_jobs is read-only — executes immediately. Confirm
@@ -248,21 +242,20 @@ def domain_gdpr_audit(c: Client) -> None:
         chat(c, "yes")
     data_dir = os.environ.get("COMPANY_DISCOVERY_DATA_DIR", "")
     if not data_dir:
-        record("gdpr_audit", False,
-                "COMPANY_DISCOVERY_DATA_DIR not set; can't open DB")
+        record("gdpr_audit", False, "COMPANY_DISCOVERY_DATA_DIR not set; can't open DB")
         return
     # The data dir has multiple .sqlite3 files (auth.sqlite3 +
     # company_discovery.sqlite3). Try each until we find the one
     # carrying analytics_events.
-    candidates = [p for p in Path(data_dir).rglob("*")
-                   if p.is_file() and p.name.endswith(".sqlite3")]
+    candidates = [
+        p for p in Path(data_dir).rglob("*") if p.is_file() and p.name.endswith(".sqlite3")
+    ]
     db_path = None
     for p in candidates:
         try:
             conn = _sql.connect(str(p))
             cur = conn.execute(
-                "SELECT name FROM sqlite_master WHERE type='table' "
-                "AND name='analytics_events'"
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='analytics_events'"
             )
             if cur.fetchone():
                 db_path = p
@@ -272,28 +265,27 @@ def domain_gdpr_audit(c: Client) -> None:
         except Exception:  # noqa: BLE001
             continue
     if db_path is None:
-        record("gdpr_audit", False,
-                f"no .sqlite3 file with analytics_events table under {data_dir}; "
-                f"saw: {[p.name for p in candidates]}")
+        record(
+            "gdpr_audit",
+            False,
+            f"no .sqlite3 file with analytics_events table under {data_dir}; "
+            f"saw: {[p.name for p in candidates]}",
+        )
         return
     try:
         conn = _sql.connect(str(db_path))
         # Schema column is `payload`, not `json`.
         cur = conn.execute(
-            "SELECT id, user_id, payload FROM analytics_events "
-            "ORDER BY rowid DESC LIMIT 100"
+            "SELECT id, user_id, payload FROM analytics_events ORDER BY rowid DESC LIMIT 100"
         )
         rows = cur.fetchall()
         conn.close()
     except Exception as exc:  # noqa: BLE001
-        record("gdpr_audit", False,
-                f"DB read failed at {db_path}: {exc}")
+        record("gdpr_audit", False, f"DB read failed at {db_path}: {exc}")
         return
-    chat_cmd_rows = [r for r in rows
-                      if "chat_cmd" in (r[2] or "")]
+    chat_cmd_rows = [r for r in rows if "chat_cmd" in (r[2] or "")]
     has_find = any("find_jobs" in (r[2] or "") for r in chat_cmd_rows)
-    has_marker = any("Audit-Query-Marker" in (r[2] or "")
-                      for r in chat_cmd_rows)
+    has_marker = any("Audit-Query-Marker" in (r[2] or "") for r in chat_cmd_rows)
     record(
         "gdpr_audit",
         bool(chat_cmd_rows) and has_find,
@@ -307,8 +299,7 @@ def domain_a11y_server(c: Client) -> None:
     r = chat(c, "/help")
     reply = r.get("reply", "")
     has_html_tag = "<" in reply and ">" in reply
-    record("a11y_server", not has_html_tag,
-            f"help reply ({len(reply)} chars) contains no raw HTML")
+    record("a11y_server", not has_html_tag, f"help reply ({len(reply)} chars) contains no raw HTML")
 
 
 def domain_i18n(c: Client) -> None:
@@ -322,8 +313,7 @@ def domain_i18n(c: Client) -> None:
     cancel = chat(c, "nein")
     de_no_works = "cancelled" in cancel
 
-    record("i18n", de_yes_works and de_no_works,
-            f"German yes={de_yes_works} no={de_no_works}")
+    record("i18n", de_yes_works and de_no_works, f"German yes={de_yes_works} no={de_no_works}")
 
 
 def domain_qa(c: Client) -> None:
@@ -338,8 +328,11 @@ def domain_qa(c: Client) -> None:
     bad = chat(c, "not a valid url at all")
     # Validator rejects with "That doesn't look like a URL." and
     # re-asks. awaiting stays at websiteUrl.
-    record("qa", bad.get("awaiting") == "websiteUrl",
-            f"invalid URL → re-prompt; awaiting={bad.get('awaiting')!r}")
+    record(
+        "qa",
+        bad.get("awaiting") == "websiteUrl",
+        f"invalid URL → re-prompt; awaiting={bad.get('awaiting')!r}",
+    )
 
 
 def domain_v2_commands(c: Client) -> None:
@@ -358,21 +351,21 @@ def domain_v2_commands(c: Client) -> None:
     chat_until_confirm(c, "/add-company V2-Del-Co https://v2-del.example")
     chat(c, "yes")
     s, boot = c.get("/api/bootstrap")
-    co = next((c for c in (boot.get("companies") or [])
-                if c.get("name") == "V2-Del-Co"), None)
+    co = next((c for c in (boot.get("companies") or []) if c.get("name") == "V2-Del-Co"), None)
     if co:
         reset(c)
         chat_until_confirm(c, f"/unwatch {co['id']}")
         chat(c, "yes")
         s, boot = c.get("/api/bootstrap")
-        deleted_ok = not any(c.get("id") == co["id"]
-                              for c in (boot.get("companies") or []))
+        deleted_ok = not any(c.get("id") == co["id"] for c in (boot.get("companies") or []))
     else:
         deleted_ok = False
 
-    record("v2_commands",
-            persona_set and deleted_ok,
-            f"set_persona ok: {persona_set}, delete_company ok: {deleted_ok}")
+    record(
+        "v2_commands",
+        persona_set and deleted_ok,
+        f"set_persona ok: {persona_set}, delete_company ok: {deleted_ok}",
+    )
 
 
 def domain_persistence(c: Client) -> None:
@@ -439,8 +432,7 @@ def main() -> int:
         except Exception as exc:  # noqa: BLE001
             record(name, False, f"crashed: {type(exc).__name__}: {exc}")
 
-    out = Path(os.environ.get("E2E_MULTIDOMAIN_REPORT",
-                                "tests/e2e/multi_domain_report.json"))
+    out = Path(os.environ.get("E2E_MULTIDOMAIN_REPORT", "tests/e2e/multi_domain_report.json"))
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(REPORT, indent=2, ensure_ascii=False))
 

@@ -32,52 +32,59 @@ from __future__ import annotations
 import re
 from typing import Final
 
-
 # --- Canonical token sets -------------------------------------------------
 
-YES_TOKENS_EN: Final[frozenset[str]] = frozenset({
-    "yes",
-    "yeah",
-    "yep",
-    "yup",
-    "ok",
-    "okay",
-    "sure",
-    "y",
-})
+YES_TOKENS_EN: Final[frozenset[str]] = frozenset(
+    {
+        "yes",
+        "yeah",
+        "yep",
+        "yup",
+        "ok",
+        "okay",
+        "sure",
+        "y",
+    }
+)
 
-NO_TOKENS_EN: Final[frozenset[str]] = frozenset({
-    "no",
-    "nope",
-    "nah",
-    "n",
-})
+NO_TOKENS_EN: Final[frozenset[str]] = frozenset(
+    {
+        "no",
+        "nope",
+        "nah",
+        "n",
+    }
+)
 
 # German — formal + the most common colloquial / regional variants the
 # project's partner orgs (MBE / IQ-Netzwerk / RINWA) report seeing in
 # day-to-day counselling.
-YES_TOKENS_DE: Final[frozenset[str]] = frozenset({
-    # Formal
-    "ja",
-    # Colloquial / regional affirmatives
-    "jo",
-    "jep",
-    "jepp",
-    "doch",
-    "klar",
-    "bestimmt",
-    "sicher",
-})
+YES_TOKENS_DE: Final[frozenset[str]] = frozenset(
+    {
+        # Formal
+        "ja",
+        # Colloquial / regional affirmatives
+        "jo",
+        "jep",
+        "jepp",
+        "doch",
+        "klar",
+        "bestimmt",
+        "sicher",
+    }
+)
 
-NO_TOKENS_DE: Final[frozenset[str]] = frozenset({
-    # Formal
-    "nein",
-    # Colloquial / regional negatives
-    "nö",
-    "ne",
-    "ne-ne",
-    "niemals",
-})
+NO_TOKENS_DE: Final[frozenset[str]] = frozenset(
+    {
+        # Formal
+        "nein",
+        # Colloquial / regional negatives
+        "nö",
+        "ne",
+        "ne-ne",
+        "niemals",
+    }
+)
 
 
 _LOCALE_SETS: Final[dict[str, tuple[frozenset[str], frozenset[str]]]] = {
@@ -112,6 +119,7 @@ def _normalize_token(text: str | None) -> str:
 
 
 # --- Public API -----------------------------------------------------------
+
 
 def is_yes(text: str | None, locale: str | None = "en") -> bool:
     """True iff ``text`` is a recognised affirmative for ``locale``.
@@ -152,6 +160,7 @@ def parse_yes_no(text: str | None, locale: str | None = "en") -> str | None:
 
 
 # --- Regex helpers for compound matching ---------------------------------
+
 
 def _alternation(tokens: frozenset[str]) -> str:
     """Build a regex-safe ``a|b|c`` from a token set. Longer tokens first

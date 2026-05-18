@@ -72,12 +72,20 @@ class CrossWorkspaceIsolationTests(unittest.TestCase):
             )
         )
         # Each owner adds a distinct company.
-        cls.state.repository.save_company(Company(
-            user_id=cls.alice.id, name="Alice Co", website_url="https://alice.example",
-        ))
-        cls.state.repository.save_company(Company(
-            user_id=cls.bob.id, name="Bob Co", website_url="https://bob.example",
-        ))
+        cls.state.repository.save_company(
+            Company(
+                user_id=cls.alice.id,
+                name="Alice Co",
+                website_url="https://alice.example",
+            )
+        )
+        cls.state.repository.save_company(
+            Company(
+                user_id=cls.bob.id,
+                name="Bob Co",
+                website_url="https://bob.example",
+            )
+        )
 
     @classmethod
     def tearDownClass(cls) -> None:

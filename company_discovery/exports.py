@@ -25,7 +25,6 @@ from typing import Iterable
 
 from .models import DiscoveredJob, ImportedJob
 
-
 _IMPORTED_FIELDS = (
     ("id", "ID"),
     ("title", "Title"),
@@ -99,18 +98,31 @@ def imported_jobs_to_markdown(jobs: Iterable[ImportedJob]) -> str:
 def discovered_jobs_to_csv(jobs: Iterable[DiscoveredJob]) -> str:
     buffer = io.StringIO()
     writer = csv.writer(buffer, lineterminator="\n")
-    writer.writerow(["ID", "Title", "Company ID", "Location", "Confidence", "Source URL", "Discovered at", "Imported"])
+    writer.writerow(
+        [
+            "ID",
+            "Title",
+            "Company ID",
+            "Location",
+            "Confidence",
+            "Source URL",
+            "Discovered at",
+            "Imported",
+        ]
+    )
     for job in jobs:
-        writer.writerow([
-            _csv_safe(job.id),
-            _csv_safe(job.title),
-            _csv_safe(job.company_id),
-            _csv_safe(job.location),
-            f"{int((job.confidence_score or 0) * 100)}%",
-            _csv_safe(job.source_url),
-            _csv_safe(job.discovered_at),
-            "yes" if job.imported_job_id else "no",
-        ])
+        writer.writerow(
+            [
+                _csv_safe(job.id),
+                _csv_safe(job.title),
+                _csv_safe(job.company_id),
+                _csv_safe(job.location),
+                f"{int((job.confidence_score or 0) * 100)}%",
+                _csv_safe(job.source_url),
+                _csv_safe(job.discovered_at),
+                "yes" if job.imported_job_id else "no",
+            ]
+        )
     return buffer.getvalue()
 
 

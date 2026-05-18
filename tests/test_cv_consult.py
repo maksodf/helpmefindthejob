@@ -18,7 +18,6 @@ from company_discovery.cv_consult import (
     parse_consult_response,
 )
 
-
 _JOB = {
     "title": "Pflegehelfer/in",
     "company": "Charité",
@@ -60,7 +59,7 @@ class ParseConsultResponseTests(unittest.TestCase):
         self.assertEqual(gaps[0]["gap"], "Vivendi")
 
     def test_wrapped_in_prose_still_parses(self):
-        raw = "Here are the gaps:\n[{\"gap\": \"X\", \"question\": \"Y?\"}]\nDone."
+        raw = 'Here are the gaps:\n[{"gap": "X", "question": "Y?"}]\nDone.'
         gaps = parse_consult_response(raw)
         self.assertEqual(gaps, [{"gap": "X", "question": "Y?"}])
 
@@ -70,10 +69,7 @@ class ParseConsultResponseTests(unittest.TestCase):
         self.assertEqual(parse_consult_response(None), [])
 
     def test_caps_at_six(self):
-        items = ", ".join([
-            f'{{"gap": "g{i}", "question": "q{i}?"}}'
-            for i in range(10)
-        ])
+        items = ", ".join([f'{{"gap": "g{i}", "question": "q{i}?"}}' for i in range(10)])
         gaps = parse_consult_response(f"[{items}]")
         self.assertLessEqual(len(gaps), 6)
 
@@ -85,14 +81,14 @@ class HeuristicConsultTests(unittest.TestCase):
         # Should pick up at least one capitalised term the CV doesn't
         # cover (e.g. Vivendi, Geriatrie, Snomed).
         self.assertTrue(
-            any(needle in text for needle in
-                 ("Vivendi", "Geriatrie", "Snomed", "MedTech")),
+            any(needle in text for needle in ("Vivendi", "Geriatrie", "Snomed", "MedTech")),
             msg=f"got: {gaps!r}",
         )
 
     def test_returns_empty_when_no_description(self):
         gaps = heuristic_consult(
-            job={"title": "X", "description": ""}, cv_text="anything",
+            job={"title": "X", "description": ""},
+            cv_text="anything",
         )
         self.assertEqual(gaps, [])
 
@@ -104,7 +100,9 @@ class HeuristicConsultTests(unittest.TestCase):
 class ConsultTopLevelTests(unittest.TestCase):
     def test_no_ai_falls_back_to_heuristic(self):
         gaps, used_ai = consult(
-            job=_JOB, cv_text=_CV_THIN, ai_caller=None,
+            job=_JOB,
+            cv_text=_CV_THIN,
+            ai_caller=None,
         )
         self.assertFalse(used_ai)
         self.assertGreater(len(gaps), 0)
@@ -112,8 +110,11 @@ class ConsultTopLevelTests(unittest.TestCase):
     def test_ai_returning_gaps_short_circuits(self):
         def fake_ai(system, user):
             return '[{"gap": "Vivendi", "question": "Used it?"}]'
+
         gaps, used_ai = consult(
-            job=_JOB, cv_text=_CV_THIN, ai_caller=fake_ai,
+            job=_JOB,
+            cv_text=_CV_THIN,
+            ai_caller=fake_ai,
         )
         self.assertTrue(used_ai)
         self.assertEqual(gaps, [{"gap": "Vivendi", "question": "Used it?"}])
@@ -121,8 +122,11 @@ class ConsultTopLevelTests(unittest.TestCase):
     def test_ai_crash_falls_back(self):
         def crashing(system, user):
             raise RuntimeError("api down")
+
         gaps, used_ai = consult(
-            job=_JOB, cv_text=_CV_THIN, ai_caller=crashing,
+            job=_JOB,
+            cv_text=_CV_THIN,
+            ai_caller=crashing,
         )
         self.assertFalse(used_ai)
         # Heuristic fallback ran.
@@ -131,8 +135,11 @@ class ConsultTopLevelTests(unittest.TestCase):
     def test_ai_empty_response_falls_back(self):
         def empty(system, user):
             return ""
+
         gaps, used_ai = consult(
-            job=_JOB, cv_text=_CV_THIN, ai_caller=empty,
+            job=_JOB,
+            cv_text=_CV_THIN,
+            ai_caller=empty,
         )
         self.assertFalse(used_ai)
 
