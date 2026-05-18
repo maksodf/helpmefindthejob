@@ -344,10 +344,10 @@ Per `10-ai-act-compliance.md`. Create the `/compliance/` directory and ship:
 
 ### 3.3 Roadmap and release discipline (5 h)
 
-- [ ] `ROADMAP.md` at repo root with quarterly milestones for 2026 Q3 → 2028 Q2 (see `03-post-grant.md` for the multi-phase view)
-- [ ] `CHANGELOG.md` in Keep-a-Changelog format, backfilled from git log
-- [ ] First tagged release: `v0.1.0` with release notes
-- [ ] Set up GitHub Releases workflow to automate future tagging
+- [x] `ROADMAP.md` at repo root — eight quarters from 2026 Q3 to 2028 Q2 with honest "we plan to / scoped for / anticipated / under consideration" language; cross-linked from README's Roadmap and Documentation sections; long-horizon context kept in `docs/grant/03-post-grant.md`.
+- [x] `CHANGELOG.md` at repo root in Keep-a-Changelog 1.1.0 format — `[0.1.0] — 2026-05-18` entry backfilled from sprint commits grouped by Added / Changed / Fixed / Removed / Security; pre-sprint history collapsed into a brief `[0.0.x] — pre-2026-05-17` entry pointing at `CONTRIBUTORS-NOTE.md`. Apache 2.0 header.
+- [x] First tagged release: `v0.1.0` with release notes — annotated tag points at the GitHub Release; release notes are version-controlled at `docs/releases/v0.1.0.md` (so the source survives any GitHub UI edit) with three sections per the maintainer spec: "What this is" / "What's in this release" / "What's not yet shipped". Cryptographic signing of the release artifact (cosign + CycloneDX SBOM) is deferred to Week 4 task 4.2 per the agent's existing scope.
+- [-] Set up GitHub Releases workflow to automate future tagging — **dropped from §3.3 scope**. The Phase 1 release cadence is low (v0.1.0 here, v0.2.0 post-NLnet-submission, see ROADMAP); manual `git tag -a` + `gh release create` is the right rhythm. Automating the workflow lands when the release cadence increases — Phase 2 task tracked in `docs/grant/03-post-grant.md`.
 
 ### 3.4 Public demo deployment (6 h)
 

@@ -236,26 +236,47 @@ the Programme page link and any required acknowledgment language.
 
 ## Roadmap
 
-A quarterly roadmap with explicit milestones for 2026 Q3 → 2028 Q2 lands
-in [`ROADMAP.md`](ROADMAP.md) in Week 3. Near-term commitments visible
-from this file:
+A quarterly roadmap with milestones for **2026 Q3 → 2028 Q2** lives at
+[`ROADMAP.md`](ROADMAP.md). At a glance:
 
-- **Week 1 (current)**: licensing, governance, sanitisation, README
-  positioning, outreach foundations. See
-  [`docs/grant/02-execution-plan.md`](docs/grant/02-execution-plan.md).
-- **Week 2**: MCP server documentation, ESCO + EURES integration,
-  reference housing-agent integration, AI Act compliance pack, Commons
-  Conservancy application submitted.
-- **Week 3**: CI expansion, public demo deployment, documentation site,
-  accessibility audit, translator pathway, reproducible Nix build.
-- **Week 4**: SUSTAINABILITY.md, signed releases with SBOM, NLnet NGI
-  Zero Commons Fund application.
+- **2026 Q3** — grant-sprint completion + first stable release
+  (v0.1.0 shipped 2026-05-18). Commons Conservancy application
+  submitted; NLnet NGI Zero Commons Fund application submitted by
+  end of Week 4.
+- **2026 Q4** — Arabic as the third UI language; first NGO pilot
+  deployment; WIP reintegration begins (per Decision 16).
+- **2027 Q1** — Phase 2 NLnet application; framework extraction
+  begins.
+- **2027 Q2** — housing-agent integration hardened; healthcare-agent
+  scoping starts.
+- **2027 Q3** — multi-agent orchestrator scoping.
+- **2027 Q4** — multi-agent civic platform first integration.
+- **2028 Q1 / Q2** — multi-country localisation (Austria, then
+  France + Netherlands).
+
+The full version-by-version history of what shipped is at
+[`CHANGELOG.md`](CHANGELOG.md). Long-horizon context (Phases 2–4,
+sustainability model) at [`docs/grant/03-post-grant.md`](docs/grant/03-post-grant.md).
 
 ## Documentation
 
+- [`ROADMAP.md`](ROADMAP.md) — quarterly milestones 2026 Q3 → 2028 Q2.
+- [`CHANGELOG.md`](CHANGELOG.md) — what shipped in each release.
+- [`ARCHITECTURE.md`](ARCHITECTURE.md) — system diagram and component
+  map.
+- [`STANDARDS.md`](STANDARDS.md) — every standard the project
+  implements.
+- [`compliance/`](compliance/) — EU AI Act compliance pack (Articles
+  9–15, 27, 49).
 - [`docs/grant/`](docs/grant/) — strategic source of truth: project
   brief, execution plan, decisions log, research notes, personas,
   cost-saving doctrine, MCP composition spec, AI Act compliance plan.
+- [`docs/mcp-server.md`](docs/mcp-server.md) — public MCP server
+  documentation, 13-tool catalogue (v0.2.0).
+- [`docs/esco-integration.md`](docs/esco-integration.md) — ESCO + EURES
+  integration reference.
+- [`docs/releases/`](docs/releases/) — version-controlled release
+  notes (`docs/releases/v0.1.0.md` for the current release).
 - [`CONTRIBUTING.md`](CONTRIBUTING.md) — how to contribute.
 - [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) — Contributor Covenant 2.1.
 - [`SECURITY.md`](SECURITY.md) — private vulnerability disclosure.
