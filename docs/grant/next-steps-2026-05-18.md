@@ -38,6 +38,9 @@
 
 ## Step 3 — Open R12 close (synthetic-cohort bias-testing interim run)
 
+**Broadening commit lands 2026-05-18; see `bias-testing-2026-05-18-broadened.md` for the second-run report (140 data points: 70 scoring + 70 CV-tailoring). Remaining four scenario classes (onboarding, discovery, motivation-letter drafting, skill-gap brief) sequenced to post-Phase-1 dated reports.**
+
+
 | Field | Value |
 |---|---|
 | **Deliverable** | Three artefacts the methodology at `compliance/accuracy-and-bias-testing.md` already specifies but has not yet produced: (a) `tests/fixtures/personas/` — synthetic-but-realistic profile records for all seven personas, shaped per §2.1; (b) `tests/test_bias_methodology.py` — runs the methodology against the fixtures and asserts the divergence-from-tolerance counts under the bands of §2.4; (c) `docs/grant/bias-testing-2026-05-XX.md` — the first executed run's report per §2.5. Closes the transparency notice's "preliminary results due Week 3" claim before NLnet submission. |

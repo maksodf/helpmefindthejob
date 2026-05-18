@@ -231,3 +231,7 @@ which tag ran.
   seven personas; tolerance bands honoured (no tolerance manipulation);
   all seven in band. Closes R12 for Phase 1; subsequent runs broaden
   coverage and are emitted as new dated reports.
+- **2026-05-18 (broadened)**: scoring class broadened to 10 scenarios
+  per persona + CV-tailoring class added at 10 scenarios per persona;
+  see `bias-testing-2026-05-18-broadened.md` for the 140-data-point
+  report.

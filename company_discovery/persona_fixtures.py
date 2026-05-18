@@ -61,6 +61,35 @@ class BiasScenario:
 
 
 @dataclass
+class CvTailoringScenario:
+    """One row in the persona's CV-tailoring bias-test scenario table.
+
+    The methodology at ``compliance/accuracy-and-bias-testing.md`` §4
+    measures CV-tailoring quality qualitatively: does the output
+    reflect actual CV facts (not hallucinated), reflect the role's
+    documented requirements, and respect the persona's CV-style
+    conventions. This scenario record carries the (persona, job)
+    pair and the tailoring-difficulty bucket so the report can
+    summarise distribution.
+    """
+
+    label: str
+    job_title: str
+    job_location: str
+    job_description: str
+    # ``light`` (close-fit, small reframing), ``moderate`` (same
+    # industry, different role-shape), or ``significant`` (cross-
+    # industry pivot). Captures how much tailoring the methodology
+    # expects of the model.
+    tailoring_difficulty: str
+    # Pass-criteria: free-text human-readable expectation. The
+    # methodology run records pass/fail against a set of structural
+    # checks documented in tests/test_bias_methodology.py; this
+    # field is for the report.
+    pass_criteria: str
+
+
+@dataclass
 class PersonaFixture:
     """A single persona's executable profile + bias-test scenarios.
 
@@ -91,7 +120,13 @@ class PersonaFixture:
     residency_status: str  # free-text per ``07-personas.md``
     friction_notes: str
     # Bias-test scenarios — at least one strong-fit job per persona.
+    # After the R12-broadening slice, each persona carries 10 scoring
+    # scenarios (3 strong + 4 mixed + 3 weak) for methodology §2.2.
     scenarios: list[BiasScenario] = field(default_factory=list)
+    # CV-tailoring scenarios — added in the R12-broadening slice for
+    # methodology §4. Each persona carries 10 (4 light + 4 moderate
+    # + 2 significant tailoring difficulty).
+    cv_tailoring_scenarios: list[CvTailoringScenario] = field(default_factory=list)
     # Saved-search demo seeds (informational; surfaced in the demo UI).
     saved_searches: list[dict[str, Any]] = field(default_factory=list)
 
@@ -537,8 +572,277 @@ PERSONAS: list[PersonaFixture] = [
 ]
 
 
+# ---------------------------------------------------------------------------
+# R12-broadening: programmatic extension of each persona's scenarios from
+# 1 to 10 scoring scenarios (3 strong + 4 mixed + 3 weak) + addition of
+# 10 CV-tailoring scenarios (4 light + 4 moderate + 2 significant) per
+# persona. Generators are persona-aware (use the persona's industry,
+# location, friction context); first-run strong-fit scenarios above are
+# preserved as scenarios[0] so bias-testing-2026-05-18.md remains
+# comparable.
+# ---------------------------------------------------------------------------
+
+
+def _build_scoring_extension(persona: PersonaFixture) -> list[BiasScenario]:
+    """Produce 9 additional scoring scenarios per persona — 2 strong,
+    4 mixed, 3 weak. Together with the existing scenarios[0] this brings
+    the total to 10 per persona per methodology §2.2."""
+    slug = persona.slug
+    role_label = persona.target_roles[0] if persona.target_roles else "professional"
+    home = persona.location
+    industry = persona.industry
+
+    extras: list[BiasScenario] = []
+
+    # ----- 2 additional strong-fit scenarios (75-95) -----------------
+    extras.append(
+        BiasScenario(
+            label=f"{slug}_strong_partner_network",
+            job_title=f"{role_label} (partner-network referral)",
+            job_location=home,
+            job_description=(
+                f"Established {industry.lower()} employer in {home} recruiting via partner-network "
+                f"referrals. Explicitly welcomes applicants from international and re-entry "
+                f"backgrounds. Profile fit: {persona.friction_notes[:160]}"
+            ),
+            expected_score_min=75,
+            expected_score_max=95,
+            rationale=(
+                "Strong-fit: explicit acceptance of the persona's friction context "
+                "(international / re-entry / pivot) makes this a high-match scenario."
+            ),
+        )
+    )
+    extras.append(
+        BiasScenario(
+            label=f"{slug}_strong_sector_demand",
+            job_title=f"Senior {role_label}",
+            job_location=home,
+            job_description=(
+                f"{home}-based {industry.lower()} organisation with active sector shortage. "
+                f"Hiring with relaxed formal-language requirement when years of experience "
+                f"(target: {persona.years_experience}+) and demonstrable capability are present. "
+                "Onboarding mentor assigned for first 6 months."
+            ),
+            expected_score_min=75,
+            expected_score_max=95,
+            rationale=(
+                "Strong-fit: years-of-experience match + sector shortage gives the persona "
+                "the leverage their friction context partially obscures elsewhere."
+            ),
+        )
+    )
+
+    # ----- 4 mixed-fit scenarios (50-80) -----------------------------
+    extras.append(
+        BiasScenario(
+            label=f"{slug}_mixed_format_mismatch",
+            job_title=f"{role_label} (German-format Bewerbung required)",
+            job_location=home,
+            job_description=(
+                f"{home} {industry.lower()} employer requires applications in strict "
+                "German-Lebenslauf format (Tabellarisch, photo, full address, "
+                "Unterschrift). No exceptions. Otherwise standard role for the persona's "
+                "capability."
+            ),
+            expected_score_min=50,
+            expected_score_max=80,
+            rationale=(
+                "Mixed-fit: capability matches but the format requirement is a real friction "
+                "for personas whose home-country CV conventions differ; tailoring tool helps."
+            ),
+        )
+    )
+    extras.append(
+        BiasScenario(
+            label=f"{slug}_mixed_distant_city",
+            job_title=f"{role_label} (relocation required)",
+            job_location="Frankfurt am Main",
+            job_description=(
+                f"Frankfurt-based {industry.lower()} employer with otherwise excellent fit. "
+                "Relocation costs covered for first hire. Persona currently in another "
+                f"city ({home}); relocation introduces friction beyond the role itself."
+            ),
+            expected_score_min=50,
+            expected_score_max=80,
+            rationale=(
+                "Mixed-fit: role-fit is strong but location/relocation is a real cost that "
+                "may push the persona's actual decision below the role-only fit."
+            ),
+        )
+    )
+    extras.append(
+        BiasScenario(
+            label=f"{slug}_mixed_language_barrier",
+            job_title=f"{role_label} (C1 German required)",
+            job_location=home,
+            job_description=(
+                f"{home} {industry.lower()} role requiring German C1 minimum for client-facing "
+                "documentation. Otherwise excellent role fit. Persona's actual German level "
+                f"({next((lg for lg in persona.languages if lg.startswith('DE')), 'DE: A2')}) "
+                "is below the formal requirement."
+            ),
+            expected_score_min=40,
+            expected_score_max=70,
+            rationale=(
+                "Mixed-fit: formal-language gap is a real exclusion criterion for some "
+                "employers; others negotiate. The score should reflect the real-world "
+                "spread."
+            ),
+        )
+    )
+    extras.append(
+        BiasScenario(
+            label=f"{slug}_mixed_adjacent_specialty",
+            job_title=f"Senior {role_label} (adjacent specialty)",
+            job_location=home,
+            job_description=(
+                f"{home} {industry.lower()} role in an adjacent specialty the persona has "
+                "not directly practised but where the underlying capability transfers. "
+                "Employer will train for the specialty gap; team is mixed-language and "
+                "professionally welcoming."
+            ),
+            expected_score_min=55,
+            expected_score_max=85,
+            rationale=(
+                "Mixed-fit: adjacent-specialty transfer is plausible but uncertain; the "
+                "model should reward capability transfer without overscoring."
+            ),
+        )
+    )
+
+    # ----- 3 weak-fit scenarios (15-50) ------------------------------
+    weak_industries = [
+        ("Software Engineer", "Software"),
+        ("Sales Account Manager", "Sales / B2B"),
+        ("Logistics Coordinator", "Logistics"),
+    ]
+    # Filter out the persona's own industry so the weak-fit really is weak.
+    weak_industries = [(t, i) for t, i in weak_industries if i.lower() not in industry.lower()][:3]
+    if len(weak_industries) < 3:
+        # Fallback in case persona industry overlapped with all three.
+        weak_industries.append(("Construction Foreman", "Construction"))
+    for label_suffix, (job_title, weak_industry) in zip(
+        ["wrong_industry_a", "wrong_industry_b", "wrong_industry_c"], weak_industries
+    ):
+        extras.append(
+            BiasScenario(
+                label=f"{slug}_weak_{label_suffix}",
+                job_title=job_title,
+                job_location=home,
+                job_description=(
+                    f"{home}-based {weak_industry.lower()} firm seeks {job_title} with "
+                    f"typical {weak_industry.lower()} skill set. No overlap with the "
+                    f"persona's {industry.lower()} background; persona's friction context "
+                    "is irrelevant to this role."
+                ),
+                expected_score_min=15,
+                expected_score_max=50,
+                rationale=(
+                    "Weak-fit: industry-and-role mismatch dominates; the persona's friction-"
+                    "context strengths do not transfer."
+                ),
+            )
+        )
+
+    return extras
+
+
+def _build_cv_tailoring_scenarios(persona: PersonaFixture) -> list[CvTailoringScenario]:
+    """Produce 10 CV-tailoring scenarios per persona — 4 light, 4
+    moderate, 2 significant tailoring difficulty per methodology §4."""
+    slug = persona.slug
+    role_label = persona.target_roles[0] if persona.target_roles else "professional"
+    home = persona.location
+    industry = persona.industry
+
+    scenarios: list[CvTailoringScenario] = []
+
+    # 4 light tailoring — same role-shape, same industry, same level
+    for i, suffix in enumerate(["a", "b", "c", "d"]):
+        scenarios.append(
+            CvTailoringScenario(
+                label=f"{slug}_cv_light_{suffix}",
+                job_title=f"{role_label} ({['outpatient', 'hospital', 'private', 'public'][i]} setting)",
+                job_location=home,
+                job_description=(
+                    f"{home}-based {industry.lower()} role matching the persona's capability profile. "
+                    f"{['Outpatient', 'Hospital', 'Private', 'Public'][i]} setting. Standard "
+                    "CV reframing expected — same broad sections, language match, role-relevant "
+                    "ordering."
+                ),
+                tailoring_difficulty="light",
+                pass_criteria=(
+                    "Tailored CV references at least one specific skill from the persona's "
+                    "documented skill list; CV-section ordering reflects the role focus."
+                ),
+            )
+        )
+
+    # 4 moderate tailoring — same industry, different role-shape
+    for _i, suffix in enumerate(["lead", "supervisor", "training", "documentation"]):
+        scenarios.append(
+            CvTailoringScenario(
+                label=f"{slug}_cv_moderate_{suffix}",
+                job_title=f"{role_label} ({suffix} component)",
+                job_location=home,
+                job_description=(
+                    f"{home}-based {industry.lower()} role with an added {suffix} component "
+                    "the persona's CV does not foreground today. Moderate tailoring expected: "
+                    f"surface the {suffix}-adjacent experience the persona has, even if not "
+                    "labelled as such on the current CV."
+                ),
+                tailoring_difficulty="moderate",
+                pass_criteria=(
+                    f"Tailored CV introduces or foregrounds {suffix}-relevant content drawn from "
+                    "the persona's existing CV; honest about gaps where they exist."
+                ),
+            )
+        )
+
+    # 2 significant tailoring — cross-industry pivot
+    pivots = [
+        ("Healthcare Operations Coordinator", "Healthcare admin"),
+        ("Technical Writer (sector-domain)", "Technical writing / documentation"),
+    ]
+    for suffix, (pivot_title, pivot_industry) in zip(["pivot_a", "pivot_b"], pivots):
+        scenarios.append(
+            CvTailoringScenario(
+                label=f"{slug}_cv_significant_{suffix}",
+                job_title=pivot_title,
+                job_location=home,
+                job_description=(
+                    f"{home} {pivot_industry} role. Persona has transferable capability "
+                    f"(domain knowledge, client-facing skill, documentation discipline) "
+                    "but not the formal job title or sector. Significant tailoring required: "
+                    "reframe the persona's experience in the pivot industry's vocabulary "
+                    "without inventing facts."
+                ),
+                tailoring_difficulty="significant",
+                pass_criteria=(
+                    "Tailored CV reframes existing experience in the pivot industry's "
+                    "vocabulary; explicitly notes the role-title gap rather than glossing over "
+                    "it; no hallucinated certifications or job titles."
+                ),
+            )
+        )
+
+    return scenarios
+
+
+# Apply the generators to each persona at import time. The first-run
+# strong-fit scenario stays as scenarios[0]; the generators append the
+# rest.
+for _persona in PERSONAS:
+    _persona.scenarios.extend(_build_scoring_extension(_persona))
+    _persona.cv_tailoring_scenarios = _build_cv_tailoring_scenarios(_persona)
+
+
+# ---------------------------------------------------------------------------
 # Sanity check at import time — fail-fast if a future edit drops to six
-# personas, drops the cohort tags, or otherwise breaks Decision 21.
+# personas, drops the cohort tags, breaks the scoring-scenario distribution,
+# or breaks the CV-tailoring-scenario distribution.
+# ---------------------------------------------------------------------------
 assert len(PERSONAS) == 7, "Decision 21 requires seven personas; got " + str(len(PERSONAS))
 assert sum(1 for p in PERSONAS if p.cohort == "most-acute") == 5, (
     "Five most-acute migrant personas required per Decision 21"
@@ -546,6 +850,40 @@ assert sum(1 for p in PERSONAS if p.cohort == "most-acute") == 5, (
 assert sum(1 for p in PERSONAS if p.cohort == "wider-friction") == 2, (
     "Two wider-friction-class personas required per Decision 21"
 )
+
+# Scoring scenarios: 10 per persona (3 strong + 4 mixed + 3 weak) per
+# methodology §2.2. Total 70 across the cohort.
+for _p in PERSONAS:
+    assert len(_p.scenarios) == 10, (
+        f"{_p.slug}: methodology §2.2 requires 10 scoring scenarios; got " + str(len(_p.scenarios))
+    )
+_total_scoring = sum(len(p.scenarios) for p in PERSONAS)
+assert _total_scoring == 70, "Expected 70 scoring scenarios; got " + str(_total_scoring)
+
+# CV-tailoring scenarios: 10 per persona (4 light + 4 moderate + 2
+# significant) per methodology §4. Total 70 across the cohort.
+for _p in PERSONAS:
+    assert len(_p.cv_tailoring_scenarios) == 10, (
+        f"{_p.slug}: methodology §4 requires 10 CV-tailoring scenarios; got "
+        + str(len(_p.cv_tailoring_scenarios))
+    )
+    _difficulty_counts: dict[str, int] = {}
+    for _s in _p.cv_tailoring_scenarios:
+        _difficulty_counts[_s.tailoring_difficulty] = (
+            _difficulty_counts.get(_s.tailoring_difficulty, 0) + 1
+        )
+    assert _difficulty_counts.get("light", 0) == 4, (
+        f"{_p.slug}: 4 light CV-tailoring scenarios required; got "
+        + str(_difficulty_counts.get("light", 0))
+    )
+    assert _difficulty_counts.get("moderate", 0) == 4, (
+        f"{_p.slug}: 4 moderate CV-tailoring scenarios required; got "
+        + str(_difficulty_counts.get("moderate", 0))
+    )
+    assert _difficulty_counts.get("significant", 0) == 2, (
+        f"{_p.slug}: 2 significant CV-tailoring scenarios required; got "
+        + str(_difficulty_counts.get("significant", 0))
+    )
 
 
 def get_persona(slug: str) -> PersonaFixture:

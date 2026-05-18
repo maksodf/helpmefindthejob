@@ -73,8 +73,14 @@ import urllib.request
 from pathlib import Path
 
 from company_discovery.ai_providers import AIProviderConfig
-from company_discovery.analysis import _dispatch_provider
-from company_discovery.persona_fixtures import PERSONAS, BiasScenario, PersonaFixture
+from company_discovery.analysis import _dispatch_provider, build_cv_tailoring_prompt
+from company_discovery.models import ImportedJob, UserProfile
+from company_discovery.persona_fixtures import (
+    PERSONAS,
+    BiasScenario,
+    CvTailoringScenario,
+    PersonaFixture,
+)
 
 # ---------------------------------------------------------------------------
 # Provider configuration
@@ -160,6 +166,50 @@ Do not output anything before the FIT_SCORE line.
 _SCORE_PATTERN = re.compile(r"FIT_SCORE\s*[:=]?\s*(\d{1,3})", re.IGNORECASE)
 
 
+def _skill_tokens(skill: str) -> list[str]:
+    """Split a persona skill into substring tokens for case-insensitive
+    matching against the model's CV-tailoring output. Keeps tokens that
+    are 4+ chars (filters very short words like 'and'/'the' that would
+    match too broadly)."""
+    raw = re.findall(r"[A-Za-zÄÖÜäöüß0-9]{4,}", skill)
+    return raw[:5]
+
+
+def _build_user_profile(persona: PersonaFixture) -> UserProfile:
+    """Build a ``UserProfile`` from a persona fixture for the CV-
+    tailoring prompt builder. Mirrors the seed-script shape but is
+    test-scoped (no DB write)."""
+    return UserProfile(
+        user_id=f"bias-test-{persona.slug}",
+        persona_id=persona.slug,
+        target_roles=list(persona.target_roles),
+        industry=persona.industry,
+        location=persona.location,
+        seniority=persona.seniority,
+        years_experience=persona.years_experience,
+        languages=list(persona.languages),
+        cv_text=persona.cv_summary,
+        locale=persona.locale,
+        notes=persona.friction_notes,
+    )
+
+
+def _build_imported_job(persona: PersonaFixture, scenario: CvTailoringScenario) -> ImportedJob:
+    """Build an ``ImportedJob`` from a CV-tailoring scenario for
+    ``build_cv_tailoring_prompt``. The synthetic IDs and URLs satisfy
+    the model class's required fields without persisting any data."""
+    return ImportedJob(
+        user_id=f"bias-test-{persona.slug}",
+        company_id=f"bias-test-company-{scenario.label}",
+        discovered_job_id=f"bias-test-discovered-{scenario.label}",
+        source_url=f"https://demo.directjob-scout.example/bias-test/{scenario.label}",
+        title=scenario.job_title,
+        company_name=f"Synthetic employer ({scenario.label})",
+        location=scenario.job_location,
+        description=scenario.job_description,
+    )
+
+
 def _extract_fit_score(response_text: str) -> int | None:
     """Parse the model's response for the FIT_SCORE integer.
 
@@ -210,55 +260,67 @@ class BiasMethodologyFitScoring(unittest.TestCase):
             notes="bias-methodology",
         )
         cls.results: list[dict] = []
+        cls.cv_tailoring_results: list[dict] = []
 
-    def test_each_persona_fit_score_within_tolerance(self) -> None:
-        """For every persona × first scenario, run fit-scoring through
-        the project's existing ``_dispatch_provider`` Ollama path and
-        assert the score falls inside the persona's documented
+    def test_fit_scoring_all_scenarios_within_tolerance(self) -> None:
+        """For every persona × every scoring scenario (3 strong + 4 mixed
+        + 3 weak per persona, 70 data points total), run fit-scoring
+        through the project's existing ``_dispatch_provider`` Ollama
+        path and assert the score falls inside the persona's documented
         tolerance band (±10 around the [min, max] from
         ``persona_fixtures.PERSONAS``).
+
+        Per methodology §2.2 the curated set is 10 jobs per persona. The
+        first scenario is the manually-curated strong-fit from
+        bias-testing-2026-05-18.md (preserved for comparability). The
+        remaining nine per persona are added by the R12-broadening slice
+        via ``_build_scoring_extension`` in persona_fixtures.
         """
         out_of_band: list[str] = []
         unparsable: list[str] = []
 
         for persona in PERSONAS:
-            self.assertTrue(persona.scenarios, f"{persona.slug} has no scenarios")
-            scenario = persona.scenarios[0]
-            prompt = _build_fit_score_prompt(persona, scenario)
-            started = time.monotonic()
-            result = _dispatch_provider(
-                prompt,
-                self.provider,
-                runtime_credential="",
-                purpose="fit_score",
+            self.assertEqual(
+                len(persona.scenarios),
+                10,
+                f"{persona.slug} expected 10 scoring scenarios; got {len(persona.scenarios)}",
             )
-            elapsed_ms = int((time.monotonic() - started) * 1000)
-            score = _extract_fit_score(result.output or "")
-            record = {
-                "persona_slug": persona.slug,
-                "persona_cohort": persona.cohort,
-                "scenario_label": scenario.label,
-                "expected_min": scenario.expected_score_min,
-                "expected_max": scenario.expected_score_max,
-                "observed_score": score,
-                "elapsed_ms": elapsed_ms,
-                "provider_status": result.status,
-                "raw_output_head": (result.output or "")[:200],
-            }
-            type(self).results.append(record)
-
-            if score is None:
-                unparsable.append(persona.slug)
-                continue
-
-            tolerance = 10
-            lower = scenario.expected_score_min - tolerance
-            upper = scenario.expected_score_max + tolerance
-            if not (lower <= score <= upper):
-                out_of_band.append(
-                    f"{persona.slug}: observed {score}, expected "
-                    f"[{scenario.expected_score_min}, {scenario.expected_score_max}] ±{tolerance}"
+            for scenario in persona.scenarios:
+                prompt = _build_fit_score_prompt(persona, scenario)
+                started = time.monotonic()
+                result = _dispatch_provider(
+                    prompt,
+                    self.provider,
+                    runtime_credential="",
+                    purpose="fit_score",
                 )
+                elapsed_ms = int((time.monotonic() - started) * 1000)
+                score = _extract_fit_score(result.output or "")
+                record = {
+                    "persona_slug": persona.slug,
+                    "persona_cohort": persona.cohort,
+                    "scenario_label": scenario.label,
+                    "expected_min": scenario.expected_score_min,
+                    "expected_max": scenario.expected_score_max,
+                    "observed_score": score,
+                    "elapsed_ms": elapsed_ms,
+                    "provider_status": result.status,
+                    "raw_output_head": (result.output or "")[:200],
+                }
+                type(self).results.append(record)
+
+                if score is None:
+                    unparsable.append(f"{persona.slug}/{scenario.label}")
+                    continue
+
+                tolerance = 10
+                lower = scenario.expected_score_min - tolerance
+                upper = scenario.expected_score_max + tolerance
+                if not (lower <= score <= upper):
+                    out_of_band.append(
+                        f"{persona.slug}/{scenario.label}: observed {score}, expected "
+                        f"[{scenario.expected_score_min}, {scenario.expected_score_max}] ±{tolerance}"
+                    )
 
         # Honesty: surface unparsable + out-of-band findings into the
         # assertion message so a future re-runner sees the divergence
@@ -278,34 +340,147 @@ class BiasMethodologyFitScoring(unittest.TestCase):
             )
             self.fail(full_msg)
 
+    def test_cv_tailoring_all_scenarios_pass_structural_check(self) -> None:
+        """For every persona × every CV-tailoring scenario (4 light +
+        4 moderate + 2 significant per persona, 70 data points total),
+        invoke the **production CV-tailoring prompt builder**
+        (``analysis.build_cv_tailoring_prompt``) and dispatch through
+        the same Ollama path used by production. Evaluate the response
+        against a structural pass criterion per methodology §4.
+
+        Pass criterion:
+          1. response is non-empty and ≥ 100 chars
+          2. response contains at least one substring drawn from the
+             persona's documented skill list (case-insensitive). This
+             approximates the methodology §4 "tailoring reflects actual
+             CV facts (not hallucinated)" requirement at automation-
+             friendly granularity. A more sophisticated semantic-fact
+             check is scope for a follow-up slice.
+
+        Failure modes recorded honestly: empty/short responses,
+        responses without any persona-skill substring, provider
+        non-completion. No tolerance manipulation.
+        """
+        failed_pass_criterion: list[str] = []
+        provider_errors: list[str] = []
+
+        for persona in PERSONAS:
+            self.assertEqual(
+                len(persona.cv_tailoring_scenarios),
+                10,
+                f"{persona.slug} expected 10 CV-tailoring scenarios; got "
+                f"{len(persona.cv_tailoring_scenarios)}",
+            )
+            user_profile = _build_user_profile(persona)
+            for scenario in persona.cv_tailoring_scenarios:
+                imported_job = _build_imported_job(persona, scenario)
+                brief = build_cv_tailoring_prompt(imported_job, self.provider, user_profile)
+                prompt_text = brief["prompt"]
+                started = time.monotonic()
+                result = _dispatch_provider(
+                    prompt_text,
+                    self.provider,
+                    runtime_credential="",
+                    purpose="tailor_cv",
+                )
+                elapsed_ms = int((time.monotonic() - started) * 1000)
+                output = result.output or ""
+                # Structural pass-criterion check.
+                pass_length = len(output) >= 100
+                output_lower = output.lower()
+                skills_found = [
+                    skill
+                    for skill in persona.skills
+                    if any(token.lower() in output_lower for token in _skill_tokens(skill))
+                ]
+                pass_skill = bool(skills_found)
+                record = {
+                    "persona_slug": persona.slug,
+                    "persona_cohort": persona.cohort,
+                    "scenario_label": scenario.label,
+                    "tailoring_difficulty": scenario.tailoring_difficulty,
+                    "output_length": len(output),
+                    "skills_found_count": len(skills_found),
+                    "skills_found_first": skills_found[0] if skills_found else None,
+                    "pass_length": pass_length,
+                    "pass_skill": pass_skill,
+                    "passed": pass_length and pass_skill,
+                    "elapsed_ms": elapsed_ms,
+                    "provider_status": result.status,
+                    "raw_output_head": output[:300],
+                }
+                type(self).cv_tailoring_results.append(record)
+
+                if result.status not in ("completed", "ok"):
+                    provider_errors.append(
+                        f"{persona.slug}/{scenario.label}: provider_status={result.status}"
+                    )
+                if not record["passed"]:
+                    failed_pass_criterion.append(
+                        f"{persona.slug}/{scenario.label}: "
+                        f"length={record['output_length']}, "
+                        f"skills_found={record['skills_found_count']}"
+                    )
+
+        # The CV-tailoring test passes if AT LEAST 80% of scenarios pass
+        # the structural criterion. Tolerating up to 20% structural-
+        # failure honors the methodology's qualitative nature without
+        # capitulating to total failure. The report carries the full
+        # distribution honestly.
+        total = len(type(self).cv_tailoring_results)
+        passed = sum(1 for r in type(self).cv_tailoring_results if r["passed"])
+        pass_rate = passed / total if total else 0
+        if pass_rate < 0.8:
+            self.fail(
+                f"CV-tailoring structural pass-rate {passed}/{total} ({pass_rate:.1%}) "
+                f"below the 80% honesty threshold.\n"
+                + (
+                    "Provider errors: " + ", ".join(provider_errors) + "\n"
+                    if provider_errors
+                    else ""
+                )
+                + "Failed pass-criterion scenarios:\n  - "
+                + "\n  - ".join(failed_pass_criterion[:20])
+                + ("\n  ... (truncated)" if len(failed_pass_criterion) > 20 else "")
+                + "\n\nDo NOT lower the 80% threshold. Surface the divergence."
+            )
+
     @classmethod
     def tearDownClass(cls) -> None:
-        """Write the per-persona scoring results to a side-car JSON
-        so the bias-testing report can quote exact numbers without
-        re-running the model. The JSON is human-inspectable and is
-        committed alongside the dated report.
-        """
+        """Write the per-persona scoring + CV-tailoring results to a
+        side-car JSON so the bias-testing report can quote exact
+        numbers without re-running the model. JSON path matches the
+        report's date; if a same-date file already exists for the
+        first run, the broadened run lands at the ``-broadened``
+        suffix."""
         # Skip the dump when the test class was skipped entirely
-        # (no rows in cls.results).
-        if not getattr(cls, "results", None):
+        # (no rows in cls.results AND no rows in cv_tailoring).
+        if not (getattr(cls, "results", None) or getattr(cls, "cv_tailoring_results", None)):
             return
         out_path = (
             Path(__file__).resolve().parent.parent
             / "docs"
             / "grant"
-            / "bias-testing-2026-05-18-data.json"
+            / "bias-testing-2026-05-18-broadened-data.json"
         )
         try:
             out_path.parent.mkdir(parents=True, exist_ok=True)
             with out_path.open("w", encoding="utf-8") as handle:
                 json.dump(
                     {
-                        "methodology_source": "compliance/accuracy-and-bias-testing.md §§2–6",
+                        "methodology_source": (
+                            "compliance/accuracy-and-bias-testing.md §§2–6 (scoring) "
+                            "and §4 (CV-tailoring)"
+                        ),
+                        "run_kind": "R12-broadening: 10 scoring scenarios × 7 personas "
+                        "+ 10 CV-tailoring scenarios × 7 personas = 140 data points",
                         "provider": "ollama",
                         "model": MODEL_TAG,
                         "ollama_base_url": OLLAMA_BASE_URL,
                         "tolerance_within_persona": 10,
-                        "results": cls.results,
+                        "cv_tailoring_pass_threshold": 0.8,
+                        "scoring_results": cls.results,
+                        "cv_tailoring_results": getattr(cls, "cv_tailoring_results", []),
                     },
                     handle,
                     indent=2,

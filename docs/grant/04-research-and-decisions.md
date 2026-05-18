@@ -465,6 +465,8 @@ These are not yet decided. Listed so a future agent or planning session can prio
 
 **Status as of 2026-05-18**: IN PROGRESS — scheduled for Phase 1 close before NLnet submission, per maintainer decision 2026-05-18.
 
+**2026-05-18 (broadening)**: broadened scoring class to 10 scenarios per persona + added CV-tailoring class at 10 scenarios per persona. Coverage now 140 data points (33.3% of the methodology surface; 2 of 6 scenario classes executed). Report: `docs/grant/bias-testing-2026-05-18-broadened.md`. Remaining four classes (onboarding, discovery, motivation-letter drafting, skill-gap brief) deferred to post-Phase-1 dated reports.
+
 **Context**: `compliance/accuracy-and-bias-testing.md` documents a methodology that is not yet executed at full scale. The transparency notice (`compliance/transparency-notice.md`) promises "preliminary results due Week 3 of the grant sprint." Closing R12 closes that public claim before submission. The earlier framing — that the methodology would first execute at the partner-NGO pilot — has shifted with the partner-NGO pilot now positioned in 2026 Q4 (post-grant) per `ROADMAP.md`. A synthetic-cohort interim run using the seven canonical personas bridges the gap.
 
 **Target artefacts**:
