@@ -2,3 +2,6 @@
 # Keep this list as small as possible — the app uses stdlib for most things.
 pypdf==5.1.0
 pywebpush==1.14.0
+# jsonschema enforces MCP tools/call inputSchema validation before dispatch
+# (mcp_server.py). Light dependency, well-maintained, no native code.
+jsonschema==4.25.1

@@ -15,10 +15,73 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+import jsonschema
+
 from company_discovery.http_fetcher import HTTPFetcher
 from company_discovery.mcp_tools import CompanyDiscoveryMCPTools, TOOL_SCHEMAS
 from company_discovery.service import CompanyDiscoveryService, ScanConfig
 from company_discovery.sqlite_repository import SqliteCompanyDiscoveryRepository
+
+
+_TOOL_INDEX: dict[str, dict[str, Any]] = {tool["name"]: tool for tool in TOOL_SCHEMAS}
+
+
+def _problem_document(
+    *,
+    tool_name: str,
+    detail: str,
+    validation_path: str = "",
+    violated_rule: str = "",
+) -> dict[str, Any]:
+    """RFC 7807 Problem Details payload, embedded as the tool-call
+    error content. MCP carries the payload inside the standard
+    ``content[0].text`` channel with ``isError=True``."""
+
+    return {
+        "status": "invalid_arguments",
+        "type": "about:blank",
+        "title": "Tool arguments failed schema validation",
+        "detail": detail,
+        "instance": tool_name,
+        "validationPath": validation_path,
+        "violatedRule": violated_rule,
+    }
+
+
+def validate_tool_arguments(tool_name: str, arguments: Any) -> dict[str, Any] | None:
+    """Return ``None`` on success, or an RFC 7807 problem document on
+    failure. Validates ``arguments`` against the named tool's
+    ``inputSchema`` from :data:`TOOL_SCHEMAS`. Unknown tools return a
+    ``unknown_tool`` problem so the caller can short-circuit dispatch."""
+
+    tool = _TOOL_INDEX.get(tool_name)
+    if tool is None:
+        return {
+            "status": "unknown_tool",
+            "type": "about:blank",
+            "title": "Unknown tool",
+            "detail": f"Tool {tool_name!r} is not in the published catalogue.",
+            "instance": tool_name,
+        }
+    schema = tool.get("inputSchema") or {"type": "object"}
+    if not isinstance(arguments, dict):
+        return _problem_document(
+            tool_name=tool_name,
+            detail="arguments must be a JSON object.",
+            validation_path="",
+            violated_rule="type",
+        )
+    validator = jsonschema.Draft7Validator(schema)
+    errors = sorted(validator.iter_errors(arguments), key=lambda e: list(e.path))
+    if not errors:
+        return None
+    first = errors[0]
+    return _problem_document(
+        tool_name=tool_name,
+        detail=first.message,
+        validation_path="/".join(str(p) for p in first.absolute_path) or "(root)",
+        violated_rule=first.validator,
+    )
 
 
 ROOT = Path(__file__).parent
@@ -86,12 +149,53 @@ def handle_request(message: dict[str, Any], tools: CompanyDiscoveryMCPTools) -> 
     if method == "tools/call":
         name = params.get("name")
         arguments = params.get("arguments") or {}
-        if not isinstance(name, str) or not hasattr(tools, name):
-            return rpc_response(message_id, text_result({"status": "error", "error": "unknown_tool"}, True))
+        if not isinstance(name, str):
+            return rpc_response(
+                message_id,
+                text_result(
+                    {
+                        "status": "invalid_arguments",
+                        "type": "about:blank",
+                        "title": "Tool name missing or wrong type",
+                        "detail": "params.name must be a string.",
+                        "instance": "",
+                    },
+                    True,
+                ),
+            )
+        problem = validate_tool_arguments(name, arguments)
+        if problem is not None:
+            return rpc_response(message_id, text_result(problem, True))
+        if not hasattr(tools, name):
+            return rpc_response(
+                message_id,
+                text_result(
+                    {
+                        "status": "unknown_tool",
+                        "type": "about:blank",
+                        "title": "Tool dispatch target missing",
+                        "detail": f"No method named {name!r} on the tools object.",
+                        "instance": name,
+                    },
+                    True,
+                ),
+            )
         try:
             result = getattr(tools, name)(**arguments)
         except Exception as error:  # noqa: BLE001 - tool boundary
-            return rpc_response(message_id, text_result({"status": "error", "error": str(error)}, True))
+            return rpc_response(
+                message_id,
+                text_result(
+                    {
+                        "status": "tool_error",
+                        "type": "about:blank",
+                        "title": "Tool raised an exception",
+                        "detail": str(error),
+                        "instance": name,
+                    },
+                    True,
+                ),
+            )
         return rpc_response(message_id, text_result(result))
     return rpc_error(message_id, -32601, f"Unknown method: {method}")
 
