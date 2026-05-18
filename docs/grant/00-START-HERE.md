@@ -21,6 +21,7 @@
 | `10-ai-act-compliance.md` | Compliance pack for EU AI Act high-risk-AI obligations, applicable 2 August 2026. The institutional moat. |
 | `11-institutional-outreach.md` | Outreach tracker, partner-targeting strategy, cold-contact templates, letter-of-support template. |
 | `12-application-package.md` | The actual application draft, milestone budget breakdown, submission checklist. |
+| `13-lessons-learned.md` | Behavioural rules captured from prior planning sessions. **Read before generating any agent prompt, recommending a scope change, or editing planning docs.** |
 
 ---
 

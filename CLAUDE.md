@@ -29,9 +29,10 @@ Three workstreams run in parallel:
 
 1. **`docs/grant/00-START-HERE.md`** — orientation and table of contents
 2. **`docs/grant/01-project-brief.md`** — the strategic source of truth
-3. **`docs/grant/04-research-and-decisions.md`** — verified facts, decisions log, open questions
-4. **`docs/grant/02-execution-plan.md`** — week-by-week task list with checkboxes
-5. Everything else in `docs/grant/` as relevant
+3. **`docs/grant/13-lessons-learned.md`** — behavioural rules from prior sessions. Read this before generating any prompt for the coding agent, recommending a scope change, or editing planning docs.
+4. **`docs/grant/04-research-and-decisions.md`** — verified facts, decisions log, open questions
+5. **`docs/grant/02-execution-plan.md`** — week-by-week task list with checkboxes
+6. Everything else in `docs/grant/` as relevant
 
 If you change strategic direction, update `01-project-brief.md` AND log the decision in `04-research-and-decisions.md`. If you complete a task, tick the box in `02-execution-plan.md` and add a note if scope changed.
 
