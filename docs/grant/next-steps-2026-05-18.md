@@ -11,6 +11,9 @@
 
 ## Step 1 — Resolve Open R8 (demo URL in the public tree)
 
+**STATUS — CLOSED 2026-05-18 — placeholder convention retained per maintainer decision. Historical context preserved below for audit trail.**
+
+
 | Field | Value |
 |---|---|
 | **Deliverable** | A one-line maintainer answer to `04-research-and-decisions.md` Open R8 (updated 2026-05-18): "public tree continues to use `app.directjob-scout.example` placeholders (Decision 12 default)" **OR** "name the real subdomain in the public tree (reversing the Week 1 task 1.4 sanitisation for the demo URL only)." Once answered, a small public-tree edit follows if the maintainer chose option B. |
