@@ -226,13 +226,13 @@ The verification runs in a clean Docker container so the "fresh-clone smoke test
 
 ### 2.3 New MCP tools (8 h) — composition expansion
 
-- [ ] Implement `get_user_profile_for_consent` — returns the user's portable civic profile (subset they have consented to share)
-- [ ] Implement `propose_referral` — emits a structured referral to another civic agent
-- [ ] Implement `query_esco_skill` — looks up an ESCO skill or occupation code
-- [ ] Implement `export_eures_compatible` — exports a job listing in EURES schema
-- [ ] Implement `record_user_outcome` — persists an outcome event for analytics
-- [ ] Add JSON Schemas for all new tools
-- [ ] Add unit tests for each new tool
+- [x] Implement `get_user_profile_for_consent` — returns the user's portable civic profile, filtered to the requested `scopes` array (any subset of `identity`, `residence`, `employment`, `cv`, `outcomes`, `preferences`). Empty placeholders for scopes without data so a consuming agent can detect "no record yet" without inspecting field-by-field. `outcomes` scope reads back the JSONL events persisted by `record_user_outcome` (per-user filtered).
+- [x] Implement `propose_referral` — emits a structured referral object with FHIR-ServiceRequest-adjacent fields (`referralId`, `intent`, `priority`, `reasonCode`, `supportingInfo`, `userConsentRequired`). No persistence; caller surfaces to the user and hands over on consent.
+- [x] Implement `query_esco_skill` — substring-matches a Week 2 persona-panel-aligned mini-dataset (~12 entries covering nursing, mechanical engineering, frontend, plumbing, home-based care plus skills); full ESCO dataset import lands in §2.4. Supports `type` filter (`occupation`/`skill`/`any`) and `limit`.
+- [x] Implement `export_eures_compatible` — projects a stored discovered job onto a EURES-compatible JobPosting subset (`hiringOrganization`, `jobLocation`, `datePosted`, `validThrough`, `employmentType`, etc.) with explicit `schemaConformance: EURES-compatible-subset-v0`. Returns `status: not_found` when the discovered-job id does not resolve.
+- [x] Implement `record_user_outcome` — append-only JSON Lines journal at `data/user_outcomes.jsonl`. Enum: `applied`/`replied`/`interviewing`/`offer`/`rejected`/`withdrawn`. Optional `note` field. Enforced both at the inputSchema enum level and at the method body so non-MCP callers can't bypass.
+- [x] Add JSON Schemas for all new tools (Draft 7, registered in `TOOL_SCHEMAS` in `company_discovery/mcp_tools.py`; the §2.2 server-side enforcement covers them automatically).
+- [x] Add unit tests for each new tool — `tests/test_phase11_mcp_tools_v2.py` (27 tests). Coverage: catalogue registration (5 new tools + total count = 13), schema-compiles sanity, per-tool happy path, per-tool MCP-dispatch validation failure (missing required / bad enum), referral-id uniqueness, ESCO type filtering, outcome-event read-back through `get_user_profile_for_consent`, JSONL append order, schema↔module-constant sync for outcome enum.
 
 ### 2.4 ESCO and EURES integration (4 h)
 
