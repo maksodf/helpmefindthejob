@@ -10,14 +10,16 @@ This document is for: securing **one** letter of support from a credible institu
 
 | # | Partner | Type | Goal | Status | Contact attempted | Reply | Outcome |
 |---|---|---|---|---|---|---|---|
-| 1 | TBD MBE service point | Beratungsstelle | Letter of support | _not yet_ | — | — | — |
-| 2 | TBD IQ-Netzwerk regional office | Federal programme | Letter of support | _not yet_ | — | — | — |
-| 3 | TBD university career service | Higher-education | Letter of support | _not yet_ | — | — | — |
-| 4 | TBD Optionskommune Jobcenter | Public agency | Letter of support OR pilot expression of interest | _not yet_ | — | — | — |
-| 5 | Housing-agent author (the maintainer's friend) | OSS collaborator | Collaboration agreement + integration | _not yet_ | — | — | — |
-| 6 | TU Berlin contact (optional, low-priority) | Academic | Faculty letter of support | _not yet_ | — | — | — |
+| 1 | AWO Charlottenburg-Wilmersdorf MBE — Irina Alles (`fim-cw@awoberlin.de`) | Beratungsstelle | Letter of support | **DRAFTED 2026-05-18 — NOT YET SENT — target: Week 4 start** (see `outreach-drafts/01-awo-fim-cw.md`) | — | — | — |
+| 2 | RINWA Berlin (La Red) — Cristina Faraco Blanco (`faraco@la-red.eu`) | Federal-successor (IQ → RINWA 2026) | Letter of support | **DRAFTED 2026-05-18 — NOT YET SENT — target: Week 4 start** (see `outreach-drafts/02-rinwa-berlin.md`) | — | — | — |
+| 3 | TU Berlin Career Service — Bettina Satory (`bettina.satory@tu-berlin.de`) | Higher-education (doubles as Template G academic email) | Letter of support | **DRAFTED 2026-05-18 — NOT YET SENT — target: Week 4 start** (see `outreach-drafts/03-tu-berlin-career-service.md`) | — | — | — |
+| 4 | TBD Optionskommune Jobcenter | Public agency | Letter of support OR pilot expression of interest | _not pursued_ — one credible letter is enough; this slot held in reserve | — | — | — |
+| 5 | Housing-agent author (the maintainer's friend) | OSS collaborator | Collaboration agreement + integration | _not yet_ — handled separately as part of Week 2 task 2.5 | — | — | — |
+| 6 | TU Berlin academic contact (optional, low-priority) | Academic | Faculty letter of support | _merged into slot 3_ — TU Berlin Career Service double-serves as the optional academic email per the maintainer's call 2026-05-17 | — | — | — |
 
 **Update this table after every contact attempt.** Date every status change.
+
+**Send deferral (Decision 19, 2026-05-18)**: all institutional outreach now sends at end of Week 3 / start of Week 4, after the README, demo deployment, docs site, AI Act compliance pack, and green-CI badges are visibly finished. The drafts above are research artifacts; re-verify contact details within the week before sending. Opportunistic warm-intro outreach is permitted at any time and logged here with the same fields.
 
 ---
 

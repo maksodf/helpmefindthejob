@@ -93,40 +93,85 @@ For task ordering and dependencies, the weeks are roughly sequential but not str
 - [x] Sanitise tester-name leakage: `Nasser` references in `company_discovery/journey.py` and `tests/test_journey_edge_cases.py` replaced with generic "an early tester" phrasing; Python identifier `NASSER_COMPLAINT` renamed to `EARLY_TESTER_COMPLAINT`. Bug-history context preserved.
 - [x] Pin Docker project name to `directjob-scout` in both compose files (`name:` field plus `image: directjob-scout:latest`) so the generated image name no longer leaks the original local directory name (`nassermcpserver-...`). Script references updated accordingly.
 
-### 1.5 GitHub repo housekeeping (1 h)
+### 1.5 GitHub repo housekeeping (1 h) — maintainer-clicks, agent-prepared text
 
 - [ ] Update the repo description to match the new positioning
-- [ ] Add topic tags: `civic-tech`, `mcp`, `model-context-protocol`, `jobs`, `employment`, `open-source`, `germany`, `eu`, `migration`, `apache-2-0`, `self-hosted`, `civic-commons`
+- [ ] Add topic tags reflecting the civic-commons positioning
 - [ ] Enable GitHub Discussions
-- [ ] Verify default branch is appropriately named
+- [ ] Verify default branch is `main`
+- [ ] Confirm GitHub auto-detected the Apache 2.0 license from `LICENSE`, the issue templates from `.github/ISSUE_TEMPLATE/`, the PR template from `.github/PULL_REQUEST_TEMPLATE.md`, and the CODEOWNERS from `.github/CODEOWNERS`
 
-### 1.6 Outreach drafting and sending (6 h)
+**Proposed text for the maintainer to paste into the GitHub UI** (drafted by agent 2026-05-18 — ~15 minutes of maintainer click-through):
 
-- [ ] Identify one specific named contact per top-ranked partner (MBE, IQ-Netzwerk, university career service) — use the BAMF database, IQ-Netzwerk regional pages, and university career-service pages
-- [ ] Personalise the cold-contact templates in `11-institutional-outreach.md` for each named target
-- [ ] Send the first wave of cold contacts (3 outbound: one MBE, one IQ-Netzwerk, one university career service)
-- [ ] Draft the housing-agent collaboration message together with the maintainer (Template F in `11-institutional-outreach.md`)
-- [ ] Maintainer sends the housing-agent message
-- [ ] Send the single optional TU Berlin email (Template G)
-- [ ] Update the outreach tracker in `11-institutional-outreach.md`
+**Repo description (Settings → General → About)**:
 
-### 1.7 Production-deployment alignment (3 h)
+> Open-source EU-wide civic-employment commons — an MCP-composable copilot for migrants and EU-mobile workers. Apache 2.0, EU AI Act compliant by design, pending Programme of The Commons Conservancy.
 
-- [ ] Snapshot the current production deployment state
-- [ ] Decide: bring it into alignment with new positioning, take it offline, or replace it with the Week 3 demo deployment
-- [ ] Execute the decision
+**Website field**: leave blank for now; populate with `https://demo.<domain>` once the public demo deploys in Week 3 task 3.4.
+
+**Topic tags (Settings → General → About → Topics — 12 picked from the 20-tag GitHub limit)**:
+
+```
+civic-tech
+civic-commons
+mcp
+model-context-protocol
+employment
+migration
+open-source
+apache-2-0
+self-hosted
+ai-act
+multilingual
+germany
+```
+
+Optional additions if you want to surface more themes: `eu`, `nlnet`, `anerkennung`, `esco`, `eures`, `integration`. (`chatbot` is technically applicable but pulls in unrelated audiences; skip.)
+
+**Settings recommendations**:
+
+- **General → Features → Discussions**: enable. The `SUPPORT.md` file already routes users there.
+- **General → Default branch**: confirm `main` (likely already set).
+- **General → Pull Requests**: leave default; the `.github/PULL_REQUEST_TEMPLATE.md` will surface automatically.
+- **Branches → Branch protection**: defer to Week 3 task 3.2 (CI expansion) so that branch-protection rules can require CI-green status checks that don't yet exist.
+- **Security → Code security and analysis → Private vulnerability reporting**: enable. This is the GitHub-native channel `SECURITY.md` references as the primary disclosure path.
+- **Security → Code security and analysis → Dependency graph**: leave on (default).
+- **Security → Code security and analysis → Dependabot alerts**: leave on (default). Renovate replaces this in Week 3 task 3.2.
+- **Code and automation → Pages**: leave off for now; turned on in Week 3 task 3.5 (documentation site).
+- **Code and automation → Actions → General**: leave default permissions; tighten in Week 3 task 3.2 if needed.
+- **Sponsorships**: GitHub auto-detects `.github/FUNDING.yml`. All entries are commented out in Week 1 by design, so no Sponsor button renders. Resolution per the comment in that file.
+- **Pinned issues**: optional — pin a single "DirectJob Scout v0.1.0 grant-readiness sprint — May–June 2026" tracking issue once you open one. Skip if you'd rather not.
+
+### 1.6 Outreach drafting (research only — send deferred to Week 4 per Decision 19)
+
+- [x] Identify one specific named contact per top-ranked partner — research pass completed 2026-05-18:
+  - **MBE Berlin**: AWO Charlottenburg-Wilmersdorf FIM — Irina Alles (`fim-cw@awoberlin.de`). Selected over Diakonisches Werk Berlin Stadtmitte (institutional-insolvency timing) and Caritas Erzbistum Berlin MBE Mitte (no named individual surfaced).
+  - **IQ-Netzwerk Berlin**: superseded in 2026 by RINWA — La Red, Cristina Faraco Blanco (`faraco@la-red.eu`).
+  - **University career service**: TU Berlin Career Service — Bettina Satory (`bettina.satory@tu-berlin.de`). Doubles as the optional Template G TU Berlin academic email per maintainer instruction 2026-05-17.
+- [x] Personalise the cold-contact templates — three German draft messages saved under [`outreach-drafts/`](outreach-drafts/) with `STATUS: DRAFTED — NOT YET SENT — TARGET SEND: WEEK 4 START` headers, last-verified dates, and fit-reason annotations.
+- [-] Send the first wave of cold contacts — **deferred to Week 4 task 4.0** per Decision 19 in `04-research-and-decisions.md`. Sending earlier risks a partner forming a half-finished impression from artifacts that aren't yet visibly complete.
+- [ ] Draft the housing-agent collaboration message together with the maintainer — moved to Week 2 task 2.5 alongside the actual reference integration; the message and the integration land together.
+- [-] Maintainer sends the housing-agent message — deferred until Week 2 task 2.5 collaboration step.
+- [-] Send the single optional TU Berlin email — merged into the TU Berlin Career Service outreach draft (slot 3 above); no separate Template G send.
+- [x] Update the outreach tracker in `11-institutional-outreach.md` — done 2026-05-18.
+
+### 1.7 Production-deployment alignment (closed — mitigated by Decision 17)
+
+- [x] Snapshot the current production deployment state — **Mitigated by Decision 17 in `04-research-and-decisions.md`: no public production deployment exists to align. The only running instance is a single private-tester deployment for the maintainer's partner. No action required.**
+- [x] Decide: bring it into alignment with new positioning, take it offline, or replace it with the Week 3 demo deployment — **No public deployment to address. The Week 3 demo (task 3.4) is the project's first public reference deployment.**
+- [x] Execute the decision — **No execution needed. Item closed.**
 
 ### Week 1 Definition of Done
 
 - LICENSE file present, recognised by GitHub
 - All 6+ governance files at root
 - README opens with the new positioning, badges visible, one persona referenced
-- Zero occurrences of `khalo.org` in code
-- Commercial docs moved out of `docs/`
-- GitHub repo description and topics updated
-- A fresh-clone smoke test passes
-- First wave of outreach sent (3 cold contacts + housing-agent friend + optional TU Berlin)
-- Production-deployment state addressed
+- Zero occurrences of `khalo.org` in public-tree code (CLAUDE.md narrative context and `CONTRIBUTORS-NOTE.md` excepted; both deliberately retain the term for agent-onboarding clarity)
+- Commercial docs moved out of `docs/` into `private/` (gitignored)
+- GitHub repo description and topics updated (maintainer's click-through; proposed text in §1.5)
+- A fresh-clone smoke test passes (verified in Week 2 task 2.0)
+- Outreach drafted under `docs/grant/outreach-drafts/`; send deferred to Week 4 task 4.0 per Decision 19
+- Production-deployment alignment closed — mitigated by Decision 17, no public deployment exists
 
 ---
 
@@ -134,7 +179,27 @@ For task ordering and dependencies, the weeks are roughly sequential but not str
 
 **Goal**: the central pitch claim — "MCP-composable, AI-Act-compliant civic-agent infrastructure" — is verifiable by any reviewer reading the repo for 5 minutes. The Commons Conservancy application is submitted.
 
-**Estimated effort**: ~50 hours.
+**Estimated effort**: ~56–58 hours (~50 h for the original §§2.1–2.8 plus the new §2.0 Feature verification pass at 6–8 h, added as the new highest-priority Week 2 work).
+
+### 2.0 Feature verification pass (6–8 h) — HIGHEST PRIORITY
+
+**Why this comes first**: every Week 2 deliverable (MCP server docs, AI Act compliance pack, ARCHITECTURE.md, ESCO/EURES integration claims) makes claims about what the code does. Before we write documentation that says the code does X, we run the code and verify X. If any claim does not hold up, we surface the gap to the maintainer rather than silently aligning the documentation to the code or the code to the documentation. This rule applies for the rest of the sprint.
+
+The verification runs in a clean Docker container so the "fresh-clone smoke test passes" criterion from Week 1 DoD is genuinely verified.
+
+- [ ] Spin up the app in a clean Docker container (`docker compose up --build`); confirm `/api/health` returns 200 and the sign-in page renders
+- [ ] Walk through all 12 phases of the journey state machine with Aïcha (Tunisian nurse persona) end-to-end: greet → discover → CV inspect → inspiration → preferences → aggregator search → review & categorize → drill → tailor CV → draft letter → CV coaching → done. Record each phase's actual behaviour.
+- [ ] Confirm the confirmation gates actually block writes until confirmed — attempt a journey AI invocation, then refuse the confirmation prompt, and verify no DB write occurred.
+- [ ] Swap AI providers and run a non-trivial flow end-to-end on each:
+  - **Ollama** (fully offline) — confirm the BYO-AI claim works without external network egress
+  - At least one cloud provider (OpenAI / Anthropic / Gemini / DeepSeek / OpenRouter — maintainer picks based on available API key)
+- [ ] Inspect a persisted CV file: read the implementation in `company_discovery/cv_builder.py` and any encryption helper, then look at the actual file in `data/`, and confirm ChaCha20-Poly1305 is actually applied (not just claimed). Document key derivation, nonce handling, authentication-tag verification.
+- [ ] Call all 8 MCP tools listed in `mcp_server.py` and confirm each returns a JSON-Schema-valid response (use a small `jsonschema` test harness; record the exact schemas and responses).
+- [ ] Switch language EN ↔ DE; verify the UI fully reloads and all visible strings translate. Test German yes/no parsing: `ja`, `nein`, `jo`, `jep`, `nö`, `nope`. Confirm each is correctly classified.
+- [ ] Run the existing test suite in the clean container (`python3 -m unittest discover -v`) and verify the "tests pass" claim. Record the actual pass/fail count.
+- [ ] Capture screenshots / terminal recordings of each verification step into `docs/grant/feature-verification-2026-05-XX/` (auxiliary artefacts directory; not committed by default unless useful)
+- [ ] Write the verification report to `docs/grant/feature-verification-2026-05-XX.md` with one section per check, recording: claim made by docs / planning / README; observed behaviour; pass/fail/partial; if not-pass, the specific failure and recommended fix path.
+- [ ] **Surface the verification report to the maintainer for review before starting any other Week 2 work.** Do not move forward on §2.2 / §2.3 / §2.7 / §2.8 until the maintainer has read the report and given a green light. Gaps surfaced here may reshape the Week 2 task list.
 
 ### 2.1 Commons Conservancy application (4 h)
 
@@ -338,6 +403,22 @@ Per `10-ai-act-compliance.md`. Create the `/compliance/` directory and ship:
 
 **Estimated effort**: ~25 hours.
 
+### 4.0 Outreach send pass (4 h)
+
+The three draft messages prepared in Week 1 task 1.6 are saved under [`outreach-drafts/`](outreach-drafts/). Send-gate criterion per Decision 19: README, demo deployment, docs site, AI Act compliance pack, and green-CI badges all visibly finished before any send.
+
+- [ ] Re-verify each draft's contact details (name, role, email) — the drafts carry "last verified" dates from Week 1; check whether anything changed
+- [ ] Confirm the send-gate criterion is satisfied (Week 3 deliverables visibly complete)
+- [ ] Personalise the three German draft messages — fill in maintainer name, contact email, project link, and (for TU Berlin) student programme + Matrikelnummer
+- [ ] Send the three outbound emails:
+  - AWO Charlottenburg-Wilmersdorf FIM — Irina Alles (`fim-cw@awoberlin.de`)
+  - RINWA Berlin / La Red — Cristina Faraco Blanco (`faraco@la-red.eu`)
+  - TU Berlin Career Service — Bettina Satory (`bettina.satory@tu-berlin.de`)
+- [ ] Update the outreach tracker in `11-institutional-outreach.md` with send dates and any reply/outcome notes
+- [ ] Send the housing-agent collaboration message (Template F) — handled by maintainer if not already done in Week 2 task 2.5
+- [ ] Optionally send to one Optionskommune Jobcenter IF a strong-fit office has emerged organically (otherwise hold; one credible letter is sufficient)
+- [ ] Set a 7-day follow-up reminder per Template B for any contact who has not replied; one follow-up only, then stop
+
 ### 4.1 Sustainability and post-grant story (3 h)
 
 - [ ] `SUSTAINABILITY.md` describing the post-grant model:
@@ -399,5 +480,7 @@ Per `10-ai-act-compliance.md`. Create the `/compliance/` directory and ship:
 Use this section for free-form notes during execution. Date each entry.
 
 **2026-05-17**: plan created reflecting all strategic decisions, AI Act work, Commons Conservancy application, Apache 2.0 licensing, cost-saving doctrine, and the EU-wide positioning.
+
+**2026-05-18**: outreach sends deferred from Week 1 task 1.6 to Week 4 task 4.0 per Decision 19 in `04-research-and-decisions.md`. The three contact-package drafts (AWO Charlottenburg-Wilmersdorf FIM, RINWA Berlin / La Red, TU Berlin Career Service) are saved under `outreach-drafts/`. Task 1.7 closed as mitigated by Decision 17 (no public production deployment exists to align). Task 1.5 GitHub UI housekeeping remains the only open Week 1 item; the proposed text for the maintainer to paste through the GitHub UI is embedded in §1.5 above. Week 2 work begins with the new highest-priority task 2.0 (Feature verification pass) — verify every claim our Week 2 docs make against the running code before any documentation lands.
 
 <!-- Add new dated notes below this line as execution proceeds -->

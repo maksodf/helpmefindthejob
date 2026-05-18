@@ -307,6 +307,24 @@ This is positive for project coherence — one committed contributor rather than
 
 **Reversibility**: Soft. If the partner withdraws from project involvement, the recruitment-pipeline framing of Decision 15 returns to active operating mode.
 
+#### Decision 19: Outreach send timing — defer all institutional outreach to Week 4 start
+
+**Decided**: 2026-05-18.
+
+**Earlier position**: outreach in Week 1 task 1.6 to maximise response-cycle buffer before the Week 4 application submission.
+
+**Revised position**: outreach drafted but **not sent** until end of Week 3 / start of Week 4, after the project artifacts a recipient would inspect are visibly finished (README rewritten, demo deployment live at a stable URL, documentation site live, AI Act compliance pack shipped under `compliance/`, green CI badges in README).
+
+**Reasoning**:
+
+- First impressions are durable. A partner who clicks the README link and sees half-finished work is meaningfully harder to recover than a partner contacted later but seeing finished work. The "honest about instability" doctrine (CLAUDE.md hard rule 6) applies to *narrative*, not to a partner's first read of the README.
+- The application must stand on its own without partner letters. Outreach is a strengthening signal, not a requirement. R13 (reviewer expects more institutional partners than we can secure) is already mitigated by the Commons Conservancy admission path and one letter being sufficient.
+- Maintainer's 18 h/day commitment makes the Week 2–3 build pace fast enough that the buffer cost is acceptable. The hardening work happens regardless of outreach timing.
+- Partner pre-check returned no warm intros; cold-contact response rate is modest regardless of buffer length. Spending 6 h of Week 1 capacity on sends that may not yield is a worse trade than spending 6 h on Week 2 verification work that strengthens the application.
+- The three draft messages (AWO Charlottenburg-Wilmersdorf FIM, RINWA Berlin / La Red, TU Berlin Career Service) are saved under `docs/grant/outreach-drafts/` with explicit `STATUS: DRAFTED — NOT YET SENT` headers and last-verified dates, so re-verification before send is a 10-minute task.
+
+**Reversibility**: soft. If during Week 2 or 3 a strong-fit partner spontaneously appears (via the maintainer's network, a community event, or a referral arising from the housing-agent collaboration), opportunistic early outreach is fine — the decision applies to the bulk-send batch, not to warm-intro singletons. Log any opportunistic send as an entry in the `11-institutional-outreach.md` tracker with the same fields as the bulk drafts.
+
 #### Decision 18: Identity-bearing fields ship as explicit placeholders, resolved via dated follow-up commits per the consent-first authorship policy
 
 **Decided**: 2026-05-17.
