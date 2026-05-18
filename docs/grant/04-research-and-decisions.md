@@ -436,10 +436,13 @@ These are not yet decided. Listed so a future agent or planning session can prio
 - Committed to as a grant deliverable; precise scope (which user flows, which conformance criteria) needs definition
 - **Action**: Week 3 — define audit scope, select criteria, possibly engage HAN University accessibility support (an NLnet-provided service)
 
-### Open R8: Hosting cost for the public demo deployment
+### Open R8: Public-tree URL for the demo deployment
 
-- Demo deployment in Week 3 needs a stable URL (`demo.<domain>` or similar)
-- **Action**: Week 2 — maintainer picks hosting provider, secures domain, sets up cert + monitoring
+**Updated 2026-05-18 (cleanup-audit-2026-05-18.md)**: the original framing of this question — "pick hosting provider, secure domain, set up cert + monitoring" — was based on the assumption that §3.4 needed to *provision* new infrastructure. Per the cleanup audit, the maintainer has **existing deployment infrastructure** already running. The actual open question that remains is narrower: should the public tree reference the maintainer's real existing subdomain by name, or should it continue to use the `app.directjob-scout.example` placeholder convention established by Week 1 task 1.4 sanitisation (Decision 12)?
+
+- **Status as of 2026-05-18**: pending one-line maintainer answer (see `cleanup-audit-2026-05-18.md` Part C).
+- **Default if no answer**: keep the existing `app.directjob-scout.example` placeholder convention in the public tree (Decision 12); the live deployment config in `private/` carries the real URL.
+- **Action**: maintainer answers; cleanup commit follows if a public-tree change is wanted.
 
 ### Open R9: ESCO mapping data — extract from authoritative source
 

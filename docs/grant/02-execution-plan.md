@@ -349,15 +349,15 @@ Per `10-ai-act-compliance.md`. Create the `/compliance/` directory and ship:
 - [x] First tagged release: `v0.1.0` with release notes — annotated tag points at the GitHub Release; release notes are version-controlled at `docs/releases/v0.1.0.md` (so the source survives any GitHub UI edit) with three sections per the maintainer spec: "What this is" / "What's in this release" / "What's not yet shipped". Cryptographic signing of the release artifact (cosign + CycloneDX SBOM) is deferred to Week 4 task 4.2 per the agent's existing scope.
 - [-] Set up GitHub Releases workflow to automate future tagging — **dropped from §3.3 scope**. The Phase 1 release cadence is low (v0.1.0 here, v0.2.0 post-NLnet-submission, see ROADMAP); manual `git tag -a` + `gh release create` is the right rhythm. Automating the workflow lands when the release cadence increases — Phase 2 task tracked in `docs/grant/03-post-grant.md`.
 
-### 3.4 Public demo deployment (6 h)
+### 3.4 Public demo deployment (~3 h, re-anchored 2026-05-18)
 
-- [ ] Pick hosting provider (Hetzner Cloud, OVH, Scaleway — all EU-anchored)
-- [ ] Secure domain (`directjob-scout.eu` or similar)
-- [ ] Deploy the canonical reference implementation
-- [ ] Pre-seed with the persona-panel example users (Aïcha, Yusuf, Olga, Mahmoud, Maria)
-- [ ] Add health-check monitoring
-- [ ] Document the deployment recipe in `docs/deployment-recipe.md`
-- [ ] Add the demo URL to README and to the application package
+**Scope re-anchor**: §3.4 uses the **existing deployment infrastructure** the maintainer already operates. Hosting provider, registrar, monitoring vendor — these are the maintainer's existing setup, not §3.4 prerequisites to provision new. The earlier draft of this task listed Hetzner / OVH / Scaleway as candidates and `directjob-scout.eu` as a candidate domain; that was placeholder enumeration that an advisory prompt mis-read as a commitment. Cleanup audit 2026-05-18 (`cleanup-audit-2026-05-18.md`) details the false dependency the cleanup removed. Re-anchored scope:
+
+- [ ] Confirm with maintainer which subdomain hosts the public demo. The maintainer's existing deployment is documented in `private/` (gitignored per Decision 12 / Week 1 task 1.4 sanitisation); the public-tree convention is `app.directjob-scout.example` placeholders. **Decision needed before referencing a demo URL in any public artifact** — see `04-research-and-decisions.md` Open R8 (updated).
+- [ ] Pre-seed the existing deployment with the **seven-persona** panel (Aïcha, Yusuf, Olga, Mahmoud, Maria, Käthe, Tobias) per Decision 21. The seeding script itself is generic — runs against any DirectJob Scout instance, not infrastructure-specific. *(Agent-doable autonomously once the persona-source-of-truth decision is locked: read `07-personas.md` and produce reproducible seed records.)*
+- [ ] Document the generic deployment recipe in `docs/deployment-recipe.md` (extends the existing `docs/production-deployment.md` with the persona-seed step + the "use existing infrastructure" framing). **Not** Hetzner-specific; works against any Docker Compose + Caddy host the maintainer chooses.
+- [ ] Verify `/api/health` returns green via the existing `scripts/production-smoke.sh`. Already implemented; the §3.4 task is to *run* it post-seed, not to *build* it.
+- [ ] Once the maintainer confirms the demo URL, update README and `12-application-package.md` to reference it. Until then, the public-tree placeholder remains `app.directjob-scout.example` per the existing sanitisation convention.
 
 ### 3.5 Documentation site (3 h)
 

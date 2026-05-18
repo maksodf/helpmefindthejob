@@ -87,11 +87,11 @@ A risk is **Critical** if it can sink the application or the project entirely.
 
 ### R9 — Public demo deployment goes down during application review (Likelihood: Low, Impact: Medium)
 
-**Risk**: Reviewer visits `demo.directjob-scout.eu` and sees a 500 error or down page. Bad signal.
+**Risk**: Reviewer visits the demo URL and sees a 500 error or down page. Bad signal.
 
-**Mitigation**: Week 3 — set up the demo with health-check monitoring; use a reliable hosting provider (Hetzner Cloud, OVH, Scaleway are EU-anchored choices); status-check before submission; accept a brief "we are a small project" caveat in README if uptime cannot be guaranteed.
+**Mitigation**: Week 3 — use the **existing deployment infrastructure** the maintainer already operates (per `docs/production-deployment.md` and the existing `scripts/deploy.sh` / `scripts/production-smoke.sh` toolchain). Existing infrastructure is the default; introducing a new hosting provider for the demo is out of scope for §3.4. Health-check monitoring via `/api/health` is already in `docker-compose.prod.yml`; external uptime probes are provider-neutral per `docs/production-deployment.md` (the operator picks one and configures it themselves). Status-check before submission; accept a brief "we are a small project" caveat in README if uptime cannot be guaranteed.
 
-**Owner**: agent execution (Week 3 task).
+**Owner**: agent execution against existing infrastructure (Week 3 task).
 
 ### R10 — Scope creep during execution (Likelihood: High, Impact: Medium)
 
