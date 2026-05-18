@@ -75,7 +75,7 @@ Short reference for German bureaucratic, EU policy, and project-specific terms u
 - **MCP / Model Context Protocol** — Open protocol for AI applications to expose tools, resources, and prompts to AI clients. https://modelcontextprotocol.io
 - **MCP tool** — A callable function exposed by an MCP server with a JSON Schema for its inputs and outputs.
 - **NGO** — Non-Governmental Organisation. In Germany, often "Verein" or "gemeinnütziger Verein" (charitable association).
-- **Persona panel** — The set of fictional users (Aïcha, Yusuf, Olga, Mahmoud, Maria) used in proposal narrative, demos, and documentation. See `07-personas.md`.
+- **Persona panel** — The set of seven fictional users used in proposal narrative, demos, and documentation: the five most-acute migrant personas (Aïcha, Yusuf, Olga, Mahmoud, Maria) plus the two wider-friction-class personas (Käthe, Tobias) added per Decision 21. See `07-personas.md`.
 
 ---
 

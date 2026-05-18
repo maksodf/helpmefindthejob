@@ -440,9 +440,9 @@ These are not yet decided. Listed so a future agent or planning session can prio
 
 **Updated 2026-05-18 (cleanup-audit-2026-05-18.md)**: the original framing of this question — "pick hosting provider, secure domain, set up cert + monitoring" — was based on the assumption that §3.4 needed to *provision* new infrastructure. Per the cleanup audit, the maintainer has **existing deployment infrastructure** already running. The actual open question that remains is narrower: should the public tree reference the maintainer's real existing subdomain by name, or should it continue to use the `app.directjob-scout.example` placeholder convention established by Week 1 task 1.4 sanitisation (Decision 12)?
 
-- **Status as of 2026-05-18**: pending one-line maintainer answer (see `cleanup-audit-2026-05-18.md` Part C).
-- **Default if no answer**: keep the existing `app.directjob-scout.example` placeholder convention in the public tree (Decision 12); the live deployment config in `private/` carries the real URL.
-- **Action**: maintainer answers; cleanup commit follows if a public-tree change is wanted.
+- **Status as of 2026-05-18**: **ANSWERED 2026-05-18 — placeholder convention retained.** The maintainer's answer: keep the existing `app.directjob-scout.example` placeholder convention in the public tree; revisit when ready. No public-tree changes needed.
+- **Default**: the `app.directjob-scout.example` placeholder convention remains the public-tree standard (Decision 12); the live deployment config in `private/` carries the real URL.
+- **Action**: closed; re-open only if the maintainer's stance changes.
 
 ### Open R9: ESCO mapping data — extract from authoritative source
 

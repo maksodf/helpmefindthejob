@@ -104,7 +104,7 @@ Milestone-based payment, results-only, no progress reports — per NLnet's stand
 
 ### Milestone 4: Public demo deployment and accessibility
 
-**Deliverable**: live public demo at stable URL (`demo.<domain>`) running the canonical reference implementation, with persona-panel pre-seeded examples (Aïcha, Yusuf, Olga, Mahmoud, Maria); WCAG 2.2 Level AA accessibility audit completed with results published in ACCESSIBILITY.md; documentation site (mkdocs-material) deployed at `docs.<domain>` covering architecture, deployment, MCP API, contributing.
+**Deliverable**: live public demo at stable URL (`demo.<domain>`) running the canonical reference implementation, with persona-panel pre-seeded examples covering all seven personas (Aïcha, Yusuf, Olga, Mahmoud, Maria — the five most-acute migrant cases — plus Käthe and Tobias — the two wider-friction-class cases — per Decision 21); WCAG 2.2 Level AA accessibility audit completed with results published in ACCESSIBILITY.md; documentation site (mkdocs-material) deployed at `docs.<domain>` covering architecture, deployment, MCP API, contributing.
 
 **Cost-saving mechanism**: reduces the discovery and evaluation cost for any potential institutional adopter; the demo replaces the need for sales calls or vendor presentations entirely.
 

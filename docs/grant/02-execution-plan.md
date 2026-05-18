@@ -306,7 +306,7 @@ Per `10-ai-act-compliance.md`. Create the `/compliance/` directory and ship:
 - `STANDARDS.md` lists every standard cited
 - ESCO integration covering 30+ occupations
 - EURES schema export verified
-- Reference integration with housing agent (Option B preferred, Option A fallback acceptable) — shipped in `examples/`
+- Reference integration with housing agent shipped in `examples/` per Decision 20: Option A (mock stub) is the Phase 1 default; Option B (real friend integration) ships only on explicit collaborator confirmation; self-built (Options C / D) is deferred to Phase 2. The DoD is met by whichever disposition lands by the close of Week 2 — both Option A and Option B satisfy the MCP-composition pitch (per Rule 6 in `13-lessons-learned.md`).
 - CI runs MCP integration test, badge is green
 - ARCHITECTURE.md with system diagram
 - Complete AI Act compliance pack in `/compliance/`
