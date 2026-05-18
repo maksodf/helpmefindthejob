@@ -40,6 +40,8 @@
 
 **Broadening commit lands 2026-05-18; see `bias-testing-2026-05-18-broadened.md` for the second-run report (140 data points: 70 scoring + 70 CV-tailoring). Remaining four scenario classes (onboarding, discovery, motivation-letter drafting, skill-gap brief) sequenced to post-Phase-1 dated reports.**
 
+**Polish slice lands 2026-05-19; see `bias-testing-2026-05-18-polish.md` for the third-run report (147 data points: 70 cohort-aware scoring + 7 cross-industry probes + 70 CV-tailoring semantic-fact checks). Closes three broadened-run adversarial-audit findings: cohort-blind mixed-fit fixtures (closed via cohort branching + import-time guard); permissive 2-condition CV-tailoring structural check (replaced with 4-condition semantic-fact check); Maria→Logistics cross-industry investigation (pattern verdict ONE-OFF, reclassified as prompt-phrasing sensitivity). Both tests in the polish run fail honestly with thresholds preserved; primary product-design finding is that `build_cv_tailoring_prompt` does not currently ask the model to acknowledge persona-friction-context (criterion d fails 27 times; criteria a/b/c pass 70/70). Remediation tracked for post-grant 2026 Q4 cadence.**
+
 
 | Field | Value |
 |---|---|

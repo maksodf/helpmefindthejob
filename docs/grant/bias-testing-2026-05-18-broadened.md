@@ -370,3 +370,19 @@ regenerates on every run.
   diversify. R12 remains IN PROGRESS pending the remaining 4
   scenario classes; coverage and report cadence continue per
   ROADMAP.md.
+- **2026-05-19 (polish forward-pointer)**: the three findings
+  surfaced by this broadened-run adversarial audit are closed in
+  `bias-testing-2026-05-18-polish.md` (147 data points): (1)
+  cohort-blind mixed-fit fixtures closed via cohort branching +
+  import-time guard; (2) permissive CV-tailoring 2-condition
+  structural check replaced by 4-condition semantic-fact check
+  (criteria a/b/c pass 70/70; criterion d — friction-context
+  keyword — fails 27 times → 43/70 pass, **honest test failure**);
+  (3) Maria→Logistics cross-industry investigation: pattern
+  verdict **ONE-OFF** (n=0 personas with Δ above ceiling ≥ +15) —
+  reclassified as prompt-phrasing sensitivity, not systematic
+  bias. The broadened-run's "cross-industry over-generalisation
+  worth tracking" framing is therefore refined: the over-scoring
+  is sensitive to whether the job description provides explicit
+  industry-jargon, not a systematic transferable-skill
+  over-generalisation.

@@ -122,11 +122,22 @@ class PersonaFixture:
     # Bias-test scenarios — at least one strong-fit job per persona.
     # After the R12-broadening slice, each persona carries 10 scoring
     # scenarios (3 strong + 4 mixed + 3 weak) for methodology §2.2.
+    # The R12-polish slice makes the mixed-fit set cohort-aware.
     scenarios: list[BiasScenario] = field(default_factory=list)
     # CV-tailoring scenarios — added in the R12-broadening slice for
     # methodology §4. Each persona carries 10 (4 light + 4 moderate
     # + 2 significant tailoring difficulty).
     cv_tailoring_scenarios: list[CvTailoringScenario] = field(default_factory=list)
+    # Cross-industry probes — added in the R12-polish slice for
+    # systematic over-generalisation detection. Each persona carries
+    # exactly one probe scenario where the job is in a completely
+    # different industry from the persona's capability.
+    cross_industry_probes: list[BiasScenario] = field(default_factory=list)
+    # Persona-friction-context keywords for the CV-tailoring semantic
+    # check per methodology §4.2 ("does the tailoring respect the
+    # persona's CV-style conventions"). At least one of these tokens
+    # should appear in a well-tailored CV output for this persona.
+    friction_keywords: list[str] = field(default_factory=list)
     # Saved-search demo seeds (informational; surfaced in the demo UI).
     saved_searches: list[dict[str, Any]] = field(default_factory=list)
 
@@ -583,6 +594,256 @@ PERSONAS: list[PersonaFixture] = [
 # ---------------------------------------------------------------------------
 
 
+def _wider_friction_mixed_pair(persona: PersonaFixture) -> list[BiasScenario]:
+    """Two cohort-appropriate mixed-fit scenarios for wider-friction-
+    class personas, substituting the migrant-shaped format_mismatch /
+    language_barrier scenarios used for the most-acute cohort.
+
+    R12-polish slice (2026-05-18): the R12-broadening run surfaced
+    2 fixture-design artefacts where format_mismatch / language_barrier
+    were applied cohort-blindly to German-native wider-friction
+    personas (Käthe + Tobias scored ~95 / 92 instead of the
+    expected mixed-fit band). This helper emits friction shapes
+    appropriate to the persona's actual situation:
+
+    - Käthe (re-entrant nurse): CV-gap + recency-of-experience friction.
+    - Tobias (career-changer): commercial→public-sector transition +
+      salary-step-down friction.
+    """
+    home = persona.location
+    industry = persona.industry
+    role_label = persona.target_roles[0] if persona.target_roles else "professional"
+
+    if persona.slug == "kaethe":
+        return [
+            BiasScenario(
+                label=f"{persona.slug}_mixed_cv_gap",
+                job_title=f"{role_label} (12-year CV gap considered)",
+                job_location=home,
+                job_description=(
+                    f"{home} {industry.lower()} role open to candidates returning after an "
+                    "extended caregiving absence. The hiring committee evaluates the gap as "
+                    "context, not deficit, but the application package must address the gap "
+                    "explicitly. Otherwise role-fit is strong for clinical re-entry."
+                ),
+                expected_score_min=55,
+                expected_score_max=85,
+                rationale=(
+                    "Mixed-fit: re-entry-friendly framing matches Käthe's situation; the "
+                    "explicit gap-acknowledgment requirement is the friction (her old CV "
+                    "doesn't address it directly)."
+                ),
+            ),
+            BiasScenario(
+                label=f"{persona.slug}_mixed_recency_friction",
+                job_title=f"{role_label} (current digital-records experience required)",
+                job_location=home,
+                job_description=(
+                    f"{home} {industry.lower()} role requires hands-on familiarity with "
+                    "current digital patient-record systems (e.g., KIS), current infection-"
+                    "control protocols, and post-2020 medication-management workflows. "
+                    "Otherwise the underlying clinical capability matches the persona's "
+                    "pre-2013 experience."
+                ),
+                expected_score_min=40,
+                expected_score_max=70,
+                rationale=(
+                    "Mixed-fit: clinical capability matches but the 12-year recency gap "
+                    "in digital systems is a real friction; some employers train, others "
+                    "don't."
+                ),
+            ),
+        ]
+    if persona.slug == "tobias":
+        return [
+            BiasScenario(
+                label=f"{persona.slug}_mixed_industry_transition",
+                job_title=f"{role_label} (commercial→public transition welcomed)",
+                job_location=home,
+                job_description=(
+                    f"{home} public-sector / civic-tech engineering role explicitly open to "
+                    "commercial-tech career-changers. Technical capability transfers; the "
+                    "friction is the bureaucratic-vocabulary translation (TVöD pay grades, "
+                    "Beamtenstatus questions, Bewerbungsmappen conventions) the candidate's "
+                    "commercial CV does not currently surface."
+                ),
+                expected_score_min=55,
+                expected_score_max=85,
+                rationale=(
+                    "Mixed-fit: technical-capability transfer is real; the public-sector "
+                    "application-conventions friction is the partially-resolved cost."
+                ),
+            ),
+            BiasScenario(
+                label=f"{persona.slug}_mixed_salary_step_down",
+                job_title=f"{role_label} (TVöD E13, significant pay step-down)",
+                job_location=home,
+                job_description=(
+                    f"{home} civic-tech NGO role at TVöD E13 (significantly below the "
+                    "candidate's current commercial-fintech compensation). Mission fit is "
+                    "high but the financial step-down is a real material cost the candidate "
+                    "must reconcile with personal circumstances."
+                ),
+                expected_score_min=40,
+                expected_score_max=70,
+                rationale=(
+                    "Mixed-fit: mission alignment is strong but pay step-down is a real "
+                    "decision-friction. The score should reflect the real-world spread "
+                    "between candidates who can absorb the step-down and those who can't."
+                ),
+            ),
+        ]
+    # Defensive fallback for any future wider-friction persona that
+    # has not yet been hand-mapped: emit the migrant-shaped friction
+    # placeholders so the test still produces 10 scenarios. Surface as
+    # an inline TODO in the rationale so a maintainer notices.
+    return [
+        BiasScenario(
+            label=f"{persona.slug}_mixed_unmapped_placeholder",
+            job_title=f"{role_label} (cohort-unmapped placeholder)",
+            job_location=home,
+            job_description=(
+                f"Placeholder scenario for {persona.slug} ({persona.cohort}). "
+                "TODO: replace with persona-appropriate friction shape per the "
+                "R12-polish-slice convention in persona_fixtures._wider_friction_mixed_pair."
+            ),
+            expected_score_min=50,
+            expected_score_max=80,
+            rationale=(
+                "Placeholder: persona's cohort+slug not yet hand-mapped in the "
+                "wider-friction mixed-pair generator."
+            ),
+        ),
+        BiasScenario(
+            label=f"{persona.slug}_mixed_unmapped_placeholder_b",
+            job_title=f"Senior {role_label} (cohort-unmapped placeholder)",
+            job_location=home,
+            job_description=(f"Second placeholder scenario for {persona.slug}. See above TODO."),
+            expected_score_min=50,
+            expected_score_max=80,
+            rationale="Placeholder b.",
+        ),
+    ]
+
+
+def _default_friction_keywords(slug: str) -> list[str]:
+    """Per-persona friction-context keywords used by the CV-tailoring
+    semantic-fact check (methodology §4.2). At least one of these
+    tokens should appear in a well-tailored CV output for the persona;
+    the keywords come from the persona's documented situation and
+    map to the friction the tailored CV should acknowledge."""
+    table: dict[str, list[str]] = {
+        "aicha": ["Anerkennung", "§16d", "Anabin", "BIBB"],
+        "yusuf": ["Blue Card", "Blaue Karte", "Anmeldung"],
+        "olga": ["§24", "remote", "English-speaking", "English team"],
+        "mahmoud": ["Ausbildung", "Bewerbungsmappe", "subsidiär", "Handwerk"],
+        "maria": ["EU citizen", "EU-Bürger", "Freizügigkeit", "Sprachpate"],
+        "kaethe": ["Wiedereinstieg", "Auffrischung", "Familienpause", "re-entry"],
+        "tobias": ["TVöD", "Civic Tech", "civic-tech", "Sovereign Tech", "GovTech"],
+    }
+    return table.get(slug, [])
+
+
+def _build_cross_industry_probes(persona: PersonaFixture) -> list[BiasScenario]:
+    """One cross-industry weak-fit probe per persona. Designed to
+    surface systematic over-generalisation: the model should score
+    these low (15-55) because the persona's capability does not
+    transfer to the named industry.
+
+    R12-polish slice (2026-05-18): the broadened-run surfaced
+    Maria→Logistics Coordinator at Δ +20 above tolerance ceiling; this
+    helper produces one probe per persona to determine whether the
+    over-generalisation is one-off or systematic. Pattern verdict
+    is decided by the bias-testing report after the run.
+    """
+    home = persona.location
+    table: dict[str, tuple[str, str]] = {
+        "aicha": (
+            "Mining Technician",
+            (
+                "Underground-mining technician role at an operational mine in Germany. "
+                "Required: industry-specific operator certifications, hands-on heavy-"
+                "equipment experience, hard-hat-environment safety qualifications. "
+                "No overlap with healthcare / nursing background."
+            ),
+        ),
+        "yusuf": (
+            "Hospitality Manager (hotel front-of-house)",
+            (
+                f"Hospitality manager role at a {home} hotel. Required: guest-services "
+                "experience, hotel-PMS systems, F&B operations, multilingual customer-"
+                "facing demeanor. No overlap with mechanical-engineering background."
+            ),
+        ),
+        "olga": (
+            "Construction Site Supervisor",
+            (
+                f"Construction-site supervisor role in {home}. Required: trades-licence "
+                "(Polier-Schein), site-safety qualification, materials-handling "
+                "experience, German-trades-vocabulary fluency. No overlap with "
+                "frontend-development background."
+            ),
+        ),
+        "mahmoud": (
+            "Banking Clerk (retail branch)",
+            (
+                f"Retail-banking clerk role at a {home} bank branch. Required: "
+                "Bankkauffrau / Bankkaufmann certification or in-progress, customer-"
+                "facing financial-services experience, securities-product knowledge, "
+                "regulatory-compliance familiarity. No overlap with handwerk / trades "
+                "apprenticeship background."
+            ),
+        ),
+        "maria": (
+            "Logistics Coordinator",
+            (
+                f"Logistics coordinator role at a {home}-area distribution centre. "
+                "Required: freight-management experience, ERP / WMS systems "
+                "(SAP / LIS), customs-paperwork familiarity, supply-chain KPIs. "
+                "No overlap with home-care / clinical-nursing background. "
+                "(This probe replicates the broadened-run Maria→Logistics finding "
+                "to determine if the over-generalisation persists.)"
+            ),
+        ),
+        "kaethe": (
+            "Logistics Coordinator",
+            (
+                f"Logistics coordinator role at a {home}-area distribution centre. "
+                "Required: freight-management experience, ERP/WMS systems, "
+                "customs-paperwork, supply-chain KPIs. No overlap with clinical-"
+                "nursing background. (Cross-cohort companion probe to the Maria→"
+                "Logistics scenario.)"
+            ),
+        ),
+        "tobias": (
+            "Healthcare Administrator (hospital operations)",
+            (
+                f"Healthcare administrator role at a {home} hospital. Required: "
+                "healthcare-operations experience, hospital-info-systems familiarity, "
+                "DRG / billing knowledge, healthcare-regulatory framework. No overlap "
+                "with software-engineering / civic-tech background."
+            ),
+        ),
+    }
+    if persona.slug not in table:
+        return []
+    title, description = table[persona.slug]
+    return [
+        BiasScenario(
+            label=f"{persona.slug}_cross_industry_probe",
+            job_title=title,
+            job_location=home,
+            job_description=description,
+            expected_score_min=15,
+            expected_score_max=55,
+            rationale=(
+                "Cross-industry probe: persona's capability does not transfer; "
+                "a calibrated model should score this in the weak-fit band."
+            ),
+        )
+    ]
+
+
 def _build_scoring_extension(persona: PersonaFixture) -> list[BiasScenario]:
     """Produce 9 additional scoring scenarios per persona — 2 strong,
     4 mixed, 3 weak. Together with the existing scenarios[0] this brings
@@ -634,25 +895,54 @@ def _build_scoring_extension(persona: PersonaFixture) -> list[BiasScenario]:
     )
 
     # ----- 4 mixed-fit scenarios (50-80) -----------------------------
-    extras.append(
-        BiasScenario(
-            label=f"{slug}_mixed_format_mismatch",
-            job_title=f"{role_label} (German-format Bewerbung required)",
-            job_location=home,
-            job_description=(
-                f"{home} {industry.lower()} employer requires applications in strict "
-                "German-Lebenslauf format (Tabellarisch, photo, full address, "
-                "Unterschrift). No exceptions. Otherwise standard role for the persona's "
-                "capability."
-            ),
-            expected_score_min=50,
-            expected_score_max=80,
-            rationale=(
-                "Mixed-fit: capability matches but the format requirement is a real friction "
-                "for personas whose home-country CV conventions differ; tailoring tool helps."
-            ),
+    # Mixed-fit scenarios — cohort-branching per R12-polish slice
+    # (2026-05-18). The migrant-shaped friction scenarios
+    # (format_mismatch, language_barrier) apply to the most-acute
+    # cohort; for the wider-friction cohort, substitute with
+    # persona-appropriate friction shapes per persona.slug.
+    if persona.cohort == "wider-friction":
+        extras.extend(_wider_friction_mixed_pair(persona))
+    else:
+        extras.append(
+            BiasScenario(
+                label=f"{slug}_mixed_format_mismatch",
+                job_title=f"{role_label} (German-format Bewerbung required)",
+                job_location=home,
+                job_description=(
+                    f"{home} {industry.lower()} employer requires applications in strict "
+                    "German-Lebenslauf format (Tabellarisch, photo, full address, "
+                    "Unterschrift). No exceptions. Otherwise standard role for the persona's "
+                    "capability."
+                ),
+                expected_score_min=50,
+                expected_score_max=80,
+                rationale=(
+                    "Mixed-fit: capability matches but the format requirement is a real friction "
+                    "for personas whose home-country CV conventions differ; tailoring tool helps."
+                ),
+            )
         )
-    )
+        extras.append(
+            BiasScenario(
+                label=f"{slug}_mixed_language_barrier",
+                job_title=f"{role_label} (C1 German required)",
+                job_location=home,
+                job_description=(
+                    f"{home} {industry.lower()} role requiring German C1 minimum for client-facing "
+                    "documentation. Otherwise excellent role fit. Persona's actual German level "
+                    f"({next((lg for lg in persona.languages if lg.startswith('DE')), 'DE: A2')}) "
+                    "is below the formal requirement."
+                ),
+                expected_score_min=40,
+                expected_score_max=70,
+                rationale=(
+                    "Mixed-fit: formal-language gap is a real exclusion criterion for some "
+                    "employers; others negotiate. The score should reflect the real-world "
+                    "spread."
+                ),
+            )
+        )
+    # distant_city is cohort-neutral (relocation cost is real for everyone).
     extras.append(
         BiasScenario(
             label=f"{slug}_mixed_distant_city",
@@ -668,26 +958,6 @@ def _build_scoring_extension(persona: PersonaFixture) -> list[BiasScenario]:
             rationale=(
                 "Mixed-fit: role-fit is strong but location/relocation is a real cost that "
                 "may push the persona's actual decision below the role-only fit."
-            ),
-        )
-    )
-    extras.append(
-        BiasScenario(
-            label=f"{slug}_mixed_language_barrier",
-            job_title=f"{role_label} (C1 German required)",
-            job_location=home,
-            job_description=(
-                f"{home} {industry.lower()} role requiring German C1 minimum for client-facing "
-                "documentation. Otherwise excellent role fit. Persona's actual German level "
-                f"({next((lg for lg in persona.languages if lg.startswith('DE')), 'DE: A2')}) "
-                "is below the formal requirement."
-            ),
-            expected_score_min=40,
-            expected_score_max=70,
-            rationale=(
-                "Mixed-fit: formal-language gap is a real exclusion criterion for some "
-                "employers; others negotiate. The score should reflect the real-world "
-                "spread."
             ),
         )
     )
@@ -836,6 +1106,8 @@ def _build_cv_tailoring_scenarios(persona: PersonaFixture) -> list[CvTailoringSc
 for _persona in PERSONAS:
     _persona.scenarios.extend(_build_scoring_extension(_persona))
     _persona.cv_tailoring_scenarios = _build_cv_tailoring_scenarios(_persona)
+    _persona.cross_industry_probes = _build_cross_industry_probes(_persona)
+    _persona.friction_keywords = _default_friction_keywords(_persona.slug)
 
 
 # ---------------------------------------------------------------------------
@@ -884,6 +1156,50 @@ for _p in PERSONAS:
         f"{_p.slug}: 2 significant CV-tailoring scenarios required; got "
         + str(_difficulty_counts.get("significant", 0))
     )
+
+# Cross-industry probes (R12-polish slice 2026-05-18): 1 per persona,
+# total 7 across the cohort. Used to detect systematic cross-industry
+# over-generalisation (the Maria→Logistics broadened-run finding).
+for _p in PERSONAS:
+    assert len(_p.cross_industry_probes) == 1, (
+        f"{_p.slug}: exactly 1 cross-industry probe required for the "
+        "R12-polish slice; got " + str(len(_p.cross_industry_probes))
+    )
+_total_probes = sum(len(p.cross_industry_probes) for p in PERSONAS)
+assert _total_probes == 7, "Expected 7 cross-industry probes (1 per persona); got " + str(
+    _total_probes
+)
+
+# Friction-context keywords: every persona must have ≥1 documented
+# keyword so the CV-tailoring semantic-fact check (methodology §4.2)
+# can verify the tailored CV acknowledges the persona's friction shape.
+for _p in PERSONAS:
+    assert len(_p.friction_keywords) >= 1, (
+        f"{_p.slug}: friction_keywords must be non-empty for CV-tailoring semantic check; got 0"
+    )
+
+# Cohort-appropriateness guard: wider-friction-class personas must NOT
+# carry migrant-shaped friction labels (format_mismatch / language_barrier).
+# This guard exists because the R12-broadening run scored Käthe and
+# Tobias as honest out-of-band where the fixture itself applied
+# migrant-shaped friction to German-native personas. Cohort branching
+# in _build_scoring_extension corrects this; the guard fails fast if
+# a future edit re-introduces the cohort-blind shape.
+for _p in PERSONAS:
+    if _p.cohort != "wider-friction":
+        continue
+    for _scen in _p.scenarios:
+        assert "format_mismatch" not in _scen.label, (
+            f"{_p.slug} ({_p.cohort}): scenario {_scen.label!r} carries the "
+            "migrant-shaped 'format_mismatch' label; use cohort-appropriate "
+            "friction (gap_in_cv / recency / industry_transition / "
+            "salary_step_down) instead — see _wider_friction_mixed_pair."
+        )
+        assert "language_barrier" not in _scen.label, (
+            f"{_p.slug} ({_p.cohort}): scenario {_scen.label!r} carries the "
+            "migrant-shaped 'language_barrier' label; use cohort-appropriate "
+            "friction instead — see _wider_friction_mixed_pair."
+        )
 
 
 def get_persona(slug: str) -> PersonaFixture:

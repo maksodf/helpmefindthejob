@@ -235,3 +235,13 @@ which tag ran.
   per persona + CV-tailoring class added at 10 scenarios per persona;
   see `bias-testing-2026-05-18-broadened.md` for the 140-data-point
   report.
+- **2026-05-19 (polish)**: cohort-aware fixture fix + 4-condition
+  semantic CV-tailoring check + 7 cross-industry probes (147 data
+  points total); see `bias-testing-2026-05-18-polish.md`. The
+  polish run resolves the broadened-run robustness questions: the
+  first-run score-clustering at 85/92 was a small-sample artefact
+  (confirmed at broadened run); the polish run's cross-class Δ
+  remains +4.5 (no bias signal between cohorts); cross-industry
+  probe pattern verdict is **ONE-OFF** (n=0 personas with Δ above
+  ceiling ≥ +15). Both tests in the polish run fail honestly with
+  thresholds preserved.

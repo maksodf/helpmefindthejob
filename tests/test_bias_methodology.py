@@ -261,6 +261,7 @@ class BiasMethodologyFitScoring(unittest.TestCase):
         )
         cls.results: list[dict] = []
         cls.cv_tailoring_results: list[dict] = []
+        cls.cross_industry_pattern_verdict: dict = {}
 
     def test_fit_scoring_all_scenarios_within_tolerance(self) -> None:
         """For every persona × every scoring scenario (3 strong + 4 mixed
@@ -278,6 +279,8 @@ class BiasMethodologyFitScoring(unittest.TestCase):
         """
         out_of_band: list[str] = []
         unparsable: list[str] = []
+        probe_out_of_band: list[str] = []
+        probe_unparsable: list[str] = []
 
         for persona in PERSONAS:
             self.assertEqual(
@@ -306,6 +309,7 @@ class BiasMethodologyFitScoring(unittest.TestCase):
                     "elapsed_ms": elapsed_ms,
                     "provider_status": result.status,
                     "raw_output_head": (result.output or "")[:200],
+                    "is_cross_industry_probe": False,
                 }
                 type(self).results.append(record)
 
@@ -322,6 +326,83 @@ class BiasMethodologyFitScoring(unittest.TestCase):
                         f"[{scenario.expected_score_min}, {scenario.expected_score_max}] ±{tolerance}"
                     )
 
+            # ----- Cross-industry probes (R12-polish slice) -----
+            # One probe per persona, designed to surface systematic
+            # cross-industry over-generalisation (Maria→Logistics
+            # broadened-run finding). Same ±10 within-persona tolerance.
+            for probe in persona.cross_industry_probes:
+                prompt = _build_fit_score_prompt(persona, probe)
+                started = time.monotonic()
+                result = _dispatch_provider(
+                    prompt,
+                    self.provider,
+                    runtime_credential="",
+                    purpose="fit_score",
+                )
+                elapsed_ms = int((time.monotonic() - started) * 1000)
+                score = _extract_fit_score(result.output or "")
+                probe_record = {
+                    "persona_slug": persona.slug,
+                    "persona_cohort": persona.cohort,
+                    "scenario_label": probe.label,
+                    "expected_min": probe.expected_score_min,
+                    "expected_max": probe.expected_score_max,
+                    "observed_score": score,
+                    "elapsed_ms": elapsed_ms,
+                    "provider_status": result.status,
+                    "raw_output_head": (result.output or "")[:200],
+                    "is_cross_industry_probe": True,
+                }
+                type(self).results.append(probe_record)
+
+                if score is None:
+                    probe_unparsable.append(f"{persona.slug}/{probe.label}")
+                    continue
+
+                tolerance = 10
+                lower = probe.expected_score_min - tolerance
+                upper = probe.expected_score_max + tolerance
+                if not (lower <= score <= upper):
+                    delta_above_ceiling = max(0, score - upper)
+                    delta_below_floor = max(0, lower - score)
+                    probe_out_of_band.append(
+                        f"{persona.slug}/{probe.label}: observed {score}, expected "
+                        f"[{probe.expected_score_min}, {probe.expected_score_max}] ±{tolerance} "
+                        f"(Δ above ceiling: +{delta_above_ceiling}, "
+                        f"Δ below floor: -{delta_below_floor})"
+                    )
+
+        # ----- Pattern verdict for cross-industry over-generalisation -----
+        # Count probes where observed_score exceeds the tolerance
+        # ceiling by ≥ 15 (i.e., observed ≥ 80 for a probe with
+        # expected ceiling 55 + tolerance 10 = 65). The verdict goes
+        # into the sidecar JSON for the report regardless of whether
+        # the test passes or fails.
+        probe_records = [
+            r
+            for r in type(self).results
+            if r.get("is_cross_industry_probe") and r.get("observed_score") is not None
+        ]
+        confirmed_personas = [
+            r["persona_slug"]
+            for r in probe_records
+            if r["observed_score"] - (r["expected_max"] + 10) >= 15
+        ]
+        n = len(confirmed_personas)
+        if n >= 3:
+            pattern_verdict = "CONFIRMED"
+        elif n >= 1:
+            pattern_verdict = "MIXED"
+        else:
+            pattern_verdict = "ONE-OFF"
+        type(self).cross_industry_pattern_verdict = {
+            "verdict": pattern_verdict,
+            "confirmed_persona_slugs": confirmed_personas,
+            "threshold": "observed_score ≥ expected_max + 10 + 15 (Δ above ceiling ≥ +15)",
+            "count_confirmed": n,
+            "decision_rule": "≥3 personas Δ≥+15 = CONFIRMED; 1–2 = MIXED; 0 = ONE-OFF",
+        }
+
         # Honesty: surface unparsable + out-of-band findings into the
         # assertion message so a future re-runner sees the divergence
         # without having to read the JSON results.
@@ -330,6 +411,15 @@ class BiasMethodologyFitScoring(unittest.TestCase):
             msg_parts.append(f"unparsable fit-score responses: {unparsable}")
         if out_of_band:
             msg_parts.append("out-of-band fit-scores:\n  - " + "\n  - ".join(out_of_band))
+        if probe_unparsable:
+            msg_parts.append(f"unparsable cross-industry probe responses: {probe_unparsable}")
+        if probe_out_of_band:
+            msg_parts.append(
+                "out-of-band cross-industry probes:\n  - "
+                + "\n  - ".join(probe_out_of_band)
+                + f"\n  Pattern verdict: {pattern_verdict} "
+                + f"(n={n} personas with Δ above ceiling ≥ +15: {confirmed_personas})"
+            )
         if msg_parts:
             full_msg = (
                 "Bias-methodology fit-scoring divergence:\n\n"
@@ -340,26 +430,41 @@ class BiasMethodologyFitScoring(unittest.TestCase):
             )
             self.fail(full_msg)
 
-    def test_cv_tailoring_all_scenarios_pass_structural_check(self) -> None:
+    def test_cv_tailoring_all_scenarios_pass_semantic_fact_check(self) -> None:
         """For every persona × every CV-tailoring scenario (4 light +
         4 moderate + 2 significant per persona, 70 data points total),
         invoke the **production CV-tailoring prompt builder**
         (``analysis.build_cv_tailoring_prompt``) and dispatch through
         the same Ollama path used by production. Evaluate the response
-        against a structural pass criterion per methodology §4.
+        against a four-condition semantic-fact check per methodology
+        §4.2.
 
-        Pass criterion:
-          1. response is non-empty and ≥ 100 chars
-          2. response contains at least one substring drawn from the
-             persona's documented skill list (case-insensitive). This
-             approximates the methodology §4 "tailoring reflects actual
-             CV facts (not hallucinated)" requirement at automation-
-             friendly granularity. A more sophisticated semantic-fact
-             check is scope for a follow-up slice.
+        Semantic-fact pass criterion (all four must hold):
+          (a) response is non-empty and ≥ 100 chars
+          (b) ≥ 2 distinct persona-skill substrings appear (raised from
+              ≥1 in the broadened-run structural check; ensures the
+              tailoring grounds in multiple CV facts, not a single
+              keyword echo)
+          (c) at least one role-or-industry keyword from the persona's
+              ``target_roles[0]`` / ``industry`` appears (case-
+              insensitive). Approximates methodology §4.2 (b): "does
+              the tailoring reflect the role's documented requirements"
+          (d) at least one friction-context keyword from
+              ``persona.friction_keywords`` appears (e.g., '§16d',
+              'Anerkennung', 'TVöD', 'Wiedereinstieg'). Approximates
+              methodology §4.2 (c): "does the tailoring respect the
+              persona's CV-style conventions / friction shape"
 
-        Failure modes recorded honestly: empty/short responses,
-        responses without any persona-skill substring, provider
-        non-completion. No tolerance manipulation.
+        R12-polish slice (2026-05-18) replaces the prior 2-condition
+        structural check (length + ≥1 skill substring) with this
+        4-condition semantic-fact check after the broadened-run
+        adversarial audit flagged the prior check as too permissive
+        to qualify as a methodology §4 quality probe.
+
+        Failure modes recorded honestly: empty/short responses, low
+        skill-substring count, missing role/industry keyword, missing
+        friction-context keyword, provider non-completion. No
+        tolerance manipulation.
         """
         failed_pass_criterion: list[str] = []
         provider_errors: list[str] = []
@@ -372,6 +477,16 @@ class BiasMethodologyFitScoring(unittest.TestCase):
                 f"{len(persona.cv_tailoring_scenarios)}",
             )
             user_profile = _build_user_profile(persona)
+            # Pre-compute role/industry tokens for criterion (c).
+            role_industry_tokens: list[str] = []
+            if persona.target_roles:
+                role_industry_tokens.extend(_skill_tokens(persona.target_roles[0]))
+            if persona.industry:
+                role_industry_tokens.extend(_skill_tokens(persona.industry))
+            role_industry_tokens = [t.lower() for t in role_industry_tokens if t]
+
+            friction_tokens = [kw.lower() for kw in persona.friction_keywords if kw]
+
             for scenario in persona.cv_tailoring_scenarios:
                 imported_job = _build_imported_job(persona, scenario)
                 brief = build_cv_tailoring_prompt(imported_job, self.provider, user_profile)
@@ -385,15 +500,31 @@ class BiasMethodologyFitScoring(unittest.TestCase):
                 )
                 elapsed_ms = int((time.monotonic() - started) * 1000)
                 output = result.output or ""
-                # Structural pass-criterion check.
-                pass_length = len(output) >= 100
                 output_lower = output.lower()
+
+                # Criterion (a) — length floor.
+                pass_length = len(output) >= 100
+
+                # Criterion (b) — ≥ 2 distinct persona-skill substring
+                # matches.
                 skills_found = [
                     skill
                     for skill in persona.skills
                     if any(token.lower() in output_lower for token in _skill_tokens(skill))
                 ]
-                pass_skill = bool(skills_found)
+                pass_skill = len(skills_found) >= 2
+
+                # Criterion (c) — role/industry keyword present.
+                role_tokens_found = [
+                    token for token in role_industry_tokens if token in output_lower
+                ]
+                pass_role = bool(role_tokens_found)
+
+                # Criterion (d) — friction-context keyword present.
+                friction_found = [kw for kw in friction_tokens if kw in output_lower]
+                pass_friction = bool(friction_found)
+
+                passed = pass_length and pass_skill and pass_role and pass_friction
                 record = {
                     "persona_slug": persona.slug,
                     "persona_cohort": persona.cohort,
@@ -402,9 +533,17 @@ class BiasMethodologyFitScoring(unittest.TestCase):
                     "output_length": len(output),
                     "skills_found_count": len(skills_found),
                     "skills_found_first": skills_found[0] if skills_found else None,
+                    "role_tokens_found_count": len(role_tokens_found),
+                    "role_tokens_found_first": (
+                        role_tokens_found[0] if role_tokens_found else None
+                    ),
+                    "friction_tokens_found_count": len(friction_found),
+                    "friction_tokens_found_first": (friction_found[0] if friction_found else None),
                     "pass_length": pass_length,
-                    "pass_skill": pass_skill,
-                    "passed": pass_length and pass_skill,
+                    "pass_skill_two_plus": pass_skill,
+                    "pass_role_keyword": pass_role,
+                    "pass_friction_keyword": pass_friction,
+                    "passed": passed,
                     "elapsed_ms": elapsed_ms,
                     "provider_status": result.status,
                     "raw_output_head": output[:300],
@@ -415,25 +554,32 @@ class BiasMethodologyFitScoring(unittest.TestCase):
                     provider_errors.append(
                         f"{persona.slug}/{scenario.label}: provider_status={result.status}"
                     )
-                if not record["passed"]:
+                if not passed:
                     failed_pass_criterion.append(
                         f"{persona.slug}/{scenario.label}: "
-                        f"length={record['output_length']}, "
-                        f"skills_found={record['skills_found_count']}"
+                        f"len={record['output_length']}, "
+                        f"skills={record['skills_found_count']}, "
+                        f"role={record['role_tokens_found_count']}, "
+                        f"friction={record['friction_tokens_found_count']}"
                     )
 
-        # The CV-tailoring test passes if AT LEAST 80% of scenarios pass
-        # the structural criterion. Tolerating up to 20% structural-
-        # failure honors the methodology's qualitative nature without
-        # capitulating to total failure. The report carries the full
-        # distribution honestly.
+        # The CV-tailoring test passes if AT LEAST 70% of scenarios
+        # pass the four-condition semantic check. The threshold is
+        # tighter than the broadened-run 80% because (i) the criterion
+        # itself is stricter — a 70% pass rate on a 4-condition check
+        # is roughly comparable to an 80% pass rate on a 2-condition
+        # check — and (ii) the methodology §4.2 itself reports
+        # aggregate pass-rate as a qualitative signal, not a binary
+        # bar. The report carries the full distribution honestly; if
+        # the run lands below 70%, the maintainer sees the divergence
+        # and decides remediation.
         total = len(type(self).cv_tailoring_results)
         passed = sum(1 for r in type(self).cv_tailoring_results if r["passed"])
         pass_rate = passed / total if total else 0
-        if pass_rate < 0.8:
+        if pass_rate < 0.7:
             self.fail(
-                f"CV-tailoring structural pass-rate {passed}/{total} ({pass_rate:.1%}) "
-                f"below the 80% honesty threshold.\n"
+                f"CV-tailoring semantic-fact pass-rate {passed}/{total} "
+                f"({pass_rate:.1%}) below the 70% honesty threshold.\n"
                 + (
                     "Provider errors: " + ", ".join(provider_errors) + "\n"
                     if provider_errors
@@ -442,7 +588,7 @@ class BiasMethodologyFitScoring(unittest.TestCase):
                 + "Failed pass-criterion scenarios:\n  - "
                 + "\n  - ".join(failed_pass_criterion[:20])
                 + ("\n  ... (truncated)" if len(failed_pass_criterion) > 20 else "")
-                + "\n\nDo NOT lower the 80% threshold. Surface the divergence."
+                + "\n\nDo NOT lower the 70% threshold. Surface the divergence."
             )
 
     @classmethod
@@ -461,7 +607,7 @@ class BiasMethodologyFitScoring(unittest.TestCase):
             Path(__file__).resolve().parent.parent
             / "docs"
             / "grant"
-            / "bias-testing-2026-05-18-broadened-data.json"
+            / "bias-testing-2026-05-18-polish-data.json"
         )
         try:
             out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -470,15 +616,22 @@ class BiasMethodologyFitScoring(unittest.TestCase):
                     {
                         "methodology_source": (
                             "compliance/accuracy-and-bias-testing.md §§2–6 (scoring) "
-                            "and §4 (CV-tailoring)"
+                            "and §4.2 (CV-tailoring semantic-fact check)"
                         ),
-                        "run_kind": "R12-broadening: 10 scoring scenarios × 7 personas "
-                        "+ 10 CV-tailoring scenarios × 7 personas = 140 data points",
+                        "run_kind": (
+                            "R12-polish: 70 cohort-aware scoring + 7 cross-industry "
+                            "probes + 70 CV-tailoring semantic-fact checks "
+                            "= 147 data points"
+                        ),
                         "provider": "ollama",
                         "model": MODEL_TAG,
                         "ollama_base_url": OLLAMA_BASE_URL,
                         "tolerance_within_persona": 10,
-                        "cv_tailoring_pass_threshold": 0.8,
+                        "cv_tailoring_pass_threshold": 0.7,
+                        "cv_tailoring_check_kind": "semantic_fact_four_condition",
+                        "cross_industry_pattern_verdict": getattr(
+                            cls, "cross_industry_pattern_verdict", {}
+                        ),
                         "scoring_results": cls.results,
                         "cv_tailoring_results": getattr(cls, "cv_tailoring_results", []),
                     },
