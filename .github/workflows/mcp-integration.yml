@@ -60,4 +60,13 @@ jobs:
 
       - name: Print catalogue summary on success
         if: success()
+        # PYTHONPATH=. puts the repo root on sys.path so the script's
+        # ``from company_discovery.mcp_tools import TOOL_SCHEMAS`` resolves.
+        # Running ``python scripts/<file>.py`` directly only adds the
+        # script's parent dir (``scripts/``) to sys.path, not the repo
+        # root — which is why the post-success step had been failing.
+        # No untrusted GitHub event payload is interpolated into this
+        # run step.
+        env:
+          PYTHONPATH: .
         run: python scripts/print_mcp_catalogue.py
