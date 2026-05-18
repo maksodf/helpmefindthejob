@@ -485,19 +485,56 @@ class AuthStore:
 
     # --- TOTP 2FA --------------------------------------------------------
 
-    def _encrypt_secret(self, secret_b32: str) -> str:
-        """Symmetric envelope: derive a key from secret_key + a per-user
-        salt, XOR the base32 secret. Reversible only with secret_key."""
+    def _totp_crypto(self) -> "EncryptionAtRest":
+        """Lazy-init and cache the AEAD helper used for the TOTP-secret
+        column. Same key-derivation chain as the CV-text column (HKDF from
+        ``self.secret_key`` unless ``DIRECTJOB_DATA_KEY`` is set), so a
+        single rotation of either env var rotates both columns together.
+        """
 
-        import base64
+        from .crypto_kit import EncryptionAtRest
 
-        salt = secrets.token_bytes(8)
-        key = hashlib.sha256(self.secret_key.encode("utf-8") + salt).digest()
-        data = secret_b32.encode("ascii")
-        ciphertext = bytes(b ^ key[i % len(key)] for i, b in enumerate(data))
-        return base64.b64encode(salt + ciphertext).decode("ascii")
+        cached = getattr(self, "_totp_crypto_cached", None)
+        if cached is None:
+            cached = EncryptionAtRest.from_secret_key(self.secret_key)
+            self._totp_crypto_cached = cached
+        return cached
 
-    def _decrypt_secret(self, blob: str) -> str:
+    def _encrypt_secret(self, secret_b32: str, user_id: str) -> str:
+        """AEAD-encrypt the TOTP base32 secret with the user id as AAD.
+
+        AAD binding defeats swap-the-blob attacks: a row written for one
+        user cannot be transplanted into another user's row and decrypted.
+        """
+
+        aad = user_id.encode("utf-8")
+        return self._totp_crypto().encrypt(secret_b32, aad=aad)
+
+    def _decrypt_secret(self, blob: str, user_id: str) -> str:
+        """Decrypt the TOTP base32 secret. Transparent across the two
+        on-disk formats produced over the project's history:
+
+        * AEAD (current) — ``aead:v1:...`` blobs written by
+          :meth:`_encrypt_secret`. Decrypted with AAD bound to user id.
+        * Legacy XOR — unauthenticated XOR-with-SHA256-derived-key blobs
+          written before the migration. Decrypted via
+          :meth:`_decrypt_legacy_totp` for read continuity; callers that
+          mutate state should invoke :meth:`_migrate_legacy_totp_if_needed`
+          to opportunistically upgrade the column on next write.
+        """
+
+        from .crypto_kit import is_aead_blob
+
+        if is_aead_blob(blob):
+            aad = user_id.encode("utf-8")
+            return self._totp_crypto().decrypt(blob, aad=aad)
+        return self._decrypt_legacy_totp(blob)
+
+    def _decrypt_legacy_totp(self, blob: str) -> str:
+        """Decrypt a pre-migration XOR-base64 TOTP blob. Kept solely to
+        support transparent lazy-migration of existing rows; never used
+        for new writes."""
+
         import base64
 
         raw = base64.b64decode(blob)
@@ -505,6 +542,28 @@ class AuthStore:
         key = hashlib.sha256(self.secret_key.encode("utf-8") + salt).digest()
         plain = bytes(b ^ key[i % len(key)] for i, b in enumerate(ciphertext))
         return plain.decode("ascii")
+
+    def _migrate_legacy_totp_if_needed(self, user_id: str, blob: str) -> None:
+        """If the stored TOTP blob is in the pre-migration XOR-base64
+        format, re-encrypt it under AEAD and update the row. Idempotent:
+        a no-op when the blob is already in ``aead:v1:`` format.
+
+        Called from the read paths (verify / confirm) so the column
+        upgrades on first read after the migration deploys, without
+        requiring a separate offline migration step.
+        """
+
+        from .crypto_kit import is_aead_blob
+
+        if not blob or is_aead_blob(blob):
+            return
+        plaintext = self._decrypt_legacy_totp(blob)
+        new_blob = self._encrypt_secret(plaintext, user_id)
+        self.connection.execute(
+            "UPDATE users SET totp_secret = ? WHERE id = ?",
+            (new_blob, user_id),
+        )
+        self.connection.commit()
 
     def has_totp_enabled(self, user_id: str) -> bool:
         row = self.connection.execute(
@@ -520,7 +579,7 @@ class AuthStore:
 
         user = self.get_user(user_id)
         secret = _b32_secret()
-        encrypted = self._encrypt_secret(secret)
+        encrypted = self._encrypt_secret(secret, user_id)
         # Pre-generate 8 single-use recovery codes; only persist after
         # confirmation so a half-finished enrollment doesn't litter rows.
         self.connection.execute(
@@ -544,7 +603,8 @@ class AuthStore:
         ).fetchone()
         if not row or not row[0]:
             raise ValueError("totp_not_started")
-        secret = self._decrypt_secret(row[0])
+        secret = self._decrypt_secret(row[0], user_id)
+        self._migrate_legacy_totp_if_needed(user_id, row[0])
         if not verify_totp(secret, code):
             raise ValueError("invalid_totp_code")
         plaintext_codes = [secrets.token_hex(5) for _ in range(8)]
@@ -562,7 +622,9 @@ class AuthStore:
         ).fetchone()
         if not row or not row[0] or not row[1]:
             return False
-        return verify_totp(self._decrypt_secret(row[0]), code)
+        secret = self._decrypt_secret(row[0], user_id)
+        self._migrate_legacy_totp_if_needed(user_id, row[0])
+        return verify_totp(secret, code)
 
     def consume_recovery_code(self, user_id: str, code: str) -> bool:
         import json
