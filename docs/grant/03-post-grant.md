@@ -181,6 +181,7 @@ A rejection is one round, not the project's end. NLnet runs rolling 2-month dead
 5. **WCAG 2.2 AA full conformance** with HAN University audit support.
 6. **FOSDEM 2027 talk delivered** — credibility multiplier.
 7. **Codeberg mirror** for European-sovereignty resilience.
+8. **Cross-platform test-suite cleanup** — Phase 1 §3.2 added a CI workflow capable of running on `macos-latest` and `windows-latest`, but the existing test suite has Linux-isms (file `open()` calls without explicit `encoding="utf-8"` defaulting to cp1252 on Windows; subprocess-based HTTP smoke tests timing out in `setUpClass` on macOS due to slower TCP-bind). Phase 2 systematically remediates both (audit every `open()` for explicit utf-8; widen the subprocess startup timeouts and split the smoke harness to be tolerant of macOS / Windows runner timing) so the CI matrix can broaden back to ubuntu + macos + windows. The work is mostly mechanical but touches many test files.
 
 ### Phase 2 grant ask
 
