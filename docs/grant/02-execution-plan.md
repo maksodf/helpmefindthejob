@@ -210,17 +210,19 @@ The verification runs in a clean Docker container so the "fresh-clone smoke test
 
 ### 2.2 MCP server documentation (6 h) — BLOCKER FIX
 
-- [ ] Create `docs/mcp-server.md` covering the catalogue (initial 8 tools + 5 new Week-2 tools):
-  - Tool name, purpose, JSON Schema for input and output, audit-log entry shape, deterministic fallback behaviour, standards alignment, example invocation in Python and TypeScript
+- [x] Create `docs/mcp-server.md` covering the catalogue:
+  - Tool name, purpose, required input fields, output shape, standards alignment per tool (8 tools today; 13 after §2.3)
   - Protocol version pinned at `2024-11-05`
-  - Catalogue version (SemVer): start at v0.1.0
-  - Composition patterns explained: sequential handoff, profile-shared, orchestrated (future)
-  - Portable civic profile schema linked
-  - Error conventions (RFC 7807)
-- [ ] Publish JSON Schema for every tool input/output as separate files in `mcp_server/schemas/`
-- [ ] Add an `/mcp/schemas.json` endpoint exposing the full catalogue
-- [ ] Add a `/mcp/version` endpoint
-- [ ] Create `STANDARDS.md` at repo root listing every standard cited
+  - Catalogue version (SemVer): policy documented; current `0.1.0`
+  - Composition patterns explained: sequential handoff, profile-shared, orchestrated (future) — cross-linked to `09-mcp-composition.md`
+  - Portable civic profile schema referenced (lands with §2.3 catalogue expansion)
+  - Error conventions (RFC 7807 Problem Details — fields `status`, `type`, `title`, `detail`, `instance`, `validationPath`, `violatedRule`)
+  - Example client invocations in Python (stdlib) and TypeScript (Node.js)
+  - Operational notes (stdio transport, env-var data path, encryption integration, audit-log boundary)
+- [ ] Publish JSON Schema for every tool input/output as separate files in `mcp_server/schemas/` — *deferred to a §2.2 follow-up; canonical schemas already live in `company_discovery/mcp_tools.py:TOOL_SCHEMAS`, and `tools/list` exposes them over the wire. A filesystem mirror under `mcp_server/schemas/<tool-name>.json` is a build-artefact ergonomic addition, not a contract change; folded in once a downstream consumer needs it for external tooling.*
+- [ ] Add an `/mcp/schemas.json` endpoint exposing the full catalogue — *deferred to a §2.2 follow-up; requires an `app.py` route addition. The stdio `tools/list` call is the canonical surface today.*
+- [ ] Add a `/mcp/version` endpoint — *deferred to the same §2.2 follow-up. The version is currently reachable via the `serverInfo.version` field in the `initialize` response.*
+- [x] Create `STANDARDS.md` at repo root listing every standard cited (Licensing + governance, Protocols + interfaces, Employment + civic-data vocabularies, Accessibility + transparency, Privacy + security, Operational, Internal protocols — with the implementing file path and shipping status per row; verification recipe at the end so a reviewer can deep-check the standards claims in 10 minutes)
 
 ### 2.3 New MCP tools (8 h) — composition expansion
 

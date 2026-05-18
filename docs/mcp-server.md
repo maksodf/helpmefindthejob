@@ -1,0 +1,274 @@
+# DirectJob Scout MCP Server
+
+**Audience**: integrators who want to call DirectJob Scout from another agent, deployers who want to understand the catalogue contract, NLnet reviewers who want to verify the project's "MCP-composable open civic infrastructure" claim.
+
+**Strategic context** lives in [`docs/grant/09-mcp-composition.md`](grant/09-mcp-composition.md) (composition spec) and [`docs/grant/01-project-brief.md`](grant/01-project-brief.md) (overall positioning). This document is the operational reference for the server itself.
+
+---
+
+## What this is
+
+`mcp_server.py` is a [Model Context Protocol](https://modelcontextprotocol.io) server that exposes DirectJob Scout's civic-employment capabilities as a small, well-documented tool catalogue. It is the project's **composition surface**: other open civic agents (housing, healthcare, residency, education) can call DirectJob Scout via the same protocol used by any MCP-aware client (Claude Desktop, Cursor, Continue, Cline, custom JSON-RPC clients), without forking either project.
+
+The current catalogue exposes **eight tools** (Week 1 baseline). Week 2 §2.3 in [`docs/grant/02-execution-plan.md`](grant/02-execution-plan.md) expands the catalogue to thirteen by adding five composition-oriented tools (`get_user_profile_for_consent`, `propose_referral`, `query_esco_skill`, `export_eures_compatible`, `record_user_outcome`).
+
+## Protocol surface
+
+| Field | Value |
+|---|---|
+| Transport | JSON-RPC 2.0 over stdio |
+| MCP `protocolVersion` | `2024-11-05` |
+| `serverInfo.name` | `directjob-scout` |
+| `serverInfo.version` | `0.1.0` (catalogue SemVer; see versioning policy below) |
+| Capabilities advertised | `{"tools": {}}` |
+| Source | [`mcp_server.py`](../mcp_server.py) (top-level entry point) |
+| Tool implementations | [`company_discovery/mcp_tools.py`](../company_discovery/mcp_tools.py) |
+| Tool schemas | `TOOL_SCHEMAS` in the same module (canonical source of truth) |
+
+The supported JSON-RPC methods are:
+
+- `initialize` — version handshake; returns the `protocolVersion`, `serverInfo`, and capabilities.
+- `notifications/initialized` — no-op acknowledgement; standard MCP initialise-complete signal.
+- `ping` — returns `{}`; useful for liveness checks.
+- `tools/list` — returns the full catalogue including each tool's `name`, `description`, and `inputSchema`.
+- `tools/call` — invokes a named tool with a JSON-object `arguments` payload. Every payload is **JSON-Schema-validated against the tool's `inputSchema`** before dispatch (see "Argument validation" below).
+
+Anything else returns a JSON-RPC error `-32601` "Unknown method".
+
+## Argument validation (the contract that's actually enforced)
+
+Every `tools/call` payload is validated against the registered tool's `inputSchema` using [`jsonschema.Draft7Validator`](https://python-jsonschema.readthedocs.io/) **before** the tool method is invoked. The validation rules that `inputSchema` advertises in `tools/list` are real: a deployer can write a client against the published catalogue and trust the server to enforce the shape.
+
+Specifically:
+
+- **Missing required field** — returns an RFC 7807 Problem Details payload with `status: "invalid_arguments"`, `violatedRule: "required"`, `validationPath` pointing to the missing field, and `detail` quoting the validator's message. The tool method is not invoked.
+- **Wrong type** — same shape with `violatedRule: "type"`.
+- **Non-object arguments** — `tools/call` requires `arguments` to be a JSON object; anything else returns the same problem document with `violatedRule: "type"`.
+- **Unknown tool name** — returns `status: "unknown_tool"` before any schema lookup.
+- **Tool body raises an exception** — wrapped into a Problem Details payload with `status: "tool_error"` and the exception message in `detail`. Tracebacks are not leaked.
+
+**Additional properties policy**: the current catalogue schemas do not set `additionalProperties: false`, so unknown keys pass validation. This is documented and pinned by test (`tests/test_phase11_mcp_input_validation.py::AdditionalPropertiesPolicyTests`). A future catalogue-tightening that flips `additionalProperties: false` is a deliberate decision, not an accident, and will bump the catalogue's MINOR version per the policy below.
+
+## Catalogue versioning policy
+
+The tool catalogue follows [Semantic Versioning](https://semver.org/) independently of the MCP protocol version:
+
+- **MAJOR** — backwards-incompatible change to any tool's input or output schema; removal of a tool; change of `protocolVersion`.
+- **MINOR** — addition of a tool; addition of an optional field on an input/output schema; tightening of `additionalProperties` (because clients may have relied on extra fields being silently ignored).
+- **PATCH** — bug fixes, performance changes, schema clarifications that do not change validity.
+
+The MCP `protocolVersion` advertised in the `initialize` response is pinned to the version the server has been tested against (currently `2024-11-05`). Upgrading to a newer MCP protocol version is a MAJOR change to the catalogue.
+
+When `/mcp/version` and `/mcp/schemas.json` HTTP endpoints land (planned in §2.2 follow-up), the catalogue version and the full schema set will be reachable without spawning the stdio process.
+
+## The 8-tool catalogue (current)
+
+Each tool's full JSON `inputSchema` is the canonical definition in [`company_discovery/mcp_tools.py`](../company_discovery/mcp_tools.py). This table summarises the required-fields surface and the standards alignment per tool; consult the source for the complete property list and types.
+
+| # | Tool | Required input | Purpose | Standards alignment |
+|---|---|---|---|---|
+| 1 | `suggest_relevant_companies` | `targetRoles[]`, `industry` | Suggest curated companies from role, industry, location preferences | schema.org Organization |
+| 2 | `add_company_to_watchlist` | `userId`, `name`, `websiteUrl` | Persist a company watchlist entry without scanning external pages | schema.org Organization |
+| 3 | `find_company_career_page` | `userId`, `companyId` | Resolve a watched company to its public career page (respects `robots.txt`) | — |
+| 4 | `scan_company_career_page` | `userId`, `companyId` | Crawl a career page and surface discovered roles | schema.org JobPosting |
+| 5 | `extract_direct_jobs_from_company_site` | `userId`, `companyId`, `pageUrl`, `html` | Extract job postings from a fetched career page | schema.org JobPosting |
+| 6 | `import_discovered_job` | `userId`, `discoveredJobId` | Persist a discovered job into the user's queue | schema.org JobPosting |
+| 7 | `deduplicate_discovered_jobs` | `userId` | Identify and merge duplicate job records | — |
+| 8 | `get_company_watchlist_summary` | `userId` | Return the user's watchlist with recent activity | — |
+
+Optional input fields per tool (full list in the source): `add_company_to_watchlist` accepts `careerPageUrl`, `sector`, `notes`, `watchEnabled`; `scan_company_career_page` accepts `careerPageUrl`; `suggest_relevant_companies` accepts `location`.
+
+## Composition patterns
+
+See [`docs/grant/09-mcp-composition.md`](grant/09-mcp-composition.md) for the full spec. Summary:
+
+1. **Sequential handoff** — agent A identifies an out-of-scope question, calls `propose_referral` on agent B, presents the structured referral to the user, hands over on consent. **Lowest coupling**: each agent runs independently; the only shared surface is the referral protocol. **Available** with the §2.3 catalogue expansion.
+2. **Profile-shared composition** — multiple agents in the same deployment read the user's portable civic profile via `get_user_profile_for_consent` (with explicit consent). **Medium coupling**: shared profile schema; both agents trust the same persistence layer. **Available** with the §2.3 catalogue expansion.
+3. **Orchestrated multi-agent conversation** — a meta-orchestrator routes a single conversation between multiple agents. **Highest coupling**, **Phase 2+ scope**.
+
+The §2.5 reference integration with an open housing agent demonstrates pattern 1 end-to-end and ships under [`examples/housing-agent-integration/`](../examples/) (lands Week 2 §2.5).
+
+## Example client invocations
+
+### Python (stdlib only)
+
+```python
+"""Drive the DirectJob Scout MCP server from a Python client over stdio.
+
+Spawns the server as a subprocess, performs the MCP handshake, lists
+tools, and invokes get_company_watchlist_summary. No external
+dependencies beyond the Python standard library.
+"""
+import json
+import subprocess
+import sys
+
+proc = subprocess.Popen(
+    [sys.executable, "mcp_server.py"],
+    stdin=subprocess.PIPE,
+    stdout=subprocess.PIPE,
+    stderr=subprocess.PIPE,
+    text=True,
+)
+
+def call(message):
+    proc.stdin.write(json.dumps(message) + "\n")
+    proc.stdin.flush()
+    return json.loads(proc.stdout.readline())
+
+# Handshake.
+hello = call({"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {}})
+assert hello["result"]["protocolVersion"] == "2024-11-05"
+
+# Catalogue.
+catalogue = call({"jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": {}})
+print(f"{len(catalogue['result']['tools'])} tools available")
+
+# Tool invocation. inputSchema is validated server-side; missing
+# required fields return an RFC 7807 problem document.
+summary = call({
+    "jsonrpc": "2.0", "id": 3, "method": "tools/call",
+    "params": {
+        "name": "get_company_watchlist_summary",
+        "arguments": {"userId": "u-123"},
+    },
+})
+print(summary["result"]["content"][0]["text"])
+
+proc.stdin.close()
+proc.wait()
+```
+
+Sample invalid-argument response (missing `name` + `websiteUrl` on `add_company_to_watchlist`):
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 4,
+  "result": {
+    "content": [{
+      "type": "text",
+      "text": "{\"status\":\"invalid_arguments\",\"type\":\"about:blank\",\"title\":\"Tool arguments failed schema validation\",\"detail\":\"'userId' is a required property\",\"instance\":\"add_company_to_watchlist\",\"validationPath\":\"(root)\",\"violatedRule\":\"required\"}"
+    }],
+    "isError": true
+  }
+}
+```
+
+### TypeScript
+
+```typescript
+/**
+ * Drive the DirectJob Scout MCP server from a Node.js client over
+ * stdio. Standard child_process; no external SDK assumed.
+ */
+import { spawn } from "node:child_process";
+import readline from "node:readline";
+
+const proc = spawn("python3", ["mcp_server.py"]);
+const rl = readline.createInterface({ input: proc.stdout });
+const responses: AsyncIterator<string> = rl[Symbol.asyncIterator]();
+
+async function call(message: Record<string, unknown>) {
+  proc.stdin.write(JSON.stringify(message) + "\n");
+  const { value } = await responses.next();
+  return JSON.parse(value as string);
+}
+
+const hello = await call({
+  jsonrpc: "2.0",
+  id: 1,
+  method: "initialize",
+  params: {},
+});
+console.log(`Connected to ${hello.result.serverInfo.name} v${hello.result.serverInfo.version}`);
+
+const catalogue = await call({
+  jsonrpc: "2.0",
+  id: 2,
+  method: "tools/list",
+  params: {},
+});
+console.log(`${catalogue.result.tools.length} tools in catalogue`);
+
+const summary = await call({
+  jsonrpc: "2.0",
+  id: 3,
+  method: "tools/call",
+  params: {
+    name: "get_company_watchlist_summary",
+    arguments: { userId: "u-123" },
+  },
+});
+console.log(JSON.parse(summary.result.content[0].text));
+
+proc.stdin.end();
+```
+
+### Curl (HTTP catalogue endpoints — lands in §2.2 follow-up)
+
+```bash
+# Schema catalogue (planned)
+curl -s https://demo.directjob-scout.example/mcp/schemas.json | jq '.tools | length'
+
+# Catalogue version (planned)
+curl -s https://demo.directjob-scout.example/mcp/version | jq '.catalogueVersion'
+```
+
+## Audit logging
+
+Every persisting tool emits an entry into `data/admin_audit.log` (one JSON object per line). The audit schema is documented in the EU AI Act Article 12 compliance section of [`docs/grant/10-ai-act-compliance.md`](grant/10-ai-act-compliance.md). Tool invocations that do **not** persist (read-only summaries, schema lookups) are not audited; the audit boundary follows the same persist=True / persist=False split that the journey state machine uses internally.
+
+## Error model
+
+All `tools/call` responses with `isError: true` carry an [RFC 7807 Problem Details](https://www.rfc-editor.org/rfc/rfc7807) JSON document inside the standard MCP `content[0].text` channel. Fields:
+
+| Field | Meaning |
+|---|---|
+| `status` | One of `invalid_arguments`, `unknown_tool`, `tool_error`. Machine-readable. |
+| `type` | URI identifying the problem type. Currently `about:blank` (the catalogue does not yet host a public problem-type taxonomy). |
+| `title` | Short human-readable problem name. |
+| `detail` | Specific failure message — for validation errors this is the `jsonschema` validator message; for tool errors this is the exception message (without traceback). |
+| `instance` | The tool name that triggered the problem. |
+| `validationPath` | JSON Pointer-style path to the offending field, or `(root)` if the failure is at the top level. Present only for `invalid_arguments`. |
+| `violatedRule` | The JSON Schema keyword that fired (`required`, `type`, etc.). Present only for `invalid_arguments`. |
+
+A deployer can dispatch on `status` for programmatic handling and surface `detail` to a human operator in the UI.
+
+## Operational notes
+
+- **Startup**: `python3 mcp_server.py` from the repository root. The server reads `COMPANY_DISCOVERY_DATA_DIR` (default `./data`) to locate its SQLite database, which it shares with the web app — meaning MCP tool invocations and web-app interactions see the same persisted state.
+- **No HTTP**: the server speaks JSON-RPC over stdio, not HTTP. Embed it as a subprocess of your agent, or wrap it with a process-supervised stdio bridge.
+- **Single-process state**: the server is stateless at the request boundary; all state lives in the SQLite database. Multiple clients can connect via multiple subprocess instances pointed at the same `COMPANY_DISCOVERY_DATA_DIR`.
+- **Encryption**: any persisted user data passes through [`company_discovery/crypto_kit.py`](../company_discovery/crypto_kit.py) at the storage layer. The CV-text column and TOTP-secret column are AEAD-encrypted at rest (ChaCha20-Poly1305 with AAD = user_id; see [`ARCHITECTURE.md`](../ARCHITECTURE.md) and [`SECURITY.md`](../SECURITY.md)).
+- **Logging**: stderr is reserved for human-readable diagnostics. Tool invocations + audit entries go to `data/admin_audit.log`.
+
+## Where the schemas live
+
+`TOOL_SCHEMAS` in [`company_discovery/mcp_tools.py`](../company_discovery/mcp_tools.py) is the canonical source. The schemas are JSON Schema Draft 7 documents. The [`/mcp/schemas.json`](https://demo.directjob-scout.example/mcp/schemas.json) HTTP endpoint exposing the full catalogue and [`/mcp/version`](https://demo.directjob-scout.example/mcp/version) reporting the catalogue version land in a §2.2 follow-up; until then, fetch the schemas via the stdio `tools/list` call.
+
+A planned ergonomic addition is to split the schemas into individual files under `mcp_server/schemas/<tool-name>.json` so external tooling (linting, code generation) can read them without spawning the Python process. This is on the §2.2 follow-up list; the canonical definitions stay in `mcp_tools.py` and the filesystem export becomes a build artefact.
+
+## Roadmap — what changes in §2.3
+
+Five additional tools land in Week 2 §2.3 to enable cross-civic-agent composition:
+
+- `get_user_profile_for_consent` — return the user's portable civic profile (subset they have consented to share). Bound to a consent record per agent + per purpose.
+- `propose_referral` — emit a structured referral to another civic agent. Enables pattern-1 composition (sequential handoff).
+- `query_esco_skill` — look up an ESCO skill or occupation code. Cross-agent shared taxonomy.
+- `export_eures_compatible` — export a job listing in EURES schema. Cross-deployment interoperability.
+- `record_user_outcome` — persist an outcome event (applied, interviewed, hired) for analytics. Cost-saving-doctrine evidence.
+
+When these land the catalogue version bumps from `0.1.0` to `0.2.0` per the SemVer policy above.
+
+## See also
+
+- [`docs/grant/09-mcp-composition.md`](grant/09-mcp-composition.md) — full composition spec and standards alignment
+- [`docs/grant/01-project-brief.md`](grant/01-project-brief.md) §8 — technical positioning and MCP composition story
+- [`ARCHITECTURE.md`](../ARCHITECTURE.md) — system-level overview with the MCP server in context
+- [`STANDARDS.md`](../STANDARDS.md) — every standard the project implements
+- [`SECURITY.md`](../SECURITY.md) — vulnerability disclosure and security posture
+- [Model Context Protocol homepage](https://modelcontextprotocol.io)
+- [JSON-RPC 2.0 specification](https://www.jsonrpc.org/specification)
+- [RFC 7807 — Problem Details for HTTP APIs](https://www.rfc-editor.org/rfc/rfc7807)
+- [JSON Schema Draft 7](https://json-schema.org/specification-links#draft-7)
