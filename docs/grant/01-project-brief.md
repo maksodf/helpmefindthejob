@@ -111,7 +111,7 @@ The project has **never been publicly launched**. A single private-instance depl
 - Full EN/DE i18n with German legal pages (Impressum §5 TMG)
 - MCP server skeleton (`mcp_server.py`) exposing 8 tools with JSON schemas
 - Solid self-hosting story: Dockerfile, docker-compose.prod.yml, Caddy HTTPS, backup/restore scripts, restore-drill
-- ~20 test files including i18n parity and Playwright E2E
+- 76 test files / 925 tests (i18n parity, journey state machine, persona ranking, encryption-at-rest including the AEAD migration, MCP catalogue input-schema enforcement, locale-aware yes/no parsing, 2FA enrollment, Stripe webhook signature verification, cross-workspace isolation, DuckDuckGo search provider, push transport, and the Playwright E2E entry point). Suite passes in ~18 s on bare host (verified 2026-05-18).
 - CI runs on Python 3.9 + 3.12
 
 ### Missing for grant credibility (these are the Week 1–4 deliverables)
@@ -124,7 +124,7 @@ The project has **never been publicly launched**. A single private-instance depl
 - README opens with "self-hosted chat-driven job-hunting copilot" — commercial framing rather than commons (MAJOR — Week 1 rewrite)
 - No badges, no public roadmap, no CHANGELOG, no tagged releases (MAJOR)
 - CI is tests-only — no lint, no mypy, no coverage upload, no security scan (MAJOR)
-- Tests fail locally on clean machine due to cryptography/cffi build issue (MAJOR — Week 3 fix)
+- A `cryptography` / `cffi` build issue may manifest on some environments on a fresh clone (initially reported on Linux without pre-built wheels; not reproduced on the maintainer's macOS host where the full 925-test suite passes in ~18 s on bare metal — verified 2026-05-18 in `feature-verification-2026-05-18.md` §8). Week 3 task 3.1 investigates if the failure reproduces in CI or on a fresh contributor clone.
 - No documentation site, no translator pathway, no accessibility statement (MAJOR)
 - No EU AI Act compliance pack (MAJOR — Week 2 deliverable, the moat)
 

@@ -279,7 +279,7 @@ _CANCEL_TOKENS = (
     "nevermind", "nvm", "never mind", "forget it",
     "abbrechen", "stoppen", "vergiss es",
 )
-_HELP_TOKENS = ("/help", "/?", "help me", "what can you do", "hilfe")
+_HELP_TOKENS = ("/help", "/?", "help", "help me", "what can you do", "hilfe", "hilf mir")
 _BACK_TOKENS = ("/back", "back", "go back", "previous", "zurück", "zurueck")
 
 
@@ -401,7 +401,12 @@ def looks_like_cv_creation_intent(msg: str, current_phase: str) -> bool:
 _LOOSE_SEARCH_INTENT = (
     re.compile(r"\b(?:search|find|look|suche|finde)\s+(?:for\s+|nach\s+|me\s+)?",
                 re.IGNORECASE),
-    re.compile(r"^\s*(?:no|nein|nope)\s*[,!.]?\s+(?:search|find|look|suche|finde)\b",
+    # Cross-locale negative-prefix + search-verb intent. The negative
+    # token set is the canonical one from `company_discovery.locale_parser`
+    # (NEGATIVE_SEARCH_PREFIX_RE) — duplicated as a literal here for
+    # parse-time clarity, but the parser module is the source of truth
+    # and a regression test pins the two to stay in sync.
+    re.compile(r"^\s*(?:nein|niemals|nope|ne-ne|nah|no|nö|ne|n)\s*[,!.]?\s+(?:search|find|look|suche|finde)\b",
                 re.IGNORECASE),
     re.compile(r"\b(?:i\s+(?:want|need)|i'd\s+like|ich\s+möchte)\b.*?\b(?:another|different|new|anderes|neue)\b",
                 re.IGNORECASE),

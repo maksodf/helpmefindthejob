@@ -138,7 +138,7 @@ def handle_request(message: dict[str, Any], tools: CompanyDiscoveryMCPTools) -> 
             message_id,
             {
                 "protocolVersion": "2024-11-05",
-                "serverInfo": {"name": "company-discovery", "version": "0.1.0"},
+                "serverInfo": {"name": "directjob-scout", "version": "0.1.0"},
                 "capabilities": {"tools": {}},
             },
         )

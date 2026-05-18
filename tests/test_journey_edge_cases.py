@@ -78,7 +78,8 @@ class EscapeHatchTests(unittest.TestCase):
             self.assertTrue(is_cancel_token(token), msg=token)
 
     def test_help_recognised(self):
-        for token in ("/help", "help me", "what can you do", "hilfe"):
+        for token in ("/help", "/?", "help", "help me", "what can you do",
+                       "hilfe", "hilf mir"):
             self.assertTrue(is_help_token(token), msg=token)
 
     def test_back_recognised(self):
