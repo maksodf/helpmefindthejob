@@ -272,10 +272,10 @@ If no positive response (Option A fallback):
 
 ### 2.7 ARCHITECTURE.md (4 h)
 
-- [ ] Write `ARCHITECTURE.md` at repo root
-- [ ] Mermaid diagram showing: web app, MCP server as composition surface, future-housing-agent slot, BYO-AI provider abstraction, encrypted profile-at-rest layer, audit-log layer, journey state machine
-- [ ] Caption every component with the implementing file/module
-- [ ] Cross-link to `09-mcp-composition.md`
+- [x] Write `ARCHITECTURE.md` at repo root
+- [x] Mermaid diagram showing: web app, MCP server as composition surface, BYO-AI provider abstraction (11 options), encrypted profile-at-rest layer, audit-log layer, journey state machine, locale-aware token parser. The future-housing-agent slot appears as an "Other civic agent" external actor on the diagram, materialising as the §2.5 reference integration.
+- [x] Caption every component with the implementing file/module (component-map tables organised by layer: Entry surfaces, Application logic, Domain services, Persistence + crypto, Cross-cutting, External)
+- [x] Cross-link to `09-mcp-composition.md` (and to `07-personas.md`, `08-cost-saving-doctrine.md`, `10-ai-act-compliance.md` for adjacent context)
 
 ### 2.8 AI Act compliance pack (12 h) — BLOCKER FIX
 
