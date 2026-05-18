@@ -1,0 +1,63 @@
+# MCP integration smoke test.
+#
+# Spawns the MCP server as a real subprocess, performs the JSON-RPC
+# handshake, lists the 13-tool catalogue (v0.2.0), calls a
+# representative set of tools/call happy paths spanning the legacy
+# catalogue + the §2.3 composition tools + the §2.4 ESCO-backed
+# lookup, exercises the schema-validation failure path, and verifies
+# clean shutdown. The README's "mcp-integration" badge reflects this
+# workflow's status.
+#
+# Source of truth: tests/test_phase12_mcp_integration_e2e.py — the
+# workflow runs that unittest module so the contract surface is the
+# same locally and in CI.
+#
+# Triggers on push and pull_request to the working branch family, plus
+# the main and Week-N branches as they emerge.
+
+name: mcp-integration
+
+on:
+  push:
+    branches:
+      - main
+      - "claude/**"
+  pull_request:
+    branches:
+      - main
+      - "claude/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  mcp-stdio-handshake-and-thirteen-tools:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install runtime dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run the MCP integration test
+        run: |
+          python -m unittest tests.test_phase12_mcp_integration_e2e -v
+
+      - name: Print catalogue summary on success
+        if: success()
+        run: python scripts/print_mcp_catalogue.py
