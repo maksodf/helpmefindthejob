@@ -1,6 +1,9 @@
 # Runtime dependencies pinned for reproducible production builds.
 # Keep this list as small as possible — the app uses stdlib for most things.
-pypdf==5.1.0
+# pypdf — upgrade range covers CVE-2025-55197 / CVE-2025-62707 /
+# CVE-2025-62708 / CVE-2025-66019 and the 2026 CVE series through
+# CVE-2026-41314. Verified by pip-audit (--strict) in CI.
+pypdf>=6.10.2,<7.0.0
 pywebpush==1.14.0
 # cryptography backs the ChaCha20-Poly1305 AEAD encryption-at-rest layer
 # in company_discovery/crypto_kit.py and the AI-Act audit-log salt
