@@ -3407,8 +3407,15 @@ class AppState:
         if not _ai_consent_satisfied(profile, provider):
             return {"ok": False, "message": "AI consent required — confirm in Settings first."}
         from company_discovery.analysis import execute_cv_tailoring
+        from company_discovery.persona_fixtures import friction_keywords_for
 
-        result = execute_cv_tailoring(imported, provider, "", profile)
+        result = execute_cv_tailoring(
+            imported,
+            provider,
+            "",
+            profile,
+            friction_keywords=friction_keywords_for(profile.persona_id),
+        )
         self.log_analytics(
             user_id, "chat_cmd", {"name": "tailor_cv", "id": imported_id, "status": result.status}
         )
@@ -7697,11 +7704,14 @@ class Handler(BaseHTTPRequestHandler):
                         "Confirm consent in Settings before running AI on your CV.",
                     )
                     return
+                from company_discovery.persona_fixtures import friction_keywords_for
+
                 result = execute_cv_tailoring(
                     imported,
                     provider,
                     runtime_credential,
                     profile,
+                    friction_keywords=friction_keywords_for(profile.persona_id),
                 )
                 STATE.quota_store.record_ai_run(user_id)
                 # CV variant attribution (#44): persist a small record

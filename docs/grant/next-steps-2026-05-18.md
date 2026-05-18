@@ -44,6 +44,8 @@
 
 **Prompt-enhancement slice lands 2026-05-19; see `bias-testing-2026-05-19.md` for the fourth-run report. Closes the polish-run criterion-(d) finding via production-code enhancement to `build_cv_tailoring_prompt` (new friction-context-acknowledgment instruction + optional `friction_keywords` parameter). Re-run on the same 147-data-point surface: criterion (d) pass-rate 43/70 (61.4%) → 65/70 (92.9%); overall CV-tailoring 61/70 (87.1%) — test PASSED (threshold unchanged). Scoring failure essentially flat; pattern verdict ONE-OFF (third consecutive run). Production chat-router → `friction_keywords` wiring deferred to a follow-on slice (UserProfile schema discussion).**
 
+**Chat-router wiring slice lands 2026-05-19; closes the prompt-enhancement deferral. Production chat-router CV-tailoring path (`app.py:3411` and `app.py:7702`) now passes `friction_keywords_for(profile.persona_id)` to `execute_cv_tailoring`. Path B (hybrid) chosen: `friction_keywords_for` helper in `persona_fixtures.py` reads from the seven-panel `PERSONAS` source of truth — no schema change to production `Persona` (job-category taxonomy, where uniform friction-vocabulary doesn't apply). Seeded-demo panel users get persona-specific friction line; non-panel users get the always-present generic instruction (no regression). 6 new regression tests in `tests/test_round4.py`; full suite green at 1018 tests. No bias-test re-run needed; the 92.9% criterion-(d) contract was already verified at 0a9182e.**
+
 
 | Field | Value |
 |---|---|

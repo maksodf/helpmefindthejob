@@ -475,3 +475,26 @@ No over-claims identified. The report stands.
   remains ONE-OFF. The polish-run criterion-(d) finding is
   closed. R12 remains IN PROGRESS pending the remaining 4
   scenario classes.
+- **2026-05-19 (chat-router wired)**: deferred remediation #1
+  from the prompt-enhanced report closed. Production chat-router
+  CV-tailoring path (`app.py` → `chat_handler_tailor_cv` and the
+  HTTP `tailor_cv` route) now passes
+  `friction_keywords_for(profile.persona_id)` to
+  `execute_cv_tailoring`. Real seeded-demo users (Aïcha,
+  Yusuf, Olga, Mahmoud, Maria, Käthe, Tobias) now receive the
+  same persona-specific friction-vocab line the bias-test
+  verified at 92.9% criterion-(d) pass-rate. Non-panel
+  production users (job-category persona_ids like
+  `healthcare-management`, `tech`) receive `[]` from the lookup
+  helper — the always-present generic friction-context
+  instruction continues to do its job for them with no
+  regression. Source of truth for the seven-panel
+  friction-vocabulary remains `persona_fixtures.PERSONAS`; the
+  new `friction_keywords_for(persona_id)` helper is the
+  production wrapper that bridges the bias-test fixture data
+  into the chat-router. Regression tests cover panel lookup,
+  non-panel fallback, None / empty input, shared-reference
+  isolation, panel-user end-to-end wiring, and non-panel-user
+  end-to-end wiring (6 new tests in `tests/test_round4.py`).
+  No bias-test re-run needed — the contract was already
+  verified at 0a9182e (87.1% overall, 92.9% criterion d).

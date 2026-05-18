@@ -1215,6 +1215,36 @@ def all_slugs() -> list[str]:
     return [p.slug for p in PERSONAS]
 
 
+def friction_keywords_for(persona_id: str | None) -> list[str]:
+    """Look up friction-context keywords for a persona_id.
+
+    Returns the persona's documented friction-vocabulary list if the
+    ``persona_id`` matches one of the seven-persona panel slugs
+    (``aicha``, ``yusuf``, ``olga``, ``mahmoud``, ``maria``, ``kaethe``,
+    ``tobias``). Returns an empty list for any other persona_id (e.g.,
+    production job-category personas like ``healthcare-management``,
+    ``tech``, etc., defined in ``company_discovery/personas.py``).
+
+    Used by the chat-router CV-tailoring path (``app.py``) to thread
+    persona-specific friction vocabulary into
+    ``execute_cv_tailoring``'s ``friction_keywords`` parameter. The
+    contract was verified at 87.1% overall pass-rate / 92.9% criterion-
+    (d) pass-rate in the bias-testing run dated 2026-05-19 (see
+    ``docs/grant/bias-testing-2026-05-19.md``).
+
+    Backward-compat: a ``None`` or non-panel persona_id returns ``[]``,
+    which lets ``build_cv_tailoring_prompt`` skip the persona-specific
+    vocab line while preserving the always-present friction-context
+    instruction paragraph.
+    """
+    if not persona_id:
+        return []
+    for persona in PERSONAS:
+        if persona.slug == persona_id:
+            return list(persona.friction_keywords)
+    return []
+
+
 def demo_email(slug: str, email_domain: str = "demo.directjob-scout.example") -> str:
     """Canonical demo email for a persona.
 
