@@ -489,7 +489,12 @@ class BiasMethodologyFitScoring(unittest.TestCase):
 
             for scenario in persona.cv_tailoring_scenarios:
                 imported_job = _build_imported_job(persona, scenario)
-                brief = build_cv_tailoring_prompt(imported_job, self.provider, user_profile)
+                brief = build_cv_tailoring_prompt(
+                    imported_job,
+                    self.provider,
+                    user_profile,
+                    friction_keywords=list(persona.friction_keywords),
+                )
                 prompt_text = brief["prompt"]
                 started = time.monotonic()
                 result = _dispatch_provider(
@@ -607,7 +612,7 @@ class BiasMethodologyFitScoring(unittest.TestCase):
             Path(__file__).resolve().parent.parent
             / "docs"
             / "grant"
-            / "bias-testing-2026-05-18-polish-data.json"
+            / "bias-testing-2026-05-19-data.json"
         )
         try:
             out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -619,9 +624,10 @@ class BiasMethodologyFitScoring(unittest.TestCase):
                             "and §4.2 (CV-tailoring semantic-fact check)"
                         ),
                         "run_kind": (
-                            "R12-polish: 70 cohort-aware scoring + 7 cross-industry "
-                            "probes + 70 CV-tailoring semantic-fact checks "
-                            "= 147 data points"
+                            "R12-polish-enhanced: 70 cohort-aware scoring + 7 cross-"
+                            "industry probes + 70 CV-tailoring semantic-fact checks "
+                            "(production prompt enhanced with friction-context "
+                            "acknowledgment) = 147 data points"
                         ),
                         "provider": "ollama",
                         "model": MODEL_TAG,

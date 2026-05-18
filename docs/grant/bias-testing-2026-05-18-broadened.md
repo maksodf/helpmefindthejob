@@ -386,3 +386,13 @@ regenerates on every run.
   is sensitive to whether the job description provides explicit
   industry-jargon, not a systematic transferable-skill
   over-generalisation.
+- **2026-05-19 (prompt-enhanced forward-pointer)**: the polish-
+  run criterion-(d) finding is closed in
+  `bias-testing-2026-05-19.md`. Production
+  `build_cv_tailoring_prompt` enhanced with friction-context-
+  acknowledgment instruction + optional `friction_keywords`
+  parameter; criterion (d) pass-rate moved from 43/70 (61.4%) to
+  65/70 (92.9%) — +22 personas, +31.5 pp. Overall CV-tailoring
+  test PASSED at 87.1%. The Maria→Logistics ONE-OFF verdict
+  holds for a third consecutive run; the broadened-run framing
+  is now firmly retired.

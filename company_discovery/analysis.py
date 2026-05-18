@@ -412,16 +412,62 @@ def build_cv_tailoring_prompt(
     job: ImportedJob,
     provider: AIProviderConfig,
     profile: UserProfile | None = None,
+    friction_keywords: list[str] | None = None,
 ) -> dict[str, str]:
-    """Build a prompt that rewrites the candidate's CV for a specific job."""
+    """Build a prompt that rewrites the candidate's CV for a specific job.
+
+    ``friction_keywords`` (added 2026-05-19) — optional list of
+    persona-specific bureaucratic / career-context vocabulary the
+    candidate's situation involves (e.g., ``["§16d", "Anerkennung",
+    "BIBB"]`` for an Anerkennung-track healthcare candidate; ``["TVöD",
+    "Civic Tech"]`` for a public-sector tech career-changer). When
+    supplied, the prompt asks the model to surface these terms in the
+    tailored CV so the candidate's friction situation reads as
+    authentic. Default ``None`` preserves backward compatibility — the
+    friction-context instruction itself is always present, listing
+    common friction categories as examples.
+
+    This is the production-prompt remediation of the R12-polish bias-
+    testing finding: criterion (d) friction-context-keyword check
+    failed 27/70 because the prompt did not ask the model to
+    acknowledge the candidate's friction situation. See
+    ``docs/grant/bias-testing-2026-05-18-polish.md`` §"CV-tailoring
+    results" for the source finding.
+    """
 
     persona_label, profile_block = _candidate_profile_block(profile)
+    friction_vocab_line = ""
+    if friction_keywords:
+        seen: set[str] = set()
+        unique_kw: list[str] = []
+        for kw in friction_keywords:
+            norm = (kw or "").strip()
+            if norm and norm not in seen:
+                seen.add(norm)
+                unique_kw.append(norm)
+        if unique_kw:
+            friction_vocab_line = (
+                "\nThe candidate's documented friction-context vocabulary "
+                "includes: " + ", ".join(unique_kw) + ". Use these terms "
+                "verbatim where they fit the role's documented requirements."
+            )
+
     prompt = f"""You are tailoring a resume / CV for a specific job opening on behalf of a {persona_label} candidate.
 
 Goal: rewrite the candidate's CV so that it foregrounds the experience and
 language the hiring team will respond to, *without inventing facts*. If the
 candidate's CV doesn't actually contain a piece of evidence the job asks for,
 say so in the editing notes — don't fabricate it.
+
+Friction-context acknowledgment: when tailoring the CV, acknowledge the
+candidate's documented bureaucratic / career-context friction where it
+materially affects this role's application — for example: visa or residency
+status (§16d, §24, Blue Card, EU citizenship, Freizügigkeit); recognition
+pathway (Anerkennung, Anabin, BIBB); career-shift context (Wiedereinstieg,
+civic-tech career change, Familienpause); employment framework (TVöD,
+Ausbildung, Bewerbungsmappe); or language proficiency level. Use the
+candidate's own friction vocabulary so the tailored CV reads as authentic
+to their situation, not generic.{friction_vocab_line}
 
 Candidate profile (target persona, current CV, and notes):
 {profile_block}
@@ -466,8 +512,9 @@ def execute_cv_tailoring(
     provider: AIProviderConfig,
     runtime_credential: str = "",
     profile: UserProfile | None = None,
+    friction_keywords: list[str] | None = None,
 ) -> AnalysisExecutionResult:
-    brief = build_cv_tailoring_prompt(job, provider, profile)
+    brief = build_cv_tailoring_prompt(job, provider, profile, friction_keywords=friction_keywords)
     return _dispatch_provider(brief["prompt"], provider, runtime_credential, purpose="tailor_cv")
 
 

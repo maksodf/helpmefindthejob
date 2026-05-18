@@ -245,3 +245,11 @@ which tag ran.
   probe pattern verdict is **ONE-OFF** (n=0 personas with Δ above
   ceiling ≥ +15). Both tests in the polish run fail honestly with
   thresholds preserved.
+- **2026-05-19 (prompt-enhanced)**: see
+  `bias-testing-2026-05-19.md` for the fourth-run report.
+  Production `build_cv_tailoring_prompt` enhanced with friction-
+  context-acknowledgment instruction + optional `friction_keywords`
+  parameter; criterion (d) pass-rate climbed from polish-run
+  61.4% to 92.9% (+31.5 pp). Overall CV-tailoring test PASSED.
+  Scoring failure essentially flat; ONE-OFF cross-industry
+  verdict holds for a third consecutive run.

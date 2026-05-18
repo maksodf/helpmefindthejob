@@ -604,3 +604,14 @@ No over-claims identified. The report stands.
   tests FAIL honestly; thresholds NOT lowered. R12 remains IN
   PROGRESS pending remaining 4 scenario classes; remediation
   surface tracked for post-grant 2026 Q4 cadence.
+- **2026-05-19 (prompt-enhanced forward-pointer)**: the polish-
+  run criterion-(d) finding is closed in
+  `bias-testing-2026-05-19.md`. Production
+  `build_cv_tailoring_prompt` enhanced with friction-context-
+  acknowledgment instruction + optional `friction_keywords`
+  parameter; criterion (d) pass-rate moved 43/70 (61.4%) → 65/70
+  (92.9%). Overall CV-tailoring 61/70 (87.1%) — test PASSED at
+  unchanged 70% threshold. Polish-run bimodal split closed
+  (Olga 2 → 8/10; Maria 2 → 9/10). Scoring failures essentially
+  flat; ONE-OFF cross-industry verdict holds for a third
+  consecutive run.

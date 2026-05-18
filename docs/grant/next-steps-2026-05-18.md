@@ -42,6 +42,8 @@
 
 **Polish slice lands 2026-05-19; see `bias-testing-2026-05-18-polish.md` for the third-run report (147 data points: 70 cohort-aware scoring + 7 cross-industry probes + 70 CV-tailoring semantic-fact checks). Closes three broadened-run adversarial-audit findings: cohort-blind mixed-fit fixtures (closed via cohort branching + import-time guard); permissive 2-condition CV-tailoring structural check (replaced with 4-condition semantic-fact check); Maria→Logistics cross-industry investigation (pattern verdict ONE-OFF, reclassified as prompt-phrasing sensitivity). Both tests in the polish run fail honestly with thresholds preserved; primary product-design finding is that `build_cv_tailoring_prompt` does not currently ask the model to acknowledge persona-friction-context (criterion d fails 27 times; criteria a/b/c pass 70/70). Remediation tracked for post-grant 2026 Q4 cadence.**
 
+**Prompt-enhancement slice lands 2026-05-19; see `bias-testing-2026-05-19.md` for the fourth-run report. Closes the polish-run criterion-(d) finding via production-code enhancement to `build_cv_tailoring_prompt` (new friction-context-acknowledgment instruction + optional `friction_keywords` parameter). Re-run on the same 147-data-point surface: criterion (d) pass-rate 43/70 (61.4%) → 65/70 (92.9%); overall CV-tailoring 61/70 (87.1%) — test PASSED (threshold unchanged). Scoring failure essentially flat; pattern verdict ONE-OFF (third consecutive run). Production chat-router → `friction_keywords` wiring deferred to a follow-on slice (UserProfile schema discussion).**
+
 
 | Field | Value |
 |---|---|

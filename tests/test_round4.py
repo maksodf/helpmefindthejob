@@ -135,6 +135,70 @@ class CvTailoringPromptTests(unittest.TestCase):
         ):
             self.assertIn(section, result["prompt"])
 
+    def test_prompt_always_contains_friction_acknowledgment_instruction(self) -> None:
+        """R12-polish remediation (2026-05-19): the friction-context
+        acknowledgment instruction must appear in every CV-tailoring
+        prompt regardless of whether ``friction_keywords`` is supplied.
+        The bias-testing polish report's criterion-(d) finding drove
+        this contract. See ``docs/grant/bias-testing-2026-05-18-polish.md``.
+        """
+        result = build_cv_tailoring_prompt(self.job, self.provider, profile=None)
+        self.assertIn("Friction-context acknowledgment", result["prompt"])
+        self.assertIn("§16d", result["prompt"])
+        self.assertIn("Anerkennung", result["prompt"])
+        self.assertIn("Wiedereinstieg", result["prompt"])
+        self.assertIn("TVöD", result["prompt"])
+
+    def test_prompt_inlines_persona_friction_keywords_when_supplied(self) -> None:
+        """When ``friction_keywords`` is supplied the prompt surfaces
+        them verbatim and instructs the model to use the candidate's
+        own vocabulary."""
+        keywords = ["§16d", "Anerkennung", "BIBB", "Anabin"]
+        result = build_cv_tailoring_prompt(
+            self.job,
+            self.provider,
+            profile=None,
+            friction_keywords=keywords,
+        )
+        self.assertIn("documented friction-context vocabulary", result["prompt"])
+        for kw in keywords:
+            self.assertIn(kw, result["prompt"])
+        self.assertIn("verbatim", result["prompt"])
+
+    def test_prompt_backward_compat_when_friction_keywords_absent(self) -> None:
+        """Backward-compat: callers that omit ``friction_keywords``, or
+        pass ``None`` / empty list, still get a well-formed prompt with
+        the generic friction-context instruction but NO
+        candidate-specific vocabulary line."""
+        for kw_arg in (None, [], ["", "   ", None]):  # type: ignore[list-item]
+            result = build_cv_tailoring_prompt(
+                self.job,
+                self.provider,
+                profile=None,
+                friction_keywords=kw_arg,
+            )
+            self.assertIn("Friction-context acknowledgment", result["prompt"])
+            self.assertNotIn("documented friction-context vocabulary", result["prompt"])
+
+    def test_prompt_deduplicates_friction_keywords(self) -> None:
+        """Whitespace-only entries are dropped; duplicates collapse."""
+        keywords = ["§16d", "  ", "§16d", "Anerkennung", "", "Anerkennung"]
+        result = build_cv_tailoring_prompt(
+            self.job,
+            self.provider,
+            profile=None,
+            friction_keywords=keywords,
+        )
+        # §16d and Anerkennung should each appear once in the vocab line.
+        # The instruction-example list also mentions §16d and Anerkennung
+        # as illustrative friction vocabulary, so count occurrences in
+        # the vocab-line slice only.
+        vocab_line_start = result["prompt"].find("documented friction-context vocabulary")
+        vocab_line_end = result["prompt"].find("\n", vocab_line_start + 100)
+        vocab_segment = result["prompt"][vocab_line_start:vocab_line_end]
+        self.assertEqual(vocab_segment.count("§16d"), 1)
+        self.assertEqual(vocab_segment.count("Anerkennung"), 1)
+
 
 if __name__ == "__main__":
     unittest.main()
