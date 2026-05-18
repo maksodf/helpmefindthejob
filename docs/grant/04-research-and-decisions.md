@@ -339,6 +339,56 @@ This is positive for project coherence — one committed contributor rather than
 
 **Reversibility**: Hard (in spirit). Once shipped, the policy is the public norm for the project; rolling it back would damage credibility and would arguably violate the Contributor Covenant's contributor-autonomy stance. Soft (in mechanics): individual placeholder lines are routinely resolved as contributors consent.
 
+#### Decision 20: Focus discipline — DirectJob Scout core is the Phase 1 deliverable; housing agent is additive only
+
+**Decided**: 2026-05-18.
+
+**Supersedes (partially)**: Decision 11. Where Decision 11 framed the housing-agent integration as Option B (real, via friend) preferred with Option A (mock) fallback, Decision 20 reframes the *project priority*: DirectJob Scout's core quality through Phase 1 is the criterion that matters, and the housing-agent component is at most additive evidence of MCP composition.
+
+**Reasoning**:
+- The application is reviewed against the core project's quality and cost-saving-doctrine evidence, not against the breadth of side deliverables. A single excellent civic agent with a documented composition interface is a structurally stronger pitch than two unevenly-finished agents.
+- The MCP composition story is satisfied by (a) the published MCP server documentation, (b) `ARCHITECTURE.md`'s composition diagram, (c) `STANDARDS.md`'s standards alignment, and (d) *one* reference integration of any shape (mock, narrow companion, or friend-collaborated). None of those require shipping a substantial self-built second civic agent in Phase 1.
+- Earlier exploration (in this planning session) of self-built housing-agent options (Option C full-scratch / Option D narrow companion) was a focus error. The capacity to build it exists; the strategic case for spending Phase 1 capacity on it does not.
+- Phase 2 is the appropriate window for a serious housing agent (whether self-built or framework-extraction-driven), aligned with the second-grant arc and proper scope.
+
+**Operational consequences**:
+- Self-built housing-agent work moves to Phase 2 of the post-grant roadmap (`03-post-grant.md`), not Phase 1.
+- Friend-outreach via Template F (existing friend with housing agent) and Template H (developer friends who could build one) continues — but as *additive*, not as the critical path. Positive responses produce a third civic agent in the ecosystem; non-responses produce no project change.
+- §2.5 in the execution plan ships as Option A (mock stub) if no friend collaboration lands by its turn in the queue; Option B (real friend integration) if a friend says yes. Maintainer does not self-build a Phase 1 housing agent regardless.
+- All Week 2 / Week 3 / Week 4 capacity that was conceptually allocated to housing-agent work returns to strengthening DirectJob Scout's quality, the AI Act compliance pack, the demo deployment, the documentation site, and the application drafting.
+
+**Reversibility**: soft. If, between Phase 1 close and Phase 2 grant, a serious need emerges for a Phase-1-window housing-agent that the friend-collaboration path cannot meet, the decision can be reopened with explicit re-evaluation.
+
+#### Decision 21: Positioning frame — friction-class, not migrant-class
+
+**Decided**: 2026-05-18.
+
+**Earlier framing**: project positioned as primarily / explicitly for migrants and EU-mobile workers.
+
+**Revised framing**: project positioned for *anyone facing structural friction between their capability and the European labor market's ability to recognise and connect them to work*. Migrants and EU-mobile workers are the **most acute** use case — language barriers, foreign-credential opacity, residency complexities make the friction densest there — and remain the strongest specific evidence in proposal narrative and persona-anchored examples. The same friction also affects career changers, returning workers after caregiving, the long-term unemployed, returning expats, older workers, people with employment gaps, first-generation graduates without family-networked guidance, and anyone working outside their familiar bureaucratic context.
+
+**Reasoning**:
+- The architecture is friction-driven, not demographic-driven. Nothing in the codebase is migrant-restricted; every feature (Anerkennung paths, multilingual support, German-format CV templates, motivation-letter drafting) is acuity-driven and triggers for users who need it.
+- Positioning as migrant-only mis-describes the architecture, narrows institutional adoption (a Jobcenter serves all Bürgergeld recipients; "the migrant tool" deploys for ~30% of caseload while "the employment-friction tool" deploys for all of it), and creates political-category friction in jurisdictions where "migrant tech" is contested.
+- The cost-saving doctrine expands materially under the friction-class framing — every cost-saving mechanism applies to a larger addressable population, multiplying the institutional savings claim.
+- The friction-class framing strengthens the multi-country EU positioning: migration patterns differ between countries, but bureaucratic friction is universal across the EU labor markets.
+
+**What stays the same**:
+- The five-persona panel (Aïcha, Yusuf, Olga, Mahmoud, Maria) remains the most-acute-use-case anchor and the primary narrative device in proposals and demos. The panel widens with two non-migrant personas (Käthe, Tobias) to demonstrate friction-class breadth, but does not remove the existing five.
+- German-bureaucratic context (Anerkennung, Bürgergeld, Beratungsstellen, Optionskommunen, MBE / IQ-Netzwerk) stays relevant — it is the bureaucratic terrain that the most acute use case navigates, and the Week 4 institutional outreach to MBE / IQ-Netzwerk / TU Berlin Career Service stays as-is.
+- The Anerkennung-friendly employer matching, ESCO mapping, EURES export, encrypted-at-rest, BYO-AI, MCP composition, AI Act compliance — all unchanged.
+- The cost-saving doctrine's eight mechanisms are unchanged; only the addressable-population framing widens.
+
+**What changes in documentation**:
+- `01-project-brief.md` §1 mission and §2 positioning sentences broaden
+- `07-personas.md` adds two non-migrant personas (Käthe, Tobias) and reframes the panel intro
+- `08-cost-saving-doctrine.md` opens with the broader addressable-population framing
+- `12-application-package.md` abstract and problem statement broaden
+- `CLAUDE.md` and `00-START-HERE.md` TL;DR sections reflect the broader frame
+- `README.md` opener references both the most-acute persona (Aïcha) and at least one non-migrant friction case to demonstrate breadth
+
+**Reversibility**: hard. The positioning is the public-facing identity; reverting after public deployment would be expensive. This decision is the project's identity going forward.
+
 ---
 
 ## Part C — Open research questions

@@ -2,17 +2,25 @@
 
 The DirectJob Scout panel of personas. Used in proposal narrative, demos, screenshots, public materials, and design conversations. **Every public-facing artifact references at least one of these personas concretely.**
 
+The panel is split into two groups:
+- **The most acute use case (five personas)**: migrants and EU-mobile workers facing the densest concentration of friction. These remain the strongest specific narrative evidence and the primary persona-anchors in proposals and demos.
+- **The wider friction class (two personas)**: non-migrant users facing structurally similar friction in different forms. Their presence demonstrates that the tool's architecture is friction-driven rather than demographic-driven, per Decision 21 in `04-research-and-decisions.md`.
+
 When real anonymized testers become available, their stories replace or augment the fictional panel. Until then, the fictional panel carries the narrative.
 
 ---
 
-## Why a panel rather than a single persona
+## Why a panel — and why a wider panel
 
-A single anchor persona risks reading as tokenism — "the migrant" as a singular figure. A panel of five proves the system serves a *category* of human situations, not a single demographic. The panel also forces the design to handle edge cases (RTL languages, regulated professions, EU vs non-EU work rights, refugee-status nuances) rather than optimising for one happy path.
+A single anchor persona risks reading as tokenism — "the migrant" as a singular figure. A panel proves the system serves a *category of human situations*, not a single demographic. The panel forces the design to handle edge cases (RTL languages, regulated professions, EU vs non-EU work rights, refugee-status nuances) rather than optimising for one happy path.
+
+Extending the panel beyond the migrant use case proves the architectural claim that the tool addresses structural labor-market friction, not migration status as such. The wider personas (Käthe, Tobias) demonstrate that the same features serving the most-acute group — CV-format scaffolding, language-aware system navigation, structured conversational journey, fit-scoring, motivation-letter drafting — are equally relevant to other friction classes the European labor market produces.
+
+The migrant five remain the most acute and the most concrete evidence. They are not the only users. They are the strongest example users.
 
 ---
 
-## The five personas
+## The five most-acute-use-case personas (migrants and EU-mobile workers)
 
 Each persona is rendered with: name + origin, current age and family situation, professional background, current residence status in Germany, German-language level, primary frustration the agent solves, secondary frustrations the agent acknowledges but does not solve.
 
@@ -109,11 +117,13 @@ When considering whether a feature is worth building, the test is: does this hel
 ### In the multilingual roadmap
 
 The personas' linguistic profiles drive language priority:
-- EN + DE already shipped — serves all five personas at the comprehension level they have or are reaching
+- EN + DE already shipped — serves Käthe, Tobias, Aïcha, Yusuf, Olga, Mahmoud, Maria at the comprehension level they have or are reaching (Käthe and Tobias are German-native; the others are at A2–C1 German and benefit from English as well)
 - Arabic (RTL work) — serves Aïcha and Mahmoud at first-language fluency
 - Ukrainian / Russian — serves Olga at first-language fluency
 - Turkish — serves Yusuf at first-language fluency
 - Romanian — serves Maria at first-language fluency
+
+The wider-friction-class personas (Käthe, Tobias) do not generate additional language demand because they are German-native. Their inclusion adds *no* language-roadmap cost — only architectural-validation evidence.
 
 ### Inclusion of real testers
 
@@ -121,11 +131,45 @@ If real testers from comparable backgrounds become available before submission, 
 
 ---
 
+## The two wider-friction-class personas (non-migrant)
+
+These personas demonstrate that the same friction the migrant five face takes structurally similar forms for non-migrant users. The architecture serves them equally. Per Decision 21, the friction class is the design target; the migrant subset is the most acute case within it.
+
+### 6. Käthe — German, returning to nursing after twelve years out for childcare
+
+**Age**: 47, married, three children (ages 14, 11, 8) now all in school for the first time.
+
+**Professional background**: Registered Krankenschwester. Trained and certified in Germany in 1998. Practiced clinical nursing on a cardiology ward in a Berlin hospital from 1999 to 2013, then left the workforce to raise her children. Speaks German natively; reads English clinical literature.
+
+**Residence status**: German citizen, no permit needed, lived in Berlin her whole working life.
+
+**Primary frustration the agent solves**: Käthe is legally a nurse — the Berufsbezeichnung still applies. But everything about practising nursing in Germany has changed since 2013: digital patient-record systems, electronic medication management, new infection-control protocols, COVID-era staffing-model changes, mandatory continuing-education hours she missed, and a shifted hiring landscape where hospitals expect re-entrants to attest to specific re-orientation programmes (Wiedereinstiegsprogramme). She does not know where to start, her old contacts have moved on, and her CV from 2013 is structurally wrong for 2026 conventions. **The agent walks her through identifying Berlin hospitals with formal Wiedereinstieg programmes, generates an updated CV that frames her twelve-year absence as caregiving rather than a gap to apologise for, drafts a motivation letter aligned with current Pflege-sector hiring conventions, and proposes a three-step re-entry timeline (formal Auffrischung course → Wiedereinstieg interview prep → first ward shadowing).**
+
+**Secondary frustrations the agent acknowledges but does not solve**: continuing-education credit recovery, schedule-flexibility negotiation (school-aged kids), pension-credit catch-up. Each is referred.
+
+**What makes her credible as a persona**: returning workers after extended caregiving absence are a numerically significant, structurally under-served demographic across the EU. The Bundesagentur publicly identifies this as one of the labor-supply levers Germany pulls hardest. The 46,000-position healthcare shortage is the same shortage Aïcha addresses, from a different friction angle: Käthe has legal access and German fluency but needs system re-orientation; Aïcha has clinical capability but needs language and recognition support. Same shortage, different friction shape.
+
+### 7. Tobias — German, software developer pivoting from commercial tech to public-sector civic-tech
+
+**Age**: 35, single, no children. Lives in Hamburg.
+
+**Professional background**: Senior backend developer (Python, Go, distributed systems) with eleven years at a Hamburg-based fintech startup. Strong portfolio of shipped commercial software; led a team of four in his last role. Speaks German natively; English C1-business.
+
+**Residence status**: German citizen, no permit needed.
+
+**Primary frustration the agent solves**: Tobias wants to leave commercial fintech and work on civic-tech or public-sector digital infrastructure — applications that serve the public good rather than maximising returns. He has no idea how to get hired in the public-sector or NGO context. The hiring process is entirely different from commercial tech: TVöD pay grades (E13 / E14 / E15), formal tariff-bound positions, application packages that demand specific German bureaucratic conventions (Beamtenstatus questions, formal Bewerbungsmappen, tariff-aware CV framing) rather than the casual CV+cover-letter pattern commercial tech uses. He doesn't know which agencies and NGOs are actively hiring developers, doesn't know how to translate his commercial impact ("led the migration of our payment-processing layer") into the language public-sector hiring committees actually evaluate. **The agent walks him through the public-sector digital-employer landscape (GovTech Campus, Sovereign Tech Fund-affiliated projects, Code for Germany, Prototype Fund-adjacent organisations, federal IT roles, civic-NGO digital teams), generates a CV reformatted for public-sector conventions with TVöD-pay-grade-aligned framing, drafts a motivation letter that translates commercial impact into civic-service language, and prepares him for the structurally different interview format.**
+
+**Secondary frustrations the agent acknowledges but does not solve**: pay-cut financial planning, navigating Beamtenstatus eligibility, family pension implications. Each is referred.
+
+**What makes him credible as a persona**: career-changers from commercial tech to civic-tech / public-sector are a small but growing cohort across the EU. The friction they face — translating commercial-vocabulary capability into public-sector-vocabulary credentials — is identical in *shape* to what Aïcha faces translating Tunisian-vocabulary credentials into German-vocabulary credentials. Same architectural friction, different surface vocabulary. His presence in the panel directly demonstrates the friction-class claim.
+
+---
+
 ## What the personas are not
 
-- **Not stereotypes**: each persona has a specific profession, life situation, and goal. None is "the migrant" generically.
-- **Not interchangeable**: the agent's response to each differs concretely — Aïcha gets Anerkennung-aware employer matching; Olga gets remote-friendly-tech matching; Mahmoud gets Ausbildung-format CV scaffolding; etc.
-- **Not used to claim the agent is universally applicable**: the agent serves *humans with employment friction in the EU*, primarily migrant or migration-adjacent. Other populations may benefit but are not the design target.
+- **Not stereotypes**: each persona has a specific profession, life situation, and goal. None is "the migrant" generically and none is "the German" generically.
+- **Not interchangeable**: the agent's response to each differs concretely — Aïcha gets Anerkennung-aware employer matching; Olga gets remote-friendly-tech matching; Mahmoud gets Ausbildung-format CV scaffolding; Käthe gets Wiedereinstieg-programme matching; Tobias gets TVöD-aware public-sector framing.
+- **Not used to claim universal applicability beyond the friction class**: the agent serves *humans with structural labor-market friction in the EU*. People who already navigate the system fluently and have the social capital to do so are not the design target.
 
 ---
 

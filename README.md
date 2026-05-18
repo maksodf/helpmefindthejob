@@ -7,20 +7,30 @@
 [![MCP](https://img.shields.io/badge/MCP-2024--11--05-blueviolet.svg)](https://modelcontextprotocol.io)
 
 > Aïcha is a Tunisian-trained registered nurse working through §16d
-> Anerkennung in Berlin. Her German is B1 climbing toward B2, her CV is
-> shaped for a Tunisian recruiter, and the role she is qualified for is
-> open right now at three Berlin clinics — but the recognition path, the
-> recruiter-side bias, and the bureaucratic stack between her and that
-> role are not something Google or LinkedIn can navigate for her.
-> **DirectJob Scout is the open civic-employment commons built so Aïcha,
-> and the millions like her, can navigate that stack themselves.**
+> Anerkennung in Berlin — clinically capable, German at B1 climbing
+> toward B2, CV shaped for a Tunisian recruiter. Käthe is a German
+> nurse returning to clinical work after twelve years out for childcare
+> — legally certified, German-native, but everything about practising
+> nursing in Germany has changed since 2013 and her old CV reads wrong
+> for 2026 conventions. The same Berlin clinic is hiring the role both
+> of them are qualified for. The bureaucratic stack between either of
+> them and that role is not something Google or LinkedIn can navigate
+> for them. **DirectJob Scout is the open civic-employment commons
+> built so Aïcha and Käthe — and the millions of others facing the same
+> structural friction across the European labor market — can navigate
+> that stack themselves.**
 
 DirectJob Scout is an **open-source EU-wide civic-employment commons** —
 an MCP-composable copilot that captures specialist HR and
 bureaucratic-navigation knowledge into modular, standards-anchored tools
-and puts it directly into the hands of migrants and EU-mobile workers
-across Europe. Germany is the first reference deployment because that is
-where the maintainer is; the architecture is country-neutral.
+and puts it directly into the hands of anyone facing structural friction
+between their actual capability and the European labor market's ability
+to recognise and connect them to work. Migrants and EU-mobile workers
+are the most acute use case (and primary narrative anchor in our
+demos); the same architecture serves career changers, workers returning
+after extended absence, the long-term unemployed, and others. Germany
+is the first reference deployment because that is where the maintainer
+is; the architecture is country-neutral.
 
 The project is being prepared as a Programme of **The Commons
 Conservancy** (the NLnet-co-founded Dutch stichting whose Programmes

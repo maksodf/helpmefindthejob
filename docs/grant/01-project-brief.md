@@ -28,7 +28,9 @@ This is the strategic source-of-truth document. Read end-to-end before working o
 
 ## 1. Mission
 
-DirectJob Scout exists to **capture specialist HR and bureaucratic-navigation knowledge — currently locked in advisors' heads, HR departments, recruiter networks, and overworked migrant-services case workers — and put it directly into the hands of the people who need it most**: the millions of skilled and semi-skilled migrants and EU-mobile workers across Europe who face structural labor-market friction not because of capability but because of language, foreign-credential opacity, bureaucratic fragmentation, and the absence of tooling designed for their situation.
+DirectJob Scout exists to **capture specialist HR and bureaucratic-navigation knowledge — currently locked in advisors' heads, HR departments, recruiter networks, and overworked employment-services case workers — and put it directly into the hands of the people who need it most**: anyone facing structural friction between their actual capability and the European labor market's ability to recognise and connect them to work.
+
+The friction is universal across the EU labor markets; its acuity varies by user situation. Migrants and EU-mobile workers face it most acutely — language barriers, foreign-credential opacity through Anerkennung, residency-status complexities, bureaucratic fragmentation — and are the strongest single use case for the project. The same structural friction also affects career changers, workers returning after caregiving or extended absence, the long-term unemployed re-entering the system, returning expats, older workers facing implicit-bias filtering, and first-generation graduates without family-networked guidance through professional conventions. The architecture is friction-driven, not demographic-driven. Per Decision 21 in `04-research-and-decisions.md`, the migrant use case remains the strongest specific evidence and primary narrative anchor; it is not the project's hard-coded identity.
 
 We exist as a **digital commons**: open-source under Apache 2.0, hosted by The Commons Conservancy, multilingual, privacy-preserving, EU AI Act compliant by design, self-hostable by anyone — from an individual at home to a Beratungsstelle to a Jobcenter. No vendor lock-in. No commercial gate. Free for the people who need it most; sustainable through institutional support contracts and the multi-grant arc.
 
@@ -42,12 +44,13 @@ DirectJob Scout is **EU-wide civic-employment infrastructure** with Germany as t
 
 ### The one-sentence positioning
 
-> **DirectJob Scout is an open-source EU-wide civic employment commons that captures specialist HR and bureaucratic-navigation knowledge into modular, MCP-composable tools — putting agency back into migrants' hands while saving the institutions that serve them measurable operational cost.**
+> **DirectJob Scout is an open-source EU-wide civic employment commons that captures specialist HR and bureaucratic-navigation knowledge into modular, MCP-composable tools — putting agency back into the hands of anyone facing structural labor-market friction, while saving the institutions that serve them measurable operational cost. Migrants and EU-mobile workers are the most acute use case but not the only one.**
 
 ### What we are not
 
 - Not a commercial SaaS
-- Not LinkedIn for migrants
+- Not a tool restricted to any single demographic — friction-driven, not demographic-driven
+- Not LinkedIn for migrants only
 - Not a generic GPT wrapper
 - Not a closed-source tool with an open-source veneer
 - Not a German-only product

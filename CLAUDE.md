@@ -6,11 +6,11 @@ Any Claude session (or other coding agent) working on this repository should rea
 
 ## What this project is
 
-**DirectJob Scout** is an **open-source EU-wide civic employment commons** — an MCP-composable tool that captures specialist HR and bureaucratic-navigation knowledge into modular, standards-anchored modules and puts that knowledge in migrants' hands directly. Germany is the first reference deployment; the architecture is EU-wide.
+**DirectJob Scout** is an **open-source EU-wide civic employment commons** — an MCP-composable tool that captures specialist HR and bureaucratic-navigation knowledge into modular, standards-anchored modules and puts that knowledge directly into the hands of anyone facing structural friction in the European labor market. Migrants and EU-mobile workers are the most acute use case and the primary narrative anchor in proposal and demo material, but the architecture is friction-driven rather than demographic-driven and the same friction affects career changers, returning workers, the long-term unemployed, returning expats, and others (see Decision 21 in `docs/grant/04-research-and-decisions.md`). Germany is the first reference deployment; the architecture is EU-wide.
 
 The project is being prepared as a Programme of **The Commons Conservancy** (Dutch stichting co-founded by NLnet). License is **Apache 2.0 with Contributor License Agreement**.
 
-This is *not* a commercial SaaS, even though earlier iterations of the codebase carried commercial-product framing (Pro/Free tier in the README, "sellable-readiness" docs, `khalo.org` hardcoded). The Week 1 sanitisation pass (see `docs/grant/02-execution-plan.md` task 1.4) replaced the public-facing residue with `directjob-scout.example` placeholders and relocated the commercial-vision docs to `private/`. The active project direction is civic-commons. Early git commits may still reference legacy strings; see `CONTRIBUTORS-NOTE.md` for the history-preservation rationale.
+This is *not* a commercial SaaS, even though earlier iterations of the codebase carried commercial-product framing. The Week 1 sanitisation pass (see `docs/grant/02-execution-plan.md` task 1.4) replaced the public-facing residue with `directjob-scout.example` placeholders and relocated the commercial-vision docs to `private/`. The active project direction is civic-commons. Early git commits may still reference legacy strings; see `CONTRIBUTORS-NOTE.md` for the history-preservation rationale.
 
 ---
 
@@ -88,7 +88,9 @@ Full reasoning for every decision in `docs/grant/04-research-and-decisions.md` P
 | `company_discovery/billing.py` | Stripe — billing moved out of public messaging during grant work |
 | `static/i18n/{en,de}.json` | Translation bundles |
 | `docs/grant/` | **Planning workspace. Read first.** |
-| `docs/` (other files) | Mostly internal commercial docs — scheduled for relocation in Week 1 |
+| `docs/mcp-server.md` | Public MCP server documentation (Week 2 task 2.2 output) |
+| `docs/esco-integration.md` | ESCO + EURES integration reference (Week 2 task 2.4 output) |
+| `private/` (gitignored) | Internal commercial-vision docs relocated from `docs/` during Week 1 sanitisation. Not for public reference. |
 
 ---
 

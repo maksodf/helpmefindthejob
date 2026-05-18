@@ -4,6 +4,12 @@
 
 **Why this exists**: To win institutional funding (NLnet, Sovereign Tech Fund, government budgets), and to win institutional adoption (Beratungsstellen, Jobcenter, university career services), the project must offer *value creation*, not *charity*. We do not ask funders or institutions to choose between helping people and saving money. We claim — and prove — that this project does both simultaneously. Every feature is evaluated against that claim.
 
+## Addressable population
+
+Per Decision 21 in `04-research-and-decisions.md`, the doctrine's addressable population is **anyone facing structural friction in the European labor market** — not migrants alone. Migrants and EU-mobile workers are the most acute use case and provide the densest concentration of friction per user, which is why they are the strongest specific cost-saving evidence. The same mechanisms apply to career changers, returning workers after caregiving or extended absence, the long-term unemployed re-entering, returning expats, older workers facing implicit-bias filtering, and first-generation graduates without family-networked guidance.
+
+The cost-saving math expands materially under the friction-class framing: a Jobcenter serves all Bürgergeld recipients, not only the migrant subset. The "advisor caseload" mechanism applies to every advisor-client interaction, not only migrant cases. "Multilingual built in" continues to save the migrant subset specifically; "shorter time-to-employment" applies across all friction classes. Where a specific mechanism applies most strongly to a sub-population, that is noted in the mechanism's description.
+
 ---
 
 ## The doctrine in one sentence

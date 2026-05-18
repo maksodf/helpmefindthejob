@@ -30,7 +30,7 @@
 
 **The deadline**: ~4 weeks from 2026-05-17 — verify the exact NLnet call deadline in `04-research-and-decisions.md` Open Question R1 before committing to a date.
 
-**The product positioning**: not "an open-source job app." It is **an open-source EU-wide civic employment commons that captures specialist HR and bureaucratic-navigation knowledge into modular, MCP-composable tools** — the Redwax pattern applied to civic life. Germany is the first reference deployment because that is where the maintainer is.
+**The product positioning**: not "an open-source job app." It is **an open-source EU-wide civic employment commons that captures specialist HR and bureaucratic-navigation knowledge into modular, MCP-composable tools** — the Redwax pattern applied to civic life. **Friction-driven, not demographic-driven**: serves anyone facing structural friction in the European labor market. Migrants and EU-mobile workers are the most acute use case and primary narrative anchor; the same architecture serves career changers, returning workers, the long-term unemployed, and others (Decision 21). Germany is the first reference deployment because that is where the maintainer is.
 
 **The institutional home**: Programme of **The Commons Conservancy** (NLnet-co-founded Dutch stichting; application target Week 2).
 
@@ -52,7 +52,7 @@
 4. **Never commit secrets, real keys, or PII.** Sanitise any `khalo.org`, real tester names, or production URLs before pushing.
 5. **Mobile-friendly assumption**: the maintainer reviews on a phone for planning; for execution, computer is recommended. Small diffs, clear commit messages.
 6. **Honest about instability**: do not over-polish to look finished. NGI0 winners are honest about alpha state.
-7. **Anchor persona panel**: every public-facing example, screenshot, narrative uses one of the five personas. See `07-personas.md`.
+7. **Anchor persona panel**: every public-facing example, screenshot, narrative uses one of the seven personas (five most-acute migrants + two wider friction-class). Primary narrative weight stays with the migrant five; the wider two demonstrate the friction-class claim architecturally. See `07-personas.md`.
 8. **Cost-saving doctrine applies to every feature decision.** When in doubt, re-read `08-cost-saving-doctrine.md`.
 9. **AI Act compliance is non-negotiable scope.** Cannot be cut for time. See `10-ai-act-compliance.md`.
 10. **One credible letter of support is enough.** Don't pad outreach. See `11-institutional-outreach.md`.
