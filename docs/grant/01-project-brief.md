@@ -127,7 +127,7 @@ The project has **never been publicly launched**. A single private-instance depl
 - README opens with "self-hosted chat-driven job-hunting copilot" — commercial framing rather than commons (MAJOR — Week 1 rewrite)
 - No badges, no public roadmap, no CHANGELOG, no tagged releases (MAJOR)
 - CI is tests-only — no lint, no mypy, no coverage upload, no security scan (MAJOR)
-- A `cryptography` / `cffi` build issue may manifest on some environments on a fresh clone (initially reported on Linux without pre-built wheels; not reproduced on the maintainer's macOS host where the full 925-test suite passes in ~18 s on bare metal — verified 2026-05-18 in `feature-verification-2026-05-18.md` §8). Week 3 task 3.1 investigates if the failure reproduces in CI or on a fresh contributor clone.
+- The historical `cryptography` / `cffi` build issue (Linux without pre-built wheels + no rust + build-essential) is closed as of Week 3 task 3.1. Explicit `cryptography>=42.0.0,<50.0.0` pin in `requirements.txt` plus the `fresh-clone-install` CI workflow on `python:3.11-slim` and `python:3.12-slim` verify the install + a representative test slice on every push. Docker remains supported as a fallback for environments lacking pre-built wheel support on their specific platform.
 - No documentation site, no translator pathway, no accessibility statement (MAJOR)
 - No EU AI Act compliance pack (MAJOR — Week 2 deliverable, the moat)
 

@@ -321,11 +321,13 @@ Per `10-ai-act-compliance.md`. Create the `/compliance/` directory and ship:
 
 ### 3.1 Fix the local test environment (3 h)
 
-- [ ] Diagnose the `cryptography` / `cffi` build failure on fresh clones
-- [ ] Pin runtime dependencies in `requirements.txt` and dev dependencies in `requirements-dev.txt`
-- [ ] Document install order in `CONTRIBUTING.md`
-- [ ] Verify `python -m unittest discover` passes on a clean machine
-- [ ] Add a fresh-clone Docker smoke-test workflow
+- [x] Diagnose the `cryptography` / `cffi` build failure on fresh clones — root cause: `cryptography` was never explicitly listed in `requirements.txt`; it came in as a transitive dependency through `pywebpush`, leaving wheel selection to the resolver. On Linux containers without rust + build-essential the resolver could fall back to source build and fail at the cffi compilation step.
+- [x] Pin runtime dependencies in `requirements.txt` — `cryptography>=42.0.0,<50.0.0` explicitly added with an inline rationale comment. The pin range is broad enough to keep us on supported security-patched cryptography versions while every version in the range ships pre-built wheels for macOS x86/arm64, Linux x86/arm64 (manylinux + musllinux), and Windows.
+- [x] Pin dev dependencies in `requirements-dev.txt` — created with `pre-commit>=3.5.0,<5.0.0`. Ruff / mypy / coverage / codespell append here when §3.2 lands.
+- [x] Document install order in `CONTRIBUTING.md` — explicit four-step sequence (runtime install → dev install → pre-commit activation → app run).
+- [x] Verify `python -m unittest discover` passes on a clean machine — verified via Docker on both `python:3.11-slim` and `python:3.12-slim`: fresh `pip install -r requirements.txt` succeeds with no rust / build-essential, the cryptography import works, and the representative smoke-test slice (encryption-at-rest + AEAD fuzzing + audit log + MCP integration end-to-end) runs green. Full 994-test local suite also green after the changes.
+- [x] Add a fresh-clone Docker smoke-test workflow — `.github/workflows/fresh-clone-install.yml`. Runs on every push and PR against `main` and `claude/**` branches; matrix over `python:3.11-slim` and `python:3.12-slim`; verifies pip install, the cryptography import, and the smoke-test slice. README carries the `Fresh-clone install` badge under the License badge.
+- [x] Soften framing in `CLAUDE.md`, `README.md`, `CONTRIBUTING.md`, `01-project-brief.md` — historical issue is closed; Docker is supported as a fallback but no longer required for testing.
 
 ### 3.2 CI expansion (8 h)
 

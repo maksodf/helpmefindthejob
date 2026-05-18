@@ -1,0 +1,90 @@
+# Fresh-clone install smoke test.
+#
+# Verifies on every push that `pip install -r requirements.txt`
+# succeeds in a minimal slim Python container with no rust /
+# build-essential pre-installed, and that the representative
+# native-dependency-touching test slice runs green.
+#
+# This workflow exists because the historical "cryptography / cffi
+# build issue" (Linux without pre-built wheels) was the project's
+# largest onboarding friction. Week 3 task 3.1 of the grant sprint
+# closed it by pinning `cryptography` explicitly to a range with
+# broad wheel coverage; this workflow is the standing verification
+# that the fix continues to hold across Python versions.
+#
+# The README's "fresh-clone-install" badge reflects this workflow's
+# status. If the workflow goes red, fresh-clone install on a vanilla
+# slim container is broken — that is a contributor-onboarding
+# blocker and is treated as such.
+#
+# Security note: this workflow uses only `matrix.python-image` from
+# the static matrix enumeration. No untrusted GitHub event payload
+# fields (issue titles, PR bodies, commit messages, head refs, etc.)
+# flow into `run:` steps. See
+# https://github.blog/security/vulnerability-research/how-to-catch-github-actions-workflow-injections-before-attackers-do/
+
+name: fresh-clone-install
+
+on:
+  push:
+    branches:
+      - main
+      - "claude/**"
+  pull_request:
+    branches:
+      - main
+      - "claude/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fresh-clone-install-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        python-image:
+          - python:3.11-slim
+          - python:3.12-slim
+    container: ${{ matrix.python-image }}
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Show Python version
+        run: python --version
+
+      - name: Install runtime dependencies on a fresh container
+        # No rust, no build-essential, no apt-get update — this is the
+        # minimal-slim-container scenario that historically failed.
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Confirm cryptography import works
+        # The AEAD encryption-at-rest layer and the AI-Act audit-log
+        # salt hashing both require cryptography. If the wheel didn't
+        # install cleanly, this fails fast with a clear signal.
+        run: |
+          python -c "from cryptography.hazmat.primitives.ciphers.aead import ChaCha20Poly1305; import cryptography; print('cryptography', cryptography.__version__)"
+
+      - name: Run the representative smoke-test slice
+        # These four modules exercise the parts of the codebase that
+        # depend on native cryptography wheels:
+        #   * test_phase0_encryption_at_rest — ChaCha20-Poly1305 AEAD
+        #     round-trip and tamper detection
+        #   * test_aead_fuzzing — fuzz on the AEAD format
+        #   * test_phase13_audit_log — AI Act Article 12 audit log
+        #     emitter (SHA-256 over a per-deployment salt)
+        #   * test_phase12_mcp_integration_e2e — the published MCP
+        #     server end-to-end JSON-RPC handshake, including the
+        #     audit-log emission on tool-call dispatch
+        run: |
+          python -m unittest \
+            tests.test_phase0_encryption_at_rest \
+            tests.test_aead_fuzzing \
+            tests.test_phase13_audit_log \
+            tests.test_phase12_mcp_integration_e2e

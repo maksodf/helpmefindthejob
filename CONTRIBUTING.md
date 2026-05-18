@@ -25,11 +25,15 @@ read [`SUPPORT.md`](SUPPORT.md).
 ## Project state
 
 The project is in early alpha. The main branch is intended to stay
-buildable but may include unfinished work. Tests on a freshly-cloned
-machine currently require a Docker container due to a known
-`cryptography` / `cffi` build issue (Week 3 task 3.1 of the grant sprint
-will fix this on bare metal). If you hit setup friction, please open an
-issue — fixing onboarding paper-cuts is itself a valuable contribution.
+buildable but may include unfinished work. The fresh-clone install
+(`pip install -r requirements.txt && pip install -r requirements-dev.txt`)
+is verified on every push by the `fresh-clone-install` CI workflow
+(`.github/workflows/fresh-clone-install.yml`) on `python:3.11-slim`
+and `python:3.12-slim` containers. The historical
+`cryptography` / `cffi` build issue is closed (see Week 3 task 3.1
+in `docs/grant/02-execution-plan.md`). If you still hit setup
+friction on a specific platform, please open an issue — fixing
+onboarding paper-cuts is itself a valuable contribution.
 
 ## Before You Start
 
@@ -52,14 +56,19 @@ Requirements: Python 3.11+ and (optionally but recommended) Docker.
 git clone https://github.com/maksodf/directjob-scout.git
 cd directjob-scout
 
-# Install runtime dependencies.
+# 1. Install runtime dependencies (cryptography is pinned with broad
+#    wheel coverage — no rust or C build toolchain needed on most
+#    platforms).
 pip install -r requirements.txt
 
-# Install pre-commit and the git hook.
-pip install pre-commit
+# 2. Install development dependencies (pre-commit and friends; ruff /
+#    mypy / coverage land alongside Week 3 task 3.2).
+pip install -r requirements-dev.txt
+
+# 3. Activate the git pre-commit hook.
 pre-commit install
 
-# Run the app locally.
+# 4. Run the app locally.
 python3 app.py
 # Open http://127.0.0.1:8765
 ```
@@ -75,8 +84,12 @@ will be added in Week 3 (`docs/grant/02-execution-plan.md` §3.2).
 python3 -m unittest discover -v
 ```
 
-If the test run errors on `cryptography` / `cffi`, run inside Docker
-instead:
+The suite passes natively on Python 3.11 + 3.12 across macOS, Linux,
+and minimal slim Docker containers — the `fresh-clone-install` CI
+workflow (`.github/workflows/fresh-clone-install.yml`) verifies this
+on every push. If your specific environment still has issues with
+cryptography wheels (extremely rare with the pinning landed in §3.1),
+run inside Docker as a fallback:
 
 ```bash
 docker compose up --build

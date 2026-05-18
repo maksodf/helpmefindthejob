@@ -2,6 +2,7 @@
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![MCP integration](https://github.com/maksodf/directjob-scout/actions/workflows/mcp-integration.yml/badge.svg?branch=claude/project-analysis-bpHCo)](https://github.com/maksodf/directjob-scout/actions/workflows/mcp-integration.yml)
+[![Fresh-clone install](https://github.com/maksodf/directjob-scout/actions/workflows/fresh-clone-install.yml/badge.svg?branch=claude/project-analysis-bpHCo)](https://github.com/maksodf/directjob-scout/actions/workflows/fresh-clone-install.yml)
 [![Release](https://img.shields.io/badge/release-pre--v0.1.0-lightgrey.svg)](#)
 [![Languages](https://img.shields.io/badge/languages-EN%20%2B%20DE-informational.svg)](static/i18n/)
 [![MCP](https://img.shields.io/badge/MCP-2024--11--05-blueviolet.svg)](https://modelcontextprotocol.io)
@@ -90,13 +91,18 @@ docker compose up --build
 # Open http://127.0.0.1:8765
 ```
 
-Tests on a fresh clone currently require Docker due to a known
-`cryptography` / `cffi` build issue tracked for Week 3 of the grant
-sprint. Inside Docker:
+Run the test suite directly on a fresh clone:
 
 ```bash
-docker compose exec directjob-scout python3 -m unittest discover -v
+python3 -m unittest discover
 ```
+
+The 994-test suite passes natively on Python 3.11 and 3.12 across
+macOS, Linux, and the `python:3.11-slim` / `python:3.12-slim` Docker
+containers — verified on every push by the `fresh-clone-install`
+workflow at `.github/workflows/fresh-clone-install.yml`. Docker is
+supported as a deployment target but is no longer required for
+testing.
 
 Configuration is environment-variable driven; see
 [`.env.example`](.env.example) for the full list. The

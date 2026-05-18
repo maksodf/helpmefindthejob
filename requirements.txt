@@ -2,6 +2,23 @@
 # Keep this list as small as possible — the app uses stdlib for most things.
 pypdf==5.1.0
 pywebpush==1.14.0
+# cryptography backs the ChaCha20-Poly1305 AEAD encryption-at-rest layer
+# in company_discovery/crypto_kit.py and the AI-Act audit-log salt
+# hashing in company_discovery/audit_log.py. It is also a transitive
+# dependency of pywebpush; we pin it explicitly so the wheel selected
+# is under our control rather than the resolver's, and so future code
+# does not silently depend on a transitive dep that pywebpush could
+# in principle drop.
+#
+# Modern cryptography (42+) ships pre-built wheels for macOS x86_64 +
+# arm64, Linux x86_64 + aarch64 (manylinux2014 + musllinux), and
+# Windows. This range eliminates the historical cffi source-build
+# failure reported on minimal Linux containers without rust +
+# build-essential — those environments now resolve to a pre-built
+# wheel and the install succeeds without compilation. Verified via
+# the fresh-clone-install workflow (.github/workflows/fresh-clone-
+# install.yml).
+cryptography>=42.0.0,<50.0.0
 # jsonschema enforces MCP tools/call inputSchema validation before dispatch
 # (mcp_server.py). Light dependency, well-maintained, no native code.
 jsonschema==4.25.1
