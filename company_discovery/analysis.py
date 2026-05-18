@@ -11,11 +11,13 @@ import json
 import os
 import re
 import subprocess
+import time
 from dataclasses import dataclass
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 
+from . import audit_log
 from .ai_providers import AIProviderConfig
 from .models import DiscoveredJob, ImportedJob, UserProfile
 from .personas import get_persona
@@ -328,7 +330,9 @@ def execute_cv_query_expansion(
     runtime_credential: str = "",
 ) -> AnalysisExecutionResult:
     brief = build_cv_query_expansion_prompt(profile, free_text, provider)
-    return _dispatch_provider(brief["prompt"], provider, runtime_credential)
+    return _dispatch_provider(
+        brief["prompt"], provider, runtime_credential, purpose="cv_query_expansion"
+    )
 
 
 _AUTO_FIT_SCORE_RE = re.compile(r"score\s*[:\-]\s*(\d{1,3})", re.IGNORECASE)
@@ -383,7 +387,9 @@ def execute_auto_fit(
     profile: UserProfile | None = None,
 ) -> AnalysisExecutionResult:
     brief = build_auto_fit_prompt(job, company_name, provider, profile)
-    return _dispatch_provider(brief["prompt"], provider, runtime_credential)
+    return _dispatch_provider(
+        brief["prompt"], provider, runtime_credential, purpose="fit_score"
+    )
 
 
 def build_cv_tailoring_prompt(
@@ -446,7 +452,9 @@ def execute_cv_tailoring(
     profile: UserProfile | None = None,
 ) -> AnalysisExecutionResult:
     brief = build_cv_tailoring_prompt(job, provider, profile)
-    return _dispatch_provider(brief["prompt"], provider, runtime_credential)
+    return _dispatch_provider(
+        brief["prompt"], provider, runtime_credential, purpose="tailor_cv"
+    )
 
 
 def execute_job_decision_brief(
@@ -456,7 +464,9 @@ def execute_job_decision_brief(
     profile: UserProfile | None = None,
 ) -> AnalysisExecutionResult:
     brief = build_job_decision_brief_prompt(job, provider, profile)
-    return _dispatch_provider(brief["prompt"], provider, runtime_credential)
+    return _dispatch_provider(
+        brief["prompt"], provider, runtime_credential, purpose="job_decision_brief"
+    )
 
 
 def execute_cover_letter_brief(
@@ -466,10 +476,102 @@ def execute_cover_letter_brief(
     profile: UserProfile | None = None,
 ) -> AnalysisExecutionResult:
     brief = build_cover_letter_brief_prompt(job, provider, profile)
-    return _dispatch_provider(brief["prompt"], provider, runtime_credential)
+    return _dispatch_provider(
+        brief["prompt"], provider, runtime_credential, purpose="cover_letter"
+    )
 
 
 def _dispatch_provider(
+    prompt: str,
+    provider: AIProviderConfig,
+    runtime_credential: str,
+    *,
+    purpose: str = "unknown",
+) -> AnalysisExecutionResult:
+    """Dispatch the prompt to the configured AI provider and emit an
+    AI Act Article 12 audit-log ``ai_invocation`` event around the call.
+
+    ``purpose`` identifies which analysis call invoked the dispatch
+    (e.g. ``"fit_score"``, ``"cover_letter"``, ``"tailor_cv"``,
+    ``"motivation_letter"``, ``"skill_gap_brief"``). It feeds the
+    audit log's ``prompt_template_id`` field and the cost-saving
+    measurement queries.
+
+    Existing callers that omit ``purpose`` log as ``"unknown"``; new
+    callers should pass an explicit value.
+    """
+    started = time.monotonic()
+    result: AnalysisExecutionResult | None = None
+    error_class: str | None = None
+    try:
+        result = _dispatch_provider_impl(prompt, provider, runtime_credential)
+        return result
+    except BaseException as exc:
+        error_class = type(exc).__name__
+        raise
+    finally:
+        _emit_dispatch_audit(
+            prompt=prompt,
+            provider=provider,
+            purpose=purpose,
+            started=started,
+            result=result,
+            error_class=error_class,
+        )
+
+
+def _emit_dispatch_audit(
+    *,
+    prompt: str,
+    provider: AIProviderConfig,
+    purpose: str,
+    started: float,
+    result: AnalysisExecutionResult | None,
+    error_class: str | None,
+) -> None:
+    """Compose and emit the ``ai_invocation`` audit-log event for a
+    completed (or failed) :func:`_dispatch_provider` call. Never raises."""
+    duration_ms = int((time.monotonic() - started) * 1000)
+    try:
+        emitter = audit_log.default_emitter()
+    except Exception:
+        return
+    try:
+        if result is None:
+            outcome = "error"
+            ai_provider = (provider.provider_id if provider else "unknown") or "unknown"
+            err_label = error_class or "Unknown"
+            response_hash = None
+        else:
+            if result.status == "handoff_required":
+                outcome = "declined"
+            elif result.error:
+                outcome = "error"
+            else:
+                outcome = "ok"
+            ai_provider = result.provider_id or (provider.provider_id if provider else "unknown")
+            err_label = None if outcome == "ok" else (result.status or error_class)
+            response_hash = emitter.short_hash(result.output) if result.output else None
+        prompt_template_id = emitter.short_hash(f"purpose:{purpose}") if purpose else None
+        prompt_hash = emitter.short_hash(prompt)
+        audit_log.emit_ai_invocation(
+            purpose=purpose,
+            ai_provider=ai_provider or "unknown",
+            prompt_template_id=prompt_template_id[:8] if prompt_template_id else None,
+            duration_ms=duration_ms,
+            outcome=outcome,
+            prompt_hash=prompt_hash,
+            response_hash=response_hash,
+            error_class=err_label,
+            emitter=emitter,
+        )
+    except Exception:
+        # Audit logging never breaks the AI call. Failures surface via
+        # the emitter's own stderr warning channel.
+        pass
+
+
+def _dispatch_provider_impl(
     prompt: str,
     provider: AIProviderConfig,
     runtime_credential: str,

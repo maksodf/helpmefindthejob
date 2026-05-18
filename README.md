@@ -164,10 +164,18 @@ without forking.
   including Ollama for fully-offline mode), explicit-consent data
   egress, user-export and user-deletion paths.
 - **EU AI Act compliance** — designed for high-risk AI under Annex III
-  §4. Risk-management plan, data-governance documentation, audit
-  logging, transparency notice, human-oversight UI, accuracy + bias
-  testing. Full pack in [`compliance/`](compliance/) (lands Week 2,
-  ahead of the 2 August 2026 enforcement date).
+  §4. Full compliance pack shipped at
+  [`compliance/`](compliance/): risk-management plan, data-governance
+  documentation, Annex IV technical documentation, Article 12 audit
+  logging (`company_discovery/audit_log.py` emitter integrated into
+  MCP and analysis paths), user-facing transparency notice,
+  deployer-facing operating manual, human-oversight guide with
+  `/api/admin/oversight/queue` admin endpoint (Article 14),
+  accuracy-and-bias testing methodology anchored to the seven-persona
+  panel (Article 15), pre-fillable templates for EU AI database
+  registration (Article 49) and the Fundamental Rights Impact
+  Assessment (Article 27). Aligned with the 2 August 2026 enforcement
+  date.
 
 ## MCP composition
 

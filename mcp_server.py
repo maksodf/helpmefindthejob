@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 import os
 import sys
+import time
 from dataclasses import asdict, is_dataclass
 from datetime import datetime
 from pathlib import Path
@@ -17,6 +18,7 @@ from typing import Any
 
 import jsonschema
 
+from company_discovery import audit_log
 from company_discovery.http_fetcher import HTTPFetcher
 from company_discovery.mcp_tools import CompanyDiscoveryMCPTools, TOOL_SCHEMAS
 from company_discovery.service import CompanyDiscoveryService, ScanConfig
@@ -147,10 +149,29 @@ def handle_request(message: dict[str, Any], tools: CompanyDiscoveryMCPTools) -> 
     if method == "tools/list":
         return rpc_response(message_id, {"tools": TOOL_SCHEMAS})
     if method == "tools/call":
-        name = params.get("name")
-        arguments = params.get("arguments") or {}
+        return _handle_tools_call(message_id, params, tools)
+    return rpc_error(message_id, -32601, f"Unknown method: {method}")
+
+
+def _handle_tools_call(
+    message_id: Any,
+    params: dict[str, Any],
+    tools: CompanyDiscoveryMCPTools,
+) -> dict[str, Any]:
+    """Dispatch a ``tools/call`` request and emit the AI Act Article 12
+    ``mcp_tool_invocation`` audit-log event for every outcome (success,
+    schema rejection, unknown tool, tool exception)."""
+    name = params.get("name")
+    arguments = params.get("arguments") or {}
+    started = time.monotonic()
+    outcome = "ok"
+    error_class: str | None = None
+    response: dict[str, Any] | None = None
+    try:
         if not isinstance(name, str):
-            return rpc_response(
+            outcome = "declined"
+            error_class = "InvalidName"
+            response = rpc_response(
                 message_id,
                 text_result(
                     {
@@ -163,11 +184,21 @@ def handle_request(message: dict[str, Any], tools: CompanyDiscoveryMCPTools) -> 
                     True,
                 ),
             )
+            return response
         problem = validate_tool_arguments(name, arguments)
         if problem is not None:
-            return rpc_response(message_id, text_result(problem, True))
+            outcome = "declined"
+            error_class = (
+                "UnknownTool"
+                if problem.get("status") == "unknown_tool"
+                else "SchemaViolation"
+            )
+            response = rpc_response(message_id, text_result(problem, True))
+            return response
         if not hasattr(tools, name):
-            return rpc_response(
+            outcome = "declined"
+            error_class = "UnknownTool"
+            response = rpc_response(
                 message_id,
                 text_result(
                     {
@@ -180,10 +211,13 @@ def handle_request(message: dict[str, Any], tools: CompanyDiscoveryMCPTools) -> 
                     True,
                 ),
             )
+            return response
         try:
             result = getattr(tools, name)(**arguments)
         except Exception as error:  # noqa: BLE001 - tool boundary
-            return rpc_response(
+            outcome = "error"
+            error_class = type(error).__name__
+            response = rpc_response(
                 message_id,
                 text_result(
                     {
@@ -196,24 +230,79 @@ def handle_request(message: dict[str, Any], tools: CompanyDiscoveryMCPTools) -> 
                     True,
                 ),
             )
-        return rpc_response(message_id, text_result(result))
-    return rpc_error(message_id, -32601, f"Unknown method: {method}")
+            return response
+        response = rpc_response(message_id, text_result(result))
+        return response
+    finally:
+        _emit_tool_call_audit(
+            name=name if isinstance(name, str) else "<invalid>",
+            arguments=arguments if isinstance(arguments, dict) else {},
+            response=response,
+            started=started,
+            outcome=outcome,
+            error_class=error_class,
+        )
+
+
+def _emit_tool_call_audit(
+    *,
+    name: str,
+    arguments: dict[str, Any],
+    response: dict[str, Any] | None,
+    started: float,
+    outcome: str,
+    error_class: str | None,
+) -> None:
+    """Compose and emit the ``mcp_tool_invocation`` audit-log event.
+    Never raises."""
+    duration_ms = int((time.monotonic() - started) * 1000)
+    try:
+        emitter = audit_log.default_emitter()
+        arg_payload = json.dumps(arguments, sort_keys=True, ensure_ascii=False)
+        args_hash = emitter.short_hash(arg_payload)
+        response_size_bytes = (
+            len(json.dumps(response, ensure_ascii=False)) if response is not None else 0
+        )
+        audit_log.emit_mcp_tool_invocation(
+            tool_name=name,
+            arguments_hash=args_hash,
+            response_size_bytes=response_size_bytes,
+            duration_ms=duration_ms,
+            outcome=outcome,
+            error_class=error_class,
+            emitter=emitter,
+        )
+    except Exception:
+        # Audit logging never breaks the MCP server.
+        pass
 
 
 def run_stdio(tools: CompanyDiscoveryMCPTools | None = None) -> None:
     active_tools = tools or build_tools()
-    for line in sys.stdin:
-        if not line.strip():
-            continue
+    ctx_token = audit_log.set_caller_context(caller="mcp")
+    try:
+        audit_log.emit_system_event(system_event_kind="mcp_server_started")
+    except Exception:
+        pass
+    try:
+        for line in sys.stdin:
+            if not line.strip():
+                continue
+            try:
+                message = json.loads(line)
+            except json.JSONDecodeError as error:
+                response = rpc_error(None, -32700, str(error))
+            else:
+                response = handle_request(message, active_tools)
+            if response is not None:
+                sys.stdout.write(json.dumps(jsonable(response), ensure_ascii=False) + "\n")
+                sys.stdout.flush()
+    finally:
         try:
-            message = json.loads(line)
-        except json.JSONDecodeError as error:
-            response = rpc_error(None, -32700, str(error))
-        else:
-            response = handle_request(message, active_tools)
-        if response is not None:
-            sys.stdout.write(json.dumps(jsonable(response), ensure_ascii=False) + "\n")
-            sys.stdout.flush()
+            audit_log.emit_system_event(system_event_kind="mcp_server_stopped")
+        except Exception:
+            pass
+        audit_log.reset_caller_context(ctx_token)
 
 
 if __name__ == "__main__":

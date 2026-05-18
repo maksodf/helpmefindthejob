@@ -23,7 +23,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from threading import Lock, Thread
 from typing import Any
-from urllib.parse import unquote, urlparse
+from urllib.parse import parse_qs, unquote, urlparse
 
 from company_discovery.analysis import (
     build_auto_fit_prompt,
@@ -289,6 +289,49 @@ def session_cookie_header(token: str, max_age: int) -> str:
     if COOKIE_SECURE:
         parts.append("Secure")
     return "; ".join(parts)
+
+
+def _read_ai_act_audit_tail(
+    log_path: Path, limit: int, event_type_filter: str | None
+) -> list[dict[str, Any]]:
+    """Read the tail of the AI Act Article 12 audit log.
+
+    Returns up to ``limit`` of the most recent entries (most recent first),
+    optionally filtered by event_type. Rotated sibling files are included
+    so the queue surfaces events that have just been rotated out of the
+    primary file.
+
+    The implementation reads the live file plus rotated siblings into
+    memory; for the §2.8 minimum-viable oversight UI this is acceptable
+    because the queue is reviewed at human-attention rates (hundreds of
+    events per review session, not millions). A streaming or
+    sqlite-backed variant lands as a Phase 2 enhancement if oversight
+    volumes outgrow the in-memory read.
+    """
+    records: list[dict[str, Any]] = []
+    candidates: list[Path] = []
+    if log_path.exists():
+        candidates.append(log_path)
+    candidates.extend(sorted(log_path.parent.glob(log_path.name + ".*")))
+    for candidate in candidates:
+        try:
+            with candidate.open("r", encoding="utf-8") as handle:
+                for line in handle:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        record = json.loads(line)
+                    except json.JSONDecodeError:
+                        continue
+                    if event_type_filter and record.get("event_type") != event_type_filter:
+                        continue
+                    records.append(record)
+        except OSError:
+            continue
+    # Sort by timestamp descending so the most recent appears first
+    records.sort(key=lambda r: r.get("timestamp", ""), reverse=True)
+    return records[:limit]
 
 
 def _serialise_cv_section(section) -> dict[str, Any]:
@@ -4671,6 +4714,49 @@ class Handler(BaseHTTPRequestHandler):
                     return
                 tickets = STATE.repository.list_support_tickets()
                 self.send_json({"tickets": tickets})
+                return
+            if parsed.path == "/api/admin/oversight/queue":
+                # AI Act Article 14 minimum-viable human-oversight surface.
+                # Returns recent AI-Act audit-log events for an oversight
+                # person to review. Requires DIRECTJOB_HUMAN_OVERSIGHT_MODE
+                # to be set to a truthy value; otherwise returns a 503
+                # explaining the deployer-side configuration step.
+                # See compliance/human-oversight-guide.md.
+                if not self.require_admin(session):
+                    return
+                mode = (os.environ.get("DIRECTJOB_HUMAN_OVERSIGHT_MODE", "") or "").lower()
+                if mode not in {"enabled", "true", "1", "yes", "on"}:
+                    self.send_json(
+                        {
+                            "status": "disabled",
+                            "mode": mode or "disabled",
+                            "detail": (
+                                "Set DIRECTJOB_HUMAN_OVERSIGHT_MODE=enabled to expose the "
+                                "human-oversight queue. See compliance/human-oversight-guide.md "
+                                "for the four oversight modes and selection guidance."
+                            ),
+                            "events": [],
+                        }
+                    )
+                    return
+                limit_raw = (parsed.query and parse_qs(parsed.query).get("limit", ["100"]))
+                try:
+                    limit = max(1, min(int(limit_raw[0]), 1000))
+                except (ValueError, IndexError):
+                    limit = 100
+                event_type_filter = None
+                if parsed.query:
+                    qs = parse_qs(parsed.query)
+                    if "event_type" in qs and qs["event_type"]:
+                        event_type_filter = qs["event_type"][0]
+                events = _read_ai_act_audit_tail(DATA_ROOT / "ai_act_audit.log", limit, event_type_filter)
+                self.send_json({
+                    "status": "enabled",
+                    "mode": "enabled",
+                    "events": events,
+                    "filter": {"limit": limit, "event_type": event_type_filter},
+                    "totalReturned": len(events),
+                })
                 return
             if parsed.path == "/api/saved-searches":
                 self.send_json({"savedSearches": STATE._saved_searches_with_alerts(user_id)})

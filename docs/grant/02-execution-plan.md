@@ -285,17 +285,19 @@ If no positive response (Option A fallback):
 
 Per `10-ai-act-compliance.md`. Create the `/compliance/` directory and ship:
 
-- [ ] `compliance/risk-management-plan.md` (Article 9)
-- [ ] `compliance/data-governance.md` (Article 10)
-- [ ] `compliance/technical-documentation.md` (Article 11 + Annex IV — all 9 sections)
-- [ ] Audit-log schema documented + audit-log infrastructure integrated into MCP server and web app
-- [ ] `compliance/transparency-notice.md` (user-facing, Article 13)
-- [ ] `compliance/deployer-operating-manual.md` (Article 13)
-- [ ] `compliance/human-oversight-guide.md` + minimal human-oversight UI for deployers (Article 14)
-- [ ] `compliance/accuracy-and-bias-testing.md` (Article 15)
-- [ ] `compliance/eu-database-registration-template.md` (deployer pre-fill, Article 49)
-- [ ] `compliance/fundamental-rights-impact-assessment-template.md` (deployer pre-fill, Article 27)
-- [ ] Cross-link from README and from `10-ai-act-compliance.md`
+- [x] `compliance/README.md` index — orientation, audience split (provider/deployer/end-user), friction-class framing per Decision 21
+- [x] `compliance/risk-management-plan.md` (Article 9) — eight identified risks (R1–R8) with pre- and post-mitigation L×S ratings; incident escalation; review cadence
+- [x] `compliance/data-governance.md` (Article 10) — data-category map; ChaCha20-Poly1305 AEAD encryption-at-rest; prompt minimisation; bias-testing reference
+- [x] `compliance/technical-documentation.md` (Article 11 + Annex IV — all 9 sections including post-market monitoring per Article 72)
+- [x] Audit-log schema documented (`compliance/audit-log-schema.md`) + audit-log infrastructure integrated into MCP server (`mcp_server.py::_handle_tools_call`) and analysis pipeline (`company_discovery/analysis.py::_dispatch_provider`). Emitter at `company_discovery/audit_log.py` with PII-hashed `user_opaque_id` and `session_opaque_id` by default, contextvar-based caller-context propagation, microsecond-precision rotation with collision nonce
+- [x] `compliance/transparency-notice.md` (user-facing, Article 13) — friction-class framing for "who this is for"; user-rights map (Articles 50 and 86); deployer-managed addendum with TBD placeholders
+- [x] `compliance/deployer-operating-manual.md` (Article 13) — friction-class framing for "who you can serve" (so Jobcenter / career service / NGO operators understand the tool fits their full caseload); pre-deployment checklist; Article 26 obligations map; incident response
+- [x] `compliance/human-oversight-guide.md` + minimum-viable human-oversight UI (Article 14): admin endpoint `/api/admin/oversight/queue` gated by `DIRECTJOB_HUMAN_OVERSIGHT_MODE`; four oversight modes (passive monitoring / advisor-review queue / per-action gates / kill-switch); appointment record with TBD placeholders
+- [x] `compliance/accuracy-and-bias-testing.md` (Article 15) — seven-persona panel as test cohort (includes Käthe and Tobias for friction-class breadth per Decision 21); within-persona / cross-persona / cross-class equivalence axes; tolerance bands; pre-deployment re-test procedure
+- [x] `compliance/eu-database-registration-template.md` (deployer pre-fill, Article 49) — provider Sections A–C pre-filled; deployer Sections D–G with TBD placeholders; pre-submission checklist
+- [x] `compliance/fundamental-rights-impact-assessment-template.md` (deployer pre-fill, Article 27) — eight parts including affected-population section using friction-class framing; CFR-article-by-article assessment table; per-deployer-type sample affected-population text for MBE / Optionskommune Jobcenter / university career service / NGO contexts
+- [x] Cross-link from README (compliance pack callout under "Standards we implement") and from `10-ai-act-compliance.md` (implementation-status header pointing at the shipped pack)
+- [x] Tests for the audit-log emitter in `tests/test_phase13_audit_log.py` — 20 tests covering emitter (rotation, hash determinism, plaintext opt-in, error_class), caller-context contextvar propagation, convenience wrappers, MCP-server integration, analysis-pipeline integration, and the tail helper for the oversight endpoint. Test patches in `tests/test_ai_quality_e2e.py` and `tests/test_chat_ai_router.py` updated to accept the new `purpose` kwarg via `**_kwargs`.
 
 ### Week 2 Definition of Done
 

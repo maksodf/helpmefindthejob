@@ -107,7 +107,11 @@ class _ScriptedDispatch:
 
         def patched(prompt: str,
                     provider: AIProviderConfig,
-                    runtime_credential: str) -> AnalysisExecutionResult:
+                    runtime_credential: str,
+                    **_kwargs) -> AnalysisExecutionResult:
+            # **_kwargs accepts the audit-log ``purpose`` keyword passed by
+            # the production execute_* call sites; the patched dispatcher
+            # ignores it because it short-circuits the AI call entirely.
             outer.last_prompt = prompt
             return AnalysisExecutionResult(
                 status=outer.status,

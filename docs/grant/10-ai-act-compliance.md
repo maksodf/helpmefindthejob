@@ -2,6 +2,8 @@
 
 **Status**: technical-spine document. Drives Week 2–3 work in `02-execution-plan.md` and the cost-saving claim in `08-cost-saving-doctrine.md` §"Mechanism 5".
 
+**Implementation status (2026-05-18)**: §2.8 of the execution plan shipped — the live compliance pack is at [`/compliance/`](../../compliance/) in the repository, with the Article 12 audit-log emitter at [`../../company_discovery/audit_log.py`](../../company_discovery/audit_log.py) and integration into [`../../mcp_server.py`](../../mcp_server.py) and [`../../company_discovery/analysis.py`](../../company_discovery/analysis.py). The Article 14 minimum-viable human-oversight admin endpoint is at `/api/admin/oversight/queue` in `app.py` (admin-gated, controlled by `DIRECTJOB_HUMAN_OVERSIGHT_MODE`). Tests in `tests/test_phase13_audit_log.py` (20 tests covering emitter, caller-context, convenience wrappers, MCP integration, analysis integration, and the tail helper).
+
 This document describes how DirectJob Scout is designed to be compliant with the EU AI Act high-risk-AI obligations applicable to employment-related AI systems, with deadline **2 August 2026**.
 
 The work in this document is not optional. It is the single largest piece of regulatory differentiation the project offers — and the largest reason institutions will adopt our open-source tool rather than build their own.
