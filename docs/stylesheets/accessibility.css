@@ -1,0 +1,29 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+/* Copyright (c) 2026 DirectJob Scout contributors */
+
+/* DirectJob Scout — accessibility overrides for mkdocs-material.
+ *
+ * The §3.6 first-pass accessibility audit (axe-core CLI 4.11.4, 2026-05-19)
+ * found that inline body links in the default mkdocs-material theme rely
+ * on color alone to distinguish themselves from surrounding text, which
+ * fails WCAG 1.4.1 (Use of Color) as the `link-in-text-block` axe rule.
+ *
+ * This stylesheet adds an underline to inline body-content links so the
+ * distinction is non-color-dependent. The mkdocs-material theme has its
+ * own underline conventions for navigation and header links; we scope
+ * this to `.md-content` body links only so the theme chrome stays clean.
+ *
+ * Audit evidence: docs/grant/accessibility-audit-2026-05-19/ (raw axe JSON).
+ * Remediation reference: ACCESSIBILITY.md.
+ */
+
+.md-content a:not(.md-button):not([class^="md-"]) {
+  text-decoration: underline;
+  text-decoration-thickness: 0.05em;
+  text-underline-offset: 0.2em;
+}
+
+/* Preserve the no-underline aesthetic for theme-managed link
+ * classes (md-button, md-search-result__link, etc.) — the
+ * underline rule above explicitly excludes any link whose class
+ * starts with `md-` (the theme's namespacing convention). */

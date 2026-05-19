@@ -57,6 +57,14 @@ node_modules/
 # always rebuilds from source.
 site/
 
+# axe-core CLI accessibility audit JSON output. Each file is 100–400 KB
+# of axe-core's full rule trace (passes + violations + incomplete +
+# inapplicable). The violation summary lives in ACCESSIBILITY.md;
+# regeneration is one command (see ACCESSIBILITY.md "How to reproduce").
+# Keeping these out of git avoids committing large generated artefacts
+# that get stale on every code change.
+audit-results/
+
 # Test artifacts
 .tox/
 .nox/

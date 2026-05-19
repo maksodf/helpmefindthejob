@@ -267,6 +267,9 @@ sustainability model) at [`docs/grant/03-post-grant.md`](docs/grant/03-post-gran
   map.
 - [`STANDARDS.md`](STANDARDS.md) — every standard the project
   implements.
+- [`ACCESSIBILITY.md`](ACCESSIBILITY.md) — WCAG 2.2 Level AA target;
+  axe-core CLI 4.11 audit findings + fixes shipped + known gaps with
+  remediation plan; reproduction commands.
 - [`compliance/`](compliance/) — EU AI Act compliance pack (Articles
   9–15, 27, 49).
 - [`docs/grant/`](docs/grant/) — strategic source of truth: project

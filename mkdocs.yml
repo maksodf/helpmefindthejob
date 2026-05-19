@@ -69,6 +69,12 @@ theme:
     - content.code.copy
     - toc.follow
 
+extra_css:
+  - stylesheets/accessibility.css
+
+extra_javascript:
+  - javascripts/accessibility.js
+
 plugins:
   - search
 
@@ -94,6 +100,7 @@ nav:
   - Quickstart: https://github.com/maksodf/directjob-scout#quickstart
   - Architecture: https://github.com/maksodf/directjob-scout/blob/main/ARCHITECTURE.md
   - Standards: https://github.com/maksodf/directjob-scout/blob/main/STANDARDS.md
+  - Accessibility: https://github.com/maksodf/directjob-scout/blob/main/ACCESSIBILITY.md
   - MCP API: mcp-server.md
   - Deployment:
       - Generic recipe: deployment-recipe.md

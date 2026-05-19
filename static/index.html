@@ -27,12 +27,12 @@
   <body>
     <a class="skip-link" href="#mainContent">Skip to main content</a>
 
-    <section id="authGate" class="auth-gate" hidden>
+    <main id="authGate" class="auth-gate" aria-labelledby="authGateHeading" hidden>
       <div class="auth-card">
         <div class="auth-brand">
           <span class="brand-mark" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 6 H12 a6 6 0 0 1 0 12 H7 V6 z"/><circle cx="13" cy="12" r="1.4" fill="currentColor"/><path d="M16.5 9.5 L20 6 M17.5 6 L20 6 L20 8.5"/></svg></span>
           <div>
-            <h1>DirectJob Scout</h1>
+            <h1 id="authGateHeading">DirectJob Scout</h1>
             <p data-i18n="auth.signInLead">Sign in to continue.</p>
           </div>
         </div>
@@ -80,7 +80,7 @@
           <a href="/impressum" data-i18n="auth.legal.impressum">Impressum</a>
         </p>
       </div>
-    </section>
+    </main>
 
     <section id="forgotPasswordView" class="auth-aux" aria-labelledby="forgotPasswordTitle" hidden>
       <h1 id="forgotPasswordTitle" data-i18n="auth.forgotHeading">Forgot your password?</h1>
