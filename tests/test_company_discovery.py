@@ -8,10 +8,19 @@
 from __future__ import annotations
 
 import json
+import os
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import patch
+
+# Set the audit-log salt BEFORE any app/analysis import triggers the
+# emitter's lazy init — otherwise the dev-mode UserWarning surfaces.
+# PART N iteration of the 2026-05-19 deep-audit sweep.
+os.environ.setdefault(
+    "HELPMEFINDTHEJOB_AUDIT_SALT",
+    "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+)
 
 from app import AppState, jsonable
 from company_discovery.ai_providers import AIProviderConfig, validate_provider_config

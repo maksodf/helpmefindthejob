@@ -154,6 +154,7 @@ class HttpSeoPageRouteTests(unittest.TestCase):
         self.port = _free_port()
         env = {
             **os.environ,
+            "HELPMEFINDTHEJOB_AUDIT_SALT": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",  # deterministic test salt; silences audit-log dev warning in spawned subprocess
             "HELPMEFINDTHEJOB_DATA_DIR": self.tmp.name,
             "HELPMEFINDTHEJOB_ENV": "development",
         }

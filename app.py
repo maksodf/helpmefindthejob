@@ -5053,8 +5053,7 @@ class Handler(BaseHTTPRequestHandler):
                 # via the Cookie header on the next same-origin POST).
                 self.send_header(
                     "Set-Cookie",
-                    f"helpmefindthejob_ref={code}; Max-Age=2592000; Path=/; "
-                    "HttpOnly; SameSite=Lax",
+                    f"helpmefindthejob_ref={code}; Max-Age=2592000; Path=/; HttpOnly; SameSite=Lax",
                 )
                 self.end_headers()
                 return

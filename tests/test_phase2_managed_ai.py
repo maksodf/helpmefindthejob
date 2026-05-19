@@ -53,6 +53,14 @@ import json
 import os
 import unittest
 
+# Set the audit-log salt BEFORE the analysis import below triggers
+# the emitter's lazy init in `_emit_dispatch_audit`. PART N iteration
+# of the 2026-05-19 deep-audit sweep.
+os.environ.setdefault(
+    "HELPMEFINDTHEJOB_AUDIT_SALT",
+    "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+)
+
 from company_discovery.ai_providers import PROVIDER_OPTIONS, AIProviderConfig
 from company_discovery.analysis import _dispatch_provider
 

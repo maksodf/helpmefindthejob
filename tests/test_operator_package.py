@@ -21,6 +21,12 @@ class OperatorPackageTests(unittest.TestCase):
     def test_production_env_template_is_sourceable_by_readiness_check(self) -> None:
         env = os.environ.copy()
         env["ENV_FILE"] = "deploy/production.env.template"
+        # Deterministic test salt; silences audit-log dev warning when
+        # the readiness-check subprocess transitively imports audit_log.
+        env.setdefault(
+            "HELPMEFINDTHEJOB_AUDIT_SALT",
+            "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+        )
         result = subprocess.run(
             ["./scripts/production-readiness-check.sh"],
             cwd=ROOT,

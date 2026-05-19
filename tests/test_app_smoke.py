@@ -35,7 +35,12 @@ class AppSmokeTests(unittest.TestCase):
     def test_server_serves_ui_and_core_apis(self) -> None:
         with TemporaryDirectory() as tmp:
             port = free_port()
-            env = {**os.environ, "HELPMEFINDTHEJOB_DATA_DIR": tmp}
+            env = {
+                **os.environ,
+                "HELPMEFINDTHEJOB_DATA_DIR": tmp,
+                # deterministic test salt; silences audit-log dev warning
+                "HELPMEFINDTHEJOB_AUDIT_SALT": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+            }
             process = subprocess.Popen(
                 [sys.executable, str(ROOT / "app.py"), "--port", str(port)],
                 cwd=ROOT,

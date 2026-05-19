@@ -114,6 +114,7 @@ class HttpPhase2Tests(unittest.TestCase):
         cls.port = free_port()
         env = {
             **os.environ,
+            "HELPMEFINDTHEJOB_AUDIT_SALT": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",  # deterministic test salt; silences audit-log dev warning in spawned subprocess
             "HELPMEFINDTHEJOB_DATA_DIR": cls.tmp.name,
             "HELPMEFINDTHEJOB_ENV": "development",
             "HELPMEFINDTHEJOB_EMAIL_BACKEND": "console",

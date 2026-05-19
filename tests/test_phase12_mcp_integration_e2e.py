@@ -60,6 +60,17 @@ class _StdioMCPClient:
         self._tmp = tempfile.TemporaryDirectory()
         env = os.environ.copy()
         env["HELPMEFINDTHEJOB_DATA_DIR"] = self._tmp.name
+        # Deterministic test salt — silences the audit-log dev-mode
+        # UserWarning that would otherwise surface when the spawned
+        # subprocess lazy-initialises the default emitter. Subprocesses
+        # inherit os.environ but NOT the tests/__init__.py setdefault
+        # (unittest.discover doesn't import the test package).
+        import base64
+
+        env.setdefault(
+            "HELPMEFINDTHEJOB_AUDIT_SALT",
+            base64.b64encode(b"\x00" * 32).decode("ascii"),
+        )
         self._proc = subprocess.Popen(
             [sys.executable, str(MCP_SERVER)],
             stdin=subprocess.PIPE,

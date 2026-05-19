@@ -45,6 +45,7 @@ class SiteConfigEndpointTests(unittest.TestCase):
         port = _free_port()
         env = {
             **os.environ,
+            "HELPMEFINDTHEJOB_AUDIT_SALT": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",  # deterministic test salt; silences audit-log dev warning in spawned subprocess
             "HELPMEFINDTHEJOB_DATA_DIR": tmp.name,
             "HELPMEFINDTHEJOB_ENV": "development",
             **env_extra,
