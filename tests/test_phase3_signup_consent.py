@@ -106,11 +106,19 @@ class HttpRegisterConsentTests(unittest.TestCase):
             self.fail("server did not start")
 
     def _terminate(self) -> None:
-        self.proc.terminate()
         try:
-            self.proc.wait(timeout=3)
-        except subprocess.TimeoutExpired:
-            self.proc.kill()
+            self.proc.terminate()
+            try:
+                self.proc.wait(timeout=3)
+            except subprocess.TimeoutExpired:
+                self.proc.kill()
+        finally:
+            for stream in (self.proc.stdin, self.proc.stdout, self.proc.stderr):
+                if stream is not None:
+                    try:
+                        stream.close()
+                    except Exception:
+                        pass
 
     def _post(self, path: str, body: dict) -> tuple[int, dict]:
         request = Request(

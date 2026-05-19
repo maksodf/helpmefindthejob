@@ -138,8 +138,16 @@ class AppSmokeTests(unittest.TestCase):
                     exported = json.loads(response.read().decode("utf-8"))
                 self.assertEqual(exported["schemaVersion"], 1)
             finally:
-                process.terminate()
                 try:
-                    process.wait(timeout=3)
-                except subprocess.TimeoutExpired:
-                    process.kill()
+                    process.terminate()
+                    try:
+                        process.wait(timeout=3)
+                    except subprocess.TimeoutExpired:
+                        process.kill()
+                finally:
+                    for stream in (process.stdin, process.stdout, process.stderr):
+                        if stream is not None:
+                            try:
+                                stream.close()
+                            except Exception:
+                                pass

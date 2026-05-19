@@ -154,11 +154,19 @@ class HttpPhase2Tests(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls) -> None:
-        cls.process.terminate()
         try:
-            cls.process.wait(timeout=3)
-        except subprocess.TimeoutExpired:
-            cls.process.kill()
+            cls.process.terminate()
+            try:
+                cls.process.wait(timeout=3)
+            except subprocess.TimeoutExpired:
+                cls.process.kill()
+        finally:
+            for stream in (cls.process.stdin, cls.process.stdout, cls.process.stderr):
+                if stream is not None:
+                    try:
+                        stream.close()
+                    except Exception:
+                        pass
         cls.tmp.cleanup()
 
     def test_bootstrap_includes_phase2_fields(self) -> None:

@@ -69,11 +69,19 @@ class SiteConfigEndpointTests(unittest.TestCase):
         self.fail("server did not start")
 
     def _terminate(self, proc: subprocess.Popen) -> None:
-        proc.terminate()
         try:
-            proc.wait(timeout=3)
-        except subprocess.TimeoutExpired:
-            proc.kill()
+            proc.terminate()
+            try:
+                proc.wait(timeout=3)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+        finally:
+            for stream in (proc.stdin, proc.stdout, proc.stderr):
+                if stream is not None:
+                    try:
+                        stream.close()
+                    except Exception:
+                        pass
 
     def _get_site_config(self, base: str) -> dict:
         try:

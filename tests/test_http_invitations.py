@@ -126,11 +126,19 @@ class HttpInvitesAndResetTests(unittest.TestCase):
         self._wait_for_health()
 
     def _terminate(self) -> None:
-        self.process.terminate()
         try:
-            self.process.wait(timeout=3)
-        except subprocess.TimeoutExpired:
-            self.process.kill()
+            self.process.terminate()
+            try:
+                self.process.wait(timeout=3)
+            except subprocess.TimeoutExpired:
+                self.process.kill()
+        finally:
+            for stream in (self.process.stdin, self.process.stdout, self.process.stderr):
+                if stream is not None:
+                    try:
+                        stream.close()
+                    except Exception:
+                        pass
 
     def _wait_for_health(self) -> None:
         for _ in range(40):
