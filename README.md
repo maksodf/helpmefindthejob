@@ -314,10 +314,14 @@ caseload is structurally larger than their capacity. Their advice is
 rarely written down in a form a foreign-credentialed worker can act on
 alone at 11 p.m. between two shifts. The opportunity is to put that
 specialist knowledge into modular, MCP-composable tools — under an
-open licence, AI Act compliant by design, hosted by a Dutch stichting
-that outlasts any one maintainer — and to evaluate every feature by
-whether it reduces institutional cost while improving end-user
-outcomes. See
+open licence, with the EU AI Act compliance pack designed for the
+2 August 2026 high-risk-AI enforcement date (Articles 12 + 14 wired
+in code; Articles 9–11 + 13 + 15 + 27 + 49 documented in
+[`compliance/`](compliance/) as deployer doctrine and templates), hosted
+by a Dutch stichting that outlasts any one maintainer — and to evaluate
+every feature against a documented cost-saving hypothesis (the doctrine
+is the contract; measured outcomes pending the first institutional
+deployment). See
 [`docs/grant/08-cost-saving-doctrine.md`](docs/grant/08-cost-saving-doctrine.md)
 for the full doctrine.
 

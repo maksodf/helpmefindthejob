@@ -230,21 +230,157 @@ for post-grant cycles:
 
 ## Maintainer-side actions surfaced by this sweep
 
-Three concrete actions for the maintainer to take before / around
-NLnet submission:
+Five concrete actions for the maintainer to take before / around
+NLnet submission. Items 4 and 5 were added during the
+2026-05-19 pre-submission scope-tightening slice after the honest
+inventory surfaced gaps the dashboard did not previously name.
 
-1. **Upload the original signed tarball `directjob-scout-0.1.0.tar.gz`
+1. **GitHub repository visibility** — currently private (HTTP 404
+   to public readers). Settings → Change visibility → Public.
+   Blocks every URL claim in the README / STANDARDS / application
+   draft until flipped.
+2. **Upload the original signed tarball `directjob-scout-0.1.0.tar.gz`
    as a v0.1.0 GitHub release asset** — required to keep cosign
    verification working after the GitHub repo rename. The
    [`v0.1.0-signing.md`](../releases/v0.1.0-signing.md) verify
    command points at this asset by `--pattern`.
-2. **GitHub repository rename via Settings → Rename**
+3. **GitHub repository rename via Settings → Rename**
    (`maksodf/directjob-scout` → `maksodf/helpmefindthejob`). GitHub
    auto-redirects preserve old URLs for migration continuity.
-3. **DNS configuration for `helpmefindthejob.com`** — apex hosting
+4. **Merge working branch to `main`** — the working branch
+   `claude/project-analysis-bpHCo` is far ahead of `origin/main`
+   (about 25 commits). The `docs-publish` workflow targets the
+   working branch, so the GH Pages site only activates after the
+   merge. README badges currently hardcode `branch=claude/
+   project-analysis-bpHCo`; after the merge they need updating to
+   `branch=main` (this is a 5-min follow-up, not in this slice).
+5. **DNS configuration for `helpmefindthejob.com`** — apex hosting
    (CNAME → GitHub Pages) for the docs site +
    `demo.helpmefindthejob.com` for the public demo deployment.
+   The IP `89.31.143.90` currently responds HTTP 405 to HEAD
+   requests; nothing project-specific is served.
 
 These are infrastructure / hosting actions outside the slice's
 self-imposed Rules 4 + 5 (no infrastructure-vendor commitments
 without maintainer authorisation).
+
+---
+
+## Honesty caveats — what this dashboard does **NOT** record
+
+Added 2026-05-19 during the pre-submission scope-tightening slice
+(PART 9). The 9.1–9.9 sections above record positive runtime
+evidence — green test counts, axe scores, cosign verify success.
+This section names the limits of what that evidence proves.
+
+### Test-count caveats
+
+- **1043 tests** include ~36 BYO-AI provider tests that finish in
+  ~2 ms because they exclusively use `MagicMock` + `patch`. They
+  verify the dispatcher's branching logic, not whether real API
+  calls succeed against OpenAI / Anthropic / Gemini / DeepSeek /
+  OpenRouter / Claude Code. Only Ollama is exercised live (by the
+  bias-testing methodology and the journey integration). Live-key
+  verification of cloud providers is Phase 2.
+- **4 skipped tests** on bare-host: 2 are bias-methodology tests
+  (opt-in via `HELPMEFINDTHEJOB_RUN_BIAS_METHODOLOGY=1` / legacy
+  `DIRECTJOB_RUN_BIAS_METHODOLOGY=1`) and 2 are E2E browser tests
+  (opt-in via `E2E_BASE_URL` + `E2E_EMAIL` + `E2E_PASSWORD`). In
+  standard CI runs **the only true browser-driven coverage is
+  never exercised**. Bias methodology is exercised manually
+  (see §9.3).
+
+### Accessibility caveats
+
+- axe-core's own documentation states that automated tools catch
+  **20–50 %** of WCAG issues. "0/0/0/0 across 33 captures" means
+  "no axe findings", not "WCAG 2.2 AA conformant". Manual
+  screen-reader navigation (NVDA / VoiceOver), keyboard-only
+  navigation, focus-order on dynamic state transitions,
+  reduced-motion preference, cognitive accessibility (WCAG 2.2
+  3.2.6 / 3.3.1 / 3.3.7 / 3.3.8), bidi text / Arabic RTL — none
+  of these are covered by the automated audit.
+- The "33 captures" figure double-counts colour-scheme variants
+  (8 auth screens × 2 schemes + 4 dynamic states). True
+  **unique-surface** count is ~25.
+- "32 violation instances closed" counts each Fix in
+  `ACCESSIBILITY.md` plus the auth-surface remediation hits.
+  Some Fixes (e.g. Fix 4 "12 primary-button instances cleared")
+  closed multiple instances per Fix label.
+
+### EU AI Act caveats
+
+- The 11-document `compliance/` pack is **mostly doctrine and
+  templates**. Runtime enforcement is partial:
+  - Article 12 (audit log) — **wired in code** (PART 1.1 of the
+    pre-submission slice added production-mode fail-fast on
+    missing salt; tamper-evidence + centralised log forwarding =
+    Phase 2).
+  - Article 14 (human oversight) — `/api/admin/oversight/queue`
+    endpoint exists; **never tested end-to-end as a real admin
+    user**, only via unit tests.
+  - Articles 9, 10, 11 + Annex IV, 13, 15, 27, 49 — deployer
+    doctrine + templates. No deployer has filled them for any
+    reference deployment.
+- Article 15 (accuracy + bias-testing) methodology is at **33 %
+  execution** (2 of 6 scenario classes). The most recent run
+  (`bias-testing-2026-05-19.md`) found 10 ONE-OFF OOB
+  divergences in fit-scoring on `llama3.1:8b` — within prior
+  runs' non-determinism band but **the test failed** under the
+  no-tolerance-manipulation rule.
+
+### ESCO + EURES caveats
+
+- The ESCO reference dataset (`reference/esco/`) is a **curated
+  subset**: 30 occupations + 50 skills covering the persona
+  panel + Bundesagentur 2025 shortage list. Real ESCO has ~3 000
+  occupations + ~13 500 skills. Queries outside the curated set
+  return nothing.
+- The EURES integration is a **JSON projection contract**, not a
+  transport. No EURES API client exists; no jobs are pushed to
+  EURES anywhere.
+
+### cosign verification caveats
+
+- The `cosign verify-blob` runtime evidence (§9.5) was captured
+  **today, pre-rename**, against the current GitHub auto-archive.
+  After the GitHub repo rename (maintainer action #3 above), the
+  auto-archive top-level directory becomes `helpmefindthejob-0.1.0/`
+  and the bytes — and SHA-256 — diverge. Verification then
+  requires the maintainer to attach the original signed tarball
+  as a release asset (action #2 above).
+- The cosign key is **model b** (long-lived ECDSA P-256, not
+  registered with Sigstore's transparency log). Every verifier
+  sees `--insecure-ignore-tlog` and cosign's "insecure practice"
+  warning.
+
+### Cost-saving doctrine caveats
+
+- The doctrine documents 8 testable mechanisms in
+  `docs/grant/08-cost-saving-doctrine.md`. **Measured outcomes
+  are zero today** — no institutional deployment has produced
+  the data needed to verify any of the 8 mechanisms. The
+  doctrine is honest design intent, not a measured claim.
+
+### Domain + visibility caveats
+
+- `helpmefindthejob.com` DNS resolves to `89.31.143.90`. HTTP
+  returns 405; HTTPS does not respond. The project's claimed
+  public surface is **not currently served** at any URL.
+- The maintainer's GitHub repo at `maksodf/directjob-scout` is
+  **private**. Every `github.com/maksodf/...` link in the
+  codebase 404s for unauthenticated readers (e.g. an NLnet
+  reviewer) until visibility is flipped to public.
+
+### Phase 2 backlog
+
+- The honest-inventory follow-up surfaced 65 distinct items;
+  12 are closed in this slice; **53 are catalogued for Phase 2**
+  at [`phase2-backlog-2026-05-19.md`](phase2-backlog-2026-05-19.md).
+  That file is the durable record of what is tracked but
+  deferred.
+
+This caveats block is required honesty doctrine: the dashboard's
+positive evidence is genuine, but the positive evidence is **the
+floor of what we have proven, not the ceiling of what is
+required**. The Phase 2 backlog catalogues the remaining ceiling.

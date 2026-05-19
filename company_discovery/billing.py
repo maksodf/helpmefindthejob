@@ -30,7 +30,6 @@ dedicated billing platform.
 from __future__ import annotations
 
 import json
-import os
 import ssl
 import urllib.error
 import urllib.parse
@@ -39,6 +38,8 @@ from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable, Protocol
+
+from company_discovery.env_compat import get_env
 
 
 def _now_iso() -> str:
@@ -316,7 +317,7 @@ StripeTransport = Callable[[str, str, dict[str, str]], dict[str, object]]
 
 
 def _default_stripe_transport(method: str, url: str, form: dict[str, str]) -> dict[str, object]:
-    api_key = os.environ.get("DIRECTJOB_STRIPE_API_KEY", "")
+    api_key = get_env("HELPMEFINDTHEJOB_STRIPE_API_KEY", "DIRECTJOB_STRIPE_API_KEY", "")
     if not api_key:
         raise RuntimeError("billing_backend_unconfigured: set DIRECTJOB_STRIPE_API_KEY")
     body = urllib.parse.urlencode(form).encode("utf-8")
@@ -364,14 +365,26 @@ class StripeBillingBackend:
         transport: StripeTransport | None = None,
     ) -> None:
         self.path = path
-        self.api_key = os.environ.get("DIRECTJOB_STRIPE_API_KEY", "")
-        self.success_url = os.environ.get("DIRECTJOB_STRIPE_SUCCESS_URL", "")
-        self.cancel_url = os.environ.get("DIRECTJOB_STRIPE_CANCEL_URL", "")
+        self.api_key = get_env("HELPMEFINDTHEJOB_STRIPE_API_KEY", "DIRECTJOB_STRIPE_API_KEY", "")
+        self.success_url = get_env(
+            "HELPMEFINDTHEJOB_STRIPE_SUCCESS_URL", "DIRECTJOB_STRIPE_SUCCESS_URL", ""
+        )
+        self.cancel_url = get_env(
+            "HELPMEFINDTHEJOB_STRIPE_CANCEL_URL", "DIRECTJOB_STRIPE_CANCEL_URL", ""
+        )
         self.price_lookup = {
-            "team": os.environ.get("DIRECTJOB_STRIPE_PRICE_TEAM", ""),
-            "org": os.environ.get("DIRECTJOB_STRIPE_PRICE_ORG", ""),
-            "pro_monthly": os.environ.get("DIRECTJOB_STRIPE_PRICE_PRO_MONTHLY", ""),
-            "pro_annual": os.environ.get("DIRECTJOB_STRIPE_PRICE_PRO_ANNUAL", ""),
+            "team": get_env(
+                "HELPMEFINDTHEJOB_STRIPE_PRICE_TEAM", "DIRECTJOB_STRIPE_PRICE_TEAM", ""
+            ),
+            "org": get_env("HELPMEFINDTHEJOB_STRIPE_PRICE_ORG", "DIRECTJOB_STRIPE_PRICE_ORG", ""),
+            "pro_monthly": get_env(
+                "HELPMEFINDTHEJOB_STRIPE_PRICE_PRO_MONTHLY",
+                "DIRECTJOB_STRIPE_PRICE_PRO_MONTHLY",
+                "",
+            ),
+            "pro_annual": get_env(
+                "HELPMEFINDTHEJOB_STRIPE_PRICE_PRO_ANNUAL", "DIRECTJOB_STRIPE_PRICE_PRO_ANNUAL", ""
+            ),
         }
         self._transport: StripeTransport = transport or _default_stripe_transport
 
@@ -455,7 +468,11 @@ class StripeBillingBackend:
 
 
 def build_backend(*, data_dir: Path | None = None) -> BillingBackend:
-    backend = (os.environ.get("DIRECTJOB_BILLING_BACKEND") or "manual").strip().casefold()
+    backend = (
+        (get_env("HELPMEFINDTHEJOB_BILLING_BACKEND", "DIRECTJOB_BILLING_BACKEND") or "manual")
+        .strip()
+        .casefold()
+    )
     base = Path(data_dir) if data_dir else Path("data")
     if backend == "stripe":
         return StripeBillingBackend(path=base / "billing.json")

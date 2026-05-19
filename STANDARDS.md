@@ -10,8 +10,8 @@ Helpmefindthejob is **standards-anchored on purpose**. Adopters inherit interope
 | Apache Individual Contributor License Agreement model | [`cla.md`](cla.md) — adapted, no novel terms | Shipped |
 | [SPDX-License-Identifier](https://spdx.org/) | `# SPDX-License-Identifier: Apache-2.0` on every Python source file; `.pre-commit-config.yaml` enforces on staged files | Shipped |
 | [Contributor Covenant 2.1](https://www.contributor-covenant.org/version/2/1/code_of_conduct/) | [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) (adopted by reference to canonical CC BY 4.0 source) | Shipped |
-| [Semantic Versioning 2.0.0](https://semver.org/) | MCP tool catalogue version policy in [`docs/mcp-server.md`](docs/mcp-server.md); applied to release tags from `v0.1.0` onward | Shipped (policy); first tagged release in Week 3 §3.3 |
-| [Keep a Changelog](https://keepachangelog.com/) | `CHANGELOG.md` format committed in Week 3 §3.3 | Planned |
+| [Semantic Versioning 2.0.0](https://semver.org/) | MCP tool catalogue version policy in [`docs/mcp-server.md`](docs/mcp-server.md); applied to release tags from `v0.1.0` onward | Shipped — `v0.1.0` released 2026-05-18 with annotated tag, cosign signature, CycloneDX SBOM. |
+| [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/) | [`CHANGELOG.md`](CHANGELOG.md) at repo root; `[Unreleased]` + `[0.1.0]` blocks with Added/Changed/Deprecated/Removed/Fixed/Security sections. | Shipped. |
 
 ## Protocols + interfaces
 
@@ -21,7 +21,7 @@ Helpmefindthejob is **standards-anchored on purpose**. Adopters inherit interope
 | [JSON-RPC 2.0](https://www.jsonrpc.org/specification) | MCP transport in `mcp_server.py` (over stdio) | Shipped |
 | [JSON Schema Draft 7](https://json-schema.org/specification-links#draft-7) | Every tool's `inputSchema` in [`company_discovery/mcp_tools.py`](company_discovery/mcp_tools.py); enforced by `jsonschema.Draft7Validator` before `tools/call` dispatch | Shipped |
 | [RFC 7807 — Problem Details for HTTP APIs](https://www.rfc-editor.org/rfc/rfc7807) | MCP `tools/call` validation-failure payloads (`status`, `type`, `title`, `detail`, `instance`, `validationPath`, `violatedRule`) | Shipped |
-| [RFC 9116 — `/.well-known/security.txt`](https://www.rfc-editor.org/rfc/rfc9116) | [`static/.well-known/security.txt`](static/.well-known/security.txt) served by `app.py` at `/.well-known/security.txt` (`text/plain; charset=utf-8`, 200 verified via curl probe 2026-05-19). Lists GitHub Security Advisories + placeholder email per Decision 12. Cross-referenced from [`SECURITY.md`](SECURITY.md). | Shipped |
+| [RFC 9116 — `/.well-known/security.txt`](https://www.rfc-editor.org/rfc/rfc9116) | [`static/.well-known/security.txt`](static/.well-known/security.txt) served by `app.py` at `/.well-known/security.txt` (`text/plain; charset=utf-8`, 200 verified via curl probe 2026-05-19). Lists GitHub Security Advisories + `security@helpmefindthejob.com` per the Open R8 reopen (Decision 22 supersedes the Decision-12 placeholder convention). Cross-referenced from [`SECURITY.md`](SECURITY.md). | Shipped |
 | [ISO 8601](https://www.iso.org/iso-8601-date-and-time-format.html) date/time | All timestamps server-side and in audit-log entries (`data/admin_audit.log`) | Shipped |
 | [ISO 639-1](https://www.loc.gov/standards/iso639-2/php/code_list.php) language tags | i18n locale identifiers (`en`, `de`); locale parser normalises `en_US`/`en-GB`/`DE` etc. | Shipped |
 
@@ -31,8 +31,8 @@ Helpmefindthejob is **standards-anchored on purpose**. Adopters inherit interope
 |---|---|---|
 | [schema.org JobPosting](https://schema.org/JobPosting) | Output shape of `scan_company_career_page`, `extract_direct_jobs_from_company_site`, `import_discovered_job` | Shipped (shape); SEO `/jobs/<slug>` pages emit JSON-LD JobPosting |
 | [schema.org Organization](https://schema.org/Organization) | Output shape of `suggest_relevant_companies`, `add_company_to_watchlist` | Shipped |
-| [ESCO](https://esco.ec.europa.eu/) — European Skills, Competences, Qualifications and Occupations | Persona skill mapping; planned `query_esco_skill` MCP tool in §2.3 will expose taxonomy lookup | §2.3 expansion + §2.4 dataset integration |
-| [EURES](https://eures.europa.eu/) job-posting schema | Planned `export_eures_compatible` MCP tool in §2.3 will emit EURES-shaped exports | §2.3 + §2.4 |
+| [ESCO](https://esco.ec.europa.eu/) — European Skills, Competences, Qualifications and Occupations | **ESCO-aligned curated reference dataset** at [`reference/esco/`](reference/esco/) — 30 occupations + 50 skills covering the seven-persona panel + the Bundesagentur 2025 shortage list. Consumed by the `query_esco_skill` MCP tool. | Shipped — curated subset only. Full taxonomy integration (~3 000 occupations + ~13 500 skills) is Phase 2 work. |
+| [EURES](https://eures.europa.eu/) job-posting schema | **EURES-compatible projection contract** — `export_eures_compatible` MCP tool emits a JSON shape matching the EURES schema; tested by [`tests/test_phase12_esco_eures.py`](tests/test_phase12_esco_eures.py). | Shipped — projection only. Live EURES API transport is Phase 2 work. |
 | [BIBB / Anabin](https://anabin.kmk.org/anabin.html) Anerkennung references | German Anerkennung path guidance in journey state machine; not directly schema-imported, but cited in user-facing flows | Cited (content); schema-import is post-grant scope |
 
 ## Accessibility + transparency
@@ -47,8 +47,8 @@ Helpmefindthejob is **standards-anchored on purpose**. Adopters inherit interope
 
 | Standard | Where | Status |
 |---|---|---|
-| [GDPR](https://eur-lex.europa.eu/eli/reg/2016/679/oj) — data-minimisation, user-export, user-deletion paths | Throughout; audit-log for admin actions, encrypted PII at rest, 7-day deletion grace, per-user data isolation | Shipped (process); legal counsel review in Week 3 |
-| [ChaCha20-Poly1305 AEAD](https://www.rfc-editor.org/rfc/rfc8439) | [`company_discovery/crypto_kit.py`](company_discovery/crypto_kit.py) for `profile.cv_text` and `users.totp_secret` columns; AAD = user_id; HKDF-SHA256 ([RFC 5869](https://www.rfc-editor.org/rfc/rfc5869)) for key derivation from `DIRECTJOB_SECRET_KEY` | Shipped |
+| [GDPR](https://eur-lex.europa.eu/eli/reg/2016/679/oj) — data-minimisation, user-export, user-deletion paths | Throughout; audit-log for admin actions, encrypted PII at rest, 7-day deletion grace, per-user data isolation | Shipped (process); legal counsel review remains Phase 2 — no independent DPIA published. |
+| [ChaCha20-Poly1305 AEAD](https://www.rfc-editor.org/rfc/rfc8439) | [`company_discovery/crypto_kit.py`](company_discovery/crypto_kit.py) for `profile.cv_text` and `users.totp_secret` columns; AAD = user_id; HKDF-SHA256 ([RFC 5869](https://www.rfc-editor.org/rfc/rfc5869)) for key derivation from `HELPMEFINDTHEJOB_SECRET_KEY` (legacy `DIRECTJOB_SECRET_KEY` accepted with a DeprecationWarning via the `env_compat` shim) | Shipped |
 | [TOTP / HOTP (RFC 6238 / RFC 4226)](https://www.rfc-editor.org/rfc/rfc6238) 2FA | [`company_discovery/auth.py`](company_discovery/auth.py) `verify_totp`, `_totp_at` | Shipped |
 | [otpauth:// URI scheme](https://github.com/google/google-authenticator/wiki/Key-Uri-Format) for QR-code provisioning | `_format_otpauth_url` in `auth.py` | Shipped |
 
@@ -58,7 +58,7 @@ Helpmefindthejob is **standards-anchored on purpose**. Adopters inherit interope
 |---|---|---|
 | [OCI image format](https://github.com/opencontainers/image-spec) | `Dockerfile`, `docker-compose.yml`, `docker-compose.prod.yml`; image named `helpmefindthejob:latest` independent of local repo directory | Shipped |
 | [Nix flake reproducible build](https://nixos.wiki/wiki/Flakes) | [`flake.nix`](flake.nix) + [`flake.lock`](flake.lock) at repo root; pins `nixos-25.05` nixpkgs commit + Python 3.12; `nix develop` / `nix run` / `nix flake check` documented in [`docs/deployment-recipe.md`](docs/deployment-recipe.md) §12 | Shipped |
-| [OpenSSF Scorecard](https://github.com/ossf/scorecard) | Workflow + badge in Week 3 §3.2 | Planned |
+| [OpenSSF Scorecard](https://github.com/ossf/scorecard) | [`.github/workflows/scorecard.yml`](.github/workflows/scorecard.yml) (weekly cron + push-to-main) — SARIF results uploaded to the GitHub Security tab. All six project workflows pinned to full 40-char commit SHAs per OpenSSF "pinned-dependencies". README badge linked at the top of the project README. | Shipped |
 | [CycloneDX SBOM](https://cyclonedx.org/) | [`docs/releases/v0.1.0-sbom.json`](docs/releases/v0.1.0-sbom.json) generated by `cyclonedx-py environment` v7.3.0 (CycloneDX 1.6 format; 91 components covering runtime + dev deps + transitives). Committed under `docs/releases/` AND attached to the v0.1.0 GitHub Release. | Shipped |
 | [cosign](https://docs.sigstore.dev/cosign/overview/) signed releases | v0.1.0 source tarball cosign-signed with a long-lived ECDSA P-256 key pair (cosign 3.0.6, model b). Bundle + public key: [`docs/releases/v0.1.0-source.tar.gz.sigstore`](docs/releases/v0.1.0-source.tar.gz.sigstore) + [`docs/releases/v0.1.0-cosign.pub`](docs/releases/v0.1.0-cosign.pub). Verify with `cosign verify-blob ... --insecure-ignore-tlog`. v0.2.0+ plans to switch to keyless via GH Actions OIDC; full doc at [`docs/releases/v0.1.0-signing.md`](docs/releases/v0.1.0-signing.md). | Shipped |
 | [Conventional Commits](https://www.conventionalcommits.org/) | Commit-message convention in [`CONTRIBUTING.md`](CONTRIBUTING.md) | Shipped |

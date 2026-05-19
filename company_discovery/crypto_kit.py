@@ -48,9 +48,10 @@ from __future__ import annotations
 import base64
 import hashlib
 import hmac
-import os
 import secrets
 from typing import Final
+
+from company_discovery.env_compat import get_env
 
 _FORMAT_PREFIX: Final[str] = "aead:v1:"
 _NONCE_BYTES: Final[int] = 12  # ChaCha20-Poly1305 nonce length
@@ -77,7 +78,7 @@ def _hkdf_sha256(secret: bytes, *, salt: bytes, info: bytes, length: int) -> byt
 def resolve_data_key(secret_key: str) -> bytes:
     """Return the 32-byte master key, fetching from env or deriving."""
 
-    explicit = os.environ.get("DIRECTJOB_DATA_KEY", "").strip()
+    explicit = get_env("HELPMEFINDTHEJOB_DATA_KEY", "DIRECTJOB_DATA_KEY", "").strip()
     if explicit:
         try:
             decoded = base64.b64decode(explicit)

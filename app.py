@@ -106,6 +106,7 @@ from company_discovery.email_transport import (
     build_transport,
     email_from_address,
 )
+from company_discovery.env_compat import get_env
 from company_discovery.exports import (
     discovered_jobs_to_csv,
     discovered_jobs_to_markdown,
@@ -162,7 +163,9 @@ from company_discovery.watchlist_templates import get_template, list_templates
 
 ROOT = Path(__file__).parent
 STATIC_ROOT = ROOT / "static"
-DATA_ROOT = Path(os.environ.get("COMPANY_DISCOVERY_DATA_DIR", str(ROOT / "data")))
+DATA_ROOT = Path(
+    get_env("HELPMEFINDTHEJOB_DATA_DIR", "COMPANY_DISCOVERY_DATA_DIR", str(ROOT / "data"))
+)
 DATA_PATH = DATA_ROOT / "company_discovery.sqlite3"
 AUTH_PATH = DATA_ROOT / "auth.sqlite3"
 AI_CONFIG_PATH = DATA_ROOT / "ai_provider.json"
@@ -179,14 +182,17 @@ PASSWORD_RESET_REQUEST_WINDOW = 600
 # register 7+ throwaway accounts in quick succession). Production
 # stays at the default of 3.
 try:
-    REGISTER_REQUEST_LIMIT = int(os.environ.get("DIRECTJOB_REGISTER_LIMIT") or 3)
+    REGISTER_REQUEST_LIMIT = int(
+        get_env("HELPMEFINDTHEJOB_REGISTER_LIMIT", "DIRECTJOB_REGISTER_LIMIT") or 3
+    )
 except ValueError:
     REGISTER_REQUEST_LIMIT = 3
 REGISTER_REQUEST_WINDOW = 600
 REQUIRE_EMAIL_VERIFICATION = (
-    os.environ.get("DIRECTJOB_REQUIRE_EMAIL_VERIFICATION") or ""
+    get_env("HELPMEFINDTHEJOB_REQUIRE_EMAIL_VERIFICATION", "DIRECTJOB_REQUIRE_EMAIL_VERIFICATION")
+    or ""
 ).strip().casefold() in ("true", "1", "yes")
-APP_PUBLIC_URL = os.environ.get("DIRECTJOB_PUBLIC_URL") or ""
+APP_PUBLIC_URL = get_env("HELPMEFINDTHEJOB_PUBLIC_URL", "DIRECTJOB_PUBLIC_URL") or ""
 LOCAL_USER_ID = "local-user"
 MAX_JSON_BODY_BYTES = 5_000_000
 DEFAULT_WATCHLIST_SCHEDULE = {
@@ -198,19 +204,28 @@ DEFAULT_WATCHLIST_SCHEDULE = {
 APP_VERSION = "0.79.4"
 EXPORT_SCHEMA_VERSION = 1
 SESSION_COOKIE_NAME = "directjob_session"
-APP_ENV = os.environ.get("COMPANY_DISCOVERY_ENV", "development").strip().casefold()
+APP_ENV = get_env("HELPMEFINDTHEJOB_ENV", "COMPANY_DISCOVERY_ENV", "development").strip().casefold()
 COOKIE_SECURE = (
-    os.environ.get("DIRECTJOB_COOKIE_SECURE", "true" if APP_ENV == "production" else "false")
+    get_env(
+        "HELPMEFINDTHEJOB_COOKIE_SECURE",
+        "DIRECTJOB_COOKIE_SECURE",
+        "true" if APP_ENV == "production" else "false",
+    )
     .strip()
     .casefold()
     == "true"
 )
 ALLOW_REGISTRATION = (
-    os.environ.get("DIRECTJOB_ALLOW_REGISTRATION", "false").strip().casefold() == "true"
+    get_env("HELPMEFINDTHEJOB_ALLOW_REGISTRATION", "DIRECTJOB_ALLOW_REGISTRATION", "false")
+    .strip()
+    .casefold()
+    == "true"
 )
-SECRET_KEY = os.environ.get("DIRECTJOB_SECRET_KEY") or ("dev-" + secrets.token_urlsafe(48))
-ADMIN_EMAIL = os.environ.get("DIRECTJOB_ADMIN_EMAIL")
-ADMIN_PASSWORD = os.environ.get("DIRECTJOB_ADMIN_PASSWORD")
+SECRET_KEY = get_env("HELPMEFINDTHEJOB_SECRET_KEY", "DIRECTJOB_SECRET_KEY") or (
+    "dev-" + secrets.token_urlsafe(48)
+)
+ADMIN_EMAIL = get_env("HELPMEFINDTHEJOB_ADMIN_EMAIL", "DIRECTJOB_ADMIN_EMAIL")
+ADMIN_PASSWORD = get_env("HELPMEFINDTHEJOB_ADMIN_PASSWORD", "DIRECTJOB_ADMIN_PASSWORD")
 
 
 def jsonable(value: Any) -> Any:
@@ -448,13 +463,15 @@ class AppState:
         )
         self.billing_backend = build_billing_backend(data_dir=self.data_path.parent)
         providers: list = [CuratedSearchProvider()]
-        if os.environ.get("DIRECTJOB_DUCKDUCKGO_DISABLED", "").strip().lower() not in (
+        if get_env(
+            "HELPMEFINDTHEJOB_DUCKDUCKGO_DISABLED", "DIRECTJOB_DUCKDUCKGO_DISABLED", ""
+        ).strip().lower() not in (
             "1",
             "true",
             "yes",
         ):
             providers.append(DuckDuckGoSearchProvider())
-        brave_key = os.environ.get("DIRECTJOB_BRAVE_API_KEY", "").strip()
+        brave_key = get_env("HELPMEFINDTHEJOB_BRAVE_API_KEY", "DIRECTJOB_BRAVE_API_KEY", "").strip()
         if brave_key:
             providers.append(BraveSearchProvider(api_key=brave_key))
         self.discovery_engine = DiscoveryEngine(providers=providers)
@@ -462,7 +479,14 @@ class AppState:
         # AggregatedJob rows rather than DiscoveryResult companies.
         self.aggregator_cache = AggregatorResultCache(
             self.data_path.parent / "aggregator_cache.sqlite3",
-            ttl_seconds=int(os.environ.get("DIRECTJOB_AGGREGATOR_TTL_SECONDS", "3600") or "3600"),
+            ttl_seconds=int(
+                get_env(
+                    "HELPMEFINDTHEJOB_AGGREGATOR_TTL_SECONDS",
+                    "DIRECTJOB_AGGREGATOR_TTL_SECONDS",
+                    "3600",
+                )
+                or "3600"
+            ),
         )
         aggregator_providers = list(default_no_auth_providers())
         # Future: signup providers (Adzuna, EURES, Bundesagentur) plug in here.
@@ -1074,14 +1098,27 @@ class AppState:
         "details": "…"}`` or a primitive count, never a secret.
         """
 
-        backup_remote = os.environ.get("DIRECTJOB_BACKUP_REMOTE", "").strip()
-        backup_backend = os.environ.get("DIRECTJOB_BACKUP_BACKEND", "").strip() or "local"
+        backup_remote = get_env(
+            "HELPMEFINDTHEJOB_BACKUP_REMOTE", "DIRECTJOB_BACKUP_REMOTE", ""
+        ).strip()
+        backup_backend = (
+            get_env("HELPMEFINDTHEJOB_BACKUP_BACKEND", "DIRECTJOB_BACKUP_BACKEND", "").strip()
+            or "local"
+        )
         push_configured = is_push_configured()
-        brave_configured = bool(os.environ.get("DIRECTJOB_BRAVE_API_KEY", "").strip())
+        brave_configured = bool(
+            get_env("HELPMEFINDTHEJOB_BRAVE_API_KEY", "DIRECTJOB_BRAVE_API_KEY", "").strip()
+        )
         stripe_active = os.environ.get(
             "DIRECTJOB_BILLING_BACKEND", ""
-        ).strip() == "stripe" and bool(os.environ.get("DIRECTJOB_STRIPE_API_KEY", "").strip())
-        webhook_configured = bool(os.environ.get("DIRECTJOB_STRIPE_WEBHOOK_SECRET", "").strip())
+        ).strip() == "stripe" and bool(
+            get_env("HELPMEFINDTHEJOB_STRIPE_API_KEY", "DIRECTJOB_STRIPE_API_KEY", "").strip()
+        )
+        webhook_configured = bool(
+            get_env(
+                "HELPMEFINDTHEJOB_STRIPE_WEBHOOK_SECRET", "DIRECTJOB_STRIPE_WEBHOOK_SECRET", ""
+            ).strip()
+        )
         # Subscription / membership counts (cheap; in-memory).
         push_subs = sum(1 for _ in self.repository.push_subscriptions.values())
         memberships = sum(1 for _ in self.repository.workspace_memberships.values())
@@ -1106,7 +1143,10 @@ class AppState:
             "billing": {
                 "backend": backup_backend
                 if False
-                else (os.environ.get("DIRECTJOB_BILLING_BACKEND") or "manual"),
+                else (
+                    get_env("HELPMEFINDTHEJOB_BILLING_BACKEND", "DIRECTJOB_BILLING_BACKEND")
+                    or "manual"
+                ),
                 "stripeActive": stripe_active,
                 "webhookConfigured": webhook_configured,
             },
@@ -1117,7 +1157,11 @@ class AppState:
             },
             "workspaces": {"membershipsTotal": memberships},
             "i18n": {"locales": ["en", "de"]},
-            "legalReviewed": os.environ.get("DIRECTJOB_LEGAL_REVIEWED", "false").strip().lower()
+            "legalReviewed": get_env(
+                "HELPMEFINDTHEJOB_LEGAL_REVIEWED", "DIRECTJOB_LEGAL_REVIEWED", "false"
+            )
+            .strip()
+            .lower()
             == "true",
         }
 
@@ -2336,7 +2380,10 @@ class AppState:
             if company
             else ((job.also_seen_at and next(iter(job.also_seen_at), "")) or "")
         )
-        public_url = os.environ.get("DIRECTJOB_PUBLIC_URL") or "https://app.helpmefindthejob.com"
+        public_url = (
+            get_env("HELPMEFINDTHEJOB_PUBLIC_URL", "DIRECTJOB_PUBLIC_URL")
+            or "https://app.helpmefindthejob.com"
+        )
         result = post_high_fit_notification(
             webhook_url=url,
             job_title=job.title or "",
@@ -2965,23 +3012,41 @@ class AppState:
         """Construct an AIProviderConfig that points the dispatcher at
         the operator's managed key — used as fallback when the user is
         in Manual mode. Returns None when no managed key is configured."""
-        managed_key = (os.environ.get("DIRECTJOB_MANAGED_AI_KEY") or "").strip()
+        managed_key = (
+            get_env("HELPMEFINDTHEJOB_MANAGED_AI_KEY", "DIRECTJOB_MANAGED_AI_KEY") or ""
+        ).strip()
         if not managed_key:
             return None
         # Opt-in flag so the operator decides whether to spend tokens
         # on chat-routing classifications.
-        enabled = (os.environ.get("DIRECTJOB_CHAT_AI_ROUTER") or "").strip().lower()
+        enabled = (
+            (get_env("HELPMEFINDTHEJOB_CHAT_AI_ROUTER", "DIRECTJOB_CHAT_AI_ROUTER") or "")
+            .strip()
+            .lower()
+        )
         if enabled not in {"true", "1", "yes", "on"}:
             return None
-        upstream = (os.environ.get("DIRECTJOB_MANAGED_AI_PROVIDER") or "openai").strip().lower()
+        upstream = (
+            (
+                get_env("HELPMEFINDTHEJOB_MANAGED_AI_PROVIDER", "DIRECTJOB_MANAGED_AI_PROVIDER")
+                or "openai"
+            )
+            .strip()
+            .lower()
+        )
         if upstream not in {"openai", "anthropic", "google_gemini", "deepseek", "openrouter"}:
             return None
         return AIProviderConfig(
             provider_id=upstream,
             invocation_mode="api",
-            model=(os.environ.get("DIRECTJOB_MANAGED_AI_MODEL") or "").strip(),
+            model=(
+                get_env("HELPMEFINDTHEJOB_MANAGED_AI_MODEL", "DIRECTJOB_MANAGED_AI_MODEL") or ""
+            ).strip(),
             credential_reference="DIRECTJOB_MANAGED_AI_KEY",
-            base_url=(os.environ.get("DIRECTJOB_MANAGED_AI_BASE_URL") or "").strip(),
+            base_url=(
+                get_env("HELPMEFINDTHEJOB_MANAGED_AI_BASE_URL", "DIRECTJOB_MANAGED_AI_BASE_URL")
+                or ""
+            ).strip(),
             command="",
             notes="managed-chat-router",
         )
@@ -4489,7 +4554,9 @@ class AppState:
         import hashlib as _hashlib
         import hmac as _hmac
 
-        secret = os.environ.get("DIRECTJOB_SECRET_KEY", "dev-secret").encode("utf-8")
+        secret = get_env(
+            "HELPMEFINDTHEJOB_SECRET_KEY", "DIRECTJOB_SECRET_KEY", "dev-secret"
+        ).encode("utf-8")
         digest = _hmac.new(secret, user_id.encode("utf-8"), _hashlib.sha256).hexdigest()
         return digest[:24]
 
@@ -4871,8 +4938,15 @@ class Handler(BaseHTTPRequestHandler):
                 # the frontend injects the script. When not set, we ship
                 # zero third-party requests, which is the documented
                 # default (see docs/cookie-audit.md).
-                analytics_url = (os.environ.get("DIRECTJOB_ANALYTICS_SCRIPT_URL") or "").strip()
-                analytics_domain = (os.environ.get("DIRECTJOB_ANALYTICS_DOMAIN") or "").strip()
+                analytics_url = (
+                    get_env(
+                        "HELPMEFINDTHEJOB_ANALYTICS_SCRIPT_URL", "DIRECTJOB_ANALYTICS_SCRIPT_URL"
+                    )
+                    or ""
+                ).strip()
+                analytics_domain = (
+                    get_env("HELPMEFINDTHEJOB_ANALYTICS_DOMAIN", "DIRECTJOB_ANALYTICS_DOMAIN") or ""
+                ).strip()
                 self.send_json(
                     {
                         "analytics": {
@@ -5142,7 +5216,8 @@ class Handler(BaseHTTPRequestHandler):
                     )
                     return
                 public_url = (
-                    os.environ.get("DIRECTJOB_PUBLIC_URL") or "https://app.helpmefindthejob.com"
+                    get_env("HELPMEFINDTHEJOB_PUBLIC_URL", "DIRECTJOB_PUBLIC_URL")
+                    or "https://app.helpmefindthejob.com"
                 )
                 result = post_high_fit_notification(
                     webhook_url=url,
@@ -5206,7 +5281,14 @@ class Handler(BaseHTTPRequestHandler):
                 # See compliance/human-oversight-guide.md.
                 if not self.require_admin(session):
                     return
-                mode = (os.environ.get("DIRECTJOB_HUMAN_OVERSIGHT_MODE", "") or "").lower()
+                mode = (
+                    get_env(
+                        "HELPMEFINDTHEJOB_HUMAN_OVERSIGHT_MODE",
+                        "DIRECTJOB_HUMAN_OVERSIGHT_MODE",
+                        "",
+                    )
+                    or ""
+                ).lower()
                 if mode not in {"enabled", "true", "1", "yes", "on"}:
                     self.send_json(
                         {
@@ -5444,7 +5526,9 @@ class Handler(BaseHTTPRequestHandler):
                     )
                     return
                 raw = self.rfile.read(length)
-                expected_secret = os.environ.get("DIRECTJOB_INBOUND_EMAIL_SECRET", "").strip()
+                expected_secret = get_env(
+                    "HELPMEFINDTHEJOB_INBOUND_EMAIL_SECRET", "DIRECTJOB_INBOUND_EMAIL_SECRET", ""
+                ).strip()
                 if not expected_secret:
                     self.send_error_json(
                         HTTPStatus.SERVICE_UNAVAILABLE,
@@ -5559,7 +5643,9 @@ class Handler(BaseHTTPRequestHandler):
                     return
                 raw = self.rfile.read(length)
                 signature_header = self.headers.get("Stripe-Signature", "")
-                secret = os.environ.get("DIRECTJOB_STRIPE_WEBHOOK_SECRET", "").strip()
+                secret = get_env(
+                    "HELPMEFINDTHEJOB_STRIPE_WEBHOOK_SECRET", "DIRECTJOB_STRIPE_WEBHOOK_SECRET", ""
+                ).strip()
                 if not secret:
                     self.send_error_json(
                         HTTPStatus.SERVICE_UNAVAILABLE,
@@ -5582,10 +5668,22 @@ class Handler(BaseHTTPRequestHandler):
                     )
                     return
                 price_to_plan = {
-                    os.environ.get("DIRECTJOB_STRIPE_PRICE_TEAM", ""): "team",
-                    os.environ.get("DIRECTJOB_STRIPE_PRICE_ORG", ""): "org",
-                    os.environ.get("DIRECTJOB_STRIPE_PRICE_PRO_MONTHLY", ""): "pro_monthly",
-                    os.environ.get("DIRECTJOB_STRIPE_PRICE_PRO_ANNUAL", ""): "pro_annual",
+                    get_env(
+                        "HELPMEFINDTHEJOB_STRIPE_PRICE_TEAM", "DIRECTJOB_STRIPE_PRICE_TEAM", ""
+                    ): "team",
+                    get_env(
+                        "HELPMEFINDTHEJOB_STRIPE_PRICE_ORG", "DIRECTJOB_STRIPE_PRICE_ORG", ""
+                    ): "org",
+                    get_env(
+                        "HELPMEFINDTHEJOB_STRIPE_PRICE_PRO_MONTHLY",
+                        "DIRECTJOB_STRIPE_PRICE_PRO_MONTHLY",
+                        "",
+                    ): "pro_monthly",
+                    get_env(
+                        "HELPMEFINDTHEJOB_STRIPE_PRICE_PRO_ANNUAL",
+                        "DIRECTJOB_STRIPE_PRICE_PRO_ANNUAL",
+                        "",
+                    ): "pro_annual",
                 }
                 resolver = lambda price_id: price_to_plan.get(price_id) or ""
                 current = STATE.get_subscription()
@@ -8356,9 +8454,13 @@ class Handler(BaseHTTPRequestHandler):
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--host", default=os.environ.get("COMPANY_DISCOVERY_HOST", "127.0.0.1"))
     parser.add_argument(
-        "--port", type=int, default=int(os.environ.get("COMPANY_DISCOVERY_PORT", "8765"))
+        "--host", default=get_env("HELPMEFINDTHEJOB_HOST", "COMPANY_DISCOVERY_HOST", "127.0.0.1")
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=int(get_env("HELPMEFINDTHEJOB_PORT", "COMPANY_DISCOVERY_PORT", "8765")),
     )
     args = parser.parse_args()
     server = ThreadingHTTPServer((args.host, args.port), Handler)

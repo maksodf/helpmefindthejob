@@ -72,17 +72,20 @@ cd helpmefindthejob
 cp deploy/production.env.template .env.demo
 ${EDITOR:-vi} .env.demo
 # At minimum, fill in:
-#   DIRECTJOB_DOMAIN=localhost
-#   DIRECTJOB_PUBLIC_URL=http://localhost:8765
-#   DIRECTJOB_SECRET_KEY=<32-byte base64; python3 -c "import secrets; print(secrets.token_urlsafe(32))">
-#   DIRECTJOB_AUDIT_SALT=<32-byte base64; python3 -c "import secrets, base64; print(base64.b64encode(secrets.token_bytes(32)).decode())">
-#   DIRECTJOB_ADMIN_EMAIL=<your demo admin>
-#   DIRECTJOB_ADMIN_PASSWORD=<your demo admin password>
+#   HELPMEFINDTHEJOB_DOMAIN=localhost
+#   HELPMEFINDTHEJOB_PUBLIC_URL=http://localhost:8765
+#   HELPMEFINDTHEJOB_SECRET_KEY=<32-byte base64; python3 -c "import secrets; print(secrets.token_urlsafe(32))">
+#   HELPMEFINDTHEJOB_AUDIT_SALT=<32-byte base64; python3 -c "import secrets, base64; print(base64.b64encode(secrets.token_bytes(32)).decode())">
+#   HELPMEFINDTHEJOB_ADMIN_EMAIL=<your demo admin>
+#   HELPMEFINDTHEJOB_ADMIN_PASSWORD=<your demo admin password>
+# Legacy DIRECTJOB_* / COMPANY_DISCOVERY_* names still work via the
+# env_compat shim with a DeprecationWarning; see "Env-var migration
+# path" below. Prefer the new names in new deployments.
 
-# Start the parallel-instance compose project. The ``-p directjob-demo``
+# Start the parallel-instance compose project. The ``-p helpmefindthejob-demo``
 # project name is what isolates it from any pre-existing private
 # instance on the same host.
-docker compose -p directjob-demo \
+docker compose -p helpmefindthejob-demo \
   -f docker-compose.prod.yml --env-file .env.demo \
   up -d --build
 
@@ -429,8 +432,67 @@ retention policy (see `compliance/audit-log-schema.md` §6).
 
 ---
 
+## Env-var migration path
+
+Helpmefindthejob's canonical env-var prefix is `HELPMEFINDTHEJOB_*`.
+Two legacy prefixes still work at runtime, by design:
+
+| Era | Prefix | Status |
+|---|---|---|
+| Original project (pre-DirectJob-Scout era) | `COMPANY_DISCOVERY_*` | Accepted with `DeprecationWarning` through Phase 2; removed in Phase 3. |
+| DirectJob Scout era (Week 1 through 2026-05-18) | `DIRECTJOB_*` | Accepted with `DeprecationWarning` through Phase 2; removed in Phase 3. |
+| Helpmefindthejob era (Decision 22, 2026-05-19 → ) | `HELPMEFINDTHEJOB_*` | Canonical. |
+
+The shim that implements this lookup lives at
+[`company_discovery/env_compat.py`](https://github.com/maksodf/helpmefindthejob/blob/main/company_discovery/env_compat.py)
+and is the single choke point every env-var read in the codebase
+flows through. Tests in
+[`tests/test_env_compat.py`](https://github.com/maksodf/helpmefindthejob/blob/main/tests/test_env_compat.py) pin its
+behaviour: new prefix is consulted first; legacy prefix falls back
+with a `DeprecationWarning`; the default is returned only when
+neither is set.
+
+### Migrating an existing deployment
+
+Operationally, you can migrate one variable at a time:
+
+1. **Day 0** — start the new release with your existing `.env`. The
+   `DeprecationWarning` lines surface in stderr / Docker logs naming
+   each legacy variable.
+2. **Day 1+** — at your convenience, rename each variable in your
+   `.env` from `DIRECTJOB_X` or `COMPANY_DISCOVERY_X` to
+   `HELPMEFINDTHEJOB_X`. There is no need to do them all at once;
+   each variable is independent.
+3. **Verification** — restart the service. The corresponding
+   `DeprecationWarning` for the renamed variable should disappear
+   from logs. Repeat until logs are warning-free.
+4. **Phase 3 cutover** — when the project bumps the major version
+   that removes the legacy prefixes, any variable still using a
+   legacy name will be silently ignored. The migration window is
+   therefore: now → end of Phase 2.
+
+Hard-cap: if you set both `HELPMEFINDTHEJOB_X` and `DIRECTJOB_X` to
+different values, the **new** prefix wins. No warning is emitted in
+that case because the deployer's intent is clear (they have set the
+new name).
+
+The fail-fast audit-log salt rule (
+[`company_discovery/audit_log.py`](https://github.com/maksodf/helpmefindthejob/blob/main/company_discovery/audit_log.py)
+``_resolve_salt``) sits on top of this shim: in production mode
+(``HELPMEFINDTHEJOB_ENV`` or legacy ``COMPANY_DISCOVERY_ENV`` set to
+anything other than `development` / `test`), the server refuses to
+start when neither `HELPMEFINDTHEJOB_AUDIT_SALT` nor the legacy
+`DIRECTJOB_AUDIT_SALT` is configured. Development mode falls back to
+a per-process random salt with an `ERROR`-level stderr warning.
+
+---
+
 ## Append log
 
 - **2026-05-18**: initial recipe drafted as part of the §3.4 deployment
   artefacts slice (Step 2 of `docs/grant/next-steps-2026-05-18.md`).
   Parallel-public-instance posture per Finding A maintainer decision.
+- **2026-05-19**: env-var migration path documented above; `env_compat`
+  shim landed in the pre-submission scope-tightening slice (PART 3),
+  closing inventory items #6 + #7 (DIRECTJOB_/COMPANY_DISCOVERY_
+  prefix drift).

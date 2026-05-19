@@ -95,9 +95,18 @@ Until that activation: `https://github.com/maksodf/helpmefindthejob`
 > residency, education) to form a coherent multi-domain civic
 > assistant. The codebase is Apache-2.0-licensed, self-hostable,
 > encrypted at rest (ChaCha20-Poly1305), runs on the user's
-> choice of AI provider (BYO-AI — including fully offline via
-> Ollama), and ships EU AI Act compliance built in for the
-> 2 August 2026 enforcement date.
+> choice of AI provider (BYO-AI abstraction with seven provider
+> implementations — Ollama exercised live in Phase 1; cloud
+> providers covered by mocked dispatcher tests pending live-key
+> verification in Phase 2), and ships an EU AI Act compliance pack
+> designed for the 2 August 2026 high-risk-AI enforcement date.
+> Articles 12 (audit log) and 14 (human-oversight admin endpoint)
+> are wired in code; Articles 9, 10, 11 + Annex IV, 13, 15, 27
+> and 49 are deployer-doctrine artefacts and templates in
+> `compliance/` (the methodology under Article 15 is at 33%
+> execution — 2 of 6 scenario classes shipped in four dated
+> reports; the remaining four classes execute during the
+> partner-NGO pilot in Phase 2 per `ROADMAP.md`).
 >
 > Hosted as a Programme of The Commons Conservancy. Every
 > feature is evaluated against a dual measure: improve outcomes
@@ -116,12 +125,17 @@ commits across the 4-week grant-readiness sprint, May 2026):
   CONTRIBUTING.md, CODE_OF_CONDUCT.md (Contributor Covenant 2.1),
   SECURITY.md, SUPPORT.md, AUTHORS.md, ACKNOWLEDGMENTS.md,
   TRADEMARK.md, cla.md.
-- **EU AI Act compliance pack**: 10 documents under `compliance/`
-  covering Articles 9, 10, 11, 12, 13, 14, 15, 26, 27, 49 —
-  including a documented synthetic-cohort bias-testing methodology
-  with three executed dated runs against `llama3.1:8b` (33.3%
-  methodology surface coverage; remaining four classes deferred
-  to post-grant per honest scoping).
+- **EU AI Act compliance pack**: 11 documents under `compliance/`
+  covering Articles 9, 10, 11 + Annex IV, 12, 13, 14, 15, 26, 27,
+  49. Articles **12** (audit log) and **14** (`/api/admin/oversight/queue`)
+  are wired in code; the remaining articles are deployer-doctrine
+  artefacts and templates. Article 15 methodology has executed
+  3 dated runs against `llama3.1:8b` (33.3% methodology surface
+  coverage — 2 of 6 scenario classes; remaining four classes
+  deferred to the partner-NGO pilot per honest scoping). The
+  most recent run is dated 2026-05-19; CV-tailoring criterion
+  passes at 92.9 %, fit-scoring surfaces 10 ONE-OFF OOB
+  divergences within the model's documented non-determinism band.
 - **MCP server v0.2.0** with 13-tool catalogue, JSON-Schema
   validated input, stdio JSON-RPC transport — `docs/mcp-server.md`
   documents the contract.
@@ -236,11 +250,16 @@ pre-seeded (Aïcha, Yusuf, Olga, Mahmoud, Maria — most-acute
 migrant; Käthe + Tobias — wider-friction-class per Decision 21);
 mkdocs-material documentation site at
 <https://maksodf.github.io/helpmefindthejob/>; `ACCESSIBILITY.md`
-with three-pass WCAG 2.2 AA audit evidence (unauthenticated
-surfaces axe-core CLI + authenticated surfaces Playwright +
-axe-playwright-python + light-mode + dynamic-state + compliance
-markdown; 30 instance violations closed across 22 audited
-surfaces, raw axe JSON regenerable in seconds).
+with a **WCAG 2.2 AA target** + automated audit evidence across
+4 dated passes (unauthenticated surfaces axe-core CLI + authenticated
+surfaces Playwright + axe-playwright-python + light-mode +
+dynamic-state + compliance markdown + post-rename re-audit;
+32 violation instances closed; 0/0/0/0 across 33 audited captures).
+**Honesty note**: axe-core documentation itself states automated
+tooling catches ~20–50 % of WCAG issues; full WCAG 2.2 AA
+conformance requires manual screen-reader + keyboard + cognitive
+review (HAN University manual review is the planned next pathway
+post-Commons-Conservancy admission).
 **Cost-saving mechanism**: reduces the discovery + evaluation
 cost for any institutional adopter; the demo replaces the need
 for vendor-style sales calls or presentations.

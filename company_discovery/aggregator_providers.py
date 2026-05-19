@@ -851,13 +851,37 @@ def adzuna_from_env(env: dict[str, str] | None = None) -> AdzunaProvider | None:
     reads ``os.environ``."""
 
     import os
+    import warnings
 
     src = env if env is not None else os.environ
-    app_id = (src.get("DIRECTJOB_ADZUNA_APP_ID") or "").strip()
-    app_key = (src.get("DIRECTJOB_ADZUNA_APP_KEY") or "").strip()
+
+    def _pick(new_name: str, legacy_name: str) -> str:
+        # Local, dict-based equivalent of env_compat.get_env. Kept inline
+        # because this builder accepts any Mapping (tests inject a dict);
+        # going through os.environ would defeat the injection contract.
+        value = src.get(new_name)
+        if value is not None:
+            return value
+        legacy_value = src.get(legacy_name)
+        if legacy_value is not None:
+            warnings.warn(
+                f"Env var {legacy_name!r} is deprecated; rename to "
+                f"{new_name!r}. The legacy prefix is accepted with this "
+                "DeprecationWarning through Phase 2; it is removed in "
+                "Phase 3 — see docs/deployment-recipe.md migration path.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            return legacy_value
+        return ""
+
+    app_id = _pick("HELPMEFINDTHEJOB_ADZUNA_APP_ID", "DIRECTJOB_ADZUNA_APP_ID").strip()
+    app_key = _pick("HELPMEFINDTHEJOB_ADZUNA_APP_KEY", "DIRECTJOB_ADZUNA_APP_KEY").strip()
     if not app_id or not app_key:
         return None
-    country = (src.get("DIRECTJOB_ADZUNA_COUNTRY") or "de").strip().lower() or "de"
+    country = (
+        _pick("HELPMEFINDTHEJOB_ADZUNA_COUNTRY", "DIRECTJOB_ADZUNA_COUNTRY") or "de"
+    ).strip().lower() or "de"
     return AdzunaProvider(app_id=app_id, app_key=app_key, country=country)
 
 

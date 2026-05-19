@@ -8,7 +8,6 @@
 from __future__ import annotations
 
 import json
-import os
 import sys
 import time
 from dataclasses import asdict, is_dataclass
@@ -19,6 +18,7 @@ from typing import Any
 import jsonschema
 
 from company_discovery import audit_log
+from company_discovery.env_compat import get_env
 from company_discovery.http_fetcher import HTTPFetcher
 from company_discovery.mcp_tools import TOOL_SCHEMAS, CompanyDiscoveryMCPTools
 from company_discovery.service import CompanyDiscoveryService, ScanConfig
@@ -86,7 +86,9 @@ def validate_tool_arguments(tool_name: str, arguments: Any) -> dict[str, Any] | 
 
 
 ROOT = Path(__file__).parent
-DATA_ROOT = Path(os.environ.get("COMPANY_DISCOVERY_DATA_DIR", str(ROOT / "data")))
+DATA_ROOT = Path(
+    get_env("HELPMEFINDTHEJOB_DATA_DIR", "COMPANY_DISCOVERY_DATA_DIR", str(ROOT / "data"))
+)
 DATA_PATH = DATA_ROOT / "company_discovery.sqlite3"
 
 

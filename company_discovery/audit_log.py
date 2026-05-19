@@ -35,7 +35,6 @@ import base64
 import contextvars
 import hashlib
 import json
-import os
 import secrets
 import sys
 import threading
@@ -43,6 +42,8 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+
+from company_discovery.env_compat import get_env
 
 SCHEMA_VERSION = "v1"
 
@@ -232,13 +233,18 @@ def default_emitter() -> AuditLogEmitter:
 
     Environment variables consulted:
 
-    * ``DIRECTJOB_DATA_ROOT`` — base directory; the audit log is at
-      ``${DIRECTJOB_DATA_ROOT}/ai_act_audit.log``.
-    * ``DIRECTJOB_AUDIT_SALT`` — 32 random bytes, base64 or raw. If unset, a
-      per-process random salt is generated and a stderr warning is emitted.
-    * ``DIRECTJOB_AUDIT_PLAINTEXT_PII`` — ``true`` to disable hashing. Default
-      ``false``.
-    * ``DIRECTJOB_AUDIT_ROTATE_BYTES`` — rotation threshold. Default 64 MiB.
+    * ``HELPMEFINDTHEJOB_DATA_ROOT`` (legacy ``DIRECTJOB_DATA_ROOT``) —
+      base directory; the audit log is at ``${DATA_ROOT}/ai_act_audit.log``.
+    * ``HELPMEFINDTHEJOB_AUDIT_SALT`` (legacy ``DIRECTJOB_AUDIT_SALT``) —
+      32 random bytes, base64 or raw. In production mode, missing salt
+      is fatal (see :func:`_resolve_salt`). In dev mode, a per-process
+      random salt is generated and an ERROR-level stderr warning fires.
+    * ``HELPMEFINDTHEJOB_AUDIT_PLAINTEXT_PII`` (legacy
+      ``DIRECTJOB_AUDIT_PLAINTEXT_PII``) — ``true`` to disable hashing.
+      Default ``false``.
+    * ``HELPMEFINDTHEJOB_AUDIT_ROTATE_BYTES`` (legacy
+      ``DIRECTJOB_AUDIT_ROTATE_BYTES``) — rotation threshold. Default
+      64 MiB.
     """
     global _default_emitter
     if _default_emitter is not None:
@@ -246,16 +252,24 @@ def default_emitter() -> AuditLogEmitter:
     with _default_emitter_lock:
         if _default_emitter is not None:
             return _default_emitter
-        data_root = Path(os.environ.get("DIRECTJOB_DATA_ROOT", "data"))
+        data_root = Path(get_env("HELPMEFINDTHEJOB_DATA_ROOT", "DIRECTJOB_DATA_ROOT", "data"))
         log_path = data_root / "ai_act_audit.log"
-        salt = _resolve_salt(os.environ.get("DIRECTJOB_AUDIT_SALT", ""))
-        plaintext_pii = os.environ.get("DIRECTJOB_AUDIT_PLAINTEXT_PII", "false").lower() in {
+        salt = _resolve_salt(get_env("HELPMEFINDTHEJOB_AUDIT_SALT", "DIRECTJOB_AUDIT_SALT", ""))
+        plaintext_pii = get_env(
+            "HELPMEFINDTHEJOB_AUDIT_PLAINTEXT_PII", "DIRECTJOB_AUDIT_PLAINTEXT_PII", "false"
+        ).lower() in {
             "true",
             "1",
             "yes",
             "on",
         }
-        rotate_bytes = int(os.environ.get("DIRECTJOB_AUDIT_ROTATE_BYTES", str(64 * 1024 * 1024)))
+        rotate_bytes = int(
+            get_env(
+                "HELPMEFINDTHEJOB_AUDIT_ROTATE_BYTES",
+                "DIRECTJOB_AUDIT_ROTATE_BYTES",
+                str(64 * 1024 * 1024),
+            )
+        )
         _default_emitter = AuditLogEmitter(
             log_path=log_path,
             salt=salt,
@@ -282,10 +296,43 @@ def reset_default_emitter() -> None:
 # ------------------------------------------------------------------ helpers
 
 
+_DEV_ENV_TOKENS = frozenset({"", "development", "dev", "test", "testing"})
+
+
+def _resolve_app_env() -> str:
+    """Read the application environment label, accepting both the
+    Helpmefindthejob-era prefix and the legacy company-discovery prefix.
+
+    Returns the casefolded value; empty string when neither is set.
+    """
+    raw = get_env("HELPMEFINDTHEJOB_ENV", "COMPANY_DISCOVERY_ENV", "")
+    return (raw or "").strip().casefold()
+
+
 def _resolve_salt(raw: str) -> bytes:
-    """Resolve the audit-log salt from the configured value. Accepts base64
-    or raw bytes. Falls back to a per-process random salt with a stderr
-    warning."""
+    """Resolve the audit-log salt from the configured value.
+
+    Production-mode semantics (Helpmefindthejob 2026-05-19, see
+    [docs/grant/04-research-and-decisions.md] PART 1.1 of the
+    pre-submission scope-tightening slice):
+
+    * If a salt is configured (``raw`` is non-empty), decode it
+      (base64 if it parses, raw bytes otherwise) and return.
+    * If no salt is configured **and** the application environment
+      is not ``development`` / ``dev`` / ``test`` / ``testing``,
+      print a fatal error to stderr and ``sys.exit(1)``. The audit
+      log's integrity guarantees can't be honoured without a stable
+      cross-restart salt; refusing to start is safer than running
+      with degraded auditability.
+    * If no salt is configured and the environment **is** dev/test,
+      generate a per-process salt and print an ERROR-level warning.
+      This keeps the developer's loop frictionless while the
+      production path stays fail-fast.
+
+    Tests that need the development-fallback behaviour can rely on
+    the default empty ``HELPMEFINDTHEJOB_ENV`` / ``COMPANY_DISCOVERY_ENV``,
+    which classifies as ``development``.
+    """
     if raw:
         try:
             decoded = base64.b64decode(raw, validate=False)
@@ -294,11 +341,31 @@ def _resolve_salt(raw: str) -> bytes:
         except Exception:
             pass
         return raw.encode("utf-8")
+    env = _resolve_app_env()
+    if env not in _DEV_ENV_TOKENS:
+        print(
+            "[audit_log] FATAL: env=" + env + " requires HELPMEFINDTHEJOB_AUDIT_SALT (or legacy "
+            "DIRECTJOB_AUDIT_SALT) to be set to 32 random bytes "
+            "(base64). Refusing to start because audit-log integrity "
+            "cannot be guaranteed across process restarts without a "
+            "stable salt.\n"
+            "    Generate one with:\n"
+            "        python3 -c 'import secrets, base64; "
+            "print(base64.b64encode(secrets.token_bytes(32)).decode())'\n"
+            "    Then export it as HELPMEFINDTHEJOB_AUDIT_SALT before "
+            "starting the server.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
     salt = secrets.token_bytes(32)
     print(
-        "[audit_log] DIRECTJOB_AUDIT_SALT not set; generated a per-process salt. "
-        "Audit-log entries will not be linkable across process restarts. "
-        "Set DIRECTJOB_AUDIT_SALT to 32 random bytes (base64) for stable hashing.",
+        "[audit_log] ERROR: HELPMEFINDTHEJOB_AUDIT_SALT not set; "
+        "generated a per-process salt. Audit-log entries will not be "
+        "linkable across process restarts. This fallback is permitted "
+        "in development (env=" + (env or "development") + ") only. Production deployments MUST set "
+        "HELPMEFINDTHEJOB_AUDIT_SALT (legacy DIRECTJOB_AUDIT_SALT "
+        "still accepted with a DeprecationWarning) to 32 random bytes "
+        "(base64) for stable hashing.",
         file=sys.stderr,
     )
     return salt

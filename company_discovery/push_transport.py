@@ -21,8 +21,9 @@ Why pywebpush:
 from __future__ import annotations
 
 import json
-import os
 from dataclasses import dataclass
+
+from company_discovery.env_compat import get_env
 
 from .models import PushSubscription
 
@@ -32,9 +33,13 @@ class PushUnavailableError(RuntimeError):
 
 
 def _vapid_keys() -> tuple[str, str, str] | None:
-    public = os.environ.get("DIRECTJOB_VAPID_PUBLIC_KEY", "").strip()
-    private = os.environ.get("DIRECTJOB_VAPID_PRIVATE_KEY", "").strip()
-    contact = os.environ.get("DIRECTJOB_VAPID_CONTACT", "mailto:operator@example.com").strip()
+    public = get_env("HELPMEFINDTHEJOB_VAPID_PUBLIC_KEY", "DIRECTJOB_VAPID_PUBLIC_KEY", "").strip()
+    private = get_env(
+        "HELPMEFINDTHEJOB_VAPID_PRIVATE_KEY", "DIRECTJOB_VAPID_PRIVATE_KEY", ""
+    ).strip()
+    contact = get_env(
+        "HELPMEFINDTHEJOB_VAPID_CONTACT", "DIRECTJOB_VAPID_CONTACT", "mailto:operator@example.com"
+    ).strip()
     if not public or not private:
         return None
     return public, private, contact

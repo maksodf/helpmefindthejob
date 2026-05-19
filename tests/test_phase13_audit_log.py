@@ -38,8 +38,10 @@ short-circuit paths and direct emitter calls.
 
 from __future__ import annotations
 
+import base64
 import contextvars
 import json
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -468,6 +470,93 @@ class AuditLogTailHelperTests(unittest.TestCase):
         nonexistent = Path(self.tmp.name) / "no-such-log.log"
         tail = _read_ai_act_audit_tail(nonexistent, 10, None)
         self.assertEqual(tail, [])
+
+
+class SaltFailFastTests(unittest.TestCase):
+    """Regression tests for the production fail-fast / dev-fallback
+    behaviour of ``_resolve_salt``. Added with the pre-submission
+    scope-tightening slice (PART 1.1)."""
+
+    def setUp(self) -> None:
+        # Snapshot + clear the env keys this suite manipulates so the
+        # tests cannot leak into each other or into the rest of the
+        # process. The addCleanup pattern restores them.
+        self._saved_env = {
+            key: os.environ.get(key)
+            for key in (
+                "HELPMEFINDTHEJOB_AUDIT_SALT",
+                "DIRECTJOB_AUDIT_SALT",
+                "HELPMEFINDTHEJOB_ENV",
+                "COMPANY_DISCOVERY_ENV",
+            )
+        }
+        for key in list(self._saved_env):
+            os.environ.pop(key, None)
+        self.addCleanup(self._restore_env)
+
+    def _restore_env(self) -> None:
+        for key, value in self._saved_env.items():
+            if value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = value
+
+    def test_dev_env_with_no_salt_falls_back_with_warning(self) -> None:
+        # Default (empty) env classifies as development. The function
+        # must return a 32-byte random salt without raising.
+        import io
+        from contextlib import redirect_stderr
+
+        stderr = io.StringIO()
+        with redirect_stderr(stderr):
+            salt = audit_log._resolve_salt("")
+        self.assertEqual(len(salt), 32)
+        message = stderr.getvalue()
+        self.assertIn("ERROR", message)
+        self.assertIn("HELPMEFINDTHEJOB_AUDIT_SALT", message)
+        self.assertIn("development", message)
+
+    def test_production_env_with_no_salt_exits_one(self) -> None:
+        # env=production + no salt → SystemExit(1) with a stderr
+        # message naming both env vars.
+        import io
+        from contextlib import redirect_stderr
+
+        os.environ["HELPMEFINDTHEJOB_ENV"] = "production"
+        stderr = io.StringIO()
+        with redirect_stderr(stderr), self.assertRaises(SystemExit) as ctx:
+            audit_log._resolve_salt("")
+        self.assertEqual(ctx.exception.code, 1)
+        message = stderr.getvalue()
+        self.assertIn("FATAL", message)
+        self.assertIn("HELPMEFINDTHEJOB_AUDIT_SALT", message)
+        self.assertIn("DIRECTJOB_AUDIT_SALT", message)
+        self.assertIn("production", message)
+
+    def test_staging_env_with_no_salt_also_exits_one(self) -> None:
+        # Any env other than dev/test variants triggers fail-fast.
+        os.environ["HELPMEFINDTHEJOB_ENV"] = "staging"
+        with self.assertRaises(SystemExit):
+            audit_log._resolve_salt("")
+
+    def test_production_env_with_configured_salt_succeeds(self) -> None:
+        # Salt configured → no fail-fast, return the decoded bytes.
+        os.environ["HELPMEFINDTHEJOB_ENV"] = "production"
+        salt_b64 = base64.b64encode(b"x" * 32).decode("ascii")
+        salt = audit_log._resolve_salt(salt_b64)
+        self.assertEqual(salt, b"x" * 32)
+
+    def test_legacy_env_var_name_still_resolves_app_env(self) -> None:
+        # Legacy COMPANY_DISCOVERY_ENV path must still gate fail-fast.
+        os.environ["COMPANY_DISCOVERY_ENV"] = "production"
+        with self.assertRaises(SystemExit):
+            audit_log._resolve_salt("")
+
+    def test_test_env_classified_as_dev(self) -> None:
+        os.environ["HELPMEFINDTHEJOB_ENV"] = "test"
+        # Should not raise.
+        salt = audit_log._resolve_salt("")
+        self.assertEqual(len(salt), 32)
 
 
 if __name__ == "__main__":

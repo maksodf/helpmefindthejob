@@ -17,6 +17,8 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 
+from company_discovery.env_compat import get_env
+
 from . import audit_log
 from .ai_providers import AIProviderConfig
 from .models import DiscoveredJob, ImportedJob, UserProfile
@@ -650,7 +652,14 @@ def _dispatch_provider_impl(
     #   DIRECTJOB_MANAGED_AI_MODEL     optional; falls back to a sane default
     #   DIRECTJOB_MANAGED_AI_BASE_URL  optional; for OpenAI-compatible gateways
     if provider.provider_id == "managed":
-        upstream = (os.environ.get("DIRECTJOB_MANAGED_AI_PROVIDER") or "openai").strip().lower()
+        upstream = (
+            (
+                get_env("HELPMEFINDTHEJOB_MANAGED_AI_PROVIDER", "DIRECTJOB_MANAGED_AI_PROVIDER")
+                or "openai"
+            )
+            .strip()
+            .lower()
+        )
         if upstream not in {"openai", "anthropic", "google_gemini", "deepseek", "openrouter"}:
             return AnalysisExecutionResult(
                 status="configuration_error",
@@ -659,7 +668,9 @@ def _dispatch_provider_impl(
                 prompt=prompt,
                 error="DIRECTJOB_MANAGED_AI_PROVIDER must be one of: openai, anthropic, google_gemini, deepseek, openrouter.",
             )
-        if not (os.environ.get("DIRECTJOB_MANAGED_AI_KEY") or "").strip():
+        if not (
+            get_env("HELPMEFINDTHEJOB_MANAGED_AI_KEY", "DIRECTJOB_MANAGED_AI_KEY") or ""
+        ).strip():
             return AnalysisExecutionResult(
                 status="configuration_error",
                 provider_id="managed",
@@ -670,9 +681,16 @@ def _dispatch_provider_impl(
         provider = AIProviderConfig(
             provider_id=upstream,
             invocation_mode="api",
-            model=(os.environ.get("DIRECTJOB_MANAGED_AI_MODEL") or provider.model or "").strip(),
+            model=(
+                get_env("HELPMEFINDTHEJOB_MANAGED_AI_MODEL", "DIRECTJOB_MANAGED_AI_MODEL")
+                or provider.model
+                or ""
+            ).strip(),
             credential_reference="DIRECTJOB_MANAGED_AI_KEY",
-            base_url=(os.environ.get("DIRECTJOB_MANAGED_AI_BASE_URL") or "").strip(),
+            base_url=(
+                get_env("HELPMEFINDTHEJOB_MANAGED_AI_BASE_URL", "DIRECTJOB_MANAGED_AI_BASE_URL")
+                or ""
+            ).strip(),
             command="",
             notes="managed",
         )

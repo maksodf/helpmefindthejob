@@ -291,7 +291,11 @@ def _build_state(data_dir: str | None) -> Any:
     ``seed(state, ...)`` directly with a state built by the test.
     """
     if data_dir is not None:
-        os.environ["COMPANY_DISCOVERY_DATA_DIR"] = data_dir
+        # Write the new-prefix name so app.py's env_compat shim does not
+        # emit a DeprecationWarning. The legacy COMPANY_DISCOVERY_DATA_DIR
+        # still works for deployers who set it manually; see
+        # docs/deployment-recipe.md migration path.
+        os.environ["HELPMEFINDTHEJOB_DATA_DIR"] = data_dir
     # Import here so the env-var override takes effect before app.py's
     # module-level configuration loading.
     from app import AppState

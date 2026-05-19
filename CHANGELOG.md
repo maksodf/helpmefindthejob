@@ -18,6 +18,175 @@ Fixed · Security**.
 Tracked in `docs/grant/02-execution-plan.md` §3.4 – §4.6 plus Phase 2 cleanup
 items in `docs/grant/03-post-grant.md`.
 
+This block covers every commit landed on `claude/project-analysis-bpHCo`
+between the `v0.1.0` tag (commit `0cdf13e`) and the pre-submission
+scope-tightening slice. Cuts into a future v0.2.0 once the maintainer
+green-lights the application + closes the maintainer-side actions
+listed under "Maintainer follow-ups" in
+[`docs/grant/quality-dashboard-2026-05-19.md`](docs/grant/quality-dashboard-2026-05-19.md).
+
+### Added
+
+- **Project renamed to Helpmefindthejob** with the canonical domain at
+  `helpmefindthejob.com` ([Decision 22](docs/grant/04-research-and-decisions.md#decision-22-project-rename--directjob-scout--helpmefindthejob),
+  forward-going per Decision 12). 271 files renamed; intentional
+  dual-name content preserved in the identity-of-record files
+  (`CHANGELOG.md`, `CONTRIBUTORS-NOTE.md`, `docs/releases/v0.1.0*`,
+  `docs/grant/04-research-and-decisions.md`).
+- **`company_discovery/env_compat.py`** — env-var compatibility shim
+  exposing `get_env(new, legacy, default)`, `get_env_int`, and
+  `get_env_bool`. Tries the canonical `HELPMEFINDTHEJOB_*` prefix
+  first; falls back to `DIRECTJOB_*` and `COMPANY_DISCOVERY_*` with
+  a `DeprecationWarning`. Tests in `tests/test_env_compat.py`
+  (17 cases). Doctrine + migration path in
+  [`docs/deployment-recipe.md`](docs/deployment-recipe.md).
+- **Audit-log production fail-fast** — when the application
+  environment is anything other than `development`/`dev`/`test`/
+  `testing`, `_resolve_salt` refuses to start without
+  `HELPMEFINDTHEJOB_AUDIT_SALT` (legacy `DIRECTJOB_AUDIT_SALT`).
+  6 regression tests in
+  `tests/test_phase13_audit_log.py::SaltFailFastTests`. Documented
+  in [`compliance/audit-log-schema.md`](compliance/audit-log-schema.md).
+- **Quality dashboard** at
+  [`docs/grant/quality-dashboard-2026-05-19.md`](docs/grant/quality-dashboard-2026-05-19.md)
+  capturing every PART 1–7 probe result from the pre-submission
+  comprehensive QA pass (1020 / 1029 tests across Python 3.9 + 3.12,
+  axe-core + axe-playwright accessibility coverage, cosign verify,
+  fresh-clone Docker, ESCO/EURES surface counts).
+- **Phase 2 backlog index** at
+  [`docs/grant/phase2-backlog-2026-05-19.md`](docs/grant/phase2-backlog-2026-05-19.md)
+  enumerating ~53 inventory items tracked for post-grant cycles
+  (2026 Q3 / Q4 / 2027 Q1).
+- **mkdocs-material documentation site** (§3.5) with deploy workflow
+  to GitHub Pages and `mkdocs build --strict` green.
+- **OpenSSF Scorecard SHA-pinning** — all 6 GitHub Actions workflows
+  pinned to full 40-char commit SHAs (`scorecard.yml`, `test.yml`,
+  `quality.yml`, `mcp-integration.yml`, `fresh-clone-install.yml`,
+  `docs-publish.yml`).
+- **`ACCESSIBILITY.md`** (§3.6) — three audit passes documenting
+  the first automated WCAG 2.2 AA pass + auth-surface follow-on
+  via Playwright + light-mode / dynamic-state polish; cumulative
+  32 violation instances closed across 22 (later 33) audited
+  captures. Fix 15 + Fix 16 from the pre-submission slice closed
+  pygments-contrast + landmark-unique regressions surfaced on
+  the post-rename re-audit.
+- **`docs/translating.md`** (§3.7) — translator contributor
+  pathway (terminology hygiene, parity test, preserved-German-
+  terms lint, HTML fallback drift contract).
+- **Nix flake** (§3.8) at [`flake.nix`](flake.nix) pinning
+  `nixos-25.05` (commit `ac62194`); `nix flake check` and
+  `nix develop --command python3 -m unittest discover -s tests`
+  both green on aarch64-darwin.
+- **cosign-signed v0.1.0 + CycloneDX 1.6 SBOM + RFC 9116
+  security.txt** (§4.2). Cosign key model b (long-lived ECDSA
+  P-256, `--insecure-ignore-tlog`); SBOM with 91 components;
+  security.txt at [`static/.well-known/security.txt`](static/.well-known/security.txt)
+  citing `helpmefindthejob.com` as the canonical reporting URL.
+- **`SUSTAINABILITY.md`** (§4.1) — post-grant story, grant arc,
+  community pathway.
+- **Application draft** at
+  [`docs/grant/application-draft-2026-05-19.md`](docs/grant/application-draft-2026-05-19.md)
+  (22 fields, ~13.5k words); NLnet form-fields cross-reference at
+  [`docs/grant/nlnet-form-fields-2026-05-19.md`](docs/grant/nlnet-form-fields-2026-05-19.md);
+  outreach drafts at [`docs/grant/outreach-drafts/`](docs/grant/outreach-drafts/);
+  external-reader recruit message at
+  [`docs/grant/external-reader-recruit-message-2026-05-19.md`](docs/grant/external-reader-recruit-message-2026-05-19.md).
+- **Bias-testing dated reports** —
+  [`bias-testing-2026-05-18.md`](docs/grant/bias-testing-2026-05-18.md),
+  [`bias-testing-2026-05-18-broadened.md`](docs/grant/bias-testing-2026-05-18-broadened.md),
+  [`bias-testing-2026-05-18-polish.md`](docs/grant/bias-testing-2026-05-18-polish.md),
+  [`bias-testing-2026-05-19.md`](docs/grant/bias-testing-2026-05-19.md).
+- **`friction_keywords_for(persona_id)`** helper in
+  `company_discovery/persona_fixtures.py`, wired into the production
+  chat-router CV-tailoring path at `app.py:3411` + `app.py:7702`
+  (closes deferred remediation #1 of the prompt-enhancement
+  bias-test run; 6 regression tests in `tests/test_round4.py`).
+- **`CONTRIBUTORS-NOTE.md`** rename-paragraph + git-archaeology
+  guidance for the 2026-05-19 rename.
+
+### Changed
+
+- **README, STANDARDS, application-draft, 12-application-package**
+  reframed with honesty caveats (pre-submission scope-tightening
+  slice PART 2): ESCO described as a curated reference dataset
+  (full taxonomy = Phase 2); EURES described as a projection
+  contract (live API transport = Phase 2); WCAG 2.2 AA framed as
+  target with axe-coverage caveat (HAN University manual review =
+  next pathway); AI Act compliance described as a documented
+  pack with Articles 12 + 14 wired in code and the remaining
+  articles as deployer-doctrine artefacts; BYO-AI described as a
+  seven-provider abstraction with Ollama exercised live and the
+  cloud providers covered by mocked dispatcher tests; cost-saving
+  doctrine described as a testable hypothesis pending measured
+  outcomes.
+- **CV-tailoring production prompt** (`company_discovery/analysis.py`
+  `build_cv_tailoring_prompt`) now asks the model to acknowledge
+  persona friction context — closes the polish-run criterion-(d)
+  finding. Bias-test re-run at `bias-testing-2026-05-19.md`:
+  criterion (d) pass-rate 43/70 → 65/70 (92.9 %); overall pass-rate
+  43/70 → 61/70 (87.1 %; above the 70 % threshold).
+- **README badges** + `mkdocs.yml site_url` + `static/.well-known/
+  security.txt Canonical` field point at `helpmefindthejob.com`.
+- **Audit-log emitter** docstring + variable references in
+  `compliance/audit-log-schema.md` updated to name the
+  `HELPMEFINDTHEJOB_*` prefix as canonical; legacy
+  `DIRECTJOB_*` named for back-compat.
+- **MCP integration test client** (`tests/test_phase12_mcp_integration_e2e.py`)
+  now closes subprocess stdout/stderr pipes + tempdir in a
+  `finally` block — `ResourceWarning` no longer surfaces under
+  `python3 -W error::ResourceWarning`.
+
+### Deprecated
+
+- **`DIRECTJOB_*` environment-variable prefix** (60+ variables) —
+  accepted with `DeprecationWarning` through Phase 2; removed in
+  Phase 3 (see `docs/deployment-recipe.md` migration path).
+- **`COMPANY_DISCOVERY_*` environment-variable prefix** (4
+  variables: `_ENV`, `_DATA_DIR`, `_HOST`, `_PORT`) — same migration
+  schedule.
+
+### Removed
+
+- (intentionally empty for this block)
+
+### Fixed
+
+- **Accessibility regressions** surfaced by the post-rename axe
+  re-run on the 4 mkdocs surfaces (`/mcp-server/`, `/deployment-recipe/`,
+  `/production-deployment/`, `/esco-integration/`): pygments
+  comment/docstring/variable contrast bumped from 4.47:1 → ~6.1:1
+  via scoped overrides in `docs/stylesheets/accessibility.css`
+  (Fix 15); each `<nav class="md-code__nav">` copy-button container
+  gets a unique aria-label via
+  `docs/javascripts/accessibility.js` (Fix 16).
+- **`company_discovery/audit_log.py` SPDX-License-Identifier
+  header** — pre-existing gap from the Week 2 task 2.8 commit
+  closed during the rename slice's no-gaps-behind sweep.
+- **i18n parity test** generalisation + **preserved-German-terms
+  lint** + **HTML fallback drift test** (§3.7 hardening, three
+  contracts added to `tests/test_phase0_i18n_parity.py`).
+- **Cosign verification post-rename** — verification commands in
+  `docs/releases/v0.1.0-signing.md` + `docs/releases/v0.1.0.md`
+  now download the original signed `directjob-scout-0.1.0.tar.gz`
+  by `--pattern` + `--output v0.1.0-source.tar.gz` so the SHA-256
+  match holds regardless of the GitHub repo's current name. The
+  maintainer follow-up to attach the original tarball as a v0.1.0
+  release asset is recorded in
+  [`CONTRIBUTORS-NOTE.md`](CONTRIBUTORS-NOTE.md).
+
+### Security
+
+- **Audit-log production fail-fast** (see Added) materially
+  hardens Article 12 record-keeping by refusing to start a
+  production process whose audit-log salt is unset (which would
+  silently produce uncorrelatable hashes across restarts).
+- **cosign-signed source tarball** + **CycloneDX 1.6 SBOM** +
+  **RFC 9116 security.txt** ship with v0.1.0 (`docs/releases/v0.1.0-*`,
+  `static/.well-known/security.txt`).
+- **TOTP-secret column AEAD migration** (ChaCha20-Poly1305
+  AAD-bound to user_id) — already in v0.1.0; no behaviour change
+  in this block.
+
 ---
 
 ## [0.1.0] — 2026-05-18

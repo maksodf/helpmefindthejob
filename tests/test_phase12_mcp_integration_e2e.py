@@ -87,11 +87,23 @@ class _StdioMCPClient:
         return json.loads(line)
 
     def close(self) -> int:
+        # Close every pipe + the tempdir even if the wait raises. The
+        # explicit close avoids a ResourceWarning on garbage collection
+        # (PART 6 of the pre-submission scope-tightening slice).
         assert self._proc.stdin is not None
-        self._proc.stdin.close()
         try:
+            try:
+                self._proc.stdin.close()
+            except Exception:
+                pass
             return self._proc.wait(timeout=10)
         finally:
+            for stream in (self._proc.stdout, self._proc.stderr):
+                if stream is not None:
+                    try:
+                        stream.close()
+                    except Exception:
+                        pass
             self._tmp.cleanup()
 
 

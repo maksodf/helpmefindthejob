@@ -1,0 +1,149 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright (c) 2026 Helpmefindthejob contributors -->
+
+# Phase 2 backlog — items tracked for post-grant cycles
+
+**Source**: 2026-05-19 pre-submission honest-inventory follow-up
+(items numbered as in the original inventory). This file is the
+durable index of "what is tracked but deferred" so future agents
+and contributors do not lose sight of these items between sprints.
+
+Each row carries: brief description, originating inventory `#`,
+rough effort, and a target Phase 2 quarter (`2026 Q3` / `2026 Q4` /
+`2027 Q1`). Targets are best-effort scoping anchors, not promises.
+
+The pre-submission scope-tightening slice (this slice) closed 12 of
+the 65 inventory items. The 53 remaining items are catalogued below.
+
+---
+
+## Unbuilt — promised in docs, not implemented (#21–#32)
+
+| # | Item | Effort | Target |
+|---|---|---|---|
+| 21 | Public demo deployment at `demo.helpmefindthejob.com` — provision host, wire DNS, deploy `docker-compose.prod.yml`, configure TLS + Caddy, seed the seven personas, verify journey end-to-end through the chat surface. | 1–2 d | 2026 Q3 |
+| 22 | Real partner-NGO pilot — send the 8 institutional-outreach templates from `docs/grant/11-institutional-outreach.md`; secure at minimum one letter of support; convert one of those into a pilot deployment. | 4 wk wall | 2026 Q4 |
+| 23 | TU Berlin affiliation email — Decision 17's "optional 1-hour email"; either send it or formally close the dependency. | 1 h | 2026 Q3 |
+| 24 | Commons Conservancy Programme application submission — currently drafted at `docs/grant/commons-conservancy-application-2026-05-18.md`; send to `website@commonsconservancy.org`. | 1 h + 2–6 wk review | 2026 Q3 |
+| 25 | NLnet NGI Zero Commons Fund submission — currently drafted at `docs/grant/application-draft-2026-05-19.md`; submit at the 2026-06-01 deadline (or next call). | 2 h + maintainer-side fill-in identity fields | 2026 Q3 |
+| 26 | Additional translations: Arabic, Ukrainian, Turkish, Romanian. EN + DE shipped today; the four post-grant languages have no current translator. | 1 wk per locale | 2026 Q4 onward |
+| 27 | Multi-OS CI matrix (macOS + Windows in `.github/workflows/test.yml`). Pre-existing Linux-isms surfaced during §3.2: cp1252 vs UTF-8 file IO; subprocess timing on macOS. Remediate then enable the matrix. | 1 wk | 2026 Q4 |
+| 28 | Multi-system Nix flake check (`--all-systems`). Today `nix flake check` only covers `aarch64-darwin`; the other three (`aarch64-linux`, `x86_64-linux`, `x86_64-darwin`) require `--all-systems` + a CI matrix. | 0.5 wk | 2026 Q4 |
+| 29 | Red-team harness packaged as a `tests/test_round20*` unittest target. Ad-hoc agents live at `tests/e2e/red_team/` today; package them as a single-command opt-in run. | 0.5 wk | 2026 Q3 |
+| 30 | Self-service CLA tool (CLA Assistant or equivalent). Today CLA assent is via PR-comment mechanism. | 0.5 d setup | 2026 Q3 |
+| 31 | Mobile + PWA verification: real-phone responsive check, service-worker cache strategy verification, offline-mode behaviour audit. | 2–3 d | 2026 Q4 |
+| 32 | CV-photo (`company_discovery/cv_photo.py`) GDPR review — consent flow, on-device vs server-side processing, image-storage encryption-at-rest, retention + deletion. | 1 wk | 2026 Q3 |
+
+## Test-quality gaps (#41–#46)
+
+| # | Item | Effort | Target |
+|---|---|---|---|
+| 41 | The 4 skipped tests on bare-host are the only real E2E + bias surface. Wire them into a separate CI workflow that runs nightly with the required env vars. | 0.5 d | 2026 Q4 |
+| 42 | Tests that finish in 0.002 s for 36 cases are mocking everything. Add a smoke layer that hits at least one provider live (test API key, OpenAI sandbox). | 1 d | 2026 Q4 |
+| 43 | No mutation testing, no property-based testing, no fuzzing beyond AEAD. Add Hypothesis-based property tests for the locale parser, chat-router, journey state machine. | 1 wk | 2027 Q1 |
+| 44 | No load / perf / concurrency testing. Add a small `locust` or `vegeta` suite measuring p50 / p95 / p99 across the journey + MCP `tools/call`. | 1 wk | 2027 Q1 |
+| 45 | Prompt-injection test suite — adversarial CV text + chat input. No coverage today. | 1 wk | 2026 Q4 |
+| 46 | BYO-AI cost-cap — per-session or per-user spend limit when the user provides their own API key. | 3 d | 2026 Q4 |
+
+## Security audits to run (#47–#50)
+
+| # | Item | Effort | Target |
+|---|---|---|---|
+| 47 | CSRF, CORS, rate-limit specifics, SQL-injection audit of `app.py` + repository layer. | 1 wk | 2026 Q3 |
+| 48 | Session-invalidation completeness — does 2FA enrollment / email change / role change / account deletion invalidate active sessions? | 0.5 wk | 2026 Q3 |
+| 49 | 2FA recovery codes path — implement (if missing) and test. | 3 d | 2026 Q4 |
+| 50 | Backup restore drill — `scripts/backup-production.sh` exists; verify backup decrypts + restore succeeds against a representative dataset, not just dry-run. | 0.5 d | 2026 Q3 |
+
+## Deployment / operational (#51–#54)
+
+| # | Item | Effort | Target |
+|---|---|---|---|
+| 51 | Existing maintainer Docker containers running with `directjob-scout` project name need explicit `docker compose -p directjob-scout down` before the new `helpmefindthejob` containers start. Document this as a one-time maintainer pre-flight. | 0.5 h | 2026 Q3 |
+| 52 | Caddyfile reverse-proxy directive renamed to `helpmefindthejob:8765`. Confirm + redeploy in lockstep with the compose rename on the production host. | 0.5 h | 2026 Q3 |
+| 53 | Env-var rename migration is supported by the `env_compat` shim (this slice's PART 3) with `DeprecationWarning`. Phase 3 removes the legacy prefix entirely — schedule the cutover after one major version of soak. | 1 d | 2027 Q1 |
+| 54 | GDPR Article 20 data-portability `/api/account/export` endpoint — implement (if missing) and confirm Article 17 right-of-erasure path also covers all encrypted-at-rest columns. | 1 wk | 2026 Q4 |
+
+## UX / product (#55–#58)
+
+| # | Item | Effort | Target |
+|---|---|---|---|
+| 55 | Persona panel — at least one real-world user interview per persona to validate the synthesised friction patterns. | 4 wk wall | 2026 Q4 |
+| 56 | Persona localisation: normalise content depth across the panel; render path for non-EN/DE locales when those translations land. | 1 wk | 2026 Q4 |
+| 57 | No-AI templated-fallback verification: confirm every one of the 13 MCP tools has a meaningful templated fallback when no AI provider is configured (rather than erroring out). | 0.5 wk | 2026 Q4 |
+| 58 | Cost-saving doctrine measured-outcome instrumentation — design the metric collection (with deployer consent) that turns the doctrine into a measured claim. | 1 wk | 2027 Q1 |
+
+## Documentation drift (#33–#40)
+
+| # | Item | Effort | Target |
+|---|---|---|---|
+| 33 | `docs/releases/v0.1.0.md` "What's not yet shipped" list — items have shipped since 2026-05-18. Either freeze the file as a historical snapshot with a clear "as of v0.1.0 release date" note, or add a "since v0.1.0" addendum mirroring CHANGELOG `[Unreleased]`. | 0.5 d | 2026 Q3 |
+| 34 | ~~CHANGELOG `[Unreleased]` empty.~~ **CLOSED** in PART 4 of this slice. | — | — |
+| 35 | Decision 22 narrative skips the `khalo.org → directjob-scout.example → helpmefindthejob.com` two-step transition. Could be folded into the Open R8 reopen for clarity. | 0.5 h | 2026 Q3 |
+| 36 | Open R-question log: confirm Open R1 (NLnet deadline) against the live NLnet call page at submission time; resolve Open R2 (NGI0-funded employment / migration projects). | 1 h | 2026 Q3 |
+| 37 | ~~STANDARDS row-by-row audit.~~ **CLOSED** in PART 5 of this slice. | — | — |
+| 38 | Document the test-count growth from 994 (v0.1.0) → 1043 (HEAD post-slice). Currently no entry breaks down the +49 by area. | 0.5 d | 2026 Q3 |
+| 39 | "33 audited surfaces" double-counts colour-scheme variants — true unique surface count is ~25. Reconcile in `ACCESSIBILITY.md`. | 1 h | 2026 Q3 |
+| 40 | "16 fixes" count vs "32 violation instances closed" — the two numbers measure different things; document the distinction in `ACCESSIBILITY.md`. | 0.5 h | 2026 Q3 |
+
+## Audit-log hardening (#13)
+
+| # | Item | Effort | Target |
+|---|---|---|---|
+| 13 | Audit-log tamper-evidence: line-level signing (monotonic-sequence + HMAC-chain or sigstore-style append-only ledger); centralised log forwarding; provable-completeness signal so a regulator can detect deletion. | 2 wk | 2027 Q1 |
+
+## Cosign keyless transition (#14)
+
+| # | Item | Effort | Target |
+|---|---|---|---|
+| 14 | Cosign keyless via GitHub Actions OIDC (cosign model a). Removes the `--insecure-ignore-tlog` flag and the long-lived private key. Planned for v0.2.0+. | 1 d | 2026 Q4 |
+
+## Other items the inventory surfaced
+
+| # | Item | Effort | Target |
+|---|---|---|---|
+| 1 | GitHub repository visibility — currently private (HTTP 404 to unauthenticated readers). Maintainer-side action: Settings → Change visibility → Public. | 5 min | 2026 Q3 (pre-NLnet submission) |
+| 2 | GitHub Pages docs site — currently 404 at `maksodf.github.io/helpmefindthejob/`. Activates after merge to `main` + GH Pages source = `gh-pages` branch (the docs-publish workflow target). | 1 h | 2026 Q3 |
+| 3 | `helpmefindthejob.com` HTTPS + canonical landing page. DNS resolves to a maintainer IP; HTTP returns 405 (no project served). | 0.5 d | 2026 Q3 |
+| 4 | ~~Cosign verification doc fix.~~ **CLOSED** in PART 1.2 of this slice. | — | — |
+| 5 | ~~Audit-log salt fail-fast.~~ **CLOSED** in PART 1.1 of this slice. | — | — |
+| 6 | ~~`DIRECTJOB_*` env-var prefix — env_compat shim with deprecation warnings.~~ **CLOSED** in PART 3 of this slice. | — | — |
+| 7 | ~~`COMPANY_DISCOVERY_*` env-var prefix — same shim.~~ **CLOSED** in PART 3 of this slice. | — | — |
+| 8 | "30 occupations + 51 skills" doc drift — actual file has **30 + 50**. Fix in CHANGELOG + v0.1.0 release notes references. | 0.5 h | 2026 Q3 |
+| 9 | ~~ESCO claim re-framed.~~ **CLOSED** in PART 2 of this slice. | — | — |
+| 10 | ~~EURES claim re-framed.~~ **CLOSED** in PART 2 of this slice. | — | — |
+| 11 | ~~Accessibility WCAG 2.2 AA claim re-framed.~~ **CLOSED** in PART 2 of this slice. | — | — |
+| 12 | ~~AI Act compliance claim re-framed.~~ **CLOSED** in PART 2 of this slice. | — | — |
+| 15 | ~~BYO-AI claim re-framed.~~ **CLOSED** in PART 2 of this slice. | — | — |
+| 16 | Browser-driven journey walk-through with screenshots at each state transition — manual maintainer activity that complements the automated suite. | 0.5 d | 2026 Q3 |
+| 17 | Stripe webhook end-to-end test with real Stripe sandbox webhook. | 0.5 d | 2026 Q4 |
+| 18 | Email transport (SMTP) live verification — drip campaigns, signup confirmation, 2FA recovery. | 0.5 d | 2026 Q3 |
+| 19 | ~~MCP subprocess ResourceWarning.~~ **CLOSED** in PART 6 of this slice. | — | — |
+| 20 | Bias-testing fit-scoring ONE-OFF divergence pattern — remediation is prompt engineering for variance reduction (untried) or model selection (changes the BYO-AI offline-Ollama story). | 2 wk | 2027 Q1 |
+| 58 | ~~Cost-saving claim re-framed.~~ **CLOSED** in PART 2 of this slice. | — | — |
+| 59 | Application-draft numerical claims — 3 of 4 reworded because primary sources didn't yield specific numbers. At submission time, re-attempt primary-source citation or keep the reword. | 1 h | 2026 Q3 |
+| 60 | `docs/esco-integration.md` line 117 claim "21 of the 30 occupations" carry the `shortageDE2024: true` flag — verify the actual count in the JSON. | 10 min | 2026 Q3 |
+| 61 | CHANGELOG-style summaries currently live in commit bodies, not in `CHANGELOG.md`. **Partly closed in PART 4 of this slice** (CHANGELOG `[Unreleased]` now backfilled); doctrine for future slices: every slice updates CHANGELOG before committing. | — | doctrine, ongoing |
+| 62 | Branch-name in README badges hardcoded to `branch=claude/project-analysis-bpHCo`. Once the working branch merges to `main` the badges should be updated to `branch=main`. **Conditional follow-up** — 5-min fix after merge. | 5 min | 2026 Q3 |
+| 63 | Formal pre-submission checklist that walks every NLnet form-field one-by-one against `application-draft-2026-05-19.md`. | 2 h | 2026 Q3 |
+| 64 | Open the live NLnet submission form to cross-check question wording + word limits against the draft. | 1 h | 2026 Q3 |
+| 65 | External-reader recruit — at minimum one human read of the application before submission. | 1 wk wall | 2026 Q3 |
+
+---
+
+## Closure summary
+
+- **Items closed in this slice (pre-submission scope-tightening)**: 12
+  (#4, #5, #6, #7, #9, #10, #11, #12, #15, #19, #34, #37, #58, #61
+  partly — counted as 12 distinct closures by inventory number).
+- **Items remaining**: 53.
+- **Targets**: 2026 Q3 = 24 items; 2026 Q4 = 17 items; 2027 Q1 = 12 items.
+
+This backlog is the contract: every item here is tracked, with an
+owner-rough effort estimate, and an honest quarter target. Items that
+shift quarter get a dated note appended below.
+
+## Append log
+
+- **2026-05-19**: file created during the pre-submission
+  scope-tightening slice (PART 8). 53 items catalogued; 12 marked
+  closed in-slice.

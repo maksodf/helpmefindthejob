@@ -30,13 +30,14 @@ Limits come from environment variables with safe defaults:
 
 from __future__ import annotations
 
-import os
 import sqlite3
 import threading
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from urllib.parse import urlparse
+
+from company_discovery.env_compat import get_env
 
 
 def _now() -> datetime:
@@ -54,10 +55,18 @@ def _hour_key(when: datetime | None = None) -> str:
 
 @dataclass(frozen=True)
 class QuotaLimits:
-    scans_per_day: int = int(os.environ.get("DIRECTJOB_QUOTA_SCANS_PER_DAY", "50"))
-    ai_per_day: int = int(os.environ.get("DIRECTJOB_QUOTA_AI_PER_DAY", "50"))
-    domain_per_hour: int = int(os.environ.get("DIRECTJOB_QUOTA_DOMAIN_PER_HOUR", "30"))
-    active_scans: int = int(os.environ.get("DIRECTJOB_QUOTA_ACTIVE_SCANS", "3"))
+    scans_per_day: int = int(
+        get_env("HELPMEFINDTHEJOB_QUOTA_SCANS_PER_DAY", "DIRECTJOB_QUOTA_SCANS_PER_DAY", "50")
+    )
+    ai_per_day: int = int(
+        get_env("HELPMEFINDTHEJOB_QUOTA_AI_PER_DAY", "DIRECTJOB_QUOTA_AI_PER_DAY", "50")
+    )
+    domain_per_hour: int = int(
+        get_env("HELPMEFINDTHEJOB_QUOTA_DOMAIN_PER_HOUR", "DIRECTJOB_QUOTA_DOMAIN_PER_HOUR", "30")
+    )
+    active_scans: int = int(
+        get_env("HELPMEFINDTHEJOB_QUOTA_ACTIVE_SCANS", "DIRECTJOB_QUOTA_ACTIVE_SCANS", "3")
+    )
 
 
 class QuotaError(Exception):
