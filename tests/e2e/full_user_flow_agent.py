@@ -497,7 +497,7 @@ def main() -> int:
     try:
         blob = download_photo(PHOTO_URL)
         report("download_personal_photo", True, f"{len(blob)} bytes from {PHOTO_URL}")
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:  # noqa: BLE001 - best-effort path; failure must not break the caller
         report("download_personal_photo", False, str(exc))
         return _verdict()
 
@@ -523,7 +523,7 @@ def main() -> int:
     try:
         drive_cv_builder(client)
         report("cv_builder_completed", True, "all sections submitted + finish OK")
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:  # noqa: BLE001 - best-effort path; failure must not break the caller
         report("cv_builder_completed", False, str(exc))
         return _verdict()
 
@@ -535,7 +535,7 @@ def main() -> int:
             DESKTOP_PDF_PATH.exists() and DESKTOP_PDF_PATH.stat().st_size > 1024,
             f"path={DESKTOP_PDF_PATH} size={DESKTOP_PDF_PATH.stat().st_size if DESKTOP_PDF_PATH.exists() else 0}B",
         )
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:  # noqa: BLE001 - best-effort path; failure must not break the caller
         report("pdf_saved_to_desktop", False, str(exc))
         return _verdict()
 

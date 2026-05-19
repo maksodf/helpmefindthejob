@@ -1458,7 +1458,7 @@ def _suggest_lateral_roles(
         )
         try:
             raw = ai_caller(system, user_msg)
-        except Exception:  # noqa: BLE001
+        except Exception:  # noqa: BLE001 - best-effort path; failure must not break the caller
             raw = None
         roles = _parse_role_list(raw or "")
         if roles:

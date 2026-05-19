@@ -73,7 +73,7 @@ def _call(provider, system: str, user: str) -> str | None:
         if result.status != "completed":
             return None
         return result.output
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:  # noqa: BLE001 - best-effort path; failure must not break the caller
         print(f"  ERROR: dispatch raised: {exc}", file=sys.stderr)
         return None
 

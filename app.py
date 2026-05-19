@@ -1490,7 +1490,7 @@ class AppState:
                 self.auth_store.mark_drip_sent(user.id, "drip_day7_sent_at")
                 self.log_analytics(user.id, "drip_day7_sent", {})
                 sent["day7"] += 1
-            except Exception:  # noqa: BLE001
+            except Exception:  # noqa: BLE001 - best-effort path; failure must not break the caller
                 continue
         return sent
 
@@ -3659,7 +3659,7 @@ class AppState:
                 if result.status != "completed":
                     return None
                 return result.output
-            except Exception:  # noqa: BLE001
+            except Exception:  # noqa: BLE001 - best-effort path; failure must not break the caller
                 return None
 
         return _call
@@ -3715,7 +3715,7 @@ class AppState:
                     user_id,
                     {"query": primary_query, "location": location},
                 )
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:  # noqa: BLE001 - best-effort path; failure must not break the caller
                 self.log_analytics(
                     user_id, "chat_journey_step", {"phase": "search", "searchError": str(exc)[:200]}
                 )
@@ -3994,7 +3994,7 @@ class AppState:
                 user=user,
                 reason="Requested via chat",
             )
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:  # noqa: BLE001 - best-effort path; failure must not break the caller
             self.log_analytics(
                 user_id,
                 "chat_cmd",
@@ -4616,11 +4616,11 @@ class AppState:
             digest_text = self.send_user_digest(user=user)
         except KeyError:
             digest_text = ""
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:  # noqa: BLE001 - best-effort path; failure must not break the caller
             digest_text = f"digest_failed: {type(exc).__name__}"
         try:
             self.notify_new_matches(user_id)
-        except Exception:  # noqa: BLE001, S110
+        except Exception:  # noqa: BLE001, S110 - best-effort path; failure must not break the caller
             pass
         return {
             "trigger": trigger,
@@ -5840,7 +5840,7 @@ class Handler(BaseHTTPRequestHandler):
                     # Email verification + welcome are both best-effort.
                     try:
                         STATE.send_email_verification(user)
-                    except Exception:  # noqa: BLE001, S110
+                    except Exception:  # noqa: BLE001, S110 - best-effort path; failure must not break the caller
                         pass
                     try:
                         STATE.send_welcome_email(user)
@@ -5904,7 +5904,7 @@ class Handler(BaseHTTPRequestHandler):
                         ):
                             try:
                                 STATE.send_email_verification(candidate)
-                            except Exception:  # noqa: BLE001, S110
+                            except Exception:  # noqa: BLE001, S110 - best-effort path; failure must not break the caller
                                 pass
                             break
                 self.send_json({"status": "sent_if_known"}, HTTPStatus.ACCEPTED)

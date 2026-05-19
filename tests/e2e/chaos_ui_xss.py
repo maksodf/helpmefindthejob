@@ -168,7 +168,7 @@ def run_xss_sweep() -> list[dict]:
                             "detail": detail,
                         }
                     )
-                except Exception as exc:  # noqa: BLE001
+                except Exception as exc:  # noqa: BLE001 - best-effort path; failure must not break the caller
                     results.append(
                         {
                             "payload": payload_name,

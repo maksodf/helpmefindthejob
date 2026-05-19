@@ -857,7 +857,7 @@ def parse_ai_router_response(raw: str) -> str | None:
                 import json as _json
 
                 parsed = _json.loads(json_block.group(0))
-            except Exception:  # noqa: BLE001
+            except Exception:  # noqa: BLE001 - best-effort path; failure must not break the caller
                 parsed = None
         if isinstance(parsed, dict):
             cand = str(parsed.get("command") or "").strip().casefold()
@@ -895,7 +895,7 @@ def parse_ai_router_extracted_args(raw: str) -> dict[str, Any]:
         import json as _json
 
         parsed = _json.loads(json_block.group(0))
-    except Exception:  # noqa: BLE001
+    except Exception:  # noqa: BLE001 - best-effort path; failure must not break the caller
         return {}
     if not isinstance(parsed, dict):
         return {}

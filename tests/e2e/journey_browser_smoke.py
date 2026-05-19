@@ -301,7 +301,7 @@ def main() -> int:
                     break
             report("mobile_no_bubble_overflow", not overflow, "all bubbles ≤390px wide")
             mpage.screenshot(path=str(out / "journey_mobile.png"), full_page=True)
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:  # noqa: BLE001 - best-effort path; failure must not break the caller
             report("mobile_browser_smoke", False, str(exc)[:200])
         finally:
             mctx.close()

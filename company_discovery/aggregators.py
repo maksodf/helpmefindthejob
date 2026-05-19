@@ -918,7 +918,7 @@ class JobAggregationEngine:
                             persona_id=persona_id,
                         )
                     )
-                except Exception as exc:  # noqa: BLE001
+                except Exception as exc:  # noqa: BLE001 - best-effort path; failure must not break the caller
                     error = f"{type(exc).__name__}: {exc}"[:200]
                     jobs = []
                 if self.cache is not None and jobs:

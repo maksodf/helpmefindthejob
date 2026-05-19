@@ -191,5 +191,5 @@ def extract_data_uri_size(data_uri: str | None) -> int:
         return 0
     try:
         return len(base64.b64decode(match.group(1), validate=False))
-    except Exception:  # noqa: BLE001
+    except Exception:  # noqa: BLE001 - best-effort path; failure must not break the caller
         return 0

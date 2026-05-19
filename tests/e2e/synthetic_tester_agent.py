@@ -549,7 +549,7 @@ def run_persona(base_url: str, browser, persona: Persona) -> PersonaResult:
         out_dir = Path(os.environ.get("E2E_SCREENSHOTS", "tests/e2e/screenshots"))
         out_dir.mkdir(parents=True, exist_ok=True)
         page.screenshot(path=str(out_dir / f"synthetic_{persona.id}.png"), full_page=True)
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:  # noqa: BLE001 - best-effort path; failure must not break the caller
         result.error = f"{type(exc).__name__}: {exc}"
     finally:
         context.close()

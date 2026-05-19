@@ -283,7 +283,7 @@ def verify_P1_no_duplicates() -> Result:
         return Result(
             "P1", label, True, f"run1={len(urls1)} jobs (0 dup), run2={len(urls2)} jobs (0 dup)"
         )
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:  # noqa: BLE001 - best-effort path; failure must not break the caller
         return Result("P1", label, False, f"{type(exc).__name__}: {exc}")
 
 
@@ -381,7 +381,7 @@ def verify_P2_fit_scoring_prompt() -> Result:
         if job_title and job_title.casefold() not in brief_text.casefold():
             return Result("P2", label, False, f"brief did not include job title '{job_title}'")
         return Result("P2", label, True, f"brief={len(brief_text)} chars, contains CV + job title")
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:  # noqa: BLE001 - best-effort path; failure must not break the caller
         return Result("P2", label, False, f"{type(exc).__name__}: {exc}")
 
 
@@ -420,7 +420,7 @@ def verify_P3_tailor_cv_prompt() -> Result:
         if not any(tok and tok.casefold() in out.casefold() for tok in ref.split()):
             return Result("P3", label, False, "tailor output doesn't reference the job")
         return Result("P3", label, True, f"tailor prompt={len(out)} chars, references CV + role")
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:  # noqa: BLE001 - best-effort path; failure must not break the caller
         return Result("P3", label, False, f"{type(exc).__name__}: {exc}")
 
 
@@ -471,7 +471,7 @@ def verify_P4_skill_gap_atlas() -> Result:
             )
         names = [str(g.get("skill", "?")) for g in top[:5]]
         return Result("P4", label, True, f"{imported} jobs imported, {len(top)} gaps: {names[:3]}")
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:  # noqa: BLE001 - best-effort path; failure must not break the caller
         return Result("P4", label, False, f"{type(exc).__name__}: {exc}")
 
 
@@ -528,7 +528,7 @@ def verify_P5_application_lifecycle() -> Result:
         if not replied:
             return Result("P5", label, False, f"replied flag not persisted: {replied!r}")
         return Result("P5", label, True, "status=applied, replied=True persisted across reload")
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:  # noqa: BLE001 - best-effort path; failure must not break the caller
         return Result("P5", label, False, f"{type(exc).__name__}: {exc}")
 
 
@@ -571,7 +571,7 @@ def verify_P6_watchlist_scan() -> Result:
         return Result(
             "P6", label, True, f"scan ack'd: status={run_status}, runs_started={runs_started}"
         )
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:  # noqa: BLE001 - best-effort path; failure must not break the caller
         return Result("P6", label, False, f"{type(exc).__name__}: {exc}")
 
 
@@ -614,7 +614,7 @@ def verify_P7_cv_encrypted_at_rest() -> Result:
             True,
             f"scanned {len(db_candidates)} .db file(s); sentinel not in plaintext",
         )
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:  # noqa: BLE001 - best-effort path; failure must not break the caller
         return Result("P7", label, False, f"{type(exc).__name__}: {exc}")
 
 
@@ -680,7 +680,7 @@ def verify_P8_reply_rate_analytics() -> Result:
         if not 0.30 <= float(rate) <= 0.36:
             return Result("P8", label, False, f"rate {rate} not ≈0.333 for 1/3")
         return Result("P8", label, True, f"3 applied, 1 replied, rate={rate:.3f} (≈33%)")
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:  # noqa: BLE001 - best-effort path; failure must not break the caller
         return Result("P8", label, False, f"{type(exc).__name__}: {exc}")
 
 

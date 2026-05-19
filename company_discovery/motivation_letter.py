@@ -211,7 +211,7 @@ def draft_with_ai(
     )
     try:
         out = ai_caller(system, user)
-    except Exception:  # noqa: BLE001
+    except Exception:  # noqa: BLE001 - best-effort path; failure must not break the caller
         return None
     if not looks_like_dach_letter(out or ""):
         return None

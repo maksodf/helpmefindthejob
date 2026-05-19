@@ -327,7 +327,7 @@ class DuckDuckGoSearchProvider:
                     {"q": query, "kl": "wt-wt"},
                 )
                 return body
-            except Exception:  # noqa: BLE001
+            except Exception:  # noqa: BLE001 - best-effort path; failure must not break the caller
                 return ""
         from urllib.error import HTTPError, URLError
         from urllib.parse import urlencode
@@ -383,7 +383,7 @@ class DuckDuckGoSearchProvider:
                     real = qs.get("uddg", [""])[0]
                     if real:
                         href = _unquote(real)
-                except Exception:  # noqa: BLE001
+                except Exception:  # noqa: BLE001 - best-effort path; failure must not break the caller
                     continue
             if href.startswith("//"):
                 href = "https:" + href
@@ -522,7 +522,7 @@ class BraveSearchProvider:
                     {"q": query, "count": "10"},
                 )
                 return body
-            except Exception:  # noqa: BLE001
+            except Exception:  # noqa: BLE001 - best-effort path; failure must not break the caller
                 return ""
         from urllib.error import HTTPError, URLError
         from urllib.parse import urlencode

@@ -262,7 +262,7 @@ def domain_gdpr_audit(c: Client) -> None:
                 conn.close()
                 break
             conn.close()
-        except Exception:  # noqa: BLE001
+        except Exception:  # noqa: BLE001 - best-effort path; failure must not break the caller
             continue
     if db_path is None:
         record(
@@ -280,7 +280,7 @@ def domain_gdpr_audit(c: Client) -> None:
         )
         rows = cur.fetchall()
         conn.close()
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:  # noqa: BLE001 - best-effort path; failure must not break the caller
         record("gdpr_audit", False, f"DB read failed at {db_path}: {exc}")
         return
     chat_cmd_rows = [r for r in rows if "chat_cmd" in (r[2] or "")]
@@ -429,7 +429,7 @@ def main() -> int:
     for name, fn in DOMAINS:
         try:
             fn(c)
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:  # noqa: BLE001 - best-effort path; failure must not break the caller
             record(name, False, f"crashed: {type(exc).__name__}: {exc}")
 
     out = Path(os.environ.get("E2E_MULTIDOMAIN_REPORT", "tests/e2e/multi_domain_report.json"))
