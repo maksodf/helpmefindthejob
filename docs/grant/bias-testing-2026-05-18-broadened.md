@@ -396,3 +396,37 @@ regenerates on every run.
   test PASSED at 87.1%. The Maria→Logistics ONE-OFF verdict
   holds for a third consecutive run; the broadened-run framing
   is now firmly retired.
+
+---
+
+## Editorial note appended 2026-05-20 — what this report actually measured
+
+**Test-infrastructure correction discovered 2026-05-20**: this
+broadened report captures fit-scoring behaviour against the bias-
+test's own self-contained prompt at
+`tests/test_bias_methodology.py::_build_fit_score_prompt` (emit
+format: `FIT_SCORE: <int>` + optional rationale). That test-local
+prompt was **not wired** to the production user-facing `/auto-fit`
+builder at `company_discovery.analysis.build_auto_fit_prompt`.
+
+The broadened-run's headline robustness finding ("clustering at 85/92
+did NOT persist — model spreads across 17 distinct values from 0–95")
+is **specifically about the test-framework prompt's behaviour at scale**.
+The 85/92 clustering it resolved was the test-framework prompt's
+clustering, observed in the first-run report. The CV-tailoring side
+(70 data points → 100% structural pass-rate) DID go through the
+production `build_cv_tailoring_prompt` — that figure remains intact
+as a production-prompt measurement at the looser 2-gate threshold of
+the time. CV-tailoring later moved to a 4-gate semantic-fact check
+in `bias-testing-2026-05-18-polish.md`.
+
+What this report **does** establish: scoring robustness of the
+methodology framework's prompt at 140 data points; production-prompt
+CV-tailoring at 70 data points (2-gate). What this report **does
+not** establish: production-prompt fit-scoring behaviour against the
+seven-persona cohort.
+
+The first dated bias-testing report to measure production fit-
+scoring-prompt behaviour is `bias-testing-2026-05-20.md` (forthcoming
+once the re-wired methodology completes its run). See R12 in
+`04-research-and-decisions.md` for the reconsideration block.

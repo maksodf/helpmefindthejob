@@ -615,3 +615,36 @@ No over-claims identified. The report stands.
   (Olga 2 → 8/10; Maria 2 → 9/10). Scoring failures essentially
   flat; ONE-OFF cross-industry verdict holds for a third
   consecutive run.
+
+---
+
+## Editorial note appended 2026-05-20 — what this report actually measured
+
+**Test-infrastructure correction discovered 2026-05-20**: the
+fit-scoring side of this polish report captures behaviour against the
+bias-test's own self-contained prompt at
+`tests/test_bias_methodology.py::_build_fit_score_prompt` (emit
+format: `FIT_SCORE: <int>` + optional rationale). That test-local
+prompt was **not wired** to the production user-facing `/auto-fit`
+builder at `company_discovery.analysis.build_auto_fit_prompt`. The
+fit-scoring numbers in this report therefore measure the methodology
+framework's prompt, not the production prompt.
+
+The CV-tailoring side of this report (4-condition semantic-fact check
+against the production `build_cv_tailoring_prompt`) **was** measuring
+production-prompt behaviour. The criterion-(d) friction-context
+finding (61.4% polish-run → 92.9% prompt-enhanced run) is a
+production-prompt measurement and stands intact. Cross-industry
+probes were also fit-scored via the test-framework prompt; the
+ONE-OFF pattern verdict therefore inherits the same caveat.
+
+What this report **does** establish: cohort-aware fit-scoring
+behaviour of the methodology framework's prompt; production
+CV-tailoring at the 4-condition semantic-fact threshold. What this
+report **does not** establish: production fit-scoring-prompt
+behaviour against the seven-persona cohort.
+
+The first dated bias-testing report to measure production fit-
+scoring-prompt behaviour is `bias-testing-2026-05-20.md` (forthcoming
+once the re-wired methodology completes its run). See R12 in
+`04-research-and-decisions.md` for the reconsideration block.

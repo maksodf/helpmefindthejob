@@ -498,3 +498,34 @@ No over-claims identified. The report stands.
   end-to-end wiring (6 new tests in `tests/test_round4.py`).
   No bias-test re-run needed — the contract was already
   verified at 0a9182e (87.1% overall, 92.9% criterion d).
+
+---
+
+## Editorial note appended 2026-05-20 — what this report actually measured
+
+**Test-infrastructure correction discovered 2026-05-20**: the
+fit-scoring side of this report (carried forward from the polish run
+without re-execution) captures behaviour against the bias-test's
+own self-contained prompt at
+`tests/test_bias_methodology.py::_build_fit_score_prompt` (emit
+format: `FIT_SCORE: <int>` + optional rationale). That test-local
+prompt was **not wired** to the production user-facing `/auto-fit`
+builder at `company_discovery.analysis.build_auto_fit_prompt`.
+
+The CV-tailoring prompt-enhancement headline of this report (the
+production `build_cv_tailoring_prompt` enhanced with friction-context
+acknowledgment + `friction_keywords` parameter moving criterion (d)
+from 61.4% → 92.9%, overall 87.1%) **was** measuring production-prompt
+behaviour. That figure stands intact as the first dated demonstration
+of a production-prompt CV-tailoring improvement. The fit-scoring
+numbers carried forward inherit the test-framework caveat.
+
+What this report **does** establish: production `build_cv_tailoring_prompt`
++ `friction_keywords` wiring closes the polish-run criterion-(d)
+gap. What this report **does not** establish: production
+fit-scoring-prompt behaviour against the seven-persona cohort.
+
+The first dated bias-testing report to measure production fit-
+scoring-prompt behaviour is `bias-testing-2026-05-20.md` (forthcoming
+once the re-wired methodology completes its run). See R12 in
+`04-research-and-decisions.md` for the reconsideration block.

@@ -253,3 +253,31 @@ which tag ran.
   61.4% to 92.9% (+31.5 pp). Overall CV-tailoring test PASSED.
   Scoring failure essentially flat; ONE-OFF cross-industry
   verdict holds for a third consecutive run.
+
+---
+
+## Editorial note appended 2026-05-20 — what this report actually measured
+
+**Test-infrastructure correction discovered 2026-05-20**: this report
+captures fit-scoring behaviour against the bias-test's own self-
+contained prompt at
+`tests/test_bias_methodology.py::_build_fit_score_prompt` (emit
+format: `FIT_SCORE: <int>` + optional rationale). That test-local
+prompt was **not wired** to the production user-facing `/auto-fit`
+builder at `company_discovery.analysis.build_auto_fit_prompt`. The
+two prompt templates differ in candidate-profile structure, in
+sub-score decomposition (production asks for four per-criterion
+sub-scores summing to the total; the test-local prompt asked for a
+single holistic 0-100 score), and in friction-context surfacing.
+
+What this report **does** establish: behaviour of the methodology
+framework's own prompt against the seven-persona cohort, Ollama
+llama3.1:8b, single strong-fit scenario per persona. What this report
+**does not** establish: behaviour of the production `/auto-fit`
+feature against the same cohort — the production prompt was never
+invoked here.
+
+The first dated bias-testing report to measure production-prompt
+behaviour is `bias-testing-2026-05-20.md` (forthcoming once the
+re-wired methodology completes its run). See R12 in
+`04-research-and-decisions.md` for the reconsideration block.
