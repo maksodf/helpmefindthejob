@@ -27,3 +27,26 @@
  * classes (md-button, md-search-result__link, etc.) — the
  * underline rule above explicitly excludes any link whose class
  * starts with `md-` (the theme's namespacing convention). */
+
+/* Pygments syntax-highlighting color overrides for code-block
+ * comments, docstrings, and variables. The default mkdocs-material
+ * pygments theme paints these classes at #717171 on the #f5f5f5
+ * code-block background, yielding a contrast ratio of 4.47:1 —
+ * just below the WCAG 2.2 AA 4.5:1 floor (axe `color-contrast`
+ * SERIOUS, re-surfaced 2026-05-19 post-rename audit).
+ *
+ * Scoped to `.md-typeset .highlight` so the override only applies
+ * inside mkdocs-material content code blocks and never bleeds into
+ * the app's own static-page chrome. The #595959 foreground yields
+ * ~6.1:1 against the same background — comfortably above the floor
+ * with margin for future palette tweaks. Dark-mode (`scheme="slate"`)
+ * already passes contrast; the override is light-mode only. */
+[data-md-color-scheme="default"] .md-typeset .highlight .c,
+[data-md-color-scheme="default"] .md-typeset .highlight .c1,
+[data-md-color-scheme="default"] .md-typeset .highlight .cm,
+[data-md-color-scheme="default"] .md-typeset .highlight .cp,
+[data-md-color-scheme="default"] .md-typeset .highlight .cs,
+[data-md-color-scheme="default"] .md-typeset .highlight .sd,
+[data-md-color-scheme="default"] .md-typeset .highlight .nv {
+  color: #595959;
+}

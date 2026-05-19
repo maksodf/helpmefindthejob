@@ -245,9 +245,8 @@ single-line bug fixes — may be merged without prior CLA assent at
 maintainer discretion. Anything beyond trivial needs assent on file.
 
 Operational note: a self-service CLA-signing tool (CLA Assistant or
-equivalent) will be wired up in Week 3 of the grant sprint or shortly
-after. Until then the PR-comment mechanism above is the canonical assent
-process.
+equivalent) is a post-grant follow-on. Until then the PR-comment
+mechanism above is the canonical assent process.
 
 ## Reporting Bugs and Requesting Features
 

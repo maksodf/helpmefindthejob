@@ -29,9 +29,34 @@
     }
   }
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", patchSearchDialog);
-  } else {
+  // mkdocs-material's content.code.copy feature wraps each code block's
+  // copy button in `<nav class="md-code__nav">`. When a page contains
+  // more than one code block, axe's `landmark-unique` rule (MODERATE)
+  // flags every nav after the first because they all share the same
+  // implicit "navigation" landmark name. Surfaced 2026-05-19 post-rename
+  // audit. Each nav gets a unique aria-label derived from its anchor id.
+  function patchCodeBlockNavs() {
+    var navs = document.querySelectorAll("nav.md-code__nav");
+    for (var i = 0; i < navs.length; i++) {
+      var nav = navs[i];
+      if (nav.getAttribute("aria-label") || nav.getAttribute("aria-labelledby")) {
+        continue;
+      }
+      var parent = nav.parentElement;
+      var id = parent ? parent.getAttribute("id") : null;
+      var label = id ? "Code block actions for " + id : "Code block actions " + (i + 1);
+      nav.setAttribute("aria-label", label);
+    }
+  }
+
+  function patchAll() {
     patchSearchDialog();
+    patchCodeBlockNavs();
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", patchAll);
+  } else {
+    patchAll();
   }
 })();

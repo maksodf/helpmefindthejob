@@ -512,6 +512,65 @@ GitHub UI and the mkdocs site without ambiguity.
 **Re-audit verification**: `mkdocs build --strict` green; both
 compliance pages cleared with 0 axe violations.
 
+## Fixes shipped in the pre-submission QA pass
+
+### Fix 15 — Pygments code-comment + docstring contrast (light mode)
+
+**File**: `docs/stylesheets/accessibility.css` (new pygments
+override block).
+
+**Issue**: `color-contrast` (serious, WCAG 1.4.3 Level AA) —
+re-surfaced 2026-05-19 in the pre-submission post-rename axe
+re-run across the 5 mkdocs surfaces (root, mcp-server,
+deployment-recipe, production-deployment, esco-integration). The
+default mkdocs-material pygments theme paints `.c1` (comments),
+`.sd` (docstrings), and `.nv` (variable names) at `#717171` on
+the `#f5f5f5` code-block background — a contrast ratio of
+**4.47:1**, just below the WCAG 2.2 AA 4.5:1 floor. Affected
+4 of the 5 mkdocs pages (every page that had a code block with
+these pygments classes).
+
+**Fix**: scoped overrides for `.c, .c1, .cm, .cp, .cs, .sd, .nv`
+inside `.md-typeset .highlight` under
+`[data-md-color-scheme="default"]`, setting `color: #595959`
+(~6.1:1 vs `#f5f5f5` — comfortably above the floor with margin
+for future palette tweaks). Dark-mode (`scheme="slate"`) was
+already passing and is unchanged. The override is light-mode-only.
+
+**Re-audit verification**: all 4 affected mkdocs surfaces
+cleared (serious=0).
+
+### Fix 16 — Code-block copy-button nav landmark-uniqueness
+
+**File**: `docs/javascripts/accessibility.js` (new
+`patchCodeBlockNavs` function added alongside the existing
+`patchSearchDialog`).
+
+**Issue**: `landmark-unique` (moderate, WCAG 1.3.1) — re-surfaced
+2026-05-19 in the pre-submission post-rename axe re-run.
+mkdocs-material's `content.code.copy` feature wraps each
+code-block copy button in `<nav class="md-code__nav">`. When a
+page contains more than one code block, axe's `landmark-unique`
+rule flags every nav after the first because they all share the
+same implicit "navigation" landmark name. Affected the same 4
+mkdocs surfaces as Fix 15.
+
+**Fix**: extended `accessibility.js` at DOMContentLoaded to
+attach a unique `aria-label` to every `nav.md-code__nav` lacking
+one. The label derives from the parent's `id` (`Code block actions
+for <id>`) or falls back to a positional counter (`Code block
+actions <N>`). Idempotent and safe to remove when mkdocs-material
+ships the fix upstream.
+
+**Re-audit verification**: all 4 affected mkdocs surfaces
+cleared (moderate=0).
+
+## Append log — confirmation re-runs
+
+| Date | Slice | Surfaces re-audited | Result |
+|---|---|---|---|
+| 2026-05-19 | Pre-submission QA sweep (post-rename) | 8 app + 5 docs (unauth via axe-core CLI) + 8 auth states × 2 schemes + 4 dynamic states (auth via Playwright) | 0/0/0/0 across all 33 captures after Fix 15 + Fix 16 landed; raw evidence in `audit-results/post-rename-2026-05-19/` (gitignored) and `audit-results/auth-surfaces/`. |
+
 ## Known gaps + remediation plan
 
 | Gap | Severity | Where | Why deferred | Planned timeline |

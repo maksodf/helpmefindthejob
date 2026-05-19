@@ -46,12 +46,17 @@ non-profit institutions across the EU can adopt, fork, and self-host
 without licence friction. See [`docs/grant/`](docs/grant/) for the full
 strategic context.
 
-**Status**: pre-v0.1.0 alpha. Working hosted reference implementation in
-private testing; public demo deploys in Week 3 of the grant sprint
-(see [Roadmap](#roadmap)). The main branch is intended to stay buildable
-but may contain unfinished work. Honest about instability — see
+**Status**: v0.1.0 — first stable pre-publication tag shipped 2026-05-18
+([`docs/releases/v0.1.0.md`](docs/releases/v0.1.0.md), cosign-signed
++ CycloneDX SBOM). Public demo deployment at
+[`helpmefindthejob.com`](https://helpmefindthejob.com/) is pending the
+maintainer's DNS configuration (CNAME → GH Pages or apex hosting). The
+main branch is intended to stay buildable but may contain unfinished
+work between tags. Honest about instability — see
 [`CONTRIBUTORS-NOTE.md`](CONTRIBUTORS-NOTE.md) for the project's history
-including the deprecated commercial phase.
+including the 2026-05-19 project rename ([Decision 22](docs/grant/04-research-and-decisions.md#decision-22-project-rename--directjob-scout--helpmefindthejob))
+and the deprecated commercial phase that preceded the civic-commons
+direction.
 
 ## What it does
 
@@ -167,9 +172,10 @@ without forking.
 - **EURES schema** — interoperability with the European Employment
   Services portal; export endpoint in Week 2.
 - **WCAG 2.2 AA** — accessibility target. Honest audit and remediation
-  plan in [`ACCESSIBILITY.md`](ACCESSIBILITY.md) (lands Week 3).
-- **RFC 9116** — `/.well-known/security.txt` for vulnerability
-  disclosure (lands with the public demo in Week 3).
+  shipped in [`ACCESSIBILITY.md`](ACCESSIBILITY.md) (16 fixes across
+  3 + 1 audit passes; 0/0/0/0 across all 33 audited surfaces).
+- **RFC 9116** — `/.well-known/security.txt` shipped at
+  [`static/.well-known/security.txt`](static/.well-known/security.txt).
 - **GDPR alignment** — encrypted profile-at-rest with
   ChaCha20-Poly1305, user-sovereign AI provider choice (BYO-AI
   including Ollama for fully-offline mode), explicit-consent data
@@ -221,7 +227,8 @@ docker compose -f docker-compose.prod.yml --env-file .env up -d --build
 
 Backup, restore, restore-drill, smoke checks, uptime checks, and
 TLS-expiry monitoring scripts live in [`scripts/`](scripts/). A `Nix`
-flake for reproducible builds lands in Week 3.
+flake for reproducible builds is shipped at [`flake.nix`](flake.nix)
+(pinned to `nixos-25.05`; `nix develop` enters a reproducible shell).
 
 For sensitive deployments, the BYO-AI abstraction
 ([`company_discovery/ai_providers.py`](company_discovery/ai_providers.py))
@@ -291,9 +298,11 @@ sustainability model) at [`docs/grant/03-post-grant.md`](docs/grant/03-post-gran
 - [`AUTHORS.md`](AUTHORS.md), [`ACKNOWLEDGMENTS.md`](ACKNOWLEDGMENTS.md) — who built this.
 - [`TRADEMARK.md`](TRADEMARK.md) — name and mark usage.
 - [`CONTRIBUTORS-NOTE.md`](CONTRIBUTORS-NOTE.md) — honest project history.
-- **Documentation site**: lands in Week 3 at `docs.<public-domain>`.
-- **Public demo**: lands in Week 3 at `demo.<public-domain>` with the
-  seven-persona panel pre-seeded.
+- **Documentation site**: published via mkdocs-material to GitHub Pages
+  (transitions to [`helpmefindthejob.com`](https://helpmefindthejob.com/)
+  when the maintainer wires the CNAME).
+- **Public demo**: lands at `demo.helpmefindthejob.com` with the
+  seven-persona panel pre-seeded — pending maintainer DNS.
 
 ## Why this exists
 

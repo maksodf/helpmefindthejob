@@ -46,11 +46,19 @@ and the actual quarter could shift.
 
 We plan to:
 
-- Complete the remaining Week 3 grant-sprint items: public demo
-  deployment (§3.4), documentation site at `docs.<public-domain>`
-  (§3.5), accessibility audit and `ACCESSIBILITY.md` (§3.6),
-  translator contributor pathway (§3.7), reproducible build via Nix
-  flake (§3.8).
+- Complete the Week 3 grant-sprint items. Status as of 2026-05-19:
+  - Public demo deployment (§3.4): pending maintainer DNS for
+    [`demo.helpmefindthejob.com`](https://demo.helpmefindthejob.com/).
+  - Documentation site (§3.5): **shipped** via mkdocs-material to
+    GitHub Pages; transitions to [`helpmefindthejob.com`](https://helpmefindthejob.com/)
+    when DNS is wired.
+  - Accessibility audit + [`ACCESSIBILITY.md`](ACCESSIBILITY.md) (§3.6):
+    **shipped** (16 fixes across 3 + 1 audit passes; 0/0/0/0 across 33
+    audited surfaces).
+  - Translator contributor pathway (§3.7): **shipped** at
+    [`docs/translating.md`](docs/translating.md).
+  - Reproducible build via Nix flake (§3.8): **shipped** at
+    [`flake.nix`](flake.nix) (pinned to `nixos-25.05`).
 - Submit the **Commons Conservancy Programme application** (Week 2
   task 2.1; draft at `docs/grant/commons-conservancy-application-2026-05-18.md`).
 - Conduct **institutional outreach** in Week 4: at least one

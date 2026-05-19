@@ -13,14 +13,17 @@ Helpmefindthejob is an early-stage open civic-employment commons project. Respon
   [feature-request template](.github/ISSUE_TEMPLATE/feature_request.md)
   or open a Discussion if you want to brainstorm first.
 - **Translation contributions and locale questions**: open an issue
-  tagged `translation`. See `docs/translating.md` once it lands in Week 3.
+  tagged `translation`. See [`docs/translating.md`](docs/translating.md)
+  for the translator pathway.
 - **Security disclosures**: do **not** open a public issue. Follow the
   private process in [SECURITY.md](SECURITY.md).
 - **Direct maintainer contact**: see [AUTHORS.md](AUTHORS.md).
-- **Documentation site**: a project documentation site will be published
-  at the public demo domain in Week 3 of the grant sprint. Until then,
-  the repository's `README.md`, `ARCHITECTURE.md` (Week 2), and the
-  `docs/` folder are the primary references.
+- **Documentation site**: the project documentation site is published
+  via mkdocs-material to GitHub Pages and transitions to
+  [`helpmefindthejob.com`](https://helpmefindthejob.com/) when the
+  maintainer wires the DNS. The repository's `README.md`,
+  [`ARCHITECTURE.md`](ARCHITECTURE.md), and the `docs/` folder remain
+  the canonical sources.
 
 ## What "best-effort" means in practice
 
