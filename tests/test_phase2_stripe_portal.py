@@ -130,5 +130,51 @@ class CustomerIdPropagationTests(unittest.TestCase):
         self.assertEqual(after.customer_id, "cus_keep_me")
 
 
+class StripeWebhookIdempotencyTests(unittest.TestCase):
+    """Regression coverage for PART I.4 of the 2026-05-19 deep audit:
+    `mark_stripe_event_processed` must INSERT-OR-IGNORE on event_id +
+    return True only on the first sighting. Stripe webhook retries
+    arrive with the same event.id; the second arrival must short-
+    circuit to a 200 OK without re-applying side effects."""
+
+    def setUp(self) -> None:
+        import tempfile
+        from pathlib import Path
+
+        from company_discovery.auth import AuthStore
+
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.store = AuthStore(
+            Path(self.tmp.name) / "auth.sqlite3",
+            secret_key="test-secret-key-for-idempotency-fixture-1234",
+        )
+
+    def test_first_delivery_returns_true(self) -> None:
+        first = self.store.mark_stripe_event_processed("evt_first", "ping")
+        self.assertTrue(first, "first delivery of evt_first must return True")
+
+    def test_duplicate_delivery_returns_false(self) -> None:
+        first = self.store.mark_stripe_event_processed("evt_dup", "ping")
+        second = self.store.mark_stripe_event_processed("evt_dup", "ping")
+        self.assertTrue(first, "first delivery must return True")
+        self.assertFalse(second, "second delivery (same event.id) must return False")
+
+    def test_different_events_each_first_delivery(self) -> None:
+        self.assertTrue(self.store.mark_stripe_event_processed("evt_a", "ping"))
+        self.assertTrue(self.store.mark_stripe_event_processed("evt_b", "ping"))
+        # A third event-a delivery still returns False — second arrival
+        # of an event already in the table.
+        self.assertFalse(self.store.mark_stripe_event_processed("evt_a", "ping"))
+
+    def test_empty_event_id_always_processes(self) -> None:
+        # Empty event_id is a test-fixture / malformed-payload signal;
+        # we don't want to dedupe on the empty string as a primary key.
+        first = self.store.mark_stripe_event_processed("", "ping")
+        second = self.store.mark_stripe_event_processed("", "ping")
+        self.assertTrue(first)
+        self.assertTrue(second, "empty event_id must not be deduped")
+
+
 if __name__ == "__main__":
     unittest.main()

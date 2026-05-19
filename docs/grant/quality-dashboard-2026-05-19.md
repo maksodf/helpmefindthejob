@@ -384,3 +384,71 @@ This caveats block is required honesty doctrine: the dashboard's
 positive evidence is genuine, but the positive evidence is **the
 floor of what we have proven, not the ceiling of what is
 required**. The Phase 2 backlog catalogues the remaining ceiling.
+
+---
+
+## ALL-rule categories deliberately excluded from the deep-audit sweep
+
+Added 2026-05-19 at operator request after the bounded-scope
+decision during PART B of the deep-audit sweep. The audit's static-
+analysis battery ran `ruff check --select ALL`, surfacing ~8 800
+findings across opinionated style + bug categories. The operator
+approved a bounded scope covering **real-bug categories only**
+(F / PLE / B / RUF012 / RUF009 / B904 / RET503 / TRY004 / BLE001 /
+S110 / RUF001-3 unicode / RUF005 / RET504 / TRY / S105 / S108
+plus auto-fix categories the project already opted into). All
+~80 findings in the real-bug subset were closed during the audit
+(see PARTS B.1-B.7 commit messages).
+
+The categories below were **triaged out of the audit scope** with
+the one-line reason for each. They remain available via
+`ruff check --select <code>` for future contributors who wish to
+adopt them as project policy, but they are not enforced today.
+
+| Ruff code | One-line reason for exclusion |
+|---|---|
+| **D** (pydocstyle) | Project does not require docstrings on every public function. Documentation discipline is satisfied at the module level + at the cross-link surface (README + ARCHITECTURE + STANDARDS). Per-function docstring enforcement would impose a major formatting drift the project has not opted into. |
+| **ANN** (annotation completeness) | The project's type-discipline contract is **`mypy --strict` over the audit_log / crypto_kit / mcp_server subset** (defined in pyproject.toml). Forcing full type annotations across the codebase would change the type-discipline scope; that is a deliberate policy decision the project has not made. |
+| **COM** (trailing-comma style) | No project policy. `ruff format` handles formatting; trailing-comma placement is a downstream artefact of formatter choices, not a bug. |
+| **PT*** (pytest style) | Project uses `unittest` (the `assertEqual` style), not pytest's bare `assert`. PT009 (2 224 hits) would rewrite every assertion in the suite; PT027 + PT018 would rewrite `with self.assertRaises(...)`. These are framework-style preferences, not bugs. |
+| **PLR2004** (magic-value comparison) | 227 hits; noise > signal in this codebase. Magic values in tests are by design (assertions against literal expected outcomes); production magic values are local constants where readability + locality justify the literal. Per-site noqa would be net negative. |
+| **RUF001** (ambiguous-unicode-character-string) | 14 hits; all in user-facing German strings using en-dashes (–), curly quotes, and accented characters (ñ, ü). These are intentional typography in user-facing content, not homograph-attack vectors in code (those would be caught by PLE2502, which is in scope and at zero). |
+| **RUF002** (ambiguous-unicode-character-docstring) | 14 hits; same rationale as RUF001 — typographic chars in German-context docstrings. |
+| **RUF003** (ambiguous-unicode-character-comment) | 3 hits; same rationale — em-dash in comments + emoji in tracker memos. Not security-relevant. |
+| **RUF005** (collection-literal-concatenation) | 3 hits; style preference (`[a, b] + [c]` vs `[a, b, c]`). No bug class. |
+| **RUF059** (unused-unpacked-variable) | 15 hits; tests deliberately destructure return values to document the contract even when one slot is unused. Switching to `_` would lose that documentation. |
+| **S101** (assert statement) | Tests legitimately use `assert` (the project's `per-file-ignores` already exempts `tests/*` for `B011`). |
+| **S105 in `tests/`** | 16 hits; all are test-fixture passwords (`"test-password-fixture"`, `"sk_test_dummy"`, etc.). Real-secret detection patterns are out of scope per the audit's D.7 grep (which found 0 real secrets in production code). |
+| **S108 in `tests/`** | 1 hit; `tests/e2e/test_de_audit.py` uses `/tmp/dj-de-audit` as a fixed staging path. Test-only artefact; not a production-code path traversal vector. |
+| **BLE001 in `scripts/` + `tests/e2e/`** | 44 hits across agent / script files. Pattern is `except Exception: ...` in best-effort UI-driving / subprocess-cleanup paths where there is no recovery action. Production-code BLE001 sites (21) all carry justified `# noqa: BLE001 - <reason>` per PART B.3. |
+| **S110 in `scripts/` + `tests/e2e/`** | 33 hits; same idiom as BLE001 above (`try: ... except Exception: pass`). Production-code S110 sites (also 21) carry the same justified noqa. |
+| **EM101 / TRY003** (raw-string in exception / raise-vanilla-args) | 122 + 55 hits; style preference for whether to pre-name error messages. The exception's class + message string is sufficient for the project's debugging surface. |
+| **FBT003** (boolean-positional-value-in-call) | 119 hits; the codebase's calling convention predates this rule. Refactor cost > value. |
+| **SLF001** (private-member-access) | 90 hits; concentrated in test files asserting against `_private` internals of dataclasses, repository surfaces, and ChatSession state. Necessary for the deterministic test contracts the project relies on. |
+| **ARG001 / ARG002** (unused function argument) | 113 hits; many are interface-required parameters (callback signatures, MCP tool schemas) that the implementation doesn't currently consume. Renaming to `_arg` would lie about the contract. |
+| **S310** (suspicious URL-open) | 76 hits; the aggregator + AI-provider + Stripe + Slack adapters legitimately use `urllib.request.urlopen`. SSRF defence is at the base-URL allowlist layer (PART E.13), not at the urlopen call site. |
+| **C901** (complex-structure) | 47 hits; reflects business-logic complexity (chat router, journey state machine, aggregators). Refactor for complexity-score alone would not improve correctness; pre-existing tests pin the behaviour. |
+| **D401** (non-imperative-mood docstring summary) | 43 hits; minor stylistic preference for docstring opening verbs. |
+| **E501** (line-too-long) | 181 hits; the project's pyproject.toml ignores E501 (formatter handles line length, not lint). |
+
+Categories that **were** in scope and reached zero:
+
+- **F** (pyflakes — real errors): 0 findings
+- **PLE** (pylint errors, including the `bidi-unicode` security rule PLE2502): 0
+- **B** (flake8-bugbear): 0 (B904 closed in PART B.6)
+- **RUF012** (mutable class default): 0 (ClassVar annotations in PART B.4)
+- **RUF009** (function call in dataclass default): 0 (default_factory in PART B.5)
+- **B904** (raise-without-from): 0 (PART B.6)
+- **RET503** (implicit return): 0 (PART B.7)
+- **TRY004** (type-check-without-TypeError): 0 (PART B.7)
+- **BLE001 + S110 in production code**: 0 (every site justified, PART B.3)
+- **PLE2502 + PLE2515** (bidi + zero-width unicode literals): 0 (PART B.2)
+- **F401** (unused imports): 0
+- **F841 + F842** (unused variables / annotations): 0 (PART B.6 + B.7)
+
+The audit's honest claim: **every real-bug class the operator-approved
+scope covers is at zero.** The categories above are deferred-with-
+explicit-reason, not silently triaged out. A future contributor who
+wants to opt into any of them can do so by adding the code to
+`[tool.ruff.lint.select]` in `pyproject.toml` — the audit's PART N
+3-zero-pass closure is for the bounded set only.

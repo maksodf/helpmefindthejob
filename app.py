@@ -5676,6 +5676,22 @@ class Handler(BaseHTTPRequestHandler):
                         HTTPStatus.BAD_REQUEST, "bad_json", "Webhook body is not valid JSON."
                     )
                     return
+                # Idempotency dedup (PART I.4 of the deep audit). Stripe
+                # retries on non-2xx for up to ~3 days; if a previous
+                # delivery succeeded but our 200-OK response was lost,
+                # the same event.id arrives again. Short-circuit on a
+                # second arrival to avoid double-applying subscription
+                # state + analytics side-effects.
+                event_id = str(event.get("id") or "")
+                event_type = str(event.get("type") or "")
+                is_first_delivery = STATE.auth_store.mark_stripe_event_processed(
+                    event_id, event_type
+                )
+                if not is_first_delivery:
+                    self.send_json(
+                        {"status": "ok", "appliedType": event_type, "deduplicated": True}
+                    )
+                    return
                 price_to_plan = {
                     get_env(
                         "HELPMEFINDTHEJOB_STRIPE_PRICE_TEAM", "DIRECTJOB_STRIPE_PRICE_TEAM", ""
