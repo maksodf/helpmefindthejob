@@ -635,11 +635,11 @@ NLnet reviewers can audit each claim against the source.
 | NLnet weighted scoring **30 % technical / 40 % relevance-impact / 30 % cost-effectiveness; pass threshold 5.0 / 7.0** | <https://nlnet.nl/commonsfund/guideforapplicants> | **VERIFIED 2026-05-19** (WebFetch). |
 | NLnet Commons Fund 13th-call deadline **2026-06-01 12:00 CEST** | <https://nlnet.nl/commonsfund/> | **VERIFIED 2026-05-19** (WebFetch). |
 | Annex III §4 (employment, workers management and access to self-employment) covers AI systems used in recruitment, selection, evaluation | EU 2024/1689 Annex III §4 | **VERIFIED** (primary regulation text). |
-| 163 of ~1,200 occupations in shortage in DE | [Bundesagentur für Arbeit — Fachkräfteengpassanalyse 2024](https://statistik.arbeitsagentur.de/DE/Navigation/Statistiken/Themen-im-Fokus/Fachkraeftebedarf/Fachkraeftebedarf-Nav.html) | **CITED FROM PRIOR APPLICATION PACKAGE — to be re-verified by maintainer against current BA report before submission**. The 12-application-package.md cites it as the Federal Employment Agency's 2024 analysis; we preserve the figure but flag that the maintainer should re-confirm against the most recent published edition. |
-| ~46,000 unfilled positions in DE healthcare | [OECD Economic Surveys: Germany 2025](https://www.oecd.org/en/publications/oecd-economic-surveys-germany-2025_2c91e1d4-en.html) | **CITED FROM PRIOR APPLICATION PACKAGE — to be re-verified by maintainer against the OECD publication's specific page citation before submission**. |
-| **~700 MBE service points across DE** | [BAMF MBE Beratungsstellen-Datenbank](https://www.bamf.de/DE/Themen/Integration/ZugewanderteTeilnehmende/ErwachseneZugewanderte/erwachsenezugewanderte-node.html) | **APPROXIMATE** — BAMF maintains the MBE service-point directory; exact count varies as service points open/close. The "~700" figure is an order-of-magnitude estimate from the prior package; the maintainer should consult the BAMF directory for the current count before submission. |
-| **16 IQ-Netzwerk regional networks** | <https://www.netzwerk-iq.de/> | **STRUCTURAL** — IQ-Netzwerk is organised by Bundesland; with 16 Länder there are 16 regional networks by design. **VERIFIED structurally**; the maintainer should confirm against the IQ-Netzwerk public page that this organisational structure persists at submission time. |
-| **104 Optionskommunen** | [BMAS / SGB II §6a list](https://www.bmas.de/DE/Soziales/Grundsicherung-Buergergeld/Traeger-der-Buergergeldverwaltung/optionskommunen-uebersicht.html) | **CITED FROM PRIOR APPLICATION PACKAGE — to be re-verified by maintainer against the current BMAS publication before submission**. |
+| **163 Engpassberufe in DE** | [Bundesagentur für Arbeit — Fachkräftebedarf overview](https://statistik.arbeitsagentur.de/DE/Navigation/Statistiken/Themen-im-Fokus/Fachkraeftebedarf/Fachkraeftebedarf-Nav.html) — section "Arbeits- und Fachkräftemangel trotz Arbeitslosigkeit" carries the line *"Die letzte Fachkräfteengpassanalyse der Statistik der Bundesagentur für Arbeit weist 163 Engpassberufe aus."* | **VERIFIED 2026-05-19** via direct fetch of the BA Fachkräftebedarf overview page. The "of ~1,200 occupations" qualifier in the application body refers to the size of the BA Berufsklassifikation der Berufe 2010 (KldB 2010) framework (~1,300 Berufsgattungen at the 5-digit code level); the headline 163-shortage-occupations figure is the verified anchor. |
+| ~46,000 unfilled positions in DE healthcare | [OECD Economic Surveys: Germany 2025](https://www.oecd.org/en/publications/oecd-economic-surveys-germany-2025_2c91e1d4-en.html) | **STILL FLAGGED FOR MAINTAINER RE-VERIFY**. WebFetch returned HTTP 403 against the OECD URL during this slice (2026-05-19); alternative reach via BMG Pflege overview + Destatis offene-Stellen + IW Köln Fachkräftelücke did not surface a single primary-source URL with the 46,000 figure published at headline level (most attempts returned 404 or 401). The 46,000 figure remains in the application body as cited from prior 12-application-package.md research, but the maintainer should re-verify against the OECD publication PDF or paid OECD iLibrary access at submission time. |
+| **~700 MBE service points across DE** | [BAMF-NAvI](https://bamf-navi.bamf.de/de/) (canonical directory; aggregate count not published at headline level) | **APPROXIMATE — FLAGGED**. BAMF-NAvI confirmed as the directory surface; BAMF does NOT publish an aggregate MBE service-point count at any reachable URL. The "~700" figure is order-of-magnitude estimate from prior BAMF annual reports + Bundesregierung Migration-Atlas materials; not a single-source figure. Honest framing in the application body: "service points across Germany" without claiming a specific count would be safer, but the 12-application-package.md prior research used "~700" — the maintainer can either (a) verify against the BAMF annual MBE report or (b) reword to "Migrationsberatungsstellen across Germany" without the count. |
+| **16 IQ-Netzwerk regional networks** | <https://www.netzwerk-iq.de/> | **STRUCTURAL** — IQ-Netzwerk is organised by Bundesland; with 16 Länder there are 16 regional networks by design. **VERIFIED structurally** (the federal-state structure of Germany is constitutionally fixed); maintainer should confirm against the IQ-Netzwerk public page that this organisational structure persists at submission time. |
+| **110 Optionskommunen** (was: "104" in earlier drafts) | [§6a SGB II + Article 91e(2) Grundgesetz](https://de.wikipedia.org/wiki/Optionskommune) — Wikipedia article citing federal-law primary sources | **VERIFIED + UPDATED 2026-05-19**. WebFetch of the Wikipedia article confirmed: 69 Optionskommunen from 2005-01-01 + 41 additional from 2012-01-01 = **110 total**; the cap was set by federal-constitutional ruling at 110 ("weil der Bund die Anzahl der Optionskommunen zulässig auf 110 beschränken durfte"). The earlier "104" figure in 12-application-package.md was drift from the constitutional cap; **corrected to 110 in both 12-application-package.md §C and this draft's Field 16**. This is the only number that drifted enough to require a body update in this slice. |
 | €30k–€200k AI Act compliance consulting cost avoided per deployer | **INDUSTRY ESTIMATE — not measured**. | The range reflects publicly reported AI-compliance-consulting quotes during 2024–2026 (range source: aggregated quotes from German Datenschutz / KI-compliance consultancies; we don't cite a single primary source because the actual number depends on the deployer's existing compliance posture and the consultant's scope). The application body uses qualified language ("typical" / "industry-estimate") rather than asserting a single figure. **NOT a measured claim.** |
 | **30 axe-core violation instances closed across 22 audited surfaces** | [`ACCESSIBILITY.md`](../../ACCESSIBILITY.md) "Current state" table | **VERIFIED** — every violation has a documented pre/post-fix count and a file:line for the closing fix. |
 | **91 components in v0.1.0 CycloneDX SBOM** | [`docs/releases/v0.1.0-sbom.json`](releases/v0.1.0-sbom.json) | **VERIFIED** — the SBOM is committed; component count derivable via `jq '.components | length'`. |
@@ -648,11 +648,35 @@ NLnet reviewers can audit each claim against the source.
 | **Seven-persona panel: Aïcha, Yusuf, Olga, Mahmoud, Maria, Käthe, Tobias** | [`docs/grant/07-personas.md`](07-personas.md) + Decision 21 | **VERIFIED** — the panel is the project's canonical source-of-truth; Decision 21 dated 2026-05-18. |
 | **MCP catalogue v0.2.0, 13 tools** | [`docs/mcp-server.md`](mcp-server.md) | **VERIFIED** — the catalogue + per-tool input schemas committed; CI smoke test exercises the surface. |
 
-**Pre-submission discipline**: the maintainer's final read should
-re-confirm the four "to be re-verified" rows above (163 shortage
-occupations, 46k healthcare unfilled, ~700 MBE, 104
-Optionskommunen) against the named primary sources at submission
-time. If the current published figures have drifted from the
-12-application-package.md figures, update both this draft and
-`12-application-package.md` in the same commit to keep the
+**Pre-submission discipline (slice-end state, post 2026-05-19 polish)**:
+
+- **2 of 4 carried-forward numbers verified at primary source via
+  WebFetch this slice**:
+  - **163 Engpassberufe** — VERIFIED at BA Fachkräftebedarf overview.
+  - **Optionskommunen — corrected 104 → 110** (federal constitutional
+    cap per §6a SGB II + Art. 91e(2) GG; 69 from 2005 + 41 from 2012).
+    Source-of-truth file `12-application-package.md` §C updated in
+    the same commit.
+- **2 of 4 still flagged**:
+  - **~46,000 healthcare unfilled** — OECD URL returned HTTP 403;
+    alternative primary-source URLs (BMG, Destatis, IW Köln,
+    BA Pflege) returned 404 or 401. Maintainer should re-verify
+    against the OECD publication PDF or paid OECD iLibrary access
+    at submission time. Consider also: the figure may be more
+    cleanly sourced from a Pflegerat / DKG / Statistisches
+    Bundesamt press release than from OECD.
+  - **~700 MBE service points** — BAMF does NOT publish an
+    aggregate count at any reachable URL; BAMF-NAvI is the
+    directory surface. Maintainer can either (a) re-verify
+    against the most recent BAMF MBE annual report or (b)
+    reword application body to drop the specific count ("MBE
+    service points across Germany" without "~700").
+- **Structural verifications carry forward** (16 IQ-Netzwerk
+  regional networks; seven-persona panel; MCP catalogue + tool
+  count; 1020/1029 tests; 30 axe violations closed; etc.) —
+  these are anchored in the project's own source-of-truth files
+  or in constitutional structure (16 Länder).
+
+If anything else drifts at submission time, update both this draft
+and `12-application-package.md` in the same commit to keep the
 source-of-truth file aligned.
