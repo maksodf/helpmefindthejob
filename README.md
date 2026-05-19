@@ -1,16 +1,16 @@
-# DirectJob Scout
+# Helpmefindthejob
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
-[![tests](https://github.com/maksodf/directjob-scout/actions/workflows/test.yml/badge.svg?branch=claude/project-analysis-bpHCo)](https://github.com/maksodf/directjob-scout/actions/workflows/test.yml)
-[![quality](https://github.com/maksodf/directjob-scout/actions/workflows/quality.yml/badge.svg?branch=claude/project-analysis-bpHCo)](https://github.com/maksodf/directjob-scout/actions/workflows/quality.yml)
-[![MCP integration](https://github.com/maksodf/directjob-scout/actions/workflows/mcp-integration.yml/badge.svg?branch=claude/project-analysis-bpHCo)](https://github.com/maksodf/directjob-scout/actions/workflows/mcp-integration.yml)
-[![Fresh-clone install](https://github.com/maksodf/directjob-scout/actions/workflows/fresh-clone-install.yml/badge.svg?branch=claude/project-analysis-bpHCo)](https://github.com/maksodf/directjob-scout/actions/workflows/fresh-clone-install.yml)
-[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/maksodf/directjob-scout/badge)](https://securityscorecards.dev/viewer/?uri=github.com/maksodf/directjob-scout)
-[![codecov](https://codecov.io/gh/maksodf/directjob-scout/branch/claude%2Fproject-analysis-bpHCo/graph/badge.svg)](https://codecov.io/gh/maksodf/directjob-scout)
+[![tests](https://github.com/maksodf/helpmefindthejob/actions/workflows/test.yml/badge.svg?branch=claude/project-analysis-bpHCo)](https://github.com/maksodf/helpmefindthejob/actions/workflows/test.yml)
+[![quality](https://github.com/maksodf/helpmefindthejob/actions/workflows/quality.yml/badge.svg?branch=claude/project-analysis-bpHCo)](https://github.com/maksodf/helpmefindthejob/actions/workflows/quality.yml)
+[![MCP integration](https://github.com/maksodf/helpmefindthejob/actions/workflows/mcp-integration.yml/badge.svg?branch=claude/project-analysis-bpHCo)](https://github.com/maksodf/helpmefindthejob/actions/workflows/mcp-integration.yml)
+[![Fresh-clone install](https://github.com/maksodf/helpmefindthejob/actions/workflows/fresh-clone-install.yml/badge.svg?branch=claude/project-analysis-bpHCo)](https://github.com/maksodf/helpmefindthejob/actions/workflows/fresh-clone-install.yml)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/maksodf/helpmefindthejob/badge)](https://securityscorecards.dev/viewer/?uri=github.com/maksodf/helpmefindthejob)
+[![codecov](https://codecov.io/gh/maksodf/helpmefindthejob/branch/claude%2Fproject-analysis-bpHCo/graph/badge.svg)](https://codecov.io/gh/maksodf/helpmefindthejob)
 [![Release](https://img.shields.io/badge/release-pre--v0.1.0-lightgrey.svg)](#)
 [![Languages](https://img.shields.io/badge/languages-EN%20%2B%20DE-informational.svg)](static/i18n/)
 [![MCP](https://img.shields.io/badge/MCP-2024--11--05-blueviolet.svg)](https://modelcontextprotocol.io)
-[![Docs](https://github.com/maksodf/directjob-scout/actions/workflows/docs-publish.yml/badge.svg?branch=claude/project-analysis-bpHCo)](https://maksodf.github.io/directjob-scout/)
+[![Docs](https://github.com/maksodf/helpmefindthejob/actions/workflows/docs-publish.yml/badge.svg?branch=claude/project-analysis-bpHCo)](https://maksodf.github.io/helpmefindthejob/)
 
 > Aïcha is a Tunisian-trained registered nurse working through §16d
 > Anerkennung in Berlin — clinically capable, German at B1 climbing
@@ -21,12 +21,12 @@
 > for 2026 conventions. The same Berlin clinic is hiring the role both
 > of them are qualified for. The bureaucratic stack between either of
 > them and that role is not something Google or LinkedIn can navigate
-> for them. **DirectJob Scout is the open civic-employment commons
+> for them. **Helpmefindthejob is the open civic-employment commons
 > built so Aïcha and Käthe — and the millions of others facing the same
 > structural friction across the European labor market — can navigate
 > that stack themselves.**
 
-DirectJob Scout is an **open-source EU-wide civic-employment commons** —
+Helpmefindthejob is an **open-source EU-wide civic-employment commons** —
 an MCP-composable copilot that captures specialist HR and
 bureaucratic-navigation knowledge into modular, standards-anchored tools
 and puts it directly into the hands of anyone facing structural friction
@@ -55,7 +55,7 @@ including the deprecated commercial phase.
 
 ## What it does
 
-DirectJob Scout combines three discovery rails behind a single chat
+Helpmefindthejob combines three discovery rails behind a single chat
 interface:
 
 - **Career-page monitoring** of companies the user adds to a watchlist
@@ -83,8 +83,8 @@ A clean clone should land you at a working local instance in five
 minutes.
 
 ```bash
-git clone https://github.com/maksodf/directjob-scout.git
-cd directjob-scout
+git clone https://github.com/maksodf/helpmefindthejob.git
+cd helpmefindthejob
 
 # Option 1: Python directly. Requires Python 3.11+.
 pip install -r requirements.txt
@@ -115,7 +115,7 @@ Configuration is environment-variable driven; see
 
 ## The personas
 
-DirectJob Scout's design is anchored by a **panel of seven personas**
+Helpmefindthejob's design is anchored by a **panel of seven personas**
 split into two groups: five **most-acute-use-case** personas (migrants
 and EU-mobile workers facing the densest concentration of friction —
 the strongest specific narrative evidence in proposals and demos) and
@@ -192,7 +192,7 @@ without forking.
 
 The MCP server in [`mcp_server.py`](mcp_server.py) exposes the project
 as composable civic infrastructure. Other open civic agents — housing,
-healthcare, residency, education — compose with DirectJob Scout
+healthcare, residency, education — compose with Helpmefindthejob
 without forking either project. See
 [`docs/grant/09-mcp-composition.md`](docs/grant/09-mcp-composition.md)
 for the composition patterns (sequential handoff, profile-shared,
@@ -206,7 +206,7 @@ under [`examples/`](examples/) (TBD).
 
 ## Self-hosting
 
-DirectJob Scout is designed to be deployed by a single NGO, a
+Helpmefindthejob is designed to be deployed by a single NGO, a
 Beratungsstelle, a Jobcenter, a university career service, or an
 individual at home, on commodity hardware. There is no per-seat licence
 fee and no managed cloud lock-in. The reference deployment uses Docker
@@ -300,7 +300,7 @@ sustainability model) at [`docs/grant/03-post-grant.md`](docs/grant/03-post-gran
 The honest version: every advisor at a Migrationsberatungsstelle, every
 caseworker at an Optionskommune, every nurse-recognition coordinator,
 every Anerkennung specialist already holds in their head most of what
-DirectJob Scout will eventually codify. Their time is rationed. Their
+Helpmefindthejob will eventually codify. Their time is rationed. Their
 caseload is structurally larger than their capacity. Their advice is
 rarely written down in a form a foreign-credentialed worker can act on
 alone at 11 p.m. between two shifts. The opportunity is to put that
@@ -317,4 +317,4 @@ for the full doctrine.
 Apache License 2.0 — see [`LICENSE`](LICENSE), [`NOTICE`](NOTICE),
 [`TRADEMARK.md`](TRADEMARK.md), and [`cla.md`](cla.md).
 
-Copyright (c) 2026 DirectJob Scout contributors.
+Copyright (c) 2026 Helpmefindthejob contributors.

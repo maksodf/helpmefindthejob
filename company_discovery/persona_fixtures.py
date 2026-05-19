@@ -1,4 +1,4 @@
-# Copyright (c) 2026 DirectJob Scout contributors
+# Copyright (c) 2026 Helpmefindthejob contributors
 # SPDX-License-Identifier: Apache-2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -1245,7 +1245,7 @@ def friction_keywords_for(persona_id: str | None) -> list[str]:
     return []
 
 
-def demo_email(slug: str, email_domain: str = "demo.directjob-scout.example") -> str:
+def demo_email(slug: str, email_domain: str = "demo.helpmefindthejob.com") -> str:
     """Canonical demo email for a persona.
 
     The default domain follows the public-tree placeholder convention

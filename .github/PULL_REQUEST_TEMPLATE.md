@@ -1,5 +1,5 @@
 <!--
-Thank you for contributing to DirectJob Scout.
+Thank you for contributing to Helpmefindthejob.
 
 Before you submit, please read CONTRIBUTING.md and cla.md if you have
 not already. Anything beyond a trivial fix requires a CLA assent line
@@ -14,7 +14,7 @@ the user, deployer, or contributor see differently after this PR? -->
 ## Why
 
 <!-- Motivation. If this fixes a bug, describe the bug. If this adds a
-capability, explain why it belongs in DirectJob Scout (ideally with a
+capability, explain why it belongs in Helpmefindthejob (ideally with a
 nod to the cost-saving doctrine in docs/grant/08-cost-saving-doctrine.md:
 does this reduce institutional cost while improving end-user outcomes?). -->
 

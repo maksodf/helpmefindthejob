@@ -5,8 +5,8 @@ Drop-in queries the operator runs once there are real users on the system. Each 
 Run via the existing `analytics_events` + `imported_jobs` + `users` tables on the production droplet:
 
 ```sh
-ssh -i ~/.ssh/directjob_scout root@161.35.76.8 \
-  "docker exec -i directjob-scout-app sqlite3 /app/data/company_discovery.sqlite3 < /tmp/<query>.sql"
+ssh -i ~/.ssh/helpmefindthejob root@161.35.76.8 \
+  "docker exec -i helpmefindthejob-app sqlite3 /app/data/company_discovery.sqlite3 < /tmp/<query>.sql"
 ```
 
 Or interactively via the admin panel's analytics widget once it ships. For now, raw SQL is the source of truth.

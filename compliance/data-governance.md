@@ -1,5 +1,5 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
-<!-- Copyright (c) 2026 DirectJob Scout contributors -->
+<!-- Copyright (c) 2026 Helpmefindthejob contributors -->
 
 # Data Governance
 
@@ -13,7 +13,7 @@
 
 Article 10 of the AI Act requires that **training, validation, and testing data sets** be relevant, representative, free of errors, and complete, with documented bias detection.
 
-DirectJob Scout **does not train models on user data**. The project orchestrates prompts to third-party general-purpose AI providers through the BYO-AI abstraction at [`company_discovery/ai_providers.py`](../company_discovery/ai_providers.py). The user (or the deployer in an institutional configuration) supplies the AI provider. We compose prompts, we do not train.
+Helpmefindthejob **does not train models on user data**. The project orchestrates prompts to third-party general-purpose AI providers through the BYO-AI abstraction at [`company_discovery/ai_providers.py`](../company_discovery/ai_providers.py). The user (or the deployer in an institutional configuration) supplies the AI provider. We compose prompts, we do not train.
 
 The consequence: our Article 10 scope shifts from training-corpus governance to:
 

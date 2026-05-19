@@ -1,4 +1,4 @@
-# Copyright (c) 2026 DirectJob Scout contributors
+# Copyright (c) 2026 Helpmefindthejob contributors
 # SPDX-License-Identifier: Apache-2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -337,7 +337,7 @@ class DuckDuckGoSearchProvider:
         request = Request(
             url,
             headers={
-                "User-Agent": "Mozilla/5.0 (compatible; DirectJobScout/0.14; +https://app.directjob-scout.example/about)",
+                "User-Agent": "Mozilla/5.0 (compatible; DirectJobScout/0.14; +https://app.helpmefindthejob.com/about)",
                 "Accept": "text/html,application/xhtml+xml",
                 "Accept-Language": "en-US,en;q=0.9",
             },

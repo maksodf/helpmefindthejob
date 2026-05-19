@@ -7,7 +7,7 @@ labels: ["security"]
 
 ## ⚠ Stop and read
 
-If you have discovered a security vulnerability in DirectJob Scout, **please do not file a public issue**. Follow the private process documented in [SECURITY.md](../../SECURITY.md):
+If you have discovered a security vulnerability in Helpmefindthejob, **please do not file a public issue**. Follow the private process documented in [SECURITY.md](../../SECURITY.md):
 
 - Contact the maintainer privately via the channel listed in
   [AUTHORS.md](../../AUTHORS.md). Once the project domain is registered,
@@ -25,7 +25,7 @@ Open a public issue here only if:
 
 - The vulnerability is already publicly disclosed elsewhere with a
   CVE, advisory, or upstream patch, and you are tracking the
-  remediation status in DirectJob Scout.
+  remediation status in Helpmefindthejob.
 - The issue is a general security hardening request (a missing header,
   a deprecated dependency, a feature improvement) rather than an
   exploitable vulnerability.

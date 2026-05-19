@@ -1,11 +1,11 @@
 # Support
 
-DirectJob Scout is an early-stage open civic-employment commons project. Response times are best-effort and may be slower during focused development sprints. We appreciate your patience.
+Helpmefindthejob is an early-stage open civic-employment commons project. Response times are best-effort and may be slower during focused development sprints. We appreciate your patience.
 
 ## Where to ask
 
 - **Questions about using the app or deploying it**: open a thread in
-  [GitHub Discussions](https://github.com/maksodf/directjob-scout/discussions)
+  [GitHub Discussions](https://github.com/maksodf/helpmefindthejob/discussions)
   (will be enabled in Week 1 of the grant sprint; please check back if
   the link is not yet live).
 - **Bug reports**: file an issue using the [bug-report template](.github/ISSUE_TEMPLATE/bug_report.md).

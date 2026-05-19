@@ -1,4 +1,4 @@
-# Copyright (c) 2026 DirectJob Scout contributors
+# Copyright (c) 2026 Helpmefindthejob contributors
 # SPDX-License-Identifier: Apache-2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -501,7 +501,7 @@ class CompanyDiscoveryMCPTools:
                 "referralId": f"ref-{uuid.uuid4().hex[:12]}",
                 "schemaVersion": "0.1.0",
                 "issuedAt": _now_iso(),
-                "sourceAgent": "directjob-scout",
+                "sourceAgent": "helpmefindthejob",
                 "targetAgent": targetAgent,
                 "userId": userId,
                 "intent": "proposed",

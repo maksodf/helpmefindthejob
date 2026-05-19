@@ -1,4 +1,4 @@
-# Copyright (c) 2026 DirectJob Scout contributors
+# Copyright (c) 2026 Helpmefindthejob contributors
 # SPDX-License-Identifier: Apache-2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -60,5 +60,5 @@ def build_digest(
         )
         if job.source_url:
             lines.append(f"  {job.source_url}")
-    lines += ["", "Open DirectJob Scout to review and import."]
+    lines += ["", "Open Helpmefindthejob to review and import."]
     return "\n".join(lines) + "\n"

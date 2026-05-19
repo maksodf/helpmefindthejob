@@ -1,5 +1,5 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
-<!-- Copyright (c) 2026 DirectJob Scout contributors -->
+<!-- Copyright (c) 2026 Helpmefindthejob contributors -->
 
 # External-reader recruit message — paste-ready
 
@@ -31,7 +31,7 @@ Hi [Reader name],
 
 Hope you're well. I'm reaching out for a small favour with a real deadline.
 
-I've spent the last four weeks getting an open-source project — DirectJob Scout —
+I've spent the last four weeks getting an open-source project — Helpmefindthejob —
 into shape for a grant submission to NLnet (the EU's Next Generation Internet
 funder). The project is a civic-employment commons for the European labour
 market: think a calm, multilingual, privacy-preserving job-search copilot

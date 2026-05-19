@@ -1,4 +1,4 @@
-# DirectJob Scout — Internal Threat Model
+# Helpmefindthejob — Internal Threat Model
 
 Last updated: 2026-05-08. Author: workspace engineering. Status:
 internal. This document is not a substitute for an external penetration
@@ -6,7 +6,7 @@ test. Track an external review as **P0.K BLOCKED until vendor engaged**
 in the gap analysis.
 
 The model targets the production hosted deployment at
-`https://app.directjob-scout.example`, with admin-managed tester accounts and
+`https://app.helpmefindthejob.com`, with admin-managed tester accounts and
 provider-neutral AI handoff.
 
 ## 1. Assets and trust boundaries

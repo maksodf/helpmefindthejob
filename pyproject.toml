@@ -1,4 +1,4 @@
-# Project metadata and tool configuration for DirectJob Scout.
+# Project metadata and tool configuration for Helpmefindthejob.
 #
 # Single source of truth for ruff, mypy, coverage, and codespell. The
 # runtime install path (requirements.txt + requirements-dev.txt)
@@ -9,7 +9,7 @@
 # .github/workflows/quality.yml for the CI invocation.
 
 [project]
-name = "directjob-scout"
+name = "helpmefindthejob"
 description = "Open-source EU-wide civic employment commons — MCP-composable copilot for users facing structural labor-market friction in Europe."
 license = { text = "Apache-2.0" }
 readme = "README.md"

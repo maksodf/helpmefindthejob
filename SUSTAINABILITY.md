@@ -1,11 +1,11 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
-<!-- Copyright (c) 2026 DirectJob Scout contributors -->
+<!-- Copyright (c) 2026 Helpmefindthejob contributors -->
 
 # Sustainability
 
 ## Stated commitment
 
-DirectJob Scout is sustainable because it is **open-source under
+Helpmefindthejob is sustainable because it is **open-source under
 Apache 2.0**, **hosted by The Commons Conservancy** (admission
 pending), and **self-hostable by anyone on commodity hardware**.
 Sustainability of this project does **not** depend on a single
@@ -22,7 +22,7 @@ sustainability is structured today and how it grows from here.
 
 ## Post-grant operational model
 
-| Pillar | How DirectJob Scout is set up |
+| Pillar | How Helpmefindthejob is set up |
 |---|---|
 | **Open-source core** | Apache 2.0 + Contributor License Agreement ([Decision 1](docs/grant/04-research-and-decisions.md#decision-1-license--apache-20--contributor-license-agreement)). No closed components. Every line of code that ships to a user is in the public repository. |
 | **Institutional wrapper** | Programme of [The Commons Conservancy](https://commonsconservancy.org/), a Dutch stichting co-founded by NLnet. Admission application targeted for Week 2 of the grant sprint ([Decision 2](docs/grant/04-research-and-decisions.md)). The Conservancy provides governance continuity, legal personality, and a fiscal channel for grants + donations independent of any single human maintainer. |
@@ -43,7 +43,7 @@ hosting provider's terms.
 
 ## Grant arc plan
 
-DirectJob Scout's funding model is a **multi-grant arc** —
+Helpmefindthejob's funding model is a **multi-grant arc** —
 following the documented Redwax pattern within the NLnet
 ecosystem. The arc has four phases:
 
@@ -68,7 +68,7 @@ full breakdown in
 - Public demo (parallel-public-instance deployment recipe)
 - Accessibility: WCAG 2.2 AA first pass + auth-surface audit +
   light-mode + compliance markdown + dynamic-state coverage
-- Documentation site at maksodf.github.io/directjob-scout/
+- Documentation site at maksodf.github.io/helpmefindthejob/
 - RFC 9116 `/.well-known/security.txt`
 - Translator-contributor pathway
 - OpenSSF Scorecard workflow + SHA-pinned actions
@@ -83,7 +83,7 @@ documented in NLnet's own programme history.
 
 **Phase 2 scope** (under planning, not committed):
 
-- **Framework extraction** — convert DirectJob Scout's
+- **Framework extraction** — convert Helpmefindthejob's
   modular core into a reusable template for other civic
   agents (housing, healthcare, residency, education).
   Composable via the existing MCP catalogue.
@@ -116,7 +116,7 @@ others):
   for digital-commons infrastructure that the public sector
   depends on
 - [NGI Search](https://www.ngi.eu/ngi-projects/ngi-search/) —
-  if DirectJob Scout's discovery-and-aggregation layer
+  if Helpmefindthejob's discovery-and-aggregation layer
   matures to a stand-alone proposition
 - [NGI Trustchain](https://trustchain.ngi.eu/) — relevant
   for the EU AI Act compliance + auditability stack as a
@@ -126,7 +126,7 @@ others):
 
 ### Long-term — anchor + diversify
 
-Long-term, DirectJob Scout remains anchored as **a Programme
+Long-term, Helpmefindthejob remains anchored as **a Programme
 of The Commons Conservancy** with **diversified funding**:
 multiple short-to-medium grants (not a single perpetual
 grant), optional institutional support contracts (see
@@ -139,7 +139,7 @@ encourages for all of its Programmes.
 
 ## Optional support contracts (carefully framed)
 
-DirectJob Scout's **default operational model is self-host +
+Helpmefindthejob's **default operational model is self-host +
 community support**. This will remain the default.
 
 Institutional deployers (a Beratungsstelle, an
@@ -184,7 +184,7 @@ current offering.
 | **GitHub Issues** | Bug reports, feature requests | [`.github/ISSUE_TEMPLATE/`](.github/ISSUE_TEMPLATE/) |
 | **Pull requests (CLA-gated)** | Code, documentation, translations | [`CONTRIBUTING.md`](CONTRIBUTING.md) + [`cla.md`](cla.md) |
 | **Translation contributions** | New locale bundles (Arabic / Ukrainian / Turkish / Romanian roadmap per Decision 6 + Decision 21) | [`docs/translating.md`](docs/translating.md) |
-| **Security disclosure** | Private vulnerability reports | [`SECURITY.md`](SECURITY.md) + RFC 9116 [`security.txt`](https://maksodf.github.io/directjob-scout/.well-known/security.txt) |
+| **Security disclosure** | Private vulnerability reports | [`SECURITY.md`](SECURITY.md) + RFC 9116 [`security.txt`](https://maksodf.github.io/helpmefindthejob/.well-known/security.txt) |
 | **Code of Conduct** | Contributor Covenant 2.1 | [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) |
 
 Contributors are credited in [`AUTHORS.md`](AUTHORS.md) and
@@ -205,7 +205,7 @@ Donations are welcome but secondary.
 |---|---|---|
 | **GitHub Sponsors** | Placeholder in [`.github/FUNDING.yml`](.github/FUNDING.yml) | The maintainer activates the actual Sponsors profile when ready, per [Decision 18](docs/grant/04-research-and-decisions.md) consent-first authorship — pre-launch (Decision 17) the project deliberately does not invite donations |
 | **Open Collective** | Placeholder | Post-Conservancy-admission, the Conservancy entity may set up an Open Collective channel that flows to it |
-| **The Commons Conservancy direct donation** | Available post-admission | The Conservancy publishes a stichting bank account; donations earmarked for DirectJob Scout are routed to the project's Conservancy account |
+| **The Commons Conservancy direct donation** | Available post-admission | The Conservancy publishes a stichting bank account; donations earmarked for Helpmefindthejob are routed to the project's Conservancy account |
 
 Contributors and donors are credited (with their consent) in
 [`ACKNOWLEDGMENTS.md`](ACKNOWLEDGMENTS.md). Crediting policy
@@ -241,7 +241,7 @@ sustainability commitment is structural, not revenue-driven:
   contributor
 - the multi-grant arc provides funded development windows
 - the self-hostable architecture means institutional
-  deployers can run DirectJob Scout indefinitely on their
+  deployers can run Helpmefindthejob indefinitely on their
   own infrastructure without depending on the maintainer
 
 **No growth-metric promises.** This document does not commit
@@ -302,4 +302,4 @@ list is the honest pre-mortem:
 | Standards we implement | [`STANDARDS.md`](STANDARDS.md) |
 | Reproducible build (Nix flake) | [`flake.nix`](flake.nix) + [`docs/deployment-recipe.md`](docs/deployment-recipe.md) §12 |
 | Signed releases + SBOM | [`docs/releases/v0.1.0-signing.md`](docs/releases/v0.1.0-signing.md) |
-| RFC 9116 security.txt | <https://maksodf.github.io/directjob-scout/.well-known/security.txt> |
+| RFC 9116 security.txt | <https://maksodf.github.io/helpmefindthejob/.well-known/security.txt> |

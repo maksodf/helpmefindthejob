@@ -1,6 +1,6 @@
 # Code of Conduct
 
-DirectJob Scout adopts the Contributor Covenant version 2.1 as its Code of Conduct.
+Helpmefindthejob adopts the Contributor Covenant version 2.1 as its Code of Conduct.
 
 The full text is available at the canonical source:
 <https://www.contributor-covenant.org/version/2/1/code_of_conduct/>

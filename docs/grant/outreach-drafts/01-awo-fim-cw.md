@@ -24,7 +24,7 @@ Chosen over Diakonisches Werk Berlin Stadtmitte (whose parent org went through a
 
 ## Fit reasons for personalisation
 
-1. The Pangea-Haus's seven-language counselling palette (Arabisch, Deutsch, Englisch, Französisch, Russisch, Spanisch, Türkisch) maps almost 1:1 onto our persona panel: Arabic (Aïcha, Mahmoud), Russian (Olga), Turkish (Yusuf), Spanish-adjacent Romance (Maria), with German and English live in DirectJob Scout and Arabic + Turkish on the post-grant language roadmap. This is a substantive operational alignment, not a generic "we both serve migrants" claim.
+1. The Pangea-Haus's seven-language counselling palette (Arabisch, Deutsch, Englisch, Französisch, Russisch, Spanisch, Türkisch) maps almost 1:1 onto our persona panel: Arabic (Aïcha, Mahmoud), Russian (Olga), Turkish (Yusuf), Spanish-adjacent Romance (Maria), with German and English live in Helpmefindthejob and Arabic + Turkish on the post-grant language roadmap. This is a substantive operational alignment, not a generic "we both serve migrants" claim.
 2. AWO's secular Arbeiterwohlfahrt heritage sits cleanly with a civic-commons project explicitly designed around a multi-faith persona panel without religious-organisation framing — zero friction on positioning.
 
 ## Draft message (German)
@@ -33,7 +33,7 @@ Chosen over Diakonisches Werk Berlin Stadtmitte (whose parent org went through a
 
 Sehr geehrte Frau Alles,
 
-mein Name ist [Maintainer]. Ich bin Student an der TU Berlin und entwickle gemeinsam mit einem kleinen Team **DirectJob Scout** — ein Open-Source-Tool, das speziell dafür konzipiert ist, Migrationsberatungsstellen wie das Pangea-Haus im Beratungsalltag zu entlasten.
+mein Name ist [Maintainer]. Ich bin Student an der TU Berlin und entwickle gemeinsam mit einem kleinen Team **Helpmefindthejob** — ein Open-Source-Tool, das speziell dafür konzipiert ist, Migrationsberatungsstellen wie das Pangea-Haus im Beratungsalltag zu entlasten.
 
 Konkret übernimmt das Tool routinemäßige Fragen, die Klient:innen täglich an Ihre Berater:innen richten: Lebenslauf-Format nach deutschen Konventionen, Anerkennungspfade nach § 16d AufenthG, anerkennungsbereite Arbeitgeber, Bewerbungsanschreiben in deutscher Geschäftssprache. So bleibt mehr Zeit für jene Fälle, in denen menschliches Urteilsvermögen unverzichtbar ist.
 
@@ -55,4 +55,4 @@ Mit freundlichen Grüßen,
 
 - `[Maintainer]` — your preferred display name
 - `[Kontakt-Email]` — your direct reply-to email
-- `[Link zum Projekt-README / Demo]` — single link, ideally the demo URL once Week 3 ships it; until then the README at github.com/maksodf/directjob-scout
+- `[Link zum Projekt-README / Demo]` — single link, ideally the demo URL once Week 3 ships it; until then the README at github.com/maksodf/helpmefindthejob

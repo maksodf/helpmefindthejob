@@ -1,9 +1,9 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
-<!-- Copyright (c) 2026 DirectJob Scout contributors -->
+<!-- Copyright (c) 2026 Helpmefindthejob contributors -->
 
 # Risk Management Plan
 
-**Audience**: provider (DirectJob Scout maintainers) and any deployer reviewing the upstream risk posture before deployment.
+**Audience**: provider (Helpmefindthejob maintainers) and any deployer reviewing the upstream risk posture before deployment.
 **Article**: AI Act Article 9 (risk management system).
 **Status**: living document. Reviewed every six months, on every major release, and on every reported incident.
 
@@ -11,7 +11,7 @@
 
 ## 1. Purpose
 
-Article 9 of [Regulation (EU) 2024/1689](https://eur-lex.europa.eu/eli/reg/2024/1689/oj) requires every high-risk AI system to have a documented, continuous risk-management process covering risks to health, safety, and fundamental rights. This plan captures DirectJob Scout's risk identification, mitigation, residual-risk acknowledgement, review cycle, and incident escalation.
+Article 9 of [Regulation (EU) 2024/1689](https://eur-lex.europa.eu/eli/reg/2024/1689/oj) requires every high-risk AI system to have a documented, continuous risk-management process covering risks to health, safety, and fundamental rights. This plan captures Helpmefindthejob's risk identification, mitigation, residual-risk acknowledgement, review cycle, and incident escalation.
 
 The risks documented here are the risks specific to **a civic-employment AI system that scores job-to-CV fit, drafts motivation letters, and routes users through a 12-phase journey**. Generic AI-safety risks not specific to this domain are referenced where relevant but not enumerated.
 
@@ -203,7 +203,7 @@ Each risk is rated **Likelihood** (low / medium / high) × **Severity** (low / m
 
 ## 5. Incident escalation
 
-If a deployer, user, oversight person, or external researcher reports an incident involving DirectJob Scout that may involve any of R1–R8 (or a previously-unidentified risk):
+If a deployer, user, oversight person, or external researcher reports an incident involving Helpmefindthejob that may involve any of R1–R8 (or a previously-unidentified risk):
 
 1. **Reporter**: file via [`../SECURITY.md`](../SECURITY.md) or open a GitHub issue tagged `incident-ai-act`.
 2. **Triage** (within 5 working days): provider acknowledges receipt and classifies severity (Sev-1: ongoing fundamental-rights breach; Sev-2: pattern bias affecting a documented persona class; Sev-3: single-event misfire; Sev-4: documentation gap).

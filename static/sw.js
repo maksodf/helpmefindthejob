@@ -1,4 +1,4 @@
-/* DirectJob Scout — service worker.
+/* Helpmefindthejob — service worker.
  *
  * Strategy by resource class:
  *   - /api/*                — never cached; always network.
@@ -55,7 +55,7 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener("push", (event) => {
-  let data = { title: "DirectJob Scout", body: "" };
+  let data = { title: "Helpmefindthejob", body: "" };
   if (event.data) {
     try { data = Object.assign(data, event.data.json()); }
     catch (_) { data.body = event.data.text(); }

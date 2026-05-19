@@ -1,5 +1,5 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
-<!-- Copyright (c) 2026 DirectJob Scout contributors -->
+<!-- Copyright (c) 2026 Helpmefindthejob contributors -->
 
 # Audit Log Schema
 
@@ -14,7 +14,7 @@
 
 Article 12 of [Regulation (EU) 2024/1689](https://eur-lex.europa.eu/eli/reg/2024/1689/oj) requires high-risk AI systems to automatically record events ("logs") with sufficient granularity to identify situations that may result in the system presenting a risk, and to enable post-market monitoring (Article 72) and any operational checks under Article 26.
 
-The DirectJob Scout audit log is **append-only JSONL** stored at `${DATA_ROOT}/ai_act_audit.log` (configurable). It is **separate from** the existing admin-action audit log (`admin_audit.log`) — admin actions and AI Act compliance events have different audiences, retention requirements, and access patterns.
+The Helpmefindthejob audit log is **append-only JSONL** stored at `${DATA_ROOT}/ai_act_audit.log` (configurable). It is **separate from** the existing admin-action audit log (`admin_audit.log`) — admin actions and AI Act compliance events have different audiences, retention requirements, and access patterns.
 
 ---
 

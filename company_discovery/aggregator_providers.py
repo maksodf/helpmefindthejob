@@ -1,4 +1,4 @@
-# Copyright (c) 2026 DirectJob Scout contributors
+# Copyright (c) 2026 Helpmefindthejob contributors
 # SPDX-License-Identifier: Apache-2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -42,7 +42,7 @@ from .aggregators import (
     title_matches_query_family,
 )
 
-_USER_AGENT = "DirectJobScout/0.19 (+https://app.directjob-scout.example/about)"
+_USER_AGENT = "DirectJobScout/0.19 (+https://app.helpmefindthejob.com/about)"
 
 
 def _strip_html(html_text: str) -> str:

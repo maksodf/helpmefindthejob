@@ -16,7 +16,7 @@ For task ordering and dependencies, the weeks are roughly sequential but not str
 ## Pre-flight checklist (do before Week 1 starts)
 
 - [ ] Verify the exact NLnet Commons Fund call deadline that aligns with the planned submission timing
-- [ ] Confirm the GitHub repo URL stays where it is OR migrate to a `directjob-scout` org for institutional-wrapper signal
+- [ ] Confirm the GitHub repo URL stays where it is OR migrate to a `helpmefindthejob` org for institutional-wrapper signal
 - [ ] Switch maintainer workstation from mobile to computer for execution
 - [ ] Read `01-project-brief.md` and `04-research-and-decisions.md` end-to-end so the strategic context is fresh
 - [ ] Create `claude/week-1-foundations` branch off the current working branch
@@ -70,8 +70,8 @@ For task ordering and dependencies, the weeks are roughly sequential but not str
 
 ### 1.4 Sanitise internal residue (4 h) — MAJOR FIX
 
-- [x] Replace all `khalo.org` occurrences (verified count: 17 in `app.py`; ~70 across the public tree including static HTML, scripts, .env.example, docker-compose.prod.yml, and tests) with `directjob-scout.example` placeholders or environment-variable-driven configuration. Planning-doc estimate of "~29 in app.py" was inaccurate; the fresh-scan count is reported in the Commit D message.
-- [x] Replace `support@khalo.org` with `support@directjob-scout.example`
+- [x] Replace all `khalo.org` occurrences (verified count: 17 in `app.py`; ~70 across the public tree including static HTML, scripts, .env.example, docker-compose.prod.yml, and tests) with `helpmefindthejob.com` placeholders or environment-variable-driven configuration. Planning-doc estimate of "~29 in app.py" was inaccurate; the fresh-scan count is reported in the Commit D message.
+- [x] Replace `support@khalo.org` with `support@helpmefindthejob.com`
 - [x] Add `CONTRIBUTORS-NOTE.md` honestly explaining that early commits may reference internal tester names and legacy framing — do not retroactively rewrite history (preserves commit integrity per Decision 12)
 - [x] Delete `keepbuildingtill100%tracker.MD` from repo root (per Decision 14 in `04-research-and-decisions.md`)
 - [x] Sanitise `.env.example` — analytics domain placeholders updated; no real keys present
@@ -91,7 +91,7 @@ For task ordering and dependencies, the weeks are roughly sequential but not str
   - `docs/legal-review-brief.md` *(extension — contained real PII: maintainer's Gmail)*
   - `docs/deployment-handoff.md` *(extension — heavily commercial-operational, "friend"-handoff narrative)*
 - [x] Sanitise tester-name leakage: `Nasser` references in `company_discovery/journey.py` and `tests/test_journey_edge_cases.py` replaced with generic "an early tester" phrasing; Python identifier `NASSER_COMPLAINT` renamed to `EARLY_TESTER_COMPLAINT`. Bug-history context preserved.
-- [x] Pin Docker project name to `directjob-scout` in both compose files (`name:` field plus `image: directjob-scout:latest`) so the generated image name no longer leaks the original local directory name (`nassermcpserver-...`). Script references updated accordingly.
+- [x] Pin Docker project name to `helpmefindthejob` in both compose files (`name:` field plus `image: helpmefindthejob:latest`) so the generated image name no longer leaks the original local directory name (`nassermcpserver-...`). Script references updated accordingly.
 
 ### 1.5 GitHub repo housekeeping (1 h) — maintainer-clicks, agent-prepared text
 
@@ -140,7 +140,7 @@ Optional additions if you want to surface more themes: `eu`, `nlnet`, `anerkennu
 - **Code and automation → Pages**: leave off for now; turned on in Week 3 task 3.5 (documentation site).
 - **Code and automation → Actions → General**: leave default permissions; tighten in Week 3 task 3.2 if needed.
 - **Sponsorships**: GitHub auto-detects `.github/FUNDING.yml`. All entries are commented out in Week 1 by design, so no Sponsor button renders. Resolution per the comment in that file.
-- **Pinned issues**: optional — pin a single "DirectJob Scout v0.1.0 grant-readiness sprint — May–June 2026" tracking issue once you open one. Skip if you'd rather not.
+- **Pinned issues**: optional — pin a single "Helpmefindthejob v0.1.0 grant-readiness sprint — May–June 2026" tracking issue once you open one. Skip if you'd rather not.
 
 ### 1.6 Outreach drafting (research only — send deferred to Week 4 per Decision 19)
 
@@ -267,12 +267,12 @@ If no positive response (Option A fallback):
 - [x] Add `.github/workflows/mcp-integration.yml` — matrix on Python 3.11 + 3.12; pip-cache; runs `python -m unittest tests.test_phase12_mcp_integration_e2e`; prints the catalogue summary on success via `scripts/print_mcp_catalogue.py`.
 - [x] Test spawns the MCP server as subprocess — `_StdioMCPClient` in `tests/test_phase12_mcp_integration_e2e.py`; uses a tmp `COMPANY_DISCOVERY_DATA_DIR` per test for isolation; bounded 10 s shutdown wait.
 - [x] Connects a mock MCP client over stdio — JSON-RPC-over-stdio writes to subprocess.stdin, reads from subprocess.stdout one line per request.
-- [x] Calls `initialize`, expects version `2024-11-05` — `test_01_initialize_returns_canonical_protocol_version`; also asserts `serverInfo.name == "directjob-scout"` and capabilities advertise tools.
+- [x] Calls `initialize`, expects version `2024-11-05` — `test_01_initialize_returns_canonical_protocol_version`; also asserts `serverInfo.name == "helpmefindthejob"` and capabilities advertise tools.
 - [x] Calls `tools/list`, expects at least 13 tools — `test_03_tools_list_returns_thirteen_tools_with_draft7_schemas` asserts exactly 13 (the catalogue v0.2.0 surface), enumerates all expected names, and runs `jsonschema.Draft7Validator.check_schema` on every tool's `inputSchema`.
 - [x] Calls `find_company_career_page` and `propose_referral` with known inputs — covered by `test_06_find_company_career_page_happy_path` and `test_04_propose_referral_happy_path`. Also covers `query_esco_skill` happy path (§2.4 German-label lookup) for completeness across the catalogue's three eras (legacy 8 + §2.3 composition tools + §2.4 ESCO).
 - [x] Validates all responses against the published JSON Schemas — every `tools/list` schema is Draft-7-compiled; every happy-path response is parsed and field-checked against the documented shape; the schema-validation failure path is verified via `test_07_invalid_arguments_returns_rfc7807_problem_document` (deliberately malformed `record_user_outcome` payload returns the RFC 7807 Problem Details document with `violatedRule: "enum"`).
 - [x] Clean shutdown — `_cleanup` asserts subprocess exits 0 within 10 seconds after stdin close.
-- [x] Green badge in README — top of `README.md` carries `[![MCP integration](https://github.com/maksodf/directjob-scout/actions/workflows/mcp-integration.yml/badge.svg?branch=claude/project-analysis-bpHCo)](https://github.com/maksodf/directjob-scout/actions/workflows/mcp-integration.yml)`; will go green on the first push to GitHub that picks up the workflow.
+- [x] Green badge in README — top of `README.md` carries `[![MCP integration](https://github.com/maksodf/helpmefindthejob/actions/workflows/mcp-integration.yml/badge.svg?branch=claude/project-analysis-bpHCo)](https://github.com/maksodf/helpmefindthejob/actions/workflows/mcp-integration.yml)`; will go green on the first push to GitHub that picks up the workflow.
 
 ### 2.7 ARCHITECTURE.md (4 h)
 
@@ -352,23 +352,23 @@ Per `10-ai-act-compliance.md`. Create the `/compliance/` directory and ship:
 
 ### 3.4 Public demo deployment (~3 h, re-anchored 2026-05-18)
 
-**Scope re-anchor**: §3.4 uses the **existing deployment infrastructure** the maintainer already operates. Hosting provider, registrar, monitoring vendor — these are the maintainer's existing setup, not §3.4 prerequisites to provision new. The earlier draft of this task listed Hetzner / OVH / Scaleway as candidates and `directjob-scout.eu` as a candidate domain; that was placeholder enumeration that an advisory prompt mis-read as a commitment. Cleanup audit 2026-05-18 (`cleanup-audit-2026-05-18.md`) details the false dependency the cleanup removed.
+**Scope re-anchor**: §3.4 uses the **existing deployment infrastructure** the maintainer already operates. Hosting provider, registrar, monitoring vendor — these are the maintainer's existing setup, not §3.4 prerequisites to provision new. The earlier draft of this task listed Hetzner / OVH / Scaleway as candidates and `helpmefindthejob.eu` as a candidate domain; that was placeholder enumeration that an advisory prompt mis-read as a commitment. Cleanup audit 2026-05-18 (`cleanup-audit-2026-05-18.md`) details the false dependency the cleanup removed.
 
 **Posture (Finding A, maintainer decision 2026-05-18)**: The §3.4 public demo is deployed as a **parallel public instance** using the same `scripts/deploy.sh` against a second compose project (or a second subdomain on the same host). Decision 17's private posture for the existing single-tester deployment stays intact; the public demo and the private tester share zero data and zero app state. The seed-personas script and the recipe land against the parallel instance, not the existing private one. Concretely: the parallel instance gets its own `.env` (separate `DIRECTJOB_DOMAIN`, separate `DIRECTJOB_SECRET_KEY`, separate `DIRECTJOB_AUDIT_SALT`, separate admin credentials), its own named Docker volume (`directjob_data_demo` rather than `directjob_data`), and its own Caddy site block. The private and public instances may live on the same VM or on separate hosts — the seed-and-recipe work is host-agnostic.
 
 Re-anchored scope:
 
-- [ ] Stand up the parallel public instance per the posture above. The same `scripts/deploy.sh` toolchain serves it; the demo URL is the maintainer's call (Open R8 ANSWERED 2026-05-18 — placeholder convention `app.directjob-scout.example` remains the public-tree convention; the live demo URL stays in `private/`).
-- [ ] Pre-seed the **parallel public instance** with the **seven-persona** panel (Aïcha, Yusuf, Olga, Mahmoud, Maria, Käthe, Tobias) per Decision 21. The seeding script itself is generic — runs against any DirectJob Scout instance, not infrastructure-specific. The fixtures are designed to share with the R12 bias-testing methodology — same persona-source-of-truth at `docs/grant/07-personas.md`, same fixture shape. *(Agent-doable autonomously once Step 2 of `next-steps-2026-05-18.md` lands.)*
+- [ ] Stand up the parallel public instance per the posture above. The same `scripts/deploy.sh` toolchain serves it; the demo URL is the maintainer's call (Open R8 ANSWERED 2026-05-18 — placeholder convention `app.helpmefindthejob.com` remains the public-tree convention; the live demo URL stays in `private/`).
+- [ ] Pre-seed the **parallel public instance** with the **seven-persona** panel (Aïcha, Yusuf, Olga, Mahmoud, Maria, Käthe, Tobias) per Decision 21. The seeding script itself is generic — runs against any Helpmefindthejob instance, not infrastructure-specific. The fixtures are designed to share with the R12 bias-testing methodology — same persona-source-of-truth at `docs/grant/07-personas.md`, same fixture shape. *(Agent-doable autonomously once Step 2 of `next-steps-2026-05-18.md` lands.)*
 - [ ] Document the generic deployment recipe in `docs/deployment-recipe.md` (extends the existing `docs/production-deployment.md` with the persona-seed step + the parallel-public-instance framing). **Not** Hetzner-specific; works against any Docker Compose + Caddy host the maintainer chooses.
 - [ ] Verify `/api/health` returns green on the parallel public instance via the existing `scripts/production-smoke.sh`. Already implemented; the §3.4 task is to *run* it post-seed, not to *build* it.
-- [ ] Update README and `12-application-package.md` to reference the parallel public instance's URL once it is live. Until then, the public-tree placeholder remains `app.directjob-scout.example` per the existing sanitisation convention.
+- [ ] Update README and `12-application-package.md` to reference the parallel public instance's URL once it is live. Until then, the public-tree placeholder remains `app.helpmefindthejob.com` per the existing sanitisation convention.
 
 ### 3.5 Documentation site (3 h)
 
 - [x] Set up mkdocs-material with basic site structure: Quickstart, Architecture, Deployment, Contributing, MCP API, Standards, AI Act compliance, Roadmap *(landed 2026-05-19: `mkdocs.yml` at repo root, `docs/index.md` landing page with Decision-21 friction-class opener, native serving for `docs/*.md`, external GitHub links for top-level + compliance content per "don't duplicate")*
 - [x] Auto-deploy via GitHub Actions to GitHub Pages *(landed 2026-05-19: `.github/workflows/docs-publish.yml`; trigger on push to main + working branch; pull-requests run the build verification only. All four actions pinned to commit SHAs per OpenSSF Scorecard. Settings → Pages → Source must be flipped to "GitHub Actions" on first push for the deploy job to activate; this is a one-time maintainer action surfaced in the slice closeout.)*
-- [x] Link from README *(landed 2026-05-19: Docs badge linking to https://maksodf.github.io/directjob-scout/ added near the existing CI badges.)*
+- [x] Link from README *(landed 2026-05-19: Docs badge linking to https://maksodf.github.io/helpmefindthejob/ added near the existing CI badges.)*
 
 ### 3.6 Accessibility audit and ACCESSIBILITY.md (8 h)
 
@@ -439,7 +439,7 @@ The three draft messages prepared in Week 1 task 1.6 are saved under [`outreach-
 
 ### 4.2 Final differentiation polish (4 h)
 
-- [x] Cosign-sign `v0.1.0` release *(landed 2026-05-19: v0.1.0 source tarball signed with cosign 3.0.6 + long-lived ECDSA P-256 key (model b). Bundle at `docs/releases/v0.1.0-source.tar.gz.sigstore` + public key at `docs/releases/v0.1.0-cosign.pub`; both attached to the GitHub Release v0.1.0. Private key stored at `~/.config/directjob-scout/cosign-v0.1.0.key` (outside repo, chmod 600); generated password sidecar in same directory. `cosign verify-blob ... --insecure-ignore-tlog` returns "Verified OK". v0.2.0+ planned for keyless via GH Actions OIDC — full signing-policy doc at `docs/releases/v0.1.0-signing.md`. Key rotation policy: per-release key generation; the v0.1.0 key is NOT reused for future releases.)*
+- [x] Cosign-sign `v0.1.0` release *(landed 2026-05-19: v0.1.0 source tarball signed with cosign 3.0.6 + long-lived ECDSA P-256 key (model b). Bundle at `docs/releases/v0.1.0-source.tar.gz.sigstore` + public key at `docs/releases/v0.1.0-cosign.pub`; both attached to the GitHub Release v0.1.0. Private key stored at `~/.config/helpmefindthejob/cosign-v0.1.0.key` (outside repo, chmod 600); generated password sidecar in same directory. `cosign verify-blob ... --insecure-ignore-tlog` returns "Verified OK". v0.2.0+ planned for keyless via GH Actions OIDC — full signing-policy doc at `docs/releases/v0.1.0-signing.md`. Key rotation policy: per-release key generation; the v0.1.0 key is NOT reused for future releases.)*
 - [x] Attach CycloneDX SBOM (via `cyclonedx-py`) *(landed 2026-05-19: `docs/releases/v0.1.0-sbom.json` generated by `cyclonedx-py environment` (cyclonedx-bom 7.3.0) against the project's pinned Python venv. CycloneDX 1.6 format, 91 components including runtime + dev deps + transitives. Committed under `docs/releases/` AND attached to the GitHub Release v0.1.0.)*
 - [x] `static/.well-known/security.txt` per RFC 9116 *(landed 2026-05-19: `static/.well-known/security.txt` with Contact (placeholder mailto + GitHub Security Advisories URL), Expires (2027-05-19, +365 days), Preferred-Languages (en, de), Canonical (live GH Pages URL), Acknowledgments, Policy. Served by app.py's existing `serve_static` route at `/.well-known/security.txt` with `Content-Type: text/plain` — curl probe verified HTTP 200 + 954-byte body. Cross-referenced from `SECURITY.md` top-of-file.)*
 - [x] Verify OpenSSF Scorecard badge is at acceptable score (8.0+) *(landed 2026-05-19: documented in `docs/grant/scorecard-status-2026-05-19.md`. Live score not yet populated because Scorecard workflow only runs on `push` to main + weekly cron, and this sprint has been on `claude/project-analysis-bpHCo`. Expected per-check outcomes documented: Pinned-Dependencies 10/10 (post 546f952 + 5be9f47 SHA-pin sweeps), Token-Permissions 10/10 (every workflow declares minimum `permissions: contents: read` at top level with per-job escalations), Security-Policy 10/10 (SECURITY.md + RFC 9116 security.txt), SBOM 10/10 (this slice), Signed-Releases 10/10 (this slice), Dangerous-Workflow 10/10, Maintained 10/10, License 10/10, CI-Tests 10/10. Only Branch-Protection requires maintainer-side GitHub Settings action; surfaced in the scorecard-status doc.)*

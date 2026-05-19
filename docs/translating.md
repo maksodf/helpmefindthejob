@@ -1,9 +1,9 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
-<!-- Copyright (c) 2026 DirectJob Scout contributors -->
+<!-- Copyright (c) 2026 Helpmefindthejob contributors -->
 
-# Translating DirectJob Scout
+# Translating Helpmefindthejob
 
-DirectJob Scout is a civic employment commons for the European
+Helpmefindthejob is a civic employment commons for the European
 labour market. It ships **English + German** today and grows by
 locale as native-speaker contributors join. This page is the
 contributor pathway: how locale bundles are structured, how to
@@ -14,7 +14,7 @@ rule, and how the translation-review process works.
 
 The shipped locales are **English (`en`) and German (`de`)** per
 the project's
-[Decision 6](https://github.com/maksodf/directjob-scout/blob/main/docs/grant/04-research-and-decisions.md#decision-6).
+[Decision 6](https://github.com/maksodf/helpmefindthejob/blob/main/docs/grant/04-research-and-decisions.md#decision-6).
 The post-grant target locales — **Arabic, Ukrainian, Turkish,
 Romanian** — map to the seven-persona panel's friction
 geography:
@@ -242,4 +242,4 @@ start, the friendliest path is:
 
 The full contributor protocol (CLA, code of conduct, review
 expectations) lives in
-[`CONTRIBUTING.md`](https://github.com/maksodf/directjob-scout/blob/main/CONTRIBUTING.md).
+[`CONTRIBUTING.md`](https://github.com/maksodf/helpmefindthejob/blob/main/CONTRIBUTING.md).

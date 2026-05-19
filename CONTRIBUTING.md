@@ -1,6 +1,6 @@
-# Contributing to DirectJob Scout
+# Contributing to Helpmefindthejob
 
-Thank you for considering a contribution. DirectJob Scout is an open
+Thank you for considering a contribution. Helpmefindthejob is an open
 civic-employment commons — a small focused codebase that aims to put
 specialist HR and bureaucratic-navigation knowledge directly into the
 hands of anyone facing structural labor-market friction in Europe, with
@@ -42,7 +42,7 @@ onboarding paper-cuts is itself a valuable contribution.
    one-line CLA assent on the pull request (see [Contributor License
    Agreement](#contributor-license-agreement) below).
 3. Check the [issue
-   tracker](https://github.com/maksodf/directjob-scout/issues) to see
+   tracker](https://github.com/maksodf/helpmefindthejob/issues) to see
    whether someone is already working on the same thing.
 4. For larger changes (anything beyond a typo, a one-line fix, or a clear
    bug), open an issue first so we can agree on the approach before you
@@ -53,8 +53,8 @@ onboarding paper-cuts is itself a valuable contribution.
 Requirements: Python 3.11+ and (optionally but recommended) Docker.
 
 ```bash
-git clone https://github.com/maksodf/directjob-scout.git
-cd directjob-scout
+git clone https://github.com/maksodf/helpmefindthejob.git
+cd helpmefindthejob
 
 # 1. Install runtime dependencies (cryptography is pinned with broad
 #    wheel coverage — no rust or C build toolchain needed on most
@@ -182,7 +182,7 @@ body is optional but encouraged for anything non-trivial.
 
 ## Translations
 
-DirectJob Scout ships English + German today and grows by locale as
+Helpmefindthejob ships English + German today and grows by locale as
 native-speaker contributors join. If you'd like to add a locale —
 Arabic, Ukrainian, Turkish, Romanian are the post-grant targets per
 [Decision 6](docs/grant/04-research-and-decisions.md) — see
@@ -226,13 +226,13 @@ locale-bundle PRs.
 
 ## Contributor License Agreement
 
-DirectJob Scout uses an Apache-style Individual Contributor License
+Helpmefindthejob uses an Apache-style Individual Contributor License
 Agreement. The full text is in [`cla.md`](cla.md); it has not been
 amended with any novel terms beyond the Apache ICLA template.
 
 **For every non-trivial pull request, please add this comment exactly:**
 
-> I have read and agree to the DirectJob Scout Individual Contributor
+> I have read and agree to the Helpmefindthejob Individual Contributor
 > License Agreement, version 1.0, dated 2026-05-17.
 
 State your full legal name and the email address you commit from. A

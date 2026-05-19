@@ -34,7 +34,7 @@ Picked La Red over Arbeit und Leben Berlin-Brandenburg because La Red has explic
 
 Sehr geehrte Frau Faraco Blanco,
 
-mein Name ist [Maintainer]. Ich bin Student an der TU Berlin und entwickle **DirectJob Scout** — ein Open-Source-Tool, das internationale Fachkräfte durch den Anerkennungs- und Bewerbungsprozess in Deutschland führt. Mehrsprachig, datenschutzkonform (lokal selbst hostbar, verschlüsselt), Apache-2.0-lizenziert und im Vorgriff auf den EU AI Act bereits dokumentiert.
+mein Name ist [Maintainer]. Ich bin Student an der TU Berlin und entwickle **Helpmefindthejob** — ein Open-Source-Tool, das internationale Fachkräfte durch den Anerkennungs- und Bewerbungsprozess in Deutschland führt. Mehrsprachig, datenschutzkonform (lokal selbst hostbar, verschlüsselt), Apache-2.0-lizenziert und im Vorgriff auf den EU AI Act bereits dokumentiert.
 
 Das Projekt deckt sich strukturell mit den drei Servicelinien von RINWA auf eine Weise, die mir auffällig genau erscheint:
 

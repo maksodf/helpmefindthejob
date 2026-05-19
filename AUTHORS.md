@@ -1,12 +1,12 @@
 # Authors
 
-DirectJob Scout is developed and maintained by:
+Helpmefindthejob is developed and maintained by:
 
 ## Maintainers
 
 - **[@maksodf](https://github.com/maksodf)** *(display name pending — see [Consent-first authorship policy](#consent-first-authorship-policy) below)*
   - Role: lead engineer and technical decisions.
-  - Contact: open a [Discussion](https://github.com/maksodf/directjob-scout/discussions) until a project email is published.
+  - Contact: open a [Discussion](https://github.com/maksodf/helpmefindthejob/discussions) until a project email is published.
 
 - **Co-maintainer** — *identity to be added with consent per the project's consent-first authorship policy.*
   - Role scope: HR / Anerkennung / Beratungsstelle navigation expertise; community-organising and institutional-outreach coordination; co-decision on governance and roadmap.
@@ -14,7 +14,7 @@ DirectJob Scout is developed and maintained by:
 
 ## Consent-first authorship policy
 
-DirectJob Scout lists named contributors only when each contributor has explicitly consented to public attribution. This is the project's standing authorship norm, and it applies to every identity-bearing field — `AUTHORS.md`, [`ACKNOWLEDGMENTS.md`](ACKNOWLEDGMENTS.md), commit-message co-author trailers, and any future contributor roster.
+Helpmefindthejob lists named contributors only when each contributor has explicitly consented to public attribution. This is the project's standing authorship norm, and it applies to every identity-bearing field — `AUTHORS.md`, [`ACKNOWLEDGMENTS.md`](ACKNOWLEDGMENTS.md), commit-message co-author trailers, and any future contributor roster.
 
 Contributors may choose any of:
 

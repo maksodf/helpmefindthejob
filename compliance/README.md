@@ -1,17 +1,17 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
-<!-- Copyright (c) 2026 DirectJob Scout contributors -->
+<!-- Copyright (c) 2026 Helpmefindthejob contributors -->
 
 # EU AI Act Compliance Pack
 
 **Status**: shipped as part of Week 2 task 2.8 of the NLnet NGI Zero Commons Fund grant sprint. Living documentation — updated alongside any change to system behaviour that affects the obligations under Regulation (EU) 2024/1689.
 
-This directory is the **DirectJob Scout EU AI Act compliance pack**. It documents how the project meets the high-risk-AI obligations applicable to employment-related AI systems under [Regulation (EU) 2024/1689](https://eur-lex.europa.eu/eli/reg/2024/1689/oj) (the "AI Act"), with general high-risk-AI obligations becoming enforceable on **2 August 2026**.
+This directory is the **Helpmefindthejob EU AI Act compliance pack**. It documents how the project meets the high-risk-AI obligations applicable to employment-related AI systems under [Regulation (EU) 2024/1689](https://eur-lex.europa.eu/eli/reg/2024/1689/oj) (the "AI Act"), with general high-risk-AI obligations becoming enforceable on **2 August 2026**.
 
-DirectJob Scout is squarely within Annex III §4 of the AI Act:
+Helpmefindthejob is squarely within Annex III §4 of the AI Act:
 
 > *recruitment or selection of natural persons, in particular to place targeted job advertisements, to analyse and filter job applications, and to evaluate candidates, as well as AI systems intended to be used to make decisions affecting terms of work-related relationships*
 
-Any institution deploying DirectJob Scout inherits the AI Act high-risk-system obligations as the **deployer** (Article 26). DirectJob Scout maintainers are the **provider** (Article 16). The two roles have distinct obligations; this pack covers the provider's obligations in full and ships **pre-fillable templates** for the deployer-specific obligations so a deployer's compliance work is reduced to local-context completion rather than from-scratch engineering.
+Any institution deploying Helpmefindthejob inherits the AI Act high-risk-system obligations as the **deployer** (Article 26). Helpmefindthejob maintainers are the **provider** (Article 16). The two roles have distinct obligations; this pack covers the provider's obligations in full and ships **pre-fillable templates** for the deployer-specific obligations so a deployer's compliance work is reduced to local-context completion rather than from-scratch engineering.
 
 For the strategic and historical context behind this work, see [`../docs/grant/10-ai-act-compliance.md`](../docs/grant/10-ai-act-compliance.md). For the cost-saving mechanism this pack underpins, see [`../docs/grant/08-cost-saving-doctrine.md`](../docs/grant/08-cost-saving-doctrine.md) §"Mechanism 5".
 
@@ -38,15 +38,15 @@ For the strategic and historical context behind this work, see [`../docs/grant/1
 
 The pack distinguishes three audiences. Each file's header repeats this for the reader who lands on it directly.
 
-- **Provider** (DirectJob Scout maintainers under the Commons Conservancy). Obligations: Articles 9–15, 11+Annex IV technical documentation, post-market monitoring under Article 72.
-- **Deployer** (the institution that deploys DirectJob Scout — a Beratungsstelle, IQ-Netzwerk regional office, Optionskommune Jobcenter, university career service, NGO, individual self-hoster). Obligations under Article 26: input-data appropriateness, monitoring under Article 26(5), human oversight per Article 14, AI database registration per Article 49, FRIA for public-authority deployers per Article 27, post-incident notification per Article 73.
-- **End user** (the jobseeker using DirectJob Scout). Rights under Articles 86 and 50: right to an explanation of an individual decision affecting them, right to know they are interacting with an AI system.
+- **Provider** (Helpmefindthejob maintainers under the Commons Conservancy). Obligations: Articles 9–15, 11+Annex IV technical documentation, post-market monitoring under Article 72.
+- **Deployer** (the institution that deploys Helpmefindthejob — a Beratungsstelle, IQ-Netzwerk regional office, Optionskommune Jobcenter, university career service, NGO, individual self-hoster). Obligations under Article 26: input-data appropriateness, monitoring under Article 26(5), human oversight per Article 14, AI database registration per Article 49, FRIA for public-authority deployers per Article 27, post-incident notification per Article 73.
+- **End user** (the jobseeker using Helpmefindthejob). Rights under Articles 86 and 50: right to an explanation of an individual decision affecting them, right to know they are interacting with an AI system.
 
 ---
 
 ## Friction-class framing (Decision 21)
 
-DirectJob Scout serves **anyone facing structural friction between their capability and the European labor market's ability to recognise and connect them to work**. Migrants and EU-mobile workers are the most acute use case and provide the densest concentration of friction per user; the same architecture also serves career changers, returning workers after caregiving or extended absence, the long-term unemployed re-entering, and others. The architecture is friction-driven, not demographic-driven. See [`../docs/grant/04-research-and-decisions.md`](../docs/grant/04-research-and-decisions.md) Decision 21 for the binding decision, and [`../docs/grant/07-personas.md`](../docs/grant/07-personas.md) for the seven-persona panel that anchors the framing.
+Helpmefindthejob serves **anyone facing structural friction between their capability and the European labor market's ability to recognise and connect them to work**. Migrants and EU-mobile workers are the most acute use case and provide the densest concentration of friction per user; the same architecture also serves career changers, returning workers after caregiving or extended absence, the long-term unemployed re-entering, and others. The architecture is friction-driven, not demographic-driven. See [`../docs/grant/04-research-and-decisions.md`](../docs/grant/04-research-and-decisions.md) Decision 21 for the binding decision, and [`../docs/grant/07-personas.md`](../docs/grant/07-personas.md) for the seven-persona panel that anchors the framing.
 
 This framing is embedded in:
 - The user-facing transparency notice's "who this is for" section
@@ -105,4 +105,4 @@ The other files document the provider-side compliance and exist for reference an
 
 This pack is licensed under the **Apache License 2.0** (SPDX: `Apache-2.0`). See [`../LICENSE`](../LICENSE) and [`../NOTICE`](../NOTICE).
 
-Copyright (c) 2026 DirectJob Scout contributors.
+Copyright (c) 2026 Helpmefindthejob contributors.

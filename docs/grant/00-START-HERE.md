@@ -1,6 +1,6 @@
 # Grant Application Workspace — Start Here
 
-**Purpose**: track everything related to the NLnet NGI Zero Commons Fund application for DirectJob Scout. This folder is the single source of truth for the strategic vision, research findings, decisions, and execution plan. If you (human or agent) are picking up this work mid-flight, read the files in this folder in the order below before touching anything.
+**Purpose**: track everything related to the NLnet NGI Zero Commons Fund application for Helpmefindthejob. This folder is the single source of truth for the strategic vision, research findings, decisions, and execution plan. If you (human or agent) are picking up this work mid-flight, read the files in this folder in the order below before touching anything.
 
 ---
 
@@ -27,7 +27,7 @@
 
 ## TL;DR for fast onboarding
 
-**The goal**: win a Phase 1 NLnet NGI Zero Commons Fund grant of ~€37,000 (within the €50k first-round cap) to harden DirectJob Scout into a credible open-source civic-employment commons. Multi-grant arc planned beyond Phase 1.
+**The goal**: win a Phase 1 NLnet NGI Zero Commons Fund grant of ~€37,000 (within the €50k first-round cap) to harden Helpmefindthejob into a credible open-source civic-employment commons. Multi-grant arc planned beyond Phase 1.
 
 **The deadline**: ~4 weeks from 2026-05-17 — verify the exact NLnet call deadline in `04-research-and-decisions.md` Open Question R1 before committing to a date.
 

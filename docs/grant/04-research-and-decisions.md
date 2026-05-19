@@ -34,7 +34,7 @@ If a number, claim, or decision in `01-project-brief.md` ever seems off, the sou
 | Regulation | (EU) 2024/1689 | EUR-Lex |
 | Entry into force | 1 August 2024 | EUR-Lex |
 | **High-risk AI (Annex III) obligations applicable from** | **2 August 2026** | AI Act Service Desk; Lexology guidance |
-| DirectJob Scout's classification | High-risk under Annex III §4(a) and §4(b) — employment-related AI | Annex III text |
+| Helpmefindthejob's classification | High-risk under Annex III §4(a) and §4(b) — employment-related AI | Annex III text |
 | Required: risk management | Article 9 | AI Act |
 | Required: data governance | Article 10 | AI Act |
 | Required: technical documentation | Article 11 + Annex IV | AI Act |
@@ -343,11 +343,11 @@ This is positive for project coherence — one committed contributor rather than
 
 **Reversibility**: Hard (in spirit). Once shipped, the policy is the public norm for the project; rolling it back would damage credibility and would arguably violate the Contributor Covenant's contributor-autonomy stance. Soft (in mechanics): individual placeholder lines are routinely resolved as contributors consent.
 
-#### Decision 20: Focus discipline — DirectJob Scout core is the Phase 1 deliverable; housing agent is additive only
+#### Decision 20: Focus discipline — Helpmefindthejob core is the Phase 1 deliverable; housing agent is additive only
 
 **Decided**: 2026-05-18.
 
-**Supersedes (partially)**: Decision 11. Where Decision 11 framed the housing-agent integration as Option B (real, via friend) preferred with Option A (mock) fallback, Decision 20 reframes the *project priority*: DirectJob Scout's core quality through Phase 1 is the criterion that matters, and the housing-agent component is at most additive evidence of MCP composition.
+**Supersedes (partially)**: Decision 11. Where Decision 11 framed the housing-agent integration as Option B (real, via friend) preferred with Option A (mock) fallback, Decision 20 reframes the *project priority*: Helpmefindthejob's core quality through Phase 1 is the criterion that matters, and the housing-agent component is at most additive evidence of MCP composition.
 
 **Reasoning**:
 - The application is reviewed against the core project's quality and cost-saving-doctrine evidence, not against the breadth of side deliverables. A single excellent civic agent with a documented composition interface is a structurally stronger pitch than two unevenly-finished agents.
@@ -359,7 +359,7 @@ This is positive for project coherence — one committed contributor rather than
 - Self-built housing-agent work moves to Phase 2 of the post-grant roadmap (`03-post-grant.md`), not Phase 1.
 - Friend-outreach via Template F (existing friend with housing agent) and Template H (developer friends who could build one) continues — but as *additive*, not as the critical path. Positive responses produce a third civic agent in the ecosystem; non-responses produce no project change.
 - §2.5 in the execution plan ships as Option A (mock stub) if no friend collaboration lands by its turn in the queue; Option B (real friend integration) if a friend says yes. Maintainer does not self-build a Phase 1 housing agent regardless.
-- All Week 2 / Week 3 / Week 4 capacity that was conceptually allocated to housing-agent work returns to strengthening DirectJob Scout's quality, the AI Act compliance pack, the demo deployment, the documentation site, and the application drafting.
+- All Week 2 / Week 3 / Week 4 capacity that was conceptually allocated to housing-agent work returns to strengthening Helpmefindthejob's quality, the AI Act compliance pack, the demo deployment, the documentation site, and the application drafting.
 
 **Reversibility**: soft. If, between Phase 1 close and Phase 2 grant, a serious need emerges for a Phase-1-window housing-agent that the friend-collaboration path cannot meet, the decision can be reopened with explicit re-evaluation.
 
@@ -392,6 +392,35 @@ This is positive for project coherence — one committed contributor rather than
 - `README.md` opener references both the most-acute persona (Aïcha) and at least one non-migrant friction case to demonstrate breadth
 
 **Reversibility**: hard. The positioning is the public-facing identity; reverting after public deployment would be expensive. This decision is the project's identity going forward.
+
+#### Decision 22: Project rename — DirectJob Scout → Helpmefindthejob
+
+**Decided**: 2026-05-19.
+
+The project is renamed from **DirectJob Scout** to **Helpmefindthejob** (single-word brand, capital H), with the canonical domain at **helpmefindthejob.com** (acquired by the maintainer 2026-05-19). The rename is **forward-going only** per [Decision 12](#decision-12-repository-sanitisation--apply-the-week-1-decision-and-document-the-historical-residue): pre-rename git history retains "DirectJob Scout" as the documented identity-of-record for all commits up to and including `v0.1.0`; `v0.1.0` cryptographic artefacts (cosign signature bundle + public key + CycloneDX SBOM) are immutable and stay bound to the pre-rename identity.
+
+**Reasoning**:
+
+- The new name aligns the user-benefit framing ("help me find a job") with the user's actual pain point, in plain English the seven-persona panel themselves would use.
+- Brand consistency before NLnet submission so a reviewer's first impression matches the production domain.
+- `helpmefindthejob.com` is the maintainer's acquired domain — it becomes the canonical demo + docs surface (current `maksodf.github.io/directjob-scout/` GH Pages URL stays available via GitHub auto-redirect after the repo is renamed).
+
+**What this changes**:
+
+- All forward-going documentation, source code, configuration, public-tree placeholders, and external URLs renamed.
+- MCP server `serverInfo.name` flipped from `"directjob-scout"` → `"helpmefindthejob"`; the corresponding integration-test assertion updated in lockstep.
+- Public-tree placeholder convention (`directjob-scout.example` per Decision 12) is **superseded** by the real `helpmefindthejob.com` domain — see Open R8 reopen below.
+- GitHub repository to be renamed by the maintainer via Settings → Rename (handled GitHub-side; auto-redirects from the old URL are preserved by GitHub for migration continuity).
+
+**What this does NOT change**:
+
+- Git commit history (immutable per Decision 12).
+- `v0.1.0` release-name `DirectJob Scout v0.1.0` (identity-of-record at sign time).
+- `v0.1.0` cryptographic artefacts under `docs/releases/v0.1.0-*` (cosign signature was computed over `directjob-scout-0.1.0.tar.gz`; renaming the artefacts post-sign would break verification).
+- CHANGELOG.md historical entries (the `[0.1.0]` block names DirectJob Scout as the identity-of-record at that release).
+- `docs/grant/cleanup-audit-2026-05-18*.md` historical reports.
+
+**Reversibility**: hard. Public-name change affects every artefact going forward. Reverting would require another forward-going rename of comparable scope. The git-history-of-pre-rename + the `v0.1.0` cryptographic identity-of-record remain intact under either direction.
 
 ---
 
@@ -444,8 +473,8 @@ These are not yet decided. Listed so a future agent or planning session can prio
 **Updated 2026-05-18 (cleanup-audit-2026-05-18.md)**: the original framing of this question — "pick hosting provider, secure domain, set up cert + monitoring" — was based on the assumption that §3.4 needed to *provision* new infrastructure. Per the cleanup audit, the maintainer has **existing deployment infrastructure** already running. The actual open question that remains is narrower: should the public tree reference the maintainer's real existing subdomain by name, or should it continue to use the `app.directjob-scout.example` placeholder convention established by Week 1 task 1.4 sanitisation (Decision 12)?
 
 - **Status as of 2026-05-18**: **ANSWERED 2026-05-18 — placeholder convention retained.** The maintainer's answer: keep the existing `app.directjob-scout.example` placeholder convention in the public tree; revisit when ready. No public-tree changes needed.
-- **Default**: the `app.directjob-scout.example` placeholder convention remains the public-tree standard (Decision 12); the live deployment config in `private/` carries the real URL.
-- **Action**: closed; re-open only if the maintainer's stance changes.
+- **Status as of 2026-05-19**: **REOPENED AND UPDATED 2026-05-19 — placeholder convention SUPERSEDED by real domain `helpmefindthejob.com`.** Per [Decision 22](#decision-22-project-rename--directjob-scout--helpmefindthejob), the maintainer acquired `helpmefindthejob.com` as the canonical project domain. The Decision-12 placeholder convention (`directjob-scout.example`) was protective when no real domain existed; with `helpmefindthejob.com` now owned, the real domain replaces the placeholder in the public tree. Specifically: `app.directjob-scout.example` → `app.helpmefindthejob.com`; `demo.directjob-scout.example` → `demo.helpmefindthejob.com`; canonical `support@directjob-scout.example` → `support@helpmefindthejob.com`. Documentation site URL transitions from `maksodf.github.io/directjob-scout/` → `helpmefindthejob.com/` (GH Pages CNAME or apex hosting per maintainer DNS configuration). GitHub repository rename (`maksodf/directjob-scout` → `maksodf/helpmefindthejob`) handled GitHub-side via Settings → Rename; auto-redirects preserved.
+- **Action**: closed (as of 2026-05-19 reopen + update). Maintainer's remaining DNS-config work is independent of the public-tree text changes and tracked outside this decision log.
 
 ### Open R9: ESCO mapping data — extract from authoritative source
 

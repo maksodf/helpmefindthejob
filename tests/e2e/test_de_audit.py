@@ -1,4 +1,4 @@
-# Copyright (c) 2026 DirectJob Scout contributors
+# Copyright (c) 2026 Helpmefindthejob contributors
 # SPDX-License-Identifier: Apache-2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -13,7 +13,7 @@ and asserts that key German strings render in the visible DOM. Catches
 straggler English text that leaked past Items 1 + 17.
 
 Required environment (script no-ops without all three so CI doesn't run it):
-  E2E_BASE_URL    e.g. https://app.directjob-scout.example
+  E2E_BASE_URL    e.g. https://app.helpmefindthejob.com
   E2E_EMAIL       admin email
   E2E_PASSWORD    admin password
 

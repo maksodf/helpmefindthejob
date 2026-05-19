@@ -1,5 +1,5 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
-<!-- Copyright (c) 2026 DirectJob Scout contributors -->
+<!-- Copyright (c) 2026 Helpmefindthejob contributors -->
 
 # Outreach send-gate readiness — 2026-05-19
 
@@ -37,7 +37,7 @@ pending the working-branch-to-main merge.
 
 The outreach drafts reference (or will, after personalisation by
 the maintainer) the docs site URL
-`https://maksodf.github.io/directjob-scout/`. That URL becomes live
+`https://maksodf.github.io/helpmefindthejob/`. That URL becomes live
 once the docs-publish workflow runs against `main` (the workflow's
 own trigger). On the working branch `claude/project-analysis-bpHCo`
 the docs build runs and uploads the artefact, but Pages serves from
@@ -48,7 +48,7 @@ the main-branch deploy.
 1. Maintainer reviews this slice + the §4.4 application draft.
 2. Maintainer merges the working branch into `main`.
 3. The docs-publish workflow fires automatically; verify the live
-   docs site at `https://maksodf.github.io/directjob-scout/` returns
+   docs site at `https://maksodf.github.io/helpmefindthejob/` returns
    200 + the Aïcha + Käthe vignette landing.
 4. Maintainer personalises the three outreach drafts (fills in
    `[Maintainer]` name, `[Kontakt-Email]`, `[Studienprogramm]`,
@@ -77,7 +77,7 @@ preserved for maintainer fill-in:
 - `[Maintainer]` — preferred display name (all three drafts)
 - `[Kontakt-Email]` — direct reply-to email (all three drafts)
 - `[Link zum Projekt-README / Demo]` — single project URL (all
-  three drafts; recommended: `https://maksodf.github.io/directjob-scout/`
+  three drafts; recommended: `https://maksodf.github.io/helpmefindthejob/`
   once Pages serves the main-branch deploy)
 - `[Studienprogramm]` + `[Matrikelnummer]` — TU Berlin-only fields
   (draft 03)
@@ -91,7 +91,7 @@ footer.
 # 1. Pull the latest main + verify Pages is live.
 git checkout main
 git pull
-curl -sI https://maksodf.github.io/directjob-scout/ | head -1
+curl -sI https://maksodf.github.io/helpmefindthejob/ | head -1
 # Expected: HTTP/2 200
 
 # 2. Open each draft, fill the four placeholders, save outside the

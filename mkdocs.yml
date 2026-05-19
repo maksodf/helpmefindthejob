@@ -1,4 +1,4 @@
-# DirectJob Scout — mkdocs-material site config.
+# Helpmefindthejob — mkdocs-material site config.
 #
 # Built locally with: `pip install -r requirements-dev.txt && mkdocs build --strict`.
 # Auto-deployed to GitHub Pages on every push to main and the working
@@ -10,13 +10,13 @@
 # at the repo root and are linked as external GitHub URLs in the nav
 # so a single edit stays authoritative.
 
-site_name: DirectJob Scout
+site_name: Helpmefindthejob
 site_description: >-
   Open-source EU-wide civic employment commons — MCP-composable copilot
   for users facing structural labor-market friction in Europe.
-site_url: https://maksodf.github.io/directjob-scout/
-repo_url: https://github.com/maksodf/directjob-scout
-repo_name: maksodf/directjob-scout
+site_url: https://helpmefindthejob.com/
+repo_url: https://github.com/maksodf/helpmefindthejob
+repo_name: maksodf/helpmefindthejob
 edit_uri: edit/main/docs/
 
 # All public-facing planning + content lives under docs/. The grant
@@ -102,27 +102,27 @@ markdown_extensions:
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/maksodf/directjob-scout
+      link: https://github.com/maksodf/helpmefindthejob
   generator: false
 
 nav:
   - Home: index.md
-  - Quickstart: https://github.com/maksodf/directjob-scout#quickstart
-  - Architecture: https://github.com/maksodf/directjob-scout/blob/main/ARCHITECTURE.md
-  - Standards: https://github.com/maksodf/directjob-scout/blob/main/STANDARDS.md
-  - Accessibility: https://github.com/maksodf/directjob-scout/blob/main/ACCESSIBILITY.md
+  - Quickstart: https://github.com/maksodf/helpmefindthejob#quickstart
+  - Architecture: https://github.com/maksodf/helpmefindthejob/blob/main/ARCHITECTURE.md
+  - Standards: https://github.com/maksodf/helpmefindthejob/blob/main/STANDARDS.md
+  - Accessibility: https://github.com/maksodf/helpmefindthejob/blob/main/ACCESSIBILITY.md
   - MCP API: mcp-server.md
   - Deployment:
       - Generic recipe: deployment-recipe.md
       - Production: production-deployment.md
   - ESCO + EURES: esco-integration.md
   - Compliance:
-      - Overview (GitHub): https://github.com/maksodf/directjob-scout/tree/main/compliance
+      - Overview (GitHub): https://github.com/maksodf/helpmefindthejob/tree/main/compliance
       - Transparency notice: compliance/transparency-notice.md
       - Deployer operating manual: compliance/deployer-operating-manual.md
   - Contributing:
-      - Guide (GitHub): https://github.com/maksodf/directjob-scout/blob/main/CONTRIBUTING.md
+      - Guide (GitHub): https://github.com/maksodf/helpmefindthejob/blob/main/CONTRIBUTING.md
       - Translating: translating.md
-  - Roadmap: https://github.com/maksodf/directjob-scout/blob/main/ROADMAP.md
-  - Sustainability: https://github.com/maksodf/directjob-scout/blob/main/SUSTAINABILITY.md
-  - Changelog: https://github.com/maksodf/directjob-scout/blob/main/CHANGELOG.md
+  - Roadmap: https://github.com/maksodf/helpmefindthejob/blob/main/ROADMAP.md
+  - Sustainability: https://github.com/maksodf/helpmefindthejob/blob/main/SUSTAINABILITY.md
+  - Changelog: https://github.com/maksodf/helpmefindthejob/blob/main/CHANGELOG.md

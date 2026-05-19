@@ -1,5 +1,5 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
-<!-- Copyright (c) 2026 DirectJob Scout contributors -->
+<!-- Copyright (c) 2026 Helpmefindthejob contributors -->
 
 # Cleanup audit follow-up — adversarial review of commit 8ae169f
 
@@ -160,7 +160,7 @@ R12 (synthetic-cohort interim run using the seven personas) **IS the gap-closing
 
 ### 6.2 Step 3 GitHub Pages status
 
-**Result**: `gh api /repos/maksodf/directjob-scout/pages` returns:
+**Result**: `gh api /repos/maksodf/helpmefindthejob/pages` returns:
 
 ```
 {"message":"Not Found","documentation_url":"https://docs.github.com/rest/pages/pages#get-a-apiname-pages-site","status":"404"}

@@ -1,12 +1,12 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
-<!-- Copyright (c) 2026 DirectJob Scout contributors -->
+<!-- Copyright (c) 2026 Helpmefindthejob contributors -->
 
 # OpenSSF Scorecard status — 2026-05-19
 
 This page is the project's snapshot of expected Scorecard
 behaviour at the time the Week 4 §4.2 slice landed. The actual
 public-score-feed at
-<https://scorecard.dev/viewer/?uri=github.com/maksodf/directjob-scout>
+<https://scorecard.dev/viewer/?uri=github.com/maksodf/helpmefindthejob>
 will pick up the improvements documented here on the next
 weekly cron run (the `.github/workflows/scorecard.yml` workflow
 fires at `32 5 * * 1` and on `push` to `main`).
@@ -69,9 +69,9 @@ After the working branch merges to main + the first Scorecard
 run completes:
 
 ```bash
-gh api /repos/maksodf/directjob-scout/actions/workflows/scorecard.yml/runs \
+gh api /repos/maksodf/helpmefindthejob/actions/workflows/scorecard.yml/runs \
   --jq '.workflow_runs[0] | {created_at, conclusion}'
-curl -sL "https://api.securityscorecards.dev/projects/github.com/maksodf/directjob-scout" \
+curl -sL "https://api.securityscorecards.dev/projects/github.com/maksodf/helpmefindthejob" \
   | python3 -m json.tool
 ```
 

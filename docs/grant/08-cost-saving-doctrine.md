@@ -37,7 +37,7 @@ A feature fails — and is dropped or deferred — if it only improves user outc
 
 ## The eight built-in cost-saving mechanisms
 
-These are the specific ways DirectJob Scout reduces institutional operational cost. Each is documented because each is a defensible claim in funding proposals and partner conversations.
+These are the specific ways Helpmefindthejob reduces institutional operational cost. Each is documented because each is a defensible claim in funding proposals and partner conversations.
 
 ### 1. Lower advisor caseload per case served
 
@@ -65,7 +65,7 @@ The migrant subset is the densest concentration of cases per advisor visit and i
 
 **How**: The project is open-source under Apache 2.0. Institutions self-host on existing infrastructure. There is no per-user, per-advisor, per-client subscription.
 
-**Per-instance saving**: Commercial alternatives (LinkedIn Talent Insights, SaaS career-platforms) commonly cost €15–€80 per user per month. For a Beratungsstelle serving 200 clients with 8 advisors, that range translates to €1,400 to €19,200 monthly recurring cost. DirectJob Scout is €0.
+**Per-instance saving**: Commercial alternatives (LinkedIn Talent Insights, SaaS career-platforms) commonly cost €15–€80 per user per month. For a Beratungsstelle serving 200 clients with 8 advisors, that range translates to €1,400 to €19,200 monthly recurring cost. Helpmefindthejob is €0.
 
 **At scale**: A Jobcenter serving 5,000 clients with 50 advisors avoids €5–€50k per month of recurring software cost.
 

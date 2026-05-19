@@ -1,4 +1,4 @@
-# Copyright (c) 2026 DirectJob Scout contributors
+# Copyright (c) 2026 Helpmefindthejob contributors
 # SPDX-License-Identifier: Apache-2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -95,15 +95,15 @@ class SiteConfigEndpointTests(unittest.TestCase):
 
     def test_set_returns_values(self) -> None:
         env_extra = {
-            "DIRECTJOB_ANALYTICS_SCRIPT_URL": "https://analytics.directjob-scout.example/js/script.js",
-            "DIRECTJOB_ANALYTICS_DOMAIN": "directjob-scout.example",
+            "DIRECTJOB_ANALYTICS_SCRIPT_URL": "https://analytics.helpmefindthejob.com/js/script.js",
+            "DIRECTJOB_ANALYTICS_DOMAIN": "helpmefindthejob.com",
         }
         _, base = self._spawn(env_extra)
         cfg = self._get_site_config(base)
         self.assertEqual(
-            cfg["analytics"]["scriptUrl"], "https://analytics.directjob-scout.example/js/script.js"
+            cfg["analytics"]["scriptUrl"], "https://analytics.helpmefindthejob.com/js/script.js"
         )
-        self.assertEqual(cfg["analytics"]["domain"], "directjob-scout.example")
+        self.assertEqual(cfg["analytics"]["domain"], "helpmefindthejob.com")
 
 
 if __name__ == "__main__":

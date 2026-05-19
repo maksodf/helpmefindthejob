@@ -1,11 +1,11 @@
 # Acknowledgments
 
-DirectJob Scout stands on the work of many other projects, communities, and individuals. This file records gratitude for the most direct sources of inspiration, infrastructure, and influence.
+Helpmefindthejob stands on the work of many other projects, communities, and individuals. This file records gratitude for the most direct sources of inspiration, infrastructure, and influence.
 
 ## Standards and protocols
 
 - **Model Context Protocol** (MCP) — the composition interface that
-  makes DirectJob Scout a piece of civic infrastructure rather than a
+  makes Helpmefindthejob a piece of civic infrastructure rather than a
   standalone app. We are building one of the first civic-services
   reference implementations of MCP and contribute back to that
   ecosystem.

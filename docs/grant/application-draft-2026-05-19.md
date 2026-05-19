@@ -1,7 +1,7 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
-<!-- Copyright (c) 2026 DirectJob Scout contributors -->
+<!-- Copyright (c) 2026 Helpmefindthejob contributors -->
 
-# DirectJob Scout — NLnet NGI Zero Commons Fund application (working draft)
+# Helpmefindthejob — NLnet NGI Zero Commons Fund application (working draft)
 
 **Status**: working draft for the §4.4 execution-plan slice; not
 yet submitted. The maintainer reviews + an external reader does
@@ -42,7 +42,7 @@ Optional. Skip unless the maintainer wants a phone fallback.
 
 ## Field 5 — Country (optional)
 
-> Germany (EU member state). DirectJob Scout's reference
+> Germany (EU member state). Helpmefindthejob's reference
 > implementation is deployed in Germany; the architecture is
 > EU-wide and country-neutral (cross-border deployment is a
 > localisation exercise, not a re-engineering effort).
@@ -55,7 +55,7 @@ Optional. Skip unless the maintainer wants a phone fallback.
 
 ## Field 7 — Proposal name
 
-**DirectJob Scout — an open-source EU-wide civic employment commons**
+**Helpmefindthejob — an open-source EU-wide civic employment commons**
 
 (Subtitle for the cover page if the form supports one:
 "MCP-composable copilot for users facing structural labour-market
@@ -65,11 +65,11 @@ friction in Europe.")
 
 ## Field 8 — Website / wiki
 
-`https://maksodf.github.io/directjob-scout/` (the documentation
+`https://maksodf.github.io/helpmefindthejob/` (the documentation
 site — `mkdocs build --strict` already green, GH Pages serving
 will activate when the working branch merges to `main`).
 
-Until that activation: `https://github.com/maksodf/directjob-scout`
+Until that activation: `https://github.com/maksodf/helpmefindthejob`
 (canonical source repository).
 
 ---
@@ -85,7 +85,7 @@ Until that activation: `https://github.com/maksodf/directjob-scout`
 > anyone navigating an employment system outside their familiar
 > bureaucratic context.
 >
-> **DirectJob Scout** is an open-source, multilingual,
+> **Helpmefindthejob** is an open-source, multilingual,
 > privacy-preserving civic employment agent that captures
 > specialist HR and bureaucratic-navigation knowledge into a
 > small, well-documented set of MCP-composable modular tools.
@@ -109,7 +109,7 @@ Until that activation: `https://github.com/maksodf/directjob-scout`
 ## Field 10 — Prior involvement (optional)
 
 Phase 1 work already shipped and verifiable in the public
-repository at <https://github.com/maksodf/directjob-scout> (90+
+repository at <https://github.com/maksodf/helpmefindthejob> (90+
 commits across the 4-week grant-readiness sprint, May 2026):
 
 - **Apache 2.0 + CLA + governance pack**: LICENSE, NOTICE,
@@ -235,7 +235,7 @@ canonical reference implementation, with the seven-persona panel
 pre-seeded (Aïcha, Yusuf, Olga, Mahmoud, Maria — most-acute
 migrant; Käthe + Tobias — wider-friction-class per Decision 21);
 mkdocs-material documentation site at
-<https://maksodf.github.io/directjob-scout/>; `ACCESSIBILITY.md`
+<https://maksodf.github.io/helpmefindthejob/>; `ACCESSIBILITY.md`
 with three-pass WCAG 2.2 AA audit evidence (unauthenticated
 surfaces axe-core CLI + authenticated surfaces Playwright +
 axe-playwright-python + light-mode + dynamic-state + compliance
@@ -350,9 +350,9 @@ An employment-AI system makes high-risk decisions about access to
 employment (Annex III §4); the compliance obligations are
 substantial.
 
-**What DirectJob Scout does that the above don't**:
+**What Helpmefindthejob does that the above don't**:
 
-| Property | LinkedIn-class | BA JOBBÖRSE | GPT-wrapper | DirectJob Scout |
+| Property | LinkedIn-class | BA JOBBÖRSE | GPT-wrapper | Helpmefindthejob |
 |---|---|---|---|---|
 | Open-source (Apache 2.0) | no | no | no | **yes** |
 | Self-hostable on commodity hardware | no | no | mixed | **yes** (deployment-recipe.md + flake.nix) |
@@ -427,7 +427,7 @@ journey. Phase 2 work.
 
 ## Field 16 — Ecosystem description
 
-**Where DirectJob Scout fits in the NGI / civic-tech / labour-
+**Where Helpmefindthejob fits in the NGI / civic-tech / labour-
 market ecosystem**:
 
 **Upstream (we depend on)**:
@@ -472,7 +472,7 @@ market ecosystem**:
 **Adjacent NGI projects**: NLnet's `commons-fund/` published
 project list includes adjacent civic-tech infrastructure (FOSS
 identity layers, public-data portals, ePartizipation toolchains).
-DirectJob Scout's MCP composition surface is designed to
+Helpmefindthejob's MCP composition surface is designed to
 interoperate with those via the same protocol used by Claude
 Desktop / Cursor / Continue / Cline — no NLnet-specific glue.
 

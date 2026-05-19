@@ -1,6 +1,6 @@
 ---
 name: Bug report
-about: Report a problem in DirectJob Scout
+about: Report a problem in Helpmefindthejob
 title: "[bug] "
 labels: ["bug"]
 ---
@@ -25,7 +25,7 @@ triggers the bug. -->
 - Python version (if running locally):
 - Docker (yes/no, version):
 - Browser and version (if a UI bug):
-- DirectJob Scout commit or tag:
+- Helpmefindthejob commit or tag:
 - AI provider in use (OpenAI / Gemini / Ollama / manual / etc.):
 - Deployment shape (local / docker compose / production):
 

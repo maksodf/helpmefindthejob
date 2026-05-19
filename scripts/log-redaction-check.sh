@@ -8,7 +8,7 @@
 #
 # Usage:
 #   ./scripts/log-redaction-check.sh
-#   COMPOSE_FILE=docker-compose.prod.yml SERVICE_NAME=directjob-scout \
+#   COMPOSE_FILE=docker-compose.prod.yml SERVICE_NAME=helpmefindthejob \
 #     ./scripts/log-redaction-check.sh
 #   LOG_LINES=2000 ./scripts/log-redaction-check.sh
 #
@@ -32,7 +32,7 @@
 set -eu
 
 COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.prod.yml}"
-SERVICE_NAME="${SERVICE_NAME:-directjob-scout}"
+SERVICE_NAME="${SERVICE_NAME:-helpmefindthejob}"
 LOG_LINES="${LOG_LINES:-1000}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 

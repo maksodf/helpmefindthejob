@@ -7,7 +7,7 @@
     "ISCO-08 (ILO four-digit unit groups)",
     "ESCO v1.1 (European Skills, Competences, Qualifications and Occupations)"
   ],
-  "coveragePolicy": "Persona-panel-aligned subset. Each entry serves at least one of the five DirectJob Scout personas (Aïcha = nursing; Yusuf = mechanical engineering; Olga = frontend development; Mahmoud = construction trades; Maria = home-based care) and/or appears in the Bundesagentur für Arbeit 2025 shortage-occupation list.",
+  "coveragePolicy": "Persona-panel-aligned subset. Each entry serves at least one of the five Helpmefindthejob personas (Aïcha = nursing; Yusuf = mechanical engineering; Olga = frontend development; Mahmoud = construction trades; Maria = home-based care) and/or appears in the Bundesagentur für Arbeit 2025 shortage-occupation list.",
   "entries": [
     {
       "code": "2221.1",

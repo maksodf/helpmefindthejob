@@ -19,5 +19,5 @@ if [ ! -d "$BACKUP_DIR" ]; then
 fi
 
 echo "retention: pruning *.tar.gz older than $DAYS days from $BACKUP_DIR"
-find "$BACKUP_DIR" -type f -name 'directjob-scout-*.tar.gz' -mtime +"$DAYS" -print -delete
+find "$BACKUP_DIR" -type f -name 'helpmefindthejob-*.tar.gz' -mtime +"$DAYS" -print -delete
 echo "retention: done"

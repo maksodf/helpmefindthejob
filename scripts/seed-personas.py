@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-# Copyright (c) 2026 DirectJob Scout contributors
+# Copyright (c) 2026 Helpmefindthejob contributors
 # SPDX-License-Identifier: Apache-2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
 # a copy of the License at http://www.apache.org/licenses/LICENSE-2.0.
 
-"""Seed the seven-persona panel into a DirectJob Scout instance.
+"""Seed the seven-persona panel into a Helpmefindthejob instance.
 
 This script is part of the §3.4 parallel-public-instance recipe. It
 creates seven demo accounts (Aïcha, Yusuf, Olga, Mahmoud, Maria,
@@ -47,7 +47,7 @@ Usage
 Other flags::
 
     --data-dir PATH         Override COMPANY_DISCOVERY_DATA_DIR for one run.
-    --email-domain DOMAIN   Override the default demo.directjob-scout.example.
+    --email-domain DOMAIN   Override the default demo.helpmefindthejob.com.
     --base-url URL          Reserved for future HTTP-API mode; not used.
     --force-password-reset  Overwrite existing personas' passwords too.
     --dry-run               Print what would be created; don't write anything.
@@ -227,7 +227,7 @@ def seed(
 
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Seed the seven-persona panel into a DirectJob Scout instance."
+        description="Seed the seven-persona panel into a Helpmefindthejob instance."
     )
     parser.add_argument(
         "--password",
@@ -240,7 +240,7 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument(
         "--email-domain",
-        default="demo.directjob-scout.example",
+        default="demo.helpmefindthejob.com",
         help=(
             "Email domain for the seven persona accounts. Default is "
             "the public-tree placeholder convention (Decision 12); "

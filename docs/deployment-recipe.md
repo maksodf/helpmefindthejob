@@ -1,10 +1,10 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
-<!-- Copyright (c) 2026 DirectJob Scout contributors -->
+<!-- Copyright (c) 2026 Helpmefindthejob contributors -->
 
 # Deployment recipe — parallel public demo instance
 
 **Audience**: a contributor or institutional deployer who wants a public demo
-of DirectJob Scout running against any Docker Compose + Caddy host.
+of Helpmefindthejob running against any Docker Compose + Caddy host.
 **Companion to**: [`production-deployment.md`](production-deployment.md) (the
 general production guide) and `docs/grant/02-execution-plan.md` §3.4 (the
 grant-sprint planning context).
@@ -65,8 +65,8 @@ For a local-development demo on the deployer's own machine, with
 HTTP-only and no Let's Encrypt cert:
 
 ```bash
-git clone https://github.com/maksodf/directjob-scout.git
-cd directjob-scout
+git clone https://github.com/maksodf/helpmefindthejob.git
+cd helpmefindthejob
 
 # Copy the env template and fill in placeholders.
 cp deploy/production.env.template .env.demo
@@ -112,7 +112,7 @@ already reachable via SSH:
 sudo mkdir -p /srv/directjob-demo
 sudo chown "$USER:$USER" /srv/directjob-demo
 cd /srv/directjob-demo
-git clone https://github.com/maksodf/directjob-scout.git .
+git clone https://github.com/maksodf/helpmefindthejob.git .
 
 # Generate the demo's secrets — these must be different from the
 # private instance's secrets.
@@ -151,7 +151,7 @@ SSH_HOST=<user>@<demo-host> \
 SSH_KEY=~/.ssh/<your-key> \
 PUBLIC_URL=https://demo.<your-domain> \
 APP_DIR=/srv/directjob-demo \
-SERVICE_NAME=directjob-scout \
+SERVICE_NAME=helpmefindthejob \
 COMPOSE_FILE=docker-compose.prod.yml \
 ./scripts/deploy.sh
 ```
@@ -172,7 +172,7 @@ After the first deploy, run the persona seed once via SSH:
 ```bash
 ssh <user>@<demo-host> \
   "cd /srv/directjob-demo && \
-   docker compose exec -T directjob-scout \
+   docker compose exec -T helpmefindthejob \
      python3 scripts/seed-personas.py --password '<demo-password>'"
 ```
 
@@ -197,7 +197,7 @@ as `healthy` once the start-period elapses.
 ### 5.2 Persona seed verification
 
 ```bash
-docker compose -p directjob-demo exec directjob-scout python3 -c "
+docker compose -p directjob-demo exec helpmefindthejob python3 -c "
 from app import build_state
 state = build_state()
 users = state.auth_store.list_users()
@@ -289,13 +289,13 @@ firewall vendor.
 ## 9. Log locations
 
 - Application logs: `docker compose -p directjob-demo logs
-  directjob-scout`.
+  helpmefindthejob`.
 - Caddy access + error logs: `docker compose -p directjob-demo logs
   caddy`.
 - AI Act audit log: inside the container at
   `${DIRECTJOB_DATA_ROOT}/ai_act_audit.log`, or on the host inside the
   named volume `directjob_data_demo`. Inspect via
-  `docker compose -p directjob-demo exec directjob-scout cat
+  `docker compose -p directjob-demo exec helpmefindthejob cat
   /app/data/ai_act_audit.log`.
 - Admin-action log (separate from the AI Act log): same location,
   filename `admin_audit.log`.
@@ -304,7 +304,7 @@ firewall vendor.
 
 ## 10. Swap-file note (optional)
 
-DirectJob Scout's runtime memory footprint is modest. The encryption-
+Helpmefindthejob's runtime memory footprint is modest. The encryption-
 at-rest layer, the sqlite WAL, and the embedded Python image all fit
 under 1 GiB at idle. The AI provider runs out-of-process (when
 configured) or off-host, so RAM is not the bottleneck.
@@ -344,7 +344,7 @@ health-check assertion. A failed deploy can be rolled back with the
 
 ## 12. Reproducible builds (Nix flake)
 
-DirectJob Scout ships a `flake.nix` at the repo root that pins the
+Helpmefindthejob ships a `flake.nix` at the repo root that pins the
 Python interpreter + OS-level dev toolchain to a specific
 `nixos-25.05` nixpkgs commit (captured in `flake.lock`). A reviewer
 running `nix develop` six months from now gets the same shell — same

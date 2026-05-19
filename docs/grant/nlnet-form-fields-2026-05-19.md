@@ -1,5 +1,5 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
-<!-- Copyright (c) 2026 DirectJob Scout contributors -->
+<!-- Copyright (c) 2026 Helpmefindthejob contributors -->
 
 # NLnet NGI Zero Commons Fund — application form structure
 
@@ -52,14 +52,14 @@
 |---|---|---|---|---|
 | 6 | Please select a call | dropdown | yes | "NGI Zero Commons Fund" / "NGI TALER" / "NGI Fediversity" / "Research & Higher Education Technology Fund" / "Open Call" / "Other" |
 
-DirectJob Scout selects **"NGI Zero Commons Fund"**.
+Helpmefindthejob selects **"NGI Zero Commons Fund"**.
 
 ### Project body
 
 | # | Field | Type | Required | Limit | Guidance |
 |---|---|---|---|---|---|
 | 7 | Proposal name | text | yes | — | Concise title |
-| 8 | Website / wiki | text | no | — | The project's canonical URL (we cite `https://maksodf.github.io/directjob-scout/` once Pages is live; until then, the GitHub repo URL) |
+| 8 | Website / wiki | text | no | — | The project's canonical URL (we cite `https://maksodf.github.io/helpmefindthejob/` once Pages is live; until then, the GitHub repo URL) |
 | 9 | **Abstract** | textarea | yes | not enforced (NLnet recommends ~200 words) | "Explain the whole project and its expected outcome(s)" |
 | 10 | Prior involvement | textarea | no | — | Previous relevant projects or contributions by the applicant |
 | 11 | **Requested Amount** (€) | numeric | yes | 5,000 – 50,000 (first proposal) | Whole euros |
@@ -67,7 +67,7 @@ DirectJob Scout selects **"NGI Zero Commons Fund"**.
 | 13 | Other funding sources | textarea | no | — | Co-funders, in-kind contributions, prior grants |
 | 14 | **Project comparison** | textarea | yes | not enforced | Differentiation from existing projects — what we do that incumbents don't |
 | 15 | Technical challenges | textarea | no | — | Hard problems anticipated |
-| 16 | **Ecosystem description** | textarea | yes | not enforced | Where DirectJob Scout fits in the NGI / civic-tech / labour-market ecosystem; what we build on, what we compose with |
+| 16 | **Ecosystem description** | textarea | yes | not enforced | Where Helpmefindthejob fits in the NGI / civic-tech / labour-market ecosystem; what we build on, what we compose with |
 
 ### Attachments
 
@@ -104,7 +104,7 @@ interpreted by reviewers:
   commons (Apache 2.0, Conservancy wrapper, self-hostable, no
   vendor lock-in) is a primary review axis under
   "Relevance/Impact/Strategic potential" (40% weight).
-- **European dimension**: required. DirectJob Scout's
+- **European dimension**: required. Helpmefindthejob's
   EU-wide-civic-employment positioning + DE-first reference
   deployment + Conservancy-stichting host directly satisfies.
 - **Standards interop**: NLnet's Commons Fund values projects
@@ -123,7 +123,7 @@ interpreted by reviewers:
 Per the FAQ, NLnet offers these **non-monetary** services we can
 request as part of the grant relationship:
 
-| Service | Provider | Phase 1 relevance for DirectJob Scout |
+| Service | Provider | Phase 1 relevance for Helpmefindthejob |
 |---|---|---|
 | **Accessibility audit** | HAN University of Applied Sciences | Manual keyboard + screen-reader review beyond the axe-core automated baseline shipped in `ACCESSIBILITY.md`. Anticipated as a Phase 2 service after Conservancy admission lands. |
 | **Security audit** | NLnet's partner network | Out of scope for first €5k–€50k grant (security audits typically engage at the >€50k subsequent-proposal tier). |
@@ -134,7 +134,7 @@ request as part of the grant relationship:
 | **Community building** | NLnet network | Helpful for activating the GitHub Sponsors + Open Collective channels per `SUSTAINABILITY.md` once we are past the Decision 17 pre-launch posture. |
 | **Responsible-disclosure guidance** | NLnet network | SECURITY.md + RFC 9116 `security.txt` are the contracts; ongoing operator-side response is where mentoring would help. |
 
-DirectJob Scout's application package explicitly names
+Helpmefindthejob's application package explicitly names
 **accessibility audit (HAN University) + mentoring on AI Act
 compliance + packaging (NixOS Foundation)** as the three Phase 1
 services we intend to use. Security audit deferred to Phase 2.

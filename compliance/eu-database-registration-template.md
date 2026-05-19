@@ -1,5 +1,5 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
-<!-- Copyright (c) 2026 DirectJob Scout contributors -->
+<!-- Copyright (c) 2026 Helpmefindthejob contributors -->
 
 # EU AI Database Registration Template
 
@@ -25,14 +25,14 @@ Pre-filled by the project. Verify at submission time against the current state o
 
 | Field | Value |
 |---|---|
-| Provider name | The Commons Conservancy, on behalf of DirectJob Scout contributors |
-| Provider organisation type | Foundation (Stichting) under Dutch law, hosting the DirectJob Scout Programme |
+| Provider name | The Commons Conservancy, on behalf of Helpmefindthejob contributors |
+| Provider organisation type | Foundation (Stichting) under Dutch law, hosting the Helpmefindthejob Programme |
 | Provider country of establishment | Netherlands |
 | Provider primary contact | `[TBD: maintainer to fill once Commons Conservancy admission lands]` |
 | Provider authorised representative in the Union | Not applicable (provider is EU-established) |
 | Provider VAT or registration identifier | `[TBD: Commons Conservancy to provide]` |
 | Provider website | `[TBD: to be set once Commons Conservancy Programme page lands]` |
-| Provider repository URL | `https://github.com/maksodf/directjob-scout` |
+| Provider repository URL | `https://github.com/maksodf/helpmefindthejob` |
 
 ---
 
@@ -42,7 +42,7 @@ Pre-filled by the project. Verify against the current release.
 
 | Field | Value |
 |---|---|
-| AI system trade name | DirectJob Scout |
+| AI system trade name | Helpmefindthejob |
 | AI system version | `[TBD: deployer to specify the deployed version at registration time, e.g., v0.1.0]` |
 | Annex III category | §4 — Employment, workers' management and access to self-employment |
 | Specific high-risk use case description | Recruitment / selection support: AI-assisted fit-scoring of job postings against user CV, CV tailoring, motivation-letter drafting, application-outcome analysis. Outputs are advisory; no automated decisions. |
@@ -100,7 +100,7 @@ Pre-filled by the project. Verify against the current release.
 The deployer verifies each item before submitting the registration.
 
 - [ ] Section A is current with the latest repository state.
-- [ ] Section B specifies the deployed version of DirectJob Scout.
+- [ ] Section B specifies the deployed version of Helpmefindthejob.
 - [ ] Section C specifies the conformity-assessment procedure used.
 - [ ] Section D is complete with the deployer's information.
 - [ ] Section E specifies the operational configuration in this deployment.

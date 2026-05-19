@@ -1,4 +1,4 @@
-# Copyright (c) 2026 DirectJob Scout contributors
+# Copyright (c) 2026 Helpmefindthejob contributors
 # SPDX-License-Identifier: Apache-2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -6,7 +6,7 @@
 # a copy of the License at http://www.apache.org/licenses/LICENSE-2.0.
 
 """Red-team runner — invoke via:
-E2E_BASE_URL=https://app.directjob-scout.example python -m tests.e2e.red_team
+E2E_BASE_URL=https://app.helpmefindthejob.com python -m tests.e2e.red_team
 """
 
 from __future__ import annotations

@@ -8,7 +8,7 @@
     },
     {
       "id": "hero_cta_label",
-      "description": "Test 'Sign up — free' vs 'Try DirectJob Scout free' on the hero CTA.",
+      "description": "Test 'Sign up — free' vs 'Try Helpmefindthejob free' on the hero CTA.",
       "variants": ["control_signup_free", "treatment_try_free"]
     }
   ]

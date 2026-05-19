@@ -1,6 +1,6 @@
 # Personas
 
-The DirectJob Scout panel of personas. Used in proposal narrative, demos, screenshots, public materials, and design conversations. **Every public-facing artifact references at least one of these personas concretely.**
+The Helpmefindthejob panel of personas. Used in proposal narrative, demos, screenshots, public materials, and design conversations. **Every public-facing artifact references at least one of these personas concretely.**
 
 The panel is split into two groups:
 - **The most acute use case (five personas)**: migrants and EU-mobile workers facing the densest concentration of friction. These remain the strongest specific narrative evidence and the primary persona-anchors in proposals and demos.
@@ -100,7 +100,7 @@ Each persona is rendered with: name + origin, current age and family situation, 
 
 ### In the public README and project site
 
-The README opens with: *"Aïcha, a Tunisian-trained nurse working through Anerkennung in Berlin, opens DirectJob Scout."* Then one sentence per other persona to show breadth. No long backstories on the README; the panel exists in this document for everyone who wants depth.
+The README opens with: *"Aïcha, a Tunisian-trained nurse working through Anerkennung in Berlin, opens Helpmefindthejob."* Then one sentence per other persona to show breadth. No long backstories on the README; the panel exists in this document for everyone who wants depth.
 
 ### In the application proposal
 

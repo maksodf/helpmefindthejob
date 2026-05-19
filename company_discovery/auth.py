@@ -1,4 +1,4 @@
-# Copyright (c) 2026 DirectJob Scout contributors
+# Copyright (c) 2026 Helpmefindthejob contributors
 # SPDX-License-Identifier: Apache-2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -85,7 +85,7 @@ def verify_totp(secret_b32: str, code: str, *, when: datetime | None = None) -> 
     return False
 
 
-def _format_otpauth_url(*, secret_b32: str, account: str, issuer: str = "DirectJob Scout") -> str:
+def _format_otpauth_url(*, secret_b32: str, account: str, issuer: str = "Helpmefindthejob") -> str:
     """Build the otpauth:// URL that authenticator apps consume via QR code."""
 
     from urllib.parse import quote

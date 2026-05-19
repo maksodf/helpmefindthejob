@@ -1,15 +1,15 @@
-/* DirectJob Scout bookmarklet — readable source.
+/* Helpmefindthejob bookmarklet — readable source.
  *
  * The Settings page minifies this into a single-line `javascript:` URL the
  * user drags to their bookmark bar. When they click it on Indeed / LinkedIn /
  * StepStone / Xing (or any job page), it opens
- * https://app.directjob-scout.example/capture?u=…&t=… in a new tab. The capture page is
+ * https://app.helpmefindthejob.com/capture?u=…&t=… in a new tab. The capture page is
  * served by app.py's /capture route, requires the user's existing DirectJob
  * session, persists the URL+title as a DiscoveredJob, then redirects back to
  * /queue.
  *
  * NOTE: this file is committed for readability + tests. The runtime payload
- * is generated server-side (so we can stamp the user's directjob-scout.example host onto
+ * is generated server-side (so we can stamp the user's helpmefindthejob.com host onto
  * the URL without hardcoding it here).
  */
 (function () {
@@ -35,7 +35,7 @@
     "title",
   ]) || document.title || "";
   var endpoint = window.__DIRECTJOB_CAPTURE_URL__ ||
-    "https://app.directjob-scout.example/capture";
+    "https://app.helpmefindthejob.com/capture";
   var target = endpoint +
     "?u=" + encodeURIComponent(url) +
     "&t=" + encodeURIComponent(title.slice(0, 200));

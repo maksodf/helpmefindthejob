@@ -1,4 +1,4 @@
-# Copyright (c) 2026 DirectJob Scout contributors
+# Copyright (c) 2026 Helpmefindthejob contributors
 # SPDX-License-Identifier: Apache-2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -65,7 +65,7 @@ class SlackNotifyTests(unittest.TestCase):
                 fit_score=0.82,
                 fit_reason="Strong overlap on Python + Postgres.",
                 job_url="https://acme/jobs/1",
-                public_url="https://app.directjob-scout.example",
+                public_url="https://app.helpmefindthejob.com",
             )
         self.assertEqual(res["status"], "ok")
         self.assertIn("Senior Data Engineer", captured["body"].decode())

@@ -1550,7 +1550,7 @@ The agent runs end-to-end without the human in the loop and asserts
 4. Navigates Chromium to `/api/cv/print`, strips the on-page toolbar
    (replicating `window.print()` → "Save as PDF" media), captures
    the PDF via `page.pdf()`, saves it to
-   `/Users/fouad./Desktop/directjob-scout-verification-CV.pdf`.
+   `/Users/fouad./Desktop/helpmefindthejob-verification-CV.pdf`.
 5. Parses the PDF with pypdf and asserts:
    - non-empty extracted text
    - user's name present
@@ -1575,7 +1575,7 @@ The agent runs end-to-end without the human in the loop and asserts
 [PASS] download_personal_photo — 13516 bytes from https://picsum.photos/seed/directjob/240/240.jpg
 [PASS] upload_photo_to_profile — HTTP 200 sizeBytes=13516
 [PASS] cv_builder_completed — all sections submitted + finish OK
-[PASS] pdf_saved_to_desktop — path=/Users/fouad./Desktop/directjob-scout-verification-CV.pdf size=63650B
+[PASS] pdf_saved_to_desktop — path=/Users/fouad./Desktop/helpmefindthejob-verification-CV.pdf size=63650B
 [PASS] pdf_non_empty — 783 chars extracted
 [PASS] pdf_contains_user_name — looking for 'Alex Bartender'
 [PASS] pdf_dach_date_format — found 4 TT.MM.JJJJ tokens: ['01.01.2022', '31.12.2024', '01.09.2018', '30.06.2021']
@@ -1596,7 +1596,7 @@ The agent runs end-to-end without the human in the loop and asserts
 ```
 
 The PDF on the Desktop is the live proof the user requested. The
-saved file (`/Users/fouad./Desktop/directjob-scout-verification-CV.pdf`)
+saved file (`/Users/fouad./Desktop/helpmefindthejob-verification-CV.pdf`)
 opens to a clean DACH-format CV with Alex Bartender's content,
 photo embedded, dates in TT.MM.JJJJ, sections in the right order.
 
@@ -1628,4 +1628,4 @@ photo embedded, dates in TT.MM.JJJJ, sections in the right order.
 | Zero regressions across | — | **16 rounds** |
 | Job-type taxonomy buckets | 0 | **5** (bartender, barista, cafe_worker, pflegehelfer, waiter — EN+DE synonyms each) |
 | Strict job-type filter | none | **wired across chat /find, watchlist scans, saved-search runs** |
-| Runtime proof of full A-to-Z | none | **`/Users/fouad./Desktop/directjob-scout-verification-CV.pdf` — 63KB, DACH-format, clean** |
+| Runtime proof of full A-to-Z | none | **`/Users/fouad./Desktop/helpmefindthejob-verification-CV.pdf` — 63KB, DACH-format, clean** |

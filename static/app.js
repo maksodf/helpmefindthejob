@@ -3764,7 +3764,7 @@ async function exportData() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `directjob-scout-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    link.download = `helpmefindthejob-backup-${new Date().toISOString().slice(0, 10)}.json`;
     link.click();
     URL.revokeObjectURL(url);
     const ops = $("#opsResult");

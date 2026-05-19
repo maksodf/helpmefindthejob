@@ -1,4 +1,4 @@
-# Copyright (c) 2026 DirectJob Scout contributors
+# Copyright (c) 2026 Helpmefindthejob contributors
 # SPDX-License-Identifier: Apache-2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -202,7 +202,7 @@ def _build_imported_job(persona: PersonaFixture, scenario: CvTailoringScenario) 
         user_id=f"bias-test-{persona.slug}",
         company_id=f"bias-test-company-{scenario.label}",
         discovered_job_id=f"bias-test-discovered-{scenario.label}",
-        source_url=f"https://demo.directjob-scout.example/bias-test/{scenario.label}",
+        source_url=f"https://demo.helpmefindthejob.com/bias-test/{scenario.label}",
         title=scenario.job_title,
         company_name=f"Synthetic employer ({scenario.label})",
         location=scenario.job_location,

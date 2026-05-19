@@ -1,5 +1,5 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
-<!-- Copyright (c) 2026 DirectJob Scout contributors -->
+<!-- Copyright (c) 2026 Helpmefindthejob contributors -->
 
 # Technical Documentation (Article 11 + Annex IV)
 
@@ -21,7 +21,7 @@ References to specific files in the codebase are stable across releases; if a re
 
 ### 1.1 Intended purpose
 
-DirectJob Scout is a conversational copilot that helps users navigate the European job market with attention to the bureaucratic-navigation friction structurally present for users facing language-fluency gaps, foreign-credential opacity, work-rights complexity, career transitions, and re-entry after extended absence. The first reference deployment targets Germany; the architecture is country-neutral.
+Helpmefindthejob is a conversational copilot that helps users navigate the European job market with attention to the bureaucratic-navigation friction structurally present for users facing language-fluency gaps, foreign-credential opacity, work-rights complexity, career transitions, and re-entry after extended absence. The first reference deployment targets Germany; the architecture is country-neutral.
 
 The system performs the following AI-assisted functions, each of which is an Annex III §4 activity:
 
@@ -48,7 +48,7 @@ The intended deployer-users are: civic-employment institutions (Migrationsberatu
 
 The system is distributed as **open-source software under Apache 2.0** (with a Contributor License Agreement; see [`../cla.md`](../cla.md)). Distribution channels:
 
-- **Primary**: public Git repository at `https://github.com/maksodf/directjob-scout` (mirrored to Codeberg for European-sovereignty resilience starting Phase 2).
+- **Primary**: public Git repository at `https://github.com/maksodf/helpmefindthejob` (mirrored to Codeberg for European-sovereignty resilience starting Phase 2).
 - **Deployment artefacts**: Dockerfile, `docker-compose.prod.yml`, Caddy HTTPS configuration, backup/restore scripts. Nix flake for reproducible builds lands Week 3.
 - **MCP server**: stdio-spawned subprocess; composable with other open civic agents over JSON-RPC.
 

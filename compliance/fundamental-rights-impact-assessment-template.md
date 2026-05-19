@@ -1,5 +1,5 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
-<!-- Copyright (c) 2026 DirectJob Scout contributors -->
+<!-- Copyright (c) 2026 Helpmefindthejob contributors -->
 
 # Fundamental Rights Impact Assessment (FRIA) Template
 
@@ -27,10 +27,10 @@ This template is **pre-filled** at the provider level with the architectural mit
 
 | Field | Value |
 |---|---|
-| AI system name | DirectJob Scout |
+| AI system name | Helpmefindthejob |
 | Version | `[TBD: deployer to fill — e.g., v0.1.0]` |
-| Provider | The Commons Conservancy, hosting the DirectJob Scout Programme |
-| Repository | `https://github.com/maksodf/directjob-scout` |
+| Provider | The Commons Conservancy, hosting the Helpmefindthejob Programme |
+| Repository | `https://github.com/maksodf/helpmefindthejob` |
 | Annex III classification | §4(a) and §4(b) — recruitment / selection support |
 
 ### 1.3 Intended use in this deployment
@@ -49,7 +49,7 @@ This section uses the friction-class framing established in Decision 21 of the p
 
 ### 2.1 General description
 
-The DirectJob Scout architecture serves **anyone facing structural friction between their capability and the European labor market's ability to recognise and connect them to work**. The architecture is friction-driven, not demographic-driven.
+The Helpmefindthejob architecture serves **anyone facing structural friction between their capability and the European labor market's ability to recognise and connect them to work**. The architecture is friction-driven, not demographic-driven.
 
 Migrants and EU-mobile workers face this friction most acutely — language barriers, foreign-credential opacity through Anerkennung, residency-status complexities, bureaucratic fragmentation — and they are the most-acute use case the design is anchored on. The same structural friction also affects: career changers, workers returning after caregiving or extended absence, the long-term unemployed re-entering the system, returning expats, older workers facing implicit-bias filtering, and first-generation graduates without family-networked guidance.
 
@@ -133,7 +133,7 @@ This section maps the project-level risks (from [`risk-management-plan.md`](risk
 
 ## Part 6 — Remediation channels
 
-A user who believes their fundamental rights have been affected by a DirectJob Scout output in this deployment can use the following remediation channels:
+A user who believes their fundamental rights have been affected by a Helpmefindthejob output in this deployment can use the following remediation channels:
 
 | Channel | Description |
 |---|---|
@@ -143,7 +143,7 @@ A user who believes their fundamental rights have been affected by a DirectJob S
 | Deployer's complaints procedure | `[TBD: deployer to specify their organisation's existing complaints procedure]` |
 | Supervisory authority — data protection | `[TBD: deployer to specify the relevant data-protection authority for their jurisdiction]` |
 | Supervisory authority — AI Act | `[TBD: deployer to specify the relevant market-surveillance authority for the AI Act]` |
-| Provider | GitHub Issue tagged `incident-ai-act` at `https://github.com/maksodf/directjob-scout/issues`, or via [`../SECURITY.md`](../SECURITY.md) for security-related concerns |
+| Provider | GitHub Issue tagged `incident-ai-act` at `https://github.com/maksodf/helpmefindthejob/issues`, or via [`../SECURITY.md`](../SECURITY.md) for security-related concerns |
 
 ---
 
@@ -156,7 +156,7 @@ A user who believes their fundamental rights have been affected by a DirectJob S
 | Reviewer(s) | `[TBD: deployer to fill — typically the deployer's data-protection officer, legal counsel, and accountable senior individual]` |
 | Date of lodging with supervisory authority | `[TBD: deployer to fill]` |
 | Scheduled next review date | `[TBD: deployer to fill — typically 12 months from completion, or sooner if substantive deployment changes]` |
-| Triggers for unscheduled review | Major version upgrade of DirectJob Scout; change of AI provider; addition of a new user population; any reported incident; any guidance publication from the European AI Office that affects the assessment |
+| Triggers for unscheduled review | Major version upgrade of Helpmefindthejob; change of AI provider; addition of a new user population; any reported incident; any guidance publication from the European AI Office that affects the assessment |
 
 ---
 
@@ -166,7 +166,7 @@ A user who believes their fundamental rights have been affected by a DirectJob S
 
 Sample conclusion language (deployer adapts):
 
-> *On the basis of the architectural mitigations described in [`risk-management-plan.md`](risk-management-plan.md), the human-oversight setup described in [`human-oversight-guide.md`](human-oversight-guide.md), and the deployer-level additional measures recorded in Part 4 above, the residual fundamental-rights risk of deploying DirectJob Scout at <deployer> for the affected population described in Part 2 is assessed as **acceptable for a controlled initial deployment** in Mode B (advisor-review queue) for the first 90 days, followed by a documented review and possible transition to Mode A (passive monitoring) once a sufficient track record is established. The deployer commits to the monitoring cadence in `human-oversight-guide.md` §4 and to a full FRIA re-review at the 12-month mark.*
+> *On the basis of the architectural mitigations described in [`risk-management-plan.md`](risk-management-plan.md), the human-oversight setup described in [`human-oversight-guide.md`](human-oversight-guide.md), and the deployer-level additional measures recorded in Part 4 above, the residual fundamental-rights risk of deploying Helpmefindthejob at <deployer> for the affected population described in Part 2 is assessed as **acceptable for a controlled initial deployment** in Mode B (advisor-review queue) for the first 90 days, followed by a documented review and possible transition to Mode A (passive monitoring) once a sufficient track record is established. The deployer commits to the monitoring cadence in `human-oversight-guide.md` §4 and to a full FRIA re-review at the 12-month mark.*
 
 ---
 

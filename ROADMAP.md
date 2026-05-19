@@ -1,5 +1,5 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
-<!-- Copyright (c) 2026 DirectJob Scout contributors -->
+<!-- Copyright (c) 2026 Helpmefindthejob contributors -->
 
 # Roadmap
 
@@ -106,7 +106,7 @@ pilot evidence).
 We plan to:
 
 - Begin **framework extraction** of the shared abstractions across
-  DirectJob Scout and any other civic agent the project ecosystem
+  Helpmefindthejob and any other civic agent the project ecosystem
   has produced (the parallel housing agent, anticipated companion
   healthcare or residency agents). Scope: chat router, journey state
   machine, MCP server packaging, encrypted-profile SDK, i18n loader.
@@ -160,7 +160,7 @@ We plan to:
 We plan to:
 
 - Scope the **multi-agent orchestrator** that routes a user
-  conversation across DirectJob Scout + housing + healthcare
+  conversation across Helpmefindthejob + housing + healthcare
   (+ any other civic agent the ecosystem has produced) in a single
   session. Architecture sketch in `docs/grant/03-post-grant.md`
   §"Phase 3 architectural shape"; the implementable detail emerges
@@ -181,9 +181,9 @@ We plan to:
 We plan to:
 
 - Ship the **first orchestrator-routed multi-agent civic integration**
-  end-to-end — a user starts a conversation with DirectJob Scout,
+  end-to-end — a user starts a conversation with Helpmefindthejob,
   gets handed off to the healthcare agent for Krankenversicherung
-  registration, returns to DirectJob Scout for the job-application
+  registration, returns to Helpmefindthejob for the job-application
   step, etc. The portable civic profile (`docs/grant/09-mcp-composition.md`)
   is the data layer that travels with consent across agents.
 - Deliver the **FOSDEM 2028 talk** on the multi-agent civic platform

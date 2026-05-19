@@ -4,7 +4,7 @@
 
 {$DIRECTJOB_DOMAIN} {
 	encode zstd gzip
-	reverse_proxy directjob-scout:8765
+	reverse_proxy helpmefindthejob:8765
 	header {
 		Strict-Transport-Security "max-age=31536000; includeSubDomains"
 	}

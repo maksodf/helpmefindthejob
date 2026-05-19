@@ -84,7 +84,7 @@ When working on this project, scan this list before any of the following: starti
 
 **Rule**: the MCP composition story is satisfied by (a) the published MCP server documentation, (b) the architecture diagram, (c) `STANDARDS.md`, and (d) *one* reference integration of any shape — mock stub, narrow companion, or friend-collaborated. A self-built second civic agent is not required for Phase 1. Decision 20 records this explicitly. Building a self-built second agent in Phase 1 is a focus error; it moves to Phase 2.
 
-**Why it matters**: blurring this distinction in planning sessions pulls capacity away from making DirectJob Scout itself excellent — which is what the grant is funded against. Specific case: the housing-agent-from-scratch conversation cycled through Options A/B/C/D for several rounds before the underlying conflation was named and Decision 20 was committed.
+**Why it matters**: blurring this distinction in planning sessions pulls capacity away from making Helpmefindthejob itself excellent — which is what the grant is funded against. Specific case: the housing-agent-from-scratch conversation cycled through Options A/B/C/D for several rounds before the underlying conflation was named and Decision 20 was committed.
 
 ---
 

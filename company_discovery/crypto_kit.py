@@ -1,4 +1,4 @@
-# Copyright (c) 2026 DirectJob Scout contributors
+# Copyright (c) 2026 Helpmefindthejob contributors
 # SPDX-License-Identifier: Apache-2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -90,7 +90,7 @@ def resolve_data_key(secret_key: str) -> bytes:
         raise ValueError("secret_key_too_short_for_derivation")
     return _hkdf_sha256(
         secret_key.encode("utf-8"),
-        salt=b"directjob-scout/aead-v1",
+        salt=b"helpmefindthejob/aead-v1",
         info=b"directjob/data-key",
         length=_KEY_BYTES,
     )

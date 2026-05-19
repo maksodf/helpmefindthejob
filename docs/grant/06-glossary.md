@@ -70,7 +70,7 @@ Short reference for German bureaucratic, EU policy, and project-specific terms u
 - **Civic Commons** — Open-source infrastructure built and maintained for public benefit, distinct from commercial SaaS.
 - **Commons Conservancy / The Commons Conservancy** — Dutch stichting hosting open-source projects as multi-tenant legal infrastructure. https://commonsconservancy.org
 - **Cost-saving doctrine** — Project design principle: every feature must reduce institutional operational costs while improving outcomes. See `08-cost-saving-doctrine.md`.
-- **DirectJob Scout** — The project. The first reference implementation of the civic-employment-agent pattern.
+- **Helpmefindthejob** — The project. The first reference implementation of the civic-employment-agent pattern.
 - **Journey state machine** — The 12-phase deterministic conversation flow that drives a job-search session from discovery to drafted application.
 - **MCP / Model Context Protocol** — Open protocol for AI applications to expose tools, resources, and prompts to AI clients. https://modelcontextprotocol.io
 - **MCP tool** — A callable function exposed by an MCP server with a JSON Schema for its inputs and outputs.

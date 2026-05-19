@@ -1,4 +1,4 @@
-# Copyright (c) 2026 DirectJob Scout contributors
+# Copyright (c) 2026 Helpmefindthejob contributors
 # SPDX-License-Identifier: Apache-2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -152,4 +152,4 @@ def build_transport(
 
 
 def email_from_address() -> str:
-    return os.environ.get("DIRECTJOB_EMAIL_FROM") or "directjob-scout@localhost"
+    return os.environ.get("DIRECTJOB_EMAIL_FROM") or "helpmefindthejob@localhost"

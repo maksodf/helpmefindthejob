@@ -1,5 +1,5 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
-<!-- Copyright (c) 2026 DirectJob Scout contributors -->
+<!-- Copyright (c) 2026 Helpmefindthejob contributors -->
 
 # Human Oversight Guide
 
@@ -20,7 +20,7 @@ Article 14 of [Regulation (EU) 2024/1689](https://eur-lex.europa.eu/eli/reg/2024
 - **Decide, in any particular situation, not to use** the high-risk AI system or otherwise disregard, override, or reverse its output
 - **Intervene in the operation** or interrupt the system through a "stop" function
 
-This guide describes how each of those capabilities is achieved in DirectJob Scout. The provider provides the affordances; the deployer appoints the oversight person; the oversight person follows this guide.
+This guide describes how each of those capabilities is achieved in Helpmefindthejob. The provider provides the affordances; the deployer appoints the oversight person; the oversight person follows this guide.
 
 ---
 
@@ -42,7 +42,7 @@ The competence basis matters: an oversight person who does not understand the re
 
 ## 2. The four oversight modes
 
-DirectJob Scout supports four oversight postures, listed from least to most intervention. The deployer chooses one (or a hybrid) and configures the system accordingly. The chosen posture is recorded in the audit log on every config reload.
+Helpmefindthejob supports four oversight postures, listed from least to most intervention. The deployer chooses one (or a hybrid) and configures the system accordingly. The chosen posture is recorded in the audit log on every config reload.
 
 ### Mode A: Passive monitoring (default)
 

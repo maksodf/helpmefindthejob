@@ -1,4 +1,4 @@
-# Copyright (c) 2026 DirectJob Scout contributors
+# Copyright (c) 2026 Helpmefindthejob contributors
 # SPDX-License-Identifier: Apache-2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -265,18 +265,21 @@ class SeedPersonasTests(unittest.TestCase):
                 "supplied at runtime via --password",
             )
 
-    def test_default_email_domain_is_placeholder(self) -> None:
-        """Default email domain follows the Decision-12 placeholder
-        convention; the real subdomain stays in the deployer's
-        private .env."""
+    def test_default_email_domain_is_canonical(self) -> None:
+        """Default email domain is the canonical helpmefindthejob.com
+        demo subdomain per Decision 22 (project rename + real-domain
+        acquisition supersedes the Decision-12 .example placeholder
+        convention; see Open R8 reopen in
+        docs/grant/04-research-and-decisions.md). Deployers may still
+        override at run time via --email-domain for their own
+        subdomain."""
         source = _SCRIPT_PATH.read_text(encoding="utf-8")
-        # The argparse default must be the placeholder TLD per RFC 2606.
         self.assertRegex(
             source,
-            r'default="demo\.directjob-scout\.example"',
-            "seed-personas.py default --email-domain must follow the .example "
-            "placeholder convention (Decision 12); deployers override at run "
-            "time.",
+            r'default="demo\.helpmefindthejob\.com"',
+            "seed-personas.py default --email-domain must be the canonical "
+            "demo.helpmefindthejob.com subdomain (Decision 22); the prior "
+            "Decision-12 .example placeholder convention is superseded.",
         )
 
     # ── persona fixture consistency ───────────────────────────────────────

@@ -1,11 +1,11 @@
 #!/usr/bin/env sh
 # production-smoke.sh
 #
-# Black-box smoke check for a deployed DirectJob Scout instance.
+# Black-box smoke check for a deployed Helpmefindthejob instance.
 #
 # Usage:
 #   ./scripts/production-smoke.sh
-#   APP_BASE_URL=https://app.directjob-scout.example ./scripts/production-smoke.sh
+#   APP_BASE_URL=https://app.helpmefindthejob.com ./scripts/production-smoke.sh
 #   ADMIN_EMAIL=admin@example.com ADMIN_PASSWORD=... \
 #     ./scripts/production-smoke.sh
 #
@@ -20,7 +20,7 @@
 
 set -eu
 
-APP_BASE_URL="${APP_BASE_URL:-https://app.directjob-scout.example}"
+APP_BASE_URL="${APP_BASE_URL:-https://app.helpmefindthejob.com}"
 ADMIN_EMAIL="${ADMIN_EMAIL:-${DIRECTJOB_ADMIN_EMAIL:-}}"
 ADMIN_PASSWORD="${ADMIN_PASSWORD:-${DIRECTJOB_ADMIN_PASSWORD:-}}"
 COOKIE_JAR="$(mktemp -t directjob-smoke.XXXXXX)"

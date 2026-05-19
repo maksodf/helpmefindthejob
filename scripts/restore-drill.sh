@@ -8,7 +8,7 @@
 # This script never touches the live container or its data volume.
 #
 # Usage:
-#   ./scripts/restore-drill.sh ./backups/directjob-scout-YYYY...tar.gz
+#   ./scripts/restore-drill.sh ./backups/helpmefindthejob-YYYY...tar.gz
 #   BACKUP_FILE=...tar.gz ./scripts/restore-drill.sh
 #
 # Exit codes:
@@ -19,10 +19,10 @@
 set -eu
 
 BACKUP_FILE="${1:-${BACKUP_FILE:-}}"
-SIDECAR_NAME="${SIDECAR_NAME:-directjob-scout-restore-drill}"
+SIDECAR_NAME="${SIDECAR_NAME:-helpmefindthejob-restore-drill}"
 SIDECAR_VOLUME="${SIDECAR_VOLUME:-directjob_data_restore_drill}"
 SIDECAR_PORT="${SIDECAR_PORT:-18765}"
-IMAGE="${IMAGE:-directjob-scout}"
+IMAGE="${IMAGE:-helpmefindthejob}"
 
 if [ -z "$BACKUP_FILE" ]; then
   echo "drill: provide a backup file path (or set BACKUP_FILE)" >&2

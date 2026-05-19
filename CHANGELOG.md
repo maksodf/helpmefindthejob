@@ -1,9 +1,9 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
-<!-- Copyright (c) 2026 DirectJob Scout contributors -->
+<!-- Copyright (c) 2026 Helpmefindthejob contributors -->
 
 # Changelog
 
-All notable changes to **DirectJob Scout** are documented in this file.
+All notable changes to **Helpmefindthejob** are documented in this file.
 
 The format follows [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/)
 and the project adheres to [Semantic Versioning 2.0.0](https://semver.org/).
@@ -177,7 +177,7 @@ to The Commons Conservancy pending, EU AI Act compliant by design.
 
 - **`khalo.org` references** — replaced with `directjob-scout.example`
   placeholders in code, docs, tests, and configuration
-  (Week 1 task 1.4).
+  (Week 1 task 1.4). _(Note: per [Decision 22](docs/grant/04-research-and-decisions.md#decision-22-project-rename--directjob-scout--helpmefindthejob), the `directjob-scout.example` placeholder convention was subsequently superseded on 2026-05-19 by the real domain `helpmefindthejob.com` when the project was renamed and the domain acquired; the v0.1.0 release shipped with the placeholder convention as the identity-of-record at sign time.)_
 - **Tester-name leakage** in code comments and test fixtures
   (Week 1 task 1.4).
 - **`keepbuildingtill100%tracker.MD`** at repo root (per Decision 14).

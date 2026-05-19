@@ -2,9 +2,9 @@
 
 **Status**: technical-spine document. Drives the Week 2 work in `02-execution-plan.md`.
 
-This document describes how DirectJob Scout exposes itself as a composable open-civic-infrastructure surface through the Model Context Protocol (MCP), and how other open civic agents (housing, healthcare, residency, education) can compose with it inside a single conversation or as separate consumers.
+This document describes how Helpmefindthejob exposes itself as a composable open-civic-infrastructure surface through the Model Context Protocol (MCP), and how other open civic agents (housing, healthcare, residency, education) can compose with it inside a single conversation or as separate consumers.
 
-The Redwax pattern of *small, modular, composable tools combined into larger services* is the explicit inspiration. The DirectJob Scout MCP server is to civic-employment what Redwax's mod_ca / mod_ocsp / mod_scep modules are to PKI: small, standards-anchored, well-documented building blocks that compose.
+The Redwax pattern of *small, modular, composable tools combined into larger services* is the explicit inspiration. The Helpmefindthejob MCP server is to civic-employment what Redwax's mod_ca / mod_ocsp / mod_scep modules are to PKI: small, standards-anchored, well-documented building blocks that compose.
 
 ---
 
@@ -66,11 +66,11 @@ The server exposes its catalogue version at `/mcp/version` and the full catalogu
 
 ## The composition pattern
 
-The composition pattern is the same as Redwax's "combine modules to form a service" model. A new civic agent (e.g., a housing agent) composes with DirectJob Scout in one of three modes:
+The composition pattern is the same as Redwax's "combine modules to form a service" model. A new civic agent (e.g., a housing agent) composes with Helpmefindthejob in one of three modes:
 
 ### Mode 1: Sequential handoff (lowest coupling)
 
-User talks to housing agent. Housing agent identifies that the user has an employment question. Housing agent calls `propose_referral` on DirectJob Scout's MCP server, gets back a structured referral object, presents it to the user with a "would you like me to hand you over" prompt. On consent, the user is handed over.
+User talks to housing agent. Housing agent identifies that the user has an employment question. Housing agent calls `propose_referral` on Helpmefindthejob's MCP server, gets back a structured referral object, presents it to the user with a "would you like me to hand you over" prompt. On consent, the user is handed over.
 
 **Coupling**: minimal — each agent runs independently; the only shared surface is the referral protocol.
 
@@ -86,7 +86,7 @@ User runs both agents in the same deployment. The housing agent reads the user's
 
 ### Mode 3: Orchestrated multi-agent conversation (highest coupling, Phase 2+)
 
-A meta-orchestrator routes a single conversation between multiple civic agents. The user asks "I need a job, a flat, and to renew my visa" — the orchestrator routes job questions to DirectJob Scout, housing questions to the housing agent, visa questions to the residency agent. All share state.
+A meta-orchestrator routes a single conversation between multiple civic agents. The user asks "I need a job, a flat, and to renew my visa" — the orchestrator routes job questions to Helpmefindthejob, housing questions to the housing agent, visa questions to the residency agent. All share state.
 
 **Coupling**: orchestrator is a project of its own; shared state model; agent-to-agent message bus.
 
@@ -138,7 +138,7 @@ All cited in `STANDARDS.md` at the repo root (Week 1 task).
 The Week 2 deliverable is one concrete reference integration proving the composition pattern actually works. Two options exist; Option B is preferred.
 
 **Option A — Mock housing-stub client (fallback)**:
-- A small Python script in `examples/housing-stub-client/` that connects to the DirectJob Scout MCP server, demonstrates the `propose_referral` flow with mock data, and records a terminal-session log.
+- A small Python script in `examples/housing-stub-client/` that connects to the Helpmefindthejob MCP server, demonstrates the `propose_referral` flow with mock data, and records a terminal-session log.
 - Cost: ~8 hours. Demonstrates the pattern but does not prove a real second consumer.
 
 **Option B — Real housing-agent integration (preferred)**:

@@ -174,7 +174,7 @@ A rejection is one round, not the project's end. NLnet runs rolling 2-month dead
 
 ### What gets done in Phase 2
 
-1. **Framework extraction** — the work explicitly deferred during Phase 1. Once DirectJob Scout and the housing agent have both been running for several months, the shared abstractions become obvious. The 11-week refactor scoped earlier (chat router, journey state machine, MCP server packaging, encrypted-profile SDK, i18n loader) becomes the Phase 2 grant.
+1. **Framework extraction** — the work explicitly deferred during Phase 1. Once Helpmefindthejob and the housing agent have both been running for several months, the shared abstractions become obvious. The 11-week refactor scoped earlier (chat router, journey state machine, MCP server packaging, encrypted-profile SDK, i18n loader) becomes the Phase 2 grant.
 2. **Second NLnet application** — leveraging Phase 1 completion as evidence of delivery capability. NLnet's program rewards multi-round arcs (Redwax precedent).
 3. **First institutional pilot deployment** — at the partner Beratungsstelle / IQ-Netzwerk office / Optionskommune that signed the letter of support.
 4. **Security audit through NLnet support services** if not already done.

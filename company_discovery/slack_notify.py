@@ -1,4 +1,4 @@
-# Copyright (c) 2026 DirectJob Scout contributors
+# Copyright (c) 2026 Helpmefindthejob contributors
 # SPDX-License-Identifier: Apache-2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -55,7 +55,7 @@ def post_high_fit_notification(
     reason = (fit_reason or "").strip()
     reason_block = f"\n> {reason}" if reason else ""
     link_block = f"\n<{job_url}|View job>" if job_url else ""
-    cta_block = f"\n<{public_url}|Open DirectJob Scout>" if public_url else ""
+    cta_block = f"\n<{public_url}|Open Helpmefindthejob>" if public_url else ""
     text = (
         f":briefcase: *{fit_pct}% fit* — {title_line}{company_line}{location_line}"
         f"{reason_block}{link_block}{cta_block}"

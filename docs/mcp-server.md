@@ -1,6 +1,6 @@
-# DirectJob Scout MCP Server
+# Helpmefindthejob MCP Server
 
-**Audience**: integrators who want to call DirectJob Scout from another agent, deployers who want to understand the catalogue contract, NLnet reviewers who want to verify the project's "MCP-composable open civic infrastructure" claim.
+**Audience**: integrators who want to call Helpmefindthejob from another agent, deployers who want to understand the catalogue contract, NLnet reviewers who want to verify the project's "MCP-composable open civic infrastructure" claim.
 
 **Strategic context** lives in [`docs/grant/09-mcp-composition.md`](grant/09-mcp-composition.md) (composition spec) and [`docs/grant/01-project-brief.md`](grant/01-project-brief.md) (overall positioning). This document is the operational reference for the server itself.
 
@@ -8,7 +8,7 @@
 
 ## What this is
 
-`mcp_server.py` is a [Model Context Protocol](https://modelcontextprotocol.io) server that exposes DirectJob Scout's civic-employment capabilities as a small, well-documented tool catalogue. It is the project's **composition surface**: other open civic agents (housing, healthcare, residency, education) can call DirectJob Scout via the same protocol used by any MCP-aware client (Claude Desktop, Cursor, Continue, Cline, custom JSON-RPC clients), without forking either project.
+`mcp_server.py` is a [Model Context Protocol](https://modelcontextprotocol.io) server that exposes Helpmefindthejob's civic-employment capabilities as a small, well-documented tool catalogue. It is the project's **composition surface**: other open civic agents (housing, healthcare, residency, education) can call Helpmefindthejob via the same protocol used by any MCP-aware client (Claude Desktop, Cursor, Continue, Cline, custom JSON-RPC clients), without forking either project.
 
 The current catalogue exposes **eight tools** (Week 1 baseline). Week 2 §2.3 in [`docs/grant/02-execution-plan.md`](grant/02-execution-plan.md) expands the catalogue to thirteen by adding five composition-oriented tools (`get_user_profile_for_consent`, `propose_referral`, `query_esco_skill`, `export_eures_compatible`, `record_user_outcome`).
 
@@ -18,11 +18,11 @@ The current catalogue exposes **eight tools** (Week 1 baseline). Week 2 §2.3 in
 |---|---|
 | Transport | JSON-RPC 2.0 over stdio |
 | MCP `protocolVersion` | `2024-11-05` |
-| `serverInfo.name` | `directjob-scout` |
+| `serverInfo.name` | `helpmefindthejob` |
 | `serverInfo.version` | `0.1.0` (catalogue SemVer; see versioning policy below) |
 | Capabilities advertised | `{"tools": {}}` |
-| Source | [`mcp_server.py`](https://github.com/maksodf/directjob-scout/blob/main/mcp_server.py) (top-level entry point) |
-| Tool implementations | [`company_discovery/mcp_tools.py`](https://github.com/maksodf/directjob-scout/blob/main/company_discovery/mcp_tools.py) |
+| Source | [`mcp_server.py`](https://github.com/maksodf/helpmefindthejob/blob/main/mcp_server.py) (top-level entry point) |
+| Tool implementations | [`company_discovery/mcp_tools.py`](https://github.com/maksodf/helpmefindthejob/blob/main/company_discovery/mcp_tools.py) |
 | Tool schemas | `TOOL_SCHEMAS` in the same module (canonical source of truth) |
 
 The supported JSON-RPC methods are:
@@ -63,7 +63,7 @@ When `/mcp/version` and `/mcp/schemas.json` HTTP endpoints land (planned in §2.
 
 ## The 8-tool catalogue (current)
 
-Each tool's full JSON `inputSchema` is the canonical definition in [`company_discovery/mcp_tools.py`](https://github.com/maksodf/directjob-scout/blob/main/company_discovery/mcp_tools.py). This table summarises the required-fields surface and the standards alignment per tool; consult the source for the complete property list and types.
+Each tool's full JSON `inputSchema` is the canonical definition in [`company_discovery/mcp_tools.py`](https://github.com/maksodf/helpmefindthejob/blob/main/company_discovery/mcp_tools.py). This table summarises the required-fields surface and the standards alignment per tool; consult the source for the complete property list and types.
 
 | # | Tool | Required input | Purpose | Standards alignment |
 |---|---|---|---|---|
@@ -86,14 +86,14 @@ See [`docs/grant/09-mcp-composition.md`](grant/09-mcp-composition.md) for the fu
 2. **Profile-shared composition** — multiple agents in the same deployment read the user's portable civic profile via `get_user_profile_for_consent` (with explicit consent). **Medium coupling**: shared profile schema; both agents trust the same persistence layer. **Available** with the §2.3 catalogue expansion.
 3. **Orchestrated multi-agent conversation** — a meta-orchestrator routes a single conversation between multiple agents. **Highest coupling**, **Phase 2+ scope**.
 
-The §2.5 reference integration with an open housing agent demonstrates pattern 1 end-to-end and ships under [`examples/housing-agent-integration/`](https://github.com/maksodf/directjob-scout/tree/main/examples/) (lands Week 2 §2.5).
+The §2.5 reference integration with an open housing agent demonstrates pattern 1 end-to-end and ships under [`examples/housing-agent-integration/`](https://github.com/maksodf/helpmefindthejob/tree/main/examples/) (lands Week 2 §2.5).
 
 ## Example client invocations
 
 ### Python (stdlib only)
 
 ```python
-"""Drive the DirectJob Scout MCP server from a Python client over stdio.
+"""Drive the Helpmefindthejob MCP server from a Python client over stdio.
 
 Spawns the server as a subprocess, performs the MCP handshake, lists
 tools, and invokes get_company_watchlist_summary. No external
@@ -159,7 +159,7 @@ Sample invalid-argument response (missing `name` + `websiteUrl` on `add_company_
 
 ```typescript
 /**
- * Drive the DirectJob Scout MCP server from a Node.js client over
+ * Drive the Helpmefindthejob MCP server from a Node.js client over
  * stdio. Standard child_process; no external SDK assumed.
  */
 import { spawn } from "node:child_process";
@@ -209,10 +209,10 @@ proc.stdin.end();
 
 ```bash
 # Schema catalogue (planned)
-curl -s https://demo.directjob-scout.example/mcp/schemas.json | jq '.tools | length'
+curl -s https://demo.helpmefindthejob.com/mcp/schemas.json | jq '.tools | length'
 
 # Catalogue version (planned)
-curl -s https://demo.directjob-scout.example/mcp/version | jq '.catalogueVersion'
+curl -s https://demo.helpmefindthejob.com/mcp/version | jq '.catalogueVersion'
 ```
 
 ## Audit logging
@@ -240,12 +240,12 @@ A deployer can dispatch on `status` for programmatic handling and surface `detai
 - **Startup**: `python3 mcp_server.py` from the repository root. The server reads `COMPANY_DISCOVERY_DATA_DIR` (default `./data`) to locate its SQLite database, which it shares with the web app — meaning MCP tool invocations and web-app interactions see the same persisted state.
 - **No HTTP**: the server speaks JSON-RPC over stdio, not HTTP. Embed it as a subprocess of your agent, or wrap it with a process-supervised stdio bridge.
 - **Single-process state**: the server is stateless at the request boundary; all state lives in the SQLite database. Multiple clients can connect via multiple subprocess instances pointed at the same `COMPANY_DISCOVERY_DATA_DIR`.
-- **Encryption**: any persisted user data passes through [`company_discovery/crypto_kit.py`](https://github.com/maksodf/directjob-scout/blob/main/company_discovery/crypto_kit.py) at the storage layer. The CV-text column and TOTP-secret column are AEAD-encrypted at rest (ChaCha20-Poly1305 with AAD = user_id; see [`ARCHITECTURE.md`](https://github.com/maksodf/directjob-scout/blob/main/ARCHITECTURE.md) and [`SECURITY.md`](https://github.com/maksodf/directjob-scout/blob/main/SECURITY.md)).
+- **Encryption**: any persisted user data passes through [`company_discovery/crypto_kit.py`](https://github.com/maksodf/helpmefindthejob/blob/main/company_discovery/crypto_kit.py) at the storage layer. The CV-text column and TOTP-secret column are AEAD-encrypted at rest (ChaCha20-Poly1305 with AAD = user_id; see [`ARCHITECTURE.md`](https://github.com/maksodf/helpmefindthejob/blob/main/ARCHITECTURE.md) and [`SECURITY.md`](https://github.com/maksodf/helpmefindthejob/blob/main/SECURITY.md)).
 - **Logging**: stderr is reserved for human-readable diagnostics. Tool invocations + audit entries go to `data/admin_audit.log`.
 
 ## Where the schemas live
 
-`TOOL_SCHEMAS` in [`company_discovery/mcp_tools.py`](https://github.com/maksodf/directjob-scout/blob/main/company_discovery/mcp_tools.py) is the canonical source. The schemas are JSON Schema Draft 7 documents. The [`/mcp/schemas.json`](https://demo.directjob-scout.example/mcp/schemas.json) HTTP endpoint exposing the full catalogue and [`/mcp/version`](https://demo.directjob-scout.example/mcp/version) reporting the catalogue version land in a §2.2 follow-up; until then, fetch the schemas via the stdio `tools/list` call.
+`TOOL_SCHEMAS` in [`company_discovery/mcp_tools.py`](https://github.com/maksodf/helpmefindthejob/blob/main/company_discovery/mcp_tools.py) is the canonical source. The schemas are JSON Schema Draft 7 documents. The [`/mcp/schemas.json`](https://demo.helpmefindthejob.com/mcp/schemas.json) HTTP endpoint exposing the full catalogue and [`/mcp/version`](https://demo.helpmefindthejob.com/mcp/version) reporting the catalogue version land in a §2.2 follow-up; until then, fetch the schemas via the stdio `tools/list` call.
 
 A planned ergonomic addition is to split the schemas into individual files under `mcp_server/schemas/<tool-name>.json` so external tooling (linting, code generation) can read them without spawning the Python process. This is on the §2.2 follow-up list; the canonical definitions stay in `mcp_tools.py` and the filesystem export becomes a build artefact.
 
@@ -265,9 +265,9 @@ When these land the catalogue version bumps from `0.1.0` to `0.2.0` per the SemV
 
 - [`docs/grant/09-mcp-composition.md`](grant/09-mcp-composition.md) — full composition spec and standards alignment
 - [`docs/grant/01-project-brief.md`](grant/01-project-brief.md) §8 — technical positioning and MCP composition story
-- [`ARCHITECTURE.md`](https://github.com/maksodf/directjob-scout/blob/main/ARCHITECTURE.md) — system-level overview with the MCP server in context
-- [`STANDARDS.md`](https://github.com/maksodf/directjob-scout/blob/main/STANDARDS.md) — every standard the project implements
-- [`SECURITY.md`](https://github.com/maksodf/directjob-scout/blob/main/SECURITY.md) — vulnerability disclosure and security posture
+- [`ARCHITECTURE.md`](https://github.com/maksodf/helpmefindthejob/blob/main/ARCHITECTURE.md) — system-level overview with the MCP server in context
+- [`STANDARDS.md`](https://github.com/maksodf/helpmefindthejob/blob/main/STANDARDS.md) — every standard the project implements
+- [`SECURITY.md`](https://github.com/maksodf/helpmefindthejob/blob/main/SECURITY.md) — vulnerability disclosure and security posture
 - [Model Context Protocol homepage](https://modelcontextprotocol.io)
 - [JSON-RPC 2.0 specification](https://www.jsonrpc.org/specification)
 - [RFC 7807 — Problem Details for HTTP APIs](https://www.rfc-editor.org/rfc/rfc7807)

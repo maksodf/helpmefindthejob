@@ -1,4 +1,4 @@
-# Copyright (c) 2026 DirectJob Scout contributors
+# Copyright (c) 2026 Helpmefindthejob contributors
 # SPDX-License-Identifier: Apache-2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -1089,7 +1089,7 @@ class AppState:
         last_backup = None
         try:
             backup_dir = Path("/var/backups/directjob")
-            archives = sorted(backup_dir.glob("directjob-scout-*.tar.gz"))
+            archives = sorted(backup_dir.glob("helpmefindthejob-*.tar.gz"))
             if archives:
                 last_backup = datetime.fromtimestamp(
                     archives[-1].stat().st_mtime, tz=timezone.utc
@@ -1210,7 +1210,7 @@ class AppState:
         if "@" not in target:
             raise ValueError("invalid_email")
         body = (
-            "DirectJob Scout test email.\n\n"
+            "Helpmefindthejob test email.\n\n"
             f"Triggered by: {actor.email}\n"
             f"At: {now_utc().isoformat()}\n"
             "If you can read this, your email path is configured correctly. "
@@ -1220,7 +1220,7 @@ class AppState:
             self.email_transport.send(
                 Email(
                     to=target,
-                    subject="DirectJob Scout test email",
+                    subject="Helpmefindthejob test email",
                     text=body,
                     from_address=email_from_address(),
                 )
@@ -1255,10 +1255,10 @@ class AppState:
             self.email_transport.send(
                 Email(
                     to=user.email,
-                    subject="[DirectJob Scout] Confirm account deletion",
+                    subject="[Helpmefindthejob] Confirm account deletion",
                     text=(
                         "Hi,\n\n"
-                        "We received a request to delete your DirectJob Scout account.\n\n"
+                        "We received a request to delete your Helpmefindthejob account.\n\n"
                         "If this was you, click the link below within the next 7 days to schedule the deletion. "
                         "After confirming, we wait another 7 days before erasing your data — you can cancel any time during that grace window from Settings → Privacy.\n\n"
                         f"Confirm deletion: {confirm_url}\n\n"
@@ -1273,7 +1273,7 @@ class AppState:
             self.email_transport.send(
                 Email(
                     to=email_from_address(),
-                    subject="[DirectJob Scout] Account deletion request",
+                    subject="[Helpmefindthejob] Account deletion request",
                     text=(
                         f"User: {user.email}\nUser id: {user.id}\nReason: {ticket.body}\n"
                         "User has been emailed a confirmation link. After they click it, the hard-delete fires 7 days later via the retention purge sweep."
@@ -1329,9 +1329,9 @@ class AppState:
             (
                 "Senior Backend Engineer",
                 "Acme Health (Demo)",
-                "https://demo.directjob-scout.example/acme-health",
+                "https://demo.helpmefindthejob.com/acme-health",
                 "Berlin",
-                "https://demo.directjob-scout.example/jobs/senior-backend",
+                "https://demo.helpmefindthejob.com/jobs/senior-backend",
                 0.92,
                 0.88,
                 "High overlap on Python + healthcare-management keywords; remote-friendly.",
@@ -1339,9 +1339,9 @@ class AppState:
             (
                 "Frontend Engineer",
                 "Sample SaaS (Demo)",
-                "https://demo.directjob-scout.example/sample-saas",
+                "https://demo.helpmefindthejob.com/sample-saas",
                 "Remote — DACH",
-                "https://demo.directjob-scout.example/jobs/frontend",
+                "https://demo.helpmefindthejob.com/jobs/frontend",
                 0.85,
                 0.82,
                 "Demo lead — TypeScript + design-system fit. Remote.",
@@ -1349,9 +1349,9 @@ class AppState:
             (
                 "DevOps Engineer",
                 "Demo Insurance (Demo)",
-                "https://demo.directjob-scout.example/demo-insurance",
+                "https://demo.helpmefindthejob.com/demo-insurance",
                 "München",
-                "https://demo.directjob-scout.example/jobs/devops",
+                "https://demo.helpmefindthejob.com/jobs/devops",
                 0.78,
                 0.75,
                 "Demo lead — Kubernetes / Terraform / SRE focus. Hybrid.",
@@ -1359,9 +1359,9 @@ class AppState:
             (
                 "Data Engineer",
                 "Mock Analytics (Demo)",
-                "https://demo.directjob-scout.example/mock-analytics",
+                "https://demo.helpmefindthejob.com/mock-analytics",
                 "Hamburg",
-                "https://demo.directjob-scout.example/jobs/data",
+                "https://demo.helpmefindthejob.com/jobs/data",
                 0.88,
                 0.84,
                 "Demo lead — dbt + Snowflake + CDC; bilingual EN/DE team.",
@@ -1369,9 +1369,9 @@ class AppState:
             (
                 "Product Manager",
                 "Test Tech (Demo)",
-                "https://demo.directjob-scout.example/test-tech",
+                "https://demo.helpmefindthejob.com/test-tech",
                 "Berlin",
-                "https://demo.directjob-scout.example/jobs/product",
+                "https://demo.helpmefindthejob.com/jobs/product",
                 0.74,
                 0.71,
                 "Demo lead — early-stage SaaS; PM-of-one with engineering background.",
@@ -1465,7 +1465,7 @@ class AppState:
         self.email_transport.send(
             Email(
                 to=user.email,
-                subject="[DirectJob Scout] Day 3 — install the bookmarklet",
+                subject="[Helpmefindthejob] Day 3 — install the bookmarklet",
                 text=body,
                 from_address=email_from_address(),
             )
@@ -1488,7 +1488,7 @@ class AppState:
         self.email_transport.send(
             Email(
                 to=user.email,
-                subject="[DirectJob Scout] Day 7 — any luck?",
+                subject="[Helpmefindthejob] Day 7 — any luck?",
                 text=body,
                 from_address=email_from_address(),
             )
@@ -1503,7 +1503,7 @@ class AppState:
         confirm_url = self.public_url_for(f"/account/verify-email?token={token}")
         body = (
             "Hi,\n\n"
-            "Welcome to DirectJob Scout. Click the link below to verify your email address — "
+            "Welcome to Helpmefindthejob. Click the link below to verify your email address — "
             "this proves you own the inbox and unlocks the full app.\n\n"
             f"Verify your email: {confirm_url}\n\n"
             "If you did not sign up, ignore this email; the account stays unverified and unusable until someone clicks the link.\n"
@@ -1512,7 +1512,7 @@ class AppState:
             self.email_transport.send(
                 Email(
                     to=user.email,
-                    subject="[DirectJob Scout] Verify your email",
+                    subject="[Helpmefindthejob] Verify your email",
                     text=body,
                     from_address=email_from_address(),
                 )
@@ -1538,7 +1538,7 @@ class AppState:
             "/"
         )  # bookmarklet card lives in Settings → Bookmarklet
         body = (
-            f"Welcome to DirectJob Scout.\n\n"
+            f"Welcome to Helpmefindthejob.\n\n"
             "You signed in for the first time — here are three quick wins to make the product useful in 5 minutes:\n\n"
             "1. Add 5–10 companies whose careers pages you want to watch (Companies tab → Add).\n"
             "2. Set up a saved search for your role + city. We watch Indeed, StepStone, Arbeitnow, Muse, "
@@ -1552,7 +1552,7 @@ class AppState:
         self.email_transport.send(
             Email(
                 to=user.email,
-                subject="[DirectJob Scout] Welcome — three quick wins",
+                subject="[Helpmefindthejob] Welcome — three quick wins",
                 text=body,
                 from_address=email_from_address(),
             )
@@ -2216,7 +2216,7 @@ class AppState:
         )
         accept_url = self.public_url_for(f"/accept-invite?token={issued.raw_token}")
         message = (
-            f"You have been invited to DirectJob Scout as a {role}.\n\n"
+            f"You have been invited to Helpmefindthejob as a {role}.\n\n"
             f"Accept your invitation here:\n{accept_url}\n\n"
             "If the link does not open, paste it into your browser. "
             "The invite expires in 48 hours and can be used once."
@@ -2224,7 +2224,7 @@ class AppState:
         self.email_transport.send(
             Email(
                 to=normalized,
-                subject="Your DirectJob Scout invitation",
+                subject="Your Helpmefindthejob invitation",
                 text=message,
                 from_address=email_from_address(),
             )
@@ -2298,14 +2298,14 @@ class AppState:
         )
         reset_url = self.public_url_for(f"/reset-password?token={issued.raw_token}")
         message = (
-            "We received a request to reset your DirectJob Scout password.\n\n"
+            "We received a request to reset your Helpmefindthejob password.\n\n"
             f"If this was you, follow this link within 1 hour:\n{reset_url}\n\n"
             "If you did not request this, you can ignore this email."
         )
         self.email_transport.send(
             Email(
                 to=normalized,
-                subject="Reset your DirectJob Scout password",
+                subject="Reset your Helpmefindthejob password",
                 text=message,
                 from_address=email_from_address(),
             )
@@ -2336,7 +2336,7 @@ class AppState:
             if company
             else ((job.also_seen_at and next(iter(job.also_seen_at), "")) or "")
         )
-        public_url = os.environ.get("DIRECTJOB_PUBLIC_URL") or "https://app.directjob-scout.example"
+        public_url = os.environ.get("DIRECTJOB_PUBLIC_URL") or "https://app.helpmefindthejob.com"
         result = post_high_fit_notification(
             webhook_url=url,
             job_title=job.title or "",
@@ -4478,7 +4478,7 @@ class AppState:
 
     def inbound_token_for_user(self, user_id: str) -> str:
         """Stable per-user token used as the local-part of inbound email
-        addresses (e.g. ``u-{token}@inbox.directjob-scout.example``).
+        addresses (e.g. ``u-{token}@inbox.helpmefindthejob.com``).
 
         Derived as HMAC-SHA256 over the user-id + the server secret so it
         survives restarts and can be re-derived if a user loses their
@@ -4568,7 +4568,7 @@ class AppState:
         self.email_transport.send(
             Email(
                 to=user.email,
-                subject="Your DirectJob Scout digest",
+                subject="Your Helpmefindthejob digest",
                 text=text,
                 from_address=email_from_address(),
             )
@@ -4641,7 +4641,7 @@ class AppState:
             self.email_transport.send(
                 Email(
                     to=email_from_address(),
-                    subject=f"[DirectJob Scout support] {saved.subject}",
+                    subject=f"[Helpmefindthejob support] {saved.subject}",
                     text=(f"From: {saved.contact_email}\nUser id: {user.id}\n\n{saved.body}\n"),
                     from_address=email_from_address(),
                 )
@@ -5142,12 +5142,12 @@ class Handler(BaseHTTPRequestHandler):
                     )
                     return
                 public_url = (
-                    os.environ.get("DIRECTJOB_PUBLIC_URL") or "https://app.directjob-scout.example"
+                    os.environ.get("DIRECTJOB_PUBLIC_URL") or "https://app.helpmefindthejob.com"
                 )
                 result = post_high_fit_notification(
                     webhook_url=url,
                     job_title="Test notification",
-                    company_name="DirectJob Scout",
+                    company_name="Helpmefindthejob",
                     location=None,
                     fit_score=0.95,
                     fit_reason="This is a test from your Settings page.",
@@ -5433,7 +5433,7 @@ class Handler(BaseHTTPRequestHandler):
                 # token route the message to the right account.
                 #
                 # Activation steps for the operator:
-                #   1. Wire MX for inbox.directjob-scout.example to the inbound
+                #   1. Wire MX for inbox.helpmefindthejob.com to the inbound
                 #      provider (Resend supports this).
                 #   2. Set DIRECTJOB_INBOUND_EMAIL_SECRET in prod env.
                 #   3. Configure the provider's webhook to POST here.
@@ -7052,7 +7052,7 @@ class Handler(BaseHTTPRequestHandler):
                     )
                     return
                 payload_obj = PushPayload(
-                    title=str(payload.get("title") or "DirectJob Scout"),
+                    title=str(payload.get("title") or "Helpmefindthejob"),
                     body=str(payload.get("body") or "Test notification."),
                     url="/",
                 )
@@ -8089,15 +8089,15 @@ class Handler(BaseHTTPRequestHandler):
             '  <meta charset="utf-8" />\n'
             '  <meta name="viewport" content="width=device-width, initial-scale=1" />\n'
             '  <meta name="robots" content="noindex,nofollow" />\n'
-            "  <title>Job alert not found — DirectJob Scout</title>\n"
+            "  <title>Job alert not found — Helpmefindthejob</title>\n"
             '  <link rel="stylesheet" href="/styles.css" />\n'
             "</head>\n"
             '<body class="legal-body">\n'
             '  <main class="legal-page">\n'
-            '    <a href="/" class="legal-back">← DirectJob Scout</a>\n'
+            '    <a href="/" class="legal-back">← Helpmefindthejob</a>\n'
             "    <h1>Job alert not found</h1>\n"
             "    <p>This job-alert page does not exist. Head to "
-            '<a href="/">directjob-scout.example</a> to set up your own saved search — we watch the '
+            '<a href="/">helpmefindthejob.com</a> to set up your own saved search — we watch the '
             "company pages + the major aggregators daily.</p>\n"
             "  </main>\n"
             "</body>\n"
@@ -8116,7 +8116,7 @@ class Handler(BaseHTTPRequestHandler):
 
         title = page["title"] or f"{page['role']} jobs in {page['city']}"
         intro = page["intro"] or (
-            f"DirectJob Scout watches direct career pages and the major aggregators for "
+            f"Helpmefindthejob watches direct career pages and the major aggregators for "
             f"{page['role']} roles in {page['city']}."
         )
         canonical = STATE.public_url_for(f"/jobs/{page['slug']}")
@@ -8129,7 +8129,7 @@ class Handler(BaseHTTPRequestHandler):
             '  <meta charset="utf-8" />\n'
             '  <meta name="viewport" content="width=device-width, initial-scale=1" />\n'
             '  <meta name="robots" content="index,follow" />\n'
-            f"  <title>{_escape(title)} — DirectJob Scout</title>\n"
+            f"  <title>{_escape(title)} — Helpmefindthejob</title>\n"
             f'  <meta name="description" content="{_escape(og_description)}" />\n'
             f'  <link rel="canonical" href="{_escape(canonical)}" />\n'
             '  <meta property="og:type" content="article" />\n'
@@ -8140,7 +8140,7 @@ class Handler(BaseHTTPRequestHandler):
             "</head>\n"
             '<body class="legal-body">\n'
             '  <main class="legal-page">\n'
-            '    <a href="/" class="legal-back">← DirectJob Scout</a>\n'
+            '    <a href="/" class="legal-back">← Helpmefindthejob</a>\n'
             f"    <h1>{_escape(title)}</h1>\n"
             f"    <p>{_escape(intro)}</p>\n"
             "    <section>\n"
@@ -8191,15 +8191,15 @@ class Handler(BaseHTTPRequestHandler):
             '  <meta charset="utf-8" />\n'
             '  <meta name="viewport" content="width=device-width, initial-scale=1" />\n'
             '  <meta name="robots" content="noindex,nofollow" />\n'
-            "  <title>Job not available — DirectJob Scout</title>\n"
+            "  <title>Job not available — Helpmefindthejob</title>\n"
             '  <link rel="stylesheet" href="/styles.css" />\n'
             "</head>\n"
             '<body class="legal-body">\n'
             '  <main class="legal-page">\n'
-            '    <a href="/" class="legal-back">← DirectJob Scout</a>\n'
+            '    <a href="/" class="legal-back">← Helpmefindthejob</a>\n'
             "    <h1>Job not available</h1>\n"
             "    <p>This job's share link has been disabled by its owner, or the link is wrong. "
-            'If you arrived here by mistake, head to <a href="/">directjob-scout.example</a>.</p>\n'
+            'If you arrived here by mistake, head to <a href="/">helpmefindthejob.com</a>.</p>\n'
             "  </main>\n"
             "</body>\n"
             "</html>\n"
@@ -8231,7 +8231,7 @@ class Handler(BaseHTTPRequestHandler):
             '  <meta charset="utf-8" />\n'
             '  <meta name="viewport" content="width=device-width, initial-scale=1" />\n'
             '  <meta name="robots" content="index,follow" />\n'
-            f"  <title>{_escape(title)} at {_escape(company)} — DirectJob Scout</title>\n"
+            f"  <title>{_escape(title)} at {_escape(company)} — Helpmefindthejob</title>\n"
             f'  <meta name="description" content="{_escape(og_description)}" />\n'
             f'  <link rel="canonical" href="{_escape(canonical)}" />\n'
             '  <meta property="og:type" content="article" />\n'
@@ -8242,7 +8242,7 @@ class Handler(BaseHTTPRequestHandler):
             "</head>\n"
             '<body class="legal-body">\n'
             '  <main class="legal-page">\n'
-            '    <a href="/" class="legal-back">← DirectJob Scout</a>\n'
+            '    <a href="/" class="legal-back">← Helpmefindthejob</a>\n'
             f"    <h1>{_escape(title)}</h1>\n"
             f'    <p class="muted"><strong>{_escape(company)}</strong>'
             + (f" · {_escape(location)}" if location else "")
@@ -8252,7 +8252,7 @@ class Handler(BaseHTTPRequestHandler):
             "    </section>\n"
             "    <section>\n"
             "      <h2>Want jobs like this in your inbox?</h2>\n"
-            "      <p>DirectJob Scout watches direct career pages plus the major aggregators "
+            "      <p>Helpmefindthejob watches direct career pages plus the major aggregators "
             "(Indeed, StepStone, Arbeitnow, Bundesagentur, Muse) and dedupes the queue. "
             "No LinkedIn feed, no algorithm, no surveillance.</p>\n"
             f'      <p><a class="btn btn-primary" href="{_escape(signup_url)}">Sign up — it\'s free</a></p>\n'
@@ -8293,15 +8293,15 @@ class Handler(BaseHTTPRequestHandler):
             '  <meta charset="utf-8" />\n'
             '  <meta name="viewport" content="width=device-width, initial-scale=1" />\n'
             '  <meta name="robots" content="noindex,nofollow" />\n'
-            f"  <title>{_escape(title)} — DirectJob Scout</title>\n"
+            f"  <title>{_escape(title)} — Helpmefindthejob</title>\n"
             '  <link rel="stylesheet" href="/styles.css" />\n'
             "</head>\n"
             '<body class="legal-body">\n'
             '  <main class="legal-page">\n'
-            '    <a href="/" class="legal-back">← Back to DirectJob Scout</a>\n'
+            '    <a href="/" class="legal-back">← Back to Helpmefindthejob</a>\n'
             f'    <h1 style="color: {accent}">{_escape(title)}</h1>\n'
             f"    <p>{_escape(message)}</p>\n"
-            '    <p class="muted small">If something is wrong, contact <a href="mailto:support@directjob-scout.example">support@directjob-scout.example</a>.</p>\n'
+            '    <p class="muted small">If something is wrong, contact <a href="mailto:support@helpmefindthejob.com">support@helpmefindthejob.com</a>.</p>\n'
             "  </main>\n"
             "</body>\n"
             "</html>\n"

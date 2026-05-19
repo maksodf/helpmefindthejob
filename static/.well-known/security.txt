@@ -1,19 +1,21 @@
 # SPDX-License-Identifier: Apache-2.0
 # security.txt per RFC 9116 — https://www.rfc-editor.org/rfc/rfc9116
 #
-# DirectJob Scout — civic employment commons for the European labour
+# Helpmefindthejob — civic employment commons for the European labour
 # market. Programme of The Commons Conservancy. Apache 2.0 + CLA.
 #
-# The Contact email uses the public-tree placeholder convention
-# (Decision 12 in docs/grant/04-research-and-decisions.md); the
-# deployer substitutes the real reporting address at deployment time.
-# Reports sent to the GitHub Security tab via the Policy URL below
-# are the canonical channel today.
+# Per Decision 22 (2026-05-19), the canonical project domain is
+# helpmefindthejob.com (acquired by the maintainer; supersedes the
+# pre-rename Decision-12 placeholder convention per the Open R8 reopen
+# in docs/grant/04-research-and-decisions.md). Reports sent to the
+# GitHub Security tab via the Policy URL below are the canonical
+# channel today; the security@helpmefindthejob.com mailbox lands
+# when the maintainer wires the MX record.
 
-Contact: mailto:security@directjob-scout.example
-Contact: https://github.com/maksodf/directjob-scout/security/advisories/new
+Contact: mailto:security@helpmefindthejob.com
+Contact: https://github.com/maksodf/helpmefindthejob/security/advisories/new
 Expires: 2027-05-19T05:03:45Z
 Preferred-Languages: en, de
-Canonical: https://maksodf.github.io/directjob-scout/.well-known/security.txt
-Acknowledgments: https://github.com/maksodf/directjob-scout/security
-Policy: https://github.com/maksodf/directjob-scout/blob/main/SECURITY.md
+Canonical: https://helpmefindthejob.com/.well-known/security.txt
+Acknowledgments: https://github.com/maksodf/helpmefindthejob/security
+Policy: https://github.com/maksodf/helpmefindthejob/blob/main/SECURITY.md

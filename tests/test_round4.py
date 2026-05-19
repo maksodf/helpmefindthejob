@@ -1,4 +1,4 @@
-# Copyright (c) 2026 DirectJob Scout contributors
+# Copyright (c) 2026 Helpmefindthejob contributors
 # SPDX-License-Identifier: Apache-2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -320,7 +320,7 @@ class ChatRouterCvTailoringWiringTests(unittest.TestCase):
             user_id=user.id,
             company_id="c-wiring",
             discovered_job_id="dj-wiring",
-            source_url="https://demo.directjob-scout.example/job/wiring",
+            source_url="https://demo.helpmefindthejob.com/job/wiring",
             title="Pflegefachkraft",
             company_name="Test Clinic",
             location="Berlin",

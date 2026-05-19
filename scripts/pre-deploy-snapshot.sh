@@ -20,7 +20,7 @@
 # Environment overrides:
 #   COMPOSE_FILE        defaults to docker-compose.prod.yml when present,
 #                       otherwise docker-compose.yml.
-#   SERVICE_NAME        defaults to directjob-scout.
+#   SERVICE_NAME        defaults to helpmefindthejob.
 #   DATA_DIR            defaults to /app/data (path inside the container).
 #   SSH_HOST            if set, runs the snapshot remotely over ssh
 #                       (e.g. SSH_HOST="root@161.35.76.8").
@@ -39,7 +39,7 @@ if [ -z "${COMPOSE_FILE:-}" ]; then
     COMPOSE_FILE="docker-compose.yml"
   fi
 fi
-SERVICE_NAME="${SERVICE_NAME:-directjob-scout}"
+SERVICE_NAME="${SERVICE_NAME:-helpmefindthejob}"
 DATA_DIR="${DATA_DIR:-/app/data}"
 TAG="${TAG:-$(date -u +%Y%m%dT%H%M%SZ)}"
 SSH_HOST="${SSH_HOST:-}"
@@ -134,7 +134,7 @@ fi
 # don't add a dependency to the host.
 #
 #   DIRECTJOB_BACKUP_S3_BUCKET   target bucket (required to enable)
-#   DIRECTJOB_BACKUP_S3_PREFIX   key prefix, e.g. "directjob-scout/"
+#   DIRECTJOB_BACKUP_S3_PREFIX   key prefix, e.g. "helpmefindthejob/"
 #   DIRECTJOB_BACKUP_S3_ENDPOINT --endpoint-url override (optional)
 #   AWS_ACCESS_KEY_ID            forwarded into the container
 #   AWS_SECRET_ACCESS_KEY        forwarded into the container
@@ -163,7 +163,7 @@ EOF
   if [ -n "${DIRECTJOB_BACKUP_S3_ENDPOINT:-}" ]; then
     endpoint_flag="--endpoint-url $DIRECTJOB_BACKUP_S3_ENDPOINT"
   fi
-  prefix="${DIRECTJOB_BACKUP_S3_PREFIX:-directjob-scout/}"
+  prefix="${DIRECTJOB_BACKUP_S3_PREFIX:-helpmefindthejob/}"
   UPLOAD_PROGRAM="$(printf '%s' "$UPLOAD_PROGRAM" \
     | sed "s|__SERVICE__|$SERVICE_NAME|g; s|__DATA__|$DATA_DIR|g; s|__TAG__|$TAG|g; s|__BUCKET__|$DIRECTJOB_BACKUP_S3_BUCKET|g; s|__PREFIX__|$prefix|g; s|__ENDPOINT_FLAG__|$endpoint_flag|g")"
   if [ -n "$SSH_HOST" ]; then

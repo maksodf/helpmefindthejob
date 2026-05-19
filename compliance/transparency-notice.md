@@ -1,9 +1,9 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
-<!-- Copyright (c) 2026 DirectJob Scout contributors -->
+<!-- Copyright (c) 2026 Helpmefindthejob contributors -->
 
 # Transparency Notice for Users
 
-**Audience**: **you, the user of DirectJob Scout.** This notice explains how the system works, what data flows where, and your rights.
+**Audience**: **you, the user of Helpmefindthejob.** This notice explains how the system works, what data flows where, and your rights.
 **Article**: AI Act Article 13 (transparency to deployers — adapted here as the user-facing surface) and Article 50 (transparency to natural persons interacting with AI systems).
 **Surface**: this notice is shown at first run and is always available from the Settings screen.
 **Status**: living document. The user-facing rendered version is at `/settings/transparency`; the source of truth lives here in the repo.
@@ -12,15 +12,15 @@
 
 ## What this is
 
-DirectJob Scout is an open-source civic-employment copilot. It helps you navigate the European job market — including parts of that market that are often hard to navigate alone: foreign-credential recognition (Anerkennung), CV conventions that vary by country, multilingual application processes, employment-services bureaucracy, and the differences between sectors.
+Helpmefindthejob is an open-source civic-employment copilot. It helps you navigate the European job market — including parts of that market that are often hard to navigate alone: foreign-credential recognition (Anerkennung), CV conventions that vary by country, multilingual application processes, employment-services bureaucracy, and the differences between sectors.
 
-**Who is DirectJob Scout built for?** Anyone facing structural friction between what they can actually do and what the European labor market is set up to recognise. Migrants and EU-mobile workers face this friction most acutely — language barriers, foreign-credential opacity, residency complexities make it densest there — and they are the strongest example users the system was designed around. The same friction also affects, for example, someone returning to clinical nursing after twelve years out of practice for childcare; someone pivoting from commercial tech to public-sector civic-tech work; someone re-entering the labour market after long-term unemployment; someone moving back to their home country after years working abroad; or anyone working outside the bureaucratic system they grew up navigating. If you recognise yourself in any of those situations — or in something structurally similar — this tool is built for you.
+**Who is Helpmefindthejob built for?** Anyone facing structural friction between what they can actually do and what the European labor market is set up to recognise. Migrants and EU-mobile workers face this friction most acutely — language barriers, foreign-credential opacity, residency complexities make it densest there — and they are the strongest example users the system was designed around. The same friction also affects, for example, someone returning to clinical nursing after twelve years out of practice for childcare; someone pivoting from commercial tech to public-sector civic-tech work; someone re-entering the labour market after long-term unemployment; someone moving back to their home country after years working abroad; or anyone working outside the bureaucratic system they grew up navigating. If you recognise yourself in any of those situations — or in something structurally similar — this tool is built for you.
 
-You do not need to be a migrant for DirectJob Scout to be useful, and migrants are not the only users. The tool is built around the **friction** you face in connecting your capability to a role, not around who you are.
+You do not need to be a migrant for Helpmefindthejob to be useful, and migrants are not the only users. The tool is built around the **friction** you face in connecting your capability to a role, not around who you are.
 
 ---
 
-## What DirectJob Scout does
+## What Helpmefindthejob does
 
 The tool combines:
 
@@ -34,7 +34,7 @@ At every step, the suggestions are **suggestions** — never decisions. You conf
 
 ## How AI is used
 
-Some actions in DirectJob Scout invoke an AI model. These are:
+Some actions in Helpmefindthejob invoke an AI model. These are:
 
 | Action | What the AI does | What the AI does not do |
 |---|---|---|
@@ -44,7 +44,7 @@ Some actions in DirectJob Scout invoke an AI model. These are:
 | Analyse your application history | Surfaces patterns: which CV variant gets replies, which sectors respond, which application timings work | Does not decide what you should do next; offers observations |
 | Generate a skill-gap brief | Compares your skills to a role's required ESCO skills and surfaces gaps | Does not enrol you in any course or programme |
 
-Other actions in DirectJob Scout are **deterministic** — no AI involved. Examples: job discovery from configured sources, locale-aware yes/no parsing in chat, profile-field editing, application persistence, calendar reminders.
+Other actions in Helpmefindthejob are **deterministic** — no AI involved. Examples: job discovery from configured sources, locale-aware yes/no parsing in chat, profile-field editing, application persistence, calendar reminders.
 
 ---
 
@@ -56,13 +56,13 @@ When an AI action runs, the system sends **only the slice of data needed for tha
 - **Motivation-letter drafting** sends the job posting and the CV bullets you confirmed for this role — not your job history with other employers.
 - **CV tailoring** sends the job posting and the CV sections you select — not your other CV sections.
 
-The full minimisation rules are documented in [`data-governance.md`](https://github.com/maksodf/directjob-scout/blob/main/compliance/data-governance.md) §4 and live in the project's open-source codebase. You can verify them.
+The full minimisation rules are documented in [`data-governance.md`](https://github.com/maksodf/helpmefindthejob/blob/main/compliance/data-governance.md) §4 and live in the project's open-source codebase. You can verify them.
 
 ---
 
 ## You choose the AI provider
 
-DirectJob Scout does not force a single AI provider on you. The deployment can be configured to use:
+Helpmefindthejob does not force a single AI provider on you. The deployment can be configured to use:
 
 - **OpenAI, Anthropic, Gemini, DeepSeek, OpenRouter** (commercial cloud AI providers)
 - **Ollama** (fully offline, your own machine, no data leaves)
@@ -78,7 +78,7 @@ You can change your AI provider at any time. You can revoke AI consent at any ti
 
 ## What is logged
 
-DirectJob Scout keeps an audit log for compliance with EU AI Act Article 12. The log records:
+Helpmefindthejob keeps an audit log for compliance with EU AI Act Article 12. The log records:
 
 - Every AI invocation (timestamp, purpose, AI provider used, tokens in/out, response duration)
 - Every system event (MCP tool calls, kill-switch activations, AI-provider failover)
@@ -137,7 +137,7 @@ We list these here because honesty about limitations matters more than marketing
 
 ## Where the system lives
 
-DirectJob Scout is open-source under Apache License 2.0. The source code is at `https://github.com/maksodf/directjob-scout`. The project is being prepared as a Programme of The Commons Conservancy (a Dutch foundation co-founded by NLnet). You can fork, self-host, audit, or contribute. No vendor lock-in. No commercial gate.
+Helpmefindthejob is open-source under Apache License 2.0. The source code is at `https://github.com/maksodf/helpmefindthejob`. The project is being prepared as a Programme of The Commons Conservancy (a Dutch foundation co-founded by NLnet). You can fork, self-host, audit, or contribute. No vendor lock-in. No commercial gate.
 
 ---
 

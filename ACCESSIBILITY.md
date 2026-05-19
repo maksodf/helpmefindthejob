@@ -1,11 +1,11 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
-<!-- Copyright (c) 2026 DirectJob Scout contributors -->
+<!-- Copyright (c) 2026 Helpmefindthejob contributors -->
 
 # Accessibility
 
 ## Stated target
 
-DirectJob Scout targets **WCAG 2.2 Level AA** ([W3C
+Helpmefindthejob targets **WCAG 2.2 Level AA** ([W3C
 specification](https://www.w3.org/TR/WCAG22/)). Conformance is
 iterative; this document is the project's honest record of the
 state of that work — what's been audited, what's been fixed, what
@@ -251,7 +251,7 @@ accessible name, so they weren't part of any landmark.
 
 **Fix**: converted `<section id="authGate" class="auth-gate" hidden>`
 to `<main id="authGate" class="auth-gate" aria-labelledby="authGateHeading" hidden>`,
-and added `id="authGateHeading"` to the `<h1>DirectJob Scout</h1>`
+and added `id="authGateHeading"` to the `<h1>Helpmefindthejob</h1>`
 inside it. The auth-gate is now a properly named `main` landmark.
 The auxiliary auth views (forgot-password, reset-password,
 accept-invite) were already labelled via `aria-labelledby`; the
@@ -505,7 +505,7 @@ resolved by mkdocs because the targets live outside the rendered
 docs tree.
 
 **Fix**: rewrote 6 relative cross-tree links to absolute GitHub
-URLs (`https://github.com/maksodf/directjob-scout/blob/main/...`).
+URLs (`https://github.com/maksodf/helpmefindthejob/blob/main/...`).
 The canonical compliance files now render correctly in both the
 GitHub UI and the mkdocs site without ambiguity.
 

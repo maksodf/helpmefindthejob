@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2026 DirectJob Scout contributors
+# Copyright (c) 2026 Helpmefindthejob contributors
 # SPDX-License-Identifier: Apache-2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -80,7 +80,7 @@ OUT_DIR = REPO_ROOT / "audit-results" / "auth-surfaces"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
 DEMO_PASSWORD = os.environ.get("AUDIT_PASSWORD", "audit-test-12345678")
-EMAIL = "aicha@demo.directjob-scout.example"
+EMAIL = "aicha@demo.helpmefindthejob.com"
 
 
 def _err(msg: str) -> None:
@@ -457,7 +457,7 @@ def _write_summary(per_scheme: dict[str, dict[str, tuple[int, int, int, int]]]) 
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="DirectJob Scout auth-surface accessibility audit runner."
+        description="Helpmefindthejob auth-surface accessibility audit runner."
     )
     parser.add_argument(
         "--color-scheme",

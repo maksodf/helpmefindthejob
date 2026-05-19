@@ -1,4 +1,4 @@
-# Copyright (c) 2026 DirectJob Scout contributors
+# Copyright (c) 2026 Helpmefindthejob contributors
 # SPDX-License-Identifier: Apache-2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -663,7 +663,7 @@ def render_cv_print_html(cv_markdown: str, *, auto_print: bool = False) -> str:
         '<meta charset="utf-8" />\n'
         '<meta name="viewport" content="width=device-width,initial-scale=1" />\n'
         '<meta name="robots" content="noindex" />\n'
-        "<title>CV — DirectJob Scout</title>\n"
+        "<title>CV — Helpmefindthejob</title>\n"
         "<style>\n"
         "@page { size: A4; margin: 18mm 16mm; }\n"
         "html, body {\n"

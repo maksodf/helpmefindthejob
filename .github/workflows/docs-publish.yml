@@ -1,4 +1,4 @@
-# DirectJob Scout — mkdocs-material → GitHub Pages publish workflow.
+# Helpmefindthejob — mkdocs-material → GitHub Pages publish workflow.
 #
 # Trigger: push to `main` and to the working branch `claude/project-
 # analysis-bpHCo` during the 4-week grant sprint; pull-requests build

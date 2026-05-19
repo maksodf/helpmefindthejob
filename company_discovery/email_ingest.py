@@ -1,4 +1,4 @@
-# Copyright (c) 2026 DirectJob Scout contributors
+# Copyright (c) 2026 Helpmefindthejob contributors
 # SPDX-License-Identifier: Apache-2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -8,7 +8,7 @@
 """Email-forward ingest — parse inbound platform alert emails into jobs.
 
 When a user forwards a LinkedIn / Indeed / StepStone alert email to
-their personal DirectJob inbox (e.g. ``u-{token}@inbox.directjob-scout.example``),
+their personal DirectJob inbox (e.g. ``u-{token}@inbox.helpmefindthejob.com``),
 the inbound webhook (Resend, Postmark, Mailgun — any of them works)
 POSTs the parsed message to ``/api/inbound/email`` on this server. The
 handler resolves the user via the per-user token, runs the parser

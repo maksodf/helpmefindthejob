@@ -1,6 +1,6 @@
 {
   "_doc": "Source-of-truth input for scripts/generate-seo-pages.py. Operator edits the cities + roles arrays then re-runs the script to regenerate deploy/seo-pages.json.example. Cross-product = pages = cities × roles. Slugs must be alnum or dash; labels are free text. The intro_template uses {role} and {city} placeholders.",
-  "intro_template": "DirectJob Scout watches direct career pages plus the major aggregators (Indeed, StepStone, Arbeitnow, Bundesagentur, Muse) for {role} roles in {city}. We dedupe across sources and let you triage one keyboard-driven queue. No feed, no algorithm, no recruiter messages.",
+  "intro_template": "Helpmefindthejob watches direct career pages plus the major aggregators (Indeed, StepStone, Arbeitnow, Bundesagentur, Muse) for {role} roles in {city}. We dedupe across sources and let you triage one keyboard-driven queue. No feed, no algorithm, no recruiter messages.",
   "cities": [
     {"slug": "berlin", "label": "Berlin"},
     {"slug": "munich", "label": "Munich"},

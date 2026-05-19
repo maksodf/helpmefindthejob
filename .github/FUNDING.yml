@@ -1,4 +1,4 @@
-# DirectJob Scout funding configuration for GitHub Sponsors-style links.
+# Helpmefindthejob funding configuration for GitHub Sponsors-style links.
 #
 # All entries are placeholders during the May–August 2026 NLnet grant
 # sprint. Real funding handles land in Week 4 (NLnet acknowledgment if
@@ -15,7 +15,7 @@
 # Reference: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/displaying-a-sponsor-button-in-your-repository
 
 # github: TBD-maintainer-github-sponsors-handle
-# open_collective: TBD-directjob-scout-collective
+# open_collective: TBD-helpmefindthejob-collective
 # ko_fi: TBD
 # tidelift: TBD
 # custom:

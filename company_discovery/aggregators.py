@@ -1,4 +1,4 @@
-# Copyright (c) 2026 DirectJob Scout contributors
+# Copyright (c) 2026 Helpmefindthejob contributors
 # SPDX-License-Identifier: Apache-2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -7,7 +7,7 @@
 
 """Job-aggregator scaffolding.
 
-Aggregators are the **second rail** of DirectJob Scout's source pipeline
+Aggregators are the **second rail** of Helpmefindthejob's source pipeline
 (the first being direct career-page scans of watched companies). Each
 aggregator wraps a public job-board API or RSS feed and emits a
 normalized :class:`AggregatedJob` per posting it finds.

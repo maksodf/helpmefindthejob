@@ -36,15 +36,15 @@ write_header() {
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="robots" content="index,follow" />
-    <title>Changelog — DirectJob Scout</title>
-    <meta name="description" content="What we shipped on DirectJob Scout (directjob-scout.example). Real cadence, no marketing spin." />
-    <link rel="canonical" href="https://directjob-scout.example/changelog" />
+    <title>Changelog — Helpmefindthejob</title>
+    <meta name="description" content="What we shipped on Helpmefindthejob (helpmefindthejob.com). Real cadence, no marketing spin." />
+    <link rel="canonical" href="https://helpmefindthejob.com/changelog" />
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body class="legal-body">
     <main class="legal-page">
       <header>
-        <a href="/" class="legal-back">← Back to DirectJob Scout</a>
+        <a href="/" class="legal-back">← Back to Helpmefindthejob</a>
         <h1>Changelog</h1>
         <p class="muted">What we actually shipped. App version ${APP_VERSION}. Regenerated ${TODAY}.</p>
       </header>

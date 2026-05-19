@@ -1,13 +1,13 @@
 # Architecture
 
-> One-page system diagram and component map for DirectJob Scout. This
+> One-page system diagram and component map for Helpmefindthejob. This
 > document is the "where does the code live and how does it fit
 > together" reference. For the *why* — strategic context, persona
 > design, cost-saving doctrine, EU AI Act compliance pack — see
 > `docs/grant/`. For the MCP composition surface specifically, see
 > [`docs/grant/09-mcp-composition.md`](docs/grant/09-mcp-composition.md).
 
-DirectJob Scout is a single-process Python application that exposes
+Helpmefindthejob is a single-process Python application that exposes
 itself in two complementary ways: a **chat-driven web UI** for direct
 end-user interaction, and an **MCP (Model Context Protocol) server**
 for composition with other open civic agents. The two share a single
@@ -228,7 +228,7 @@ Every MCP `tools/call` payload is **JSON-Schema-validated** against the register
 
 ## EU AI Act compliance hooks
 
-DirectJob Scout is high-risk under Annex III §4 of the EU AI Act, effective from 2 August 2026. The Week 2 §2.8 compliance pack ships under `compliance/` with:
+Helpmefindthejob is high-risk under Annex III §4 of the EU AI Act, effective from 2 August 2026. The Week 2 §2.8 compliance pack ships under `compliance/` with:
 
 - Risk management plan (Article 9)
 - Data governance documentation (Article 10)

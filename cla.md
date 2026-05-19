@@ -1,6 +1,6 @@
 # Contributor License Agreement (Individual)
 
-**Project**: DirectJob Scout
+**Project**: Helpmefindthejob
 **Maintainer contact**: see `SECURITY.md` and `SUPPORT.md` for current channels
 **Version**: 1.0 (2026-05-17)
 **Status**: starter document. Operational signing-and-tracking infrastructure
@@ -18,14 +18,14 @@ This Contributor License Agreement ("Agreement") is modelled on the
 for this project. No novel terms have been introduced.
 
 In order to clarify the intellectual-property terms of contributions from any
-person ("You") to DirectJob Scout, the Project must have on file a signed CLA
+person ("You") to Helpmefindthejob, the Project must have on file a signed CLA
 from each contributor before that contributor's contributions are merged.
 This Agreement is for Your protection as a contributor as well as the
 protection of the Project; it does **not** change Your rights to use Your own
 contributions for any other purpose.
 
 You accept and agree to the following terms and conditions for Your past,
-present, and future contributions submitted to DirectJob Scout. In return,
+present, and future contributions submitted to Helpmefindthejob. In return,
 the Project shall not use Your contributions in a way that is contrary to
 the licence under which the Project is distributed (Apache License, Version
 2.0). Except for the license granted herein to the Project and recipients of
@@ -131,7 +131,7 @@ pull-request workflow, the assent mechanism is:
 2. In Your first non-trivial pull request, add a comment with the
    following exact text:
 
-   > I have read and agree to the DirectJob Scout Individual Contributor
+   > I have read and agree to the Helpmefindthejob Individual Contributor
    > License Agreement, version 1.0, dated 2026-05-17.
 
 3. State Your full legal name and the email address You commit from.
@@ -169,7 +169,7 @@ The CLA does **not**:
 
 - transfer copyright ownership away from You
 - prevent You from using Your Contribution in any other project
-- restrict Your right to fork DirectJob Scout under Apache 2.0
+- restrict Your right to fork Helpmefindthejob under Apache 2.0
 - grant the Project rights beyond what is needed to distribute Your
   Contribution under the Project's license
 

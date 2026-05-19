@@ -1,4 +1,4 @@
-# DirectJob Scout — Project Brief
+# Helpmefindthejob — Project Brief
 
 **Last updated**: 2026-05-17
 **Status**: pre-application, planning phase complete
@@ -28,7 +28,7 @@ This is the strategic source-of-truth document. Read end-to-end before working o
 
 ## 1. Mission
 
-DirectJob Scout exists to **capture specialist HR and bureaucratic-navigation knowledge — currently locked in advisors' heads, HR departments, recruiter networks, and overworked employment-services case workers — and put it directly into the hands of the people who need it most**: anyone facing structural friction between their actual capability and the European labor market's ability to recognise and connect them to work.
+Helpmefindthejob exists to **capture specialist HR and bureaucratic-navigation knowledge — currently locked in advisors' heads, HR departments, recruiter networks, and overworked employment-services case workers — and put it directly into the hands of the people who need it most**: anyone facing structural friction between their actual capability and the European labor market's ability to recognise and connect them to work.
 
 The friction is universal across the EU labor markets; its acuity varies by user situation. Migrants and EU-mobile workers face it most acutely — language barriers, foreign-credential opacity through Anerkennung, residency-status complexities, bureaucratic fragmentation — and are the strongest single use case for the project. The same structural friction also affects career changers, workers returning after caregiving or extended absence, the long-term unemployed re-entering the system, returning expats, older workers facing implicit-bias filtering, and first-generation graduates without family-networked guidance through professional conventions. The architecture is friction-driven, not demographic-driven. Per Decision 21 in `04-research-and-decisions.md`, the migrant use case remains the strongest specific evidence and primary narrative anchor; it is not the project's hard-coded identity.
 
@@ -40,11 +40,11 @@ The pattern is the **Redwax model applied to civic life**: small, well-documente
 
 ## 2. Positioning
 
-DirectJob Scout is **EU-wide civic-employment infrastructure** with Germany as the first reference deployment. The architecture is country-neutral; cross-border deployment is a localisation exercise, not a re-engineering effort.
+Helpmefindthejob is **EU-wide civic-employment infrastructure** with Germany as the first reference deployment. The architecture is country-neutral; cross-border deployment is a localisation exercise, not a re-engineering effort.
 
 ### The one-sentence positioning
 
-> **DirectJob Scout is an open-source EU-wide civic employment commons that captures specialist HR and bureaucratic-navigation knowledge into modular, MCP-composable tools — putting agency back into the hands of anyone facing structural labor-market friction, while saving the institutions that serve them measurable operational cost. Migrants and EU-mobile workers are the most acute use case but not the only one.**
+> **Helpmefindthejob is an open-source EU-wide civic employment commons that captures specialist HR and bureaucratic-navigation knowledge into modular, MCP-composable tools — putting agency back into the hands of anyone facing structural labor-market friction, while saving the institutions that serve them measurable operational cost. Migrants and EU-mobile workers are the most acute use case but not the only one.**
 
 ### What we are not
 
@@ -212,7 +212,7 @@ Four distinguishing design choices:
 
 2. **User-sovereign data and AI** — encrypted at rest (ChaCha20-Poly1305), BYO-AI provider abstraction (including Ollama for fully-offline mode), no data egress beyond explicit consent.
 
-3. **MCP-exposed as open civic infrastructure** — the Model Context Protocol server is the commons interface. Versioned tool catalogue with JSON Schemas, documented composition pattern (sequential handoff, profile-shared, orchestrated). Other open civic agents — housing, healthcare, residency, education — compose with DirectJob Scout without forking. Full spec in `09-mcp-composition.md`.
+3. **MCP-exposed as open civic infrastructure** — the Model Context Protocol server is the commons interface. Versioned tool catalogue with JSON Schemas, documented composition pattern (sequential handoff, profile-shared, orchestrated). Other open civic agents — housing, healthcare, residency, education — compose with Helpmefindthejob without forking. Full spec in `09-mcp-composition.md`.
 
 4. **Multilingual and locale-aware by design** — EN + DE shipped; translator-contributor pathway documented; locale rules baked in (German yes/no synonyms, Impressum, city aliases).
 
@@ -222,7 +222,7 @@ The MCP composition story is **proven in Week 2** with a concrete reference inte
 
 ## 9. EU AI Act compliance as the institutional moat
 
-DirectJob Scout is squarely **high-risk AI under EU AI Act Annex III §4(a) and §4(b)** — employment-related AI. Obligations are enforceable from **2 August 2026**.
+Helpmefindthejob is squarely **high-risk AI under EU AI Act Annex III §4(a) and §4(b)** — employment-related AI. Obligations are enforceable from **2 August 2026**.
 
 We build in compliance by design — risk management plan, data governance documentation, technical documentation aligned with Annex IV, audit logging, transparency notices, human-oversight UI, accuracy + bias testing. The full compliance pack is documented in `10-ai-act-compliance.md`.
 
@@ -232,7 +232,7 @@ The institutional consequence: **every institution deploying our agent inherits 
 
 ## 10. The institutional wrapper — Commons Conservancy
 
-DirectJob Scout will apply for admission as a Programme of **The Commons Conservancy** (Dutch stichting, founded 2016 by NLnet, multi-tenant legal-entity wrapper for open-source projects, free).
+Helpmefindthejob will apply for admission as a Programme of **The Commons Conservancy** (Dutch stichting, founded 2016 by NLnet, multi-tenant legal-entity wrapper for open-source projects, free).
 
 What this solves:
 

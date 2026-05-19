@@ -1,4 +1,4 @@
-# Copyright (c) 2026 DirectJob Scout contributors
+# Copyright (c) 2026 Helpmefindthejob contributors
 # SPDX-License-Identifier: Apache-2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -26,7 +26,7 @@ Five claims about the product, each with a concrete pass/fail check:
 3. The generated CV PDF lands on the user's Desktop. The agent
    navigates a headless Chromium to ``/api/cv/print`` and uses
    Playwright's ``page.pdf()`` to save the file to
-   ``~/Desktop/directjob-scout-verification-CV.pdf`` — physically
+   ``~/Desktop/helpmefindthejob-verification-CV.pdf`` — physically
    present after the run.
 
 4. The PDF satisfies the DACH-CV norm. We parse it with ``pypdf``
@@ -88,7 +88,7 @@ BASE_URL = os.environ.get("E2E_BASE_URL", "").rstrip("/")
 DESKTOP_PDF_PATH = Path(
     os.environ.get(
         "E2E_DESKTOP_PDF_PATH",
-        str(Path.home() / "Desktop" / "directjob-scout-verification-CV.pdf"),
+        str(Path.home() / "Desktop" / "helpmefindthejob-verification-CV.pdf"),
     )
 )
 PHOTO_URL = os.environ.get(

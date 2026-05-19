@@ -141,7 +141,7 @@ These are starting templates. Personalise before sending — generic mail is wor
 >
 > Sehr geehrte/r Frau/Herr [Name],
 >
-> mein Name ist [Maintainer-Name]. Ich entwickle gemeinsam mit einem kleinen Team ein Open-Source-Tool namens **DirectJob Scout**, das speziell dafür entworfen wurde, Beratungsstellen wie Ihrer im Migrationsberatungsalltag zu entlasten — ohne Lizenzkosten, ohne Datenabfluss an kommerzielle Anbieter, vollständig EU-AI-Act-konform und mehrsprachig.
+> mein Name ist [Maintainer-Name]. Ich entwickle gemeinsam mit einem kleinen Team ein Open-Source-Tool namens **Helpmefindthejob**, das speziell dafür entworfen wurde, Beratungsstellen wie Ihrer im Migrationsberatungsalltag zu entlasten — ohne Lizenzkosten, ohne Datenabfluss an kommerzielle Anbieter, vollständig EU-AI-Act-konform und mehrsprachig.
 >
 > Das Tool übernimmt routinemäßige Fragen, die Klient:innen täglich an Ihre Berater:innen richten — Lebenslauf-Format, Anerkennungs-Pfade, Bewerbungsschreiben in deutscher Geschäftssprache, Stellensuche bei anerkennungsbereiten Arbeitgebern — sodass Ihre Berater:innen sich auf jene Fälle konzentrieren können, die echtes menschliches Urteilsvermögen erfordern.
 >
@@ -173,7 +173,7 @@ These are starting templates. Personalise before sending — generic mail is wor
 >
 > Sehr geehrte/r [Name des Koordinators / der Koordinatorin],
 >
-> ich entwickle ein Open-Source-Tool — **DirectJob Scout** — das speziell darauf ausgelegt ist, Menschen mit ausländischen Berufsqualifikationen durch den Anerkennungs- und Bewerbungsprozess in Deutschland zu führen. Das Tool ist mehrsprachig, datenschutzkonform (verschlüsselt, lokal selbst hostbar, kein Datenabfluss), und bereits im Vorgriff auf den EU AI Act vollständig dokumentiert.
+> ich entwickle ein Open-Source-Tool — **Helpmefindthejob** — das speziell darauf ausgelegt ist, Menschen mit ausländischen Berufsqualifikationen durch den Anerkennungs- und Bewerbungsprozess in Deutschland zu führen. Das Tool ist mehrsprachig, datenschutzkonform (verschlüsselt, lokal selbst hostbar, kein Datenabfluss), und bereits im Vorgriff auf den EU AI Act vollständig dokumentiert.
 >
 > Unsere Vision deckt sich strukturell mit der IQ-Mission: spezialisiertes Wissen rund um Anerkennung und Arbeitsmarktintegration in die Hände der Betroffenen selbst zu geben — und gleichzeitig die Berater:innen Ihres Netzwerks zu entlasten.
 >
@@ -190,7 +190,7 @@ These are starting templates. Personalise before sending — generic mail is wor
 >
 > Dear [Career Service Director],
 >
-> I am a student at TU Berlin developing an open-source civic-employment agent — **DirectJob Scout** — that supports international students and recent graduates navigating the German job market after their studies. The tool is multilingual, privacy-preserving, EU AI Act compliant by design, and free for institutional adoption.
+> I am a student at TU Berlin developing an open-source civic-employment agent — **Helpmefindthejob** — that supports international students and recent graduates navigating the German job market after their studies. The tool is multilingual, privacy-preserving, EU AI Act compliant by design, and free for institutional adoption.
 >
 > Many international graduates of [University Name] face the same recurring challenges: translating their CV into the German format, identifying employers willing to engage with foreign credentials, drafting motivation letters that speak to German hiring conventions. Our tool addresses each of these directly.
 >
@@ -206,14 +206,14 @@ These are starting templates. Personalise before sending — generic mail is wor
 
 This is the *content* template a partner organisation can either sign verbatim, edit lightly, or adapt to their own letterhead. We provide this so partners do not have to compose it from scratch.
 
-> **Letter of Support — DirectJob Scout (NGI Zero Commons Fund Application)**
+> **Letter of Support — Helpmefindthejob (NGI Zero Commons Fund Application)**
 >
 > [Date]
 > [Partner organisation letterhead]
 >
 > To the NLnet Foundation:
 >
-> [Partner organisation name] supports the development of **DirectJob Scout**, an open-source civic-employment agent for the European labor-shortage gap, as a Programme of The Commons Conservancy.
+> [Partner organisation name] supports the development of **Helpmefindthejob**, an open-source civic-employment agent for the European labor-shortage gap, as a Programme of The Commons Conservancy.
 >
 > Our daily work in [migration counselling / qualification recognition / university career services / public employment] brings us into contact with the population this project is designed to serve: skilled and semi-skilled migrants and international workers who face employment-market friction not because of capability but because of language barriers, foreign-credential opacity, bureaucratic fragmentation, and the absence of tools designed for their situation.
 >
@@ -242,9 +242,9 @@ This is drafted *with the maintainer*, since the friend is their personal contac
 >
 > Hi [Friend],
 >
-> du erinnerst dich an den Housing-Agent, an dem du gearbeitet hast — und du weißt, dass ich an DirectJob Scout sitze. Ich glaube, beide Projekte könnten sich strukturell verbinden lassen, und ich möchte das mit dir besprechen.
+> du erinnerst dich an den Housing-Agent, an dem du gearbeitet hast — und du weißt, dass ich an Helpmefindthejob sitze. Ich glaube, beide Projekte könnten sich strukturell verbinden lassen, und ich möchte das mit dir besprechen.
 >
-> Konkret: ich beantrage in den nächsten Wochen eine Förderung vom NLnet NGI Zero Commons Fund (EU-finanziert), und der Kern meines Pitches ist, dass DirectJob Scout über das Model Context Protocol (MCP) komponierbar ist — also dass andere offene zivile Agenten, wie dein Housing-Agent, sich mit ihm in einer einzigen Konversation verzahnen können. Das ist heute schon technisch möglich; ich brauche aber ein *konkretes zweites Konsumenten-Projekt*, das diese Komposition real demonstriert. Sonst bleibt der Pitch Vaporware.
+> Konkret: ich beantrage in den nächsten Wochen eine Förderung vom NLnet NGI Zero Commons Fund (EU-finanziert), und der Kern meines Pitches ist, dass Helpmefindthejob über das Model Context Protocol (MCP) komponierbar ist — also dass andere offene zivile Agenten, wie dein Housing-Agent, sich mit ihm in einer einzigen Konversation verzahnen können. Das ist heute schon technisch möglich; ich brauche aber ein *konkretes zweites Konsumenten-Projekt*, das diese Komposition real demonstriert. Sonst bleibt der Pitch Vaporware.
 >
 > Mein Vorschlag:
 >
@@ -271,7 +271,7 @@ This is drafted *with the maintainer*, since the friend is their personal contac
 >
 > Dear Prof. [Name] / Dear [Office],
 >
-> I am a student at TU Berlin developing an open-source civic-employment agent — **DirectJob Scout** — that supports migrant and international jobseekers navigating the German and EU labor market. The project is being prepared as a Programme of The Commons Conservancy and is applying to the NLnet NGI Zero Commons Fund.
+> I am a student at TU Berlin developing an open-source civic-employment agent — **Helpmefindthejob** — that supports migrant and international jobseekers navigating the German and EU labor market. The project is being prepared as a Programme of The Commons Conservancy and is applying to the NLnet NGI Zero Commons Fund.
 >
 > The technical core sits at the intersection of conversational AI (structured journey state machines, EU AI Act compliance, the Model Context Protocol), civic informatics, and accessibility-first multilingual interfaces. The first reference deployment serves migrant jobseekers in Germany — a measurable, underserved population.
 >
@@ -285,7 +285,7 @@ This is drafted *with the maintainer*, since the friend is their personal contac
 
 ### Template H: Invitation to co-create a sibling civic agent (housing) — developer friend (German)
 
-This template is for developer friends who could build a housing-search agent from scratch as an independent sibling project to DirectJob Scout, integrated via MCP. It is the friend-outreach counterpart to Template F (which addresses a friend who already operates a housing agent). Per Decision 20 in `04-research-and-decisions.md`, a positive response to Template H produces additive evidence of MCP composition; a non-response produces no project change (Option A mock stub remains the §2.5 default).
+This template is for developer friends who could build a housing-search agent from scratch as an independent sibling project to Helpmefindthejob, integrated via MCP. It is the friend-outreach counterpart to Template F (which addresses a friend who already operates a housing agent). Per Decision 20 in `04-research-and-decisions.md`, a positive response to Template H produces additive evidence of MCP composition; a non-response produces no project change (Option A mock stub remains the §2.5 default).
 
 > **Betreff**: Kollaborationsanfrage — Open-Source-Projekt, wenn du Zeit hast
 >
@@ -293,23 +293,23 @@ This template is for developer friends who could build a housing-search agent fr
 >
 > [hier kurze persönliche Anrede einfügen — z.B. "lange nicht gesehen", oder Bezug zum letzten Gespräch]
 >
-> Ich arbeite an einem Open-Source-Projekt namens DirectJob Scout — einem zivilgesellschaftlichen Tool, das Migrant:innen und EU-mobilen Arbeitssuchenden in Deutschland und Europa beim Anerkennungs- und Bewerbungsprozess hilft. Wir bewerben uns gerade um eine Förderung beim niederländischen NLnet-Stiftungsprogramm (NGI Zero Commons Fund, EU-finanziert; bekanntes Förderschiene, z.B. Redwax, eduVPN, Tenzu wurden über dieses Programm finanziert).
+> Ich arbeite an einem Open-Source-Projekt namens Helpmefindthejob — einem zivilgesellschaftlichen Tool, das Migrant:innen und EU-mobilen Arbeitssuchenden in Deutschland und Europa beim Anerkennungs- und Bewerbungsprozess hilft. Wir bewerben uns gerade um eine Förderung beim niederländischen NLnet-Stiftungsprogramm (NGI Zero Commons Fund, EU-finanziert; bekanntes Förderschiene, z.B. Redwax, eduVPN, Tenzu wurden über dieses Programm finanziert).
 >
-> Kern der technischen Vision: das Projekt ist über das Model Context Protocol (MCP) komponierbar — andere offene zivile Agenten (Wohnungssuche, Krankenversicherung, Aufenthalt, Sprachkurse etc.) können sich strukturell mit DirectJob Scout verzahnen, sodass ein:e Nutzer:in in einem einzigen Gespräch durch mehrere Lebensbereiche begleitet werden kann. Damit "komponierbar" mehr als ein Versprechen ist, brauche ich ein zweites konkretes Schwester-Projekt, das diese Komposition real demonstriert.
+> Kern der technischen Vision: das Projekt ist über das Model Context Protocol (MCP) komponierbar — andere offene zivile Agenten (Wohnungssuche, Krankenversicherung, Aufenthalt, Sprachkurse etc.) können sich strukturell mit Helpmefindthejob verzahnen, sodass ein:e Nutzer:in in einem einzigen Gespräch durch mehrere Lebensbereiche begleitet werden kann. Damit "komponierbar" mehr als ein Versprechen ist, brauche ich ein zweites konkretes Schwester-Projekt, das diese Komposition real demonstriert.
 >
 > Mein Vorschlag — und ich verstehe absolut, wenn das gerade nicht passt:
 >
-> Du baust einen Wohnungssuche-Agenten als eigenständiges, kleines Open-Source-Projekt unter Apache 2.0. Du behältst die volle Kontrolle: Architektur, Sprachwahl, Scope, Roadmap, Code-Style — alles deins. Die einzige Beschränkung ist die Interoperabilität via MCP mit DirectJob Scout.
+> Du baust einen Wohnungssuche-Agenten als eigenständiges, kleines Open-Source-Projekt unter Apache 2.0. Du behältst die volle Kontrolle: Architektur, Sprachwahl, Scope, Roadmap, Code-Style — alles deins. Die einzige Beschränkung ist die Interoperabilität via MCP mit Helpmefindthejob.
 >
 > Was das konkret bedeuten würde:
 >
-> — Aufwand: ungefähr 30–60 Stunden über 4–6 Wochen, je nachdem wie tief du gehst. Der minimal viable Scope könnte z.B. sein: einen Anmeldung-freundlichen Vermieter-Anschreiben-Generator, der auf einem Nutzerprofil basiert (das er von DirectJob Scout via MCP einliest, mit ausdrücklicher Einwilligung der Nutzer:in). Mehr Scope, etwa eine kleine Such-Schnittstelle für öffentliche Wohnungsdaten, wäre möglich aber nicht nötig.
+> — Aufwand: ungefähr 30–60 Stunden über 4–6 Wochen, je nachdem wie tief du gehst. Der minimal viable Scope könnte z.B. sein: einen Anmeldung-freundlichen Vermieter-Anschreiben-Generator, der auf einem Nutzerprofil basiert (das er von Helpmefindthejob via MCP einliest, mit ausdrücklicher Einwilligung der Nutzer:in). Mehr Scope, etwa eine kleine Such-Schnittstelle für öffentliche Wohnungsdaten, wäre möglich aber nicht nötig.
 >
-> — Lizenz: Apache 2.0. Das ist auch die Lizenz von DirectJob Scout — sorgt für maximale institutionelle Adoption (NGOs, Beratungsstellen, Jobcenter) und passt zur zivilgesellschaftlichen Ausrichtung.
+> — Lizenz: Apache 2.0. Das ist auch die Lizenz von Helpmefindthejob — sorgt für maximale institutionelle Adoption (NGOs, Beratungsstellen, Jobcenter) und passt zur zivilgesellschaftlichen Ausrichtung.
 >
 > — Anerkennung: du wirst als Co-Autor:in deines Schwester-Projekts namentlich genannt. Das Projekt kann selbst als Programme bei der Commons Conservancy (NLnet-Stiftung) gehostet werden, was eigene Förderschienen eröffnet.
 >
-> — Mögliche eigene Förderung: falls die NLnet-Förderung für DirectJob Scout klappt, ist ein eigener Folge-Antrag für dein Projekt der natürliche nächste Schritt. Die Architektur und das institutionelle Framing sind gleich genug, dass der Antrag relativ schnell geht — die Pionier-Arbeit ist bereits geleistet.
+> — Mögliche eigene Förderung: falls die NLnet-Förderung für Helpmefindthejob klappt, ist ein eigener Folge-Antrag für dein Projekt der natürliche nächste Schritt. Die Architektur und das institutionelle Framing sind gleich genug, dass der Antrag relativ schnell geht — die Pionier-Arbeit ist bereits geleistet.
 >
 > — Timing: Integration zwischen Woche 2 und Woche 3 meiner Sprint-Phase. Wir könnten die technischen Details (MCP-Surface, geteiltes Nutzerprofil-Schema, Consent-Flow) in einem 20-Minuten-Call durchsprechen, sobald du grundsätzlich Lust hast.
 >
@@ -328,7 +328,7 @@ This template is for developer friends who could build a housing-search agent fr
 >
 > [Maintainer]
 > [Kontakt]
-> [Link zum DirectJob Scout README: https://github.com/maksodf/directjob-scout/blob/claude/project-analysis-bpHCo/README.md]
+> [Link zum Helpmefindthejob README: https://github.com/maksodf/helpmefindthejob/blob/claude/project-analysis-bpHCo/README.md]
 
 ---
 

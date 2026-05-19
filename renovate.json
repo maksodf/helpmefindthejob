@@ -10,7 +10,7 @@
     ":automergeTesters"
   ],
   "description": [
-    "DirectJob Scout dependency-automation config. Renovate watches",
+    "Helpmefindthejob dependency-automation config. Renovate watches",
     "requirements.txt and requirements-dev.txt for outdated pins and",
     "opens PRs when updates are available.",
     "",

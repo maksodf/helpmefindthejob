@@ -20,12 +20,12 @@ When team grows past 1 human, split these. Until then: one phone, one runbook.
 
 ## First five minutes — triage
 
-1. **Confirm the report.** Hit `https://app.directjob-scout.example/api/health`. If 200, go look at what the user was actually doing. If 5xx or timeout, treat as SEV-1 and continue.
-2. **Check Better Stack.** Open the source `directjob-scout-prod`. Recent error spikes? Container restart loops? OOM lines?
+1. **Confirm the report.** Hit `https://app.helpmefindthejob.com/api/health`. If 200, go look at what the user was actually doing. If 5xx or timeout, treat as SEV-1 and continue.
+2. **Check Better Stack.** Open the source `helpmefindthejob-prod`. Recent error spikes? Container restart loops? OOM lines?
 3. **SSH and get container state.**
    ```sh
-   ssh -i ~/.ssh/directjob_scout root@161.35.76.8 \
-     'cd /opt/directjob-scout && docker compose -f docker-compose.prod.yml ps && docker compose -f docker-compose.prod.yml logs --tail=200 directjob-scout'
+   ssh -i ~/.ssh/helpmefindthejob root@161.35.76.8 \
+     'cd /opt/helpmefindthejob && docker compose -f docker-compose.prod.yml ps && docker compose -f docker-compose.prod.yml logs --tail=200 helpmefindthejob'
    ```
 4. **Decide:** restart, rollback, or hold. Restart is safe; rollback is faster than fixing forward when the bad release was just deployed.
 
@@ -34,12 +34,12 @@ When team grows past 1 human, split these. Until then: one phone, one runbook.
 The deploy script tags `:previous-<TAG>` before each build, so:
 
 ```sh
-ssh -i ~/.ssh/directjob_scout root@161.35.76.8 'bash -s' <<'EOF'
+ssh -i ~/.ssh/helpmefindthejob root@161.35.76.8 'bash -s' <<'EOF'
 set -eu
-cd /opt/directjob-scout
+cd /opt/helpmefindthejob
 PREV=$(docker images --format '{{.Repository}}:{{.Tag}}' | grep ':previous-' | head -1)
 [ -n "$PREV" ] || { echo "no previous tag found" >&2; exit 1; }
-docker tag "$PREV" directjob-scout:latest
+docker tag "$PREV" helpmefindthejob:latest
 docker compose -f docker-compose.prod.yml up -d --wait --wait-timeout 60
 EOF
 ```
@@ -49,8 +49,8 @@ If `--wait` fails, check `docker compose logs` and either let the previous conta
 ## Restart only
 
 ```sh
-ssh -i ~/.ssh/directjob_scout root@161.35.76.8 \
-  'cd /opt/directjob-scout && docker compose -f docker-compose.prod.yml restart directjob-scout'
+ssh -i ~/.ssh/helpmefindthejob root@161.35.76.8 \
+  'cd /opt/helpmefindthejob && docker compose -f docker-compose.prod.yml restart helpmefindthejob'
 ```
 
 ## Restore from backup
@@ -80,11 +80,11 @@ Drill verifies the backup is good. Once drill passes, **stop live traffic** (Cad
 
 ### SEV-1 user-facing (status page + email):
 
-> **Investigating** — Some users are reporting issues with DirectJob Scout. We are looking into it now and will update within 30 minutes.
+> **Investigating** — Some users are reporting issues with Helpmefindthejob. We are looking into it now and will update within 30 minutes.
 
 ### SEV-1 resolution:
 
-> **Resolved** — DirectJob Scout was unavailable from <start UTC> to <end UTC>. Cause: <one-line>. We have <fix one-line>. Sorry for the disruption.
+> **Resolved** — Helpmefindthejob was unavailable from <start UTC> to <end UTC>. Cause: <one-line>. We have <fix one-line>. Sorry for the disruption.
 
 ### SEV-2 user-facing:
 

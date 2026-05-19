@@ -2,12 +2,12 @@
 # backup-production.sh
 #
 # Snapshot the persisted SQLite/JSON data volume of the production
-# DirectJob Scout deployment to a local archive.
+# Helpmefindthejob deployment to a local archive.
 #
 # Usage:
 #   ./scripts/backup-production.sh
 #   BACKUP_DIR=/var/backups/directjob ./scripts/backup-production.sh
-#   COMPOSE_FILE=docker-compose.prod.yml SERVICE_NAME=directjob-scout \
+#   COMPOSE_FILE=docker-compose.prod.yml SERVICE_NAME=helpmefindthejob \
 #     ./scripts/backup-production.sh
 #   DIRECTJOB_BACKUP_BACKEND=rclone DIRECTJOB_BACKUP_REMOTE=s3:my-bucket/dj-scout \
 #     ./scripts/backup-production.sh
@@ -35,14 +35,14 @@
 set -eu
 
 COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.prod.yml}"
-SERVICE_NAME="${SERVICE_NAME:-directjob-scout}"
+SERVICE_NAME="${SERVICE_NAME:-helpmefindthejob}"
 DATA_DIR_IN_CONTAINER="${DATA_DIR_IN_CONTAINER:-/app/data}"
 BACKUP_DIR="${BACKUP_DIR:-./backups}"
 BACKEND="${DIRECTJOB_BACKUP_BACKEND:-local}"
 REMOTE="${DIRECTJOB_BACKUP_REMOTE:-}"
 DRY_RUN="${DIRECTJOB_BACKUP_DRY_RUN:-0}"
 TIMESTAMP="$(date -u +%Y%m%dT%H%M%SZ)"
-ARCHIVE_NAME="directjob-scout-${TIMESTAMP}.tar.gz"
+ARCHIVE_NAME="helpmefindthejob-${TIMESTAMP}.tar.gz"
 
 if [ "$DRY_RUN" = "1" ]; then
   echo "backup: DRY RUN — backend=$BACKEND remote=${REMOTE:-(none)} dir=$BACKUP_DIR"

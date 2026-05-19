@@ -1,18 +1,18 @@
 # Security Policy
 
 **Live security.txt** (RFC 9116):
-<https://maksodf.github.io/directjob-scout/.well-known/security.txt>
+<https://maksodf.github.io/helpmefindthejob/.well-known/security.txt>
 — also served by the app at `/.well-known/security.txt` on any
 running deployment. Canonical reporting flow is the GitHub Security
 Advisories link in the `security.txt` Contact list.
 
 ## Supported Versions
 
-DirectJob Scout is in active early development. Until a stable 1.0 release, security fixes are applied to the main branch only. Once 1.0 ships, a supported-version table will be added here.
+Helpmefindthejob is in active early development. Until a stable 1.0 release, security fixes are applied to the main branch only. Once 1.0 ships, a supported-version table will be added here.
 
 ## Reporting a Vulnerability
 
-If you discover a security issue in DirectJob Scout, please report it privately rather than opening a public issue.
+If you discover a security issue in Helpmefindthejob, please report it privately rather than opening a public issue.
 
 Reports go to the maintainer via the contact information in AUTHORS.md. Once the project domain is registered, a dedicated security reporting address will be added here and at /.well-known/security.txt per RFC 9116.
 
@@ -32,7 +32,7 @@ We follow responsible-disclosure practice and ask reporters to do the same: plea
 ## Scope
 
 In scope:
-- The DirectJob Scout codebase in this repository
+- The Helpmefindthejob codebase in this repository
 - The MCP server interface (mcp_server.py)
 - Authentication, authorization, and session handling in the web app
 - Data-at-rest encryption mechanisms
@@ -45,4 +45,4 @@ Out of scope:
 
 ## Acknowledgments
 
-Reporters who help improve DirectJob Scout's security are listed in ACKNOWLEDGMENTS.md with their consent.
+Reporters who help improve Helpmefindthejob's security are listed in ACKNOWLEDGMENTS.md with their consent.

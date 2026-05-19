@@ -1,7 +1,7 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
-<!-- Copyright (c) 2026 DirectJob Scout contributors -->
+<!-- Copyright (c) 2026 Helpmefindthejob contributors -->
 
-# DirectJob Scout
+# Helpmefindthejob
 
 **Open-source EU-wide civic employment commons.** An MCP-composable
 copilot for users facing structural labor-market friction in Europe.
@@ -26,12 +26,12 @@ The project's architecture is **friction-driven, not demographic-
 driven**. Migrants and EU-mobile workers are the most acute use case
 and the primary narrative anchor; the same friction shapes affect
 career changers, returning workers, the long-term unemployed, and
-returning expats. DirectJob Scout captures specialist HR and
+returning expats. Helpmefindthejob captures specialist HR and
 bureaucratic-navigation knowledge into modular, standards-anchored
 MCP tools and puts that knowledge directly into the hands of anyone
 navigating the European labour market.
 
-See the [seven-persona panel](https://github.com/maksodf/directjob-scout/blob/main/docs/grant/07-personas.md)
+See the [seven-persona panel](https://github.com/maksodf/helpmefindthejob/blob/main/docs/grant/07-personas.md)
 for the full friction-class breakdown (five most-acute migrant +
 two wider-friction-class).
 
@@ -39,7 +39,7 @@ two wider-friction-class).
 
 ## What's here
 
-- **[Quickstart](https://github.com/maksodf/directjob-scout#quickstart)** —
+- **[Quickstart](https://github.com/maksodf/helpmefindthejob#quickstart)** —
   install, run, and try the journey state machine locally.
 - **[MCP API](mcp-server.md)** — the five composition-oriented tools
   the MCP server exposes today (catalogue v0.2.0).
@@ -48,19 +48,19 @@ two wider-friction-class).
   instance recipe + the maintainer's private deployment baseline.
 - **[ESCO + EURES integration](esco-integration.md)** — the curated
   skills reference dataset and EURES projection contract.
-- **[Architecture](https://github.com/maksodf/directjob-scout/blob/main/ARCHITECTURE.md)** —
+- **[Architecture](https://github.com/maksodf/helpmefindthejob/blob/main/ARCHITECTURE.md)** —
   Mermaid system diagram + component map (read first if you're going to
   contribute code).
-- **[Standards](https://github.com/maksodf/directjob-scout/blob/main/STANDARDS.md)** —
+- **[Standards](https://github.com/maksodf/helpmefindthejob/blob/main/STANDARDS.md)** —
   the standards we hold ourselves to (Apache 2.0, ESCO, MCP, WCAG 2.2,
   EU AI Act).
-- **[Compliance pack](https://github.com/maksodf/directjob-scout/tree/main/compliance)** —
+- **[Compliance pack](https://github.com/maksodf/helpmefindthejob/tree/main/compliance)** —
   EU AI Act artefacts (transparency notice, risk management plan, FRIA
   template, technical documentation, accuracy + bias testing
   methodology, audit-log schema, data governance, human-oversight
   guide, deployer operating manual, EU database registration template).
-- **[Roadmap](https://github.com/maksodf/directjob-scout/blob/main/ROADMAP.md)**
-  and **[Changelog](https://github.com/maksodf/directjob-scout/blob/main/CHANGELOG.md)** —
+- **[Roadmap](https://github.com/maksodf/helpmefindthejob/blob/main/ROADMAP.md)**
+  and **[Changelog](https://github.com/maksodf/helpmefindthejob/blob/main/CHANGELOG.md)** —
   what's shipped, what's next.
 
 ---
@@ -69,7 +69,7 @@ two wider-friction-class).
 
 Apache 2.0 with a Contributor License Agreement. Programme of
 **The Commons Conservancy** (Dutch stichting co-founded by NLnet).
-Read **[CONTRIBUTING.md](https://github.com/maksodf/directjob-scout/blob/main/CONTRIBUTING.md)**
+Read **[CONTRIBUTING.md](https://github.com/maksodf/helpmefindthejob/blob/main/CONTRIBUTING.md)**
 before opening a pull request.
 
 ---
@@ -83,13 +83,13 @@ about what's executed (the bias-testing surface, the deployment
 recipe, the persona seed script) and what's deferred (the four
 remaining methodology scenario classes, the §3.6 accessibility audit,
 the translator contributor pathway). See the
-[grant workspace](https://github.com/maksodf/directjob-scout/tree/main/docs/grant)
+[grant workspace](https://github.com/maksodf/helpmefindthejob/tree/main/docs/grant)
 for the maintained planning record.
 
 ---
 
 ## Contact
 
-- Issues + discussion: [GitHub](https://github.com/maksodf/directjob-scout/issues)
-- Security: [SECURITY.md](https://github.com/maksodf/directjob-scout/blob/main/SECURITY.md)
-- Code of conduct: [CODE_OF_CONDUCT.md](https://github.com/maksodf/directjob-scout/blob/main/CODE_OF_CONDUCT.md)
+- Issues + discussion: [GitHub](https://github.com/maksodf/helpmefindthejob/issues)
+- Security: [SECURITY.md](https://github.com/maksodf/helpmefindthejob/blob/main/SECURITY.md)
+- Code of conduct: [CODE_OF_CONDUCT.md](https://github.com/maksodf/helpmefindthejob/blob/main/CODE_OF_CONDUCT.md)

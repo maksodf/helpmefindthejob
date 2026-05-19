@@ -1,4 +1,4 @@
-# Application to The Commons Conservancy — DirectJob Scout Programme
+# Application to The Commons Conservancy — Helpmefindthejob Programme
 
 **Status**: DRAFTED 2026-05-18 — pending maintainer review before send.
 **Target send channel**: `website@commonsconservancy.org` (the public contact published in the Conservancy footer; if Conservancy has since published a more specific application address, route there). The site's `/how/` page describes a six-phase process beginning with **Initiation**, where the Conservancy verifies eligibility and assigns a case officer; this letter is the Initiation notification.
@@ -22,29 +22,29 @@
 
 ## Letter text
 
-> **Subject**: Notification of intention to apply as a Programme — DirectJob Scout (civic-employment commons; NLnet NGI Zero Commons Fund applicant)
+> **Subject**: Notification of intention to apply as a Programme — Helpmefindthejob (civic-employment commons; NLnet NGI Zero Commons Fund applicant)
 
 To the Board and Case-Officer Team of The Commons Conservancy,
 
-I write on behalf of **DirectJob Scout**, an early-stage open-source civic-employment commons project, to notify The Commons Conservancy of our intention to apply for admission as a Programme.
+I write on behalf of **Helpmefindthejob**, an early-stage open-source civic-employment commons project, to notify The Commons Conservancy of our intention to apply for admission as a Programme.
 
 We have read the Conservancy's mission statement (DRACC 0001), the framework documents at `/how/`, and the FileSender founding statutes (DRACC 0017) as a worked example. We understand the six-phase admission process — Orientation, Initiation, Setup, Operational, and the optional Graduation / Hibernation paths — and this letter constitutes our Initiation notification. We are ready to engage with the assigned case officer to draft Programme statutes modelled on the FileSender / Redwax pattern, to sign the Pledge, and to align our governance with the IEEE-ethics-based Code of Conduct referenced in the founding documents.
 
 ### About the project
 
-DirectJob Scout is an **open-source EU-wide civic-employment commons**. The project captures specialist HR and bureaucratic-navigation knowledge — currently locked in advisors' heads, HR departments, recruiter networks, and overworked employment-services case workers — and puts that knowledge directly into the hands of anyone facing structural friction between their capability and the European labor market's ability to recognise and connect them to work. Migrants and EU-mobile workers are the most acute use case and the primary specific evidence in our proposal narrative; the same architecture serves career changers, workers returning after caregiving or extended absence, the long-term unemployed re-entering, returning expats, and others facing structurally similar friction. The architecture is friction-driven, not demographic-driven (see Decision 21 in `04-research-and-decisions.md`).
+Helpmefindthejob is an **open-source EU-wide civic-employment commons**. The project captures specialist HR and bureaucratic-navigation knowledge — currently locked in advisors' heads, HR departments, recruiter networks, and overworked employment-services case workers — and puts that knowledge directly into the hands of anyone facing structural friction between their capability and the European labor market's ability to recognise and connect them to work. Migrants and EU-mobile workers are the most acute use case and the primary specific evidence in our proposal narrative; the same architecture serves career changers, workers returning after caregiving or extended absence, the long-term unemployed re-entering, returning expats, and others facing structurally similar friction. The architecture is friction-driven, not demographic-driven (see Decision 21 in `04-research-and-decisions.md`).
 
 The first concrete reference implementation is a conversational copilot deployed in Germany (because that is where the maintainer is based); the architecture is country-neutral and the cross-border story is a localisation exercise, not a re-engineering effort.
 
-The technical contribution is the **architecture, not the application**. The project is exposed as composable civic infrastructure via the Model Context Protocol (MCP), with a versioned tool catalogue documented under JSON Schema. Parallel open civic agents — housing, healthcare, residency, education — compose with DirectJob Scout without forking. A reference housing-agent integration is shipping in Week 2 of the current sprint as proof of the composition pattern.
+The technical contribution is the **architecture, not the application**. The project is exposed as composable civic infrastructure via the Model Context Protocol (MCP), with a versioned tool catalogue documented under JSON Schema. Parallel open civic agents — housing, healthcare, residency, education — compose with Helpmefindthejob without forking. A reference housing-agent integration is shipping in Week 2 of the current sprint as proof of the composition pattern.
 
-The project repository (Apache 2.0 with Contributor License Agreement) is at `https://github.com/maksodf/directjob-scout`. The Week 1 grant-readiness hardening — LICENSE, NOTICE, TRADEMARK, CLA, SPDX headers across every Python source file, a Contributor Covenant 2.1 Code of Conduct, SECURITY / SUPPORT / AUTHORS / ACKNOWLEDGMENTS, issue + PR templates, CODEOWNERS, civic-commons-positioning README rewrite, and a published feature-verification report — has been completed and is visible on the project's active working branch.
+The project repository (Apache 2.0 with Contributor License Agreement) is at `https://github.com/maksodf/helpmefindthejob`. The Week 1 grant-readiness hardening — LICENSE, NOTICE, TRADEMARK, CLA, SPDX headers across every Python source file, a Contributor Covenant 2.1 Code of Conduct, SECURITY / SUPPORT / AUTHORS / ACKNOWLEDGMENTS, issue + PR templates, CODEOWNERS, civic-commons-positioning README rewrite, and a published feature-verification report — has been completed and is visible on the project's active working branch.
 
 ### Mission alignment with DRACC 0001
 
 DRACC 0001 frames the Conservancy's purpose as enabling "a fair and balanced global information society in which individuals can collectively scrutinise, reconfigure and improve upon the technology" and as "endurably making available and promoting free and open technology and content … at the largest possible scale."
 
-DirectJob Scout is an explicit implementation of that purpose in the civic-employment domain:
+Helpmefindthejob is an explicit implementation of that purpose in the civic-employment domain:
 
 - **Free and open technology**, with no commercial gate: Apache 2.0 with CLA, BYO-AI architecture (including a fully-offline Ollama path), encrypted user data, exportable user records, and no per-seat licensing.
 - **Endurably available**: the institutional wrapper provided by the Conservancy is precisely what allows this project to outlast any one contributor. The maintainer is a TU Berlin student; the project is not (and must not become) hostage to the maintainer's individual continuity.
@@ -76,7 +76,7 @@ If admission is granted in time to be cited in the NGI0 application, that would 
 
 ### Logistics
 
-- **Project repository**: <https://github.com/maksodf/directjob-scout>
+- **Project repository**: <https://github.com/maksodf/helpmefindthejob>
 - **Active working branch** (Week 1 grant-readiness hardening visible): `claude/project-analysis-bpHCo`
 - **Strategic planning workspace**: `docs/grant/` in the repository — full project brief, four-week execution plan, decisions log, AI Act compliance plan, MCP composition spec, and a 374-line feature-verification report are all public.
 - **Primary contact**: [MAINTAINER_NAME], [MAINTAINER_EMAIL]
@@ -89,7 +89,7 @@ With thanks for considering our application, and in advance for the time of whic
 
 Sincerely,
 [MAINTAINER_NAME]
-DirectJob Scout maintainer
+Helpmefindthejob maintainer
 
 ---
 

@@ -4,7 +4,7 @@
 
 **Implementation status (2026-05-18)**: §2.8 of the execution plan shipped — the live compliance pack is at [`/compliance/`](../../compliance/) in the repository, with the Article 12 audit-log emitter at [`../../company_discovery/audit_log.py`](../../company_discovery/audit_log.py) and integration into [`../../mcp_server.py`](../../mcp_server.py) and [`../../company_discovery/analysis.py`](../../company_discovery/analysis.py). The Article 14 minimum-viable human-oversight admin endpoint is at `/api/admin/oversight/queue` in `app.py` (admin-gated, controlled by `DIRECTJOB_HUMAN_OVERSIGHT_MODE`). Tests in `tests/test_phase13_audit_log.py` (20 tests covering emitter, caller-context, convenience wrappers, MCP integration, analysis integration, and the tail helper).
 
-This document describes how DirectJob Scout is designed to be compliant with the EU AI Act high-risk-AI obligations applicable to employment-related AI systems, with deadline **2 August 2026**.
+This document describes how Helpmefindthejob is designed to be compliant with the EU AI Act high-risk-AI obligations applicable to employment-related AI systems, with deadline **2 August 2026**.
 
 The work in this document is not optional. It is the single largest piece of regulatory differentiation the project offers — and the largest reason institutions will adopt our open-source tool rather than build their own.
 
@@ -18,7 +18,7 @@ The EU AI Act (Regulation (EU) 2024/1689) classifies as **high-risk** any AI sys
 >
 > — AI Act Annex III, §4(a) and §4(b)
 
-DirectJob Scout is squarely inside this definition. We score job-to-CV fit, we filter and recommend roles, we draft motivation letters that are sent to recruiters. Every institution that deploys our agent inherits the AI Act high-risk-system obligations.
+Helpmefindthejob is squarely inside this definition. We score job-to-CV fit, we filter and recommend roles, we draft motivation letters that are sent to recruiters. Every institution that deploys our agent inherits the AI Act high-risk-system obligations.
 
 The full set of obligations becomes enforceable on **2 August 2026** — roughly 2.5 months from the writing of this document. Public-sector deployers (Jobcenter, Beratungsstellen, Agentur für Arbeit) will be looking for tools that already meet the obligations on day one of enforcement.
 
@@ -131,7 +131,7 @@ This is the largest single cost-saving mechanism in the project. For an institut
 
 2. **Build internal AI tooling and do the compliance engineering.** Estimated cost: €30–200k in consultant time + internal staff effort + ongoing legal review. Most institutions cannot absorb this.
 
-3. **Deploy DirectJob Scout (or a comparable open-source compliant tool) and inherit the compliance pack.** Cost: deployment time + the operator's local-context fill-in work, typically a small fraction of options 1 or 2.
+3. **Deploy Helpmefindthejob (or a comparable open-source compliant tool) and inherit the compliance pack.** Cost: deployment time + the operator's local-context fill-in work, typically a small fraction of options 1 or 2.
 
 We make option 3 viable for the first time.
 
@@ -167,7 +167,7 @@ What we *do* claim is that we have **substantially reduced the technical complia
 
 ## Phase 2 work
 
-- Engage with a notified body to explore conformity assessment for the "core deployment configuration" of DirectJob Scout — this would let deployers in some configurations rely on the upstream assessment.
+- Engage with a notified body to explore conformity assessment for the "core deployment configuration" of Helpmefindthejob — this would let deployers in some configurations rely on the upstream assessment.
 - Track the publication of ISO/IEC 23894 (AI risk management standard) and align documentation accordingly.
 - Track the European AI Office's published guidance and update the pack with each significant publication.
 - Apply for NLnet's offered security audit as a follow-on milestone.

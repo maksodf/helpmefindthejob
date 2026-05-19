@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: Apache-2.0 */
-/* Copyright (c) 2026 DirectJob Scout contributors */
+/* Copyright (c) 2026 Helpmefindthejob contributors */
 
-/* DirectJob Scout — accessibility workarounds for mkdocs-material.
+/* Helpmefindthejob — accessibility workarounds for mkdocs-material.
  *
  * The §3.6 first-pass accessibility audit (axe-core CLI 4.11.4,
  * 2026-05-19) found that mkdocs-material renders its search dialog

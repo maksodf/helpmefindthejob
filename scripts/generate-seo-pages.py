@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2026 DirectJob Scout contributors
+# Copyright (c) 2026 Helpmefindthejob contributors
 # SPDX-License-Identifier: Apache-2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -30,7 +30,7 @@ Input file shape::
             {"slug": "data-engineer", "label": "Data engineer"},
             {"slug": "product-manager", "label": "Product manager"},
         ],
-        "intro_template": "DirectJob Scout watches direct career pages plus the major aggregators for {role} roles in {city}. No feed, no algorithm, no recruiter messages.",
+        "intro_template": "Helpmefindthejob watches direct career pages plus the major aggregators for {role} roles in {city}. No feed, no algorithm, no recruiter messages.",
     }
 
 Output is ``deploy/seo-pages.json.example``-shaped — an object with a
@@ -55,7 +55,7 @@ def fan_out(payload: dict[str, Any]) -> list[dict[str, str]]:
     roles = payload.get("roles") or []
     template = (
         payload.get("intro_template")
-        or "DirectJob Scout watches direct career pages plus the major aggregators "
+        or "Helpmefindthejob watches direct career pages plus the major aggregators "
         "for {role} roles in {city}."
     )
     pages: list[dict[str, str]] = []

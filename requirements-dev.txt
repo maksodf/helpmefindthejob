@@ -1,4 +1,4 @@
-# Development-only dependencies for DirectJob Scout.
+# Development-only dependencies for Helpmefindthejob.
 # These are NOT required to run the application — only to contribute
 # code. The runtime list is in requirements.txt; install both during
 # contributor setup:
@@ -39,7 +39,7 @@ codespell>=2.2.0,<3.0.0
 pip-audit>=2.7.0,<3.0.0
 
 # mkdocs-material — static documentation site generator that produces
-# the GitHub Pages site at https://maksodf.github.io/directjob-scout/.
+# the GitHub Pages site at https://maksodf.github.io/helpmefindthejob/.
 # Built locally with `mkdocs build --strict` and deployed by
 # `.github/workflows/docs-publish.yml` on every push. Config lives in
 # `mkdocs.yml` at the repo root. Major pin keeps the theme contract

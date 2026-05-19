@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2026 DirectJob Scout contributors
+# Copyright (c) 2026 Helpmefindthejob contributors
 # SPDX-License-Identifier: Apache-2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -25,7 +25,7 @@ from pathlib import Path
 from typing import Iterable
 
 HEADER_LINES = [
-    "# Copyright (c) 2026 DirectJob Scout contributors",
+    "# Copyright (c) 2026 Helpmefindthejob contributors",
     "# SPDX-License-Identifier: Apache-2.0",
     "#",
     '# Licensed under the Apache License, Version 2.0 (the "License"); you may',

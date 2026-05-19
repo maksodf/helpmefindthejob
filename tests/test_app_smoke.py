@@ -1,4 +1,4 @@
-# Copyright (c) 2026 DirectJob Scout contributors
+# Copyright (c) 2026 Helpmefindthejob contributors
 # SPDX-License-Identifier: Apache-2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -59,7 +59,7 @@ class AppSmokeTests(unittest.TestCase):
                 self.assertEqual(health["status"], "ok")
                 with urlopen(f"{base}/", timeout=1) as response:
                     html = response.read().decode("utf-8")
-                self.assertIn("DirectJob Scout", html)
+                self.assertIn("Helpmefindthejob", html)
                 self.assertIn("AI Provider", html)
                 self.assertIn("Discovery Run Controls", html)
 

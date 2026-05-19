@@ -1,8 +1,8 @@
-name: directjob-scout
+name: helpmefindthejob
 
 services:
-  directjob-scout:
-    image: directjob-scout:latest
+  helpmefindthejob:
+    image: helpmefindthejob:latest
     build: .
     expose:
       - "8765"
@@ -41,7 +41,7 @@ services:
       DIRECTJOB_LEGAL_REVIEWED: ${DIRECTJOB_LEGAL_REVIEWED:-false}
       DIRECTJOB_VAPID_PUBLIC_KEY: ${DIRECTJOB_VAPID_PUBLIC_KEY:-}
       DIRECTJOB_VAPID_PRIVATE_KEY: ${DIRECTJOB_VAPID_PRIVATE_KEY:-}
-      DIRECTJOB_VAPID_CONTACT: ${DIRECTJOB_VAPID_CONTACT:-mailto:admin@directjob-scout.example}
+      DIRECTJOB_VAPID_CONTACT: ${DIRECTJOB_VAPID_CONTACT:-mailto:admin@helpmefindthejob.com}
       DIRECTJOB_BRAVE_API_KEY: ${DIRECTJOB_BRAVE_API_KEY:-}
       DIRECTJOB_ADZUNA_APP_ID: ${DIRECTJOB_ADZUNA_APP_ID:-}
       DIRECTJOB_ADZUNA_APP_KEY: ${DIRECTJOB_ADZUNA_APP_KEY:-}
@@ -64,7 +64,7 @@ services:
   caddy:
     image: caddy:2-alpine
     depends_on:
-      - directjob-scout
+      - helpmefindthejob
     ports:
       - "80:80"
       - "443:443"

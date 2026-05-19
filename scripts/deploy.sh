@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 # deploy.sh
 #
-# Single, opinionated deploy command for DirectJob Scout production.
+# Single, opinionated deploy command for Helpmefindthejob production.
 # Replaces the ad-hoc rsync + docker compose sequence that bit us on
 # 2026-05-09 (deploys ran with the dev compose file, which has a bind
 # mount to ./data and a fresh-empty database — silently masking the
@@ -14,13 +14,13 @@
 #      (scripts/pre-deploy-snapshot.sh, written into /app/data/*.bak).
 #   3. Tag the running image as ``:previous-<TAG>`` so a rollback is
 #      one ``docker tag`` away.
-#   4. ``docker compose -f docker-compose.prod.yml build directjob-scout``.
-#   5. ``docker compose -f docker-compose.prod.yml up -d directjob-scout``.
+#   4. ``docker compose -f docker-compose.prod.yml build helpmefindthejob``.
+#   5. ``docker compose -f docker-compose.prod.yml up -d helpmefindthejob``.
 #   6. Curl /api/health and assert it reports the new APP_VERSION.
 #
 # Usage (from this repo on the operator's laptop):
-#   TAG=0.7.0 SSH_HOST=root@161.35.76.8 SSH_KEY=~/.ssh/directjob_scout \
-#     PUBLIC_URL=https://app.directjob-scout.example ./scripts/deploy.sh
+#   TAG=0.7.0 SSH_HOST=root@161.35.76.8 SSH_KEY=~/.ssh/helpmefindthejob \
+#     PUBLIC_URL=https://app.helpmefindthejob.com ./scripts/deploy.sh
 #
 # Required environment:
 #   TAG          version tag, e.g. "0.7.0"
@@ -30,17 +30,17 @@
 #   SSH_KEY      ssh -i identity file
 #   PUBLIC_URL   for the post-deploy health-check assertion
 #   COMPOSE_FILE override (default: docker-compose.prod.yml)
-#   SERVICE_NAME override (default: directjob-scout)
-#   APP_DIR      remote app directory (default: /opt/directjob-scout)
+#   SERVICE_NAME override (default: helpmefindthejob)
+#   APP_DIR      remote app directory (default: /opt/helpmefindthejob)
 set -eu
 
 TAG="${TAG:?TAG is required (e.g. TAG=0.7.0)}"
 SSH_HOST="${SSH_HOST:?SSH_HOST is required (e.g. SSH_HOST=root@161.35.76.8)}"
 SSH_KEY="${SSH_KEY:-}"
-PUBLIC_URL="${PUBLIC_URL:-https://app.directjob-scout.example}"
+PUBLIC_URL="${PUBLIC_URL:-https://app.helpmefindthejob.com}"
 COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.prod.yml}"
-SERVICE_NAME="${SERVICE_NAME:-directjob-scout}"
-APP_DIR="${APP_DIR:-/opt/directjob-scout}"
+SERVICE_NAME="${SERVICE_NAME:-helpmefindthejob}"
+APP_DIR="${APP_DIR:-/opt/helpmefindthejob}"
 
 # SSH multiplexing — one TCP connection shared across the whole deploy
 # (ssh probe + snapshot + 5 rsyncs + docker compose). Without this,

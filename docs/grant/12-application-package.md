@@ -14,7 +14,7 @@ This document holds:
 
 ## A. Project metadata
 
-- **Project name**: DirectJob Scout
+- **Project name**: Helpmefindthejob
 - **One-line summary**: An open-source EU-wide civic employment commons that captures specialist HR and bureaucratic-navigation knowledge into modular, MCP-composable tools, putting agency in the hands of anyone facing structural labor-market friction in Europe — migrants and EU-mobile workers most acutely — with first reference deployment in Germany.
 - **Project website**: [TBD — set up Week 3 demo deployment]
 - **Source repository**: [TBD — final repo URL after Commons Conservancy onboarding]
@@ -30,7 +30,7 @@ This document holds:
 
 > Across the European Union, structural labor shortages coexist with hundreds of thousands of capable people who cannot get hired — blocked not by capability but by structural friction between what they can do and what the labor-market system recognises. The friction is most acute for migrants and EU-mobile workers (language barriers, opaque foreign-credential recognition, residency complexities) but also affects career changers, workers returning after caregiving or extended absence, the long-term unemployed re-entering, and anyone navigating an employment system outside their familiar bureaucratic context.
 >
-> **DirectJob Scout** is an open-source, multilingual, privacy-preserving civic employment agent that captures specialist HR and bureaucratic-navigation knowledge into a small, well-documented set of modular tools exposed through the Model Context Protocol (MCP). The first reference implementation is a conversational jobseeker copilot deployed in Germany; the same modules compose with parallel open civic agents (housing, healthcare, residency) to form a coherent multi-domain civic assistant. The codebase is Apache-2.0-licensed, self-hostable, encrypted at rest, runs on the user's choice of AI provider — including fully offline via Ollama — and ships AI Act compliance built in for the 2 August 2026 enforcement date.
+> **Helpmefindthejob** is an open-source, multilingual, privacy-preserving civic employment agent that captures specialist HR and bureaucratic-navigation knowledge into a small, well-documented set of modular tools exposed through the Model Context Protocol (MCP). The first reference implementation is a conversational jobseeker copilot deployed in Germany; the same modules compose with parallel open civic agents (housing, healthcare, residency) to form a coherent multi-domain civic assistant. The codebase is Apache-2.0-licensed, self-hostable, encrypted at rest, runs on the user's choice of AI provider — including fully offline via Ollama — and ships AI Act compliance built in for the 2 August 2026 enforcement date.
 >
 > The project is hosted as a Programme of The Commons Conservancy. By design, every feature is evaluated against a dual measure: it must improve outcomes for the people served and reduce operational cost for the institutions that serve them.
 
@@ -56,13 +56,13 @@ The opportunity is to build the missing layer: an open-source, multilingual, pri
 
 ## D. Proposed contribution (≈500 words)
 
-DirectJob Scout addresses this gap as a digital commons. The technical and institutional design is deliberate and unusual; six choices distinguish it from every commercial and open-source alternative we have surveyed.
+Helpmefindthejob addresses this gap as a digital commons. The technical and institutional design is deliberate and unusual; six choices distinguish it from every commercial and open-source alternative we have surveyed.
 
 **Structured, gated conversation, not GPT-wrapper roulette.** A 12-phase deterministic journey state machine drives the user from discovery to drafted application. Every AI invocation is constrained to a specific phase with a specific output shape. Every database write is confirmed by the user. Every missing parameter triggers multi-turn elicitation. The agent is auditable, debuggable, and safe — properties no freeform LLM job-chatbot can offer, and properties directly required by the EU AI Act's transparency and human-oversight obligations.
 
 **User-sovereign data and AI.** The user's CV, profile, and history are encrypted at rest with ChaCha20-Poly1305 and never leave the self-hosted instance. AI inference is bring-your-own-provider — OpenAI, Anthropic, Gemini, DeepSeek, Ollama (fully offline), or manual handoff for users with no AI subscription. The architectural choice removes the structural dependency on commercial AI that disqualifies most users in the target community.
 
-**MCP-exposed as open civic infrastructure.** The agent exposes its capabilities through a Model Context Protocol server with a versioned tool catalogue, JSON Schema-defined inputs and outputs, and a documented composition pattern. Any other open civic agent — including a separately developed open-source housing-search agent operated by a partner team — can compose with DirectJob Scout inside a single conversation or as a sequential handoff. Healthcare, residency-permit, Anerkennung, and integration-course agents can attach later without forking. The MCP server is the commons interface; the modular composition pattern is the Redwax model applied to civic agents.
+**MCP-exposed as open civic infrastructure.** The agent exposes its capabilities through a Model Context Protocol server with a versioned tool catalogue, JSON Schema-defined inputs and outputs, and a documented composition pattern. Any other open civic agent — including a separately developed open-source housing-search agent operated by a partner team — can compose with Helpmefindthejob inside a single conversation or as a sequential handoff. Healthcare, residency-permit, Anerkennung, and integration-course agents can attach later without forking. The MCP server is the commons interface; the modular composition pattern is the Redwax model applied to civic agents.
 
 **Multilingual and locale-aware by design.** English and German shipped at first release with locale-aware parsing (yes/no synonyms, German bureaucratic context, RTL-readiness). Arabic, Ukrainian, Turkish, and Romanian on the post-grant roadmap with explicit translator-contributor pathways.
 

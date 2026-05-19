@@ -84,15 +84,15 @@ The script verifies `/api/health`, security headers, anonymous bootstrap rejecti
 Restore from a tarball produced by `scripts/backup-production.sh`:
 
 ```bash
-docker compose -f docker-compose.prod.yml stop directjob-scout
+docker compose -f docker-compose.prod.yml stop helpmefindthejob
 SCRATCH=$(mktemp -d)
-tar -xzf backups/directjob-scout-YYYYMMDDTHHMMSSZ.tar.gz -C "$SCRATCH"
+tar -xzf backups/helpmefindthejob-YYYYMMDDTHHMMSSZ.tar.gz -C "$SCRATCH"
 # Replace the live volume contents
 docker run --rm \
   -v directjob_data:/dst \
   -v "$SCRATCH/data":/src \
   alpine sh -c 'rm -rf /dst/* && cp -a /src/. /dst/'
-docker compose -f docker-compose.prod.yml start directjob-scout
+docker compose -f docker-compose.prod.yml start helpmefindthejob
 APP_BASE_URL=https://YOUR_DOMAIN ./scripts/production-smoke.sh
 ```
 
@@ -104,8 +104,8 @@ Two rollback paths:
 
 1. **App image only** — re-deploy the prior image:
    ```bash
-   docker compose -f docker-compose.prod.yml pull directjob-scout
-   docker compose -f docker-compose.prod.yml up -d --no-build directjob-scout
+   docker compose -f docker-compose.prod.yml pull helpmefindthejob
+   docker compose -f docker-compose.prod.yml up -d --no-build helpmefindthejob
    ```
    Use this when only application code changed.
 
@@ -119,11 +119,11 @@ Add host-level cron entries for daily backup + retention pruning + a
 weekly restore drill against the most recent tarball:
 
 ```cron
-15 3 * * *  cd /opt/directjob-scout && DIRECTJOB_BACKUP_BACKEND=rclone DIRECTJOB_BACKUP_REMOTE=$BACKUP_REMOTE ./scripts/backup-production.sh >> backups/backup.log 2>&1
-20 4 * * *  cd /opt/directjob-scout && BACKUP_RETENTION_DAYS=30 ./scripts/backup-retention.sh >> backups/retention.log 2>&1
-30 5 * * 0  cd /opt/directjob-scout && ./scripts/restore-drill.sh "$(ls -t backups/directjob-scout-*.tar.gz | head -1)" >> backups/restore-drill.log 2>&1
-*/5 * * * * cd /opt/directjob-scout && APP_BASE_URL=https://$DIRECTJOB_DOMAIN ./scripts/uptime-check.sh >> backups/uptime.log 2>&1
-0 7 * * *   cd /opt/directjob-scout && DOMAIN=$DIRECTJOB_DOMAIN WARN_DAYS=14 ./scripts/tls-expiry-check.sh >> backups/tls.log 2>&1
+15 3 * * *  cd /opt/helpmefindthejob && DIRECTJOB_BACKUP_BACKEND=rclone DIRECTJOB_BACKUP_REMOTE=$BACKUP_REMOTE ./scripts/backup-production.sh >> backups/backup.log 2>&1
+20 4 * * *  cd /opt/helpmefindthejob && BACKUP_RETENTION_DAYS=30 ./scripts/backup-retention.sh >> backups/retention.log 2>&1
+30 5 * * 0  cd /opt/helpmefindthejob && ./scripts/restore-drill.sh "$(ls -t backups/helpmefindthejob-*.tar.gz | head -1)" >> backups/restore-drill.log 2>&1
+*/5 * * * * cd /opt/helpmefindthejob && APP_BASE_URL=https://$DIRECTJOB_DOMAIN ./scripts/uptime-check.sh >> backups/uptime.log 2>&1
+0 7 * * *   cd /opt/helpmefindthejob && DOMAIN=$DIRECTJOB_DOMAIN WARN_DAYS=14 ./scripts/tls-expiry-check.sh >> backups/tls.log 2>&1
 ```
 
 Switch `DIRECTJOB_BACKUP_BACKEND` to `local`, `rclone`, or `s3` based
@@ -147,7 +147,7 @@ counters, and scheduler state for in-app dashboards.
 
 ## Email + invitations + password resets
 
-DirectJob Scout uses a provider-neutral email transport. By default the
+Helpmefindthejob uses a provider-neutral email transport. By default the
 `ConsoleTransport` records every send to `data/email_outbox.log` and
 makes no network call. To enable SMTP in production:
 

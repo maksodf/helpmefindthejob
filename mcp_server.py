@@ -1,4 +1,4 @@
-# Copyright (c) 2026 DirectJob Scout contributors
+# Copyright (c) 2026 Helpmefindthejob contributors
 # SPDX-License-Identifier: Apache-2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -149,7 +149,7 @@ def handle_request(
             message_id,
             {
                 "protocolVersion": "2024-11-05",
-                "serverInfo": {"name": "directjob-scout", "version": "0.1.0"},
+                "serverInfo": {"name": "helpmefindthejob", "version": "0.1.0"},
                 "capabilities": {"tools": {}},
             },
         )

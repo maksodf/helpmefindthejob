@@ -1,4 +1,4 @@
-# Copyright (c) 2026 DirectJob Scout contributors
+# Copyright (c) 2026 Helpmefindthejob contributors
 # SPDX-License-Identifier: Apache-2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -16,7 +16,7 @@ green-light check.
 Coverage:
 
 - ``initialize`` returns protocolVersion ``2024-11-05`` and
-  serverInfo.name ``directjob-scout``
+  serverInfo.name ``helpmefindthejob``
 - ``tools/list`` returns 13 tools (catalogue v0.2.0), each with a
   Draft-7-valid inputSchema
 - Representative ``tools/call`` happy paths for three tools spanning
@@ -117,7 +117,7 @@ class MCPIntegrationE2E(unittest.TestCase):
         response = self.client.call("initialize", {})
         result = response["result"]
         self.assertEqual(result["protocolVersion"], "2024-11-05")
-        self.assertEqual(result["serverInfo"]["name"], "directjob-scout")
+        self.assertEqual(result["serverInfo"]["name"], "helpmefindthejob")
         self.assertIn("capabilities", result)
         self.assertIn("tools", result["capabilities"])
 
@@ -191,7 +191,7 @@ class MCPIntegrationE2E(unittest.TestCase):
             "userConsentRequired",
         ):
             self.assertIn(field, referral, msg=field)
-        self.assertEqual(referral["sourceAgent"], "directjob-scout")
+        self.assertEqual(referral["sourceAgent"], "helpmefindthejob")
         self.assertEqual(referral["targetAgent"], "housing-agent")
         self.assertEqual(referral["userId"], "u-aicha")
 

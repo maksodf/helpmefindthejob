@@ -1,4 +1,4 @@
-# Pre-commit hooks for the DirectJob Scout project.
+# Pre-commit hooks for the Helpmefindthejob project.
 #
 # Setup once after cloning:
 #     pip install -r requirements-dev.txt

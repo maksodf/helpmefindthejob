@@ -1,9 +1,9 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
-<!-- Copyright (c) 2026 DirectJob Scout contributors -->
+<!-- Copyright (c) 2026 Helpmefindthejob contributors -->
 
 # Deployer Operating Manual
 
-**Audience**: **you, the institutional deployer of DirectJob Scout** — a Beratungsstelle, IQ-Netzwerk regional office, Optionskommune Jobcenter, university career service, NGO, civic-tech operator, or self-hoster running the system on your own infrastructure.
+**Audience**: **you, the institutional deployer of Helpmefindthejob** — a Beratungsstelle, IQ-Netzwerk regional office, Optionskommune Jobcenter, university career service, NGO, civic-tech operator, or self-hoster running the system on your own infrastructure.
 **Article**: AI Act Article 13 (transparency to deployers) and Article 26 (deployer obligations).
 **Status**: living document. Updated alongside every major release.
 
@@ -11,7 +11,7 @@
 
 ## What this manual is, and what it is not
 
-This is the working manual you need to operate DirectJob Scout under your AI Act Article 26 deployer obligations. It covers configuration, human-oversight setup, retention controls, data-subject-request handling, incident reporting, and the local-context fields you must complete before going live.
+This is the working manual you need to operate Helpmefindthejob under your AI Act Article 26 deployer obligations. It covers configuration, human-oversight setup, retention controls, data-subject-request handling, incident reporting, and the local-context fields you must complete before going live.
 
 This is **not** legal advice. Where you have specific legal questions — your jurisdiction's data-protection regime, your sector-specific employment regulations, the exact contours of your Article 26 obligations — those go to your counsel. This manual reduces the technical and documentation burden, not the legal review.
 
@@ -19,7 +19,7 @@ This is **not** legal advice. Where you have specific legal questions — your j
 
 ## 1. Who you can serve with this tool
 
-DirectJob Scout serves **anyone facing structural friction between their capability and the European labor market's ability to recognise and connect them to work**. This is the architectural design target, encoded in Decision 21 of the project's planning workspace.
+Helpmefindthejob serves **anyone facing structural friction between their capability and the European labor market's ability to recognise and connect them to work**. This is the architectural design target, encoded in Decision 21 of the project's planning workspace.
 
 In practical terms for you as a deployer:
 
@@ -27,9 +27,9 @@ In practical terms for you as a deployer:
 - **If you are an Optionskommune Jobcenter**: you serve **all** Bürgergeld recipients, not just the migrant subset. The friction-class framing means you can deploy the same tool for *your full caseload*. Migrant clients receive the most-acute features; non-migrant clients facing CV-currency gaps, career transitions, or re-entry after extended absence (the kind of friction Käthe and Tobias represent in the persona panel) receive the same tool tuned to their situation. You do not need to procure separate tools for "the migrant caseload" and "the rest of the caseload."
 - **If you are a university career service**: your population is international graduates (who become migrant jobseekers post-graduation) **plus** first-generation graduates without family-networked guidance through professional conventions **plus** career changers among your alumni. The friction-class framing covers all three; the persona panel includes both the migrant-graduate scenarios and the career-pivot scenario (Tobias — German native, commercial-tech to civic-tech).
 - **If you are an NGO operating in adult education, return-to-work programmes, or career-coaching for workers re-entering after caregiving**: Käthe is the persona built around your population. The tool handles Wiedereinstieg-programme matching, twelve-year-CV-gap reframing, and 2026-format-CV scaffolding — alongside everything the migrant features provide.
-- **If you are a self-hoster running DirectJob Scout for yourself or a small community**: there is no separate enterprise tier; the same tool, same features.
+- **If you are a self-hoster running Helpmefindthejob for yourself or a small community**: there is no separate enterprise tier; the same tool, same features.
 
-The cost-saving doctrine ([`docs/grant/08-cost-saving-doctrine.md`](https://github.com/maksodf/directjob-scout/blob/main/docs/grant/08-cost-saving-doctrine.md)) is built on the friction-class addressable population, not on the migrant-only one. The "advisor caseload" cost-saving mechanism applies to every advisor-client interaction in the friction class, not only migrant cases. If your finance department asks how the tool's value is bounded by demographic, the answer is: it isn't.
+The cost-saving doctrine ([`docs/grant/08-cost-saving-doctrine.md`](https://github.com/maksodf/helpmefindthejob/blob/main/docs/grant/08-cost-saving-doctrine.md)) is built on the friction-class addressable population, not on the migrant-only one. The "advisor caseload" cost-saving mechanism applies to every advisor-client interaction in the friction class, not only migrant cases. If your finance department asks how the tool's value is bounded by demographic, the answer is: it isn't.
 
 ---
 
@@ -76,7 +76,7 @@ Before going live, complete each of these in order. None is optional.
 
 ### 4.1 Environment variables
 
-The complete list lives in [`.env.example`](https://github.com/maksodf/directjob-scout/blob/main/.env.example). The AI-Act-relevant ones:
+The complete list lives in [`.env.example`](https://github.com/maksodf/helpmefindthejob/blob/main/.env.example). The AI-Act-relevant ones:
 
 | Variable | Default | What it controls |
 |---|---|---|
@@ -107,7 +107,7 @@ EN and DE are shipped. Arabic, Ukrainian, Turkish, and Romanian are on the roadm
 
 ## 5. Human oversight setup
 
-The full guide is at [`human-oversight-guide.md`](https://github.com/maksodf/directjob-scout/blob/main/compliance/human-oversight-guide.md). Summary for deployment-time:
+The full guide is at [`human-oversight-guide.md`](https://github.com/maksodf/helpmefindthejob/blob/main/compliance/human-oversight-guide.md). Summary for deployment-time:
 
 1. **Appoint a named oversight person.** This must be someone with the competence to assess fit-scoring outputs, motivation-letter drafts, and CV-tailoring suggestions for accuracy and fairness in your sector. For a Beratungsstelle, this is typically a senior advisor. For a Jobcenter, a Case Manager. For a university career service, the head of career advising. The person's contact appears in the `transparency-notice.md` addendum.
 2. **Decide review mode**: `DIRECTJOB_HUMAN_OVERSIGHT_MODE=disabled` (default, AI outputs reach the user directly) vs `enabled` (AI outputs queue for advisor review at `/api/admin/oversight/queue`). The trade-off is between throughput and oversight depth. Public-authority deployers typically choose `enabled` at first deployment and de-escalate after a documented track record.
@@ -131,7 +131,7 @@ Restrict filesystem access to the deployment's data directory. The provider does
 
 ### 6.4 Query
 
-See [`audit-log-schema.md`](https://github.com/maksodf/directjob-scout/blob/main/compliance/audit-log-schema.md) §7 for query examples. Common operational queries:
+See [`audit-log-schema.md`](https://github.com/maksodf/helpmefindthejob/blob/main/compliance/audit-log-schema.md) §7 for query examples. Common operational queries:
 
 - Count of AI invocations per user per day (anomaly detection)
 - Distribution of fit-score adjustments across the persona cohort (bias indicator)
@@ -189,13 +189,13 @@ Caddy auto-renews certificates. Verify via the `scripts/check-tls-expiry.sh` mon
 
 ## 10. Incident response
 
-If you encounter or are informed of an incident involving DirectJob Scout in your deployment:
+If you encounter or are informed of an incident involving Helpmefindthejob in your deployment:
 
 1. **Stabilise**: if the incident is ongoing and involves automatic harm (e.g., systematic bias against a documented persona class), activate the kill-switch (`DIRECTJOB_DETERMINISTIC_ONLY=true`) until you have understood and contained the issue.
 2. **Document**: capture the relevant audit-log slice, the user's reported experience, and the system state at the time of incident.
 3. **Notify**:
    - **Internal**: your data-protection officer, your oversight person, your organisation's relevant senior accountable individual.
-   - **The provider**: via [`SECURITY.md`](https://github.com/maksodf/directjob-scout/blob/main/SECURITY.md) for security-related incidents or via a GitHub Issue tagged `incident-ai-act` for AI-Act-related incidents. The provider acknowledges within 5 working days and supports with technical analysis.
+   - **The provider**: via [`SECURITY.md`](https://github.com/maksodf/helpmefindthejob/blob/main/SECURITY.md) for security-related incidents or via a GitHub Issue tagged `incident-ai-act` for AI-Act-related incidents. The provider acknowledges within 5 working days and supports with technical analysis.
    - **Supervisory authority**: per Article 73, serious incidents are notified to the relevant market-surveillance authority within the regulatory window (15 days for general serious incidents, 2 days for incidents involving widespread infringement). Your jurisdiction's data-protection authority may also need notification under GDPR Article 33 if the incident is a personal-data breach.
 4. **Remediate**: apply the technical and procedural mitigations the joint analysis identifies.
 5. **Post-incident review**: document the incident, the remediation, and any policy or configuration changes that result. This documentation feeds your next risk-register review and may inform the provider's risk-register update for the upstream project.
