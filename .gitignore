@@ -57,6 +57,13 @@ node_modules/
 # always rebuilds from source.
 site/
 
+# Python virtual environment. Created by either the bare-host
+# `pip install` workflow OR the `nix develop` flake bootstrap
+# (see flake.nix). The environment is fully reproducible from
+# requirements.txt + requirements-dev.txt; committing it would
+# bloat the repo and create cross-platform drift.
+.venv/
+
 # axe-core CLI accessibility audit JSON output. Each file is 100–400 KB
 # of axe-core's full rule trace (passes + violations + incomplete +
 # inapplicable). The violation summary lives in ACCESSIBILITY.md;
