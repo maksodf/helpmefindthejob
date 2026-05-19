@@ -22,7 +22,7 @@ from http.cookies import SimpleCookie
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from threading import Lock, Thread
-from typing import Any
+from typing import Any, ClassVar
 from urllib.parse import unquote, urlparse
 
 from company_discovery.aggregator_providers import default_no_auth_providers
@@ -2921,7 +2921,9 @@ class AppState:
         return top, jobs_with_gap_count, ready
 
     # ---------------- Chat-router session storage ----------------
-    _chat_sessions: dict[str, ChatSession] = {}
+    # ClassVar — intentional process-wide singleton dict, not a per-
+    # instance attribute. AppState is itself a process-wide singleton.
+    _chat_sessions: ClassVar[dict[str, ChatSession]] = {}
 
     def chat_session_for(self, user_id: str) -> ChatSession:
         """Return the user's chat session. On first access in a process,
@@ -2984,17 +2986,18 @@ class AppState:
     # Cache key: (message_lower_stripped, last_3_assistant_replies_joined).
     # Same user-message + same recent context → same classification, so
     # we can serve repeated probes without re-billing the LLM.
-    _chat_router_cache: dict[tuple, tuple[float, str | None]] = {}
+    # ClassVar — intentional process-wide singleton cache + metrics dicts.
+    _chat_router_cache: ClassVar[dict[tuple, tuple[float, str | None]]] = {}
     _CHAT_ROUTER_CACHE_TTL = 600  # seconds — 10 min
     _CHAT_ROUTER_CACHE_MAX = 1024
     # Per-user rate limit on AI-router classifications (cache hits don't
     # count). 20 LLM calls / 60s / user is roughly twice what a focused
     # tester can manually generate; above that we suspect a bug or
     # adversarial usage and fall back to keyword router.
-    _chat_router_calls: dict[str, list[float]] = {}
+    _chat_router_calls: ClassVar[dict[str, list[float]]] = {}
     _CHAT_ROUTER_RATE_LIMIT = 20
     _CHAT_ROUTER_RATE_WINDOW = 60
-    chat_router_metrics: dict[str, int] = {
+    chat_router_metrics: ClassVar[dict[str, int]] = {
         "calls": 0,
         "cache_hits": 0,
         "errors": 0,
@@ -4245,7 +4248,8 @@ class AppState:
     # user_profile so the state survives restarts; for now restart =
     # the user starts the builder over. The state is JSON-serialisable
     # via CvBuilderState.to_dict so persistence is a 1-line addition.
-    _cv_builder_sessions: dict[str, CvBuilderState] = {}
+    # ClassVar — intentional process-wide CV-builder session map.
+    _cv_builder_sessions: ClassVar[dict[str, CvBuilderState]] = {}
 
     def cv_builder_state_for(self, user_id: str) -> CvBuilderState:
         if user_id not in self._cv_builder_sessions:
