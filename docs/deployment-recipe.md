@@ -342,7 +342,79 @@ health-check assertion. A failed deploy can be rolled back with the
 
 ---
 
-## 12. Decommissioning
+## 12. Reproducible builds (Nix flake)
+
+DirectJob Scout ships a `flake.nix` at the repo root that pins the
+Python interpreter + OS-level dev toolchain to a specific
+`nixos-25.05` nixpkgs commit (captured in `flake.lock`). A reviewer
+running `nix develop` six months from now gets the same shell — same
+Python ABI, same `git`, same `pkg-config`, same OpenSSL headers.
+
+**Why**: build provenance for the EU AI Act Article 11 technical-
+documentation surface; one-command reproducibility for any NGI0
+reviewer or downstream re-deployer; trivial onboarding for
+contributors who already use Nix.
+
+**Requirements**: Nix with flakes enabled. One-line install on macOS
+or Linux:
+
+```bash
+curl --proto '=https' --tlsv1.2 -sSf -L \
+  https://install.determinate.systems/nix | sh -s -- install
+```
+
+Determinate's installer enables flakes out of the box. Upstream Nix
+users add `experimental-features = nix-command flakes` to
+`~/.config/nix/nix.conf`.
+
+**Commands**:
+
+```bash
+# Drop into a reproducible dev shell. First entry bootstraps a
+# .venv inside the repo from the pinned Python + pinned
+# requirements.txt + requirements-dev.txt; subsequent entries are
+# instant (the sentinel `.venv/.deps_installed` short-circuits).
+nix develop
+
+# Run the app via the flake (same env, same Python).
+nix run
+
+# Refresh the pinned inputs (nixpkgs commit + flake-utils).
+# Commit the updated flake.lock alongside any code change that
+# depends on the new pin.
+nix flake update
+
+# Verify the flake's contract is intact (CI-callable).
+nix flake check
+```
+
+**Hybrid approach (why this isn't pure-Nix)**: the runtime + dev
+deps remain pinned in `requirements.txt` + `requirements-dev.txt`
+(single source of truth shared with the bare-host pip workflow).
+The flake bootstraps Python 3.12 + `pip` from nixpkgs, then `pip`
+resolves the deps inside a project-local `.venv/`. The pip resolver
+is deterministic against the pinned version ranges; aligning every
+transitive pip dep into a Nix derivation would multiply maintenance
+overhead without adding reproducibility.
+
+A future slice can convert the runtime to a pure-Nix
+`buildPythonApplication` if the Conservancy / NixOS Foundation
+packaging support engages.
+
+**Pinned input commit**: `flake.lock` records the resolved commit
+hashes. View them with `nix flake metadata`.
+
+**Verified on**: aarch64-darwin (Determinate Nix 3.20.0 / Nix
+2.34.6) at slice ship time. The `eachDefaultSystem` flake-utils
+helper extends outputs to `x86_64-linux`, `aarch64-linux`,
+`x86_64-darwin` without per-system copy-paste; CI verification on
+those systems is tracked as a Phase 2 enhancement (the
+fresh-clone-install workflow already covers Linux pip-path
+reproducibility).
+
+---
+
+## 13. Decommissioning
 
 ```bash
 ssh <user>@<demo-host> \

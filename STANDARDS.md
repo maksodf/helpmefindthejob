@@ -57,7 +57,7 @@ DirectJob Scout is **standards-anchored on purpose**. Adopters inherit interoper
 | Standard | Where | Status |
 |---|---|---|
 | [OCI image format](https://github.com/opencontainers/image-spec) | `Dockerfile`, `docker-compose.yml`, `docker-compose.prod.yml`; image named `directjob-scout:latest` independent of local repo directory | Shipped |
-| [Nix flake reproducible build](https://nixos.wiki/wiki/Flakes) | Planned in Week 3 §3.8 — `flake.nix` at repo root | Planned |
+| [Nix flake reproducible build](https://nixos.wiki/wiki/Flakes) | [`flake.nix`](flake.nix) + [`flake.lock`](flake.lock) at repo root; pins `nixos-25.05` nixpkgs commit + Python 3.12; `nix develop` / `nix run` / `nix flake check` documented in [`docs/deployment-recipe.md`](docs/deployment-recipe.md) §12 | Shipped |
 | [OpenSSF Scorecard](https://github.com/ossf/scorecard) | Workflow + badge in Week 3 §3.2 | Planned |
 | [CycloneDX SBOM](https://cyclonedx.org/) | Attached to `v0.1.0` release in Week 4 §4.2 via `cyclonedx-py` | Planned |
 | [cosign](https://docs.sigstore.dev/cosign/overview/) signed releases | `v0.1.0` signed in Week 4 §4.2 | Planned |

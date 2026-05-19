@@ -78,6 +78,26 @@ file you stage. It is intentionally minimal during the Week 1 phase of
 the grant sprint; lint, format, and type-check hooks (ruff, black, mypy)
 will be added in Week 3 (`docs/grant/02-execution-plan.md` §3.2).
 
+### Nix workflow (optional, reproducible)
+
+The pip-based setup above is the supported default. If you already use
+Nix (or want a byte-identical dev environment for AI Act build
+provenance), a `flake.nix` at the repo root provides the same setup
+pinned against a specific `nixpkgs` commit:
+
+```bash
+nix develop       # bootstrap .venv from pinned Python; subsequent
+                  # entries are instant
+nix run           # launch the app via the flake (same env)
+nix flake check   # verify the flake's contract
+```
+
+First-build wall-clock is ~50 seconds (Determinate Nix 3.20 on
+aarch64-darwin); subsequent entries are instant thanks to the
+`.venv/.deps_installed` sentinel. Full reproducibility commands +
+hybrid Nix-native + pip-managed rationale live in
+[`docs/deployment-recipe.md`](docs/deployment-recipe.md) §12.
+
 ### Running Tests
 
 ```bash
@@ -228,17 +248,6 @@ Operational note: a self-service CLA-signing tool (CLA Assistant or
 equivalent) will be wired up in Week 3 of the grant sprint or shortly
 after. Until then the PR-comment mechanism above is the canonical assent
 process.
-
-## Translations
-
-Locale files live at `static/i18n/<lang>.json`. The currently shipped
-locales are English (`en`) and German (`de`). New locales are warmly
-welcomed; please follow [`docs/translating.md`](docs/translating.md)
-once it lands in Week 3. In the meantime, open an issue tagged
-`translation` to coordinate.
-
-Native-speaker review of the existing German locale is also welcome.
-Reviewers are credited in [`AUTHORS.md`](AUTHORS.md).
 
 ## Reporting Bugs and Requesting Features
 
