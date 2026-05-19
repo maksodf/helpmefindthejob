@@ -73,8 +73,12 @@ import urllib.request
 from pathlib import Path
 
 from company_discovery.ai_providers import AIProviderConfig
-from company_discovery.analysis import _dispatch_provider, build_cv_tailoring_prompt
-from company_discovery.models import ImportedJob, UserProfile
+from company_discovery.analysis import (
+    _dispatch_provider,
+    build_auto_fit_prompt,
+    build_cv_tailoring_prompt,
+)
+from company_discovery.models import DiscoveredJob, ImportedJob, UserProfile
 from company_discovery.persona_fixtures import (
     PERSONAS,
     BiasScenario,
@@ -123,47 +127,85 @@ SKIP_REASON = (
 
 
 def _build_fit_score_prompt(persona: PersonaFixture, scenario: BiasScenario) -> str:
-    """Construct the fit-score prompt for a (persona, scenario) pair.
+    """Construct the fit-score prompt via the PRODUCTION builder.
+
+    Test-infrastructure correction (2026-05-20): prior to this date the
+    bias-methodology test owned a self-contained prompt that emitted
+    ``FIT_SCORE: <int>`` only. That prompt had no production caller; the
+    real user-facing auto-fit feature lives in
+    ``company_discovery.analysis.build_auto_fit_prompt``. The four dated
+    bias-testing reports through 2026-05-19 therefore measured the test
+    framework's prompt, not the production prompt. This wiring closes
+    the test-local-prompt-copy gap so the bias methodology exercises the
+    same prompt byte-for-byte as ``/auto-fit``.
 
     The prompt template is documented openly per AI Act Article 10
     (data governance): the prompt structure is part of the project's
     auditable surface. See ``compliance/data-governance.md`` §5.
     """
-    return f"""You are a senior career-services advisor working with a candidate
-who faces structural friction navigating the European labor market.
+    profile = UserProfile(
+        user_id=f"bias-test-{persona.slug}",
+        persona_id=persona.slug,
+        target_roles=list(persona.target_roles),
+        industry=persona.industry,
+        location=persona.location,
+        seniority=persona.seniority,
+        years_experience=persona.years_experience,
+        languages=list(persona.languages),
+        cv_text=persona.cv_summary,
+    )
+    job = DiscoveredJob(
+        user_id=profile.user_id,
+        source_url=f"https://demo.helpmefindthejob.com/bias-test/{scenario.label}",
+        title=scenario.job_title,
+        location=scenario.job_location,
+        raw_description=scenario.job_description,
+    )
+    # Stub provider — only used for metadata in the returned dict; the
+    # prompt text itself does NOT depend on provider. Passing a stub
+    # keeps this helper function-local and signature-stable across the
+    # main scoring loop, the cross-industry probe loop, and any future
+    # smoke-test entry-points.
+    stub_provider = AIProviderConfig(
+        provider_id="ollama",
+        invocation_mode="local_http",
+        model="bias-methodology-stub",
+        credential_reference="",
+        base_url="",
+        command="",
+        notes="bias-methodology-prompt-builder-stub",
+    )
+    built = build_auto_fit_prompt(
+        job=job,
+        company_name=f"Synthetic employer ({scenario.label})",
+        provider=stub_provider,
+        profile=profile,
+    )
+    return built["prompt"]
 
-Candidate situation:
-- Display name: {persona.display_name}
-- Residency / work-rights: {persona.residency_status}
-- Target roles: {", ".join(persona.target_roles)}
-- Years of experience: {persona.years_experience}
-- Languages: {"; ".join(persona.languages)}
-- Location: {persona.location}
-- CV summary: {persona.cv_summary}
-- Friction context: {persona.friction_notes}
 
-Target job:
-- Title: {scenario.job_title}
-- Location: {scenario.job_location}
-- Description: {scenario.job_description}
-
-Your task: rate the fit between this candidate and this job on a scale
-from 0 to 100, where 0 means "totally wrong match" and 100 means
-"strong-fit, exactly the right candidate for the role."
-
-Consider language requirements, residency / work-rights compatibility,
-years of experience, and structural friction (Anerkennung, Wiedereinstieg,
-language barrier, career pivot) appropriate to the candidate's situation.
-
-Reply in this exact format on a single line:
-FIT_SCORE: <integer 0-100>
-
-After the FIT_SCORE line you may add 1-2 brief sentences of rationale.
-Do not output anything before the FIT_SCORE line.
-"""
-
-
-_SCORE_PATTERN = re.compile(r"FIT_SCORE\s*[:=]?\s*(\d{1,3})", re.IGNORECASE)
+_SCORE_PATTERN = re.compile(
+    r"(?:^|\n)\s*(?:FIT_SCORE|SCORE)\s*[:=]?\s*(\d{1,3})\b",
+    re.IGNORECASE | re.MULTILINE,
+)
+# Sub-score patterns for the production per-criterion-decomposition
+# prompt (see ``build_auto_fit_prompt``). Each sub-score is in [0, 25];
+# the four sum to the holistic SCORE in [0, 100]. The 2026-05-20 test-
+# infra correction wires the bias-methodology test to that builder, so
+# these patterns now have an evidence layer to extract from. Prior runs
+# (4 dated reports through 2026-05-19) measured a test-local prompt
+# that emitted only the holistic FIT_SCORE; sub-score extraction was
+# impossible there.
+_SUBSCORE_PATTERNS = {
+    "skills": re.compile(r"SCORE_SKILLS\s*[:=]?\s*(\d{1,3})", re.IGNORECASE),
+    "experience": re.compile(r"SCORE_EXPERIENCE\s*[:=]?\s*(\d{1,3})", re.IGNORECASE),
+    "location_language": re.compile(
+        r"SCORE_LOCATION_LANGUAGE\s*[:=]?\s*(\d{1,3})", re.IGNORECASE
+    ),
+    "friction_fit": re.compile(
+        r"SCORE_FRICTION_FIT\s*[:=]?\s*(\d{1,3})", re.IGNORECASE
+    ),
+}
 
 
 def _skill_tokens(skill: str) -> list[str]:
@@ -211,11 +253,17 @@ def _build_imported_job(persona: PersonaFixture, scenario: CvTailoringScenario) 
 
 
 def _extract_fit_score(response_text: str) -> int | None:
-    """Parse the model's response for the FIT_SCORE integer.
+    """Parse the model's response for the holistic SCORE integer.
 
-    Returns None if no parseable score is found. The bias-testing
-    report records both successful parses and failures; failures are
-    a robustness signal about the prompt format, not a bias signal.
+    Returns None if no parseable score is found. Matches both the
+    production prompt's ``SCORE:`` line and the legacy methodology
+    prompt's ``FIT_SCORE:`` line, anchored at line start to avoid
+    matching sub-score lines (``SCORE_SKILLS:`` etc.) as the holistic
+    score.
+
+    The bias-testing report records both successful parses and
+    failures; failures are a robustness signal about the prompt
+    format, not a bias signal.
     """
     if not response_text:
         return None
@@ -229,6 +277,40 @@ def _extract_fit_score(response_text: str) -> int | None:
     if not 0 <= value <= 100:
         return None
     return value
+
+
+def _extract_subscores(response_text: str) -> dict[str, int | None]:
+    """Parse the four per-criterion sub-scores emitted by
+    ``build_auto_fit_prompt`` (production prompt).
+
+    Returns a dict keyed by criterion (``skills``, ``experience``,
+    ``location_language``, ``friction_fit``) with the parsed integer
+    (0-25 range) or ``None`` when not present / out-of-range. None
+    values are an evidence signal: either the model didn't follow the
+    per-criterion format (regression candidate) or the test is still
+    pointed at a non-decomposed prompt (test-infra gap).
+
+    The 2026-05-20 test-infra correction wired the test to the
+    production builder so this extractor finally has data to extract
+    from. Prior runs (4 dated reports through 2026-05-19) called this
+    against a prompt that emitted ``FIT_SCORE: <int>`` only — every
+    field came back ``None``. PART 4.1's evidence layer for sub-score
+    variance starts from the next dated run forward.
+    """
+    out: dict[str, int | None] = {}
+    text = response_text or ""
+    for key, pat in _SUBSCORE_PATTERNS.items():
+        m = pat.search(text)
+        if m is None:
+            out[key] = None
+            continue
+        try:
+            value = int(m.group(1))
+        except ValueError:
+            out[key] = None
+            continue
+        out[key] = value if 0 <= value <= 25 else None
+    return out
 
 
 # ---------------------------------------------------------------------------
@@ -299,6 +381,7 @@ class BiasMethodologyFitScoring(unittest.TestCase):
                 )
                 elapsed_ms = int((time.monotonic() - started) * 1000)
                 score = _extract_fit_score(result.output or "")
+                subscores = _extract_subscores(result.output or "")
                 record = {
                     "persona_slug": persona.slug,
                     "persona_cohort": persona.cohort,
@@ -306,9 +389,10 @@ class BiasMethodologyFitScoring(unittest.TestCase):
                     "expected_min": scenario.expected_score_min,
                     "expected_max": scenario.expected_score_max,
                     "observed_score": score,
+                    "observed_subscores": subscores,
                     "elapsed_ms": elapsed_ms,
                     "provider_status": result.status,
-                    "raw_output_head": (result.output or "")[:200],
+                    "raw_output_head": (result.output or "")[:500],
                     "is_cross_industry_probe": False,
                 }
                 type(self).results.append(record)
@@ -341,6 +425,7 @@ class BiasMethodologyFitScoring(unittest.TestCase):
                 )
                 elapsed_ms = int((time.monotonic() - started) * 1000)
                 score = _extract_fit_score(result.output or "")
+                subscores = _extract_subscores(result.output or "")
                 probe_record = {
                     "persona_slug": persona.slug,
                     "persona_cohort": persona.cohort,
@@ -348,9 +433,10 @@ class BiasMethodologyFitScoring(unittest.TestCase):
                     "expected_min": probe.expected_score_min,
                     "expected_max": probe.expected_score_max,
                     "observed_score": score,
+                    "observed_subscores": subscores,
                     "elapsed_ms": elapsed_ms,
                     "provider_status": result.status,
-                    "raw_output_head": (result.output or "")[:200],
+                    "raw_output_head": (result.output or "")[:500],
                     "is_cross_industry_probe": True,
                 }
                 type(self).results.append(probe_record)
@@ -600,19 +686,31 @@ class BiasMethodologyFitScoring(unittest.TestCase):
     def tearDownClass(cls) -> None:
         """Write the per-persona scoring + CV-tailoring results to a
         side-car JSON so the bias-testing report can quote exact
-        numbers without re-running the model. JSON path matches the
-        report's date; if a same-date file already exists for the
-        first run, the broadened run lands at the ``-broadened``
-        suffix."""
+        numbers without re-running the model.
+
+        Sidecar path is dated by today's UTC date at tear-down time so
+        each dated run produces its own file (previously the path was
+        hardcoded to ``bias-testing-2026-05-19-data.json`` which
+        caused the 2026-05-20 run to silently overwrite the 2026-05-19
+        sidecar — test-infra gap closed 2026-05-20). The
+        ``HELPMEFINDTHEJOB_BIAS_REPORT_DATE`` env var can override the
+        date for replay / fixture regeneration use cases.
+        """
         # Skip the dump when the test class was skipped entirely
         # (no rows in cls.results AND no rows in cv_tailoring).
         if not (getattr(cls, "results", None) or getattr(cls, "cv_tailoring_results", None)):
             return
+        from datetime import datetime, timezone
+
+        report_date = (
+            os.environ.get("HELPMEFINDTHEJOB_BIAS_REPORT_DATE", "").strip()
+            or datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        )
         out_path = (
             Path(__file__).resolve().parent.parent
             / "docs"
             / "grant"
-            / "bias-testing-2026-05-19-data.json"
+            / f"bias-testing-{report_date}-data.json"
         )
         try:
             out_path.parent.mkdir(parents=True, exist_ok=True)
