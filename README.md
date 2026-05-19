@@ -207,8 +207,12 @@ orchestrated) and
 for the architectural reasoning.
 
 A reference integration with an open housing agent — proving the
-composition claim end-to-end — ships in Week 2 of the grant sprint
-under [`examples/`](examples/) (TBD).
+composition claim end-to-end — is Phase 2 work pending a partner
+agent ([Decision 20](docs/grant/04-research-and-decisions.md#decision-20-housing-agent-25-defaults-to-mock-stub-option-a)
+defaulted the §2.5 deliverable to Option A: a mock-stub client).
+The MCP composition tools (`propose_referral`, `bundle_civic_context`,
+`query_esco_skill`, `export_eures_compatible`) are wired today; the
+end-to-end demonstration arrives with the partner agent.
 
 ## Self-hosting
 
