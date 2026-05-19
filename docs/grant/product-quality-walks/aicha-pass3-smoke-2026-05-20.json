@@ -1,6 +1,7 @@
 {
   "persona": "aicha",
   "surface": "auto_fit",
+  "surface_class": "backend_analysis",
   "model": "llama3.1:8b",
   "model_provider": "ollama",
   "timestamp_utc": "2026-05-20",
@@ -8,22 +9,52 @@
   "elapsed_seconds": 17.3,
   "result_status": "completed",
   "output_raw": "SCORE_SKILLS: 18 — match between the candidate's CV skills and the JD's required skills\nSCORE_EXPERIENCE: 13 — seniority + years-of-experience + relevance of past roles vs the JD\nSCORE_LOCATION_LANGUAGE: 20 — geographic + language fit (CEFR level vs JD language; visa / residency status if relevant)\nSCORE_FRICTION_FIT: 15 — accommodates the candidate's documented friction context (Anerkennung pathway, Wiedereinstieg)\nSCORE: 66\nREASON: Strong match on location and language skills, despite some skill gaps.\nGAPS: examination, hospital operations",
+  "rubric_convention": "backend-analysis surface: R3.6/R3.8 marked N/A with reason; R3.5/R3.7 reinterpreted for backend per operator guidance 2026-05-20; top-tier = every APPLICABLE >= 2 AND >= 5 of applicable at 3",
   "rubric_score": {
-    "R3.1_specificity": 3,
-    "R3.2_friction_aware": 3,
-    "R3.3_convention_fit": 3,
-    "R3.4_honesty": 2,
-    "R3.5_ux_clarity": 2,
-    "R3.6_slow_op_ux": "n/a (single-call API)",
-    "R3.7_error_recovery": "n/a (template-level)",
-    "R3.8_accessibility": "n/a (no UI rendered)"
+    "R3.1_specificity": {
+      "score": 3,
+      "rationale": "Per-criterion decomposition + GAPS surfaces specific weak areas (examination, hospital ops)"
+    },
+    "R3.2_friction_aware": {
+      "score": 3,
+      "rationale": "SCORE_FRICTION_FIT line explicitly names 'Anerkennung pathway, Wiedereinstieg' — pulled from persona_fixtures.aicha.friction_notes via the enriched _candidate_profile_block"
+    },
+    "R3.3_convention_fit": {
+      "score": 3,
+      "rationale": "Format matches the structured score-block documented in the prompt; REASON in plain English (JD was bilingual EN/DE — defensible default)"
+    },
+    "R3.4_honesty": {
+      "score": 2,
+      "rationale": "Discloses gaps + one-sentence reason; could surface explicit confidence band (low/med/high) — current REASON line implies confidence but doesn't quantify"
+    },
+    "R3.5_reinterpreted_api_contract_clarity": {
+      "score": 3,
+      "rationale": "Reinterpreted from 'UX clarity' for backend surface: structured score-block is unambiguous + machine-parseable by parse_auto_fit_output; output format documented in prompt"
+    },
+    "R3.6_slow_op_ux": {
+      "score": "N/A",
+      "rationale": "Single-call API surface; perceived-latency design is for the UI layer that invokes auto-fit (downstream concern). 17.3s elapsed is within the documented latency envelope for llama3.1:8b but UI narration is out of this surface's scope."
+    },
+    "R3.7_reinterpreted_error_recovery": {
+      "score": "DEFERRED",
+      "rationale": "Reinterpreted from 'error recovery' for backend surface: should be 'structured error from the dispatcher path on bad input / model failure'. The single happy-path smoke does not exercise the error path. AnalysisExecutionResult dataclass carries status='provider_error' / 'configuration_error' shapes (PART A.4 round-trip tests verified the openai-compatible adapter's error coercion); equivalent error-path probe for the Ollama path against the upgraded prompt is the next sub-step before declaring 4.1 closed."
+    },
+    "R3.8_accessibility": {
+      "score": "N/A",
+      "rationale": "No UI rendered in this surface; downstream renderer's responsibility. The structured output format is screen-reader-friendly when rendered as plain text (no markdown trickery)."
+    }
   },
+  "applicable_criteria_count": 6,
+  "applicable_criteria_at_3": 4,
+  "applicable_criteria_below_3": 2,
+  "top_tier_verdict": "PROVISIONAL — 4 of 6 applicable at 3 (need >= 5). R3.4 at 2 (confidence band not surfaced) + R3.7 deferred (error-path probe pending). Bias-methodology re-run is the cross-persona evidence gate; if spread improves across all 7 personas, R3.4 confidence-band gap remains the only structural improvement needed for full top-tier on this surface.",
   "notes": [
     "Per-criterion sum: 18+13+20+15 = 66 (matches SCORE) — granular reasoning, NOT round-number anchor",
     "SCORE_FRICTION_FIT 15/25 explicitly names 'Anerkennung pathway, Wiedereinstieg' (correct for Aicha §16d AufenthG)",
     "REASON cites location + language match — correct for Aicha (Berlin + DE B1 climbing)",
     "GAPS surfaces 'examination, hospital operations' — reasonable surface; could be more specific (e.g., 'B2-level Pflegedokumentation') but honest about uncertainty",
-    "Score 66 within Aicha-strong tolerance band [40, 70] ±10 — would PASS bias-methodology test under existing thresholds"
+    "Score 66 within Aicha-strong tolerance band [40, 70] +/- 10 — would PASS bias-methodology test under existing thresholds"
   ],
-  "before_pass1_baseline": "From bias-testing-2026-05-18-broadened.md: Aicha strong-fit scenarios clustered at 85/92 (round-number anchoring). Per-criterion decomposition was the planned remediation in compliance/risk-management-plan.md §R4."
+  "before_pass1_baseline": "From bias-testing-2026-05-18-broadened.md: Aicha strong-fit scenarios clustered at 85/92 (round-number anchoring). Per-criterion decomposition was the planned remediation in compliance/risk-management-plan.md §R4.",
+  "next_evidence_gate": "bias-testing-2026-05-20.md — full bias-methodology re-run across 7 personas to confirm distributional spread holds (not just Aicha). If spread improves, this scoring row's 'R3.7 deferred' status can be promoted (single happy path is not enough alone; bias run exercises 70+ scoring scenarios per persona)."
 }
