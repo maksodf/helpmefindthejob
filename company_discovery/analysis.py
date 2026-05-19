@@ -39,6 +39,33 @@ _HEALTHCARE_SECTION_LABEL = "Healthcare relevance"
 _GENERIC_SECTION_LABEL = "Persona relevance"
 
 
+def _persona_fixture_for(persona_id: str | None):
+    """Lookup the canonical :class:`PersonaFixture` for ``persona_id``,
+    or ``None`` if the id isn't in the seven-panel fixture set.
+
+    The fixture carries fields the lighter ``Persona`` object does not:
+    ``residency_status`` (visa / Aufenthaltstitel), ``friction_notes``
+    (gap-year, Anerkennung pathway, language proficiency, etc.). These
+    feed the analysis prompts so the AI's reasoning is anchored to the
+    candidate's real friction context, not a generic role-and-industry
+    sketch.
+
+    Defensive lookup: any failure returns ``None`` so the prompt
+    builder degrades gracefully to the lighter ``Persona`` context.
+    """
+    if not persona_id:
+        return None
+    try:
+        from company_discovery.persona_fixtures import PERSONAS
+
+        for fixture in PERSONAS:
+            if fixture.slug == persona_id:
+                return fixture
+        return None
+    except Exception:  # noqa: BLE001, S110 - persona-fixture lookup is best-effort context enrichment; failure must not break the AI call
+        return None
+
+
 def _candidate_profile_block(
     profile: UserProfile | None,
     persona_id_default: str = "healthcare-management",
@@ -49,6 +76,14 @@ def _candidate_profile_block(
     section embedded in every prompt. It always falls back to a sensible
     persona-specific default so the brief stays useful even when the user
     has not filled in their profile yet.
+
+    Friction-context enrichment (PART 1 of the 2026-05-19 product-quality
+    sweep): when the persona_id matches a known fixture in
+    ``persona_fixtures.PERSONAS``, the block also surfaces
+    ``residency_status`` (Aufenthaltstitel / visa) and ``friction_notes``
+    (Anerkennung pathway, gap years, language proficiency). This makes
+    every downstream prompt (auto-fit, decision brief, cover letter,
+    CV tailoring) friction-aware without per-prompt rewrites.
     """
 
     persona_id = profile.persona_id if profile and profile.persona_id else persona_id_default
@@ -80,6 +115,17 @@ def _candidate_profile_block(
     if profile and profile.notes:
         lines.append(f"- Candidate notes: {profile.notes.strip()}")
 
+    # Friction-context enrichment from PersonaFixture when available.
+    fixture = _persona_fixture_for(persona_id)
+    if fixture is not None:
+        if fixture.residency_status:
+            lines.append(f"- Aufenthaltstitel / residency status: {fixture.residency_status}")
+        if fixture.friction_notes:
+            lines.append(
+                f"- Friction context (Anerkennung / Wiedereinstieg / language / etc.): "
+                f"{fixture.friction_notes.strip()}"
+            )
+
     if profile and (profile.cv_text or "").strip():
         cv = profile.cv_text.strip()
         if len(cv) > 4000:
@@ -110,6 +156,12 @@ def build_job_decision_brief_prompt(
 
 Create a concise Job Decision Brief for this role.
 
+Strict rules:
+- Use ONLY facts present in the candidate profile + the job description below. Do not invent the candidate's experience, skills, or visa status. Do not invent the company's culture, salary, or team size unless the JD states it.
+- For LEGAL claims (visa rules, Anerkennung pathways, Bürgergeld eligibility, Aufenthaltstitel obligations), do not give legal advice; direct the candidate to BAMF, Bundesagentur für Arbeit, or a Migrationsberatungsstelle.
+- Acknowledge the candidate's documented friction context (Aufenthaltstitel / Anerkennung / Wiedereinstieg / language level) where it materially affects whether to apply.
+- If the JD is in German, match its register; if English, use English. State the language assumption if the JD is empty.
+
 Candidate target profile:
 {profile_block}
 
@@ -125,14 +177,15 @@ Job description:
 
 Return exactly these sections:
 1. Recommendation: Apply / Maybe / Skip
-2. Fit score: 0-100
+2. Fit score: 0-100 (avoid round-number anchoring; use the granular score that fits)
 3. Why it fits
-4. Risks and blockers
+4. Risks and blockers — INCLUDE any friction-context concern (visa / language / Anerkennung) that materially affects this application
 5. Seniority check
 6. {section_label}
 7. Likely keywords/tools
 8. Application angle
 9. Missing information to verify manually
+10. Source confidence — note for each non-trivial claim above whether it is grounded in (a) the JD text, (b) the candidate's profile, or (c) general AI inference. Inference-only claims must be marked accordingly.
 """
     return {
         "title": f"Job Decision Brief: {job.title}",
@@ -160,6 +213,12 @@ edit and send. Match the language of the job description (e.g. write in
 German if the description is in German). If unsure, default to English
 and note the assumption at the end.
 
+Strict rules:
+- Use ONLY facts present in the candidate profile + the job description below. Never invent the candidate's employers, dates, titles, achievements, certifications, language levels, or visa status.
+- Acknowledge the candidate's documented friction context (Aufenthaltstitel / Anerkennung / Wiedereinstieg / language level) when it materially helps explain the candidate's fit — but DO NOT over-emphasise friction in the opening (the opening should foreground capability + interest, not bureaucratic context).
+- German register: if writing in German, default to "Sehr geehrte Damen und Herren" unless the JD names a specific contact; close with "Mit freundlichen Grüßen"; address the reader with "Sie", never "du". Avoid filler ("Hiermit bewerbe ich mich…" is a tired opening — open with the role + the candidate's reason for it).
+- Do not give legal advice. If a visa or Anerkennung question is implied, point the candidate to BAMF or the Migrationsberatungsstelle in the editing-notes section, never in the letter body.
+
 Candidate profile:
 {profile_block}
 
@@ -176,7 +235,7 @@ Return exactly these sections:
 1. Subject line / opening salutation (Sehr geehrte... / Dear...).
 2. Cover letter body (3 short paragraphs):
    - Why the candidate is excited about *this specific* company / role
-   - Concrete experience and skills that map onto the role's needs
+   - Concrete experience and skills that map onto the role's needs (use ONLY CV facts)
    - A short closing with a clear call to action
 3. Editing notes for the candidate: 2-4 bullets calling out claims that need
    to be verified, sentences to personalize further, or weak spots to fix.
@@ -204,15 +263,34 @@ def build_auto_fit_prompt(
     Designed to be cheap to run on every newly discovered job — the
     output is parsed by :func:`parse_auto_fit_output` into a structured
     score so the queue can be sorted by fit.
+
+    Per-criterion decomposition (R4 finding from the R12-polish bias
+    run): asking for a single 0–100 score caused the model to anchor
+    on round numbers (85, 92) instead of producing a true continuous
+    score. The prompt now asks for four sub-scores summed into a
+    total, which forces the model to reason granularly rather than
+    pick a familiar round number. Output stays backwards-compatible
+    (the SCORE line still carries the total), so
+    :func:`parse_auto_fit_output` doesn't need to change.
     """
 
     persona_label, profile_block = _candidate_profile_block(profile)
     prompt = f"""You are scoring a job posting for a {persona_label} candidate.
 
-Output exactly three lines, no headers, no other text:
-SCORE: <integer 0-100>
-REASON: <one short sentence, max 25 words>
+Output exactly these lines, no headers, no other text:
+SCORE_SKILLS: <integer 0-25> — match between the candidate's CV skills and the JD's required skills
+SCORE_EXPERIENCE: <integer 0-25> — seniority + years-of-experience + relevance of past roles vs the JD
+SCORE_LOCATION_LANGUAGE: <integer 0-25> — geographic + language fit (CEFR level vs JD language; visa / residency status if relevant)
+SCORE_FRICTION_FIT: <integer 0-25> — how well this role accommodates the candidate's documented friction context (Anerkennung pathway, Wiedereinstieg, visa, gap-year), or simply "neutral" if friction is not material to THIS role
+SCORE: <integer 0-100, MUST equal the sum of the four sub-scores above>
+REASON: <one short sentence, max 25 words, naming the dominant driver of the score>
 GAPS: <up to three short skill phrases, comma-separated, that the JD demands but the candidate's CV does not show. Use empty string when no clear gaps>
+
+Strict rules:
+- Do NOT invent facts about the candidate beyond what the profile block contains.
+- Do NOT invent facts about the job beyond what the snippet contains.
+- The four sub-scores MUST sum to exactly the SCORE total.
+- Avoid round-number anchoring: if the granular sub-scores sum to 73, output 73, NOT 75.
 
 Candidate target profile:
 {profile_block}
