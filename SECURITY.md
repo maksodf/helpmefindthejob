@@ -1,5 +1,11 @@
 # Security Policy
 
+**Live security.txt** (RFC 9116):
+<https://maksodf.github.io/directjob-scout/.well-known/security.txt>
+— also served by the app at `/.well-known/security.txt` on any
+running deployment. Canonical reporting flow is the GitHub Security
+Advisories link in the `security.txt` Contact list.
+
 ## Supported Versions
 
 DirectJob Scout is in active early development. Until a stable 1.0 release, security fixes are applied to the main branch only. Once 1.0 ships, a supported-version table will be added here.
