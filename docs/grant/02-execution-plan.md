@@ -381,10 +381,10 @@ Re-anchored scope:
 
 ### 3.7 Translator contributor pathway (2 h)
 
-- [ ] `docs/translating.md` explaining the JSON file structure and how to add a new locale
-- [ ] Document the translation review process
-- [ ] Native-speaker review of `de.json` — recruit one person (friend, fellow TU Berlin student, social circle) for 2 hours
-- [ ] Credit reviewers in `AUTHORS.md`
+- [x] `docs/translating.md` explaining the JSON file structure and how to add a new locale *(landed 2026-05-19: full pathway covering bundle structure, `static/i18n/<locale>.json` layout, dot-namespaced key conventions, interpolation-placeholder rules, HTML `data-i18n="..."` binding semantics, four-step contributor flow, parity-test usage, and per-language status table mapping the four post-grant locales (Arabic→Aïcha, Ukrainian→Olga, Turkish→Yusuf, Romanian→Maria) per Decision 6 + Decision 21 friction-class architecture.)*
+- [x] Document the translation review process *(landed 2026-05-19: Decision 18 consent-first authorship flow — native-speaker review of ~2 h flagging mistranslations + German-bureaucratic-term preservation violations + interpolation-placeholder corruption + tone mismatches; reviewer changes land via small scoped PRs; credit in `AUTHORS.md` happens in a separate dated commit after explicit consent. The German-bureaucratic-conventions preservation rule is documented as a primary section — terms like `Anerkennung`, `§16d`, `TVöD`, `Wiedereinstieg`, `Ausbildung` stay German in every locale to preserve legal-specific meaning. Cross-linked from `CONTRIBUTING.md` + `mkdocs.yml` nav.)*
+- [ ] Native-speaker review of `de.json` — recruit one person (friend, fellow TU Berlin student, social circle) for 2 hours *(maintainer-side outreach; sub-task open)*
+- [ ] Credit reviewers in `AUTHORS.md` *(triggered once a reviewer consents; sub-task open)*
 
 ### 3.8 Reproducible build (Nix flake) (4 h)
 

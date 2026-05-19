@@ -117,7 +117,10 @@ playwright install chromium
   lines, consider whether it should split.
 - **i18n**: any user-facing string must be added to `static/i18n/en.json`
   and `static/i18n/de.json`. Tests under `tests/` verify key parity
-  between locales; do not skip that.
+  between locales; do not skip that. The full contributor pathway for
+  adding a new locale, the German-bureaucratic-conventions preservation
+  rule, and the translation-review process live in
+  [`docs/translating.md`](docs/translating.md).
 - **SPDX header**: every new Python file starts with the SPDX header
   from [`.license-header-template.txt`](.license-header-template.txt).
   `scripts/add_spdx_headers.py` can apply it for you; the pre-commit
@@ -156,6 +159,27 @@ Types we use:
 
 Subjects are imperative ("Add", not "Added"). Avoid trailing periods. The
 body is optional but encouraged for anything non-trivial.
+
+## Translations
+
+DirectJob Scout ships English + German today and grows by locale as
+native-speaker contributors join. If you'd like to add a locale —
+Arabic, Ukrainian, Turkish, Romanian are the post-grant targets per
+[Decision 6](docs/grant/04-research-and-decisions.md) — see
+[`docs/translating.md`](docs/translating.md) for the full pathway:
+
+- Locale-bundle structure (`static/i18n/<locale>.json`)
+- The four-step contributor flow (copy `en.json` → translate →
+  parity-test → PR)
+- The **German-bureaucratic-conventions preservation rule**
+  (terms like `Anerkennung`, `§16d`, `TVöD`, `Wiedereinstieg`,
+  `Ausbildung` stay German in every locale because they have
+  legal-specific meaning that doesn't translate)
+- Translation-review process (native-speaker review per Decision 18
+  consent-first authorship; credit in `AUTHORS.md`)
+
+The CI parity test (`tests/test_phase0_i18n_parity.py`) gates
+locale-bundle PRs.
 
 ## Pull Request Process
 

@@ -120,6 +120,8 @@ nav:
       - Overview (GitHub): https://github.com/maksodf/directjob-scout/tree/main/compliance
       - Transparency notice: compliance/transparency-notice.md
       - Deployer operating manual: compliance/deployer-operating-manual.md
-  - Contributing: https://github.com/maksodf/directjob-scout/blob/main/CONTRIBUTING.md
+  - Contributing:
+      - Guide (GitHub): https://github.com/maksodf/directjob-scout/blob/main/CONTRIBUTING.md
+      - Translating: translating.md
   - Roadmap: https://github.com/maksodf/directjob-scout/blob/main/ROADMAP.md
   - Changelog: https://github.com/maksodf/directjob-scout/blob/main/CHANGELOG.md
