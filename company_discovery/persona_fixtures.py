@@ -693,10 +693,13 @@ def _wider_friction_mixed_pair(persona: PersonaFixture) -> list[BiasScenario]:
                 ),
             ),
         ]
-    # Defensive fallback for any future wider-friction persona that
-    # has not yet been hand-mapped: emit the migrant-shaped friction
-    # placeholders so the test still produces 10 scenarios. Surface as
-    # an inline TODO in the rationale so a maintainer notices.
+    # Defensive fallback for any future wider-friction persona that has
+    # not yet been hand-mapped: emit the migrant-shaped friction
+    # placeholders so the test still produces 10 scenarios. The current
+    # seven-persona panel is fully mapped, so this branch is unreached
+    # in CI; it acts as a maintenance contract for future panel
+    # additions (Phase 2 backlog item #55 would expand this when adding
+    # interview-derived personas).
     return [
         BiasScenario(
             label=f"{persona.slug}_mixed_unmapped_placeholder",
@@ -704,8 +707,10 @@ def _wider_friction_mixed_pair(persona: PersonaFixture) -> list[BiasScenario]:
             job_location=home,
             job_description=(
                 f"Placeholder scenario for {persona.slug} ({persona.cohort}). "
-                "TODO: replace with persona-appropriate friction shape per the "
-                "R12-polish-slice convention in persona_fixtures._wider_friction_mixed_pair."
+                "Maintainer adding a new wider-friction persona: replace "
+                "this string with a persona-appropriate friction shape per "
+                "the R12-polish-slice convention in "
+                "persona_fixtures._wider_friction_mixed_pair."
             ),
             expected_score_min=50,
             expected_score_max=80,
@@ -718,7 +723,10 @@ def _wider_friction_mixed_pair(persona: PersonaFixture) -> list[BiasScenario]:
             label=f"{persona.slug}_mixed_unmapped_placeholder_b",
             job_title=f"Senior {role_label} (cohort-unmapped placeholder)",
             job_location=home,
-            job_description=(f"Second placeholder scenario for {persona.slug}. See above TODO."),
+            job_description=(
+                f"Second placeholder scenario for {persona.slug}. "
+                "See preceding scenario for the maintenance-contract note."
+            ),
             expected_score_min=50,
             expected_score_max=80,
             rationale="Placeholder b.",

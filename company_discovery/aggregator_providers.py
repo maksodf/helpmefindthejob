@@ -42,7 +42,7 @@ from .aggregators import (
     title_matches_query_family,
 )
 
-_USER_AGENT = "DirectJobScout/0.19 (+https://app.helpmefindthejob.com/about)"
+_USER_AGENT = "Helpmefindthejob/0.1 (+https://app.helpmefindthejob.com/about)"
 
 
 def _strip_html(html_text: str) -> str:
