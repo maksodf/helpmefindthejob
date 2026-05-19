@@ -2,7 +2,7 @@
 
 **Status**: shipped in Week 2 §2.4. Curated subset under `reference/esco/`; full ESCO dataset import is post-grant scope.
 
-This document is the operational reference for how DirectJob Scout uses the **ESCO** (European Skills, Competences, Qualifications and Occupations) and **EURES** (European Employment Services) standards. It complements [`docs/mcp-server.md`](mcp-server.md) (which describes the MCP tools that surface these standards) and [`STANDARDS.md`](../STANDARDS.md) (which lists the standards we cite).
+This document is the operational reference for how DirectJob Scout uses the **ESCO** (European Skills, Competences, Qualifications and Occupations) and **EURES** (European Employment Services) standards. It complements [`docs/mcp-server.md`](mcp-server.md) (which describes the MCP tools that surface these standards) and [`STANDARDS.md`](https://github.com/maksodf/directjob-scout/blob/main/STANDARDS.md) (which lists the standards we cite).
 
 ---
 
@@ -25,10 +25,10 @@ Adopting these standards has three concrete consequences for the project:
 
 | Artefact | Location | Status |
 |---|---|---|
-| Curated 30-occupation reference dataset | [`reference/esco/occupations.json`](../reference/esco/occupations.json) | Shipped |
-| Curated 50-skill reference dataset | [`reference/esco/skills.json`](../reference/esco/skills.json) | Shipped |
-| Loader + persona-panel coverage tests | [`company_discovery/mcp_tools.py:_load_esco_reference_dataset`](../company_discovery/mcp_tools.py), [`tests/test_phase12_esco_eures.py`](../tests/test_phase12_esco_eures.py) | Shipped |
-| ESCO-backed `query_esco_skill` MCP tool | [`mcp_server.py`](../mcp_server.py) (catalogue v0.2.0) | Shipped |
+| Curated 30-occupation reference dataset | [`reference/esco/occupations.json`](https://github.com/maksodf/directjob-scout/blob/main/reference/esco/occupations.json) | Shipped |
+| Curated 50-skill reference dataset | [`reference/esco/skills.json`](https://github.com/maksodf/directjob-scout/blob/main/reference/esco/skills.json) | Shipped |
+| Loader + persona-panel coverage tests | [`company_discovery/mcp_tools.py:_load_esco_reference_dataset`](https://github.com/maksodf/directjob-scout/blob/main/company_discovery/mcp_tools.py), [`tests/test_phase12_esco_eures.py`](https://github.com/maksodf/directjob-scout/blob/main/tests/test_phase12_esco_eures.py) | Shipped |
+| ESCO-backed `query_esco_skill` MCP tool | [`mcp_server.py`](https://github.com/maksodf/directjob-scout/blob/main/mcp_server.py) (catalogue v0.2.0) | Shipped |
 | EURES-shaped `export_eures_compatible` MCP tool | same | Shipped (projection shape; end-to-end with persisted jobs lands in §2.6) |
 | Full ESCO dataset import (3,000 occupations / 13,000 skills, all 27 ESCO languages) | not in this commit | **Post-grant scope** (see "Upgrade path" below) |
 
@@ -230,7 +230,7 @@ DirectJob Scout acknowledges and complies with the CC BY 4.0 attribution require
 
 - [`docs/mcp-server.md`](mcp-server.md) — operational reference for `query_esco_skill` and `export_eures_compatible`
 - [`docs/grant/09-mcp-composition.md`](grant/09-mcp-composition.md) — composition spec; ESCO is the cross-agent shared taxonomy
-- [`STANDARDS.md`](../STANDARDS.md) — every standard the project cites
+- [`STANDARDS.md`](https://github.com/maksodf/directjob-scout/blob/main/STANDARDS.md) — every standard the project cites
 - [ESCO project homepage](https://esco.ec.europa.eu/)
 - [EURES portal](https://eures.europa.eu/)
 - [ESCO API documentation](https://ec.europa.eu/esco/api/doc/esco_api_doc.html)

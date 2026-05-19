@@ -15,7 +15,7 @@
 #   * PDF binary files — extraction noise produces false positives.
 #   * Lock files, JSON fixtures, SVG/CSS/minified assets, data —
 #     no contributor-written text.
-skip = *.lock,*.json,*.svg,*.css,*.min.js,*.pdf,private,data,build,static/i18n,static/impressum.html,static/datenschutz.html,docs/grant/06-glossary.md,docs/grant/outreach-drafts,docs/grant/11-institutional-outreach.md,docs/grant/commons-conservancy-application-2026-05-18.md,*.pyc,__pycache__,.git,Strategie*.pdf
+skip = *.lock,*.json,*.svg,*.css,*.min.js,*.pdf,private,data,build,site,static/i18n,static/impressum.html,static/datenschutz.html,docs/grant/06-glossary.md,docs/grant/outreach-drafts,docs/grant/11-institutional-outreach.md,docs/grant/commons-conservancy-application-2026-05-18.md,*.pyc,__pycache__,.git,Strategie*.pdf,*.min.css.map
 
 # Ignore-words rules:
 #   * Common German vocabulary that codespell's English dictionary

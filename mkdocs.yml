@@ -1,0 +1,105 @@
+# DirectJob Scout — mkdocs-material site config.
+#
+# Built locally with: `pip install -r requirements-dev.txt && mkdocs build --strict`.
+# Auto-deployed to GitHub Pages on every push to main and the working
+# branch via `.github/workflows/docs-publish.yml`.
+#
+# Cross-link rather than duplicate: native pages are the docs/ files
+# that already live in the docs tree; ARCHITECTURE / STANDARDS /
+# CONTRIBUTING / ROADMAP / CHANGELOG / compliance/ remain canonically
+# at the repo root and are linked as external GitHub URLs in the nav
+# so a single edit stays authoritative.
+
+site_name: DirectJob Scout
+site_description: >-
+  Open-source EU-wide civic employment commons — MCP-composable copilot
+  for users facing structural labor-market friction in Europe.
+site_url: https://maksodf.github.io/directjob-scout/
+repo_url: https://github.com/maksodf/directjob-scout
+repo_name: maksodf/directjob-scout
+edit_uri: edit/main/docs/
+
+# All public-facing planning + content lives under docs/. The grant
+# workspace (docs/grant/*) is an internal planning surface and is
+# excluded below — it does not belong on the public docs site.
+docs_dir: docs
+
+# Files inside docs/ that are internal / operator / audit artefacts and
+# should not be published on the public docs site. The pattern syntax is
+# gitignore-style.
+exclude_docs: |
+  grant/
+  releases/
+  null-handler-audit-2026-05-10.md
+  cookie-audit.md
+  deferred-test-backlog.md
+  incident-playbook.md
+  iteration-analytics.md
+  support-triage.md
+  pilot-runbook.md
+  security-review-checklist.md
+  threat-model.md
+  brand-voice.md
+  company-discovery-direct-career-page-search.md
+
+theme:
+  name: material
+  language: en
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.top
+    - navigation.tracking
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - toc.follow
+
+plugins:
+  - search
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/maksodf/directjob-scout
+  generator: false
+
+nav:
+  - Home: index.md
+  - Quickstart: https://github.com/maksodf/directjob-scout#quickstart
+  - Architecture: https://github.com/maksodf/directjob-scout/blob/main/ARCHITECTURE.md
+  - Standards: https://github.com/maksodf/directjob-scout/blob/main/STANDARDS.md
+  - MCP API: mcp-server.md
+  - Deployment:
+      - Generic recipe: deployment-recipe.md
+      - Production: production-deployment.md
+  - ESCO + EURES: esco-integration.md
+  - Compliance: https://github.com/maksodf/directjob-scout/tree/main/compliance
+  - Contributing: https://github.com/maksodf/directjob-scout/blob/main/CONTRIBUTING.md
+  - Roadmap: https://github.com/maksodf/directjob-scout/blob/main/ROADMAP.md
+  - Changelog: https://github.com/maksodf/directjob-scout/blob/main/CHANGELOG.md

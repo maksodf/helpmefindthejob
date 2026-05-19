@@ -37,3 +37,12 @@ codespell>=2.2.0,<3.0.0
 # Pip-audit — dependency vulnerability scanner. Run in CI on every
 # push.
 pip-audit>=2.7.0,<3.0.0
+
+# mkdocs-material — static documentation site generator that produces
+# the GitHub Pages site at https://maksodf.github.io/directjob-scout/.
+# Built locally with `mkdocs build --strict` and deployed by
+# `.github/workflows/docs-publish.yml` on every push. Config lives in
+# `mkdocs.yml` at the repo root. Major pin keeps the theme contract
+# stable across the 4-week grant sprint; the upgrade conversation
+# happens deliberately, not by surprise.
+mkdocs-material>=9.5.0,<10.0.0

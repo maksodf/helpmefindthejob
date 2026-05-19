@@ -10,6 +10,7 @@
 [![Release](https://img.shields.io/badge/release-pre--v0.1.0-lightgrey.svg)](#)
 [![Languages](https://img.shields.io/badge/languages-EN%20%2B%20DE-informational.svg)](static/i18n/)
 [![MCP](https://img.shields.io/badge/MCP-2024--11--05-blueviolet.svg)](https://modelcontextprotocol.io)
+[![Docs](https://github.com/maksodf/directjob-scout/actions/workflows/docs-publish.yml/badge.svg?branch=claude/project-analysis-bpHCo)](https://maksodf.github.io/directjob-scout/)
 
 > Aïcha is a Tunisian-trained registered nurse working through §16d
 > Anerkennung in Berlin — clinically capable, German at B1 climbing

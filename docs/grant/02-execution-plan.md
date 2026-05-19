@@ -365,9 +365,9 @@ Re-anchored scope:
 
 ### 3.5 Documentation site (3 h)
 
-- [ ] Set up mkdocs-material with basic site structure: Quickstart, Architecture, Deployment, Contributing, MCP API, Standards, AI Act compliance, Roadmap
-- [ ] Auto-deploy via GitHub Actions to GitHub Pages
-- [ ] Link from README
+- [x] Set up mkdocs-material with basic site structure: Quickstart, Architecture, Deployment, Contributing, MCP API, Standards, AI Act compliance, Roadmap *(landed 2026-05-19: `mkdocs.yml` at repo root, `docs/index.md` landing page with Decision-21 friction-class opener, native serving for `docs/*.md`, external GitHub links for top-level + compliance content per "don't duplicate")*
+- [x] Auto-deploy via GitHub Actions to GitHub Pages *(landed 2026-05-19: `.github/workflows/docs-publish.yml`; trigger on push to main + working branch; pull-requests run the build verification only. All four actions pinned to commit SHAs per OpenSSF Scorecard. Settings → Pages → Source must be flipped to "GitHub Actions" on first push for the deploy job to activate; this is a one-time maintainer action surfaced in the slice closeout.)*
+- [x] Link from README *(landed 2026-05-19: Docs badge linking to https://maksodf.github.io/directjob-scout/ added near the existing CI badges.)*
 
 ### 3.6 Accessibility audit and ACCESSIBILITY.md (8 h)
 

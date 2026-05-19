@@ -1,0 +1,93 @@
+# DirectJob Scout — mkdocs-material → GitHub Pages publish workflow.
+#
+# Trigger: push to `main` and to the working branch `claude/project-
+# analysis-bpHCo` during the 4-week grant sprint; pull-requests build
+# the site (verifying `mkdocs build --strict` succeeds) but do NOT
+# deploy. The `claude/project-analysis-bpHCo` trigger is removed when
+# work merges to main and the branch is closed.
+#
+# Pages activation: this workflow ships independent of whether
+# Settings → Pages → Source is set to "GitHub Actions". When the
+# maintainer flips that setting (Settings → Pages → Source → GitHub
+# Actions), the next push activates the deploy automatically. Until
+# then, the build-and-upload-artifact stages run successfully and
+# the `deploy` job surfaces the Pages-not-enabled error in its log —
+# a deliberate signal, not a workflow defect.
+#
+# Action pinning: every external action is pinned to a commit SHA per
+# OpenSSF Scorecard "pinned-dependencies" check. The pinned versions
+# are documented inline; bumps go through review like any other
+# dependency change.
+
+name: docs-publish
+
+on:
+  push:
+    branches:
+      - main
+      - claude/project-analysis-bpHCo
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+# Only one concurrent deploy of the docs site — but do NOT cancel an
+# in-progress run, because Pages deployments are not idempotent under
+# cancellation (a partial upload can leave the site in an inconsistent
+# state).
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build mkdocs site
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        # actions/checkout v4.2.2
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Setup Python 3.12
+        # actions/setup-python v5.3.0
+        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+
+      - name: Install mkdocs-material
+        run: |
+          python -m pip install --upgrade pip
+          # Only mkdocs-material is needed to build the docs site;
+          # avoids pulling the full dev toolchain (ruff, mypy, etc.)
+          # into the docs build job.
+          python -m pip install "mkdocs-material>=9.5.0,<10.0.0"
+
+      - name: Build site (strict)
+        run: mkdocs build --strict
+
+      - name: Upload Pages artifact
+        # actions/upload-pages-artifact v3.0.1
+        uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa
+        with:
+          path: site
+
+  deploy:
+    name: Deploy to GitHub Pages
+    if: github.event_name == 'push'
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        # actions/deploy-pages v4.0.5
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e
