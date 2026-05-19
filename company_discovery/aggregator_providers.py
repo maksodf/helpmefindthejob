@@ -114,10 +114,12 @@ class ArbeitnowProvider:
 
     name: str = "arbeitnow"
     base_url: str = "https://www.arbeitnow.com/api/job-board-api"
-    attribution: ProviderAttribution | None = ProviderAttribution(
-        name="arbeitnow",
-        label="Arbeitnow",
-        url="https://www.arbeitnow.com/",
+    attribution: ProviderAttribution | None = field(
+        default_factory=lambda: ProviderAttribution(
+            name="arbeitnow",
+            label="Arbeitnow",
+            url="https://www.arbeitnow.com/",
+        ),
     )
     fetcher: object = field(default_factory=_StdlibFetcher)
 
@@ -196,10 +198,12 @@ class MuseProvider:
 
     name: str = "muse"
     base_url: str = "https://www.themuse.com/api/public/jobs"
-    attribution: ProviderAttribution | None = ProviderAttribution(
-        name="muse",
-        label="The Muse",
-        url="https://www.themuse.com/",
+    attribution: ProviderAttribution | None = field(
+        default_factory=lambda: ProviderAttribution(
+            name="muse",
+            label="The Muse",
+            url="https://www.themuse.com/",
+        ),
     )
     fetcher: object = field(default_factory=_StdlibFetcher)
 
@@ -266,10 +270,12 @@ class RemotiveProvider:
 
     name: str = "remotive"
     base_url: str = "https://remotive.com/api/remote-jobs"
-    attribution: ProviderAttribution | None = ProviderAttribution(
-        name="remotive",
-        label="Remotive",
-        url="https://remotive.com/",
+    attribution: ProviderAttribution | None = field(
+        default_factory=lambda: ProviderAttribution(
+            name="remotive",
+            label="Remotive",
+            url="https://remotive.com/",
+        ),
     )
     # Engine skips this provider when the user's saved search names
     # a specific (non-remote) location.
@@ -340,10 +346,12 @@ class WeWorkRemotelyProvider:
         "https://weworkremotely.com/categories/remote-marketing-jobs.rss",
         "https://weworkremotely.com/categories/remote-business-jobs.rss",
     )
-    attribution: ProviderAttribution | None = ProviderAttribution(
-        name="weworkremotely",
-        label="We Work Remotely",
-        url="https://weworkremotely.com/",
+    attribution: ProviderAttribution | None = field(
+        default_factory=lambda: ProviderAttribution(
+            name="weworkremotely",
+            label="We Work Remotely",
+            url="https://weworkremotely.com/",
+        ),
     )
     # Remote-only feed; engine skips this provider on specific-location
     # searches — see JobAggregationEngine.search.
@@ -422,10 +430,12 @@ class HackerNewsHiringProvider:
     name: str = "hn_hiring"
     search_url: str = "https://hn.algolia.com/api/v1/search"
     item_url: str = "https://hn.algolia.com/api/v1/items"
-    attribution: ProviderAttribution | None = ProviderAttribution(
-        name="hn_hiring",
-        label="Hacker News “Who is hiring?”",
-        url="https://news.ycombinator.com/",
+    attribution: ProviderAttribution | None = field(
+        default_factory=lambda: ProviderAttribution(
+            name="hn_hiring",
+            label="Hacker News “Who is hiring?”",
+            url="https://news.ycombinator.com/",
+        ),
     )
     fetcher: object = field(default_factory=_StdlibFetcher)
 
@@ -577,10 +587,12 @@ class EuresProvider:
 
     name: str = "eures"
     base_url: str = "https://ec.europa.eu/eures/eures-apps/searchengine/page/jv-search/search"
-    attribution: ProviderAttribution | None = ProviderAttribution(
-        name="eures",
-        label="EURES — European Employment Services",
-        url="https://ec.europa.eu/eures/",
+    attribution: ProviderAttribution | None = field(
+        default_factory=lambda: ProviderAttribution(
+            name="eures",
+            label="EURES — European Employment Services",
+            url="https://ec.europa.eu/eures/",
+        ),
     )
     fetcher: object = field(default_factory=_StdlibFetcher)
 
@@ -681,10 +693,12 @@ class BundesagenturProvider:
     name: str = "bundesagentur"
     base_url: str = "https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v4/jobs"
     api_key: str = "jobboerse-jobsuche"  # documented public token
-    attribution: ProviderAttribution | None = ProviderAttribution(
-        name="bundesagentur",
-        label="Bundesagentur für Arbeit",
-        url="https://www.arbeitsagentur.de/jobsuche/",
+    attribution: ProviderAttribution | None = field(
+        default_factory=lambda: ProviderAttribution(
+            name="bundesagentur",
+            label="Bundesagentur für Arbeit",
+            url="https://www.arbeitsagentur.de/jobsuche/",
+        ),
     )
     fetcher: object = field(default_factory=_StdlibFetcher)
 
@@ -771,10 +785,12 @@ class AdzunaProvider:
     app_key: str = ""
     country: str = "de"
     base_url: str = "https://api.adzuna.com/v1/api/jobs"
-    attribution: ProviderAttribution | None = ProviderAttribution(
-        name="adzuna",
-        label="Adzuna",
-        url="https://www.adzuna.com/",
+    attribution: ProviderAttribution | None = field(
+        default_factory=lambda: ProviderAttribution(
+            name="adzuna",
+            label="Adzuna",
+            url="https://www.adzuna.com/",
+        ),
     )
     fetcher: object = field(default_factory=_StdlibFetcher)
 

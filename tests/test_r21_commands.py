@@ -15,6 +15,7 @@ helper functions directly so they're cheap + deterministic.
 from __future__ import annotations
 
 import unittest
+from typing import ClassVar
 
 from company_discovery.chat_router import REGISTRY
 from company_discovery.job_type_filter import (
@@ -29,7 +30,7 @@ from company_discovery.job_type_filter import (
 class TaxonomyExpansionTests(unittest.TestCase):
     """The 10 new buckets all exist + carry the right shape."""
 
-    EXPECTED_BUCKETS = {
+    EXPECTED_BUCKETS: ClassVar[set[str]] = {
         "software_engineer",
         "data_engineer",
         "product_manager",

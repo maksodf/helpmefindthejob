@@ -15,6 +15,7 @@ locales (``en`` and ``de``) plus the regression test that keeps the
 from __future__ import annotations
 
 import unittest
+from typing import ClassVar
 
 from company_discovery import locale_parser
 from company_discovery.locale_parser import (
@@ -30,8 +31,8 @@ from company_discovery.locale_parser import (
 
 
 class EnglishTokenTests(unittest.TestCase):
-    AFFIRMATIVES = ["yes", "yeah", "yep", "yup", "ok", "okay", "sure", "y"]
-    NEGATIVES = ["no", "nope", "nah", "n"]
+    AFFIRMATIVES: ClassVar[list[str]] = ["yes", "yeah", "yep", "yup", "ok", "okay", "sure", "y"]
+    NEGATIVES: ClassVar[list[str]] = ["no", "nope", "nah", "n"]
 
     def test_all_affirmatives_recognised(self) -> None:
         for token in self.AFFIRMATIVES:
@@ -50,8 +51,17 @@ class EnglishTokenTests(unittest.TestCase):
 
 
 class GermanTokenTests(unittest.TestCase):
-    AFFIRMATIVES = ["ja", "jo", "jep", "jepp", "doch", "klar", "bestimmt", "sicher"]
-    NEGATIVES = ["nein", "nö", "ne", "ne-ne", "niemals"]
+    AFFIRMATIVES: ClassVar[list[str]] = [
+        "ja",
+        "jo",
+        "jep",
+        "jepp",
+        "doch",
+        "klar",
+        "bestimmt",
+        "sicher",
+    ]
+    NEGATIVES: ClassVar[list[str]] = ["nein", "nö", "ne", "ne-ne", "niemals"]
 
     def test_all_affirmatives_recognised(self) -> None:
         for token in self.AFFIRMATIVES:
