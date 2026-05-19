@@ -1,0 +1,29 @@
+{
+  "persona": "aicha",
+  "surface": "auto_fit",
+  "model": "llama3.1:8b",
+  "model_provider": "ollama",
+  "timestamp_utc": "2026-05-20",
+  "prompt_version": "post-Pass1+2 enhancements (per-criterion decomposition + friction context + anti-round-number-anchoring)",
+  "elapsed_seconds": 17.3,
+  "result_status": "completed",
+  "output_raw": "SCORE_SKILLS: 18 — match between the candidate's CV skills and the JD's required skills\nSCORE_EXPERIENCE: 13 — seniority + years-of-experience + relevance of past roles vs the JD\nSCORE_LOCATION_LANGUAGE: 20 — geographic + language fit (CEFR level vs JD language; visa / residency status if relevant)\nSCORE_FRICTION_FIT: 15 — accommodates the candidate's documented friction context (Anerkennung pathway, Wiedereinstieg)\nSCORE: 66\nREASON: Strong match on location and language skills, despite some skill gaps.\nGAPS: examination, hospital operations",
+  "rubric_score": {
+    "R3.1_specificity": 3,
+    "R3.2_friction_aware": 3,
+    "R3.3_convention_fit": 3,
+    "R3.4_honesty": 2,
+    "R3.5_ux_clarity": 2,
+    "R3.6_slow_op_ux": "n/a (single-call API)",
+    "R3.7_error_recovery": "n/a (template-level)",
+    "R3.8_accessibility": "n/a (no UI rendered)"
+  },
+  "notes": [
+    "Per-criterion sum: 18+13+20+15 = 66 (matches SCORE) — granular reasoning, NOT round-number anchor",
+    "SCORE_FRICTION_FIT 15/25 explicitly names 'Anerkennung pathway, Wiedereinstieg' (correct for Aicha §16d AufenthG)",
+    "REASON cites location + language match — correct for Aicha (Berlin + DE B1 climbing)",
+    "GAPS surfaces 'examination, hospital operations' — reasonable surface; could be more specific (e.g., 'B2-level Pflegedokumentation') but honest about uncertainty",
+    "Score 66 within Aicha-strong tolerance band [40, 70] ±10 — would PASS bias-methodology test under existing thresholds"
+  ],
+  "before_pass1_baseline": "From bias-testing-2026-05-18-broadened.md: Aicha strong-fit scenarios clustered at 85/92 (round-number anchoring). Per-criterion decomposition was the planned remediation in compliance/risk-management-plan.md §R4."
+}
