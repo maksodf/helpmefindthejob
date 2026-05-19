@@ -267,9 +267,9 @@ class ExportsTests(unittest.TestCase):
         )
         csv_text = imported_jobs_to_csv([job])
         # Title cell must start with a leading single quote so spreadsheets
-        # render the text as literal, not as a formula.
-        rows = [line.split(",") for line in csv_text.strip().splitlines()]
-        # csv module quotes the title; verify the leading apostrophe is present
+        # render the text as literal, not as a formula. We assert against
+        # the rendered csv_text directly; no per-row split needed since
+        # the apostrophe-prefix check is a string-contains.
         self.assertIn("'=cmd", csv_text)
         self.assertIn("'@evil-corp", csv_text)
         self.assertIn("'-1", csv_text)
@@ -364,7 +364,7 @@ class BillingTests(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             backend = ManualBillingBackend(path=Path(tmp) / "billing.json")
             self.assertEqual(backend.load().plan_id, "pilot")
-            sub = backend.save(
+            backend.save(
                 Subscription(
                     plan_id="team", status="active", seats=5, customer_email="x@example.com"
                 )

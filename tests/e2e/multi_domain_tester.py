@@ -220,7 +220,7 @@ def domain_data_analytics(c: Client) -> None:
 
 def domain_product_ux(c: Client) -> None:
     reset(c)
-    r = chat_until_confirm(c, "/add-company UX-Co https://ux-co.example")
+    chat_until_confirm(c, "/add-company UX-Co https://ux-co.example")
     cancel = chat(c, "no")
     assert "cancelled" in cancel, cancel
     s, boot = c.get("/api/bootstrap")
@@ -340,7 +340,7 @@ def domain_v2_commands(c: Client) -> None:
     set_persona, run_saved_search, delete_company, tailor_cv."""
     reset(c)
     # set_persona via slash
-    r = chat_until_confirm(c, "/persona tech")
+    chat_until_confirm(c, "/persona tech")
     chat(c, "yes")
     s, boot = c.get("/api/bootstrap")
     profile = boot.get("profile") or {}

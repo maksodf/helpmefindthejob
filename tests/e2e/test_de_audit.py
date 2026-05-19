@@ -31,8 +31,8 @@ from pathlib import Path
 
 try:
     from playwright.sync_api import sync_playwright
-except ImportError:  # CI runners don't ship playwright; skip the whole module.
-    raise unittest.SkipTest("playwright not installed")
+except ImportError as err:  # CI runners don't ship playwright; skip the whole module.
+    raise unittest.SkipTest("playwright not installed") from err
 
 OUT = Path("/tmp/dj-de-audit")
 OUT.mkdir(exist_ok=True)

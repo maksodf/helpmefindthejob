@@ -777,8 +777,8 @@ class AppState:
             else:
                 try:
                     existing.years_experience = max(0, min(60, int(raw_years)))
-                except (TypeError, ValueError):
-                    raise ValueError("invalid_years_experience")
+                except (TypeError, ValueError) as err:
+                    raise ValueError("invalid_years_experience") from err
         languages = payload.get("languages")
         if isinstance(languages, str):
             languages = [item.strip() for item in languages.split(",") if item.strip()]
@@ -840,15 +840,15 @@ class AppState:
             raw = payload.get("slackFitThreshold", payload.get("slack_fit_threshold"))
             try:
                 t = float(raw) if raw is not None else 0.70
-            except (TypeError, ValueError):
-                raise ValueError("invalid_slack_fit_threshold")
+            except (TypeError, ValueError) as err:
+                raise ValueError("invalid_slack_fit_threshold") from err
             existing.slack_fit_threshold = max(0.0, min(1.0, t))
         if "retentionDays" in payload or "retention_days" in payload:
             raw = payload.get("retentionDays", payload.get("retention_days"))
             try:
                 days = int(raw) if raw is not None else 90
-            except (TypeError, ValueError):
-                raise ValueError("invalid_retention_days")
+            except (TypeError, ValueError) as err:
+                raise ValueError("invalid_retention_days") from err
             existing.retention_days = max(0, min(3650, days))
         if "onboardingDismissed" in payload or "onboarding_dismissed" in payload:
             existing.onboarding_dismissed = bool(
@@ -950,8 +950,8 @@ class AppState:
             mode_slug = "managed" if config.provider_id == "managed" else "byok"
         try:
             self.assert_ai_mode_allowed(mode_slug)
-        except ValueError:
-            raise ValueError("plan_ai_mode_locked")
+        except ValueError as err:
+            raise ValueError("plan_ai_mode_locked") from err
         self.ai_providers[user_id] = config
         self.ai_config_path.parent.mkdir(parents=True, exist_ok=True)
         self.ai_config_path.write_text(
@@ -1578,9 +1578,9 @@ class AppState:
 
         public_url = self.public_url_for("/")
         help_url = self.public_url_for("/help")
-        bookmarklet_url = self.public_url_for(
-            "/"
-        )  # bookmarklet card lives in Settings → Bookmarklet
+        # Bookmarklet card lives in Settings → Bookmarklet; the
+        # public_url above already points at the app, so we don't need
+        # a separate bookmarklet_url variable.
         body = (
             f"Welcome to Helpmefindthejob.\n\n"
             "You signed in for the first time — here are three quick wins to make the product useful in 5 minutes:\n\n"
@@ -4379,8 +4379,8 @@ class AppState:
                     imported.reminder_at = datetime.fromisoformat(
                         str(raw_reminder).replace("Z", "+00:00")
                     )
-                except ValueError:
-                    raise ValueError("invalid_reminder_at")
+                except ValueError as err:
+                    raise ValueError("invalid_reminder_at") from err
         if "replied" in payload or "repliedAt" in payload or "replied_at" in payload:
             # Accept either a boolean checkbox (`replied`) or a literal
             # timestamp. ``replied=true`` stamps now() if not already
@@ -4402,8 +4402,8 @@ class AppState:
                         imported.replied_at = datetime.fromisoformat(
                             str(raw_replied).replace("Z", "+00:00")
                         )
-                    except ValueError:
-                        raise ValueError("invalid_replied_at")
+                    except ValueError as err:
+                        raise ValueError("invalid_replied_at") from err
             # CV-variant attribution (#44): on the transition from None
             # to a real timestamp, mark the most recent variant as the
             # one that earned the reply. On clearing, undo the flag so

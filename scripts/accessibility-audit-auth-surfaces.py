@@ -241,8 +241,8 @@ def _open_cmdk(page) -> None:
         try:
             page.locator("#cmdkLauncher").click(timeout=2000)
             page.locator("#cmdkDialog[open]").wait_for(state="visible", timeout=5000)
-        except Exception:
-            raise RuntimeError("cmdk dialog did not open")
+        except Exception as err:
+            raise RuntimeError("cmdk dialog did not open") from err
     page.wait_for_timeout(200)
 
 

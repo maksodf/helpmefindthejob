@@ -226,7 +226,10 @@ class TrackerDepthTests(unittest.TestCase):
 
     def test_status_change_appends_history(self) -> None:
         user_id, job_id = self._seed_imported_job()
-        first = self.state.update_application_state(
+        # First call seeds the history with "applied"; we don't bind
+        # the return because the assertion below targets the SECOND
+        # call's outcome + the cumulative history shape.
+        self.state.update_application_state(
             user_id,
             job_id,
             {"applicationStatus": "applied"},

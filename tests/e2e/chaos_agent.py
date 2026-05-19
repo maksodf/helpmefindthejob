@@ -956,12 +956,10 @@ def chaos_concurrent_writes() -> list[ChaosResult]:
     """Two parallel sessions both write to the same profile. The user
     should never see a 500 or stale data; last-write-wins is fine."""
     c1 = _tester()
-    # Re-login as same user from a fresh client to get a parallel session.
-    # Reuse via duplicate signup is more disruptive — use the same cookie.
-    email = None
-    sid = None
-    # Easier: create one tester, then run 10 parallel CV writes from that
-    # single client and verify all succeed (no 500s).
+    # One tester, then 10 parallel CV writes from the same client to
+    # verify all succeed (no 500s). The earlier sketch contemplated a
+    # fresh parallel session via duplicate signup (more disruptive);
+    # the same-cookie approach is sufficient.
     errors: list[str] = []
     statuses: list[int] = []
     lock = threading.Lock()
