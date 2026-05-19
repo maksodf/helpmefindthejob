@@ -2,7 +2,7 @@
 
 **STATUS**: DRAFTED — NOT YET SENT — TARGET SEND: WEEK 4 START
 
-**Contact details last verified**: 2026-05-18 via Berlin.de Charlottenburg-Wilmersdorf integration listing + AWO Berlin migration-services page. Re-verify name, email, and any change of role within the week before sending.
+**Contact details last verified**: 2026-05-18 via Berlin.de Charlottenburg-Wilmersdorf integration listing + AWO Berlin migration-services page. Re-checked 2026-05-19 against the same sources — no public change to the FIM-CW contact surface. Re-verify name, email, and any change of role on the day of sending; the AWO Berlin web surface is occasionally republished.
 
 ---
 

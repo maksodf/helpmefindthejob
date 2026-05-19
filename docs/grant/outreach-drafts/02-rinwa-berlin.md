@@ -2,7 +2,7 @@
 
 **STATUS**: DRAFTED — NOT YET SENT — TARGET SEND: WEEK 4 START
 
-**Contact details last verified**: 2026-05-18 via La Red RINWA project page. Re-verify within the week before sending; RINWA is a fresh 2026 successor to IQ-Netzwerk Berlin and the staffing may shift in early operation.
+**Contact details last verified**: 2026-05-18 via La Red RINWA project page. Re-checked 2026-05-19 — no public change to the named-contact surface; programme remains in early-2026 operation. Re-verify on the day of sending: RINWA staffing may shift, and the published team page should be the last-touched ground-truth before send.
 
 ---
 

@@ -2,7 +2,7 @@
 
 **STATUS**: DRAFTED — NOT YET SENT — TARGET SEND: WEEK 4 START
 
-**Contact details last verified**: 2026-05-18 via TU Berlin Career Service team page (tu.berlin/en/careerservice/about-us/team). Re-verify name, role, and email within the week before sending.
+**Contact details last verified**: 2026-05-18 via TU Berlin Career Service team page (tu.berlin/en/careerservice/about-us/team). Re-checked 2026-05-19 — no public change to the team-listing surface. Re-verify name + role + email on the day of sending; TU Berlin's team page is occasionally republished mid-semester.
 
 ---
 

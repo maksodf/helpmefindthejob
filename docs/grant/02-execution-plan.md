@@ -423,17 +423,14 @@ Re-anchored scope:
 
 The three draft messages prepared in Week 1 task 1.6 are saved under [`outreach-drafts/`](outreach-drafts/). Send-gate criterion per Decision 19: README, demo deployment, docs site, AI Act compliance pack, and green-CI badges all visibly finished before any send.
 
-- [ ] Re-verify each draft's contact details (name, role, email) — the drafts carry "last verified" dates from Week 1; check whether anything changed
-- [ ] Confirm the send-gate criterion is satisfied (Week 3 deliverables visibly complete)
-- [ ] Personalise the three German draft messages — fill in maintainer name, contact email, project link, and (for TU Berlin) student programme + Matrikelnummer
-- [ ] Send the three outbound emails:
-  - AWO Charlottenburg-Wilmersdorf FIM — Irina Alles (`fim-cw@awoberlin.de`)
-  - RINWA Berlin / La Red — Cristina Faraco Blanco (`faraco@la-red.eu`)
-  - TU Berlin Career Service — Bettina Satory (`bettina.satory@tu-berlin.de`)
-- [ ] Update the outreach tracker in `11-institutional-outreach.md` with send dates and any reply/outcome notes
-- [ ] Send the housing-agent collaboration message (Template F) — handled by maintainer if not already done in Week 2 task 2.5
-- [ ] Optionally send to one Optionskommune Jobcenter IF a strong-fit office has emerged organically (otherwise hold; one credible letter is sufficient)
-- [ ] Set a 7-day follow-up reminder per Template B for any contact who has not replied; one follow-up only, then stop
+- [x] Re-verify each draft's contact details (name, role, email) *(landed 2026-05-19: all three drafts' "Contact details last verified" lines bumped from 2026-05-18 to 2026-05-19 after re-checking the canonical contact sources (Berlin.de Charlottenburg-Wilmersdorf integration listing + AWO Berlin migration-services page; La Red RINWA project page; TU Berlin Career Service team page). No public change to any of the three named-contact surfaces. Day-of-send re-verification still in the maintainer's hands.)*
+- [x] Confirm the send-gate criterion is satisfied *(landed 2026-05-19: full send-gate audit at [`outreach-readiness-2026-05-19.md`](outreach-readiness-2026-05-19.md). 11 of 12 criteria show ✅; the docs-site live-deploy line is 🟡 amber pending the working-branch-to-main merge that triggers the Pages deploy workflow. Recommendation: send AFTER the merge so the docs URL referenced in the email bodies resolves on first click.)*
+- [x] Personalise the three German draft messages *(partially landed 2026-05-19: the agent does NOT fill identity-bearing fields per Decision 18 consent-first authorship. The `[Maintainer]` + `[Kontakt-Email]` + `[Studienprogramm]` + `[Matrikelnummer]` placeholders are intentionally preserved for the maintainer to fill on send-day; the four placeholders are documented in `outreach-readiness-2026-05-19.md` "Maintainer-side fills retained" section + the send-day script.)*
+- [ ] Send the three outbound emails *(maintainer-side; gated on docs-site live deploy after branch-to-main merge per outreach-readiness-2026-05-19.md "Recommendation")*
+- [ ] Update the outreach tracker in `11-institutional-outreach.md` with send dates and any reply/outcome notes *(maintainer-side; triggered on send)*
+- [ ] Send the housing-agent collaboration message (Template F) *(maintainer-side; per Decision 20 the housing-agent integration is Option A mock-stub default with Option B real-collaboration as the upgrade path if the friend confirms)*
+- [ ] Optionally send to one Optionskommune Jobcenter IF a strong-fit office has emerged organically *(maintainer-side; one credible letter is sufficient — see Milestone 6 in application draft)*
+- [ ] Set a 7-day follow-up reminder per Template B for any contact who has not replied *(maintainer-side; one follow-up only, then stop)*
 
 ### 4.1 Sustainability and post-grant story (3 h)
 
@@ -455,11 +452,11 @@ The three draft messages prepared in Week 1 task 1.6 are saved under [`outreach-
 
 ### 4.4 Write and dry-run the application (10 h)
 
-- [ ] Verify NLnet's live application form structure (Open Research Question R3 in `04-research-and-decisions.md`)
-- [ ] Adapt `12-application-package.md` content into the form fields
-- [ ] Pre-empt NLnet's support services: list which we anticipate using (accessibility audit, packaging, security audit, mentoring)
-- [ ] Have one person outside the project read it cold for clarity
-- [ ] Revise based on feedback
+- [x] Verify NLnet's live application form structure (Open Research Question R3 in `04-research-and-decisions.md`) *(landed 2026-05-19: `nlnet-form-fields-2026-05-19.md` documents the 22-field structure via direct fetch of nlnet.nl/propose + nlnet.nl/commonsfund/ + the Guide for Applicants + the FAQ. Closes Open R3 with date + reference inline. Call deadline verified: 2026-06-01 12:00 CEST.)*
+- [x] Adapt `12-application-package.md` content into the form fields *(landed 2026-05-19: `application-draft-2026-05-19.md` with one section per form field. Total budget €37k below the €50k first-proposal cap per Decision 10. Decisions 1/2/4/6/9/10/11/16/17/18/19/20/21 cited inline. Per-numerical-claim verification table at the bottom — every number traces to a primary source URL or is tagged industry-estimate/projected/not-measured per Rule 2 of 13-lessons-learned.md. Closes Open R10 with the per-milestone €4k+€8k+€10k+€6k+€5k+€4k breakdown documented.)*
+- [x] Pre-empt NLnet's support services *(landed 2026-05-19: application draft §"NLnet support services we intend to use if funded" names three Phase 1 services — HAN University accessibility audit (manual keyboard + screen-reader review beyond the axe-core baseline), AI Act compliance mentoring (around the 2026-08-02 enforcement date), NixOS Foundation packaging (Phase 2 pure-Nix buildPythonApplication candidate). Security audit explicitly deferred to a Phase 2 ≥€50k subsequent proposal.)*
+- [ ] Have one person outside the project read it cold for clarity *(maintainer-side; recruit a friend or colleague — per the slice spec, the application body is dry-run-ready but external clarity feedback is a critical pre-submission step)*
+- [ ] Revise based on feedback *(maintainer-side; follow-on commit after external-reader feedback folds in)*
 
 ### 4.5 Final polish and submission (5 h)
 

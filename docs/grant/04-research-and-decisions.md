@@ -413,8 +413,11 @@ These are not yet decided. Listed so a future agent or planning session can prio
 
 ### Open R3: NLnet application form exact questions
 
-- The application form is short and standard but its exact questions shape Week 4 application drafting
-- **Action**: visit the NLnet apply page directly during Week 3 to capture the form structure before drafting
+**Status as of 2026-05-19**: ANSWERED.
+
+- The form structure is documented at [`nlnet-form-fields-2026-05-19.md`](nlnet-form-fields-2026-05-19.md) — 22 fields covering contact (1–5), call selection (6), project body (7–16: name, website, abstract, prior involvement, requested amount, budget usage, other funding, project comparison, technical challenges, ecosystem), attachments (17), GenAI disclosure (18–20), privacy + send-copy checkboxes (21–22).
+- Application body drafted at [`application-draft-2026-05-19.md`](application-draft-2026-05-19.md) — one section per form field, every numerical claim either inline-cited to a primary source URL or tagged as `industry-estimate` / `projected` / `not measured`. Pending the maintainer's review + an external-reader clarity pass + final submission via nlnet.nl/propose.
+- 13th-call deadline verified at 2026-06-01 12:00 CEST.
 
 ### Open R4: Letter-of-support contact names
 
@@ -451,8 +454,11 @@ These are not yet decided. Listed so a future agent or planning session can prio
 
 ### Open R10: Budget per-milestone breakdown
 
-- Decided to be frugal-by-default, max €50k if justified; exact per-milestone breakdown unfinalised
-- **Action**: Week 4 — when application is drafted, exact breakdown emerges from the milestone deliverables; document in `12-application-package.md`
+**Status as of 2026-05-19**: ANSWERED.
+
+- Per-milestone breakdown finalised at **€37,000 total** (below the €50,000 first-proposal cap per Decision 10's frugal-by-default posture). Six milestones documented in [`application-draft-2026-05-19.md`](application-draft-2026-05-19.md) Field 12: M1 legal+governance €4k, M2 MCP composition €8k, M3 AI Act compliance pack €10k, M4 demo+accessibility €6k, M5 reproducible builds €5k, M6 institutional readiness €4k. Each milestone has a verifiable public deliverable + a documented acceptance criterion + a cost-saving-mechanism statement.
+- Per Decision 10's frugal posture: the €37k figure reflects the genuine cost of the delivered + outstanding work, not a maximisation against the €50k cap.
+- The maintainer's final read should re-confirm the four numerical claims in the draft's verification table (163 shortage occupations / 46k healthcare unfilled / ~700 MBE / 104 Optionskommunen) against the named primary sources at submission time.
 
 ### Open R11: Commons Conservancy application — response timing
 
