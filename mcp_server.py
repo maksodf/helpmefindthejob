@@ -281,7 +281,7 @@ def _emit_tool_call_audit(
             error_class=error_class,
             emitter=emitter,
         )
-    except Exception:
+    except Exception:  # noqa: BLE001, S110 - audit logging is best-effort; failure must never break the MCP server's user-facing dispatch
         # Audit logging never breaks the MCP server.
         pass
 
@@ -291,7 +291,7 @@ def run_stdio(tools: CompanyDiscoveryMCPTools | None = None) -> None:
     ctx_token = audit_log.set_caller_context(caller="mcp")
     try:
         audit_log.emit_system_event(system_event_kind="mcp_server_started")
-    except Exception:
+    except Exception:  # noqa: BLE001, S110 - server-started event is best-effort; never block startup on the audit log
         pass
     try:
         for line in sys.stdin:
@@ -310,7 +310,7 @@ def run_stdio(tools: CompanyDiscoveryMCPTools | None = None) -> None:
     finally:
         try:
             audit_log.emit_system_event(system_event_kind="mcp_server_stopped")
-        except Exception:
+        except Exception:  # noqa: BLE001, S110 - server-stopped event is best-effort; never block shutdown on the audit log
             pass
         audit_log.reset_caller_context(ctx_token)
 

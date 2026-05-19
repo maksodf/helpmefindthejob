@@ -339,6 +339,6 @@ class DurableScheduler:
         while not self._stop.is_set():
             try:
                 self.run_due()
-            except Exception:  # noqa: BLE001 - never let the loop die
+            except Exception:  # noqa: BLE001, S110 - never let the loop die
                 pass
             self._stop.wait(self.poll_seconds)

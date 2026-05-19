@@ -338,7 +338,7 @@ def _resolve_salt(raw: str) -> bytes:
             decoded = base64.b64decode(raw, validate=False)
             if len(decoded) >= 16:
                 return decoded
-        except Exception:
+        except Exception:  # noqa: BLE001, S110 - invalid base64 falls through to raw-bytes path on purpose
             pass
         return raw.encode("utf-8")
     env = _resolve_app_env()

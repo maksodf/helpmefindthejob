@@ -425,7 +425,7 @@ class AppState:
             self.encryption_at_rest: EncryptionAtRest | None = EncryptionAtRest.from_secret_key(
                 SECRET_KEY
             )
-        except Exception:
+        except Exception:  # noqa: BLE001 - cryptography import / KDF can fail many ways on minimal sandboxes; want plain-storage fallback for ALL of them, not just the predicted set
             # cryptography import failed (e.g. minimal sandbox). Fall
             # back to plain storage — production deploys must have
             # the dep available; this is a tests-only safety net.
@@ -519,7 +519,7 @@ class AppState:
                         if (now_utc() - self._retention_last_run).total_seconds() >= 86_400:
                             self.run_retention_purge()
                             self._retention_last_run = now_utc()
-                    except Exception:
+                    except Exception:  # noqa: BLE001 - retention loop must survive every error class; next hourly tick retries
                         # Purge failures shouldn't take down the loop; the
                         # next hourly tick will try again.
                         continue
@@ -1311,7 +1311,7 @@ class AppState:
                     from_address=email_from_address(),
                 )
             )
-        except Exception:  # noqa: BLE001 - email best-effort
+        except Exception:  # noqa: BLE001, S110 - email best-effort
             pass
         try:
             self.email_transport.send(
@@ -1325,7 +1325,7 @@ class AppState:
                     from_address=email_from_address(),
                 )
             )
-        except Exception:  # noqa: BLE001 - email best-effort
+        except Exception:  # noqa: BLE001, S110 - email best-effort
             pass
         return saved
 
@@ -1561,7 +1561,7 @@ class AppState:
                     from_address=email_from_address(),
                 )
             )
-        except Exception:  # noqa: BLE001 - best-effort
+        except Exception:  # noqa: BLE001, S110 - best-effort
             pass
         self.log_analytics(user.id, "email_verification_sent", {})
 
@@ -1881,7 +1881,7 @@ class AppState:
         # by this batch. Cheap (in-memory diff against profile.last_push_notified_at).
         try:
             self.notify_new_matches(user_id)
-        except Exception:  # noqa: BLE001 — push side-effects must never break a scan
+        except Exception:  # noqa: BLE001, S110 — push side-effects must never break a scan
             pass
         return {
             "status": status,
@@ -2325,7 +2325,7 @@ class AppState:
             self.auth_store.connection.execute(
                 "SELECT 1 FROM users WHERE email = ?", (normalized,)
             ).fetchone()
-        except Exception:
+        except Exception:  # noqa: BLE001 - any DB-layer failure in this lookup path is treated as "user does not exist"; we want a single fallback for the full failure surface
             return None
         row = self.auth_store.connection.execute(
             "SELECT id FROM users WHERE email = ?", (normalized,)
@@ -4616,7 +4616,7 @@ class AppState:
             digest_text = f"digest_failed: {type(exc).__name__}"
         try:
             self.notify_new_matches(user_id)
-        except Exception:  # noqa: BLE001
+        except Exception:  # noqa: BLE001, S110
             pass
         return {
             "trigger": trigger,
@@ -4713,7 +4713,7 @@ class AppState:
                     from_address=email_from_address(),
                 )
             )
-        except Exception:  # noqa: BLE001 - never let email failure drop the ticket
+        except Exception:  # noqa: BLE001, S110 - never let email failure drop the ticket
             pass
         return saved
 
@@ -5836,11 +5836,11 @@ class Handler(BaseHTTPRequestHandler):
                     # Email verification + welcome are both best-effort.
                     try:
                         STATE.send_email_verification(user)
-                    except Exception:  # noqa: BLE001
+                    except Exception:  # noqa: BLE001, S110
                         pass
                     try:
                         STATE.send_welcome_email(user)
-                    except Exception:  # noqa: BLE001 - email failure must not block sign-in
+                    except Exception:  # noqa: BLE001, S110 - email failure must not block sign-in
                         pass
                 user = STATE.auth_store.get_user(user.id)
                 session = STATE.auth_store.create_session(user)
@@ -5900,7 +5900,7 @@ class Handler(BaseHTTPRequestHandler):
                         ):
                             try:
                                 STATE.send_email_verification(candidate)
-                            except Exception:  # noqa: BLE001
+                            except Exception:  # noqa: BLE001, S110
                                 pass
                             break
                 self.send_json({"status": "sent_if_known"}, HTTPStatus.ACCEPTED)

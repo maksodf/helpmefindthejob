@@ -233,6 +233,6 @@ def consult(
             ai_gaps = parse_consult_response(raw)
             if ai_gaps:
                 return ai_gaps, True
-        except Exception:  # noqa: BLE001
+        except Exception:  # noqa: BLE001, S110
             pass
     return heuristic_consult(job=job, cv_text=cv_text), False

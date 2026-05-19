@@ -595,7 +595,7 @@ def _emit_dispatch_audit(
     duration_ms = int((time.monotonic() - started) * 1000)
     try:
         emitter = audit_log.default_emitter()
-    except Exception:
+    except Exception:  # noqa: BLE001 - emitter init can fail many ways; failure must skip audit, never break the AI call
         return
     try:
         if result is None:
@@ -626,7 +626,7 @@ def _emit_dispatch_audit(
             error_class=err_label,
             emitter=emitter,
         )
-    except Exception:
+    except Exception:  # noqa: BLE001, S110 - audit logging is best-effort; failures surface via the emitter's own stderr channel, not by failing the AI call
         # Audit logging never breaks the AI call. Failures surface via
         # the emitter's own stderr warning channel.
         pass

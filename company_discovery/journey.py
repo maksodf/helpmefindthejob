@@ -276,7 +276,7 @@ _CONTROL_RANGES = (
 )
 
 
-def _build_control_char_re() -> "re.Pattern[str]":
+def _build_control_char_re() -> re.Pattern[str]:
     char_class = "".join(
         f"\\u{start:04x}-\\u{end:04x}" if start != end else f"\\u{start:04x}"
         for start, end in _CONTROL_RANGES

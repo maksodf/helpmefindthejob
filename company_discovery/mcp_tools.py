@@ -567,7 +567,7 @@ class CompanyDiscoveryMCPTools:
             return {"status": "error", "error": "no_repository"}
         try:
             job = repository.get_discovered_job(userId, discoveredJobId)
-        except Exception as error:
+        except Exception as error:  # noqa: BLE001 - repository surface differs across backends (sqlite vs in-memory mock); any lookup failure is reported as not_found to the MCP client
             return {"status": "not_found", "error": str(error)}
         if not job:
             return {"status": "not_found"}
