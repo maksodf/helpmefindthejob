@@ -5046,9 +5046,15 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_header("Location", "/?ref=" + code)
                 # Short-lived cookie so the SPA can pick it up on the
                 # registration form and forward it to /api/auth/register.
+                # Referral cookie: HttpOnly so JS can't read it; SameSite=Lax
+                # so it survives the SEE_OTHER redirect back to /register?ref=…
+                # The SPA reads the ?ref= query param, not the cookie. Cookie
+                # is server-side context only (forwarded to /api/auth/register
+                # via the Cookie header on the next same-origin POST).
                 self.send_header(
                     "Set-Cookie",
-                    f"directjob_ref={code}; Max-Age=2592000; Path=/; SameSite=Lax",
+                    f"helpmefindthejob_ref={code}; Max-Age=2592000; Path=/; "
+                    "HttpOnly; SameSite=Lax",
                 )
                 self.end_headers()
                 return
@@ -5654,7 +5660,7 @@ class Handler(BaseHTTPRequestHandler):
                     self.send_error_json(
                         HTTPStatus.SERVICE_UNAVAILABLE,
                         "webhook_unconfigured",
-                        "DIRECTJOB_STRIPE_WEBHOOK_SECRET not set.",
+                        "HELPMEFINDTHEJOB_STRIPE_WEBHOOK_SECRET not set.",
                     )
                     return
                 if not verify_stripe_webhook_signature(raw, signature_header, secret):
