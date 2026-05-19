@@ -45,6 +45,7 @@ jobs:
   build:
     name: Build mkdocs site
     runs-on: ubuntu-24.04
+    timeout-minutes: 10
     steps:
       - name: Checkout
         # actions/checkout v4.2.2
