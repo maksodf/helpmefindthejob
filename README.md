@@ -262,6 +262,9 @@ sustainability model) at [`docs/grant/03-post-grant.md`](docs/grant/03-post-gran
 ## Documentation
 
 - [`ROADMAP.md`](ROADMAP.md) — quarterly milestones 2026 Q3 → 2028 Q2.
+- [`SUSTAINABILITY.md`](SUSTAINABILITY.md) — post-grant operational
+  model, multi-grant arc, optional support contracts (carefully
+  framed), community + donation channels, honest pre-launch state.
 - [`CHANGELOG.md`](CHANGELOG.md) — what shipped in each release.
 - [`ARCHITECTURE.md`](ARCHITECTURE.md) — system diagram and component
   map.

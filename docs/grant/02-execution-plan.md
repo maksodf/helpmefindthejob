@@ -437,11 +437,8 @@ The three draft messages prepared in Week 1 task 1.6 are saved under [`outreach-
 
 ### 4.1 Sustainability and post-grant story (3 h)
 
-- [ ] `SUSTAINABILITY.md` describing the post-grant model:
-  - NGO/Beratungsstelle deployment partners
-  - Optional hosted support contracts (mention here, not in main README)
-  - Phase 2 / Phase 3 grant arc plan (NLnet follow-on, Sovereign Tech Fund, EU NGI tracks)
-- [ ] Link from README
+- [x] `SUSTAINABILITY.md` describing the post-grant model *(landed 2026-05-19: `SUSTAINABILITY.md` at repo root with 8 sections — stated commitment (open-source + Conservancy + self-hostable, sustainability NOT revenue-dependent); post-grant operational model (7-pillar table covering license, wrapper, self-host, no-commercial-gate, no-vendor-lock-in, privacy-by-design, cost-saving doctrine); grant arc plan (Phase 1 NLnet NGI Zero ~€37k current submission; Phase 2 NLnet follow-on Redwax-pattern with framework extraction + second institutional pilot + WIP module reintegration per Decision 16 + Arabic/Ukrainian/Turkish/Romanian localisation per Decision 21 + HAN University accessibility audit; Phase 3 Sovereign Tech Fund + NGI Search + NGI Trustchain + EU Digital Europe; long-term diversification posture); optional support contracts (hosted-instance / custom-integration / training — per-engagement not per-seat — Conservancy receives — zero contracts today); community + contribution channels (6-row table: Discussions / Issues / PRs / Translation / Security / CoC); donation channels (GitHub Sponsors placeholder / Open Collective post-CC / Conservancy direct — consent-first per Decision 18); honest state of the project 2026-05-19 (pre-launch per Decision 17 / one private tester / zero contracts / zero outside contributors / zero donations); sustainability red flags pre-mortem (NLnet rejection / CC admission rejected / maintainer withdrawal / pilot proves doctrine wrong, each with mitigation); cross-links table. SPDX header + Apache 2.0. Decisions 1/2/4/9/16/17/18/19/20/21 referenced inline.)*
+- [x] Link from README *(landed 2026-05-19: README.md Documentation section adds a `SUSTAINABILITY.md` entry beneath `ROADMAP.md`. mkdocs.yml nav adds Sustainability between Roadmap and Changelog. `mkdocs build --strict` green.)*
 
 ### 4.2 Final differentiation polish (4 h)
 
