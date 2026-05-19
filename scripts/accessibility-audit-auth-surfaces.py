@@ -100,7 +100,7 @@ def _wait_for(url: str, timeout: float = 30.0) -> bool:
     deadline = time.time() + timeout
     while time.time() < deadline:
         try:
-            urllib.request.urlopen(url, timeout=2).read()  # noqa: S310
+            urllib.request.urlopen(url, timeout=2).read()
             return True
         except (urllib.error.URLError, OSError):
             time.sleep(0.25)

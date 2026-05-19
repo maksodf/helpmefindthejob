@@ -35,7 +35,7 @@ import secrets
 import unittest
 from pathlib import Path
 
-try:  # noqa: SIM105 - import-as-feature-flag is intentional
+try:
     from playwright.sync_api import sync_playwright
 except ModuleNotFoundError:  # pragma: no cover - exercised by harness
     sync_playwright = None  # type: ignore[assignment]

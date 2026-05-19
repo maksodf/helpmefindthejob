@@ -124,7 +124,7 @@ class FactRatioTests(unittest.TestCase):
     appears in the input. Threshold for accept: 0.6 (60%)."""
 
     def test_compute_fact_ratio_imports(self):
-        from company_discovery.cv_builder import compute_fact_ratio  # noqa: F401
+        from company_discovery.cv_builder import compute_fact_ratio
 
     def test_perfect_grounding(self):
         from company_discovery.cv_builder import compute_fact_ratio

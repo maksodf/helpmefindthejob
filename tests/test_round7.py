@@ -113,7 +113,7 @@ class AutoPushHelperTests(unittest.TestCase):
         for name in list(sys.modules):
             if name == "app" or name.startswith("company_discovery.push_transport"):
                 del sys.modules[name]
-        import app  # noqa: E402
+        import app
         from company_discovery import push_transport
 
         cls.app = app

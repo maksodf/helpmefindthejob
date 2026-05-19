@@ -336,7 +336,7 @@ class HttpProfileEndpointTests(unittest.TestCase):
         for name in list(sys.modules):
             if name == "app":
                 del sys.modules[name]
-        import app  # noqa: E402
+        import app
 
         cls.state = app.STATE
         cls.app = app

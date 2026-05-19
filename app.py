@@ -5311,7 +5311,7 @@ class Handler(BaseHTTPRequestHandler):
                 event_type_filter = None
                 if parsed.query:
                     qs = parse_qs(parsed.query)
-                    if "event_type" in qs and qs["event_type"]:
+                    if qs.get("event_type"):
                         event_type_filter = qs["event_type"][0]
                 events = _read_ai_act_audit_tail(
                     DATA_ROOT / "ai_act_audit.log", limit, event_type_filter

@@ -30,7 +30,7 @@ from __future__ import annotations
 
 import importlib.util
 import os
-import re  # noqa: F401 — retained for future test additions
+import re
 import shutil
 import sys
 import tempfile

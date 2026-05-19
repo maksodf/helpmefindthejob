@@ -248,18 +248,15 @@ class OpenAICompatibleAdapterTests(unittest.TestCase):
         # Should not perform any HTTP — patch urlopen as a guard.
         ctx, _ = self._patched_urlopen(200, b"never")
         with ctx:
-            result = _execute_openai_compatible(
-                "prompt", insecure, runtime_credential="anything"
-            )
+            result = _execute_openai_compatible("prompt", insecure, runtime_credential="anything")
         self.assertEqual(result.status, "configuration_error")
         self.assertIn("HTTPS", result.error or "")
 
     def test_http_error_returns_provider_error(self) -> None:
+        from unittest.mock import patch
         from urllib.error import HTTPError
 
         from company_discovery.analysis import _execute_openai_compatible
-
-        from unittest.mock import patch
 
         def _raise(*_a, **_kw):
             raise HTTPError(
@@ -271,19 +268,17 @@ class OpenAICompatibleAdapterTests(unittest.TestCase):
             )
 
         with patch("company_discovery.analysis.urlopen", side_effect=_raise):
-            result = _execute_openai_compatible(
-                "prompt", self.provider, runtime_credential="key"
-            )
+            result = _execute_openai_compatible("prompt", self.provider, runtime_credential="key")
         self.assertEqual(result.status, "provider_error")
         self.assertIn("HTTP 429", result.error or "")
 
     def test_no_credential_returns_configuration_error(self) -> None:
-        from company_discovery.analysis import _execute_openai_compatible
-
         # No runtime credential AND no env-var fallback for the
         # credential_reference → adapter must return configuration_error
         # before any HTTP. Patch urlopen as a guard.
         from unittest.mock import patch
+
+        from company_discovery.analysis import _execute_openai_compatible
 
         with patch("company_discovery.analysis.urlopen") as urlopen_mock:
             result = _execute_openai_compatible("prompt", self.provider, runtime_credential="")

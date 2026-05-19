@@ -103,7 +103,7 @@ def _ollama_reachable() -> bool:
     server reachable and model present."""
     try:
         req = urllib.request.Request(f"{OLLAMA_BASE_URL}/api/tags")
-        with urllib.request.urlopen(req, timeout=2) as resp:  # noqa: S310
+        with urllib.request.urlopen(req, timeout=2) as resp:
             data = json.loads(resp.read().decode("utf-8"))
         names = {entry.get("name", "") for entry in data.get("models", [])}
         return MODEL_TAG in names

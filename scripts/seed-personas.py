@@ -77,8 +77,8 @@ if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
 
-from company_discovery.models import SavedSearch, UserProfile  # noqa: E402
-from company_discovery.persona_fixtures import (  # noqa: E402
+from company_discovery.models import SavedSearch, UserProfile
+from company_discovery.persona_fixtures import (
     PERSONAS,
     PersonaFixture,
     demo_email,

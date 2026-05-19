@@ -25,8 +25,8 @@ _ROOT = _HERE.parents[2]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from agents import ALL_AGENTS  # noqa: E402
-from harness import (  # noqa: E402
+from agents import ALL_AGENTS
+from harness import (
     BASE_URL,
     RedTeamAgent,
     render_console_summary,

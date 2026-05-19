@@ -31,17 +31,17 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from company_discovery.ai_providers import AIProviderConfig  # noqa: E402
-from company_discovery.analysis import _dispatch_provider  # noqa: E402
-from company_discovery.cv_consult import (  # noqa: E402
+from company_discovery.ai_providers import AIProviderConfig
+from company_discovery.analysis import _dispatch_provider
+from company_discovery.cv_consult import (
     build_consult_prompt,
     parse_consult_response,
 )
-from company_discovery.journey import (  # noqa: E402
+from company_discovery.journey import (
     _parse_role_list,
     _sanitize_for_prompt,
 )
-from company_discovery.motivation_letter import (  # noqa: E402
+from company_discovery.motivation_letter import (
     build_letter_prompt,
     looks_like_dach_letter,
 )
