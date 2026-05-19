@@ -8452,7 +8452,7 @@ class Handler(BaseHTTPRequestHandler):
         if include_body:
             self.wfile.write(content)
 
-    def log_message(self, format: str, *args: Any) -> None:
+    def log_message(self, format: str, *args: Any) -> None:  # noqa: A002 - signature inherited from BaseHTTPRequestHandler; rename would break the override
         return
 
 

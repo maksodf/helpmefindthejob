@@ -343,7 +343,7 @@ def _resolve_salt(raw: str) -> bytes:
         return raw.encode("utf-8")
     env = _resolve_app_env()
     if env not in _DEV_ENV_TOKENS:
-        print(
+        print(  # noqa: T201 - fatal-fast stderr output before sys.exit(1); warnings.warn is not appropriate for a terminal failure
             "[audit_log] FATAL: env=" + env + " requires HELPMEFINDTHEJOB_AUDIT_SALT (or legacy "
             "DIRECTJOB_AUDIT_SALT) to be set to 32 random bytes "
             "(base64). Refusing to start because audit-log integrity "

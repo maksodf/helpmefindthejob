@@ -515,7 +515,7 @@ class CompanyDiscoveryMCPTools:
     def query_esco_skill(
         self,
         query: str,
-        type: str | None = None,
+        type: str | None = None,  # noqa: A002 - param name is part of the public MCP tool JSON schema; cannot rename without breaking external clients
         limit: int | None = None,
     ) -> dict[str, Any]:
         """Substring-match the curated ESCO reference dataset.
