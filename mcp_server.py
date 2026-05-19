@@ -286,7 +286,35 @@ def _emit_tool_call_audit(
         pass
 
 
+def _install_signal_handlers() -> None:
+    """Install SIGTERM + SIGINT handlers that raise SystemExit so the
+    ``run_stdio`` finally block runs (emits the `mcp_server_stopped`
+    audit event + resets the caller context). Without this, SIGTERM
+    (e.g. from `docker stop`) terminates the process immediately and
+    skips the cleanup path.
+
+    SIGINT already raises KeyboardInterrupt by default which unwinds
+    finally, but we install an explicit handler for symmetry + so
+    SystemExit code 0 is returned (not 130).
+    """
+    import signal
+
+    def _shutdown(signum: int, _frame: object) -> None:
+        # SystemExit causes Python to unwind try/finally blocks.
+        raise SystemExit(0)
+
+    try:
+        signal.signal(signal.SIGTERM, _shutdown)
+        signal.signal(signal.SIGINT, _shutdown)
+    except (ValueError, OSError):
+        # Not on the main thread (or signal not supported on this
+        # platform — e.g. some embedded contexts). Skip silently;
+        # default behaviour still kicks in.
+        pass
+
+
 def run_stdio(tools: CompanyDiscoveryMCPTools | None = None) -> None:
+    _install_signal_handlers()
     active_tools = tools or build_tools()
     ctx_token = audit_log.set_caller_context(caller="mcp")
     try:
