@@ -161,7 +161,11 @@ class HttpInvitesAndResetTests(unittest.TestCase):
                 if entry["to"].casefold() == to.casefold():
                     return entry
             time.sleep(0.1)
+        # self.fail() raises AssertionError so the explicit return
+        # below is unreachable in practice; the explicit form satisfies
+        # ruff RET503 + mypy's "function must return on all paths".
         self.fail(f"email never arrived for {to}")
+        return {}  # unreachable; for type-checker satisfaction
 
     def _token_from_link(self, body: str) -> str:
         match = re.search(r"https?://[^\s]+\?token=([A-Za-z0-9_\-]+)", body)

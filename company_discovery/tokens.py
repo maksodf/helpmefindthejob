@@ -194,7 +194,6 @@ class TokenStore:
 
     def revoke_all_for(self, email: str, kind: str | None = None) -> int:
         consumed_at = _now().isoformat()
-        params: tuple[object, ...]
         if kind is None:
             cursor = self.connection.execute(
                 "UPDATE tokens SET consumed_at = ? WHERE email = ? AND consumed_at IS NULL",

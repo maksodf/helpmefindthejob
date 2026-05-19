@@ -66,7 +66,11 @@ class SiteConfigEndpointTests(unittest.TestCase):
                         return proc, base
             except OSError:
                 time.sleep(0.1)
+        # self.fail() raises AssertionError; the explicit raise below
+        # is unreachable in practice but satisfies ruff RET503 +
+        # mypy's "function must return on all paths".
         self.fail("server did not start")
+        raise AssertionError("unreachable")
 
     def _terminate(self, proc: subprocess.Popen) -> None:
         try:

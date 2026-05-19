@@ -110,7 +110,7 @@ def _send(client: _Client, msg: str) -> dict:
     if s != 200:
         raise RuntimeError(f"chat HTTP {s}: {p}")
     if not isinstance(p, dict):
-        raise RuntimeError(f"chat returned non-dict: {p!r}")
+        raise TypeError(f"chat returned non-dict: {p!r}")
     return p
 
 
