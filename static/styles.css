@@ -11,7 +11,13 @@
   --border-strong: #3a4254;
   --text: #e8eaee;
   --text-muted: #9ea4b5;
-  --text-soft: #6c7587;
+  /* --text-soft was #6c7587 — failed WCAG 1.4.3 (4.5:1) per
+     axe-core 4.10 audit 2026-05-19: 3.0–3.3:1 against the surface
+     palette. Bumped to #a0a6b6 to clear 4.5:1 (≈4.8:1 vs
+     surface-2 #212531; higher against the deeper bg colors).
+     Visual hierarchy preserved — text-soft is still distinct from
+     text + text-muted, just lighter. See ACCESSIBILITY.md. */
+  --text-soft: #a0a6b6;
   --accent: #5eead4;             /* mint primary */
   --accent-hover: #7ff0db;
   --accent-weak: rgba(94, 234, 212, 0.16);
@@ -68,7 +74,11 @@
   --border-strong: #b5c0bd;
   --text: #14201d;
   --text-muted: #4a5853;
-  --text-soft: #7a8783;
+  /* --text-soft was #7a8783 — failed WCAG 1.4.3 (4.5:1) against
+     the light-mode #f8faf9 bg (audit 2026-05-19, ratio 3.56:1).
+     Darkened to #5a6863 to clear 4.5:1 (≈5.5:1 vs bg). Pairs
+     with the dark-mode rebalance above. */
+  --text-soft: #5a6863;
   --accent: #0d9488;              /* mint, darker for AA on light */
   --accent-hover: #0f9c8f;
   --accent-weak: rgba(13, 148, 136, 0.10);
@@ -1630,8 +1640,21 @@ details[open] .collapsible-chevron { transform: rotate(180deg); }
   animation: view-enter 0.22s ease-out;
 }
 @keyframes view-enter {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: none; }
+  /* No opacity fade — even a transient fade-in dips text contrast
+     below WCAG 1.4.3 (4.5:1) during the keyframe, which axe-core
+     flags on every audit pass (2026-05-19 audit). The translateY
+     slide-up alone preserves the visual transition without
+     touching text contrast. */
+  from { transform: translateY(4px); }
+  to { transform: none; }
+}
+/* Respect users who prefer reduced motion — disable the view-enter
+   slide entirely. WCAG 2.3.3 (animation-from-interactions) is met
+   by either small/short animations OR a way to disable them. */
+@media (prefers-reduced-motion: reduce) {
+  .view {
+    animation: none;
+  }
 }
 
 /* List-item stagger — first ~10 items fade up with a small delay each */
@@ -2504,7 +2527,12 @@ details[open] .collapsible-chevron { transform: rotate(180deg); }
   background: transparent;
   padding: 5px 12px;
   font-size: var(--text-sm);
-  color: var(--text-muted);
+  /* Use --text (not --text-muted) for inactive tab labels — the
+     active state is distinguished by background + bold, so the
+     text colour can stay high-contrast for WCAG 1.4.3 (4.5:1) per
+     axe-core 4.10 audit 2026-05-19. The earlier --text-muted color
+     computed to ~3.0:1 against the surface palette. */
+  color: var(--text);
   cursor: pointer;
   border-radius: 6px;
   font-weight: 500;

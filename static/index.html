@@ -220,7 +220,7 @@
         <div id="dockChatTranscript" class="chat-dock-transcript"
               role="log" aria-live="polite" aria-atomic="false"></div>
         <form id="dockChatForm" class="chat-dock-form"
-              aria-label="Send a chat message">
+              aria-label="Quick chat (docked)">
           <input id="dockChatInput" type="text" autocomplete="off"
                  placeholder="Type what you want to do…"
                  aria-label="Chat message" />
@@ -252,7 +252,7 @@
         </header>
 
         <!-- Dashboard / Today -->
-        <section id="view-dashboard" class="view" data-view="dashboard" aria-labelledby="viewTitle">
+        <section id="view-dashboard" class="view" data-view="dashboard">
           <aside class="chat-first-banner" role="note" aria-label="Tip">
             <span class="chat-first-emoji" aria-hidden="true">✨</span>
             <div class="chat-first-text">
@@ -392,16 +392,16 @@
         </section>
 
         <!-- Companies -->
-        <section id="view-companies" class="view" data-view="companies" aria-labelledby="viewTitle" hidden>
+        <section id="view-companies" class="view" data-view="companies" hidden>
           <div class="companies-layout">
-            <aside class="card watchlist" aria-label="Company watchlist">
+            <section class="card watchlist" aria-label="Company watchlist">
               <div class="card-heading">
                 <h2 data-i18n="companies.watchlist.heading">Companies to watch</h2>
                 <button id="newCompanyBtn" class="btn btn-primary btn-small" type="button" data-i18n="companies.watchlist.add">+ Add</button>
               </div>
               <input id="companyFilter" class="filter-input" type="search" placeholder="Filter watchlist" />
               <div id="companyList" class="company-list"></div>
-            </aside>
+            </section>
 
             <section class="card company-detail" aria-label="Company detail">
               <div class="card-heading">
@@ -546,8 +546,20 @@
                 <h2 data-i18n="companies.suggestions.heading">Suggestions</h2>
                 <p class="muted small" data-i18n="companies.suggestions.lead">A small curated set of healthcare employers, ranked by your focus.</p>
               </div>
-              <button id="suggestBtn" class="btn btn-small" type="button" data-i18n="companies.suggestions.refresh">Refresh</button>
+              <span class="collapsible-chevron" aria-hidden="true">▾</span>
             </summary>
+            <!--
+              The Refresh button must live OUTSIDE <summary> per WCAG
+              4.1.2 + axe nested-interactive: nesting a focusable
+              <button> inside a focusable <summary> creates two stacked
+              focusable controls in the same header region and confuses
+              keyboard / screen-reader users. The button now sits at
+              the top of the disclosure body so it's still right next
+              to the heading visually when the section is expanded.
+            -->
+            <div class="suggest-refresh-row">
+              <button id="suggestBtn" class="btn btn-small" type="button" data-i18n="companies.suggestions.refresh">Refresh</button>
+            </div>
             <div class="suggest-inputs">
               <label class="field">
                 <span data-i18n="companies.suggestions.targetRoles">Target roles</span>
@@ -567,7 +579,7 @@
         </section>
 
         <!-- Discovered Jobs -->
-        <section id="view-jobs" class="view" data-view="jobs" aria-labelledby="viewTitle" hidden>
+        <section id="view-jobs" class="view" data-view="jobs" hidden>
           <section class="card" aria-label="Discovered jobs">
             <div class="card-heading">
               <h2 data-i18n="queue.heading">Roles found on company sites</h2>
@@ -602,7 +614,7 @@
         </section>
 
         <!-- Briefcase: imported jobs + AI brief + application tracking -->
-        <section id="view-brief" class="view" data-view="brief" aria-labelledby="viewTitle" hidden>
+        <section id="view-brief" class="view" data-view="brief" hidden>
           <section class="card" aria-label="Selected job brief">
             <div class="card-heading">
               <div>
@@ -721,7 +733,7 @@
         </section>
 
         <!-- Settings -->
-        <section id="view-settings" class="view" data-view="settings" aria-labelledby="viewTitle" hidden>
+        <section id="view-settings" class="view" data-view="settings" hidden>
           <nav class="settings-tabs" id="settingsTabs" role="tablist" aria-label="Settings sections">
             <button class="settings-tab" type="button" role="tab" data-tab="profile" aria-selected="true" data-i18n="settings.tab.profile">Profile</button>
             <button class="settings-tab" type="button" role="tab" data-tab="notifications" aria-selected="false" data-i18n="settings.tab.notifications">Notifications</button>
@@ -1121,7 +1133,7 @@
         </section>
 
         <!-- Assistant chat -->
-        <section id="view-assistant" class="view" data-view="assistant" aria-labelledby="viewTitle" hidden>
+        <section id="view-assistant" class="view" data-view="assistant" hidden>
           <section class="card" aria-label="AI Assistant chat">
             <div class="card-heading">
               <div>
@@ -1145,7 +1157,7 @@
         </section>
 
         <!-- CV Builder -->
-        <section id="view-cvBuilder" class="view" data-view="cvBuilder" aria-labelledby="viewTitle" hidden>
+        <section id="view-cvBuilder" class="view" data-view="cvBuilder" hidden>
           <section class="card" aria-label="CV Builder">
             <div class="card-heading">
               <div>
@@ -1157,7 +1169,7 @@
               </div>
             </div>
             <div class="cv-builder-layout" style="display:grid;grid-template-columns:240px 1fr;gap:24px;">
-              <aside id="cvBuilderSidebar" class="cv-builder-sidebar" aria-label="Sections" style="display:flex;flex-direction:column;gap:6px;"></aside>
+              <nav id="cvBuilderSidebar" class="cv-builder-sidebar" aria-label="CV builder sections" style="display:flex;flex-direction:column;gap:6px;"></nav>
               <div class="cv-builder-main">
                 <div id="cvBuilderPhotoPanel" style="margin-bottom:16px;display:flex;gap:12px;align-items:center;">
                   <img id="cvBuilderPhotoPreview" alt="Profile photo" style="width:96px;height:96px;border-radius:8px;object-fit:cover;background:#1c1c24;display:none;" />
@@ -1192,7 +1204,7 @@
              auto-switches here when a search completes. Read-only;
              interactions (drill into a job) go back through chat. -->
         <section id="view-searchResults" class="view"
-                  data-view="searchResults" aria-labelledby="viewTitle"
+                  data-view="searchResults"
                   hidden>
           <section class="card" aria-label="Search results">
             <div class="card-heading">
@@ -1217,7 +1229,7 @@
         </section>
 
         <!-- Admin -->
-        <section id="view-admin" class="view admin-only" data-view="admin" aria-labelledby="viewTitle" hidden>
+        <section id="view-admin" class="view admin-only" data-view="admin" hidden>
           <section class="card" aria-label="Tester accounts">
             <div class="card-heading">
               <div>

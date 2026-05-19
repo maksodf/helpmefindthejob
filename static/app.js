@@ -4502,7 +4502,15 @@ function renderCvBuilder() {
       button.style.textAlign = "left";
       const isCurrent = cvBuilder.currentSection?.sectionId === sid;
       button.style.fontWeight = isCurrent ? "600" : "400";
-      button.style.opacity = isCurrent ? "1" : (filled ? "0.85" : "0.5");
+      // Use the CSS color hierarchy instead of opacity so the
+      // inactive-section text still clears WCAG 1.4.3 (4.5:1).
+      // The earlier opacity-based dimming computed to ~2.7:1
+      // (axe-core 4.10 audit 2026-05-19). See ACCESSIBILITY.md.
+      button.style.color = isCurrent
+        ? "var(--text)"
+        : filled
+          ? "var(--text-muted)"
+          : "var(--text-soft)";
       const marker = filled ? "●" : "○";
       button.textContent = `${marker} ${sid}${filled ? ` (${filled})` : ""}`;
       sidebar.append(button);
