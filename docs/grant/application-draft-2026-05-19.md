@@ -636,10 +636,10 @@ NLnet reviewers can audit each claim against the source.
 | NLnet Commons Fund 13th-call deadline **2026-06-01 12:00 CEST** | <https://nlnet.nl/commonsfund/> | **VERIFIED 2026-05-19** (WebFetch). |
 | Annex III §4 (employment, workers management and access to self-employment) covers AI systems used in recruitment, selection, evaluation | EU 2024/1689 Annex III §4 | **VERIFIED** (primary regulation text). |
 | **163 Engpassberufe in DE** | [Bundesagentur für Arbeit — Fachkräftebedarf overview](https://statistik.arbeitsagentur.de/DE/Navigation/Statistiken/Themen-im-Fokus/Fachkraeftebedarf/Fachkraeftebedarf-Nav.html) — section "Arbeits- und Fachkräftemangel trotz Arbeitslosigkeit" carries the line *"Die letzte Fachkräfteengpassanalyse der Statistik der Bundesagentur für Arbeit weist 163 Engpassberufe aus."* | **VERIFIED 2026-05-19** via direct fetch of the BA Fachkräftebedarf overview page. The "of ~1,200 occupations" qualifier in the application body refers to the size of the BA Berufsklassifikation der Berufe 2010 (KldB 2010) framework (~1,300 Berufsgattungen at the 5-digit code level); the headline 163-shortage-occupations figure is the verified anchor. |
-| ~46,000 unfilled positions in DE healthcare | [OECD Economic Surveys: Germany 2025](https://www.oecd.org/en/publications/oecd-economic-surveys-germany-2025_2c91e1d4-en.html) | **STILL FLAGGED FOR MAINTAINER RE-VERIFY**. WebFetch returned HTTP 403 against the OECD URL during this slice (2026-05-19); alternative reach via BMG Pflege overview + Destatis offene-Stellen + IW Köln Fachkräftelücke did not surface a single primary-source URL with the 46,000 figure published at headline level (most attempts returned 404 or 401). The 46,000 figure remains in the application body as cited from prior 12-application-package.md research, but the maintainer should re-verify against the OECD publication PDF or paid OECD iLibrary access at submission time. |
-| **~700 MBE service points across DE** | [BAMF-NAvI](https://bamf-navi.bamf.de/de/) (canonical directory; aggregate count not published at headline level) | **APPROXIMATE — FLAGGED**. BAMF-NAvI confirmed as the directory surface; BAMF does NOT publish an aggregate MBE service-point count at any reachable URL. The "~700" figure is order-of-magnitude estimate from prior BAMF annual reports + Bundesregierung Migration-Atlas materials; not a single-source figure. Honest framing in the application body: "service points across Germany" without claiming a specific count would be safer, but the 12-application-package.md prior research used "~700" — the maintainer can either (a) verify against the BAMF annual MBE report or (b) reword to "Migrationsberatungsstellen across Germany" without the count. |
+| **Tens of thousands of unfilled healthcare positions in DE** (was: "~46,000") | [OECD Economic Surveys: Germany 2025](https://www.oecd.org/en/publications/oecd-economic-surveys-germany-2025_2c91e1d4-en.html) — citation preserved; precise figure NOT led with in the body | **REWORDED 2026-05-19 (pass 2)**. 5 alternative WebFetch routes exhausted (Destatis press releases / Deutscher Pflegerat / DKG press / IW Köln Arbeitsmarkt / BMG Pflegekräfte); none surfaced a single primary-source URL with the 46,000 figure published at headline level (403/404/401 across the candidate routes). The application body (`12-application-package.md` §C) is reworded to "tens of thousands of unfilled healthcare positions" with the OECD citation preserved as the documented anchor + the BA labour-market reports as a corroborating source. The 46,000 figure remains a defensible OECD-sourced estimate but the body no longer leads with a precise number the maintainer cannot independently re-verify in <1 hour. |
+| **Migrationsberatungsstellen (MBE) operated nationwide** (was: "~700 service points") | [BAMF-NAvI](https://bamf-navi.bamf.de/de/) (canonical service-point directory; no aggregate count published) | **REWORDED 2026-05-19 (pass 2)**. 4 alternative WebFetch routes exhausted (BAMF press releases / Bundesregierung Migration page / BAGFW homepage / Wikipedia MBE article); none yielded an aggregate count. The application body (`12-application-package.md` §C) is reworded to "Migrationsberatungsstellen (MBE) operated nationwide by the six Wohlfahrtsverbände (Caritas, Diakonie, AWO, Paritätischer, DRK, ZWST) under BAMF coordination and located via the BAMF-NAvI directory" — drops the "~700" entirely + names the operational architecture (Wohlfahrtsverbände + BAMF coordination + BAMF-NAvI). The institutional-readiness rhetorical force is preserved by the operational specificity (six named Wohlfahrtsverbände); the count claim is no longer a drift risk. |
 | **16 IQ-Netzwerk regional networks** | <https://www.netzwerk-iq.de/> | **STRUCTURAL** — IQ-Netzwerk is organised by Bundesland; with 16 Länder there are 16 regional networks by design. **VERIFIED structurally** (the federal-state structure of Germany is constitutionally fixed); maintainer should confirm against the IQ-Netzwerk public page that this organisational structure persists at submission time. |
-| **110 Optionskommunen** (was: "104" in earlier drafts) | [§6a SGB II + Article 91e(2) Grundgesetz](https://de.wikipedia.org/wiki/Optionskommune) — Wikipedia article citing federal-law primary sources | **VERIFIED + UPDATED 2026-05-19**. WebFetch of the Wikipedia article confirmed: 69 Optionskommunen from 2005-01-01 + 41 additional from 2012-01-01 = **110 total**; the cap was set by federal-constitutional ruling at 110 ("weil der Bund die Anzahl der Optionskommunen zulässig auf 110 beschränken durfte"). The earlier "104" figure in 12-application-package.md was drift from the constitutional cap; **corrected to 110 in both 12-application-package.md §C and this draft's Field 16**. This is the only number that drifted enough to require a body update in this slice. |
+| **Optionskommunen Jobcenter (cap of 110 per §6a SGB II + Article 91e GG; BMAS list = current count)** (was: "104" → "110 total") | [§6a SGB II](https://www.gesetze-im-internet.de/sgb_2/__6a.html) verified via gesetze-im-internet.de WebFetch + [Article 91e GG](https://www.gesetze-im-internet.de/gg/art_91e.html) verified via same | **REWORDED 2026-05-19 (pass 2)**. §6a SGB II §2 sentence 4 verified: cap is "höchstens 25 Prozent der zum 31. Dezember 2010 bestehenden Aufgabenträger" — historically 110 once fully utilised. Article 91e GG verified: says "begrenzt" without a fixed numerical cap (delegates to federal legislation = §6a SGB II). The "110" Wikipedia figure was the constitutional-cap-fully-utilised total (69 from 2005 + 41 from 2012). BMAS Optionskommunen list URL returned 404 on 4 attempted variants this slice; BMAS has likely restructured the URL. **Body reworded** (`12-application-package.md` §C) to "the autonomous Optionskommunen Jobcenter operating Bürgergeld under §6a SGB II + Article 91e Grundgesetz (the federal cap is 25% of the 2010 baseline of task carriers — historically a maximum of 110 Optionskommunen; the BMAS-published list is the source of truth for the current active count)". Cap vs current-count distinction now explicit; maintainer should confirm against BMAS at submission if a precise count is needed. |
 | €30k–€200k AI Act compliance consulting cost avoided per deployer | **INDUSTRY ESTIMATE — not measured**. | The range reflects publicly reported AI-compliance-consulting quotes during 2024–2026 (range source: aggregated quotes from German Datenschutz / KI-compliance consultancies; we don't cite a single primary source because the actual number depends on the deployer's existing compliance posture and the consultant's scope). The application body uses qualified language ("typical" / "industry-estimate") rather than asserting a single figure. **NOT a measured claim.** |
 | **30 axe-core violation instances closed across 22 audited surfaces** | [`ACCESSIBILITY.md`](../../ACCESSIBILITY.md) "Current state" table | **VERIFIED** — every violation has a documented pre/post-fix count and a file:line for the closing fix. |
 | **91 components in v0.1.0 CycloneDX SBOM** | [`docs/releases/v0.1.0-sbom.json`](releases/v0.1.0-sbom.json) | **VERIFIED** — the SBOM is committed; component count derivable via `jq '.components | length'`. |
@@ -648,35 +648,44 @@ NLnet reviewers can audit each claim against the source.
 | **Seven-persona panel: Aïcha, Yusuf, Olga, Mahmoud, Maria, Käthe, Tobias** | [`docs/grant/07-personas.md`](07-personas.md) + Decision 21 | **VERIFIED** — the panel is the project's canonical source-of-truth; Decision 21 dated 2026-05-18. |
 | **MCP catalogue v0.2.0, 13 tools** | [`docs/mcp-server.md`](mcp-server.md) | **VERIFIED** — the catalogue + per-tool input schemas committed; CI smoke test exercises the surface. |
 
-**Pre-submission discipline (slice-end state, post 2026-05-19 polish)**:
+**Pre-submission discipline (slice-end state, post 2026-05-19 re-verify pass 2)**:
 
-- **2 of 4 carried-forward numbers verified at primary source via
-  WebFetch this slice**:
+After two re-verification passes the carried-forward-numbers
+landscape is now:
+
+- **1 of 4 VERIFIED at primary source** (pass 1):
   - **163 Engpassberufe** — VERIFIED at BA Fachkräftebedarf overview.
-  - **Optionskommunen — corrected 104 → 110** (federal constitutional
-    cap per §6a SGB II + Art. 91e(2) GG; 69 from 2005 + 41 from 2012).
-    Source-of-truth file `12-application-package.md` §C updated in
-    the same commit.
-- **2 of 4 still flagged**:
-  - **~46,000 healthcare unfilled** — OECD URL returned HTTP 403;
-    alternative primary-source URLs (BMG, Destatis, IW Köln,
-    BA Pflege) returned 404 or 401. Maintainer should re-verify
-    against the OECD publication PDF or paid OECD iLibrary access
-    at submission time. Consider also: the figure may be more
-    cleanly sourced from a Pflegerat / DKG / Statistisches
-    Bundesamt press release than from OECD.
-  - **~700 MBE service points** — BAMF does NOT publish an
-    aggregate count at any reachable URL; BAMF-NAvI is the
-    directory surface. Maintainer can either (a) re-verify
-    against the most recent BAMF MBE annual report or (b)
-    reword application body to drop the specific count ("MBE
-    service points across Germany" without "~700").
+- **3 of 4 REWORDED** (pass 2) — the application body no longer leads
+  with the precise figure, but the OECD / BAMF / §6a SGB II
+  citations are preserved where applicable. Re-verification paths
+  fell back to alternative URLs (Destatis / Pflegerat / DKG / BMG /
+  IW Köln / BAMF press / BAGFW / Wikipedia MBE / gesetze-im-internet
+  for §6a + Art. 91e GG) and none surfaced a single-authoritative
+  number reachable via WebFetch:
+  - **Healthcare unfilled** — body reworded to "tens of thousands"
+    + OECD citation preserved as the documented anchor.
+  - **MBE** — body reworded to drop the "~700" count entirely; the
+    operational architecture is named instead (six Wohlfahrtsverbände
+    + BAMF coordination + BAMF-NAvI directory).
+  - **Optionskommunen** — body reworded to the cap-vs-current-count
+    distinction: §6a SGB II §2 cap of 25% of the 2010 task-carrier
+    baseline (historically 110); BMAS-published list is the
+    source of truth for the current active count.
 - **Structural verifications carry forward** (16 IQ-Netzwerk
-  regional networks; seven-persona panel; MCP catalogue + tool
-  count; 1020/1029 tests; 30 axe violations closed; etc.) —
-  these are anchored in the project's own source-of-truth files
-  or in constitutional structure (16 Länder).
+  regional networks tied to 16 Bundesländer; seven-persona panel;
+  MCP catalogue + tool count; 1020/1029 tests; 30 axe violations
+  closed; cosign Verified OK; etc.) — these are anchored in the
+  project's own source-of-truth files or in constitutional
+  structure.
 
-If anything else drifts at submission time, update both this draft
-and `12-application-package.md` in the same commit to keep the
-source-of-truth file aligned.
+**Net effect on the application's review surface**: every number in
+the body either traces to a primary-source URL (the 163 Engpassberufe
++ the structural verifications + the project's own artefacts) OR is
+qualified with a citation chain (OECD Economic Surveys cite; §6a SGB
+II + Art. 91e GG cap citation) without leading with a precise figure
+the maintainer cannot independently re-verify in <1 hour. Per Rule 2
+of `13-lessons-learned.md`, this satisfies the honesty discipline:
+no claim asserts a number the maintainer cannot trace.
+
+If anything drifts further at submission time, update both this
+draft and `12-application-package.md` in the same commit.
