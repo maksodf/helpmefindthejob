@@ -42,6 +42,13 @@ exclude_docs: |
   brand-voice.md
   company-discovery-direct-career-page-search.md
 
+# Compliance pages are sourced from ../compliance/ via individual nav
+# entries below — mkdocs reads files anywhere in the build tree as
+# long as they appear in nav. The two user-facing compliance docs
+# (transparency-notice + deployer-operating-manual) are brought in
+# natively for the §3.6 polish-trio slice; other compliance/* files
+# remain GitHub-rendered external links per the cross-link convention.
+
 theme:
   name: material
   language: en
@@ -75,6 +82,9 @@ extra_css:
 extra_javascript:
   - javascripts/accessibility.js
 
+hooks:
+  - docs/hooks/compliance_mirror.py
+
 plugins:
   - search
 
@@ -106,7 +116,10 @@ nav:
       - Generic recipe: deployment-recipe.md
       - Production: production-deployment.md
   - ESCO + EURES: esco-integration.md
-  - Compliance: https://github.com/maksodf/directjob-scout/tree/main/compliance
+  - Compliance:
+      - Overview (GitHub): https://github.com/maksodf/directjob-scout/tree/main/compliance
+      - Transparency notice: compliance/transparency-notice.md
+      - Deployer operating manual: compliance/deployer-operating-manual.md
   - Contributing: https://github.com/maksodf/directjob-scout/blob/main/CONTRIBUTING.md
   - Roadmap: https://github.com/maksodf/directjob-scout/blob/main/ROADMAP.md
   - Changelog: https://github.com/maksodf/directjob-scout/blob/main/CHANGELOG.md

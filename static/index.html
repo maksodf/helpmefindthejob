@@ -1145,11 +1145,9 @@
                 <button id="chatResetBtn" class="btn btn-ghost" type="button">Reset chat</button>
               </div>
             </div>
-            <div id="chatTranscript" role="log" aria-live="polite" aria-atomic="false"
-                 style="display:flex;flex-direction:column;gap:10px;padding:14px;background:#13141c;border-radius:8px;min-height:280px;max-height:520px;overflow-y:auto;font-size:14px;"></div>
+            <div id="chatTranscript" class="chat-transcript" role="log" aria-live="polite" aria-atomic="false"></div>
             <form id="chatForm" style="display:flex;gap:8px;margin-top:12px;" aria-label="Send a chat message">
-              <input id="chatInput" type="text" autocomplete="off" placeholder="Type a message or a /slash-command…" aria-label="Chat message"
-                     style="flex:1;padding:10px 12px;background:#1c1c24;border:1px solid #2a2b36;border-radius:6px;color:inherit;" />
+              <input id="chatInput" class="chat-input" type="text" autocomplete="off" placeholder="Type a message or a /slash-command…" aria-label="Chat message" />
               <button id="chatSendBtn" class="btn btn-primary" type="submit">Send</button>
             </form>
             <p id="chatPendingHint" class="muted small" role="status" aria-live="polite" style="margin-top:6px;"></p>
@@ -1395,7 +1393,7 @@
           <input id="cmdkInput" type="text" data-i18n-placeholder="cmdk.placeholder" placeholder="Search jobs, companies, settings…" autocomplete="off" spellcheck="false" />
           <kbd class="cmdk-kbd" id="cmdkKbdHint">Esc</kbd>
         </div>
-        <ul id="cmdkResults" class="cmdk-results" role="listbox"></ul>
+        <ul id="cmdkResults" class="cmdk-results" role="listbox" aria-label="Command palette results"></ul>
         <div class="cmdk-foot muted small">
           <span><kbd>↑</kbd><kbd>↓</kbd> <span data-i18n="cmdk.foot.move">move</span></span>
           <span><kbd>↵</kbd> <span data-i18n="cmdk.foot.select">select</span></span>

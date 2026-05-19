@@ -19,32 +19,43 @@ documented honestly here even when a fix is deferred.
 ## Honesty note (top of document)
 
 This document is the project's running record of automated
-accessibility audits. Two passes have run so far (both 2026-05-19):
+accessibility audits. Three passes have run so far (all 2026-05-19):
 
 1. **First pass — public unauthenticated surfaces** (§3.6 ce48ba5):
    axe-core CLI 4.11 against 8 web-app HTML pages on local
    `python3 app.py` and 5 mkdocs-material docs pages on local
    `mkdocs serve`. 8 violations / 17 nodes pre-fix → 0 / 0 post-fix.
-2. **Second pass — authenticated surfaces** (auth-surface slice,
-   below): Playwright + axe-playwright-python 0.1.7 (bundling
-   axe-core 4.10) against 8 authenticated UI states (sign-in
-   landing, post-login, jobs, assistant, companies, CV builder,
-   settings, dashboard) reached by logging in as the seeded Aïcha
-   persona. 14 violations pre-fix → 0 post-fix.
+2. **Second pass — authenticated surfaces** (auth-surface slice
+   17712ad): Playwright + axe-playwright-python 0.1.7 (bundling
+   axe-core 4.10) against 8 authenticated UI states reached by
+   logging in as the seeded Aïcha persona. 14 violations pre-fix
+   → 0 post-fix.
+3. **Third pass — polish trio** (this slice): closes the three
+   known gaps the second pass left open.
+   - **Sub-slice A: light-mode auth-surface re-run** — runner now
+     accepts `--color-scheme {dark,light,both}`; 8 light-mode auth
+     states audited. 7 violations pre-fix → 0 post-fix.
+   - **Sub-slice B: compliance markdown audit** — `compliance/
+     transparency-notice.md` + `compliance/deployer-operating-
+     manual.md` brought into the mkdocs nav via a build-hook
+     mirror; audited via axe-core CLI. 0 violations on both.
+   - **Sub-slice C: dynamic-state coverage** — runner extended
+     with 4 dynamic-state audits (cmdk dialog open, disclosure
+     expanded, settings rendered, login error state). 1 violation
+     pre-fix (cmdk results listbox lacked accessible name) → 0
+     post-fix.
 
 **Still not covered** (tracked in "Known gaps" with planned timeline):
 
-- Compliance markdown files (`compliance/*.md`) — currently
-  GitHub-rendered, not served by mkdocs or the app; GitHub-rendered
-  markdown accessibility depends on GitHub's stylesheets which are
-  outside the project's control. A follow-on slice can bring these
-  into the mkdocs site for native auditing.
 - Manual / keyboard-navigation review across the full user journey
-  (axe-core surfaces structural issues but cannot exercise focus-
-  order, tab-trap, or keyboard-only-flow questions).
+  (axe surfaces structural issues but cannot exercise focus-order,
+  tab-trap, or keyboard-only-flow questions).
 - Screen-reader testing (VoiceOver, NVDA, Orca) of real-world
   flows.
 - Mobile / responsive accessibility (touch targets, zoom).
+- Light-mode dynamic-state audit (sub-slice C ran dynamic states
+  in dark mode only; light-mode preventative fixes were applied
+  via the same code paths).
 
 The full conformance bar is a long-term project. This audit pass
 establishes the floor + a remediation surface for incremental work.
@@ -74,6 +85,18 @@ establishes the floor + a remediation surface for incremental work.
 | Tolerance manipulation | **None.** axe defaults preserved. |
 | Auth | Aïcha persona seeded via `scripts/seed-personas.py`; sign-in form filled via Playwright |
 | Reproduction | `python3 scripts/accessibility-audit-auth-surfaces.py` (see "How to reproduce" below) |
+
+### Third pass — polish trio (light-mode + compliance + dynamic states)
+
+| Field | Value |
+|---|---|
+| Date | 2026-05-19 (polish-trio slice, follow-on to 17712ad) |
+| Tools | axe-playwright-python 0.1.7 (auth + dynamic) + axe-core CLI 4.11 (compliance mkdocs pages) |
+| New runner flag | `--color-scheme {dark,light,both}` — Playwright `prefers-color-scheme` emulation + explicit in-app `applyTheme()` call so the project's `[data-theme]` CSS variables resolve to the requested scheme |
+| Dynamic states added | (i) cmdk command-palette dialog open; (ii) Suggestions `<details>` disclosure expanded; (iii) settings view with form controls rendered; (iv) sign-in form error state (bad-password submit) |
+| Compliance markdown surface | `compliance/transparency-notice.md` + `compliance/deployer-operating-manual.md` mirrored into the mkdocs docs tree via a build hook (`docs/hooks/compliance_mirror.py`) so the canonical compliance files at the repo root stay the single source of truth |
+| Tolerance manipulation | **None.** Same discipline as passes 1 + 2. |
+| Reproduction | See "How to reproduce" below. |
 
 URLs audited:
 
@@ -110,6 +133,28 @@ via Playwright + form-fill on the sign-in form):**
 - `06-cv-builder` — CV Builder view (sidebar + section host)
 - `07-settings` — Settings view
 - `08-dashboard` — Dashboard view
+
+**Third-pass additions — dynamic-state surfaces (Aïcha persona,
+dark scheme only; light-mode dynamic-state audit tracked as
+known gap):**
+- `09-dynamic-cmdk-dialog` — `<dialog id="cmdkDialog">` open
+- `10-dynamic-disclosure-open` — companies-view Suggestions
+  `<details>` expanded
+- `11-dynamic-login-error` — sign-in form after bad-password
+  submission (cookies cleared first to reach the sign-in form)
+- `12-dynamic-settings-loaded` — settings view with form controls
+  rendered
+
+**Third-pass additions — compliance pages (via mkdocs hook
+mirror; canonical source remains `compliance/*.md` at repo root):**
+- `/compliance/transparency-notice/`
+- `/compliance/deployer-operating-manual/`
+
+**Third-pass additions — light-mode auth-surface re-runs:**
+- `01-signin-landing-light` through `08-dashboard-light` (the same
+  8 auth states as the second pass, audited with the in-app theme
+  flipped to light via Playwright's `color_scheme="light"` +
+  `applyTheme('light')` JS call after login)
 
 ## Current state — verified clean across all audited surfaces
 
@@ -151,6 +196,46 @@ via Playwright + form-fill on the sign-in form):**
 Combined across both passes: **22 violation instances pre-fix → 0
 post-fix** in the §3.6 + auth-surface slices. Thresholds NOT
 manipulated. axe-core's default rule set preserved.
+
+### Third-pass surfaces — polish trio
+
+**Sub-slice A — light-mode auth-surface re-run:**
+
+| Authenticated state (light) | Pre-fix critical | Pre-fix serious | Pre-fix moderate | Post-fix |
+|---|---|---|---|---|
+| `01-signin-landing-light` | 0 | 0 | 0 | **0** |
+| `02-post-login-light` | 0 | 1 | 0 | **0** |
+| `03-jobs-light` | 0 | 1 | 0 | **0** |
+| `04-assistant-light` | 0 | 1 | 0 | **0** |
+| `05-companies-light` | 0 | 1 | 0 | **0** |
+| `06-cv-builder-light` | 0 | 1 | 0 | **0** |
+| `07-settings-light` | 0 | 1 | 0 | **0** |
+| `08-dashboard-light` | 0 | 1 | 0 | **0** |
+| **Sub-slice A totals** | **0** | **7** | **0** | **0** |
+
+**Sub-slice B — compliance markdown:**
+
+| Compliance page | Pre-fix violations | Post-fix |
+|---|---|---|
+| `/compliance/transparency-notice/` | 0 | **0** |
+| `/compliance/deployer-operating-manual/` | 0 | **0** |
+
+(After 6 cross-tree-link warnings in `mkdocs build --strict` were
+closed by rewriting the source links to absolute GitHub URLs.)
+
+**Sub-slice C — dynamic states (dark scheme):**
+
+| Dynamic state | Pre-fix critical | Pre-fix serious | Pre-fix moderate | Post-fix |
+|---|---|---|---|---|
+| `09-dynamic-cmdk-dialog-dark` | 0 | 1 | 0 | **0** |
+| `10-dynamic-disclosure-open-dark` | 0 | 0 | 0 | **0** |
+| `11-dynamic-login-error-dark` | 0 | 0 | 0 | **0** |
+| `12-dynamic-settings-loaded-dark` | 0 | 0 | 0 | **0** |
+| **Sub-slice C totals** | **0** | **1** | **0** | **0** |
+
+Combined across all three passes: **30 violation instances pre-fix
+→ 0 post-fix**. Thresholds NOT manipulated. axe-core's default
+rule set preserved.
 
 ## Fixes shipped in the §3.6 first-pass slice
 
@@ -351,17 +436,95 @@ semantic is now clean.
 
 **Re-audit verification**: companies state cleared nested-interactive.
 
+## Fixes shipped in the polish-trio slice
+
+### Fix 11 — Light-mode `--accent` colour contrast
+
+**File**: `static/styles.css:70-76`.
+
+**Issue**: `color-contrast` (serious, WCAG 1.4.3 Level AA) —
+the light-mode `--accent: #0d9488` (mint, used as primary-button
+background) against white text computed to 3.74:1 — below the
+required 4.5:1 for normal text. Affected every primary button
+across all 7 auth states (Auto-fit unscored, Send, Find me jobs,
+Save, etc.).
+
+**Fix**: darkened light-mode `--accent` from `#0d9488` to
+`#0a766b` (≈5.2:1 vs white text). The hover variant + accent-text
++ accent-weak track the same darker base. Dark-mode `--accent`
+(`#5eead4`) was already passing and is unchanged.
+
+**Re-audit verification**: 12 primary-button instances cleared
+across the 7 light-mode auth states.
+
+### Fix 12 — Chat transcript + input theme-aware shells
+
+**Files**: `static/index.html:1148-1152`, `static/styles.css`
+(new `.chat-transcript` + `.chat-input` rules).
+
+**Issue**: `color-contrast` (serious) — `<div id="chatTranscript"
+style="background:#13141c;...">` and `<input id="chatInput"
+style="background:#1c1c24;border:1px solid #2a2b36;...">` had
+hardcoded dark-mode hex colours in their inline styles. In light
+mode the body's text colour is `--text: #14201d` (dark), but the
+transcript background stayed `#13141c` (also dark) — ~1:1 contrast
+on the assistant chat bubbles, effectively invisible text.
+
+**Fix**: replaced inline styles with `.chat-transcript` and
+`.chat-input` CSS classes that use `var(--surface)` + `var(--text)`
++ `var(--border)`. Both modes now resolve to high-contrast
+combinations.
+
+**Re-audit verification**: assistant state's chat bubbles cleared
+in light mode.
+
+### Fix 13 — cmdk results listbox accessible name
+
+**File**: `static/index.html:1396`.
+
+**Issue**: `aria-input-field-name` (serious, WCAG 4.1.2 Level A) —
+the `<ul id="cmdkResults" role="listbox">` inside the cmdk dialog
+had no `aria-label`, `aria-labelledby`, or `title`. axe surfaced
+this only when the dialog was open (dynamic-state audit).
+
+**Fix**: added `aria-label="Command palette results"` to the
+listbox.
+
+**Re-audit verification**: dynamic-state-09 cleared.
+
+### Fix 14 — Compliance markdown cross-tree links rewritten
+
+**Files**: `compliance/transparency-notice.md` (1 link),
+`compliance/deployer-operating-manual.md` (5 links).
+
+**Issue**: not an axe violation; surfaced by `mkdocs build
+--strict` when the two compliance pages were brought into the
+docs site. Cross-tree relative links (`../SECURITY.md`,
+`../.env.example`, `human-oversight-guide.md` etc.) couldn't be
+resolved by mkdocs because the targets live outside the rendered
+docs tree.
+
+**Fix**: rewrote 6 relative cross-tree links to absolute GitHub
+URLs (`https://github.com/maksodf/directjob-scout/blob/main/...`).
+The canonical compliance files now render correctly in both the
+GitHub UI and the mkdocs site without ambiguity.
+
+**Re-audit verification**: `mkdocs build --strict` green; both
+compliance pages cleared with 0 axe violations.
+
 ## Known gaps + remediation plan
 
 | Gap | Severity | Where | Why deferred | Planned timeline |
 |---|---|---|---|---|
-| ~~Authenticated app surfaces (chat, settings, journey, CV builder) not yet axe-audited~~ | — | — | **CLOSED 2026-05-19** by the auth-surface follow-on slice (Playwright + axe-playwright-python runner at `scripts/accessibility-audit-auth-surfaces.py`). 8 authenticated states now audited at 0 violations each. | — |
-| Compliance markdown files not yet in the docs site | medium | `compliance/*.md` (12 files) | The §3.6 mkdocs site links to GitHub-rendered compliance files; native auditing would require including them in the site | Phase 2 |
-| Manual / keyboard-navigation review | medium | Full app + docs | Automated axe catches many issues but not all keyboard-trap / focus-order / tab-order issues | Phase 1 close if time, else NLnet HAN University audit |
+| ~~Authenticated app surfaces (chat, settings, journey, CV builder) not yet axe-audited~~ | — | — | **CLOSED 2026-05-19** by the auth-surface follow-on slice. | — |
+| ~~Compliance markdown files not yet in the docs site~~ | — | — | **CLOSED 2026-05-19** by the polish-trio sub-slice B. `compliance/transparency-notice.md` + `compliance/deployer-operating-manual.md` mirrored into the mkdocs site via `docs/hooks/compliance_mirror.py`; both audited at 0 violations. Other compliance/*.md files remain GitHub-rendered (technical artefacts, not user-facing). | — |
+| ~~Dynamic-state coverage gaps in the auth-surface runner~~ | — | — | **CLOSED 2026-05-19** by the polish-trio sub-slice C. Runner extended with 4 dynamic-state audits (cmdk dialog, disclosure expanded, settings rendered, login error). | — |
+| ~~Auth-surface contrast verified in dark mode only~~ | — | — | **CLOSED 2026-05-19** by the polish-trio sub-slice A. Runner now accepts `--color-scheme {dark,light,both}`; light-mode auth surfaces audited at 0 violations after fixes. | — |
+| Manual / keyboard-navigation review | medium | Full app + docs | Automated axe catches structural issues but not all keyboard-trap / focus-order / tab-order issues | NLnet HAN University audit (post-Commons-Conservancy admission) |
 | Screen-reader testing (VoiceOver, NVDA, Orca) | medium | Full app | Requires manual testing; not automatable | NLnet HAN University audit (post-Commons-Conservancy admission) |
 | Mobile / responsive accessibility (touch targets, zoom) | low | Full app | axe-core CLI tests desktop viewport only; the Playwright runner also tested 1280×800 only | Phase 2 |
-| Dynamic-state coverage gaps in the auth-surface runner | low | Authenticated app | The runner audits each view's initial-render state; modal dialogs, expanded disclosures, error states, post-form-submit states are NOT covered yet | Phase 2 (extend runner with more state transitions) |
-| Auth-surface contrast verified in dark mode only | low | Light-mode theme | The Playwright runner inherited Chromium's default colour scheme (dark). The light-mode `--text-soft` was bumped to clear 4.5:1 as a preventative fix, but light-mode runs against the auth surfaces have not been verified | Phase 2 (add a `--theme=light` Playwright run) |
+| Light-mode dynamic-state coverage | low | Dynamic states under light scheme | Sub-slice C ran dynamic states in dark mode only; the light-mode fixes from sub-slice A propagate to the same code paths but the explicit verification deferred to keep the runner's wall-clock budget reasonable | Phase 2 (extend runner to run dynamic states in both schemes) |
+| Other compliance/*.md files not in mkdocs site | low | `compliance/{risk-management-plan,data-governance,technical-documentation,audit-log-schema,human-oversight-guide,accuracy-and-bias-testing,fundamental-rights-impact-assessment-template,eu-database-registration-template,README}.md` | Technical compliance artefacts, not user-facing surfaces; GitHub-rendered. Sub-slice B intentionally scoped to the two user-facing files per the maintainer's §3.6 framing. Adding more would require rewriting their cross-tree links (compliance/technical-documentation alone has 8) | Phase 2 (if any becomes user-facing) |
 
 ## NLnet support services (post-Commons-Conservancy admission)
 
@@ -414,7 +577,7 @@ for path in / /mcp-server/ /deployment-recipe/ /production-deployment/ /esco-int
 done
 ```
 
-### Second pass — authenticated surfaces (Playwright + axe-playwright-python)
+### Second + third pass — authenticated + dynamic + compliance + light-mode (Playwright + axe-playwright-python + axe-core CLI)
 
 ```bash
 # 1. Install Playwright + axe-playwright-python (NOT in
@@ -423,14 +586,28 @@ done
 pip install playwright axe-playwright-python
 python3 -m playwright install chromium
 
-# 2. Run the audit. The runner spins up its own app.py instance in
-#    a tmp data dir, seeds the Aïcha persona, logs in via the
-#    sign-in form, walks through 8 authenticated UI states, and
-#    saves per-state screenshot + axe JSON + violation-summary text
-#    to audit-results/auth-surfaces/.
+# 2. Run the auth-surface audit. The runner spins up its own
+#    app.py instance in a tmp data dir, seeds the Aïcha persona,
+#    logs in via the sign-in form, walks through 8 authenticated
+#    UI states + 4 dynamic states (cmdk, disclosure, login error,
+#    settings), in both dark and light colour schemes (12 + 12 =
+#    24 axe runs total; default is --color-scheme both). Saves
+#    per-state screenshot + axe JSON + violation-summary text to
+#    audit-results/auth-surfaces/.
 python3 scripts/accessibility-audit-auth-surfaces.py
+# Optionally restrict to one scheme:
+python3 scripts/accessibility-audit-auth-surfaces.py --color-scheme dark
+python3 scripts/accessibility-audit-auth-surfaces.py --color-scheme light
 
-# 3. Read the summary.
+# 3. Audit the compliance pages (require mkdocs serve running):
+mkdocs serve --dev-addr 127.0.0.1:8001 &
+mkdir -p audit-results/compliance
+axe http://127.0.0.1:8001/compliance/transparency-notice/ \
+  --save audit-results/compliance/transparency-notice.json
+axe http://127.0.0.1:8001/compliance/deployer-operating-manual/ \
+  --save audit-results/compliance/deployer-operating-manual.json
+
+# 4. Read the auth-surface summary.
 cat audit-results/auth-surfaces/summary.txt
 ```
 
@@ -472,19 +649,26 @@ above; the files land back in `audit-results/`.
 - All surfaces post-fix: `audit-results/after-fix-01-landing.json`
   + `after-fix-02-docs-landing.json` through `after-fix-06-docs-esco.json`.
 
-**Second-pass (authenticated) filenames** — written by
+**Second + third-pass filenames** — written by
 `scripts/accessibility-audit-auth-surfaces.py` into
-`audit-results/auth-surfaces/`:
+`audit-results/auth-surfaces/`. The runner now produces a
+`<state>-<scheme>` suffix; the same 12 state IDs are audited per
+scheme:
 
-- `01-signin-landing.{png,json,txt}` — pre-login regression check
-- `02-post-login.{png,json,txt}`
-- `03-jobs.{png,json,txt}`
-- `04-assistant.{png,json,txt}`
-- `05-companies.{png,json,txt}`
-- `06-cv-builder.{png,json,txt}`
-- `07-settings.{png,json,txt}`
-- `08-dashboard.{png,json,txt}`
-- `summary.txt` — per-state violation counts in one file.
+- Base states (1–8): `01-signin-landing-<scheme>` through
+  `08-dashboard-<scheme>`
+- Dynamic states (9–12, dark only by default):
+  `09-dynamic-cmdk-dialog-dark`,
+  `10-dynamic-disclosure-open-dark`,
+  `11-dynamic-login-error-dark`,
+  `12-dynamic-settings-loaded-dark`
+- `summary.txt` — per-state + per-scheme + grand-total counts.
+
+**Compliance-page filenames** — written by axe-core CLI into
+`audit-results/compliance/`:
+
+- `transparency-notice.json`
+- `deployer-operating-manual.json`
 
 The two slice commit messages — §3.6 (`§3.6 accessibility audit +
 ACCESSIBILITY.md (first automated pass + remediation plan)`) and

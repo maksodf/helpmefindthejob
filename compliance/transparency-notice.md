@@ -56,7 +56,7 @@ When an AI action runs, the system sends **only the slice of data needed for tha
 - **Motivation-letter drafting** sends the job posting and the CV bullets you confirmed for this role — not your job history with other employers.
 - **CV tailoring** sends the job posting and the CV sections you select — not your other CV sections.
 
-The full minimisation rules are documented in [`data-governance.md`](data-governance.md) §4 and live in the project's open-source codebase. You can verify them.
+The full minimisation rules are documented in [`data-governance.md`](https://github.com/maksodf/directjob-scout/blob/main/compliance/data-governance.md) §4 and live in the project's open-source codebase. You can verify them.
 
 ---
 

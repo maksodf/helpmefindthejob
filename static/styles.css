@@ -79,10 +79,13 @@
      Darkened to #5a6863 to clear 4.5:1 (≈5.5:1 vs bg). Pairs
      with the dark-mode rebalance above. */
   --text-soft: #5a6863;
-  --accent: #0d9488;              /* mint, darker for AA on light */
-  --accent-hover: #0f9c8f;
-  --accent-weak: rgba(13, 148, 136, 0.10);
-  --accent-text: #0d8b80;
+  /* --accent was #0d9488 — failed WCAG 1.4.3 (4.5:1) with white text
+     at 3.74:1. Darkened to #0a766b (≈5.2:1 vs #fff) per axe-core
+     light-mode audit 2026-05-19. The hover variant tracks. */
+  --accent: #0a766b;              /* mint, AA-safe on white text */
+  --accent-hover: #0d8a7e;
+  --accent-weak: rgba(10, 118, 107, 0.10);
+  --accent-text: #0a766b;
   --accent-on: #ffffff;
   --accent-2: #7c5cff;            /* lavender, darker */
   --accent-2-weak: rgba(124, 92, 255, 0.10);
@@ -3497,6 +3500,35 @@ details[open] .collapsible-chevron { transform: rotate(180deg); }
 /* ============================================================
    Chat assistant — bubble + typing animation
    ============================================================ */
+/* Transcript + input theme-aware shells. Previously these were
+   inline-styled with hardcoded dark-mode hex values (`#13141c`
+   background on the transcript, `#1c1c24` on the input) which broke
+   light-mode contrast — the body text colour in light mode is dark
+   while the transcript stayed dark, yielding ~1:1 contrast (axe-core
+   light-mode audit 2026-05-19). Theming via CSS variables fixes it
+   in both modes. */
+.chat-transcript {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  min-height: 280px;
+  max-height: 520px;
+  overflow-y: auto;
+  font-size: 14px;
+}
+.chat-input {
+  flex: 1;
+  padding: 10px 12px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
 .chat-bubble code {
   background: rgba(255,255,255,0.06);
   padding: 1px 5px;

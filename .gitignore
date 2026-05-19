@@ -65,6 +65,14 @@ site/
 # that get stale on every code change.
 audit-results/
 
+# Compliance-page mirror — the canonical source for compliance/*.md
+# is at the repo root. The mkdocs build hook at
+# docs/hooks/compliance_mirror.py copies the two user-facing
+# compliance pages into docs/compliance/ at build time so they
+# render natively in the docs site. The mirror is regenerated on
+# every build; committing it would create drift.
+docs/compliance/
+
 # Test artifacts
 .tox/
 .nox/

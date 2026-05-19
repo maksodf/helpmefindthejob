@@ -29,7 +29,7 @@ In practical terms for you as a deployer:
 - **If you are an NGO operating in adult education, return-to-work programmes, or career-coaching for workers re-entering after caregiving**: Käthe is the persona built around your population. The tool handles Wiedereinstieg-programme matching, twelve-year-CV-gap reframing, and 2026-format-CV scaffolding — alongside everything the migrant features provide.
 - **If you are a self-hoster running DirectJob Scout for yourself or a small community**: there is no separate enterprise tier; the same tool, same features.
 
-The cost-saving doctrine ([`../docs/grant/08-cost-saving-doctrine.md`](../docs/grant/08-cost-saving-doctrine.md)) is built on the friction-class addressable population, not on the migrant-only one. The "advisor caseload" cost-saving mechanism applies to every advisor-client interaction in the friction class, not only migrant cases. If your finance department asks how the tool's value is bounded by demographic, the answer is: it isn't.
+The cost-saving doctrine ([`docs/grant/08-cost-saving-doctrine.md`](https://github.com/maksodf/directjob-scout/blob/main/docs/grant/08-cost-saving-doctrine.md)) is built on the friction-class addressable population, not on the migrant-only one. The "advisor caseload" cost-saving mechanism applies to every advisor-client interaction in the friction class, not only migrant cases. If your finance department asks how the tool's value is bounded by demographic, the answer is: it isn't.
 
 ---
 
@@ -76,7 +76,7 @@ Before going live, complete each of these in order. None is optional.
 
 ### 4.1 Environment variables
 
-The complete list lives in [`../.env.example`](../.env.example). The AI-Act-relevant ones:
+The complete list lives in [`.env.example`](https://github.com/maksodf/directjob-scout/blob/main/.env.example). The AI-Act-relevant ones:
 
 | Variable | Default | What it controls |
 |---|---|---|
@@ -107,7 +107,7 @@ EN and DE are shipped. Arabic, Ukrainian, Turkish, and Romanian are on the roadm
 
 ## 5. Human oversight setup
 
-The full guide is at [`human-oversight-guide.md`](human-oversight-guide.md). Summary for deployment-time:
+The full guide is at [`human-oversight-guide.md`](https://github.com/maksodf/directjob-scout/blob/main/compliance/human-oversight-guide.md). Summary for deployment-time:
 
 1. **Appoint a named oversight person.** This must be someone with the competence to assess fit-scoring outputs, motivation-letter drafts, and CV-tailoring suggestions for accuracy and fairness in your sector. For a Beratungsstelle, this is typically a senior advisor. For a Jobcenter, a Case Manager. For a university career service, the head of career advising. The person's contact appears in the `transparency-notice.md` addendum.
 2. **Decide review mode**: `DIRECTJOB_HUMAN_OVERSIGHT_MODE=disabled` (default, AI outputs reach the user directly) vs `enabled` (AI outputs queue for advisor review at `/api/admin/oversight/queue`). The trade-off is between throughput and oversight depth. Public-authority deployers typically choose `enabled` at first deployment and de-escalate after a documented track record.
@@ -131,7 +131,7 @@ Restrict filesystem access to the deployment's data directory. The provider does
 
 ### 6.4 Query
 
-See [`audit-log-schema.md`](audit-log-schema.md) §7 for query examples. Common operational queries:
+See [`audit-log-schema.md`](https://github.com/maksodf/directjob-scout/blob/main/compliance/audit-log-schema.md) §7 for query examples. Common operational queries:
 
 - Count of AI invocations per user per day (anomaly detection)
 - Distribution of fit-score adjustments across the persona cohort (bias indicator)
@@ -195,7 +195,7 @@ If you encounter or are informed of an incident involving DirectJob Scout in you
 2. **Document**: capture the relevant audit-log slice, the user's reported experience, and the system state at the time of incident.
 3. **Notify**:
    - **Internal**: your data-protection officer, your oversight person, your organisation's relevant senior accountable individual.
-   - **The provider**: via [`../SECURITY.md`](../SECURITY.md) for security-related incidents or via a GitHub Issue tagged `incident-ai-act` for AI-Act-related incidents. The provider acknowledges within 5 working days and supports with technical analysis.
+   - **The provider**: via [`SECURITY.md`](https://github.com/maksodf/directjob-scout/blob/main/SECURITY.md) for security-related incidents or via a GitHub Issue tagged `incident-ai-act` for AI-Act-related incidents. The provider acknowledges within 5 working days and supports with technical analysis.
    - **Supervisory authority**: per Article 73, serious incidents are notified to the relevant market-surveillance authority within the regulatory window (15 days for general serious incidents, 2 days for incidents involving widespread infringement). Your jurisdiction's data-protection authority may also need notification under GDPR Article 33 if the incident is a personal-data breach.
 4. **Remediate**: apply the technical and procedural mitigations the joint analysis identifies.
 5. **Post-incident review**: document the incident, the remediation, and any policy or configuration changes that result. This documentation feeds your next risk-register review and may inform the provider's risk-register update for the upstream project.
