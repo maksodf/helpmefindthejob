@@ -115,26 +115,41 @@ python3 -m unittest tests.test_phase0_i18n_parity
 ```
 
 The parity test (`tests/test_phase0_i18n_parity.py`) is also
-run in CI by `.github/workflows/test.yml` on every push. It
-enforces three contracts:
+run in CI by `.github/workflows/test.yml` on every push. **The
+test walks every `static/i18n/*.json` automatically** — drop in
+a new locale bundle and the test gates it from PR-day-one
+without a test edit. Five contracts are enforced:
 
-1. `test_en_and_de_have_identical_key_sets` — every locale bundle
-   has the same key set as `en.json`.
-2. `test_every_html_reference_resolves_in_both_bundles` — every
-   `data-i18n="..."` reference in `static/index.html` resolves in
-   both bundles.
-3. `test_no_blank_translations` — no empty values; missing
-   translations must be deliberate (copy the English string
-   verbatim when unsure rather than leaving blank).
+1. `test_all_locales_have_identical_key_sets` — every locale
+   bundle has the same key set as `en.json`. Reports per-locale
+   missing + extra keys on failure.
+2. `test_every_html_reference_resolves_in_all_locales` — every
+   `data-i18n="..."` reference in `static/index.html` resolves
+   in every locale bundle.
+3. `test_no_blank_translations_in_non_source_locales` — no
+   empty values in any non-EN locale. `en.json` is excluded
+   because a few placeholder keys may legitimately be empty in
+   the source.
+4. `test_preserved_german_terms_are_kept_verbatim` —
+   machine-enforces the German-bureaucratic-conventions
+   preservation rule (next section): wherever `en.json` uses a
+   listed term (`Anerkennung`, `§16d`, `TVöD`, `Wiedereinstieg`,
+   `Ausbildung`, etc.), every non-EN locale must keep the term
+   verbatim in the same key's value (case-insensitive substring
+   match). The `PRESERVED_TERMS` constant inside the test file
+   is the source-of-truth list — when you add a term to the
+   docs section below, add it to that constant too.
+5. `test_html_inline_fallback_matches_en_json` — inline
+   fallback text inside any `<element data-i18n="key">text</element>`
+   must match `en.json[key]` after whitespace + HTML-entity
+   normalisation. Catches drift between HTML and bundle (e.g.,
+   HTML says `<h2 data-i18n="settings.ai.heading">AI brief & cover
+   letters — pick how it runs</h2>` while `en.json` says `"AI
+   Provider"`). Empty fallback bodies are exempt — they signal
+   "use the bundle, no fallback needed."
 
 A failing parity test in CI blocks the PR. The reviewer can
 re-run after the locale bundle is updated to close the gap.
-
-When adding a third+ locale, the parity test itself currently
-asserts only en/de equivalence — the next contributor adding a
-locale should extend the test to include their new bundle.
-Filing a small PR that generalises the test to walk every
-`static/i18n/*.json` is welcome and tracked in `ROADMAP.md`.
 
 ## German-bureaucratic-conventions preservation rule
 

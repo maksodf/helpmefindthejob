@@ -271,7 +271,7 @@
             </div>
             <div class="hero-secondary">
               <div class="hero-stat">
-                <span class="hero-stat-label" data-i18n="dashboard.metric.companies">Companies</span>
+                <span class="hero-stat-label" data-i18n="dashboard.metric.companies">Companies to watch</span>
                 <strong id="metricWatched">0</strong>
               </div>
               <div class="hero-stat">
@@ -325,7 +325,7 @@
                 <input id="findJobsLocation" type="text" placeholder="Berlin / remote / global" />
               </label>
               <label class="field find-jobs-limit">
-                <span data-i18n="findJobs.limit">How many</span>
+                <span data-i18n="findJobs.limit">Per provider</span>
                 <input id="findJobsLimit" type="number" min="5" max="50" value="15" />
               </label>
               <button id="findJobsSubmit" class="btn btn-primary find-jobs-submit" type="submit" data-i18n="findJobs.submit">Search now</button>
@@ -558,7 +558,7 @@
               to the heading visually when the section is expanded.
             -->
             <div class="suggest-refresh-row">
-              <button id="suggestBtn" class="btn btn-small" type="button" data-i18n="companies.suggestions.refresh">Refresh</button>
+              <button id="suggestBtn" class="btn btn-small" type="button" data-i18n="companies.suggestions.refresh">Refresh suggestions</button>
             </div>
             <div class="suggest-inputs">
               <label class="field">
@@ -737,7 +737,7 @@
           <nav class="settings-tabs" id="settingsTabs" role="tablist" aria-label="Settings sections">
             <button class="settings-tab" type="button" role="tab" data-tab="profile" aria-selected="true" data-i18n="settings.tab.profile">Profile</button>
             <button class="settings-tab" type="button" role="tab" data-tab="notifications" aria-selected="false" data-i18n="settings.tab.notifications">Notifications</button>
-            <button class="settings-tab" type="button" role="tab" data-tab="security" aria-selected="false" data-i18n="settings.tab.security">Security</button>
+            <button class="settings-tab" type="button" role="tab" data-tab="security" aria-selected="false" data-i18n="settings.tab.security">Security & AI</button>
             <button class="settings-tab" type="button" role="tab" data-tab="workspace" aria-selected="false" data-i18n="settings.tab.workspace">Workspace</button>
           </nav>
           <section class="card" aria-label="Language" data-tab="profile">
@@ -776,7 +776,7 @@
                 <div>
                   <strong data-i18n="settings.bookmarklet.step2">Drag this button up onto the bar — once</strong>
                   <p class="muted small" data-i18n="settings.bookmarklet.step2.desc">Click and hold the button below, drag it up onto the bookmark bar, and let go. It now sits there like any other bookmark — but instead of opening a website, clicking it grabs whichever job page you're on and sends it to your queue.</p>
-                  <a id="bookmarkletLink" class="btn btn-primary bookmarklet-link" href="javascript:void(0)" data-i18n="settings.bookmarklet.dragMe">↗ Send to DirectJob</a>
+                  <a id="bookmarkletLink" class="btn btn-primary bookmarklet-link" href="javascript:void(0)" data-i18n="settings.bookmarklet.dragMe">Send to DirectJob</a>
                   <span id="bookmarkletStatus" class="muted small"></span>
                 </div>
               </li>
@@ -925,8 +925,8 @@
           <section class="card" aria-label="AI Provider" data-tab="security">
             <div class="card-heading">
               <div>
-                <h2 data-i18n="settings.ai.heading">AI brief & cover letters — pick how it runs</h2>
-                <p class="muted" data-i18n="settings.ai.lead">DirectJob can write a job-fit summary and a tailored cover letter for any role you import. Three ways to power that — pick whichever matches how you already use AI.</p>
+                <h2 data-i18n="settings.ai.heading">AI Provider</h2>
+                <p class="muted" data-i18n="settings.ai.lead">Bring your own AI subscription. We never persist raw keys.</p>
               </div>
             </div>
             <div class="ai-modes" role="radiogroup" aria-label="AI mode">
@@ -1209,8 +1209,7 @@
               <div>
                 <h2 id="searchResultsHeading" data-i18n="view.searchResults.title">Search results</h2>
                 <p class="muted" id="searchResultsSub" data-i18n="view.searchResults.subtitle">
-                  Categorised live aggregator hits. Click a card to
-                  focus on it in chat.
+                  Live aggregator hits for your last search, grouped by role family.
                 </p>
               </div>
               <div class="action-group">
