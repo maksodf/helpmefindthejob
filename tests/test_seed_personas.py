@@ -320,8 +320,17 @@ class CLISmokeTests(unittest.TestCase):
         self.seed_module = _load_seed_module()
 
     def test_password_is_required(self) -> None:
-        with self.assertRaises(SystemExit):
+        # argparse prints "the following arguments are required: --password"
+        # to stderr before raising SystemExit. Capture the stderr so the
+        # test's expected failure-mode doesn't pollute the suite's
+        # console output (PART A.2 of the deep audit).
+        import io
+        from contextlib import redirect_stderr
+
+        stderr = io.StringIO()
+        with redirect_stderr(stderr), self.assertRaises(SystemExit):
             self.seed_module._parse_args([])
+        self.assertIn("--password", stderr.getvalue())
 
     def test_dry_run_flag_recognised(self) -> None:
         args = self.seed_module._parse_args(["--password", "x", "--dry-run"])
