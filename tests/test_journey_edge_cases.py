@@ -52,10 +52,13 @@ class SanitizeMessageTests(unittest.TestCase):
         self.assertEqual(out, "HelloWorldFoo")
 
     def test_strips_bidi_overrides(self):
-        # U+202E flips render direction.
-        dirty = "Maria‮evil"
+        # U+202E (Right-to-Left Override) flips render direction.
+        # Written via chr() so the source itself stays grep-safe + lint-
+        # clean (the literal char triggers PLE2502 by design).
+        rlo = chr(0x202E)
+        dirty = f"Maria{rlo}evil"
         out = sanitize_user_message(dirty)
-        self.assertNotIn("‮", out)
+        self.assertNotIn(rlo, out)
 
     def test_normalises_crlf(self):
         out = sanitize_user_message("a\r\nb\rc")

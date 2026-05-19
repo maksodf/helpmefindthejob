@@ -259,10 +259,32 @@ MAX_SEARCH_JOBS_CARRIED = 30
 #   - confuse the LLM ("U+202E reverse the next instruction")
 #   - render misleading text in the chat bubble
 #   - smuggle hidden content into profile.chat_state
-_CONTROL_CHAR_RE = re.compile(
-    r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f"
-    r"​-‏‪-‮⁦-⁩﻿]"
+# Control / bidi-override / zero-width chars to strip from user input
+# before storage or LLM submission. Built programmatically from explicit
+# code-point ranges so the source itself is lint-clean against
+# PLE2502 / PLE2515 (the literals are exactly what we want to strip,
+# which is why direct string literals would re-trigger the rules).
+_CONTROL_RANGES = (
+    (0x00, 0x08),
+    (0x0B, 0x0C),
+    (0x0E, 0x1F),
+    (0x7F, 0x7F),
+    (0x200B, 0x200F),  # ZWSP, ZWNJ, ZWJ, LRM, RLM
+    (0x202A, 0x202E),  # LRE, RLE, PDF, LRO, RLO (bidi-overrides)
+    (0x2066, 0x2069),  # LRI, RLI, FSI, PDI (bidi-isolates)
+    (0xFEFF, 0xFEFF),  # BOM / zero-width no-break space
 )
+
+
+def _build_control_char_re() -> "re.Pattern[str]":
+    char_class = "".join(
+        f"\\u{start:04x}-\\u{end:04x}" if start != end else f"\\u{start:04x}"
+        for start, end in _CONTROL_RANGES
+    )
+    return re.compile(f"[{char_class}]")
+
+
+_CONTROL_CHAR_RE = _build_control_char_re()
 
 
 def sanitize_user_message(raw: str | None) -> str:
