@@ -503,18 +503,18 @@ class SaltFailFastTests(unittest.TestCase):
 
     def test_dev_env_with_no_salt_falls_back_with_warning(self) -> None:
         # Default (empty) env classifies as development. The function
-        # must return a 32-byte random salt without raising.
-        import io
-        from contextlib import redirect_stderr
+        # must return a 32-byte random salt without raising. The
+        # dev-mode warning is surfaced via ``warnings.warn(UserWarning)``
+        # (not stderr-print) so `assertWarns` is the natural assertion.
+        import warnings as _warnings
 
-        stderr = io.StringIO()
-        with redirect_stderr(stderr):
+        with self.assertWarns(UserWarning) as cm:
             salt = audit_log._resolve_salt("")
         self.assertEqual(len(salt), 32)
-        message = stderr.getvalue()
-        self.assertIn("ERROR", message)
+        message = str(cm.warning)
         self.assertIn("HELPMEFINDTHEJOB_AUDIT_SALT", message)
         self.assertIn("development", message)
+        del _warnings  # keep the import explicit for readability
 
     def test_production_env_with_no_salt_exits_one(self) -> None:
         # env=production + no salt → SystemExit(1) with a stderr
@@ -535,9 +535,17 @@ class SaltFailFastTests(unittest.TestCase):
 
     def test_staging_env_with_no_salt_also_exits_one(self) -> None:
         # Any env other than dev/test variants triggers fail-fast.
+        # redirect_stderr to keep the expected FATAL message out of the
+        # suite's console output (PART A.3 of the deep audit).
+        import io
+        from contextlib import redirect_stderr
+
         os.environ["HELPMEFINDTHEJOB_ENV"] = "staging"
-        with self.assertRaises(SystemExit):
+        stderr = io.StringIO()
+        with redirect_stderr(stderr), self.assertRaises(SystemExit):
             audit_log._resolve_salt("")
+        self.assertIn("FATAL", stderr.getvalue())
+        self.assertIn("staging", stderr.getvalue())
 
     def test_production_env_with_configured_salt_succeeds(self) -> None:
         # Salt configured → no fail-fast, return the decoded bytes.
@@ -548,15 +556,30 @@ class SaltFailFastTests(unittest.TestCase):
 
     def test_legacy_env_var_name_still_resolves_app_env(self) -> None:
         # Legacy COMPANY_DISCOVERY_ENV path must still gate fail-fast.
+        # redirect_stderr to keep the expected FATAL message + the legacy-
+        # name DeprecationWarning out of the suite console output (PART
+        # A.3 of the deep audit).
+        import io
+        import warnings as _warnings
+        from contextlib import redirect_stderr
+
         os.environ["COMPANY_DISCOVERY_ENV"] = "production"
-        with self.assertRaises(SystemExit):
-            audit_log._resolve_salt("")
+        stderr = io.StringIO()
+        with _warnings.catch_warnings():
+            _warnings.simplefilter("ignore", DeprecationWarning)
+            with redirect_stderr(stderr), self.assertRaises(SystemExit):
+                audit_log._resolve_salt("")
+        self.assertIn("FATAL", stderr.getvalue())
+        self.assertIn("production", stderr.getvalue())
 
     def test_test_env_classified_as_dev(self) -> None:
+        # `env=test` is part of `_DEV_ENV_TOKENS` so we get the dev
+        # fallback (random salt + UserWarning), not the fatal exit.
         os.environ["HELPMEFINDTHEJOB_ENV"] = "test"
-        # Should not raise.
-        salt = audit_log._resolve_salt("")
+        with self.assertWarns(UserWarning) as cm:
+            salt = audit_log._resolve_salt("")
         self.assertEqual(len(salt), 32)
+        self.assertIn("env=test", str(cm.warning))
 
 
 if __name__ == "__main__":

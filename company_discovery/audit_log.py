@@ -358,15 +358,26 @@ def _resolve_salt(raw: str) -> bytes:
         )
         sys.exit(1)
     salt = secrets.token_bytes(32)
-    print(
-        "[audit_log] ERROR: HELPMEFINDTHEJOB_AUDIT_SALT not set; "
-        "generated a per-process salt. Audit-log entries will not be "
-        "linkable across process restarts. This fallback is permitted "
-        "in development (env=" + (env or "development") + ") only. Production deployments MUST set "
-        "HELPMEFINDTHEJOB_AUDIT_SALT (legacy DIRECTJOB_AUDIT_SALT "
-        "still accepted with a DeprecationWarning) to 32 random bytes "
-        "(base64) for stable hashing.",
-        file=sys.stderr,
+    # Dev-mode warning uses warnings.warn (UserWarning) instead of a
+    # raw print to stderr — test runners filter UserWarning by default
+    # so the message stays out of the suite's console while remaining
+    # visible to a developer running the app directly (default Python
+    # warning filter still surfaces it). The category is UserWarning,
+    # not DeprecationWarning, because the fallback is *supported*
+    # development behaviour, not a deprecation.
+    import warnings as _warnings
+
+    _warnings.warn(
+        "[audit_log] HELPMEFINDTHEJOB_AUDIT_SALT not set; generated a "
+        "per-process salt. Audit-log entries will not be linkable "
+        "across process restarts. This fallback is permitted in "
+        "development (env=" + (env or "development") + ") only. "
+        "Production deployments MUST set HELPMEFINDTHEJOB_AUDIT_SALT "
+        "(legacy DIRECTJOB_AUDIT_SALT still accepted with a "
+        "DeprecationWarning) to 32 random bytes (base64) for stable "
+        "hashing.",
+        category=UserWarning,
+        stacklevel=2,
     )
     return salt
 
