@@ -90,12 +90,12 @@ OLLAMA_BASE_URL = os.environ.get("OLLAMA_BASE_URL", "http://127.0.0.1:11434")
 # Pinned model tag — same tag the bias-testing report references.
 # The maintainer can override via env if a newer model is preferred for
 # subsequent runs (the report records the model that ran).
-MODEL_TAG = os.environ.get("DIRECTJOB_BIAS_MODEL", "llama3.1:8b")
+MODEL_TAG = os.environ.get("HELPMEFINDTHEJOB_BIAS_MODEL", "llama3.1:8b")
 
 # Toggle the run via env var so the default test discovery does not
 # surprise contributors who lack Ollama locally. Set this to "1" (or any
 # truthy value) to run the methodology; leave unset to skip.
-RUN_BIAS_METHODOLOGY = os.environ.get("DIRECTJOB_RUN_BIAS_METHODOLOGY", "")
+RUN_BIAS_METHODOLOGY = os.environ.get("HELPMEFINDTHEJOB_RUN_BIAS_METHODOLOGY", "")
 
 
 def _ollama_reachable() -> bool:
@@ -113,7 +113,7 @@ def _ollama_reachable() -> bool:
 
 SKIP_REASON = (
     f"Bias-methodology test is opt-in (slow + network-aware). To run: "
-    f"set DIRECTJOB_RUN_BIAS_METHODOLOGY=1 with Ollama serving model "
+    f"set HELPMEFINDTHEJOB_RUN_BIAS_METHODOLOGY=1 with Ollama serving model "
     f"{MODEL_TAG!r} at {OLLAMA_BASE_URL!r}."
 )
 
@@ -244,7 +244,7 @@ class BiasMethodologyFitScoring(unittest.TestCase):
     """Executes the fit-scoring slice of the methodology against the
     seven-persona cohort. Run via:
 
-        DIRECTJOB_RUN_BIAS_METHODOLOGY=1 \\
+        HELPMEFINDTHEJOB_RUN_BIAS_METHODOLOGY=1 \\
           python3 -m unittest tests.test_bias_methodology -v
     """
 

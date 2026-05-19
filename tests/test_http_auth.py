@@ -116,8 +116,8 @@ class HttpAuthAdminTests(unittest.TestCase):
         self.port = free_port()
         env = {
             **os.environ,
-            "COMPANY_DISCOVERY_DATA_DIR": self.tmp.name,
-            "COMPANY_DISCOVERY_ENV": "development",
+            "HELPMEFINDTHEJOB_DATA_DIR": self.tmp.name,
+            "HELPMEFINDTHEJOB_ENV": "development",
         }
         self.process = subprocess.Popen(
             [sys.executable, str(ROOT / "app.py"), "--port", str(self.port)],

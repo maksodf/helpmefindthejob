@@ -42,7 +42,7 @@ class PushPayloadTests(unittest.TestCase):
 
 class PushTransportEnvTests(unittest.TestCase):
     def setUp(self) -> None:
-        for key in ("DIRECTJOB_VAPID_PUBLIC_KEY", "DIRECTJOB_VAPID_PRIVATE_KEY"):
+        for key in ("HELPMEFINDTHEJOB_VAPID_PUBLIC_KEY", "HELPMEFINDTHEJOB_VAPID_PRIVATE_KEY"):
             os.environ.pop(key, None)
 
     def test_disabled_when_env_vars_missing(self) -> None:
@@ -60,13 +60,13 @@ class PushTransportEnvTests(unittest.TestCase):
             send_push(sub, PushPayload(title="t", body="b"))
 
     def test_enabled_when_env_vars_set(self) -> None:
-        os.environ["DIRECTJOB_VAPID_PUBLIC_KEY"] = "synthetic-public-key"
-        os.environ["DIRECTJOB_VAPID_PRIVATE_KEY"] = "synthetic-private-key"
+        os.environ["HELPMEFINDTHEJOB_VAPID_PUBLIC_KEY"] = "synthetic-public-key"
+        os.environ["HELPMEFINDTHEJOB_VAPID_PRIVATE_KEY"] = "synthetic-private-key"
         try:
             self.assertTrue(is_push_configured())
             self.assertEqual(vapid_public_key(), "synthetic-public-key")
         finally:
-            for key in ("DIRECTJOB_VAPID_PUBLIC_KEY", "DIRECTJOB_VAPID_PRIVATE_KEY"):
+            for key in ("HELPMEFINDTHEJOB_VAPID_PUBLIC_KEY", "HELPMEFINDTHEJOB_VAPID_PRIVATE_KEY"):
                 os.environ.pop(key, None)
 
 
@@ -92,7 +92,7 @@ class PushHttpEndpointTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.tmpdir = Path(tempfile.mkdtemp(prefix="round6-push-"))
-        os.environ["COMPANY_DISCOVERY_DATA_DIR"] = str(cls.tmpdir)
+        os.environ["HELPMEFINDTHEJOB_DATA_DIR"] = str(cls.tmpdir)
         for name in list(sys.modules):
             if name == "app":
                 del sys.modules[name]

@@ -96,21 +96,21 @@ class ManagedAiDispatchTests(unittest.TestCase):
 
     def test_missing_key_returns_configuration_error(self) -> None:
         with _EnvSandbox(
-            DIRECTJOB_MANAGED_AI_PROVIDER="openai",
-            DIRECTJOB_MANAGED_AI_KEY=None,
+            HELPMEFINDTHEJOB_MANAGED_AI_PROVIDER="openai",
+            HELPMEFINDTHEJOB_MANAGED_AI_KEY=None,
         ):
             result = _dispatch_provider("hi", self._config(), runtime_credential="")
         self.assertEqual(result.status, "configuration_error")
-        self.assertIn("DIRECTJOB_MANAGED_AI_KEY", result.error)
+        self.assertIn("HELPMEFINDTHEJOB_MANAGED_AI_KEY", result.error)
 
     def test_invalid_upstream_returns_configuration_error(self) -> None:
         with _EnvSandbox(
-            DIRECTJOB_MANAGED_AI_PROVIDER="bogus_vendor",
-            DIRECTJOB_MANAGED_AI_KEY="sk-test",
+            HELPMEFINDTHEJOB_MANAGED_AI_PROVIDER="bogus_vendor",
+            HELPMEFINDTHEJOB_MANAGED_AI_KEY="sk-test",
         ):
             result = _dispatch_provider("hi", self._config(), runtime_credential="")
         self.assertEqual(result.status, "configuration_error")
-        self.assertIn("DIRECTJOB_MANAGED_AI_PROVIDER", result.error)
+        self.assertIn("HELPMEFINDTHEJOB_MANAGED_AI_PROVIDER", result.error)
 
     def test_rebind_picks_correct_upstream(self) -> None:
         # With a valid upstream + key the dispatcher will try the
@@ -138,16 +138,16 @@ class ManagedAiDispatchTests(unittest.TestCase):
         analysis_module._execute_openai_compatible = fake_openai
         try:
             with _EnvSandbox(
-                DIRECTJOB_MANAGED_AI_PROVIDER="openai",
-                DIRECTJOB_MANAGED_AI_KEY="sk-operator-test-key",
-                DIRECTJOB_MANAGED_AI_MODEL="gpt-4o-mini",
+                HELPMEFINDTHEJOB_MANAGED_AI_PROVIDER="openai",
+                HELPMEFINDTHEJOB_MANAGED_AI_KEY="sk-operator-test-key",
+                HELPMEFINDTHEJOB_MANAGED_AI_MODEL="gpt-4o-mini",
             ):
                 result = _dispatch_provider("hi", self._config(), runtime_credential="")
             self.assertEqual(result.status, "completed")
             rebound = captured["provider"]
             self.assertEqual(rebound.provider_id, "openai")
             self.assertEqual(rebound.invocation_mode, "api")
-            self.assertEqual(rebound.credential_reference, "DIRECTJOB_MANAGED_AI_KEY")
+            self.assertEqual(rebound.credential_reference, "HELPMEFINDTHEJOB_MANAGED_AI_KEY")
             self.assertEqual(rebound.model, "gpt-4o-mini")
             # No runtime credential — the adapter resolves the env var.
             self.assertEqual(captured["credential"], "")

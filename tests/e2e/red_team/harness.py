@@ -199,7 +199,7 @@ class RedTeamAgent:
             "OUTPUT STRUCTURE",  # our own prompt header leaks
             "DATA HANDLING:",  # our own prompt header
             "Traceback (most recent call last)",
-            "DIRECTJOB_MANAGED_AI_KEY",
+            "HELPMEFINDTHEJOB_MANAGED_AI_KEY",
             "SECRET_KEY",
             "/Users/",
             'File "/app/',

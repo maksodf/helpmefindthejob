@@ -7,7 +7,7 @@
 
 """DSGVO consent capture on public sign-up (Phase 3 tracker item #30).
 
-Public sign-ups (when DIRECTJOB_ALLOW_REGISTRATION=true and at least
+Public sign-ups (when HELPMEFINDTHEJOB_ALLOW_REGISTRATION=true and at least
 one user already exists) must tick both Terms and Privacy boxes.
 The first-account bootstrap path is exempt because the operator IS
 the one writing those policies.
@@ -81,9 +81,9 @@ class HttpRegisterConsentTests(unittest.TestCase):
         self.port = _free_port()
         env = {
             **os.environ,
-            "COMPANY_DISCOVERY_DATA_DIR": self.tmp.name,
-            "COMPANY_DISCOVERY_ENV": "development",
-            "DIRECTJOB_ALLOW_REGISTRATION": "true",
+            "HELPMEFINDTHEJOB_DATA_DIR": self.tmp.name,
+            "HELPMEFINDTHEJOB_ENV": "development",
+            "HELPMEFINDTHEJOB_ALLOW_REGISTRATION": "true",
         }
         self.proc = subprocess.Popen(
             [sys.executable, str(ROOT / "app.py"), "--port", str(self.port)],
@@ -176,7 +176,7 @@ class HttpRegisterConsentTests(unittest.TestCase):
         # Verify consent is persisted on disk via a fresh AuthStore read.
         store = AuthStore(
             Path(self.tmp.name) / "auth.sqlite3",
-            secret_key=os.environ.get("DIRECTJOB_SECRET_KEY") or "x" * 64,
+            secret_key=os.environ.get("HELPMEFINDTHEJOB_SECRET_KEY") or "x" * 64,
         )
         try:
             users = store.list_users()

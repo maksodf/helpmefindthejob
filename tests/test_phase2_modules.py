@@ -409,10 +409,10 @@ class BillingTests(unittest.TestCase):
             }
 
         with TemporaryDirectory() as tmp:
-            os.environ["DIRECTJOB_STRIPE_API_KEY"] = "sk_test_dummy"
-            os.environ["DIRECTJOB_STRIPE_PRICE_TEAM"] = "price_test_team"
-            os.environ["DIRECTJOB_STRIPE_SUCCESS_URL"] = "https://example/ok"
-            os.environ["DIRECTJOB_STRIPE_CANCEL_URL"] = "https://example/cancel"
+            os.environ["HELPMEFINDTHEJOB_STRIPE_API_KEY"] = "sk_test_dummy"
+            os.environ["HELPMEFINDTHEJOB_STRIPE_PRICE_TEAM"] = "price_test_team"
+            os.environ["HELPMEFINDTHEJOB_STRIPE_SUCCESS_URL"] = "https://example/ok"
+            os.environ["HELPMEFINDTHEJOB_STRIPE_CANCEL_URL"] = "https://example/cancel"
             try:
                 backend = StripeBillingBackend(
                     path=Path(tmp) / "billing.json", transport=fake_transport
@@ -422,10 +422,10 @@ class BillingTests(unittest.TestCase):
                 )
             finally:
                 for key in (
-                    "DIRECTJOB_STRIPE_API_KEY",
-                    "DIRECTJOB_STRIPE_PRICE_TEAM",
-                    "DIRECTJOB_STRIPE_SUCCESS_URL",
-                    "DIRECTJOB_STRIPE_CANCEL_URL",
+                    "HELPMEFINDTHEJOB_STRIPE_API_KEY",
+                    "HELPMEFINDTHEJOB_STRIPE_PRICE_TEAM",
+                    "HELPMEFINDTHEJOB_STRIPE_SUCCESS_URL",
+                    "HELPMEFINDTHEJOB_STRIPE_CANCEL_URL",
                 ):
                     os.environ.pop(key, None)
         self.assertEqual(session["id"], "cs_test_123")

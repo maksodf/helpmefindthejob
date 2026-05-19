@@ -331,23 +331,23 @@ class DataKeyDerivationTests(unittest.TestCase):
         self.assertNotEqual(key1, key2)
 
     def test_explicit_data_key_env(self):
-        """When DIRECTJOB_DATA_KEY is set, it must be base64-decodable
+        """When HELPMEFINDTHEJOB_DATA_KEY is set, it must be base64-decodable
         AND exactly 32 bytes — otherwise raise."""
         # 32-byte valid key
         valid_key = os.urandom(32)
         try:
-            os.environ["DIRECTJOB_DATA_KEY"] = base64.b64encode(valid_key).decode("ascii")
+            os.environ["HELPMEFINDTHEJOB_DATA_KEY"] = base64.b64encode(valid_key).decode("ascii")
             self.assertEqual(resolve_data_key("any-secret-key-here"), valid_key)
             # invalid base64
-            os.environ["DIRECTJOB_DATA_KEY"] = "%%%not base64%%%"
+            os.environ["HELPMEFINDTHEJOB_DATA_KEY"] = "%%%not base64%%%"
             with self.assertRaises(ValueError):
                 resolve_data_key("any")
             # wrong length
-            os.environ["DIRECTJOB_DATA_KEY"] = base64.b64encode(b"short").decode("ascii")
+            os.environ["HELPMEFINDTHEJOB_DATA_KEY"] = base64.b64encode(b"short").decode("ascii")
             with self.assertRaises(ValueError):
                 resolve_data_key("any")
         finally:
-            os.environ.pop("DIRECTJOB_DATA_KEY", None)
+            os.environ.pop("HELPMEFINDTHEJOB_DATA_KEY", None)
 
 
 class KeyLengthGuardTests(unittest.TestCase):

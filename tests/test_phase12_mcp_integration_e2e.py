@@ -59,7 +59,7 @@ class _StdioMCPClient:
     def __init__(self) -> None:
         self._tmp = tempfile.TemporaryDirectory()
         env = os.environ.copy()
-        env["COMPANY_DISCOVERY_DATA_DIR"] = self._tmp.name
+        env["HELPMEFINDTHEJOB_DATA_DIR"] = self._tmp.name
         self._proc = subprocess.Popen(
             [sys.executable, str(MCP_SERVER)],
             stdin=subprocess.PIPE,

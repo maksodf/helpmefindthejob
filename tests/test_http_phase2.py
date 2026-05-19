@@ -114,10 +114,10 @@ class HttpPhase2Tests(unittest.TestCase):
         cls.port = free_port()
         env = {
             **os.environ,
-            "COMPANY_DISCOVERY_DATA_DIR": cls.tmp.name,
-            "COMPANY_DISCOVERY_ENV": "development",
-            "DIRECTJOB_EMAIL_BACKEND": "console",
-            "DIRECTJOB_PUBLIC_URL": f"http://127.0.0.1:{cls.port}",
+            "HELPMEFINDTHEJOB_DATA_DIR": cls.tmp.name,
+            "HELPMEFINDTHEJOB_ENV": "development",
+            "HELPMEFINDTHEJOB_EMAIL_BACKEND": "console",
+            "HELPMEFINDTHEJOB_PUBLIC_URL": f"http://127.0.0.1:{cls.port}",
         }
         cls.process = subprocess.Popen(
             [sys.executable, str(ROOT / "app.py"), "--port", str(cls.port)],

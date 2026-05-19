@@ -114,10 +114,15 @@ class GetEnvTests(_EnvSandbox):
     def test_first_legacy_takes_precedence_over_second(self) -> None:
         os.environ["DIRECTJOB_TEST_VAR"] = "directjob-value"
         os.environ["COMPANY_DISCOVERY_TEST_VAR"] = "older-value"
-        value = env_compat.get_env(
-            "HELPMEFINDTHEJOB_TEST_VAR",
-            ("DIRECTJOB_TEST_VAR", "COMPANY_DISCOVERY_TEST_VAR"),
-        )
+        # Reading a legacy env var legitimately emits DeprecationWarning
+        # (the shim's documented behaviour); suppress that for the
+        # precedence assertion so `python3 -W error` doesn't flag it.
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", DeprecationWarning)
+            value = env_compat.get_env(
+                "HELPMEFINDTHEJOB_TEST_VAR",
+                ("DIRECTJOB_TEST_VAR", "COMPANY_DISCOVERY_TEST_VAR"),
+            )
         self.assertEqual(value, "directjob-value")
 
     def test_no_legacy_name_means_no_fallback(self) -> None:

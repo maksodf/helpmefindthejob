@@ -9,16 +9,16 @@
 #   BACKUP_DIR=/var/backups/directjob ./scripts/backup-production.sh
 #   COMPOSE_FILE=docker-compose.prod.yml SERVICE_NAME=helpmefindthejob \
 #     ./scripts/backup-production.sh
-#   DIRECTJOB_BACKUP_BACKEND=rclone DIRECTJOB_BACKUP_REMOTE=s3:my-bucket/dj-scout \
+#   HELPMEFINDTHEJOB_BACKUP_BACKEND=rclone HELPMEFINDTHEJOB_BACKUP_REMOTE=s3:my-bucket/dj-scout \
 #     ./scripts/backup-production.sh
-#   DIRECTJOB_BACKUP_BACKEND=s3 DIRECTJOB_BACKUP_REMOTE=s3://my-bucket/dj-scout \
+#   HELPMEFINDTHEJOB_BACKUP_BACKEND=s3 HELPMEFINDTHEJOB_BACKUP_REMOTE=s3://my-bucket/dj-scout \
 #     ./scripts/backup-production.sh
-#   DIRECTJOB_BACKUP_DRY_RUN=1 ./scripts/backup-production.sh
+#   HELPMEFINDTHEJOB_BACKUP_DRY_RUN=1 ./scripts/backup-production.sh
 #
-# Off-host backends (set DIRECTJOB_BACKUP_BACKEND):
+# Off-host backends (set HELPMEFINDTHEJOB_BACKUP_BACKEND):
 #   local   (default) — leave tarball under $BACKUP_DIR
-#   rclone           — also `rclone copy` to $DIRECTJOB_BACKUP_REMOTE
-#   s3 / aws         — also `aws s3 cp` to $DIRECTJOB_BACKUP_REMOTE
+#   rclone           — also `rclone copy` to $HELPMEFINDTHEJOB_BACKUP_REMOTE
+#   s3 / aws         — also `aws s3 cp` to $HELPMEFINDTHEJOB_BACKUP_REMOTE
 #
 # Encryption + secrets warning:
 #   * Tarballs include sqlite databases with hashed credentials. Treat
@@ -38,9 +38,9 @@ COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.prod.yml}"
 SERVICE_NAME="${SERVICE_NAME:-helpmefindthejob}"
 DATA_DIR_IN_CONTAINER="${DATA_DIR_IN_CONTAINER:-/app/data}"
 BACKUP_DIR="${BACKUP_DIR:-./backups}"
-BACKEND="${DIRECTJOB_BACKUP_BACKEND:-local}"
-REMOTE="${DIRECTJOB_BACKUP_REMOTE:-}"
-DRY_RUN="${DIRECTJOB_BACKUP_DRY_RUN:-0}"
+BACKEND="${HELPMEFINDTHEJOB_BACKUP_BACKEND:-local}"
+REMOTE="${HELPMEFINDTHEJOB_BACKUP_REMOTE:-}"
+DRY_RUN="${HELPMEFINDTHEJOB_BACKUP_DRY_RUN:-0}"
 TIMESTAMP="$(date -u +%Y%m%dT%H%M%SZ)"
 ARCHIVE_NAME="helpmefindthejob-${TIMESTAMP}.tar.gz"
 
@@ -50,15 +50,15 @@ if [ "$DRY_RUN" = "1" ]; then
     local) echo "backup: would write tarball to $BACKUP_DIR/$ARCHIVE_NAME" ;;
     rclone)
       command -v rclone >/dev/null 2>&1 || { echo "backup: rclone not installed" >&2; exit 2; }
-      [ -n "$REMOTE" ] || { echo "backup: DIRECTJOB_BACKUP_REMOTE missing" >&2; exit 2; }
+      [ -n "$REMOTE" ] || { echo "backup: HELPMEFINDTHEJOB_BACKUP_REMOTE missing" >&2; exit 2; }
       echo "backup: would 'rclone copy <tarball> $REMOTE'"
       ;;
     s3|aws)
       command -v aws >/dev/null 2>&1 || { echo "backup: aws CLI not installed" >&2; exit 2; }
-      [ -n "$REMOTE" ] || { echo "backup: DIRECTJOB_BACKUP_REMOTE missing" >&2; exit 2; }
+      [ -n "$REMOTE" ] || { echo "backup: HELPMEFINDTHEJOB_BACKUP_REMOTE missing" >&2; exit 2; }
       echo "backup: would 'aws s3 cp <tarball> $REMOTE'"
       ;;
-    *) echo "backup: unknown DIRECTJOB_BACKUP_BACKEND='$BACKEND'" >&2; exit 2 ;;
+    *) echo "backup: unknown HELPMEFINDTHEJOB_BACKUP_BACKEND='$BACKEND'" >&2; exit 2 ;;
   esac
   exit 0
 fi
@@ -126,7 +126,7 @@ case "$BACKEND" in
       exit 2
     fi
     if [ -z "$REMOTE" ]; then
-      echo "backup: DIRECTJOB_BACKUP_REMOTE is required for backend=rclone" >&2
+      echo "backup: HELPMEFINDTHEJOB_BACKUP_REMOTE is required for backend=rclone" >&2
       exit 1
     fi
     echo "backup: rclone copy → $REMOTE"
@@ -138,14 +138,14 @@ case "$BACKEND" in
       exit 2
     fi
     if [ -z "$REMOTE" ]; then
-      echo "backup: DIRECTJOB_BACKUP_REMOTE is required (e.g. s3://bucket/prefix)" >&2
+      echo "backup: HELPMEFINDTHEJOB_BACKUP_REMOTE is required (e.g. s3://bucket/prefix)" >&2
       exit 1
     fi
     echo "backup: aws s3 cp → $REMOTE"
     aws s3 cp "$ARCHIVE_PATH" "$REMOTE/$(basename "$ARCHIVE_PATH")"
     ;;
   *)
-    echo "backup: unknown DIRECTJOB_BACKUP_BACKEND='$BACKEND'" >&2
+    echo "backup: unknown HELPMEFINDTHEJOB_BACKUP_BACKEND='$BACKEND'" >&2
     exit 1
     ;;
 esac

@@ -14,7 +14,7 @@ between the keyword router and the help-fallback. The hierarchy is:
     1. slash command           (instant)
     2. keyword regex           (instant, regex-only)
     3. user's own AI provider  (when configured + consent)
-    4. operator-managed AI     (when DIRECTJOB_CHAT_AI_ROUTER=true)
+    4. operator-managed AI     (when HELPMEFINDTHEJOB_CHAT_AI_ROUTER=true)
     5. help fallback           (last resort)
 
 Tests exercise layers 3 and 4 with scripted dispatches — no real LLM
@@ -54,7 +54,7 @@ def _errored() -> AnalysisExecutionResult:
 
 class ManagedProviderResolutionTests(unittest.TestCase):
     """The managed-fallback only activates when both env vars are set
-    AND the operator has explicitly opted in via DIRECTJOB_CHAT_AI_ROUTER."""
+    AND the operator has explicitly opted in via HELPMEFINDTHEJOB_CHAT_AI_ROUTER."""
 
     def setUp(self):
         from app import STATE
@@ -63,11 +63,11 @@ class ManagedProviderResolutionTests(unittest.TestCase):
         self._old_env = {
             k: os.environ.get(k)
             for k in [
-                "DIRECTJOB_CHAT_AI_ROUTER",
-                "DIRECTJOB_MANAGED_AI_KEY",
-                "DIRECTJOB_MANAGED_AI_PROVIDER",
-                "DIRECTJOB_MANAGED_AI_MODEL",
-                "DIRECTJOB_MANAGED_AI_BASE_URL",
+                "HELPMEFINDTHEJOB_CHAT_AI_ROUTER",
+                "HELPMEFINDTHEJOB_MANAGED_AI_KEY",
+                "HELPMEFINDTHEJOB_MANAGED_AI_PROVIDER",
+                "HELPMEFINDTHEJOB_MANAGED_AI_MODEL",
+                "HELPMEFINDTHEJOB_MANAGED_AI_BASE_URL",
             ]
         }
 
@@ -79,20 +79,20 @@ class ManagedProviderResolutionTests(unittest.TestCase):
                 os.environ[k] = v
 
     def test_returns_none_without_router_flag(self):
-        os.environ.pop("DIRECTJOB_CHAT_AI_ROUTER", None)
-        os.environ["DIRECTJOB_MANAGED_AI_KEY"] = "sk-test"
+        os.environ.pop("HELPMEFINDTHEJOB_CHAT_AI_ROUTER", None)
+        os.environ["HELPMEFINDTHEJOB_MANAGED_AI_KEY"] = "sk-test"
         self.assertIsNone(self.STATE._chat_router_managed_provider())
 
     def test_returns_none_without_key(self):
-        os.environ["DIRECTJOB_CHAT_AI_ROUTER"] = "true"
-        os.environ.pop("DIRECTJOB_MANAGED_AI_KEY", None)
+        os.environ["HELPMEFINDTHEJOB_CHAT_AI_ROUTER"] = "true"
+        os.environ.pop("HELPMEFINDTHEJOB_MANAGED_AI_KEY", None)
         self.assertIsNone(self.STATE._chat_router_managed_provider())
 
     def test_returns_provider_when_both_set(self):
-        os.environ["DIRECTJOB_CHAT_AI_ROUTER"] = "true"
-        os.environ["DIRECTJOB_MANAGED_AI_KEY"] = "sk-test"
-        os.environ["DIRECTJOB_MANAGED_AI_PROVIDER"] = "anthropic"
-        os.environ["DIRECTJOB_MANAGED_AI_MODEL"] = "claude-haiku-test"
+        os.environ["HELPMEFINDTHEJOB_CHAT_AI_ROUTER"] = "true"
+        os.environ["HELPMEFINDTHEJOB_MANAGED_AI_KEY"] = "sk-test"
+        os.environ["HELPMEFINDTHEJOB_MANAGED_AI_PROVIDER"] = "anthropic"
+        os.environ["HELPMEFINDTHEJOB_MANAGED_AI_MODEL"] = "claude-haiku-test"
         provider = self.STATE._chat_router_managed_provider()
         self.assertIsNotNone(provider)
         self.assertEqual(provider.provider_id, "anthropic")
@@ -101,22 +101,22 @@ class ManagedProviderResolutionTests(unittest.TestCase):
         self.assertEqual(provider.notes, "managed-chat-router")
 
     def test_rejects_unknown_upstream(self):
-        os.environ["DIRECTJOB_CHAT_AI_ROUTER"] = "true"
-        os.environ["DIRECTJOB_MANAGED_AI_KEY"] = "sk-test"
-        os.environ["DIRECTJOB_MANAGED_AI_PROVIDER"] = "nonsense-provider"
+        os.environ["HELPMEFINDTHEJOB_CHAT_AI_ROUTER"] = "true"
+        os.environ["HELPMEFINDTHEJOB_MANAGED_AI_KEY"] = "sk-test"
+        os.environ["HELPMEFINDTHEJOB_MANAGED_AI_PROVIDER"] = "nonsense-provider"
         self.assertIsNone(self.STATE._chat_router_managed_provider())
 
     def test_router_flag_variants(self):
-        os.environ["DIRECTJOB_MANAGED_AI_KEY"] = "sk-test"
-        os.environ["DIRECTJOB_MANAGED_AI_PROVIDER"] = "anthropic"
+        os.environ["HELPMEFINDTHEJOB_MANAGED_AI_KEY"] = "sk-test"
+        os.environ["HELPMEFINDTHEJOB_MANAGED_AI_PROVIDER"] = "anthropic"
         for value in ["true", "1", "yes", "on", "TRUE", "Yes"]:
-            os.environ["DIRECTJOB_CHAT_AI_ROUTER"] = value
+            os.environ["HELPMEFINDTHEJOB_CHAT_AI_ROUTER"] = value
             self.assertIsNotNone(
                 self.STATE._chat_router_managed_provider(),
                 f"router flag value {value!r} should enable",
             )
         for value in ["false", "0", "no", "off", ""]:
-            os.environ["DIRECTJOB_CHAT_AI_ROUTER"] = value
+            os.environ["HELPMEFINDTHEJOB_CHAT_AI_ROUTER"] = value
             self.assertIsNone(
                 self.STATE._chat_router_managed_provider(),
                 f"router flag value {value!r} should disable",
@@ -136,14 +136,16 @@ class RouterWaterfallTests(unittest.TestCase):
         for k in self.STATE.chat_router_metrics:
             self.STATE.chat_router_metrics[k] = 0
         self._old_env = {
-            "DIRECTJOB_CHAT_AI_ROUTER": os.environ.get("DIRECTJOB_CHAT_AI_ROUTER"),
-            "DIRECTJOB_MANAGED_AI_KEY": os.environ.get("DIRECTJOB_MANAGED_AI_KEY"),
-            "DIRECTJOB_MANAGED_AI_PROVIDER": os.environ.get("DIRECTJOB_MANAGED_AI_PROVIDER"),
+            "HELPMEFINDTHEJOB_CHAT_AI_ROUTER": os.environ.get("HELPMEFINDTHEJOB_CHAT_AI_ROUTER"),
+            "HELPMEFINDTHEJOB_MANAGED_AI_KEY": os.environ.get("HELPMEFINDTHEJOB_MANAGED_AI_KEY"),
+            "HELPMEFINDTHEJOB_MANAGED_AI_PROVIDER": os.environ.get(
+                "HELPMEFINDTHEJOB_MANAGED_AI_PROVIDER"
+            ),
         }
         # Make sure managed is enabled for the fallback-path tests.
-        os.environ["DIRECTJOB_CHAT_AI_ROUTER"] = "true"
-        os.environ["DIRECTJOB_MANAGED_AI_KEY"] = "sk-test"
-        os.environ["DIRECTJOB_MANAGED_AI_PROVIDER"] = "anthropic"
+        os.environ["HELPMEFINDTHEJOB_CHAT_AI_ROUTER"] = "true"
+        os.environ["HELPMEFINDTHEJOB_MANAGED_AI_KEY"] = "sk-test"
+        os.environ["HELPMEFINDTHEJOB_MANAGED_AI_PROVIDER"] = "anthropic"
 
     def tearDown(self):
         for k, v in self._old_env.items():
@@ -241,7 +243,7 @@ class RouterWaterfallTests(unittest.TestCase):
 
     def test_no_provider_when_router_disabled_and_user_manual(self):
         """Manual mode + router flag OFF → return None, never call AI."""
-        os.environ["DIRECTJOB_CHAT_AI_ROUTER"] = "false"
+        os.environ["HELPMEFINDTHEJOB_CHAT_AI_ROUTER"] = "false"
         user_id = self._make_user()
         called = {"n": 0}
 
@@ -270,9 +272,9 @@ class ClassifiedCommandValidityTests(unittest.TestCase):
 
         self.STATE = STATE
         self.STATE._chat_router_cache.clear()
-        os.environ["DIRECTJOB_CHAT_AI_ROUTER"] = "true"
-        os.environ["DIRECTJOB_MANAGED_AI_KEY"] = "sk-test"
-        os.environ["DIRECTJOB_MANAGED_AI_PROVIDER"] = "anthropic"
+        os.environ["HELPMEFINDTHEJOB_CHAT_AI_ROUTER"] = "true"
+        os.environ["HELPMEFINDTHEJOB_MANAGED_AI_KEY"] = "sk-test"
+        os.environ["HELPMEFINDTHEJOB_MANAGED_AI_PROVIDER"] = "anthropic"
         import secrets
 
         email = f"valid-{secrets.token_hex(3)}@example.com"
@@ -280,9 +282,9 @@ class ClassifiedCommandValidityTests(unittest.TestCase):
 
     def tearDown(self):
         for k in (
-            "DIRECTJOB_CHAT_AI_ROUTER",
-            "DIRECTJOB_MANAGED_AI_KEY",
-            "DIRECTJOB_MANAGED_AI_PROVIDER",
+            "HELPMEFINDTHEJOB_CHAT_AI_ROUTER",
+            "HELPMEFINDTHEJOB_MANAGED_AI_KEY",
+            "HELPMEFINDTHEJOB_MANAGED_AI_PROVIDER",
         ):
             os.environ.pop(k, None)
 
@@ -329,9 +331,9 @@ class RateLimitTests(unittest.TestCase):
         self.STATE._chat_router_calls.clear()
         for k in self.STATE.chat_router_metrics:
             self.STATE.chat_router_metrics[k] = 0
-        os.environ["DIRECTJOB_CHAT_AI_ROUTER"] = "true"
-        os.environ["DIRECTJOB_MANAGED_AI_KEY"] = "sk-test"
-        os.environ["DIRECTJOB_MANAGED_AI_PROVIDER"] = "anthropic"
+        os.environ["HELPMEFINDTHEJOB_CHAT_AI_ROUTER"] = "true"
+        os.environ["HELPMEFINDTHEJOB_MANAGED_AI_KEY"] = "sk-test"
+        os.environ["HELPMEFINDTHEJOB_MANAGED_AI_PROVIDER"] = "anthropic"
         import secrets
 
         email = f"rate-{secrets.token_hex(3)}@example.com"
@@ -339,9 +341,9 @@ class RateLimitTests(unittest.TestCase):
 
     def tearDown(self):
         for k in (
-            "DIRECTJOB_CHAT_AI_ROUTER",
-            "DIRECTJOB_MANAGED_AI_KEY",
-            "DIRECTJOB_MANAGED_AI_PROVIDER",
+            "HELPMEFINDTHEJOB_CHAT_AI_ROUTER",
+            "HELPMEFINDTHEJOB_MANAGED_AI_KEY",
+            "HELPMEFINDTHEJOB_MANAGED_AI_PROVIDER",
         ):
             os.environ.pop(k, None)
         self.STATE._chat_router_cache.clear()
@@ -381,9 +383,9 @@ class PromptInjectionResistanceTests(unittest.TestCase):
         self.STATE = STATE
         self.STATE._chat_router_cache.clear()
         self.STATE._chat_router_calls.clear()
-        os.environ["DIRECTJOB_CHAT_AI_ROUTER"] = "true"
-        os.environ["DIRECTJOB_MANAGED_AI_KEY"] = "sk-test"
-        os.environ["DIRECTJOB_MANAGED_AI_PROVIDER"] = "anthropic"
+        os.environ["HELPMEFINDTHEJOB_CHAT_AI_ROUTER"] = "true"
+        os.environ["HELPMEFINDTHEJOB_MANAGED_AI_KEY"] = "sk-test"
+        os.environ["HELPMEFINDTHEJOB_MANAGED_AI_PROVIDER"] = "anthropic"
         import secrets
 
         email = f"inj-{secrets.token_hex(3)}@example.com"
@@ -391,9 +393,9 @@ class PromptInjectionResistanceTests(unittest.TestCase):
 
     def tearDown(self):
         for k in (
-            "DIRECTJOB_CHAT_AI_ROUTER",
-            "DIRECTJOB_MANAGED_AI_KEY",
-            "DIRECTJOB_MANAGED_AI_PROVIDER",
+            "HELPMEFINDTHEJOB_CHAT_AI_ROUTER",
+            "HELPMEFINDTHEJOB_MANAGED_AI_KEY",
+            "HELPMEFINDTHEJOB_MANAGED_AI_PROVIDER",
         ):
             os.environ.pop(k, None)
 

@@ -35,7 +35,7 @@ class AppSmokeTests(unittest.TestCase):
     def test_server_serves_ui_and_core_apis(self) -> None:
         with TemporaryDirectory() as tmp:
             port = free_port()
-            env = {**os.environ, "COMPANY_DISCOVERY_DATA_DIR": tmp}
+            env = {**os.environ, "HELPMEFINDTHEJOB_DATA_DIR": tmp}
             process = subprocess.Popen(
                 [sys.executable, str(ROOT / "app.py"), "--port", str(port)],
                 cwd=ROOT,

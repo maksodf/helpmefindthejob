@@ -429,8 +429,8 @@ class DefaultProvidersTests(unittest.TestCase):
         import os
 
         prior = (
-            os.environ.pop("DIRECTJOB_ADZUNA_APP_ID", None),
-            os.environ.pop("DIRECTJOB_ADZUNA_APP_KEY", None),
+            os.environ.pop("HELPMEFINDTHEJOB_ADZUNA_APP_ID", None),
+            os.environ.pop("HELPMEFINDTHEJOB_ADZUNA_APP_KEY", None),
         )
         try:
             providers = default_no_auth_providers()
@@ -441,23 +441,23 @@ class DefaultProvidersTests(unittest.TestCase):
             )
         finally:
             if prior[0] is not None:
-                os.environ["DIRECTJOB_ADZUNA_APP_ID"] = prior[0]
+                os.environ["HELPMEFINDTHEJOB_ADZUNA_APP_ID"] = prior[0]
             if prior[1] is not None:
-                os.environ["DIRECTJOB_ADZUNA_APP_KEY"] = prior[1]
+                os.environ["HELPMEFINDTHEJOB_ADZUNA_APP_KEY"] = prior[1]
 
     def test_adzuna_registered_when_env_set(self) -> None:
         import os
 
-        os.environ["DIRECTJOB_ADZUNA_APP_ID"] = "test_app_id"
-        os.environ["DIRECTJOB_ADZUNA_APP_KEY"] = "test_app_key"
+        os.environ["HELPMEFINDTHEJOB_ADZUNA_APP_ID"] = "test_app_id"
+        os.environ["HELPMEFINDTHEJOB_ADZUNA_APP_KEY"] = "test_app_key"
         try:
             providers = default_no_auth_providers()
             names = sorted(p.name for p in providers)
             self.assertIn("adzuna", names)
             self.assertEqual(len(providers), 7)
         finally:
-            os.environ.pop("DIRECTJOB_ADZUNA_APP_ID", None)
-            os.environ.pop("DIRECTJOB_ADZUNA_APP_KEY", None)
+            os.environ.pop("HELPMEFINDTHEJOB_ADZUNA_APP_ID", None)
+            os.environ.pop("HELPMEFINDTHEJOB_ADZUNA_APP_KEY", None)
 
 
 class AdzunaProviderTests(unittest.TestCase):

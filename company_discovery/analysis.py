@@ -647,8 +647,10 @@ def _dispatch_provider_impl(
         )
     # Managed AI (#26): rebind to the operator's upstream provider +
     # key before the actual dispatch. Operator config:
-    #   DIRECTJOB_MANAGED_AI_PROVIDER  e.g. "openai" (default)
-    #   DIRECTJOB_MANAGED_AI_KEY       the operator's API key
+    #   HELPMEFINDTHEJOB_MANAGED_AI_PROVIDER  e.g. "openai" (default)
+    #   HELPMEFINDTHEJOB_MANAGED_AI_KEY       the operator's API key
+    #   (legacy DIRECTJOB_MANAGED_AI_* still accepted with DeprecationWarning
+    #   via the env_compat shim)
     #   DIRECTJOB_MANAGED_AI_MODEL     optional; falls back to a sane default
     #   DIRECTJOB_MANAGED_AI_BASE_URL  optional; for OpenAI-compatible gateways
     if provider.provider_id == "managed":
@@ -666,7 +668,7 @@ def _dispatch_provider_impl(
                 provider_id="managed",
                 invocation_mode=provider.invocation_mode,
                 prompt=prompt,
-                error="DIRECTJOB_MANAGED_AI_PROVIDER must be one of: openai, anthropic, google_gemini, deepseek, openrouter.",
+                error="HELPMEFINDTHEJOB_MANAGED_AI_PROVIDER must be one of: openai, anthropic, google_gemini, deepseek, openrouter.",
             )
         if not (
             get_env("HELPMEFINDTHEJOB_MANAGED_AI_KEY", "DIRECTJOB_MANAGED_AI_KEY") or ""
@@ -676,7 +678,7 @@ def _dispatch_provider_impl(
                 provider_id="managed",
                 invocation_mode=provider.invocation_mode,
                 prompt=prompt,
-                error="Managed AI is enabled in the picker but DIRECTJOB_MANAGED_AI_KEY is not set on the server.",
+                error="Managed AI is enabled in the picker but HELPMEFINDTHEJOB_MANAGED_AI_KEY is not set on the server.",
             )
         provider = AIProviderConfig(
             provider_id=upstream,
@@ -686,7 +688,7 @@ def _dispatch_provider_impl(
                 or provider.model
                 or ""
             ).strip(),
-            credential_reference="DIRECTJOB_MANAGED_AI_KEY",
+            credential_reference="HELPMEFINDTHEJOB_MANAGED_AI_KEY",
             base_url=(
                 get_env("HELPMEFINDTHEJOB_MANAGED_AI_BASE_URL", "DIRECTJOB_MANAGED_AI_BASE_URL")
                 or ""

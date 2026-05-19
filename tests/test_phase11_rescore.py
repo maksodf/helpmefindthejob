@@ -25,7 +25,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-os.environ.setdefault("DIRECTJOB_SECRET_KEY", "x" * 64)
+os.environ.setdefault("HELPMEFINDTHEJOB_SECRET_KEY", "x" * 64)
 
 from company_discovery.models import DiscoveredJob
 

@@ -71,7 +71,7 @@ if str(ROOT) not in sys.path:
 
 
 BASE_URL = os.environ.get("E2E_BASE_URL", "").rstrip("/")
-DATA_DIR = os.environ.get("COMPANY_DISCOVERY_DATA_DIR", "")
+DATA_DIR = os.environ.get("HELPMEFINDTHEJOB_DATA_DIR", "")
 
 
 # ----------------- HTTP helpers ---------------------------------------------

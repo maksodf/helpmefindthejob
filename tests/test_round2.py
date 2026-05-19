@@ -186,7 +186,7 @@ class TrackerDepthTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.tmpdir = Path(tempfile.mkdtemp(prefix="round2-tracker-"))
-        os.environ["COMPANY_DISCOVERY_DATA_DIR"] = str(cls.tmpdir)
+        os.environ["HELPMEFINDTHEJOB_DATA_DIR"] = str(cls.tmpdir)
         for name in list(sys.modules):
             if name == "app":
                 del sys.modules[name]

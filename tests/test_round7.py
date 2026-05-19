@@ -107,9 +107,9 @@ class AutoPushHelperTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.tmpdir = Path(tempfile.mkdtemp(prefix="round7-push-"))
-        os.environ["COMPANY_DISCOVERY_DATA_DIR"] = str(cls.tmpdir)
-        os.environ["DIRECTJOB_VAPID_PUBLIC_KEY"] = "synthetic"
-        os.environ["DIRECTJOB_VAPID_PRIVATE_KEY"] = "synthetic"
+        os.environ["HELPMEFINDTHEJOB_DATA_DIR"] = str(cls.tmpdir)
+        os.environ["HELPMEFINDTHEJOB_VAPID_PUBLIC_KEY"] = "synthetic"
+        os.environ["HELPMEFINDTHEJOB_VAPID_PRIVATE_KEY"] = "synthetic"
         for name in list(sys.modules):
             if name == "app" or name.startswith("company_discovery.push_transport"):
                 del sys.modules[name]
@@ -124,7 +124,7 @@ class AutoPushHelperTests(unittest.TestCase):
     @classmethod
     def tearDownClass(cls) -> None:
         cls.push_transport.send_push = cls.original_send
-        for key in ("DIRECTJOB_VAPID_PUBLIC_KEY", "DIRECTJOB_VAPID_PRIVATE_KEY"):
+        for key in ("HELPMEFINDTHEJOB_VAPID_PUBLIC_KEY", "HELPMEFINDTHEJOB_VAPID_PRIVATE_KEY"):
             os.environ.pop(key, None)
         shutil.rmtree(cls.tmpdir, ignore_errors=True)
 

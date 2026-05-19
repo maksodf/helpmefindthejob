@@ -154,8 +154,8 @@ class HttpSeoPageRouteTests(unittest.TestCase):
         self.port = _free_port()
         env = {
             **os.environ,
-            "COMPANY_DISCOVERY_DATA_DIR": self.tmp.name,
-            "COMPANY_DISCOVERY_ENV": "development",
+            "HELPMEFINDTHEJOB_DATA_DIR": self.tmp.name,
+            "HELPMEFINDTHEJOB_ENV": "development",
         }
         self.proc = subprocess.Popen(
             [sys.executable, str(ROOT / "app.py"), "--port", str(self.port)],

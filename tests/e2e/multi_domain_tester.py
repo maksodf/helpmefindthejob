@@ -240,9 +240,9 @@ def domain_gdpr_audit(c: Client) -> None:
     # only needed on older builds that still gate it.
     if r.get("awaitingConfirmation"):
         chat(c, "yes")
-    data_dir = os.environ.get("COMPANY_DISCOVERY_DATA_DIR", "")
+    data_dir = os.environ.get("HELPMEFINDTHEJOB_DATA_DIR", "")
     if not data_dir:
-        record("gdpr_audit", False, "COMPANY_DISCOVERY_DATA_DIR not set; can't open DB")
+        record("gdpr_audit", False, "HELPMEFINDTHEJOB_DATA_DIR not set; can't open DB")
         return
     # The data dir has multiple .sqlite3 files (auth.sqlite3 +
     # company_discovery.sqlite3). Try each until we find the one

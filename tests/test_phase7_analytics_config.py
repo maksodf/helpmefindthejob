@@ -45,8 +45,8 @@ class SiteConfigEndpointTests(unittest.TestCase):
         port = _free_port()
         env = {
             **os.environ,
-            "COMPANY_DISCOVERY_DATA_DIR": tmp.name,
-            "COMPANY_DISCOVERY_ENV": "development",
+            "HELPMEFINDTHEJOB_DATA_DIR": tmp.name,
+            "HELPMEFINDTHEJOB_ENV": "development",
             **env_extra,
         }
         proc = subprocess.Popen(
@@ -97,8 +97,8 @@ class SiteConfigEndpointTests(unittest.TestCase):
     def test_unset_returns_nulls(self) -> None:
         # Make sure no env vars from the test runner leak in.
         env_extra = {
-            "DIRECTJOB_ANALYTICS_SCRIPT_URL": "",
-            "DIRECTJOB_ANALYTICS_DOMAIN": "",
+            "HELPMEFINDTHEJOB_ANALYTICS_SCRIPT_URL": "",
+            "HELPMEFINDTHEJOB_ANALYTICS_DOMAIN": "",
         }
         _, base = self._spawn(env_extra)
         cfg = self._get_site_config(base)
@@ -107,8 +107,8 @@ class SiteConfigEndpointTests(unittest.TestCase):
 
     def test_set_returns_values(self) -> None:
         env_extra = {
-            "DIRECTJOB_ANALYTICS_SCRIPT_URL": "https://analytics.helpmefindthejob.com/js/script.js",
-            "DIRECTJOB_ANALYTICS_DOMAIN": "helpmefindthejob.com",
+            "HELPMEFINDTHEJOB_ANALYTICS_SCRIPT_URL": "https://analytics.helpmefindthejob.com/js/script.js",
+            "HELPMEFINDTHEJOB_ANALYTICS_DOMAIN": "helpmefindthejob.com",
         }
         _, base = self._spawn(env_extra)
         cfg = self._get_site_config(base)

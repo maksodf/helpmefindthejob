@@ -49,9 +49,9 @@ from company_discovery.motivation_letter import (
 
 def _build_provider() -> AIProviderConfig | None:
     """Construct the AIProviderConfig from operator-supplied env."""
-    key = os.environ.get("DIRECTJOB_MANAGED_AI_KEY", "")
-    provider_id = os.environ.get("DIRECTJOB_MANAGED_AI_PROVIDER", "")
-    model = os.environ.get("DIRECTJOB_MANAGED_AI_MODEL", "")
+    key = os.environ.get("HELPMEFINDTHEJOB_MANAGED_AI_KEY", "")
+    provider_id = os.environ.get("HELPMEFINDTHEJOB_MANAGED_AI_PROVIDER", "")
+    model = os.environ.get("HELPMEFINDTHEJOB_MANAGED_AI_MODEL", "")
     if not key or not provider_id:
         return None
     return AIProviderConfig(
@@ -215,7 +215,7 @@ def main() -> int:
     provider = _build_provider()
     if provider is None:
         print(
-            "ERROR: DIRECTJOB_MANAGED_AI_KEY + DIRECTJOB_MANAGED_AI_PROVIDER required",
+            "ERROR: HELPMEFINDTHEJOB_MANAGED_AI_KEY + HELPMEFINDTHEJOB_MANAGED_AI_PROVIDER required",
             file=sys.stderr,
         )
         return 2

@@ -331,7 +331,7 @@ class HttpProfileEndpointTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.tmpdir = Path(tempfile.mkdtemp(prefix="round1-state-"))
-        os.environ["COMPANY_DISCOVERY_DATA_DIR"] = str(cls.tmpdir)
+        os.environ["HELPMEFINDTHEJOB_DATA_DIR"] = str(cls.tmpdir)
         # Ensure a fresh import.
         for name in list(sys.modules):
             if name == "app":

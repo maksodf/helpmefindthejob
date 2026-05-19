@@ -103,14 +103,14 @@ class HttpInvitesAndResetTests(unittest.TestCase):
         self.port = free_port()
         env = {
             **os.environ,
-            "COMPANY_DISCOVERY_DATA_DIR": self.tmp.name,
-            "COMPANY_DISCOVERY_ENV": "development",
-            "DIRECTJOB_EMAIL_BACKEND": "console",
-            "DIRECTJOB_PUBLIC_URL": f"http://127.0.0.1:{self.port}",
-            "DIRECTJOB_QUOTA_SCANS_PER_DAY": "5",
-            "DIRECTJOB_QUOTA_AI_PER_DAY": "2",
-            "DIRECTJOB_QUOTA_DOMAIN_PER_HOUR": "20",
-            "DIRECTJOB_QUOTA_ACTIVE_SCANS": "3",
+            "HELPMEFINDTHEJOB_DATA_DIR": self.tmp.name,
+            "HELPMEFINDTHEJOB_ENV": "development",
+            "HELPMEFINDTHEJOB_EMAIL_BACKEND": "console",
+            "HELPMEFINDTHEJOB_PUBLIC_URL": f"http://127.0.0.1:{self.port}",
+            "HELPMEFINDTHEJOB_QUOTA_SCANS_PER_DAY": "5",
+            "HELPMEFINDTHEJOB_QUOTA_AI_PER_DAY": "2",
+            "HELPMEFINDTHEJOB_QUOTA_DOMAIN_PER_HOUR": "20",
+            "HELPMEFINDTHEJOB_QUOTA_ACTIVE_SCANS": "3",
         }
         self.process = subprocess.Popen(
             [sys.executable, str(ROOT / "app.py"), "--port", str(self.port)],

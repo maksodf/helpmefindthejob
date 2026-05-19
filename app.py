@@ -3045,7 +3045,7 @@ class AppState:
             model=(
                 get_env("HELPMEFINDTHEJOB_MANAGED_AI_MODEL", "DIRECTJOB_MANAGED_AI_MODEL") or ""
             ).strip(),
-            credential_reference="DIRECTJOB_MANAGED_AI_KEY",
+            credential_reference="HELPMEFINDTHEJOB_MANAGED_AI_KEY",
             base_url=(
                 get_env("HELPMEFINDTHEJOB_MANAGED_AI_BASE_URL", "DIRECTJOB_MANAGED_AI_BASE_URL")
                 or ""
@@ -3078,7 +3078,7 @@ class AppState:
           1. In-memory cache hit (same message + recent context).
           2. The user's configured AI provider (if non-Manual + consent OK).
           3. Operator-managed AI (when ``DIRECTJOB_CHAT_AI_ROUTER=true``
-             AND ``DIRECTJOB_MANAGED_AI_KEY`` are set). This is the
+             AND ``HELPMEFINDTHEJOB_MANAGED_AI_KEY`` are set). This is the
              "long-term" path: Manual-mode testers get smart routing
              via the operator's key, no per-user provider config.
           4. ``None`` — caller falls back to the keyword router or help.

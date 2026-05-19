@@ -72,20 +72,20 @@ def _redact_email_backend() -> ReadinessSignal:
     )
     public_url = (get_env("HELPMEFINDTHEJOB_PUBLIC_URL", "DIRECTJOB_PUBLIC_URL") or "").strip()
     if backend == "smtp":
-        host = get_env("HELPMEFINDTHEJOB_SMTP_HOST", "DIRECTJOB_SMTP_HOST", "")
-        port = get_env("HELPMEFINDTHEJOB_SMTP_PORT", "DIRECTJOB_SMTP_PORT", "")
+        host = get_env("HELPMEFINDTHEJOB_SMTP_HOST", "HELPMEFINDTHEJOB_SMTP_HOST", "")
+        port = get_env("HELPMEFINDTHEJOB_SMTP_PORT", "HELPMEFINDTHEJOB_SMTP_PORT", "")
         username = bool(get_env("HELPMEFINDTHEJOB_SMTP_USERNAME", "DIRECTJOB_SMTP_USERNAME"))
         password_present = bool(
-            get_env("HELPMEFINDTHEJOB_SMTP_PASSWORD", "DIRECTJOB_SMTP_PASSWORD")
+            get_env("HELPMEFINDTHEJOB_SMTP_PASSWORD", "HELPMEFINDTHEJOB_SMTP_PASSWORD")
         )
         from_address_present = bool(get_env("HELPMEFINDTHEJOB_EMAIL_FROM", "DIRECTJOB_EMAIL_FROM"))
         missing: list[str] = []
         if not host:
-            missing.append("DIRECTJOB_SMTP_HOST")
+            missing.append("HELPMEFINDTHEJOB_SMTP_HOST")
         if not port:
-            missing.append("DIRECTJOB_SMTP_PORT")
+            missing.append("HELPMEFINDTHEJOB_SMTP_PORT")
         if not password_present:
-            missing.append("DIRECTJOB_SMTP_PASSWORD")
+            missing.append("HELPMEFINDTHEJOB_SMTP_PASSWORD")
         if missing:
             return ReadinessSignal(
                 id="email",

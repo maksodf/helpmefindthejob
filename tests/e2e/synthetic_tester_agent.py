@@ -486,7 +486,7 @@ def run_persona(base_url: str, browser, persona: Persona) -> PersonaResult:
     page.set_default_timeout(15000)
     try:
         # 1. Register. Each persona uses a fresh, unique email so registration
-        # always proceeds (DIRECTJOB_ALLOW_REGISTRATION=true is set by the
+        # always proceeds (HELPMEFINDTHEJOB_ALLOW_REGISTRATION=true is set by the
         # launcher). Wait for the form section to be visible — note that the
         # registerForm element exists in the DOM but is hidden until the auth
         # view renders, so we wait for the auth screen explicitly.
@@ -500,7 +500,7 @@ def run_persona(base_url: str, browser, persona: Persona) -> PersonaResult:
             pass  # already authenticated somehow
         else:
             # Wait for registerForm to flip visible. registrationOpen=true
-            # because the launcher sets DIRECTJOB_ALLOW_REGISTRATION=true.
+            # because the launcher sets HELPMEFINDTHEJOB_ALLOW_REGISTRATION=true.
             page.locator("#registerForm").wait_for(state="visible", timeout=10000)
         # Tick consent checkboxes if visible (they only appear after the
         # bootstrap admin exists).

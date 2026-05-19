@@ -9,7 +9,7 @@
 
 On public sign-up the server mints a verification token, mails the
 confirm link, and stamps ``users.email_verified_at`` when the user
-clicks. ``DIRECTJOB_REQUIRE_EMAIL_VERIFICATION=true`` blocks login on
+clicks. ``HELPMEFINDTHEJOB_REQUIRE_EMAIL_VERIFICATION=true`` blocks login on
 unverified accounts. Bootstrap admin path auto-verifies (the operator
 owns the mailbox already).
 
@@ -82,11 +82,11 @@ class HttpEmailVerificationTests(unittest.TestCase):
         self.port = _free_port()
         env = {
             **os.environ,
-            "COMPANY_DISCOVERY_DATA_DIR": self.tmp.name,
-            "COMPANY_DISCOVERY_ENV": "development",
-            "DIRECTJOB_ALLOW_REGISTRATION": "true",
-            "DIRECTJOB_REQUIRE_EMAIL_VERIFICATION": "true",
-            "DIRECTJOB_PUBLIC_URL": f"http://127.0.0.1:{self.port}",
+            "HELPMEFINDTHEJOB_DATA_DIR": self.tmp.name,
+            "HELPMEFINDTHEJOB_ENV": "development",
+            "HELPMEFINDTHEJOB_ALLOW_REGISTRATION": "true",
+            "HELPMEFINDTHEJOB_REQUIRE_EMAIL_VERIFICATION": "true",
+            "HELPMEFINDTHEJOB_PUBLIC_URL": f"http://127.0.0.1:{self.port}",
         }
         self.proc = subprocess.Popen(
             [sys.executable, str(ROOT / "app.py"), "--port", str(self.port)],
@@ -202,7 +202,7 @@ class HttpEmailVerificationTests(unittest.TestCase):
         )
         verify_url = self._outbox_url_for("Verify your email")
         self.assertIsNotNone(verify_url, "verify-email URL not found in outbox")
-        # The URL is absolute (DIRECTJOB_PUBLIC_URL); strip the host so
+        # The URL is absolute (HELPMEFINDTHEJOB_PUBLIC_URL); strip the host so
         # we hit the test server on the assigned port.
         path_with_query = verify_url[len(self.base) :]
         code = self._get_status(path_with_query)

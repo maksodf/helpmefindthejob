@@ -69,7 +69,7 @@ def _build_state_in_tmpdir(tmpdir: Path):
     constants only read the env var once at import time, so we must
     pass ALL paths explicitly to AppState to keep test isolation.
     """
-    os.environ["COMPANY_DISCOVERY_DATA_DIR"] = str(tmpdir)
+    os.environ["HELPMEFINDTHEJOB_DATA_DIR"] = str(tmpdir)
     from app import AppState
 
     return AppState(
@@ -92,17 +92,17 @@ class SeedPersonasTests(unittest.TestCase):
         self.tmpdir = Path(tempfile.mkdtemp(prefix="seed_personas_"))
         self.addCleanup(shutil.rmtree, self.tmpdir, ignore_errors=True)
         # Reset env so AppState picks up our tmpdir.
-        self._prev_data_dir = os.environ.get("COMPANY_DISCOVERY_DATA_DIR")
-        os.environ["COMPANY_DISCOVERY_DATA_DIR"] = str(self.tmpdir)
+        self._prev_data_dir = os.environ.get("HELPMEFINDTHEJOB_DATA_DIR")
+        os.environ["HELPMEFINDTHEJOB_DATA_DIR"] = str(self.tmpdir)
         self.addCleanup(self._restore_env)
         self.seed_module = _load_seed_module()
         self.state = _build_state_in_tmpdir(self.tmpdir)
 
     def _restore_env(self) -> None:
         if self._prev_data_dir is None:
-            os.environ.pop("COMPANY_DISCOVERY_DATA_DIR", None)
+            os.environ.pop("HELPMEFINDTHEJOB_DATA_DIR", None)
         else:
-            os.environ["COMPANY_DISCOVERY_DATA_DIR"] = self._prev_data_dir
+            os.environ["HELPMEFINDTHEJOB_DATA_DIR"] = self._prev_data_dir
 
     # ── core: seven personas seeded with profile + saved searches ──────────
 

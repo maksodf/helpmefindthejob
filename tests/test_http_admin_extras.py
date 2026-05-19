@@ -93,10 +93,10 @@ class HttpAdminExtrasTests(unittest.TestCase):
         cls.port = free_port()
         env = {
             **os.environ,
-            "COMPANY_DISCOVERY_DATA_DIR": cls.tmp.name,
-            "COMPANY_DISCOVERY_ENV": "development",
-            "DIRECTJOB_EMAIL_BACKEND": "console",
-            "DIRECTJOB_PUBLIC_URL": f"http://127.0.0.1:{cls.port}",
+            "HELPMEFINDTHEJOB_DATA_DIR": cls.tmp.name,
+            "HELPMEFINDTHEJOB_ENV": "development",
+            "HELPMEFINDTHEJOB_EMAIL_BACKEND": "console",
+            "HELPMEFINDTHEJOB_PUBLIC_URL": f"http://127.0.0.1:{cls.port}",
         }
         cls.process = subprocess.Popen(
             [sys.executable, str(ROOT / "app.py"), "--port", str(cls.port)],
@@ -183,7 +183,7 @@ class HttpAdminExtrasTests(unittest.TestCase):
         self.assertEqual(payload["backend"], "console")
         # Status response must not expose any SMTP secret keys
         flat_payload = json.dumps(payload)
-        for forbidden in ("password", "Password", "DIRECTJOB_SMTP_PASSWORD", "secret"):
+        for forbidden in ("password", "Password", "HELPMEFINDTHEJOB_SMTP_PASSWORD", "secret"):
             self.assertNotIn(forbidden, flat_payload)
         code, payload, _ = self.admin.request(
             "/api/admin/email/test",
@@ -196,7 +196,7 @@ class HttpAdminExtrasTests(unittest.TestCase):
         outbox = Path(self.tmp.name) / "email_outbox.log"
         entries = [json.loads(line) for line in outbox.read_text().splitlines() if line.strip()]
         self.assertTrue(any(entry["to"] == "ops@example.com" for entry in entries))
-        # Body of the test email must not leak DIRECTJOB_SMTP_PASSWORD or admin password
+        # Body of the test email must not leak HELPMEFINDTHEJOB_SMTP_PASSWORD or admin password
         for entry in entries:
             self.assertNotIn("password", entry["text"].lower())
 
