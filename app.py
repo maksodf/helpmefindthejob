@@ -3254,7 +3254,7 @@ class AppState:
         location = args.get("location") or profile.location or None
 
         bucket_key = identify_bucket(query)
-        jobs, _outcomes = self.aggregator_engine.search(
+        jobs, outcomes = self.aggregator_engine.search(
             query=query,
             location=location,
             limit_per_provider=10,
@@ -3393,9 +3393,27 @@ class AppState:
             f"  - **{c}**: {len(ids)} job{'s' if len(ids) != 1 else ''}"
             for c, ids in categorized.items()
         )
+        # Loop 16 (2026-05-20): Gate 6.5 partial-failure
+        # transparency. When some providers fail (error field set
+        # on the AggregationOutcome) but others returned results,
+        # prepend an honest banner so the user knows the result
+        # set is incomplete. Total-failure path is already handled
+        # by the journey's run_search_with try/except wrapper
+        # (returns the friendly "snag" message + PHASE_DONE).
+        errored_outcomes = [o for o in outcomes if o.error]
+        partial_banner = ""
+        if errored_outcomes and job_dicts:
+            total = len(outcomes)
+            failed = len(errored_outcomes)
+            partial_banner = (
+                f"_(Some providers were temporarily unavailable "
+                f"— {failed} of {total} reported errors. Results "
+                f"below are from the working providers.)_\n\n"
+            )
         msg = (
-            f"Found **{len(job_dicts)}** {role_label} result(s)"
-            f"{' in ' + location if location else ''}."
+            partial_banner
+            + f"Found **{len(job_dicts)}** {role_label} result(s)"
+            + f"{' in ' + location if location else ''}."
             + (" (Strict role filter applied — only this job type.)" if bucket_key else "")
             + f"\n\n{cats_md}\n\n"
             "Reply with a **category name** to drill in, or look at "
@@ -3408,6 +3426,14 @@ class AppState:
             "totalJobs": len(job_dicts),
             "jobType": bucket_key,
             "categories": list(categorized.keys()),
+            # Loop 16: errored providers carried in the response so
+            # the run_search_with branch (which renders its own
+            # summary_msg from categorized) can also surface the
+            # partial-failure banner consistently.
+            "erroredOutcomes": [
+                {"provider": o.provider, "error": o.error}
+                for o in errored_outcomes
+            ],
             # Tell the client to switch the canvas to the search-results
             # view so the user can SEE the results, not just hear that
             # they exist.
@@ -3966,10 +3992,28 @@ class AppState:
                 jobs_summary = "\n".join(
                     f"  - **{c}**: {len(ids)} job(s)" for c, ids in categorized.items()
                 )
+                # Loop 16 (2026-05-20): Gate 6.5 partial-failure
+                # transparency. chat_handler_find_jobs returned
+                # `erroredOutcomes` per Loop 16 plumbing; surface
+                # the same banner here so the journey-driven search
+                # has parity with the slash-/find path.
+                errored_outcomes = search_result.get("erroredOutcomes") or []
+                partial_banner = ""
+                if errored_outcomes:
+                    total_outcomes = len(errored_outcomes) + max(
+                        0, len(jobs) and 1
+                    )  # we don't have total here; render relative count only
+                    partial_banner = (
+                        f"_(Some providers were temporarily "
+                        f"unavailable — {len(errored_outcomes)} "
+                        f"reported errors. Results below are from "
+                        f"the working providers.)_\n\n"
+                    )
                 summary_msg = (
-                    f"**Found {len(jobs)} job(s) total.**\n"
-                    f"{jobs_summary}\n\n"
-                    "Reply with a **category name** to see the jobs in it."
+                    partial_banner
+                    + f"**Found {len(jobs)} job(s) total.**\n"
+                    + f"{jobs_summary}\n\n"
+                    + "Reply with a **category name** to see the jobs in it."
                 )
             # R21.x: include `jobs` + `navigateTo` so the client can
             # render the search-results canvas AFTER a journey-driven

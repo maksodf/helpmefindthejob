@@ -43,6 +43,14 @@ const ERROR_COPY = {
   raw_secret_not_allowed: "Use the env var name (e.g. OPENAI_API_KEY), not the secret value.",
   unknown_provider: "Pick a provider from the list.",
   unsupported_invocation_mode: "That mode isn't available for this provider.",
+  // Loop 16 (2026-05-20): Gate 6.5 — network-drop normalized
+  // messages. The browser emits varying jargon for connection
+  // issues ("NetworkError when attempting to fetch resource",
+  // "Failed to fetch", "Load failed"); these map them all to one
+  // user-friendly line. Also covers offline fallback when fetch
+  // throws before reaching the server.
+  network_error: "Connection issue — please check your network and try again.",
+  failed_to_fetch: "Connection issue — please check your network and try again.",
 };
 
 const SCAN_STATUS_COPY = {
@@ -142,6 +150,23 @@ function friendlyError(rawMessage, code) {
   if (byCode) return byCode;
   const byMessage = translateError(rawMessage);
   if (byMessage) return byMessage;
+  // Loop 16 (2026-05-20): Gate 6.5 — recognise common browser
+  // network-drop jargon and surface the friendly normalized
+  // message. Browser-specific strings differ across Firefox
+  // ("NetworkError when attempting to fetch resource"), Chrome
+  // ("Failed to fetch"), Safari ("Load failed"), and offline
+  // ("TypeError: Failed to fetch"). Match permissively.
+  if (rawMessage && typeof rawMessage === "string") {
+    const low = rawMessage.toLowerCase();
+    if (
+      low.includes("networkerror") ||
+      low.includes("failed to fetch") ||
+      low.includes("load failed") ||
+      low === "typeerror"
+    ) {
+      return ERROR_COPY.network_error;
+    }
+  }
   return rawMessage || t("errors.generic", "Something went wrong.");
 }
 
@@ -202,11 +227,21 @@ async function api(path, options = {}) {
     payload = {};
   }
   if (!response.ok) {
-    if (response.status === 401) {
+    const code = payload.error?.code;
+    // Loop 16 (2026-05-20): Gate 6.5 — session-expiry recovery.
+    // 401 = unauthenticated; 403 csrf_failed = stale session
+    // (cookie still present but CSRF rotated). Both require the
+    // user to re-authenticate. Triggering renderAuth() puts the
+    // login form back in front of the user with the friendly
+    // message; without this, a stale-session user just saw an
+    // opaque "403" with no recovery path.
+    if (
+      response.status === 401 ||
+      (response.status === 403 && code === "csrf_failed")
+    ) {
       clearAuthenticatedState();
       renderAuth();
     }
-    const code = payload.error?.code;
     const message = friendlyError(payload.error?.message, code);
     setStatus("Error", "error");
     const error = new Error(message);
