@@ -408,11 +408,21 @@ class ReviewDrillPhaseTests(unittest.TestCase):
         self.assertEqual(r.journey.picked_category, "Clinical")
         self.assertEqual(r.journey.phase, PHASE_DRILL)
 
-    def test_review_empty_results_marks_done(self):
+    def test_review_empty_results_routes_to_bug_c_empty_state(self):
+        """Updated 2026-05-21 (PART 6 closure): pre-Bug-C, an empty
+        review marked the journey PHASE_DONE silently. Bug C piece 1
+        (commit c89632f) changed this to the never-implicit-done
+        contract: empty results route to PHASE_REVIEW with
+        review_substate="empty", where the user gets a diagnostic +
+        widening menu (or auto-relax / start-fresh / give-up). The
+        old PHASE_DONE behavior was the silent-advance bug Aïcha's
+        shape-test surfaced."""
         j = UserJourney(phase=PHASE_REVIEW, search_results_by_category={})
         r = advance(j, "")
-        self.assertEqual(r.journey.phase, PHASE_DONE)
-        self.assertTrue(r.done)
+        # Post-Bug-C invariant: never silently advance to PHASE_DONE
+        self.assertEqual(r.journey.phase, PHASE_REVIEW)
+        self.assertEqual(r.journey.review_substate, "empty")
+        self.assertFalse(r.done)
 
     def test_drill_picks_job_by_number(self):
         j = UserJourney(

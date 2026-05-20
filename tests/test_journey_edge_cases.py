@@ -415,8 +415,15 @@ class DiscoverPhaseBucketCleanupTests(unittest.TestCase):
 
         j = UserJourney(phase=PHASE_DISCOVER, discover_step=DISCOVER_ASK_ROLE)
         r = advance(j, "no search for pflegehelfer please")
-        self.assertEqual(r.journey.role_text, "pflegehelfer")
+        # Updated 2026-05-21 (PART 6 closure): role_text is now
+        # ALWAYS preserved verbatim per fix #3 (commit 4157455).
+        # The taxonomy match still lands in bucket_key + matched_token
+        # so the aggregator can use the canonical form; role_text
+        # carries the user's intent (qualifiers like "Returning",
+        # "Senior", "ex-" stay attached).
+        self.assertEqual(r.journey.role_text, "no search for pflegehelfer please")
         self.assertEqual(r.journey.bucket_key, "pflegehelfer")
+        self.assertEqual(r.journey.matched_token, "pflegehelfer")
 
     def test_no_bucket_match_stores_full_message(self):
         from company_discovery.journey import (
