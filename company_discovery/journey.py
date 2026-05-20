@@ -1543,24 +1543,82 @@ def _parse_role_list(text: str) -> list[str]:
 # ---------------- Phase: preferences ----------------
 
 
+_PREFS_REASK_REPLY = (
+    "**Any deal-breakers?** Reply with any of:\n"
+    "  - **remote** if remote is required\n"
+    "  - **min 50k** (or any salary floor)\n"
+    "  - **startup / mid / enterprise** for company size\n"
+    "  - **none** / **skip** to move on"
+)
+
+# Explicit advance tokens at the preferences phase — colloquial DE +
+# EN variants the user actually types. Mirrors the Bug A widening on
+# the inspire phase no-list (PART 6 2026-05-20). Per operator note,
+# "go" / "next" / "weiter" are scoped to preferences-phase parsing
+# only — no cross-phase leakage because each phase has its own token
+# set.
+_PREFS_ADVANCE_TOKENS = frozenset(
+    {
+        "none", "skip", "no preference", "nothing", "nope", "no thanks",
+        "keine", "nichts", "kein bedarf", "nein danke",
+        "weiter", "next", "move on", "go", "fertig", "done", "proceed",
+    }
+)
+
+
 def _advance_prefs(journey: UserJourney, msg: str) -> AdvanceResult:
+    # PART 6 Bug B (2026-05-20 Aïcha shape-test): _advance_prefs
+    # previously ALWAYS advanced to PHASE_SEARCH on any input — empty
+    # string, gibberish ("huh"), category-pick attempts ("1"), and
+    # real preferences all triggered the same auto-search. The prompt
+    # advertised a menu but the implementation accepted anything as
+    # advance. Cross-persona impact: every persona's preferences turn
+    # could accidentally fire the aggregator search with no preference
+    # set + then dead-end at PHASE_DONE on 0-results (Bug C). Fix:
+    # advance only when (a) explicit advance token, OR (b) at least
+    # one recognized preference extracted. Otherwise re-ask.
+    if not msg.strip():
+        # Operator-required explicit early-return: empty / whitespace-
+        # only inputs never advance, always re-ask.
+        return AdvanceResult(reply=_PREFS_REASK_REPLY, journey=journey, persist=False)
+
     lc = msg.lower().strip()
-    if lc in {"none", "skip", "no preference", "nothing"}:
-        pass  # accept defaults
+
+    if lc in _PREFS_ADVANCE_TOKENS:
+        # Accept defaults; advance.
+        pass
     else:
+        # Try to extract recognized preferences from the message.
+        # Salary regex widened (Bug B adjacent fix): the prior
+        # \d{2,3} only matched 2-3 digit numbers, silently
+        # dropping real € amounts like "50000" or "1000".
+        extracted_any = False
         if "remote" in lc:
             journey.remote_required = True
-        # Salary floor: "min 50k" / "50000+" / "at least 45000"
-        m = re.search(r"\b(\d{2,3})\s*[kK]?\b", lc)
+            extracted_any = True
+        m = re.search(r"\b(\d{2,5})\s*[kK]?\b", lc)
         if m:
             v = int(m.group(1))
             journey.salary_floor = v * 1000 if v < 1000 else v
+            extracted_any = True
         if "startup" in lc:
             journey.company_size = "startup"
+            extracted_any = True
         elif "enterprise" in lc or "large" in lc:
             journey.company_size = "enterprise"
+            extracted_any = True
         elif "mid" in lc or "medium" in lc:
             journey.company_size = "mid"
+            extracted_any = True
+
+        if not extracted_any:
+            # Unrecognized input — re-ask instead of silently
+            # advancing into a no-preferences search. Examples
+            # that land here: "1", "2", "?", "ok", "huh", "what",
+            # "keine Ahnung" (the user genuinely doesn't know).
+            return AdvanceResult(
+                reply=_PREFS_REASK_REPLY, journey=journey, persist=False
+            )
 
     journey.phase = PHASE_SEARCH
     return AdvanceResult(
