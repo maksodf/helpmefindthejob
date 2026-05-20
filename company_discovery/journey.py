@@ -308,6 +308,18 @@ class AdvanceResult:
     # implementation detail out of the reply field and prevents a
     # user's literal text from ever masquerading as a dispatch.
     invoke_command: str | None = None
+    # Bug F Option B (Loop 10.2, 2026-05-20): analytics events the
+    # dispatcher should write via log_analytics. Each entry is
+    # (event_name, payload_dict). Currently used by the cv_check
+    # paste-branch friction-class classifier hook to emit one
+    # ``friction_class_classified`` event per classification call
+    # (OQ-2 telemetry contract). The dispatcher iterates this list
+    # in app.py's advance() wrapper after profile_updates are
+    # applied -- symmetric with the existing side-effect channels.
+    # Internal telemetry only; not exposed via any API surface.
+    analytics_events: list[tuple[str, dict[str, Any]]] = field(
+        default_factory=list,
+    )
 
 
 # Maximum journey-input message length. Cap so a malicious or pasted
@@ -1413,10 +1425,31 @@ def _advance_cv_check(journey: UserJourney, msg: str, *, has_existing_cv: bool) 
                 f"Got it — captured **{len(msg)} chars** of CV. "
                 f"Moving on to suggestions.\n\n{chained.reply}"
             )
+            # Bug F Option B (Loop 10.2, 2026-05-20): classify the
+            # pasted CV against the friction-class fixture panel
+            # and write the result to profile.friction_class. The
+            # write is UNCONDITIONAL: classifier returns "" for
+            # unclassifiable input, which OVERWRITES any stale
+            # prior classification (operator-spec re-classification
+            # semantics: stale > none, so a re-paste that doesn't
+            # classify must clear the field, not retain).
+            from company_discovery.friction_classifier import (
+                classify_with_telemetry,
+            )
+
+            classification = classify_with_telemetry(msg)
             chained.profile_updates = {
                 **chained.profile_updates,
                 "cv_text": msg,
+                "friction_class": classification.slug,
             }
+            chained.analytics_events.append(
+                ("friction_class_classified", {
+                    "resolved": classification.slug,
+                    "confidence": classification.confidence,
+                    "match_count": classification.match_count,
+                }),
+            )
             return chained
         # Couldn't determine intent — re-ask.
         existing_hint = '  - Reply **"reuse"** to use your existing CV\n' if has_existing_cv else ""

@@ -3710,6 +3710,15 @@ class AppState:
         )
         if result.profile_updates:
             self._journey_apply_profile_updates(user_id, result.profile_updates)
+        # Bug F Option B (Loop 10.2, 2026-05-20): journey-emitted
+        # analytics events. Each (name, payload) entry gets a
+        # log_analytics call so the OQ-2 telemetry hook lands on
+        # the same channel as other journey instrumentation.
+        for event_name, event_payload in (result.analytics_events or []):
+            try:
+                self.log_analytics(user_id, event_name, event_payload)
+            except Exception:  # noqa: BLE001 - telemetry must never break chat
+                pass
         if result.persist:
             self._journey_save(user_id, result.journey)
         # When the journey asks us to run a search, dispatch to

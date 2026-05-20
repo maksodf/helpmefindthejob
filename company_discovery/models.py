@@ -272,6 +272,21 @@ class UserProfile:
 
     user_id: str
     persona_id: str = "healthcare-management"
+    # Bug F Option B (Loop 10.2, 2026-05-20): friction-class
+    # classification derived by friction_classifier.classify() from
+    # the user's pasted CV. One of the seven fixture slugs (aicha /
+    # yusuf / olga / mahmoud / maria / kaethe / tobias) or "" when
+    # the classifier couldn't resolve confidently. Drives Bug C
+    # piece-3 + piece-4 persona-aware widening order +
+    # Ausländerbehörde caveat AND analysis.py's AI-prompt friction
+    # context (residency_status, friction_notes, scenarios). Default
+    # "" preserves backward compatibility with existing UserProfile
+    # entries serialized before this field existed. The fixture
+    # slugs are intentionally a different namespace from the
+    # ``persona_id`` registry (15 industry IDs) -- two fields, two
+    # concerns: persona_id drives industry-segment ranking +
+    # templates; friction_class drives friction-class-aware UX.
+    friction_class: str = ""
     target_roles: list[str] = field(default_factory=list)
     industry: str | None = None
     location: str | None = None
