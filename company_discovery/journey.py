@@ -2647,16 +2647,37 @@ def _advance_review(
     aggregator returned 0 results, the search dispatcher sets
     ``journey.review_substate = "empty"`` so this handler routes to
     ``_advance_review_empty`` for the never-implicit-done contract.
+
+    Bug E fix (Loop 9.1, 2026-05-20): the sub-state routing must
+    happen BEFORE the categories check. The original code only
+    matched ``review_substate == "empty"`` here, then fell through
+    to a defensive branch that CLOBBERED any other sub-state (
+    ``laterals_offered`` / ``auto_relax_offering``) back to ``empty``
+    whenever ``search_results_by_category`` was empty -- which is
+    always true during Bug-C empty-state recovery. The clobber
+    bypassed the laterals_offered and auto_relax_offering handlers
+    entirely, producing an infinite loop on the manual-menu try-
+    laterals flow. Live walk Loop 9 (Aïcha post-Bug-C re-walk)
+    surfaced this; unit tests for Bug C pieces 3/4 missed it
+    because they called the sub-state handlers directly, bypassing
+    the outer ``_advance_review`` routing. Regression coverage
+    landed in tests/test_review_routing.py: every sub-state is
+    pinned through the public ``advance()`` entry point, not
+    through direct handler calls.
     """
-    if journey.review_substate == "empty":
+    if journey.review_substate in (
+        "empty", "laterals_offered", "auto_relax_offering",
+    ):
         return _advance_review_empty(journey, msg, engine=engine)
     categories = list(journey.search_results_by_category.keys())
     if not categories:
-        # Defensive: should not happen under the new empty-state
-        # contract (the search dispatcher should have set
-        # review_substate="empty" instead of letting categories be
-        # empty here), but if it does, route to the empty-state
-        # branch rather than the old direct-to-PHASE_DONE.
+        # True defensive branch: only fires when substate is the
+        # empty-string "" (no Bug-C sub-state set) AND categories
+        # is empty. Legitimate "broken state" recovery -- e.g., a
+        # journey that landed in PHASE_REVIEW without the
+        # dispatcher properly setting substate. Route to the
+        # empty-state branch rather than the old direct-to-
+        # PHASE_DONE pre-Bug-C-piece-1 behavior.
         journey.review_substate = "empty"
         return _advance_review_empty(journey, msg, engine=engine)
     lc = msg.lower().strip()
