@@ -1,0 +1,51 @@
+1. Subject line / opening salutation:
+Subject: Application — Krankenpfleger / Krankenpflegerin (Anerkennung-friendly), Beispielarbeitgeber Berlin
+
+Sehr geehrte Damen und Herren,
+
+2. Cover letter body:
+Ihre Stellenausschreibung als Krankenpfleger / Krankenpflegerin bei Beispielarbeitgeber in Berlin hat mich sofort angesprochen, weil Ihr Haus explizit Bewerber:innen im laufenden Anerkennungsverfahren aufnimmt — genau die Konstellation, in der ich mich derzeit befinde.
+
+Ich bringe sieben Jahre klinische Erfahrung aus dem Hôpital Habib Bourguiba in Tunis mit, davon zwei Jahre auf einer geriatrischen Station — das deckt sich direkt mit der in der Stellenausschreibung genannten Erfahrung in der Geriatrie. Mein Deutsch ist auf telc-B1-Pflege-Niveau (telc-Zertifikat 2025), ich arbeite aktiv an B2; mein französisches und arabisches Sprachprofil hilft mir zusätzlich in einem internationalen Patientenkollektiv.
+
+Mein Anerkennungsverfahren bei BIBB/Anabin läuft seit Anfang 2025 und das Anerkennungsschreiben wird in den kommenden Monaten erwartet. Ich freue mich darauf, in einem persönlichen Gespräch zu klären, wie ich bei Ihnen einsteigen kann.
+
+Mit freundlichen Grüßen,
+Aïcha Ben Salah
+
+3. Editing notes for the candidate:
+- Verify the exact telc-B1-Pflege certificate date before sending; the draft assumes 2025.
+- Personalise the call-to-action with a contact name if the job ad has one.
+- Consider adding one concrete operational detail (e.g. shifts per week, documentation tooling) if you have it.
+
+4. Draft assumptions:
+- Assumed German as the letter language because the JD is in German and the employer is a Berlin Krankenhaus.
+- Assumed Hôpital Habib Bourguiba is the most recent / most relevant employer from the CV.
+- Used "Sehr geehrte Damen und Herren" because the JD does not name a contact.
+
+5. Source citations (Quellen):
+
+- "Ihre Stellenausschreibung als Krankenpfleger / Krankenpflegerin bei Beispielarbeitgeber in Berlin hat mich sofort angesprochen"
+  ← [JD] "Beispielarbeitgeber, Berlin — Krankenhaus in Berlin sucht Krankenpflegekraft."
+
+- "Ihr Haus explizit Bewerber:innen im laufenden Anerkennungsverfahren aufnimmt — genau die Konstellation, in der ich mich derzeit befinde"
+  ← [JD] "Anerkennung-friendly: Wir nehmen Bewerber:innen im laufenden Anerkennungsverfahren auf"
+  ← [CV] "§16d AufenthG visa (issued 2025-02; for recognition of foreign qualification)"
+
+- "sieben Jahre klinische Erfahrung aus dem Hôpital Habib Bourguiba in Tunis"
+  ← [CV] "Hôpital Habib Bourguiba, Tunis — Krankenpflegerin, 2018-2025 (7 years)"
+
+- "zwei Jahre auf einer geriatrischen Station"
+  ← [CV] "Geriatric ward 2 years; general medical ward 5 years"
+
+- "deckt sich direkt mit der in der Stellenausschreibung genannten Erfahrung in der Geriatrie"
+  ← [JD] "Erfahrung in der Geriatrie erwünscht"
+
+- "Mein Deutsch ist auf telc-B1-Pflege-Niveau"
+  ← [CV] "German — B1 (telc B1 Pflege, currently studying toward B2)"
+
+- "Mein Anerkennungsverfahren bei BIBB/Anabin läuft seit Anfang 2025"
+  ← [CV] "Recognition decision letter expected from BIBB / Anabin in ~4 months"
+
+- "Sehr geehrte Damen und Herren"
+  ← [Inference] No contact name was named in the JD; default German salutation per DIN 5008 norm.

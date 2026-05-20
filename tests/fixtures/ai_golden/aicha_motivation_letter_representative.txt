@@ -1,0 +1,56 @@
+Absenderzeile:
+Aïcha Ben Salah, Berlin
+
+Empfängeradresse:
+Beispielarbeitgeber
+Berlin
+
+Date: 21.05.2026
+
+Betreff:
+Bewerbung als Krankenpfleger / Krankenpflegerin (Anerkennung-friendly)
+
+Anrede:
+Sehr geehrte Damen und Herren,
+
+Mit großem Interesse habe ich Ihre Stellenausschreibung für Krankenpfleger:innen am Krankenhaus Beispielarbeitgeber in Berlin gelesen. Dass Sie ausdrücklich Bewerber:innen im laufenden Anerkennungsverfahren aufnehmen und einarbeiten, bis das Anerkennungsschreiben da ist, beschreibt exakt meine derzeitige Situation und gibt mir die Möglichkeit, sofort einzusteigen.
+
+In sieben Jahren als Krankenpflegerin am Hôpital Habib Bourguiba in Tunis habe ich umfangreiche klinische Praxis gesammelt — davon zwei Jahre auf einer geriatrischen Station, was sich direkt mit der in Ihrer Ausschreibung genannten Erfahrung in der Geriatrie deckt. Ich dokumentiere routiniert in mehreren Sprachen, übergebe sicher im interdisziplinären Team und versorge bis zu zwölf Patient:innen pro Schicht. Mein Anerkennungsverfahren bei BIBB/Anabin läuft seit Anfang 2025; die Entscheidung wird in den kommenden Monaten erwartet.
+
+Mein Deutsch ist auf telc-B1-Pflege-Niveau, ich arbeite aktiv an B2. Mein Französisch (C1) und Arabisch (Muttersprache) helfen mir bei der Kommunikation mit Patient:innen aus diversen Herkunftsländern — ein Aspekt, der in einem Berliner Krankenhaus oft relevant ist. Ich freue mich darauf, in einem persönlichen Gespräch zu klären, wie meine bisherige Praxis und Ihr Anerkennungs-freundliches Onboarding-Modell zusammenpassen.
+
+Schluss:
+Mit freundlichen Grüßen,
+
+Aïcha Ben Salah
+
+## Quellen (Source citations)
+
+- "Ihre Stellenausschreibung für Krankenpfleger:innen am Krankenhaus Beispielarbeitgeber in Berlin"
+  ← [JD] "Krankenhaus in Berlin sucht Krankenpflegekraft."
+
+- "Sie ausdrücklich Bewerber:innen im laufenden Anerkennungsverfahren aufnehmen und einarbeiten, bis das Anerkennungsschreiben da ist"
+  ← [JD] "Anerkennung-friendly: Wir nehmen Bewerber:innen im laufenden Anerkennungsverfahren auf und arbeiten Sie ein, bis das Anerkennungsschreiben da ist."
+
+- "sieben Jahre als Krankenpflegerin am Hôpital Habib Bourguiba in Tunis"
+  ← [CV] "Hôpital Habib Bourguiba, Tunis — Krankenpflegerin, 2018-2025 (7 years)"
+
+- "zwei Jahre auf einer geriatrischen Station"
+  ← [CV] "Geriatric ward 2 years; general medical ward 5 years"
+
+- "deckt sich direkt mit der in Ihrer Ausschreibung genannten Erfahrung in der Geriatrie"
+  ← [JD] "Erfahrung in der Geriatrie erwünscht"
+
+- "Anerkennungsverfahren bei BIBB/Anabin läuft seit Anfang 2025"
+  ← [CV] "§16d AufenthG visa (issued 2025-02; for recognition of foreign qualification)"
+  ← [CV] "Recognition decision letter expected from BIBB / Anabin in ~4 months"
+
+- "Mein Deutsch ist auf telc-B1-Pflege-Niveau, ich arbeite aktiv an B2"
+  ← [CV] "German — B1 (telc B1 Pflege, currently studying toward B2)"
+
+- "Mein Französisch (C1) und Arabisch (Muttersprache)"
+  ← [CV] "Arabic — native"
+  ← [CV] "French — C1"
+
+- "Sehr geehrte Damen und Herren"
+  ← [Inference] No contact name was named in the JD; default German salutation per DIN 5008 norm.

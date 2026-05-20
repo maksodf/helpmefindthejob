@@ -1,0 +1,10 @@
+{
+  "_doc": "Canonical Aïcha CV + JD inputs for PART 8 Loop 26 golden-output structural tests. Mirrors the Aïcha §16d Anerkennungsweg fixture used in PART 5 anschreiben walks and PART 7 Loop 22 composability flow 1. Stable across releases — if you change this file, update the synthetic representative outputs in this directory AND the assertions in tests/test_ai_output_invariants.py.",
+  "persona_slug": "aicha",
+  "cv_text": "Aïcha Ben Salah\nBerlin (relocated 2025)\n\nProfessional summary:\nRegistered nurse with 7 years' clinical experience in Tunisia. Currently on §16d AufenthG for the recognition of foreign qualifications (Anerkennungsverfahren). Strong geriatric-care background; documentation, medication administration, multidisciplinary handover.\n\nExperience:\n- Hôpital Habib Bourguiba, Tunis — Krankenpflegerin, 2018-2025 (7 years). Geriatric ward 2 years; general medical ward 5 years. Shifts of up to 12 residents per shift, full documentation in Arabic + French.\n- Internship — Clinique La Soukra, Tunis, 2017-2018. Surgical recovery.\n\nLanguages:\n- Arabic — native\n- French — C1\n- English — B2 (Cambridge BEC Vantage 2019)\n- German — B1 (telc B1 Pflege, currently studying toward B2)\n\nResidency / authorisation:\n- §16d AufenthG visa (issued 2025-02; for recognition of foreign qualification)\n- Recognition decision letter expected from BIBB / Anabin in ~4 months\n\nAvailability: full-time, can start onboarding immediately at an Anerkennung-friendly employer.\n",
+  "jd_text": "Beispielarbeitgeber, Berlin — Krankenhaus in Berlin sucht Krankenpflegekraft. Anerkennung-friendly: Wir nehmen Bewerber:innen im laufenden Anerkennungsverfahren auf und arbeiten Sie ein, bis das Anerkennungsschreiben da ist. Erfahrung in der Geriatrie erwünscht. Sprachniveau B1 Deutsch ausreichend; B2 erwünscht.",
+  "job_title": "Krankenpfleger / Krankenpflegerin (Anerkennung-friendly)",
+  "company": "Beispielarbeitgeber",
+  "location": "Berlin",
+  "job_url": "https://beispielarbeitgeber.example.invalid/jobs/krankenpfleger-anerkennung"
+}
