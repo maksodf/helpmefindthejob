@@ -262,6 +262,33 @@ class QueryEscoSkillTests(unittest.TestCase):
         self.assertEqual(result["matches"], [])
         self.assertEqual(result["totalCandidates"], len(_load_esco_reference_dataset()))
 
+    def test_altLabels_de_synonym_surfaces_canonical_entry(self) -> None:
+        """Colloquial DE synonyms like 'Krankenschwester' resolve to the
+        canonical Krankenpfleger entries via the altLabels_de field.
+        Regression coverage for the PART 7 Loop 22 dataset enrichment --
+        users typing common-language terms must still hit the ESCO entry."""
+
+        result = self.tools.query_esco_skill(query="Krankenschwester", type="occupation")
+        self.assertGreater(len(result["matches"]), 0)
+        codes = {match["code"] for match in result["matches"]}
+        self.assertIn(
+            "2221.1",
+            codes,
+            msg=f"altLabels_de path must surface 2221.1 (general nurse), got codes={codes}",
+        )
+
+    def test_altLabels_en_synonym_surfaces_canonical_entry(self) -> None:
+        """Symmetric coverage: English-language synonyms (e.g. 'RN' for
+        registered nurse) resolve via altLabels_en."""
+
+        result = self.tools.query_esco_skill(query="RN", type="occupation")
+        codes = {match["code"] for match in result["matches"]}
+        self.assertIn(
+            "2221.1",
+            codes,
+            msg=f"altLabels_en path must surface 2221.1 for 'RN' query, got codes={codes}",
+        )
+
     def test_limit_caps_results(self) -> None:
         full = self.tools.query_esco_skill(query="e")["matches"]
         capped = self.tools.query_esco_skill(query="e", limit=2)["matches"]

@@ -121,6 +121,8 @@ def _load_esco_reference_dataset() -> list[dict[str, Any]]:
                 "personas",
                 "shortageDE2024",
                 "esco_uri",
+                "altLabels_en",
+                "altLabels_de",
             ):
                 if optional_key in entry:
                     record[optional_key] = entry[optional_key]
@@ -531,15 +533,23 @@ class CompanyDiscoveryMCPTools:
         lowered = (query or "").strip().lower()
         kind = (type or "any").lower()
         candidates = (entry for entry in dataset if kind in ("any", entry["type"]))
-        matches = [
-            entry
-            for entry in candidates
-            if lowered
-            and (
-                lowered in entry.get("label_en", entry.get("label", "")).lower()
-                or lowered in entry.get("label_de", "").lower()
-            )
-        ]
+
+        def _matches(entry: dict[str, Any]) -> bool:
+            if not lowered:
+                return False
+            if lowered in entry.get("label_en", entry.get("label", "")).lower():
+                return True
+            if lowered in entry.get("label_de", "").lower():
+                return True
+            for alt in entry.get("altLabels_en", []) or []:
+                if lowered in str(alt).lower():
+                    return True
+            for alt in entry.get("altLabels_de", []) or []:
+                if lowered in str(alt).lower():
+                    return True
+            return False
+
+        matches = [entry for entry in candidates if _matches(entry)]
         if limit is not None:
             matches = matches[: max(0, int(limit))]
         return {

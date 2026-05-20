@@ -14,6 +14,8 @@
       "isco": "2221",
       "label_en": "Registered nurse (general)",
       "label_de": "Examinierte/r Krankenpfleger/in",
+      "altLabels_de": ["Krankenschwester", "Krankenpfleger", "Pflegefachkraft", "examinierte Pflegekraft"],
+      "altLabels_en": ["registered nurse", "general nurse", "RN"],
       "personas": ["Aicha"],
       "shortageDE2024": true,
       "esco_uri": "http://data.europa.eu/esco/occupation/2221.1"
@@ -23,6 +25,8 @@
       "isco": "2221",
       "label_en": "Specialist nurse — clinical / Pflege",
       "label_de": "Fachkrankenpfleger/in",
+      "altLabels_de": ["Fachkrankenschwester", "Pflegefachkraft (Spezialisierung)"],
+      "altLabels_en": ["specialist nurse", "clinical nurse specialist"],
       "personas": ["Aicha"],
       "shortageDE2024": true
     },
