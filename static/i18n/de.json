@@ -158,6 +158,7 @@
   "applications.coverLetter.prompt": "Anschreiben-Prompt",
   "applications.coverLetter.draft": "Anschreiben entwerfen",
   "applications.coverLetter.tailor": "CV anpassen",
+  "applications.coverLetter.sectionHint": "KI-Entwürfe enthalten fünf Abschnitte: Betreff + Anschreiben-Text, Bearbeitungshinweise, Annahmen des Entwurfs und einen \"Quellen (Source citations)\"-Nachweis. Prüfen Sie den Quellen-Abschnitt vor dem Versand — jede nicht-triviale Aussage sollte auf Ihren Lebenslauf oder die Stellenbeschreibung zurückführbar sein. Der Quellen-Abschnitt dient nur zu Ihrer Verifikation und sollte vor dem Versand entfernt werden.",
   "applications.documentsChecklist": "Dokumenten-Checkliste",
   "applications.save": "Bewerbung speichern",
   "applications.history.title": "Verlauf",

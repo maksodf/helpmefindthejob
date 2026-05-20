@@ -158,6 +158,7 @@
   "applications.coverLetter.prompt": "Cover-letter prompt",
   "applications.coverLetter.draft": "Draft cover letter",
   "applications.coverLetter.tailor": "Tailor CV",
+  "applications.coverLetter.sectionHint": "AI drafts include five sections: subject + letter body, editing notes, draft assumptions, and a \"Source citations (Quellen)\" trace. Review the citations section before sending — every non-trivial claim should map back to your CV or the job description. The citations section is for your verification only and should be removed from what you actually send.",
   "applications.documentsChecklist": "Documents checklist",
   "applications.save": "Save application",
   "applications.history.title": "History",

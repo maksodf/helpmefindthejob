@@ -265,6 +265,20 @@ Return exactly these sections:
    to be verified, sentences to personalize further, or weak spots to fix.
 4. Draft assumptions: list any inference you made (language, seniority,
    missing CV details). Be honest if information is thin.
+5. Source citations (Quellen) — NOT part of the letter, for the candidate's
+   verification only. For each non-trivial factual claim in the body
+   (sections 1+2 above), list its source verbatim. Format:
+       - "<claim sentence from letter>"
+         ← [CV] "<quoted CV excerpt the claim derives from>"
+       - "<claim sentence from letter>"
+         ← [JD] "<quoted JD excerpt the claim derives from>"
+       - "<claim sentence from letter>"
+         ← [Inference] (one-line honest explanation of the assumption)
+   Aim for 3-6 entries covering every non-trivial fact-bearing claim. This
+   surface implements the source-class hierarchy doctrine at
+   docs/grant/14-source-class-hierarchy.md — the candidate can audit every
+   claim back to its CV (class E), JD (class E), or labelled inference
+   (class G) origin.
 """
     return {
         "title": f"Cover Letter Draft: {job.title}",
