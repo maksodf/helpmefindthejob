@@ -161,6 +161,12 @@ class UserJourney:
     search_jobs_by_id: dict[str, dict[str, Any]] = field(default_factory=dict)
     picked_category: str = ""
     picked_job_id: str = ""
+    # Sub-state within PHASE_REVIEW. Set to "empty" by the search
+    # dispatcher (app.py) when the aggregator returned 0 results,
+    # so _advance_review routes to _advance_review_empty for the
+    # never-implicit-done contract. Empty string = normal
+    # populated-results review. PART 6 Bug C piece 1 (2026-05-20).
+    review_substate: str = ""
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -186,6 +192,7 @@ class UserJourney:
             "searchJobsById": dict(self.search_jobs_by_id),
             "pickedCategory": self.picked_category,
             "pickedJobId": self.picked_job_id,
+            "reviewSubstate": self.review_substate,
         }
 
     @classmethod
@@ -215,6 +222,7 @@ class UserJourney:
             search_jobs_by_id=dict(payload.get("searchJobsById") or {}),
             picked_category=payload.get("pickedCategory") or "",
             picked_job_id=payload.get("pickedJobId") or "",
+            review_substate=payload.get("reviewSubstate") or "",
         )
 
 
@@ -1640,22 +1648,128 @@ def _advance_prefs(journey: UserJourney, msg: str) -> AdvanceResult:
 # ---------------- Phase: review ----------------
 
 
-def _advance_review(journey: UserJourney, msg: str) -> AdvanceResult:
-    """User has been shown the categorized results and is picking a
-    category. Renders the top-N jobs in the chosen category with
-    title/company/location/link so the user can drill into a specific
-    posting (R17.5)."""
-    categories = list(journey.search_results_by_category.keys())
-    if not categories:
+_REVIEW_EMPTY_GIVE_UP_TOKENS = frozenset(
+    {
+        "give up", "done", "fertig", "exit", "quit", "stop",
+        "end", "ende", "abbruch", "abbrechen",
+    }
+)
+_REVIEW_EMPTY_RETRY_TOKENS = frozenset(
+    {
+        "retry", "search again", "try again", "again",
+        "nochmal", "noch einmal", "wieder versuchen",
+        "erneut", "neu suchen",
+    }
+)
+
+
+def _format_review_empty_reply(journey: UserJourney, diagnostic_text: str = "") -> str:
+    """Build the empty-state action prompt + optional diagnostic seam.
+
+    PART 6 Bug C piece 1 (2026-05-20): the empty-state reply has a
+    clean attachment point for the piece-2 diagnostic engine. Piece 1
+    passes ``diagnostic_text=""``; piece 2 will compute a 2-3
+    sentence evidence-backed explanation and pass it here. No
+    restructuring needed in piece 2 — only the helper's input
+    changes.
+    """
+    target_display = ", ".join(journey.target_roles) or "(no role set)"
+    loc_display = journey.location or "anywhere"
+    action_prompt = (
+        f"No jobs found for **{target_display}** in **{loc_display}**.\n\n"
+        "What next?\n"
+        "  - **retry** / **nochmal** / **search again** — try the same search again\n"
+        "  - **give up** / **done** / **fertig** — end this journey\n\n"
+        "(Widening choices coming in the next iteration.)"
+    )
+    if diagnostic_text:
+        return f"{diagnostic_text}\n\n{action_prompt}"
+    return action_prompt
+
+
+def _advance_review_empty(journey: UserJourney, msg: str) -> AdvanceResult:
+    """Empty-state review handler. PART 6 Bug C piece 1 (2026-05-20).
+
+    Never-implicit-done contract:
+      - "give up" / "done" / "fertig" / etc. (explicit) -> PHASE_DONE
+      - "retry" / "nochmal" / etc. -> re-fire search with same
+        criteria; if still 0, app.py routes back to empty_state
+        (loop-back invariant)
+      - empty / whitespace / gibberish -> re-ask, never advance,
+        never exit
+
+    Pieces 2-6 will layer onto this: piece 2 diagnostic engine,
+    piece 3 widening affordances, piece 4 consented auto-relax,
+    piece 5 adjacent-criterion counts, piece 6 final-state recovery.
+    """
+    if not msg.strip():
+        return AdvanceResult(
+            reply=_format_review_empty_reply(journey),
+            journey=journey,
+            persist=False,
+        )
+    lc = msg.lower().strip()
+    if lc in _REVIEW_EMPTY_GIVE_UP_TOKENS:
         journey.phase = PHASE_DONE
+        journey.review_substate = ""
         return AdvanceResult(
             reply=(
-                "No results to drill into. Try a different role or "
-                'widen the location. Type "find a job" to retry.'
+                "OK — ending this search. Type `find a job` anytime "
+                "to start fresh with different criteria."
             ),
             journey=journey,
             done=True,
         )
+    if lc in _REVIEW_EMPTY_RETRY_TOKENS:
+        # Re-fire the same search. If still 0, app.py's 0-results
+        # branch routes back to PHASE_REVIEW.empty_state — completes
+        # the loop-back invariant pinned in piece 1's tests. Pieces
+        # 3-4 will replace this placeholder with user-confirmed
+        # widening choices.
+        target_display = ", ".join(journey.target_roles) or "(no role set)"
+        loc_display = journey.location or "anywhere"
+        return AdvanceResult(
+            reply=f"Retrying search for **{target_display}** in **{loc_display}**…",
+            journey=journey,
+            run_search_with={
+                "target_roles": list(journey.target_roles),
+                "location": journey.location or None,
+                "remote_required": journey.remote_required,
+                "salary_floor": journey.salary_floor,
+                "company_size": journey.company_size or None,
+            },
+        )
+    # Anything else: re-ask. Never silently advance, never silently
+    # exit — operator's never-implicit-done invariant.
+    return AdvanceResult(
+        reply=_format_review_empty_reply(journey),
+        journey=journey,
+        persist=False,
+    )
+
+
+def _advance_review(journey: UserJourney, msg: str) -> AdvanceResult:
+    """User has been shown the categorized results and is picking a
+    category. Renders the top-N jobs in the chosen category with
+    title/company/location/link so the user can drill into a specific
+    posting (R17.5).
+
+    Empty-state branch (PART 6 Bug C piece 1, 2026-05-20): when the
+    aggregator returned 0 results, the search dispatcher sets
+    ``journey.review_substate = "empty"`` so this handler routes to
+    ``_advance_review_empty`` for the never-implicit-done contract.
+    """
+    if journey.review_substate == "empty":
+        return _advance_review_empty(journey, msg)
+    categories = list(journey.search_results_by_category.keys())
+    if not categories:
+        # Defensive: should not happen under the new empty-state
+        # contract (the search dispatcher should have set
+        # review_substate="empty" instead of letting categories be
+        # empty here), but if it does, route to the empty-state
+        # branch rather than the old direct-to-PHASE_DONE.
+        journey.review_substate = "empty"
+        return _advance_review_empty(journey, msg)
     lc = msg.lower().strip()
     # Match the category by exact lowercased name OR substring (so
     # "clinical" matches "Clinical / Pflege").

@@ -3778,16 +3778,28 @@ class AppState:
             journey2.search_results_by_category = categorized
             journey2.search_jobs_by_id = jobs_by_id
             if not jobs:
-                journey2.phase = PHASE_DONE
+                # PART 6 Bug C piece 1 (2026-05-20): never-implicit-
+                # done. The 0-results branch previously routed
+                # straight to PHASE_DONE, dead-ending the user with
+                # no recovery path beyond restarting the whole
+                # journey. The new contract routes to PHASE_REVIEW
+                # with review_substate="empty" so the user can
+                # explicitly retry or give up — see
+                # company_discovery/journey._advance_review_empty.
+                # Pieces 2-6 will add diagnostic explanation,
+                # widening affordances, consented auto-relax,
+                # adjacent-criterion counts, and final-state
+                # recovery onto this foundation.
+                journey2.phase = PHASE_REVIEW
+                journey2.review_substate = "empty"
             else:
                 journey2.phase = PHASE_REVIEW
+                journey2.review_substate = ""  # clear if previously set
             self._journey_save(user_id, journey2)
             if not jobs:
-                summary_msg = (
-                    "No matching jobs right now. Try widening the "
-                    "location or relaxing the role. Type `find a job` "
-                    "to start a new search."
-                )
+                from company_discovery.journey import _format_review_empty_reply
+
+                summary_msg = _format_review_empty_reply(journey2)
             else:
                 jobs_summary = "\n".join(
                     f"  - **{c}**: {len(ids)} job(s)" for c, ids in categorized.items()
