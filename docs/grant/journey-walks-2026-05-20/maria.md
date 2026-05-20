@@ -1,10 +1,10 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 
-# Journey walk — Olga (Ukraine → Leipzig)
+# Journey walk — Maria (Romania → Stuttgart)
 
-**Persona slug**: `olga`  |  **Cohort**: `most-acute`
-**Residency status**: §24 AufenthG (temporary protection for displaced Ukrainians)
-**Friction notes**: Single parent (one child age 7 in Grundschule); needs remote-friendly or English-speaking-team roles where A2 German is not a 12-month blocker. Wants to be evaluated on shipped-software portfolio rather than language.
+**Persona slug**: `maria`  |  **Cohort**: `most-acute`
+**Residency status**: EU citizen (Freizügigkeitsrecht)
+**Friction notes**: Persistent language barrier despite full work rights; most home-care employers want B1 minimum formally. Care quality is excellent but cannot be demonstrated through a German-language interview. Wants employers who integrate non-fluent care workers via Audio-prep or buddy systems.
 
 ## Walk-through (live HTTP API, /api/chat/message)
 
@@ -13,11 +13,11 @@ transition and the wall-clock latency for that turn.
 
 | # | User input | Phase after | Reply (truncated) | Elapsed |
 |---|---|---|---|---|
-| 1 | `/start` | `discover` | Got it — let's find you a job. I'll ask a few short questions, then search for you and show what fits.    **1. What kind of role are you … | 6 ms |
-| 2 | `Senior frontend developer` | `discover` | Got it: **Senior frontend developer**.    **2. Where?** (city, country, or "anywhere" / "remote") | 61 ms |
-| 3 | `Leipzig` | `discover` | Noted: **Leipzig**.    **3. How many years' experience do you have in this kind of role?** (a number is fine — e.g., "3" or "about 7") | 1 ms |
-| 4 | `9` | `discover` | **4. Which languages do you work in?** (comma-separated, e.g., "Deutsch, English") | 1 ms |
-| 5 | `UK: native, RU: native, EN: C1` | `cv_check` | Thanks. Quick summary:    - Role: **Senior frontend developer**    - Where: **Leipzig**    - Experience: **9**    - Languages: **UK: nati… | 1 ms |
+| 1 | `/start` | `discover` | Got it — let's find you a job. I'll ask a few short questions, then search for you and show what fits.    **1. What kind of role are you … | 1 ms |
+| 2 | `Altenpflegerin` | `discover` | Got it: **Altenpflegerin**.    **2. Where?** (city, country, or "anywhere" / "remote") | 1 ms |
+| 3 | `Stuttgart` | `discover` | Noted: **Stuttgart**.    **3. How many years' experience do you have in this kind of role?** (a number is fine — e.g., "3" or "about 7") | 1 ms |
+| 4 | `28` | `discover` | **4. Which languages do you work in?** (comma-separated, e.g., "Deutsch, English") | 1 ms |
+| 5 | `RO: native, HU: native, IT: B1` | `cv_check` | Thanks. Quick summary:    - Role: **Altenpflegerin**    - Where: **Stuttgart**    - Experience: **28**    - Languages: **RO: native, HU: … | 1 ms |
 
 ## Per-turn detail
 
@@ -25,7 +25,7 @@ transition and the wall-clock latency for that turn.
 
 **Input**: `/start`
 
-**Executed**: `start_job_journey`  |  **Phase after**: `discover`  |  **Done**: `False`  |  **Elapsed**: 6 ms
+**Executed**: `start_job_journey`  |  **Phase after**: `discover`  |  **Done**: `False`  |  **Elapsed**: 1 ms
 
 **Reply**:
 
@@ -37,35 +37,35 @@ Got it — let's find you a job. I'll ask a few short questions, then search for
 
 ### Turn 2 — Answer: target role
 
-**Input**: `Senior frontend developer`
-
-**Executed**: `None`  |  **Phase after**: `discover`  |  **Done**: `None`  |  **Elapsed**: 61 ms
-
-**Reply**:
-
-```
-Got it: **Senior frontend developer**.
-
-**2. Where?** (city, country, or "anywhere" / "remote")
-```
-
-### Turn 3 — Answer: target location
-
-**Input**: `Leipzig`
+**Input**: `Altenpflegerin`
 
 **Executed**: `None`  |  **Phase after**: `discover`  |  **Done**: `None`  |  **Elapsed**: 1 ms
 
 **Reply**:
 
 ```
-Noted: **Leipzig**.
+Got it: **Altenpflegerin**.
+
+**2. Where?** (city, country, or "anywhere" / "remote")
+```
+
+### Turn 3 — Answer: target location
+
+**Input**: `Stuttgart`
+
+**Executed**: `None`  |  **Phase after**: `discover`  |  **Done**: `None`  |  **Elapsed**: 1 ms
+
+**Reply**:
+
+```
+Noted: **Stuttgart**.
 
 **3. How many years' experience do you have in this kind of role?** (a number is fine — e.g., "3" or "about 7")
 ```
 
 ### Turn 4 — Answer: years of experience
 
-**Input**: `9`
+**Input**: `28`
 
 **Executed**: `None`  |  **Phase after**: `discover`  |  **Done**: `None`  |  **Elapsed**: 1 ms
 
@@ -77,7 +77,7 @@ Noted: **Leipzig**.
 
 ### Turn 5 — Answer: languages
 
-**Input**: `UK: native, RU: native, EN: C1`
+**Input**: `RO: native, HU: native, IT: B1`
 
 **Executed**: `None`  |  **Phase after**: `cv_check`  |  **Done**: `None`  |  **Elapsed**: 1 ms
 
@@ -85,10 +85,10 @@ Noted: **Leipzig**.
 
 ```
 Thanks. Quick summary:
-  - Role: **Senior frontend developer**
-  - Where: **Leipzig**
-  - Experience: **9**
-  - Languages: **UK: native, RU: native, EN: C1**
+  - Role: **Altenpflegerin**
+  - Where: **Stuttgart**
+  - Experience: **28**
+  - Languages: **RO: native, HU: native, IT: B1**
 
 **Do you have a CV ready?** Three options:
   - Paste it in chat (drop the whole text)

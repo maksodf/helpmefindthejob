@@ -130,8 +130,10 @@ class UserJourney:
     # Where we are inside the discover phase.
     discover_step: str = DISCOVER_ASK_ROLE
     # User-stated answers gathered along the way.
-    role_text: str = ""  # what the user typed for the role
+    role_text: str = ""  # what the user typed for the role — ALWAYS preserved verbatim (qualifiers like "Senior", "Returning", "Former" stay) so downstream AI prompts + display see the user's intent intact
     bucket_key: str = ""  # taxonomy hit (if any)
+    # The canonical taxonomy substring matched inside role_text (e.g., "frontend developer" when the user typed "Senior frontend developer"). Empty when no bucket matched. Used by the aggregator to widen search coverage past qualifier prefixes while role_text stays the source of truth for display + AI prompts.
+    matched_token: str = ""
     location: str = ""  # raw user text — passed through to aggregator
     location_canonical: str = ""  # normalised (germany / anywhere / city)
     years_experience: int | None = None
@@ -166,6 +168,7 @@ class UserJourney:
             "discoverStep": self.discover_step,
             "roleText": self.role_text,
             "bucketKey": self.bucket_key,
+            "matchedToken": self.matched_token,
             "location": self.location,
             "locationCanonical": self.location_canonical,
             "yearsExperience": self.years_experience,
@@ -194,6 +197,7 @@ class UserJourney:
             discover_step=payload.get("discoverStep") or DISCOVER_ASK_ROLE,
             role_text=payload.get("roleText") or "",
             bucket_key=payload.get("bucketKey") or "",
+            matched_token=payload.get("matchedToken") or "",
             location=payload.get("location") or "",
             location_canonical=payload.get("locationCanonical") or "",
             years_experience=payload.get("yearsExperience"),
@@ -763,15 +767,24 @@ def _advance_discover(journey: UserJourney, msg: str) -> AdvanceResult:
                 persist=False,
             )
         bucket_key, matched = identify_bucket_with_match(msg)
-        # R79.x: when the message contains a clear bucket keyword
-        # (e.g. "no, search for pflegehelfer please"), use the
-        # matched token as the role — NOT the full sentence. Storing
-        # "no search for pflegehelfer please" as role_text would
-        # feed nonsense to the aggregator on the next step. Falls
-        # back to the literal message when no bucket matches.
-        journey.role_text = matched if (bucket_key and matched) else msg
+        # role_text is ALWAYS the user's verbatim input — qualifiers
+        # like "Senior", "Junior", "Lead", "Returning", "Former",
+        # "ex-" stay attached so downstream prompts + display see
+        # the user's intent intact. The taxonomy hit lands separately
+        # in bucket_key + matched_token so the aggregator can still
+        # query the broader canonical form and so the friction-class
+        # signal (Returning Krankenschwester for Käthe; Former banker
+        # for Tobias) doesn't get stripped silently. PART 6 walk #3
+        # (2026-05-20) surfaced this: Olga's "Senior frontend
+        # developer" became "frontend developer" everywhere — data
+        # loss into the aggregator + AI prompts + summary display.
+        # Previously: role_text = matched if bucket else msg, which
+        # silently dropped qualifiers when the role phrase contained
+        # a taxonomy substring.
+        journey.role_text = msg
         if bucket_key:
             journey.bucket_key = bucket_key
+            journey.matched_token = matched or ""
             profile_updates["job_type_filter"] = bucket_key
         journey.discover_step = DISCOVER_ASK_LOCATION
         reply = (
@@ -1319,10 +1332,15 @@ def _advance_inspire(
 
     # User responding to the suggestion offer.
     lc = msg.lower().strip()
+    # Use the taxonomy-canonical form for aggregator coverage when
+    # available — "Senior frontend developer" should not narrow the
+    # aggregator query to senior-only listings; the seniority signal
+    # is preserved via role_text into the AI ranking + display.
+    aggregator_role = journey.matched_token or journey.role_text
     if lc in {"yes", "y", "all", "ja", "sure", "ok", "okay"}:
-        journey.target_roles = [journey.role_text] + journey.lateral_roles
+        journey.target_roles = [aggregator_role] + journey.lateral_roles
     elif lc in {"no", "n", "nein", "skip", "stick"}:
-        journey.target_roles = [journey.role_text]
+        journey.target_roles = [aggregator_role]
     elif msg:
         # R79.4: only accept tokens that look like role names — not
         # any free-text the user typed. Without this, a message
@@ -1344,7 +1362,7 @@ def _advance_inspire(
                 journey=journey,
                 persist=False,
             )
-        journey.target_roles = [journey.role_text] + chosen
+        journey.target_roles = [aggregator_role] + chosen
     else:
         return AdvanceResult(
             reply="Reply **yes**, **no**, or a comma-separated list.",
