@@ -135,7 +135,9 @@ def strip_seniority_prefix(role_text: str) -> str:
 
 # Ausländerbehörde caveat text — operator-verbatim (2026-05-20).
 # Doctrine: refuse to invent legal advice; always direct to BAMF /
-# Ausländerbehörde / Migrationsberatungsstelle.
+# Ausländerbehörde / Migrationsberatungsstelle. See
+# docs/grant/14-source-class-hierarchy.md class A (legal/regulatory):
+# class-A claims are never AI-generated; this caveat is the bound.
 
 LOCATION_CAVEAT_TEXT = (
     "Note: changing your search location may not be compatible with "

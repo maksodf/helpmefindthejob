@@ -82,6 +82,27 @@ When you paste your CV during the guided job-search journey, the system runs a *
 
 ---
 
+## Source-class hierarchy (where claims come from)
+
+Every claim Helpmefindthejob makes to you has a source. The project's [source-class hierarchy doctrine](../docs/grant/14-source-class-hierarchy.md) defines a ranking from most-authoritative to least and binds each kind of claim to a source class:
+
+- **Class A — legal / regulatory authority** (BAMF, Ausländerbehörde, BfA, statutes like §16d AufenthG, EU Blue Card Directive 2021/1883): used for visa, residence-permit, and recognition claims. We never have AI invent these — we either restate the statute verbatim or direct you to the authoritative body.
+- **Class B — authoritative standardised taxonomy** (ESCO 1.1, ISCO-08, EURES, CEFR): used for occupation codes, skill codes, language proficiency. Every response carries the dataset version (e.g. `v1-curated-2026-05-18`) and the ESCO URI where applicable.
+- **Class C — authoritative organisation-level data** (BfA 2025 shortage list, KMK, BIBB): used for shortage flags and recognition outcomes.
+- **Class D — curated project data** (`reference/esco/`, `companies_catalog.py`, the seven-persona panel): documented provenance + version.
+- **Class E — your primary data** (your CV, the JD you pasted, your chat responses): the AI is constrained to ground its outputs in your inputs.
+- **Class F — aggregator-fetched secondary data** (Adzuna, Personio, public career pages): always carries source-URL provenance.
+- **Class G — AI inference**: acceptable only when grounded in classes A–F via in-context evidence; never as standalone authority.
+
+The doctrine matters in practice for two reasons:
+
+1. **Verifiability**: every claim in the cover letters, motivation letters, and decision briefs we generate can be traced back to either your CV (class E), the JD you provided (class E), or a documented project source (class B–D). The cover-letter and motivation-letter generators carry inline citation markers (PART 8 Loop 25) so you can audit each claim.
+2. **Honesty about limits**: when the AI lacks grounding for a claim, it is instructed to say so rather than invent. When the statute is the authority (e.g. visa compatibility for relocation), we refuse to give legal advice and direct you to the appropriate body.
+
+This hierarchy is binding on all AI prompt sites and on all journey replies that surface authoritative claims. See [`docs/grant/14-source-class-hierarchy.md`](../docs/grant/14-source-class-hierarchy.md) for the per-prompt + per-call-site audit and the cross-reference to EU AI Act Article 50 (transparency obligations).
+
+---
+
 ## You choose the AI provider
 
 Helpmefindthejob does not force a single AI provider on you. The deployment can be configured to use:

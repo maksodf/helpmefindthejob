@@ -33,6 +33,12 @@ from .service import CompanyDiscoveryService
 # 1.1 (CC BY 4.0). See docs/esco-integration.md for the upgrade path to the
 # full ESCO dataset.
 #
+# Source-class hierarchy (docs/grant/14-source-class-hierarchy.md): ESCO
+# codes are class B (authoritative standardised taxonomy). The shortageDE2024
+# flag is class C (BfA 2025 list). The tool surface carries both
+# datasetVersion (the project's curated-version pin) and esco_uri (the
+# upstream authoritative URI) so external consumers can verify provenance.
+#
 # The legacy 12-entry inline mini-dataset below is kept as a fallback for
 # environments where the reference/ tree is unavailable (e.g. some Python
 # packaging configurations). It is also used by tests that want to exercise
