@@ -1,10 +1,10 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 
-# Journey walk — Aïcha (Tunisia → Berlin)
+# Journey walk — Olga (Ukraine → Leipzig)
 
-**Persona slug**: `aicha`  |  **Cohort**: `most-acute`
-**Residency status**: §16d AufenthG (visa for purpose of recognition of foreign qualification)
-**Friction notes**: Recognition decision letter expected in ~4 months; needs Anerkennung-friendly employers willing to begin onboarding before the letter lands.
+**Persona slug**: `olga`  |  **Cohort**: `most-acute`
+**Residency status**: §24 AufenthG (temporary protection for displaced Ukrainians)
+**Friction notes**: Single parent (one child age 7 in Grundschule); needs remote-friendly or English-speaking-team roles where A2 German is not a 12-month blocker. Wants to be evaluated on shipped-software portfolio rather than language.
 
 ## Walk-through (live HTTP API, /api/chat/message)
 
@@ -14,10 +14,10 @@ transition and the wall-clock latency for that turn.
 | # | User input | Phase after | Reply (truncated) | Elapsed |
 |---|---|---|---|---|
 | 1 | `/start` | `discover` | Got it — let's find you a job. I'll ask a few short questions, then search for you and show what fits.    **1. What kind of role are you … | 1 ms |
-| 2 | `Registered nurse` | `discover` | Got it: **Registered nurse**.    **2. Where?** (city, country, or "anywhere" / "remote") | 1 ms |
-| 3 | `Berlin` | `discover` | Noted: **Berlin**.    **3. How many years' experience do you have in this kind of role?** (a number is fine — e.g., "3" or "about 7") | 1 ms |
-| 4 | `7` | `discover` | **4. Which languages do you work in?** (comma-separated, e.g., "Deutsch, English") | 1 ms |
-| 5 | `FR: native, AR: native, EN: B2` | `cv_check` | Thanks. Quick summary:    - Role: **Registered nurse**    - Where: **Berlin**    - Experience: **7**    - Languages: **FR: native, AR: na… | 1 ms |
+| 2 | `Senior frontend developer` | `discover` | Got it: **frontend developer**.    **2. Where?** (city, country, or "anywhere" / "remote") | 1 ms |
+| 3 | `Leipzig` | `discover` | Noted: **Leipzig**.    **3. How many years' experience do you have in this kind of role?** (a number is fine — e.g., "3" or "about 7") | 1 ms |
+| 4 | `9` | `discover` | **4. Which languages do you work in?** (comma-separated, e.g., "Deutsch, English") | 1 ms |
+| 5 | `UK: native, RU: native, EN: C1` | `cv_check` | Thanks. Quick summary:    - Role: **frontend developer**    - Where: **Leipzig**    - Experience: **9**    - Languages: **UK: native, RU:… | 1 ms |
 
 ## Per-turn detail
 
@@ -37,35 +37,35 @@ Got it — let's find you a job. I'll ask a few short questions, then search for
 
 ### Turn 2 — Answer: target role
 
-**Input**: `Registered nurse`
+**Input**: `Senior frontend developer`
 
 **Executed**: `None`  |  **Phase after**: `discover`  |  **Done**: `None`  |  **Elapsed**: 1 ms
 
 **Reply**:
 
 ```
-Got it: **Registered nurse**.
+Got it: **frontend developer**.
 
 **2. Where?** (city, country, or "anywhere" / "remote")
 ```
 
 ### Turn 3 — Answer: target location
 
-**Input**: `Berlin`
+**Input**: `Leipzig`
 
 **Executed**: `None`  |  **Phase after**: `discover`  |  **Done**: `None`  |  **Elapsed**: 1 ms
 
 **Reply**:
 
 ```
-Noted: **Berlin**.
+Noted: **Leipzig**.
 
 **3. How many years' experience do you have in this kind of role?** (a number is fine — e.g., "3" or "about 7")
 ```
 
 ### Turn 4 — Answer: years of experience
 
-**Input**: `7`
+**Input**: `9`
 
 **Executed**: `None`  |  **Phase after**: `discover`  |  **Done**: `None`  |  **Elapsed**: 1 ms
 
@@ -77,7 +77,7 @@ Noted: **Berlin**.
 
 ### Turn 5 — Answer: languages
 
-**Input**: `FR: native, AR: native, EN: B2`
+**Input**: `UK: native, RU: native, EN: C1`
 
 **Executed**: `None`  |  **Phase after**: `cv_check`  |  **Done**: `None`  |  **Elapsed**: 1 ms
 
@@ -85,10 +85,10 @@ Noted: **Berlin**.
 
 ```
 Thanks. Quick summary:
-  - Role: **Registered nurse**
-  - Where: **Berlin**
-  - Experience: **7**
-  - Languages: **FR: native, AR: native, EN: B2**
+  - Role: **frontend developer**
+  - Where: **Leipzig**
+  - Experience: **9**
+  - Languages: **UK: native, RU: native, EN: C1**
 
 **Do you have a CV ready?** Three options:
   - Paste it in chat (drop the whole text)

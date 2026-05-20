@@ -107,13 +107,17 @@ def walk_persona(persona_slug: str, cookie_header: str, csrf: str) -> dict:
         resp = send_message(user_input, cookie_header, csrf)
         elapsed_ms = int((time.monotonic() - started) * 1000)
         result = resp.get("result") or {}
+        # The top-level response carries journeyPhase on every turn
+        # (post-2026-05-20 fix landed during PART 6 walk #1). The
+        # `result` dict may also carry it for /start-style responses;
+        # prefer top-level for consistency across all turn types.
         captured.append(
             {
                 "label": label,
                 "input": user_input,
                 "reply": resp.get("reply", ""),
                 "executed": resp.get("executed"),
-                "journey_phase": result.get("journeyPhase"),
+                "journey_phase": resp.get("journeyPhase") or result.get("journeyPhase"),
                 "done": result.get("done"),
                 "elapsed_ms": elapsed_ms,
                 "raw_result_keys": list(result.keys()),

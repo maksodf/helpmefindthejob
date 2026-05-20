@@ -106,7 +106,7 @@ from company_discovery.email_transport import (
     build_transport,
     email_from_address,
 )
-from company_discovery.env_compat import get_env
+from company_discovery.env_compat import get_env, get_env_bool
 from company_discovery.exports import (
     discovered_jobs_to_csv,
     discovered_jobs_to_markdown,
@@ -205,21 +205,23 @@ APP_VERSION = "0.79.4"
 EXPORT_SCHEMA_VERSION = 1
 SESSION_COOKIE_NAME = "directjob_session"
 APP_ENV = get_env("HELPMEFINDTHEJOB_ENV", "COMPANY_DISCOVERY_ENV", "development").strip().casefold()
-COOKIE_SECURE = (
-    get_env(
-        "HELPMEFINDTHEJOB_COOKIE_SECURE",
-        "DIRECTJOB_COOKIE_SECURE",
-        "true" if APP_ENV == "production" else "false",
-    )
-    .strip()
-    .casefold()
-    == "true"
+# Bool env-var parsing routes through env_compat.get_env_bool, which
+# accepts the permissive truthy set {"true", "1", "yes", "on"}
+# casefolded. Earlier these two vars used a strict `== "true"`
+# check that silently rejected "True", "TRUE", "1", "yes" — a real
+# bug that PART 6 surfaced when an operator set
+# HELPMEFINDTHEJOB_ALLOW_REGISTRATION=1 and registration stayed
+# closed. Root cause fixed; matches env_compat semantics + matches
+# the legalReviewed handling below.
+COOKIE_SECURE = get_env_bool(
+    "HELPMEFINDTHEJOB_COOKIE_SECURE",
+    "DIRECTJOB_COOKIE_SECURE",
+    default=(APP_ENV == "production"),
 )
-ALLOW_REGISTRATION = (
-    get_env("HELPMEFINDTHEJOB_ALLOW_REGISTRATION", "DIRECTJOB_ALLOW_REGISTRATION", "false")
-    .strip()
-    .casefold()
-    == "true"
+ALLOW_REGISTRATION = get_env_bool(
+    "HELPMEFINDTHEJOB_ALLOW_REGISTRATION",
+    "DIRECTJOB_ALLOW_REGISTRATION",
+    default=False,
 )
 SECRET_KEY = get_env("HELPMEFINDTHEJOB_SECRET_KEY", "DIRECTJOB_SECRET_KEY") or (
     "dev-" + secrets.token_urlsafe(48)
@@ -1157,12 +1159,11 @@ class AppState:
             },
             "workspaces": {"membershipsTotal": memberships},
             "i18n": {"locales": ["en", "de"]},
-            "legalReviewed": get_env(
-                "HELPMEFINDTHEJOB_LEGAL_REVIEWED", "DIRECTJOB_LEGAL_REVIEWED", "false"
-            )
-            .strip()
-            .lower()
-            == "true",
+            "legalReviewed": get_env_bool(
+                "HELPMEFINDTHEJOB_LEGAL_REVIEWED",
+                "DIRECTJOB_LEGAL_REVIEWED",
+                default=False,
+            ),
         }
 
     def admin_metrics(self) -> dict[str, Any]:
@@ -6668,6 +6669,7 @@ class Handler(BaseHTTPRequestHandler):
                         self.send_json(
                             {
                                 "reply": reply,
+                                "journeyPhase": STATE._journey_load(data_user_id).phase,
                                 "executed": cmd_name,
                                 "result": result,
                                 "session": session.to_dict(),
@@ -6683,6 +6685,7 @@ class Handler(BaseHTTPRequestHandler):
                         self.send_json(
                             {
                                 "reply": reply,
+                                "journeyPhase": STATE._journey_load(data_user_id).phase,
                                 "cancelled": cancelled,
                                 "session": session.to_dict(),
                             }
@@ -6719,6 +6722,7 @@ class Handler(BaseHTTPRequestHandler):
                                 self.send_json(
                                     {
                                         "reply": reply,
+                                        "journeyPhase": STATE._journey_load(data_user_id).phase,
                                         "awaiting": param.name,
                                         "session": session.to_dict(),
                                     }
@@ -6776,6 +6780,7 @@ class Handler(BaseHTTPRequestHandler):
                         self.send_json(
                             {
                                 "reply": reply,
+                                "journeyPhase": STATE._journey_load(data_user_id).phase,
                                 "session": session.to_dict(),
                             }
                         )
@@ -6826,6 +6831,7 @@ class Handler(BaseHTTPRequestHandler):
                     self.send_json(
                         {
                             "reply": reply,
+                            "journeyPhase": STATE._journey_load(data_user_id).phase,
                             "executed": cmd.name,
                             "result": result,
                             "session": session.to_dict(),
@@ -6842,6 +6848,7 @@ class Handler(BaseHTTPRequestHandler):
                     self.send_json(
                         {
                             "reply": reply,
+                            "journeyPhase": STATE._journey_load(data_user_id).phase,
                             "awaiting": missing.name,
                             "session": session.to_dict(),
                         }
@@ -6866,6 +6873,7 @@ class Handler(BaseHTTPRequestHandler):
                     self.send_json(
                         {
                             "reply": reply,
+                            "journeyPhase": STATE._journey_load(data_user_id).phase,
                             "awaiting": next_optional.name,
                             "optional": True,
                             "session": session.to_dict(),
@@ -6912,6 +6920,7 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json(
                     {
                         "reply": reply,
+                        "journeyPhase": STATE._journey_load(data_user_id).phase,
                         "awaitingConfirmation": True,
                         "pendingArgs": session.pending.args,
                         "session": session.to_dict(),
