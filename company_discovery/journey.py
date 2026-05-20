@@ -1339,7 +1339,18 @@ def _advance_inspire(
     aggregator_role = journey.matched_token or journey.role_text
     if lc in {"yes", "y", "all", "ja", "sure", "ok", "okay"}:
         journey.target_roles = [aggregator_role] + journey.lateral_roles
-    elif lc in {"no", "n", "nein", "skip", "stick"}:
+    # PART 6 Bug A (2026-05-20 Aïcha shape-test): the no-list was
+    # too tight — users typing "none" / "keine" / "nope" / "no thanks"
+    # to decline the lateral-suggestions offer fell through to the
+    # free-text branch and got their decline-word silently appended
+    # to target_roles. Cross-persona impact: every persona who used
+    # an English/German negative outside the original 5-token set
+    # hit the bug. Widened the no-list to include the colloquial
+    # negatives a user actually types.
+    elif lc in {
+        "no", "n", "nein", "skip", "stick",
+        "none", "keine", "nope", "no thanks", "nein danke", "decline", "pass",
+    }:
         journey.target_roles = [aggregator_role]
     elif msg:
         # R79.4: only accept tokens that look like role names — not
