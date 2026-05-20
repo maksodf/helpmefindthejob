@@ -372,6 +372,7 @@
   "settings.persona.notes": "Notes for the AI (optional)",
   "settings.ai.heading": "AI Provider",
   "settings.ai.lead": "Bring your own AI subscription. We never persist raw keys.",
+  "settings.ai.honestyHint": "Honest tradeoffs: cloud AI (OpenAI / Anthropic / Google / DeepSeek) is faster and currently higher-quality, but sends a slice of your CV + the job description to the provider's jurisdiction. Local AI (Ollama on your own machine) is slower and quality varies with the model, but no data leaves your device. The full per-provider matrix — quality, latency, privacy, cost, EU AI Act surface — lives in the repository at docs/grant/15-ai-provider-honesty-matrix.md. The system never silently reroutes to a provider you did not pick.",
   "settings.ai.save": "Save provider",
   "settings.account.heading": "Account security",
   "settings.account.lead": "Changing your password signs you out on every device.",

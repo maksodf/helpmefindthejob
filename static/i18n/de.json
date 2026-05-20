@@ -372,6 +372,7 @@
   "settings.persona.notes": "Hinweise für die KI (optional)",
   "settings.ai.heading": "KI-Anbieter",
   "settings.ai.lead": "Nutze dein eigenes KI-Abo. Wir speichern niemals rohe API-Schlüssel.",
+  "settings.ai.honestyHint": "Ehrliche Abwägung: Cloud-KI (OpenAI / Anthropic / Google / DeepSeek) ist schneller und derzeit qualitativ besser, aber ein Auszug Deines Lebenslaufs und der Stellenbeschreibung wird an den Anbieter in dessen Rechtsraum gesendet. Lokale KI (Ollama auf Deinem Rechner) ist langsamer und die Qualität hängt vom gewählten Modell ab, aber keine Daten verlassen Dein Gerät. Die vollständige Anbieter-Matrix — Qualität, Latenz, Datenschutz, Kosten, EU-AI-Act-Bezug — liegt im Repository unter docs/grant/15-ai-provider-honesty-matrix.md. Das System leitet niemals stillschweigend auf einen anderen Anbieter um als den, den Du gewählt hast.",
   "settings.ai.save": "Anbieter speichern",
   "settings.account.heading": "Kontosicherheit",
   "settings.account.lead": "Beim Passwortwechsel wirst du auf allen Geräten abgemeldet.",
