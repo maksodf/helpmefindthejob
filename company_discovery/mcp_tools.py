@@ -20,13 +20,18 @@ from .service import CompanyDiscoveryService
 # Reference ESCO dataset.
 #
 # The query_esco_skill tool returns matches loaded from the curated dataset
-# under reference/esco/ (occupations.json + skills.json). These files were
-# seeded in Week 2 §2.4 with 30 occupations + 50 skills covering the five-
-# persona panel (Aïcha = nurse, Yusuf = mechanical engineer, Olga = frontend
-# developer, Mahmoud = trade apprentice, Maria = home-based care worker) plus
-# Bundesagentur-für-Arbeit 2025 shortage-occupation coverage. Codes derive
-# from ISCO-08 / ESCO 1.1 (CC BY 4.0). See docs/esco-integration.md for the
-# upgrade path to the full ESCO dataset.
+# under reference/esco/ (occupations.json + skills.json). The current
+# v1-curated-2026-05-18 release carries ~30 occupations + ~50 skills covering
+# the seven-persona panel per Decision 21 (Aïcha = nurse, Yusuf = mechanical
+# engineer, Olga = frontend developer, Mahmoud = trade apprentice, Maria =
+# home-based care worker, Käthe = returning Wiedereinstieg, Tobias = trade
+# Quereinstieg) plus Bundesagentur-für-Arbeit 2025 shortage-occupation
+# coverage. Entries optionally carry altLabels_de / altLabels_en arrays so
+# colloquial synonyms (e.g. "Krankenschwester" -> 2221.1 Krankenpfleger/in)
+# resolve to canonical codes; the PART 7 Loop 22 composability flow added
+# this enrichment for the nurse entries. Codes derive from ISCO-08 / ESCO
+# 1.1 (CC BY 4.0). See docs/esco-integration.md for the upgrade path to the
+# full ESCO dataset.
 #
 # The legacy 12-entry inline mini-dataset below is kept as a fallback for
 # environments where the reference/ tree is unavailable (e.g. some Python
@@ -210,7 +215,7 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
     },
     {
         "name": "extract_direct_jobs_from_company_site",
-        "description": "Extract JobPosting JSON-LD and visible job links from supplied HTML without fetching.",
+        "description": "Extract jobs from supplied HTML without fetching: tries known ATS adapters first (Greenhouse / Lever / Personio), falls back to JobPosting JSON-LD parsing and visible job-link anchor extraction.",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -304,9 +309,13 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
         "name": "query_esco_skill",
         "description": (
             "Look up ESCO skill or occupation codes by free-text query. "
-            "Cross-agent shared taxonomy. Today this returns matches from "
-            "a ~12-entry persona-panel-aligned mini-dataset; the full "
-            "ESCO dataset import lands in Week 2 §2.4."
+            "Cross-agent shared taxonomy. Backed by the v1-curated "
+            "2026-05-18 reference dataset (~80 entries spanning ISCO-08 "
+            "occupations + ESCO skills, aligned to the seven-persona "
+            "panel and Bundesagentur-für-Arbeit 2025 shortage codes). "
+            "Matches against EN + DE labels and altLabels arrays, so "
+            "colloquial synonyms (e.g. 'Krankenschwester') resolve to "
+            "canonical entries."
         ),
         "inputSchema": {
             "type": "object",
