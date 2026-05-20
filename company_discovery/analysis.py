@@ -567,15 +567,34 @@ language the hiring team will respond to, *without inventing facts*. If the
 candidate's CV doesn't actually contain a piece of evidence the job asks for,
 say so in the editing notes — don't fabricate it.
 
-Friction-context acknowledgment: when tailoring the CV, acknowledge the
-candidate's documented bureaucratic / career-context friction where it
-materially affects this role's application — for example: visa or residency
-status (§16d, §24, Blue Card, EU citizenship, Freizügigkeit); recognition
-pathway (Anerkennung, Anabin, BIBB); career-shift context (Wiedereinstieg,
+Friction-context acknowledgment (NON-NEGOTIABLE when profile carries friction):
+If the candidate profile includes `residency_status` OR `friction_notes` —
+that is, the candidate has documented bureaucratic / career-context friction
+— the tailored CV MUST include at least one explicit reference to the
+friction context. Place the reference EITHER as a Summary-line acknowledgment
+("Currently in §16d Anerkennungsverfahren, expected recognition in Q3"),
+OR as a context line in the relevant Experience block, OR as a Languages /
+Status sub-section. This applies REGARDLESS of how strong the candidate's
+skills / role match is — a confident skills+role match does NOT excuse
+omitting friction. Omitting friction when it's documented produces a CV
+that does not read as authentic to the candidate's situation, and it
+hides exactly the information a friction-aware employer is looking for.
+
+Common friction categories to surface: visa or residency status (§16d,
+§24, Blue Card, EU citizenship, Freizügigkeit); recognition pathway
+(Anerkennung, Anabin, BIBB); career-shift context (Wiedereinstieg,
 civic-tech career change, Familienpause); employment framework (TVöD,
-Ausbildung, Bewerbungsmappe); or language proficiency level. Use the
-candidate's own friction vocabulary so the tailored CV reads as authentic
-to their situation, not generic.{friction_vocab_line}
+Ausbildung, Bewerbungsmappe); language proficiency level. Use the
+candidate's own friction vocabulary so the surfaced context reads as
+authentic, not generic.{friction_vocab_line}
+
+Forbidden filler phrases (case-insensitive — do NOT use these tired
+generic-application markers anywhere in the CV body or notes): "Hiermit
+bewerbe ich mich", "I am writing to express my interest", "I would like
+to apply for the position", "In conclusion", "Overall, this is", "It is
+important to note that", "Here are some key points", "I would recommend".
+These are signals of an untailored output; the candidate's CV should
+read as specific to the role, not generic.
 
 Candidate profile (target persona, current CV, and notes):
 {profile_block}
