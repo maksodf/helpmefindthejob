@@ -191,6 +191,23 @@ class UserJourney:
     # Populated when the user picks "try laterals"; cleared when
     # they confirm or decline. Bug C piece 3 (2026-05-20).
     proposed_laterals: list[str] = field(default_factory=list)
+    # Bug C piece 4 (2026-05-20): auto-relax mode state. When the
+    # user enters auto-mode from the empty-state menu, the system
+    # proposes widenings one at a time and the user confirms each
+    # step. Three fields:
+    #   - auto_relax_active: True while in auto-mode; cleared on
+    #     cancel / give-up / successful search
+    #   - auto_relax_declined: affordance IDs the user said
+    #     "no/skip" to in auto-mode (so they don't get re-suggested);
+    #     persists across cancel+re-enter; cleared on PHASE_DONE or
+    #     successful search
+    #   - auto_relax_offered_id: the affordance currently being
+    #     proposed; lets the handler look up the right action when
+    #     the user responds. Cleared on cancel / decline-then-recompute
+    #     / give-up / search-result-dispatch
+    auto_relax_active: bool = False
+    auto_relax_declined: list[str] = field(default_factory=list)
+    auto_relax_offered_id: str = ""
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -221,6 +238,9 @@ class UserJourney:
             "visaConstrained": self.visa_constrained,
             "appliedWidenings": list(self.applied_widenings),
             "proposedLaterals": list(self.proposed_laterals),
+            "autoRelaxActive": self.auto_relax_active,
+            "autoRelaxDeclined": list(self.auto_relax_declined),
+            "autoRelaxOfferedId": self.auto_relax_offered_id,
         }
 
     @classmethod
@@ -255,6 +275,9 @@ class UserJourney:
             visa_constrained=bool(payload.get("visaConstrained")),
             applied_widenings=list(payload.get("appliedWidenings") or []),
             proposed_laterals=list(payload.get("proposedLaterals") or []),
+            auto_relax_active=bool(payload.get("autoRelaxActive")),
+            auto_relax_declined=list(payload.get("autoRelaxDeclined") or []),
+            auto_relax_offered_id=payload.get("autoRelaxOfferedId") or "",
         )
 
 
@@ -605,6 +628,7 @@ def advance(
     has_existing_cv: bool = False,
     ai_available: bool = False,
     ai_caller: Callable[[str, str], str | None] | None = None,
+    diagnostic_engine: Any = None,
 ) -> AdvanceResult:
     """Advance the journey by one user turn.
 
@@ -695,7 +719,7 @@ def advance(
 
     # --- Phase: review (categorized results presented) ---
     if journey.phase == PHASE_REVIEW:
-        return _advance_review(journey, msg)
+        return _advance_review(journey, msg, engine=diagnostic_engine)
 
     # --- Phase: drill (showing jobs in chosen category) ---
     if journey.phase == PHASE_DRILL:
@@ -1761,9 +1785,11 @@ def _format_review_empty_reply(
             f"No matches found for **{target_display}** in "
             f"**{loc_display}** with these preferences."
         )
-    # Piece 3 (2026-05-20): persona-aware widening affordances.
-    # Compute available affordances + retry + give-up; render as a
-    # numbered menu so user can pick by number or token.
+    # Piece 3 + 4 (2026-05-20): persona-aware widening affordances +
+    # auto-relax entry slot. Render as a numbered menu so user can
+    # pick by number or token. Auto-relax slot is hidden when N=0
+    # (no eligible widenings — auto-relax would have nothing to
+    # suggest, theatrical doctrine).
     from company_discovery.widening import available_affordances
 
     new_laterals = _compute_new_laterals(journey)
@@ -1777,8 +1803,21 @@ def _format_review_empty_reply(
             # item so the visual hierarchy is clear.
             for cline in a.caveat.split("\n"):
                 menu_lines.append(f"     {cline}")
-    retry_n = n + 1
-    give_up_n = n + 2
+    # Piece 4: auto-relax entry slot, only when at least one
+    # affordance is available. Hidden when N=0 (operator doctrine —
+    # don't offer auto-relax with nothing to suggest).
+    auto_relax_n = n + 1 if offered else 0
+    if offered:
+        menu_lines.append(
+            f"  {auto_relax_n}. **Auto-relax** — "
+            f"let the system suggest the next widening step "
+            f"(or type `auto` / `suggest` / `guide me`)"
+        )
+        retry_n = auto_relax_n + 1
+        give_up_n = auto_relax_n + 2
+    else:
+        retry_n = n + 1
+        give_up_n = n + 2
     menu_lines.append(
         f"  {retry_n}. **Retry** the same search "
         f"(or type `retry` / `nochmal` / `search again`)"
@@ -1790,8 +1829,10 @@ def _format_review_empty_reply(
     return f"{leading}\n\n" + "\n".join(menu_lines)
 
 
-def _advance_review_empty(journey: UserJourney, msg: str) -> AdvanceResult:
-    """Empty-state review handler. PART 6 Bug C pieces 1-3 (2026-05-20).
+def _advance_review_empty(
+    journey: UserJourney, msg: str, *, engine: Any = None
+) -> AdvanceResult:
+    """Empty-state review handler. PART 6 Bug C pieces 1-4 (2026-05-20).
 
     Never-implicit-done contract:
       - "give up" / "done" / "fertig" / etc. (explicit) -> PHASE_DONE
@@ -1810,6 +1851,8 @@ def _advance_review_empty(journey: UserJourney, msg: str) -> AdvanceResult:
     """
     if journey.review_substate == "laterals_offered":
         return _advance_review_laterals_offered(journey, msg)
+    if journey.review_substate == "auto_relax_offering":
+        return _advance_review_auto_relax_offering(journey, msg, engine=engine)
 
     if not msg.strip():
         return AdvanceResult(
@@ -1833,27 +1876,34 @@ def _advance_review_empty(journey: UserJourney, msg: str) -> AdvanceResult:
             journey=journey,
             done=True,
         )
-    # Piece 3 (2026-05-20): parse widening-affordance choice. The
-    # numbered menu shows widenings 1..N then retry at N+1 and
-    # give-up at N+2; here we dispatch widenings first, then fall
-    # through to retry/give-up text tokens (and the numeric
-    # retry/give-up are handled in the offered-affordances-count
-    # arithmetic below).
+    # Piece 3 + 4 (2026-05-20): parse widening-affordance choice +
+    # auto-relax entry. The numbered menu shows widenings 1..N, then
+    # (if N>=1) auto-relax at N+1, then retry at N+2, then give-up
+    # at N+3. When N=0, retry is N+1 and give-up is N+2.
     from company_discovery.widening import (
         apply_widening,
         available_affordances,
         parse_affordance_choice,
+        parse_menu_auto_relax_entry,
     )
 
     new_laterals = _compute_new_laterals(journey)
     offered = available_affordances(journey, new_laterals_count=len(new_laterals))
-    # Numbered retry / give-up live at N+1 and N+2 of the menu.
-    retry_idx = len(offered) + 1
-    give_up_idx = len(offered) + 2
+    if offered:
+        auto_relax_idx = len(offered) + 1
+        retry_idx = len(offered) + 2
+        give_up_idx = len(offered) + 3
+    else:
+        auto_relax_idx = 0  # hidden — menu doesn't offer auto-relax
+        retry_idx = 1
+        give_up_idx = 2
     stripped = msg.strip().lstrip("#").strip()
+    auto_relax_entry = False
     if stripped.isdigit():
         n = int(stripped)
-        if n == retry_idx:
+        if auto_relax_idx and n == auto_relax_idx:
+            auto_relax_entry = True
+        elif n == retry_idx:
             lc = "retry"  # promote to text-token retry path below
         elif n == give_up_idx:
             lc = "give up"  # promote to text-token give-up path
@@ -1878,24 +1928,33 @@ def _advance_review_empty(journey: UserJourney, msg: str) -> AdvanceResult:
                     return AdvanceResult(reply=outcome.reply, journey=journey)
                 # noop falls through to re-ask
     else:
-        # Token-form widening choice
-        chosen = parse_affordance_choice(msg, offered)
-        if chosen is not None:
-            outcome = apply_widening(journey, chosen.id, new_laterals=new_laterals)
-            if outcome.action == "fire_search":
-                return AdvanceResult(
-                    reply=(
-                        f"OK — re-running search with **{chosen.label}** "
-                        f"applied: searching for "
-                        f"**{', '.join(journey.target_roles)}** in "
-                        f"**{journey.location or 'anywhere'}**…"
-                    ),
-                    journey=journey,
-                    run_search_with=outcome.search_criteria,
-                )
-            if outcome.action == "ask_confirm_laterals":
-                return AdvanceResult(reply=outcome.reply, journey=journey)
-            # noop falls through to re-ask
+        # Token-form: check auto-relax-enter tokens first; if no
+        # match, fall through to widening-affordance tokens.
+        if offered and parse_menu_auto_relax_entry(msg):
+            auto_relax_entry = True
+        else:
+            chosen = parse_affordance_choice(msg, offered)
+            if chosen is not None:
+                outcome = apply_widening(journey, chosen.id, new_laterals=new_laterals)
+                if outcome.action == "fire_search":
+                    return AdvanceResult(
+                        reply=(
+                            f"OK — re-running search with **{chosen.label}** "
+                            f"applied: searching for "
+                            f"**{', '.join(journey.target_roles)}** in "
+                            f"**{journey.location or 'anywhere'}**…"
+                        ),
+                        journey=journey,
+                        run_search_with=outcome.search_criteria,
+                    )
+                if outcome.action == "ask_confirm_laterals":
+                    return AdvanceResult(reply=outcome.reply, journey=journey)
+                # noop falls through to re-ask
+
+    if auto_relax_entry:
+        # Enter auto-mode. Pick the first eligible affordance per
+        # persona-aware ordering + applied/declined exclusions.
+        return _enter_auto_relax(journey, new_laterals=new_laterals, engine=engine)
     # Re-check give-up after potential promotion from numeric.
     if lc in _REVIEW_EMPTY_GIVE_UP_TOKENS:
         journey.phase = PHASE_DONE
@@ -2043,6 +2102,262 @@ def _advance_review_laterals_offered(
     )
 
 
+def _enter_auto_relax(
+    journey: UserJourney,
+    *,
+    new_laterals: list[str],
+    engine: Any = None,
+) -> AdvanceResult:
+    """Transition the journey from empty-state menu into auto-relax
+    mode. Picks the first eligible affordance per persona-aware
+    ordering, formats the suggestion (with cache-probed count when
+    available), and emits the reply.
+
+    PART 6 Bug C piece 4 (2026-05-20). If no eligible affordance,
+    emits the exhaustion message and routes back to the empty menu.
+    """
+    from company_discovery.widening import (
+        TRY_LATERALS,
+        format_auto_relax_suggestion,
+        next_auto_relax_suggestion,
+    )
+
+    affordance = next_auto_relax_suggestion(
+        journey, new_laterals_count=len(new_laterals)
+    )
+    if affordance is None:
+        # Operator-required exhaustion path. Auto-relax has nothing
+        # to offer (either all applied or all declined). Exit auto-
+        # mode + emit a brief message; menu shown next turn.
+        journey.auto_relax_active = False
+        journey.auto_relax_offered_id = ""
+        journey.review_substate = "empty"
+        return AdvanceResult(
+            reply=(
+                "I've gone through all the widening options I have.\n\n"
+                + _format_review_empty_reply(
+                    journey, diagnostic_text=journey.diagnostic_text or None
+                )
+            ),
+            journey=journey,
+        )
+    journey.auto_relax_active = True
+    journey.auto_relax_offered_id = affordance.id
+    journey.review_substate = "auto_relax_offering"
+    count = _probe_auto_relax_count(journey, affordance, engine=engine)
+    lateral_options = new_laterals if affordance.id == TRY_LATERALS else None
+    suggestion = format_auto_relax_suggestion(
+        affordance, lateral_options=lateral_options, count=count
+    )
+    return AdvanceResult(reply=suggestion, journey=journey)
+
+
+def _probe_auto_relax_count(
+    journey: UserJourney, affordance: Any, *, engine: Any = None
+) -> int | None:
+    """Compute the cached-count for an auto-relax suggestion via the
+    diagnostic engine. Returns None when no engine OR cold cache —
+    caller composes suggestion without count surfacing."""
+    if engine is None:
+        return None
+    from company_discovery.widening import (
+        DROP_SENIORITY,
+        TRY_LATERALS,
+        WIDEN_LOCATION,
+        strip_seniority_prefix,
+    )
+
+    primary = journey.target_roles[0] if journey.target_roles else (journey.role_text or "")
+    if affordance.id == WIDEN_LOCATION:
+        # Count for the same query with location dropped.
+        try:
+            return engine.probe_cached_count(query=primary, location=None)
+        except Exception:  # noqa: BLE001 - count surface is optional
+            return None
+    if affordance.id == DROP_SENIORITY:
+        stripped = strip_seniority_prefix(primary)
+        try:
+            return engine.probe_cached_count(
+                query=stripped, location=journey.location or None
+            )
+        except Exception:  # noqa: BLE001
+            return None
+    if affordance.id == TRY_LATERALS:
+        # We could probe per-lateral; piece 4 surfaces a single count
+        # for the first lateral as a representative — honest about
+        # the data we have, not an inflated sum.
+        # Caller passes new_laterals through journey.proposed_laterals
+        # only after apply_widening; for the suggestion-text turn we
+        # don't have a stable single query, so omit count here.
+        # Piece 5 will compute per-lateral counts as adjacent-criterion
+        # data when the index lands.
+        return None
+    return None
+
+
+def _advance_review_auto_relax_offering(
+    journey: UserJourney, msg: str, *, engine: Any = None
+) -> AdvanceResult:
+    """Sub-state handler for review_substate="auto_relax_offering".
+
+    PART 6 Bug C piece 4 (2026-05-20). User is being shown ONE
+    widening suggestion at a time. Possible responses:
+
+      - "yes" / advance tokens   -> apply current; if fire_search,
+        emit run_search_with (auto_relax_offered_id stays set;
+        dispatcher clears on result); if ask_confirm_laterals,
+        review_substate transitions; if noop, fall through to re-ask
+      - "no" / "skip" / decline -> add offered_id to
+        auto_relax_declined, clear offered_id, recompute next
+        suggestion (in-turn); if no more, exit auto-mode with
+        exhaustion message + menu
+      - "cancel" / "back"        -> exit auto-mode, return to menu
+      - "give up"                -> PHASE_DONE
+      - unknown                  -> re-ask current suggestion
+
+    Sub-state-scoped tokens — see the cross-sub-state collision
+    block in widening.py. Three regression tests in
+    tests/test_widening.py pin the routing invariant.
+    """
+    from company_discovery.widening import (
+        TRY_LATERALS,
+        apply_widening,
+        format_auto_relax_suggestion,
+        next_auto_relax_suggestion,
+        parse_auto_relax_response,
+    )
+
+    new_laterals = _compute_new_laterals(journey)
+    # Resolve the affordance the user is responding to.
+    offered_id = journey.auto_relax_offered_id
+
+    def _reask_current() -> AdvanceResult:
+        """Re-render the current suggestion (engine-count-aware) for
+        empty / unknown / noop fall-through."""
+        # Re-discover the affordance — it may have changed if
+        # journey state shifted between turns (defensive).
+        next_a = next_auto_relax_suggestion(
+            journey, new_laterals_count=len(new_laterals)
+        )
+        if next_a is None:
+            # Sub-state corrupted (offered_id set but no eligible) —
+            # exit auto-mode and route to menu.
+            journey.auto_relax_active = False
+            journey.auto_relax_offered_id = ""
+            journey.review_substate = "empty"
+            return AdvanceResult(
+                reply=_format_review_empty_reply(
+                    journey, diagnostic_text=journey.diagnostic_text or None
+                ),
+                journey=journey,
+                persist=False,
+            )
+        # Keep offered_id consistent with what we render.
+        journey.auto_relax_offered_id = next_a.id
+        count = _probe_auto_relax_count(journey, next_a, engine=engine)
+        lateral_options = new_laterals if next_a.id == TRY_LATERALS else None
+        return AdvanceResult(
+            reply=format_auto_relax_suggestion(
+                next_a, lateral_options=lateral_options, count=count
+            ),
+            journey=journey,
+            persist=False,
+        )
+
+    response = parse_auto_relax_response(msg)
+
+    if response == "give_up":
+        journey.phase = PHASE_DONE
+        journey.review_substate = ""
+        journey.applied_widenings = []
+        journey.proposed_laterals = []
+        journey.auto_relax_active = False
+        journey.auto_relax_declined = []
+        journey.auto_relax_offered_id = ""
+        return AdvanceResult(
+            reply=(
+                "OK — ending this search. Type `find a job` anytime "
+                "to start fresh with different criteria."
+            ),
+            journey=journey,
+            done=True,
+        )
+
+    if response == "cancel":
+        # Exit auto-mode; back to menu. Applied + declined persist
+        # (operator decision G).
+        journey.auto_relax_active = False
+        journey.auto_relax_offered_id = ""
+        journey.review_substate = "empty"
+        return AdvanceResult(
+            reply=_format_review_empty_reply(
+                journey, diagnostic_text=journey.diagnostic_text or None
+            ),
+            journey=journey,
+            persist=False,
+        )
+
+    if response == "decline":
+        # Add current to declined; recompute next suggestion in-turn.
+        if offered_id and offered_id not in journey.auto_relax_declined:
+            journey.auto_relax_declined.append(offered_id)
+        journey.auto_relax_offered_id = ""
+        next_a = next_auto_relax_suggestion(
+            journey, new_laterals_count=len(new_laterals)
+        )
+        if next_a is None:
+            # Exhausted — exit auto-mode + emit exhaustion message + menu.
+            journey.auto_relax_active = False
+            journey.review_substate = "empty"
+            return AdvanceResult(
+                reply=(
+                    "I've gone through all the widening options I have.\n\n"
+                    + _format_review_empty_reply(
+                        journey, diagnostic_text=journey.diagnostic_text or None
+                    )
+                ),
+                journey=journey,
+            )
+        journey.auto_relax_offered_id = next_a.id
+        count = _probe_auto_relax_count(journey, next_a, engine=engine)
+        lateral_options = new_laterals if next_a.id == TRY_LATERALS else None
+        return AdvanceResult(
+            reply=format_auto_relax_suggestion(
+                next_a, lateral_options=lateral_options, count=count
+            ),
+            journey=journey,
+        )
+
+    if response == "advance":
+        if not offered_id:
+            # Defensive: no current offered — re-ask (which will
+            # recompute next or exit if exhausted).
+            return _reask_current()
+        outcome = apply_widening(journey, offered_id, new_laterals=new_laterals)
+        if outcome.action == "fire_search":
+            # auto_relax_offered_id stays set per operator-approved
+            # cleanup-deferral; dispatcher will clear or re-set on
+            # search result.
+            return AdvanceResult(
+                reply=(
+                    f"OK — re-running search with this widening "
+                    f"applied: **{', '.join(journey.target_roles)}** "
+                    f"in **{journey.location or 'anywhere'}**…"
+                ),
+                journey=journey,
+                run_search_with=outcome.search_criteria,
+            )
+        if outcome.action == "ask_confirm_laterals":
+            # auto_relax_offered_id stays set so the dispatcher knows
+            # we were in auto-mode through the laterals sub-flow.
+            return AdvanceResult(reply=outcome.reply, journey=journey)
+        # noop -> re-ask
+        return _reask_current()
+
+    # response == "unknown" -> re-ask
+    return _reask_current()
+
+
 def _reask_laterals_reply(journey: UserJourney) -> str:
     """Re-render the laterals-confirmation prompt when the user
     sent gibberish / empty in the laterals_offered sub-state."""
@@ -2057,7 +2372,9 @@ def _reask_laterals_reply(journey: UserJourney) -> str:
     return "\n".join(lines)
 
 
-def _advance_review(journey: UserJourney, msg: str) -> AdvanceResult:
+def _advance_review(
+    journey: UserJourney, msg: str, *, engine: Any = None
+) -> AdvanceResult:
     """User has been shown the categorized results and is picking a
     category. Renders the top-N jobs in the chosen category with
     title/company/location/link so the user can drill into a specific
@@ -2069,7 +2386,7 @@ def _advance_review(journey: UserJourney, msg: str) -> AdvanceResult:
     ``_advance_review_empty`` for the never-implicit-done contract.
     """
     if journey.review_substate == "empty":
-        return _advance_review_empty(journey, msg)
+        return _advance_review_empty(journey, msg, engine=engine)
     categories = list(journey.search_results_by_category.keys())
     if not categories:
         # Defensive: should not happen under the new empty-state
@@ -2078,7 +2395,7 @@ def _advance_review(journey: UserJourney, msg: str) -> AdvanceResult:
         # empty here), but if it does, route to the empty-state
         # branch rather than the old direct-to-PHASE_DONE.
         journey.review_substate = "empty"
-        return _advance_review_empty(journey, msg)
+        return _advance_review_empty(journey, msg, engine=engine)
     lc = msg.lower().strip()
     # Match the category by exact lowercased name OR substring (so
     # "clinical" matches "Clinical / Pflege").

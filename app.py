@@ -3706,6 +3706,7 @@ class AppState:
             has_existing_cv=has_cv,
             ai_available=ai_caller is not None,
             ai_caller=ai_caller,
+            diagnostic_engine=self.diagnostic_engine,
         )
         if result.profile_updates:
             self._journey_apply_profile_updates(user_id, result.profile_updates)
@@ -3789,11 +3790,47 @@ class AppState:
             journey2.search_results_by_category = categorized
             journey2.search_jobs_by_id = jobs_by_id
             if not jobs:
-                # PART 6 Bug C piece 1-3 (2026-05-20): never-implicit-
+                # PART 6 Bug C piece 1-4 (2026-05-20): never-implicit-
                 # done + cache-only diagnostic + persona-aware widening
-                # affordances.
+                # affordances + auto-relax mode persistence.
                 journey2.phase = PHASE_REVIEW
-                journey2.review_substate = "empty"
+                # Piece 4: auto-mode persists across the search
+                # dispatch. If the user was in auto_relax_offering
+                # when this search fired (i.e., they said "yes" to
+                # the last suggestion), re-enter auto-mode with the
+                # next suggestion. Otherwise default to the menu.
+                if journey2.auto_relax_active:
+                    from company_discovery.widening import (
+                        next_auto_relax_suggestion,
+                    )
+
+                    # Recompute new_laterals + next suggestion. The
+                    # just-applied widening is already in
+                    # applied_widenings (apply_widening did that).
+                    laterals_count = 0
+                    try:
+                        from company_discovery.journey import (
+                            _compute_new_laterals,
+                        )
+
+                        laterals_count = len(_compute_new_laterals(journey2))
+                    except Exception:  # noqa: BLE001
+                        laterals_count = 0
+                    next_a = next_auto_relax_suggestion(
+                        journey2, new_laterals_count=laterals_count
+                    )
+                    if next_a is not None:
+                        journey2.auto_relax_offered_id = next_a.id
+                        journey2.review_substate = "auto_relax_offering"
+                    else:
+                        # Auto-relax exhausted — exit auto-mode and
+                        # show the menu (which by now will have
+                        # retry + give-up only).
+                        journey2.auto_relax_active = False
+                        journey2.auto_relax_offered_id = ""
+                        journey2.review_substate = "empty"
+                else:
+                    journey2.review_substate = "empty"
                 # Piece 2: compute diagnostic via cache-only engine.
                 diag = self.diagnostic_engine.generate(
                     role_text=(
@@ -3836,19 +3873,66 @@ class AppState:
                 journey2.phase = PHASE_REVIEW
                 journey2.review_substate = ""  # clear if previously set
                 journey2.diagnostic_text = ""
-                # A successful search clears the widening ledger — the
-                # next empty-state recovery (if it happens later) starts
-                # fresh.
+                # A successful search clears the widening ledger AND
+                # auto-relax state — the next empty-state recovery
+                # (if it happens later) starts fresh per operator
+                # decision 2026-05-20.
                 journey2.applied_widenings = []
                 journey2.proposed_laterals = []
+                journey2.auto_relax_active = False
+                journey2.auto_relax_declined = []
+                journey2.auto_relax_offered_id = ""
             self._journey_save(user_id, journey2)
             if not jobs:
-                from company_discovery.journey import _format_review_empty_reply
+                # Piece 4: if dispatcher set substate to
+                # auto_relax_offering, render the auto-relax
+                # suggestion text directly so the user sees the
+                # next prompt without an extra round-trip.
+                if journey2.review_substate == "auto_relax_offering":
+                    from company_discovery.journey import (
+                        _compute_new_laterals,
+                        _probe_auto_relax_count,
+                    )
+                    from company_discovery.widening import (
+                        TRY_LATERALS,
+                        format_auto_relax_suggestion,
+                        next_auto_relax_suggestion,
+                    )
 
-                summary_msg = _format_review_empty_reply(
-                    journey2,
-                    diagnostic_text=journey2.diagnostic_text or None,
-                )
+                    new_laterals = _compute_new_laterals(journey2)
+                    next_a = next_auto_relax_suggestion(
+                        journey2, new_laterals_count=len(new_laterals)
+                    )
+                    if next_a is not None:
+                        count = _probe_auto_relax_count(
+                            journey2, next_a, engine=self.diagnostic_engine
+                        )
+                        lateral_options = (
+                            new_laterals if next_a.id == TRY_LATERALS else None
+                        )
+                        summary_msg = format_auto_relax_suggestion(
+                            next_a,
+                            lateral_options=lateral_options,
+                            count=count,
+                        )
+                    else:
+                        from company_discovery.journey import (
+                            _format_review_empty_reply,
+                        )
+
+                        summary_msg = _format_review_empty_reply(
+                            journey2,
+                            diagnostic_text=journey2.diagnostic_text or None,
+                        )
+                else:
+                    from company_discovery.journey import (
+                        _format_review_empty_reply,
+                    )
+
+                    summary_msg = _format_review_empty_reply(
+                        journey2,
+                        diagnostic_text=journey2.diagnostic_text or None,
+                    )
             else:
                 jobs_summary = "\n".join(
                     f"  - **{c}**: {len(ids)} job(s)" for c, ids in categorized.items()

@@ -204,12 +204,38 @@ class DiagnosticEngine:
     # Cache probes — no live calls
     # ------------------------------------------------------------------
 
+    def probe_cached_count(
+        self, query: str, location: str | None
+    ) -> int | None:
+        """Public count primitive for per-candidate cache lookup.
+
+        Used by ``DiagnosticEngine.generate`` (piece 2 — assembles
+        relaxation-candidate counts into the diagnostic prose) AND by
+        ``widening`` piece 4 (auto-relax engine — surfaces per-
+        affordance counts in the suggestion text when available).
+
+        Returns the count of unique jobs (de-duped by source_url
+        across providers) for the cached (provider, query, location)
+        triple. Returns ``None`` when no provider had a cache hit —
+        callers must substitute the cold-cache fallback (omit count
+        from the diagnostic / auto-relax suggestion text).
+
+        Forward-compat (piece 5): when persistent job-index lands
+        (Phase 2 #71), this method is the integration point — its
+        signature stays identical; the underlying cache becomes the
+        index.
+        """
+        return self._cache_count_across_providers(query, location)
+
     def _cache_count_across_providers(
         self, query: str, location: str | None
     ) -> int | None:
         """Probe the cache across all configured providers for the
         given (query, location). Returns the count of unique jobs
         across cache hits, or None if no provider had a cache hit.
+
+        Private implementation; piece-2 internals call this name.
+        Public callers use the alias ``probe_cached_count`` above.
         """
         if self.cache is None:
             return None

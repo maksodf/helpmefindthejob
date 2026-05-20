@@ -192,6 +192,7 @@ def available_affordances(
     journey,  # type: ignore[no-untyped-def]  # circular import avoidance
     *,
     new_laterals_count: int = 0,
+    also_exclude: set[str] | None = None,
 ) -> list[WideningAffordance]:
     """Return the ordered, persona-aware, cumulatively-shrunk list of
     widening affordances available at the current empty-state turn.
@@ -218,6 +219,13 @@ def available_affordances(
     empty-state reply.
     """
     applied = set(journey.applied_widenings or [])
+    # Piece 4 (2026-05-20): auto-relax mode passes the declined set
+    # so a widening user said "no/skip" to in auto-mode doesn't get
+    # re-suggested. Manual menu mode passes None (or set()) — declined
+    # affordances stay menu-pickable per operator decision 2026-05-20
+    # ("declining is a soft signal").
+    if also_exclude:
+        applied = applied | set(also_exclude)
     pool: list[WideningAffordance] = []
 
     if WIDEN_LOCATION not in applied and journey.location:
@@ -281,6 +289,41 @@ def available_affordances(
 # Token vocabulary for user input parsing. Mirrors the inspire-phase
 # decline / preferences-phase advance token sets that the rest of
 # PART 6 fixes have settled on.
+
+# ----------------------------------------------------------------------
+# CROSS-SUB-STATE TOKEN COLLISIONS — DOCUMENTED AND TESTED (2026-05-20)
+# ----------------------------------------------------------------------
+# Three tokens carry DIFFERENT meanings depending on which sub-state
+# the user is in when they type them. The parser is sub-state-scoped
+# so the dispatch is unambiguous, but the cross-sub-state correctness
+# is easy to violate accidentally if a future agent reorders the parse
+# routing. Three regression tests at the bottom of
+# tests/test_widening.py pin the invariant:
+#
+#   test_weiter_in_auto_relax_advances_not_widens_location
+#   test_skip_in_auto_relax_declines_not_lateral_cancels
+#   test_cancel_in_auto_relax_returns_to_menu_not_lateral_cancel
+#
+#   token       sub-state                                meaning
+#   ----------  ---------------------------------------  -----------------
+#   weiter      menu (review_substate="empty")          widen-location token
+#   weiter      auto_relax_offering                     advance/confirm
+#   skip        laterals_offered                        cancel laterals
+#   skip        auto_relax_offering                     decline this suggestion
+#   next        auto_relax_offering                     decline this suggestion
+#   cancel      laterals_offered                        cancel laterals
+#   cancel      auto_relax_offering                     exit auto-mode -> menu
+#   back        laterals_offered                        cancel laterals
+#   back        auto_relax_offering                     exit auto-mode -> menu
+#
+# Routing order (in _advance_review and the handlers):
+#   1. Check review_substate; route to the substate-specific handler
+#   2. WITHIN that handler, parse against the substate-specific token
+#      sets only. NEVER fall through to a sibling-substate token set.
+#
+# If a future change makes a substate handler accidentally consult
+# another substate's token set, the three pinned tests fail loudly.
+# ----------------------------------------------------------------------
 
 _WIDEN_LOCATION_TOKENS = frozenset(
     {
@@ -409,6 +452,167 @@ def apply_widening(
         return WideningOutcome(action="ask_confirm_laterals", reply="\n".join(lines))
 
     return WideningOutcome(action="noop")
+
+
+# Auto-relax tokens (sub-state-scoped to review_substate ==
+# "auto_relax_offering"). See cross-sub-state collision comment above.
+
+_AUTO_RELAX_ADVANCE_TOKENS = frozenset(
+    {
+        "yes", "y", "ja", "j", "ok", "okay", "go", "weiter",
+        "confirm", "do it", "apply", "sure",
+    }
+)
+_AUTO_RELAX_DECLINE_TOKENS = frozenset(
+    {
+        "no", "n", "nein", "skip", "next", "nächste", "nachste",
+        "weiter zu", "decline",
+    }
+)
+_AUTO_RELAX_CANCEL_TOKENS = frozenset(
+    {
+        "cancel", "back", "back to menu", "back-to-menu",
+        "stop", "abbrechen", "menu", "manual",
+    }
+)
+_AUTO_RELAX_GIVE_UP_TOKENS = frozenset(
+    {
+        "give up", "done", "fertig", "exit", "quit", "end", "ende",
+    }
+)
+
+# Tokens that route INTO auto-mode from the empty-state menu. The
+# menu-level parser checks these AFTER the numbered-affordance
+# parser; if a token matches an auto-relax-enter token, the handler
+# enters auto-mode.
+
+_AUTO_RELAX_ENTER_TOKENS = frozenset(
+    {
+        "auto", "auto-relax", "auto relax", "autorelax",
+        "suggest", "system suggest", "guide me", "help me decide",
+        "relax", "auto mode", "auto-mode", "automatic",
+    }
+)
+
+
+def parse_auto_relax_response(msg: str) -> str:
+    """Sub-state-scoped parser for review_substate="auto_relax_offering".
+
+    Returns one of:
+      - "advance"  — confirm the current suggestion
+      - "decline"  — decline this one, hear the next
+      - "cancel"   — exit auto-mode, return to the menu
+      - "give_up"  — end the journey (PHASE_DONE)
+      - "unknown"  — caller re-asks the current suggestion
+
+    Order of resolution matters when tokens overlap across action
+    sets: give-up checked first (longest-multiword wins), then
+    cancel, then decline, then advance. "weiter" specifically lands
+    in "advance" here even though it's in piece-3's
+    _WIDEN_LOCATION_TOKENS (menu-mode meaning); the sub-state
+    scoping prevents the menu-token parser from ever firing while
+    we're in this sub-state.
+    """
+    if not msg or not msg.strip():
+        return "unknown"
+    lc = " ".join(msg.strip().lower().split())
+    if lc in _AUTO_RELAX_GIVE_UP_TOKENS:
+        return "give_up"
+    if lc in _AUTO_RELAX_CANCEL_TOKENS:
+        return "cancel"
+    if lc in _AUTO_RELAX_DECLINE_TOKENS:
+        return "decline"
+    if lc in _AUTO_RELAX_ADVANCE_TOKENS:
+        return "advance"
+    return "unknown"
+
+
+def parse_menu_auto_relax_entry(msg: str) -> bool:
+    """True iff the menu-mode input is a request to enter auto-mode.
+
+    Scoped to review_substate="empty" (menu mode). The caller
+    checks the numbered-affordance parser first; if no number /
+    widening-token matched, it falls through to this check and
+    enters auto-mode on a hit.
+    """
+    if not msg or not msg.strip():
+        return False
+    lc = " ".join(msg.strip().lower().split())
+    return lc in _AUTO_RELAX_ENTER_TOKENS
+
+
+def next_auto_relax_suggestion(
+    journey,  # type: ignore[no-untyped-def]
+    *,
+    new_laterals_count: int = 0,
+) -> WideningAffordance | None:
+    """Pick the next affordance auto-relax should propose, considering:
+      - applied_widenings (cumulative-shrink from piece 3)
+      - auto_relax_declined (user said no/skip in auto-mode)
+      - persona-aware ordering (already enforced by available_affordances)
+      - eligibility gates (already enforced)
+
+    Returns the first eligible affordance per the persona-ordered
+    list, or None when auto-relax has exhausted options. In the None
+    case the caller exits auto-mode and routes back to the menu
+    (which will show only retry + give-up since all widenings are
+    either applied or declined).
+    """
+    declined = set(journey.auto_relax_declined or [])
+    offered = available_affordances(
+        journey,
+        new_laterals_count=new_laterals_count,
+        also_exclude=declined,
+    )
+    return offered[0] if offered else None
+
+
+def format_auto_relax_suggestion(
+    affordance: WideningAffordance,
+    *,
+    lateral_options: list[str] | None = None,
+    count: int | None = None,
+) -> str:
+    """Compose the user-facing suggestion text for a single
+    auto-relax step. Piece 4 (2026-05-20).
+
+    Cold cache: no count surfacing — just the proposal + action
+    prompt. Warm cache: count appended honestly with "recent
+    searches show ~N postings" framing (matches piece-2 prose
+    convention: never invent counts).
+    """
+    if affordance.id == WIDEN_LOCATION:
+        suggestion = (
+            "Try widening to **search without the location filter**?"
+        )
+    elif affordance.id == DROP_SENIORITY:
+        suggestion = (
+            f"Try widening to **{affordance.description}**?"
+        )
+    elif affordance.id == TRY_LATERALS:
+        if lateral_options:
+            roles_list = ", ".join(f"**{r}**" for r in lateral_options[:5])
+            suggestion = (
+                f"Try widening to **lateral roles**? Would search "
+                f"these too: {roles_list}."
+            )
+        else:
+            suggestion = "Try widening to **lateral roles**?"
+    else:
+        suggestion = f"Try **{affordance.label}**?"
+
+    if count is not None and count > 0:
+        suggestion += f" Recent searches show **~{count} posting(s)**."
+
+    if affordance.caveat:
+        suggestion += f"\n\n{affordance.caveat}"
+
+    suggestion += (
+        "\n\nReply **yes** to apply, **no** / **skip** to try the next "
+        "widening, **cancel** to return to the menu, or **give up** "
+        "to end this journey."
+    )
+    return suggestion
 
 
 def parse_affordance_choice(
