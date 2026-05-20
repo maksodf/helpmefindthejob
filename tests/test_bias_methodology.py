@@ -700,11 +700,17 @@ class BiasMethodologyFitScoring(unittest.TestCase):
         # (no rows in cls.results AND no rows in cv_tailoring).
         if not (getattr(cls, "results", None) or getattr(cls, "cv_tailoring_results", None)):
             return
-        from datetime import datetime, timezone
+        from datetime import datetime
 
+        # Default to LOCAL time so the sidecar filename matches the
+        # operator's narrative timeline (Germany-first deployment, runs
+        # logged in GMT+1/+2). A run launched at 01:18 local with UTC
+        # still on the prior day would otherwise stamp the wrong date.
+        # The env var override remains the reproducibility anchor for
+        # replay / fixture-regeneration use cases.
         report_date = (
             os.environ.get("HELPMEFINDTHEJOB_BIAS_REPORT_DATE", "").strip()
-            or datetime.now(timezone.utc).strftime("%Y-%m-%d")
+            or datetime.now().astimezone().strftime("%Y-%m-%d")
         )
         out_path = (
             Path(__file__).resolve().parent.parent

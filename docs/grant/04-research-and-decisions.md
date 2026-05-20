@@ -523,6 +523,17 @@ These are not yet decided. Listed so a future agent or planning session can prio
 
 **Editorial notes** appended to each of the four prior dated bias-testing reports (`bias-testing-2026-05-18.md`, `-broadened.md`, `-polish.md`, `2026-05-19.md`) clarifying what each actually measured. None of the reports are rewritten — each remains accurate for what it actually executed; the editorial notes only clarify scope. `bias-testing-2026-05-20.md` will be the first dated bias-testing report to measure production fit-scoring-prompt behaviour.
 
+**2026-05-20 (wired re-run completed — pass criteria 3-of-4)**: full wired re-run executed at 01:18-01:51 GMT+2 (33 min on Ollama llama3.1:8b). 147 data points (70 scoring + 7 cross-industry probes + 70 CV-tailoring). Report: `docs/grant/bias-testing-2026-05-20.md`. Pass criteria assessment:
+  - **(a) Sub-scores emit + parse**: ✅ PASS — 69/70 records parse all four sub-scores; the lone partial misses only `SCORE_FRICTION_FIT` (1.4% rate, model-nondeterminism tolerance).
+  - **(b) Sub-scores vary meaningfully**: ✅ STRONG PASS — 0/70 uniform, 0/70 nearly-uniform, 69/70 varied; per-criterion stdev 6.0–7.4 on a 0–25 scale (24–30% relative variation).
+  - **(c) Cross-class Δ inside ±15**: ✅ PASS — Δ = +7.59 (wider-friction over most-acute); inside ±15.
+  - **(d) Production prompt does not regress spread/range/cohort**: ❌ FAILS — per-persona stdev compressed 40–60% (broadened 31–38 → wired 13–20); range tightened 0–95 → 20–83; overall mean dropped 59.7 → 51.0; OOB count 7 → 12 (+5). All 12 OOBs are strong-fit OR mixed-fit scenarios scoring BELOW band; zero scored above. Root cause: the production per-criterion prompt asks for four 0–25 sub-scores summed to a 0–100 total. The model treats 25 as "near-perfection" and almost never awards it, capping aggregates around 70 even for excellent matches.
+  - Cross-industry probes: ONE-OFF verdict holds for a **fourth** consecutive run (0/7 personas above ceiling + 15) — now under the production prompt.
+
+**Decision required**: PART 4.1 closure blocked on criterion (d). Three proposed paths in the report — (A) tune prompt anchoring guidance with explicit per-band semantics ("22–25 = exceptional match; 17–21 = good match; ..."), (B) recalibrate methodology bands + downstream thresholds, (C) raise sub-score cap above 25. Recommendation: **Path A** — the per-criterion architecture is correct; sub-score anchoring is the bug. Awaiting operator decision before next prompt iteration / re-run.
+
+**What stands closed regardless of Path A/B/C**: per-criterion architecture; sub-score variance closure; cross-class fairness; cross-industry ONE-OFF (fourth run). What remains open: strong-fit anchoring. CV-tailoring criterion-(d) friction-keyword failures (12/70, 82.9% pass-rate well above 70% threshold but reveals which persona/scenario combos drop friction context — genuine PART 5 signal flagged for the prompt-template review slice).
+
 **Context**: `compliance/accuracy-and-bias-testing.md` documents a methodology that is not yet executed at full scale. The transparency notice (`compliance/transparency-notice.md`) promises "preliminary results due Week 3 of the grant sprint." Closing R12 closes that public claim before submission. The earlier framing — that the methodology would first execute at the partner-NGO pilot — has shifted with the partner-NGO pilot now positioned in 2026 Q4 (post-grant) per `ROADMAP.md`. A synthetic-cohort interim run using the seven canonical personas bridges the gap.
 
 **Target artefacts**:
