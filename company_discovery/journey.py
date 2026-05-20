@@ -424,15 +424,14 @@ def _should_defer_cancel_to_substate(
     ``_LATERAL_CONFIRM_NO_TOKENS``) still get the universal cancel
     treatment because the sub-state doesn't claim them.
 
-    Collisions IN-SCOPE for this fix:
+    Collisions handled here:
       - laterals_offered:   "cancel"
       - auto_relax_offering: "cancel", "stop", "abbrechen"
 
-    Collisions surfaced but OUT-OF-SCOPE (see Loop 9.1.5 status
-    sync inventory):
-      - "exit", "quit" vs sub-state give-up sets
-      - "abbrechen", "exit", "quit", "stop" vs _REVIEW_EMPTY_GIVE_UP_TOKENS
-      - "reset" vs _REVIEW_EMPTY_START_FRESH_TOKENS
+    Cancel-vs-give-up + cancel-vs-start-fresh collisions are
+    handled by sibling helpers below
+    (_should_defer_give_up_to_substate,
+    _should_defer_start_fresh_to_substate) — Loop 9.1.5b.
     """
     if journey.phase != PHASE_REVIEW:
         return False
@@ -443,6 +442,82 @@ def _should_defer_cancel_to_substate(
 
         return msg_lower in _AUTO_RELAX_CANCEL_TOKENS
     return False
+
+
+def _should_defer_give_up_to_substate(
+    journey: UserJourney, msg_lower: str
+) -> bool:
+    """Bug E.2 collision item #1 + #2 (Loop 9.1.5b, 2026-05-20).
+
+    Universal ``_CANCEL_TOKENS`` set overlaps with sub-state GIVE-
+    UP token sets ("exit"/"quit" in auto-relax give-up;
+    "abbrechen"/"exit"/"quit"/"stop" in empty give-up). Pre-fix,
+    universal cancel intercepts those bare tokens BEFORE the sub-
+    state handler runs, leaving sub-state-managed fields
+    (auto_relax_*, applied_widenings, proposed_laterals) STALE on
+    PHASE_DONE.
+
+    Functional outcome is the same (PHASE_DONE) but the cleanup is
+    incomplete. The sub-state give-up handlers DO set PHASE_DONE
+    end-to-end AND clear their managed fields — verified
+    (auto_relax handler clears 7 fields; empty handler clears 4).
+
+    Substate ownership (mirror of widening.py + journey.py token
+    sets):
+      - empty                : _REVIEW_EMPTY_GIVE_UP_TOKENS
+        (give up, done, fertig, exit, quit, stop, end, ende,
+         abbruch, abbrechen)
+      - auto_relax_offering  : _AUTO_RELAX_GIVE_UP_TOKENS
+        (give up, done, fertig, exit, quit, end, ende)
+      - laterals_offered     : NO give-up handler exists -- do NOT
+        defer; universal cancel preserved (typing "exit" in
+        laterals_offered still ends the journey via universal
+        path).
+    """
+    if journey.phase != PHASE_REVIEW:
+        return False
+    if journey.review_substate == "empty":
+        return msg_lower in _REVIEW_EMPTY_GIVE_UP_TOKENS
+    if journey.review_substate == "auto_relax_offering":
+        from company_discovery.widening import _AUTO_RELAX_GIVE_UP_TOKENS
+
+        return msg_lower in _AUTO_RELAX_GIVE_UP_TOKENS
+    return False
+
+
+def _should_defer_start_fresh_to_substate(
+    journey: UserJourney, msg_lower: str
+) -> bool:
+    """Bug E.2 collision item #3 (Loop 9.1.5b, 2026-05-20).
+
+    Universal ``_CANCEL_TOKENS`` includes "reset", which is ALSO
+    in ``_REVIEW_EMPTY_START_FRESH_TOKENS`` (piece 6's operator-
+    approved 15-token set for the final-state start-fresh
+    affordance). Pre-fix, bare "reset" typed in final-state was
+    intercepted by universal cancel and routed to PHASE_DONE
+    instead of the piece-6 start-fresh path (PHASE_DISCOVER reset
+    + bridge message).
+
+    THIS IS A WRONG-OUTCOME COLLISION — the only one in the
+    collision matrix with different end states. The cancel-vs-
+    cancel and cancel-vs-give-up collisions all end at PHASE_DONE
+    (just with different state cleanup); cancel-vs-start-fresh
+    intends PHASE_DISCOVER + reset.
+
+    Sub-state ownership: only the empty handler at FINAL-STATE
+    (substate="empty" AND applied_widenings non-empty per piece-6
+    design). When applied_widenings is empty (no widenings tried
+    yet), there's no start-fresh affordance available and the
+    sub-state doesn't own "reset" -- universal cancel preserved.
+    """
+    if journey.phase != PHASE_REVIEW:
+        return False
+    if journey.review_substate != "empty":
+        return False
+    if not journey.applied_widenings:
+        # Not final-state -- sub-state doesn't own "reset" here.
+        return False
+    return msg_lower in _REVIEW_EMPTY_START_FRESH_TOKENS
 
 
 def is_help_token(msg: str) -> bool:
@@ -691,21 +766,23 @@ def advance(
     # command syntax. Returning to GREET resets the journey but
     # preserves whatever profile data we've already saved.
     #
-    # Bug E.2 fix (Loop 9.1.5, 2026-05-20): the universal
-    # ``_CANCEL_TOKENS`` set collides with sub-state-specific
-    # cancel-mode token sets when the user is in a Bug-C sub-state
-    # that owns that meaning. ``_should_defer_cancel_to_substate``
-    # checks the per-substate cancel-mode set (laterals_offered ->
-    # _LATERAL_CONFIRM_NO_TOKENS, auto_relax_offering ->
-    # _AUTO_RELAX_CANCEL_TOKENS) and returns True iff the typed
-    # token is OWNED by the sub-state. In that case we skip the
-    # universal interception and let the sub-state handler parse it.
-    # Collisions fixed in this loop: "cancel" (both substates),
-    # "stop" + "abbrechen" (auto_relax_offering only). Collisions
-    # surfaced but NOT fixed: cancel-vs-give-up + cancel-vs-start-
-    # fresh — see Loop 9.1.5 status sync inventory.
-    if is_cancel_token(msg) and not _should_defer_cancel_to_substate(
-        journey, msg.casefold()
+    # Bug E.2 fix (Loop 9.1.5, 2026-05-20) + collision audit
+    # (Loop 9.1.5b, 2026-05-20): the universal ``_CANCEL_TOKENS``
+    # set collides with sub-state-specific token sets across
+    # THREE classes of sub-state ownership:
+    #   - cancel-mode    -> _should_defer_cancel_to_substate
+    #   - give-up        -> _should_defer_give_up_to_substate
+    #   - start-fresh    -> _should_defer_start_fresh_to_substate
+    # When ANY of the three helpers returns True, the typed token
+    # is owned by the current sub-state -- skip the universal
+    # interception so the sub-state handler can parse it. Each
+    # helper checks per-token (not blanket) so unclaimed tokens
+    # still get the universal treatment.
+    msg_lower = msg.casefold()
+    if is_cancel_token(msg) and not (
+        _should_defer_cancel_to_substate(journey, msg_lower)
+        or _should_defer_give_up_to_substate(journey, msg_lower)
+        or _should_defer_start_fresh_to_substate(journey, msg_lower)
     ):
         journey.phase = PHASE_DONE
         return AdvanceResult(

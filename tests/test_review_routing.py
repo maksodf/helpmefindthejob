@@ -350,20 +350,220 @@ class UniversalCancelRespectsSubstateTests(unittest.TestCase):
         self.assertEqual(j.phase, PHASE_DONE)
         self.assertTrue(result.done)
 
-    def test_exit_in_auto_relax_still_universal_cancel(self):
-        """`exit` is in _AUTO_RELAX_GIVE_UP_TOKENS, NOT in
-        _AUTO_RELAX_CANCEL_TOKENS — per Loop 9.1.5 scope, not
-        deferred. Universal cancel still wins. Surfaced as
-        inventory item for operator (cancel-vs-give-up collision)."""
+    def test_exit_in_auto_relax_routes_through_give_up_handler(self):
+        """**Loop 9.1.5b regression** (collision item #1).
+        `exit` is in _AUTO_RELAX_GIVE_UP_TOKENS — sub-state owns
+        the give-up meaning. Post-9.1.5b: universal cancel skips,
+        sub-state give-up handler runs (PHASE_DONE + clears auto-
+        relax fields)."""
         j = _make_journey_with_substate(
             "auto_relax_offering",
-            applied_widenings=[],
+            applied_widenings=[WIDEN_LOCATION],
             auto_relax_active=True,
-            auto_relax_offered_id=WIDEN_LOCATION,
+            auto_relax_offered_id=DROP_SENIORITY,
+        )
+        j.auto_relax_declined = ["something"]
+        result = advance(j, "exit")
+        # Sub-state give-up handler ran: PHASE_DONE + full cleanup.
+        self.assertEqual(j.phase, PHASE_DONE)
+        self.assertTrue(result.done)
+        # Auto-relax fields cleared by sub-state give-up handler.
+        self.assertFalse(j.auto_relax_active)
+        self.assertEqual(j.auto_relax_declined, [])
+        self.assertEqual(j.auto_relax_offered_id, "")
+        self.assertEqual(j.applied_widenings, [])
+        self.assertEqual(j.review_substate, "")
+
+
+# ─── Loop 9.1.5b — collision item #1 (auto-relax give-up cleanup) ─
+class UniversalCancelDefersToAutoRelaxGiveUpTests(unittest.TestCase):
+    """**Loop 9.1.5b regression** — collision item #1.
+
+    Tokens in BOTH _CANCEL_TOKENS (universal) AND
+    _AUTO_RELAX_GIVE_UP_TOKENS (sub-state): "exit", "quit". Post-
+    9.1.5b: universal interception defers to sub-state give-up
+    handler which clears all auto-relax fields before PHASE_DONE."""
+
+    def test_quit_in_auto_relax_clears_state(self):
+        j = _make_journey_with_substate(
+            "auto_relax_offering",
+            applied_widenings=[WIDEN_LOCATION, DROP_SENIORITY],
+            auto_relax_active=True,
+            auto_relax_offered_id=TRY_LATERALS,
+        )
+        j.auto_relax_declined = ["one_declined"]
+        j.proposed_laterals = ["foo"]
+        result = advance(j, "quit")
+        self.assertEqual(j.phase, PHASE_DONE)
+        self.assertTrue(result.done)
+        self.assertFalse(j.auto_relax_active)
+        self.assertEqual(j.auto_relax_declined, [])
+        self.assertEqual(j.auto_relax_offered_id, "")
+        self.assertEqual(j.applied_widenings, [])
+        self.assertEqual(j.proposed_laterals, [])
+
+    def test_exit_outside_auto_relax_still_universal_cancel(self):
+        """In substate="empty" (menu mode), `exit` is in
+        _REVIEW_EMPTY_GIVE_UP_TOKENS instead — separate collision
+        (item #2). This test pins that empty-state ALSO routes via
+        sub-state (not universal cancel)."""
+        j = _make_journey_with_substate("empty")
+        result = advance(j, "exit")
+        # Still PHASE_DONE (functionally same outcome).
+        self.assertEqual(j.phase, PHASE_DONE)
+        self.assertTrue(result.done)
+
+    def test_exit_in_laterals_offered_still_universal_cancel(self):
+        """`exit` NOT in _LATERAL_CONFIRM_NO_TOKENS — laterals
+        substate doesn't own it. AND no laterals give-up handler
+        exists. Universal cancel preserved."""
+        j = _make_journey_with_substate(
+            "laterals_offered",
+            applied_widenings=[WIDEN_LOCATION],
+            proposed_laterals=["A"],
         )
         result = advance(j, "exit")
         self.assertEqual(j.phase, PHASE_DONE)
         self.assertTrue(result.done)
+
+
+# ─── Loop 9.1.5b — collision item #2 (empty-state give-up cleanup) ─
+class UniversalCancelDefersToEmptyGiveUpTests(unittest.TestCase):
+    """**Loop 9.1.5b regression** — collision item #2.
+
+    Tokens in BOTH _CANCEL_TOKENS (universal) AND
+    _REVIEW_EMPTY_GIVE_UP_TOKENS (sub-state): "abbrechen", "exit",
+    "quit", "stop". Post-9.1.5b: universal interception defers to
+    empty-state give-up handler which clears applied_widenings +
+    proposed_laterals before PHASE_DONE."""
+
+    def test_stop_in_empty_clears_applied_widenings(self):
+        j = _make_journey_with_substate(
+            "empty",
+            applied_widenings=[WIDEN_LOCATION, DROP_SENIORITY],
+        )
+        j.proposed_laterals = ["foo"]
+        result = advance(j, "stop")
+        self.assertEqual(j.phase, PHASE_DONE)
+        self.assertTrue(result.done)
+        # Sub-state give-up handler cleared widening state.
+        self.assertEqual(j.applied_widenings, [])
+        self.assertEqual(j.proposed_laterals, [])
+        self.assertEqual(j.review_substate, "")
+
+    def test_abbrechen_in_empty_clears_state(self):
+        j = _make_journey_with_substate(
+            "empty",
+            applied_widenings=[TRY_LATERALS],
+        )
+        result = advance(j, "abbrechen")
+        self.assertEqual(j.phase, PHASE_DONE)
+        self.assertTrue(result.done)
+        self.assertEqual(j.applied_widenings, [])
+
+    def test_quit_in_empty_clears_state(self):
+        j = _make_journey_with_substate(
+            "empty",
+            applied_widenings=[WIDEN_LOCATION],
+        )
+        result = advance(j, "quit")
+        self.assertEqual(j.phase, PHASE_DONE)
+        self.assertEqual(j.applied_widenings, [])
+
+    def test_exit_outside_phase_review_still_universal(self):
+        j = UserJourney(
+            phase=PHASE_DISCOVER,
+            review_substate="",
+        )
+        result = advance(j, "exit")
+        self.assertEqual(j.phase, PHASE_DONE)
+        self.assertTrue(result.done)
+
+
+# ─── Loop 9.1.5b — collision item #3 (start-fresh, WRONG OUTCOME) ─
+class UniversalCancelDefersToStartFreshTests(unittest.TestCase):
+    """**Loop 9.1.5b regression** — collision item #3.
+
+    The HIGHEST-IMPACT collision (only one with wrong-outcome
+    semantics): `reset` is in BOTH _CANCEL_TOKENS (universal) AND
+    _REVIEW_EMPTY_START_FRESH_TOKENS (piece-6 sub-state). Pre-fix
+    intended outcome was PHASE_DISCOVER + reset (start fresh);
+    actual was PHASE_DONE. Post-9.1.5b: universal interception
+    defers to empty-state start-fresh handler.
+
+    Only applies in FINAL-STATE (substate="empty" AND
+    applied_widenings non-empty). In non-final-state empty (no
+    widenings tried), there's no start-fresh affordance and
+    universal cancel preserved."""
+
+    def test_reset_in_final_state_routes_to_start_fresh(self):
+        j = _make_journey_with_substate(
+            "empty",
+            applied_widenings=[
+                WIDEN_LOCATION, DROP_SENIORITY, TRY_LATERALS,
+            ],
+        )
+        result = advance(j, "reset")
+        # Start-fresh routed: PHASE_DISCOVER (not PHASE_DONE).
+        self.assertEqual(j.phase, PHASE_DISCOVER)
+        self.assertFalse(result.done)
+        # Operator-approved bridge reply emitted.
+        self.assertIn("clearing your old search", result.reply)
+        self.assertIn("**1. What kind of role this time?**", result.reply)
+        # All discover/search/review state reset.
+        self.assertEqual(j.role_text, "")
+        self.assertEqual(j.applied_widenings, [])
+        self.assertEqual(j.review_substate, "")
+
+    def test_reset_in_non_final_state_empty_still_universal(self):
+        """Non-final-state empty (no widenings tried) doesn't have
+        a start-fresh affordance — sub-state doesn't own "reset"."""
+        j = _make_journey_with_substate(
+            "empty",
+            applied_widenings=[],  # not final-state
+        )
+        result = advance(j, "reset")
+        # Universal cancel: PHASE_DONE.
+        self.assertEqual(j.phase, PHASE_DONE)
+        self.assertTrue(result.done)
+
+    def test_reset_in_laterals_offered_still_universal(self):
+        """Laterals_offered substate doesn't own "reset"
+        (not in _LATERAL_CONFIRM_NO_TOKENS)."""
+        j = _make_journey_with_substate(
+            "laterals_offered",
+            applied_widenings=[WIDEN_LOCATION],
+            proposed_laterals=["A"],
+        )
+        result = advance(j, "reset")
+        self.assertEqual(j.phase, PHASE_DONE)
+        self.assertTrue(result.done)
+
+    def test_reset_outside_phase_review_still_universal(self):
+        j = UserJourney(phase=PHASE_DISCOVER)
+        result = advance(j, "reset")
+        self.assertEqual(j.phase, PHASE_DONE)
+        self.assertTrue(result.done)
+
+    def test_other_start_fresh_token_in_final_state_routes_through(self):
+        """Verify the deferral works for the OTHER 14 tokens in
+        _REVIEW_EMPTY_START_FRESH_TOKENS too — not just "reset"
+        (which is the universal-collision token). E.g. "neu starten"
+        was never in _CANCEL_TOKENS so it wouldn't have been
+        intercepted pre-fix; this is a control test that the
+        start-fresh path is reachable for any of the 15 tokens
+        once we're in final-state."""
+        # Full exhaustion: all 3 widenings applied -> offered=[]
+        # -> in_final_state=True -> start-fresh branch eligible.
+        j = _make_journey_with_substate(
+            "empty",
+            applied_widenings=[
+                WIDEN_LOCATION, DROP_SENIORITY, TRY_LATERALS,
+            ],
+        )
+        result = advance(j, "neu starten")
+        self.assertEqual(j.phase, PHASE_DISCOVER)
+        self.assertFalse(result.done)
 
 
 # ─── Routing invariant 4: final-state rendering ──────────────────
