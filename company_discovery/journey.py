@@ -404,6 +404,13 @@ _CANCEL_TOKENS = (
     "abbrechen",
     "stoppen",
     "vergiss es",
+    # Loop 15 (2026-05-20): additional colloquial DE+EN variants
+    # surfaced by Gate 6.4 intent matrix.
+    "stop bitte",
+    "vergiss das",
+    "never mind it",
+    "never mind that",
+    "stop please",
 )
 _HELP_TOKENS = ("/help", "/?", "help", "help me", "what can you do", "hilfe", "hilf mir")
 _BACK_TOKENS = ("/back", "back", "go back", "previous", "zurück", "zurueck")
@@ -1900,6 +1907,8 @@ _REVIEW_EMPTY_START_FRESH_TOKENS = frozenset(
         "fresh start", "start again", "begin again", "reset",
         "neu starten", "neue suche", "von vorne", "von vorn",
         "nochmal anders", "neu anfangen", "zurücksetzen",
+        # Loop 15 (2026-05-20): colloquial multi-word DE variant.
+        "lass uns nochmal anfangen",
     }
 )
 

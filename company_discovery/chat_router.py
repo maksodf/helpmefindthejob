@@ -317,6 +317,11 @@ def _build_registry() -> dict[str, Command]:
                     r"\btailor (?:my )?(?:cv|resume)\b",
                     r"\bre[\-_]?write (?:my )?(?:cv|resume)\b",
                     r"\bcustomi[sz]e (?:my )?(?:cv|resume)\b",
+                    # Loop 15 (2026-05-20): DE coverage. Both noun-
+                    # first ("CV anpassen") + verb-first
+                    # ("anpassen meinen Lebenslauf") forms.
+                    r"\b(?:cv|lebenslauf)\s+(?:anpassen|maßschneidern|zuschneiden|aufpolieren|umarbeiten)\b",
+                    r"\b(?:anpassen|maßschneidern|zuschneiden|aufpolieren|umarbeiten)\s+(?:meinen?\s+)?(?:cv|lebenslauf)\b",
                 ],
                 params=[
                     CommandParam(
@@ -449,6 +454,11 @@ def _build_registry() -> dict[str, Command]:
                 keywords=[
                     r"\b(?:consult|enhance|improve)\b.*\bcv\b",
                     r"\bcv\b.*\b(?:gaps?|enhancements?|improvements?)\b",
+                    # Loop 15 (2026-05-20): DE coverage. Common DE
+                    # phrasing: "CV verbessern" / "Lebenslauf
+                    # optimieren" / "meinen Lebenslauf verbessern".
+                    r"\b(?:cv|lebenslauf)\s+(?:verbessern|optimieren|verbessere|optimiere)\b",
+                    r"\b(?:verbessern|optimieren|verbessere|optimiere)\s+(?:meinen?\s+)?(?:cv|lebenslauf)\b",
                 ],
                 params=[],
                 confirmation_template=("Consulting CV vs. picked JD for enhancement ideas."),
@@ -468,6 +478,11 @@ def _build_registry() -> dict[str, Command]:
                 slash_aliases=["/letter", "/draft-letter", "/motivation"],
                 keywords=[
                     r"\bdraft\b.*\b(?:motivation|cover|application)\b.*\bletter\b",
+                    # Loop 15 (2026-05-20): widen verb set so
+                    # "write me a cover letter" / "compose a
+                    # motivation letter" / "prepare an application
+                    # letter" all match.
+                    r"\b(?:write|writing|compose|prepare)\b.*\b(?:motivation|cover|application)\b.*\bletter\b",
                     r"\bmotivation(?:s)?(?:schreiben)?\b",
                     r"\bbewerbungsschreiben\b",
                     r"\banschreiben\b",
@@ -599,6 +614,10 @@ def _build_registry() -> dict[str, Command]:
                     r"^\s*help\s*$",
                     r"\bwhat can you do\b",
                     r"\bshow (?:me )?commands\b",
+                    # Loop 15 (2026-05-20): DE coverage.
+                    r"^\s*hilfe\s*$",
+                    r"\bwas kannst du\b",
+                    r"\bwas kann ich tun\b",
                 ],
                 params=[],
                 confirmation_template="Listing the {n} commands I understand.",
