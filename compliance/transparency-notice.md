@@ -60,6 +60,28 @@ The full minimisation rules are documented in [`data-governance.md`](https://git
 
 ---
 
+## Friction-class inference (deterministic, internal)
+
+When you paste your CV during the guided job-search journey, the system runs a **deterministic, keyword-based classifier** over the text to infer a "friction class" — one of seven archetype labels (`aicha`, `yusuf`, `olga`, `mahmoud`, `maria`, `kaethe`, `tobias`) or the empty string when no match is confident enough. The classifier does NOT call any AI provider and does NOT leave your device's process boundary.
+
+**What is inferred**: one of the seven labels or "" (unclassified). The labels are internal codes that correspond to documented persona archetypes covering the project's friction-class panel (recognition-process candidate, EU-Blue-Card holder, §24-protected, §4-AsylG-protected, EU citizen, returning-to-workforce, career-changer).
+
+**From what**: only the CV text you voluntarily pasted at the cv_check phase. The classifier reads the text once at paste-time; no later re-reads.
+
+**Why**: to tailor the job-search recovery flow (persona-aware ordering of widening suggestions, plus an Ausländerbehörde caveat for users whose inferred class indicates residency-permit-tied search) AND to enrich AI prompts with friction context (residency-status framing, friction-notes, comparable scenarios) so the AI's reasoning is anchored to your actual situation rather than a generic role-and-industry sketch.
+
+**Visibility (Phase 1)**: internal-only field. Not exposed via any public API, not displayed in any user-visible UI. The classification operates silently and the user does not see a "we think you are in the X process" reveal. The downstream UX changes (constrained ordering, Ausländerbehörde caveat) are visible, but the classification label itself is not.
+
+**Retention**: stored on the user profile alongside other fields. Cleared on account deletion via the GDPR right-to-erasure path (cascades through the profile dataclass generically). Re-classified on every CV re-paste (the classifier returns "" for unclassifiable input, which OVERWRITES any stale prior value — stale classification is worse than no classification because it drives wrong downstream UX).
+
+**Accuracy and limits**: the classifier is Phase 1 best-guess, seeded from regulatory citations (`§16d`, `§24`, `§4 AsylG`, `Blue Card`, `TVöD`, etc.) and a set of soft multi-signal patterns. Real users may not include precise regulatory vocabulary in their CVs; the classifier deliberately returns "" rather than guess in low-confidence cases. The downstream behavior gracefully degrades to the unconstrained UX for unclassified users — that is, your experience is no worse than a user who isn't classified at all.
+
+**Telemetry**: one internal analytics event is logged per classification call with the resolved label, confidence class (`strong` / `scored` / `none`), and match count. The event uses the same audit log as other journey events (hashed identifier, no plaintext PII). The purpose of the telemetry is to inform a future Phase 2 redesign where you would be offered a user-visible confirmation step ("Looks like X — is that right?") with the right defaults.
+
+**Phase 2 commitments** (post-grant): a user-visible confirmation flow at classification time, a settings-page surface for review and correction, an opt-out for users who prefer to skip friction-aware UX entirely, and a full DPIA-equivalent privacy review with refinement of the classifier patterns based on real-world accuracy data.
+
+---
+
 ## You choose the AI provider
 
 Helpmefindthejob does not force a single AI provider on you. The deployment can be configured to use:
