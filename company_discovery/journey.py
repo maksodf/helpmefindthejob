@@ -1717,6 +1717,22 @@ _REVIEW_EMPTY_RETRY_TOKENS = frozenset(
         "erneut", "neu suchen",
     }
 )
+# Bug C piece 6 (2026-05-20): start-fresh tokens, sub-state-scoped
+# to review_substate="empty" AND final-state render mode (offered
+# is empty AND applied_widenings is non-empty). 8 EN + 7 DE
+# operator-approved set. Parse precedence inside _advance_review_
+# empty: numeric -> start-fresh -> retry -> give-up -> unknown ->
+# re-ask. No collision with give-up tokens ("stop" is give-up;
+# "start" / "start fresh" are start-fresh — exact-string match on
+# the normalized lc avoids substring confusion).
+_REVIEW_EMPTY_START_FRESH_TOKENS = frozenset(
+    {
+        "start fresh", "start over", "restart", "new search",
+        "fresh start", "start again", "begin again", "reset",
+        "neu starten", "neue suche", "von vorne", "von vorn",
+        "nochmal anders", "neu anfangen", "zurücksetzen",
+    }
+)
 
 
 def _compute_new_laterals(journey: UserJourney) -> list[str]:
@@ -1749,6 +1765,121 @@ def _compute_new_laterals(journey: UserJourney) -> list[str]:
         seen.add(rl)
         new.append(r)
     return new
+
+
+def _format_applied_widening_bullet(
+    journey: UserJourney, widening_id: str
+) -> str:
+    """One bullet line for the final-state summary block. Reads
+    label from widening.WIDENING_LABEL (static) and composes the
+    description from current journey state.
+
+    PART 6 Bug C piece 6 (2026-05-20). The summary block enumerates
+    journey.applied_widenings; each entry produces one bullet here.
+    Per Q-C verdict (option C-alpha): no per-widening counts surfaced
+    here -- the diagnostic_text upstream already stated "no live
+    postings" and adding per-widening cache counts at final-state
+    render would be mathematically misleading (cumulative-drift
+    between cache state at widening application vs final-state).
+    """
+    from company_discovery.widening import (
+        WIDENING_LABEL,
+        WIDEN_LOCATION,
+        DROP_SENIORITY,
+        TRY_LATERALS,
+    )
+
+    label = WIDENING_LABEL.get(widening_id, widening_id)
+    if widening_id == WIDEN_LOCATION:
+        return f"**{label}** — searched without the location filter"
+    if widening_id == DROP_SENIORITY:
+        target = (
+            journey.target_roles[0]
+            if journey.target_roles
+            else (journey.role_text or "")
+        )
+        if target:
+            return f'**{label}** — searched for "{target}"'
+        return f"**{label}**"
+    if widening_id == TRY_LATERALS:
+        laterals = (
+            journey.target_roles[1:] if len(journey.target_roles) > 1 else []
+        )
+        if laterals:
+            return f"**{label}** — {', '.join(laterals)}"
+        return f"**{label}**"
+    return f"**{label}**"
+
+
+def _reset_for_fresh_search(journey: UserJourney) -> None:
+    """Mutate journey in place to reset all discover/search/review
+    state for a fresh search after exhausting widening recovery.
+
+    PART 6 Bug C piece 6 (2026-05-20): action handler for the
+    "start fresh" affordance offered in the final-state recovery
+    menu. Operator-approved preserve/reset list (2026-05-20):
+
+      PRESERVE:
+        - cv_status, cv_build_section_idx, cv_build_answers,
+          cv_build_step (cv_check phase output)
+        - remote_required, salary_floor, company_size
+          (preferences-phase output)
+        - visa_constrained (derived from profile.residency_status,
+          not from the prior search attempt)
+
+      RESET:
+        - role_text, bucket_key, matched_token, location,
+          location_canonical, years_experience, languages
+          (discover-phase output, all reset per Q-D verdict)
+        - target_roles, lateral_roles (search-phase output)
+        - search_results_by_category, search_jobs_by_id,
+          picked_category, picked_job_id (search results state)
+        - review_substate, diagnostic_text, applied_widenings,
+          proposed_laterals (review-phase output)
+        - auto_relax_active, auto_relax_declined,
+          auto_relax_offered_id (auto-relax state)
+        - phase -> PHASE_DISCOVER, discover_step ->
+          DISCOVER_ASK_ROLE (route to fresh discover entry)
+
+    After this, the next user message lands in _advance_discover at
+    DISCOVER_ASK_ROLE and the user re-enters role -> location ->
+    years -> languages fresh.
+    """
+    # Discover-phase output
+    journey.role_text = ""
+    journey.bucket_key = ""
+    journey.matched_token = ""
+    journey.location = ""
+    journey.location_canonical = ""
+    journey.years_experience = None
+    journey.languages = []
+    # Search-phase output
+    journey.target_roles = []
+    journey.lateral_roles = []
+    journey.search_results_by_category = {}
+    journey.search_jobs_by_id = {}
+    journey.picked_category = ""
+    journey.picked_job_id = ""
+    # Review-phase output
+    journey.review_substate = ""
+    journey.diagnostic_text = ""
+    journey.applied_widenings = []
+    journey.proposed_laterals = []
+    # Auto-relax state
+    journey.auto_relax_active = False
+    journey.auto_relax_declined = []
+    journey.auto_relax_offered_id = ""
+    # Route to fresh discover entry
+    journey.phase = PHASE_DISCOVER
+    journey.discover_step = DISCOVER_ASK_ROLE
+
+
+_START_FRESH_BRIDGE_REPLY = (
+    "OK — clearing your old search. Let's try with different "
+    "criteria.\n\n"
+    "**1. What kind of role this time?** "
+    "(e.g., \"Pflegehelfer\", \"bartender\", \"backend engineer\")"
+)
 
 
 def _format_review_empty_reply(
@@ -1804,6 +1935,45 @@ def _format_review_empty_reply(
 
     new_laterals = _compute_new_laterals(journey)
     offered = available_affordances(journey, new_laterals_count=len(new_laterals))
+
+    # Bug C piece 6 (2026-05-20): final-state render mode. When the
+    # offered list is empty AND the user has already applied at
+    # least one widening, we have an "exhausted recovery" state.
+    # Prepend a summary block enumerating what was tried (per Q-C
+    # verdict: option C-alpha -- plain bullets, NO per-widening
+    # counts) and narrow the action menu to start-fresh / retry /
+    # give-up.
+    #
+    # Edge case: offered=[] AND applied_widenings=[] -- legitimately
+    # constrained role from turn 1 (no qualifier, no location, no
+    # new laterals). This is NOT final-state; falls through to the
+    # existing "no offered" branch with retry+give-up only and no
+    # summary block (operator Q-A trigger refinement).
+    if (not offered) and journey.applied_widenings:
+        summary_lines: list[str] = ["You've tried these widenings:"]
+        for wid in journey.applied_widenings:
+            summary_lines.append(
+                f"  - {_format_applied_widening_bullet(journey, wid)}"
+            )
+        summary_lines.append("")
+        summary_lines.append("All returned 0 matches.")
+        summary_lines.append("")
+        summary_lines.append("What next?")
+        summary_lines.append(
+            "  1. **Start fresh** — clear this search and try with "
+            "different criteria (or type `start fresh` / "
+            "`neu starten` / `restart`)"
+        )
+        summary_lines.append(
+            "  2. **Retry** the same search "
+            "(or type `retry` / `nochmal` / `search again`)"
+        )
+        summary_lines.append(
+            "  3. **Give up** — end this journey "
+            "(or type `give up` / `done` / `fertig`)"
+        )
+        return f"{leading}\n\n" + "\n".join(summary_lines)
+
     menu_lines: list[str] = ["What next?"]
     n = 0
     for n, a in enumerate(offered, start=1):
@@ -1914,20 +2084,42 @@ def _advance_review_empty(
 
     new_laterals = _compute_new_laterals(journey)
     offered = available_affordances(journey, new_laterals_count=len(new_laterals))
+    # Bug C piece 6 (2026-05-20): final-state render mode index
+    # layout. When offered=[] AND applied_widenings is non-empty,
+    # the menu shows 1=Start fresh, 2=Retry, 3=Give up. When
+    # offered=[] AND applied_widenings=[] (legitimately constrained
+    # edge case, no widenings tried), the menu shows 1=Retry,
+    # 2=Give up (start-fresh hidden -- nothing to clear). When
+    # offered is non-empty, today's behavior unchanged.
+    in_final_state = (not offered) and bool(journey.applied_widenings)
     if offered:
         auto_relax_idx = len(offered) + 1
         retry_idx = len(offered) + 2
         give_up_idx = len(offered) + 3
+        start_fresh_idx = 0  # hidden
+    elif in_final_state:
+        auto_relax_idx = 0  # hidden
+        start_fresh_idx = 1
+        retry_idx = 2
+        give_up_idx = 3
     else:
-        auto_relax_idx = 0  # hidden — menu doesn't offer auto-relax
+        # offered=[] AND applied_widenings=[] -- legitimately
+        # constrained edge case (no qualifier, no location, no new
+        # laterals from turn 1). Start-fresh hidden because there's
+        # nothing to clear; only retry + give-up are honest.
+        auto_relax_idx = 0
+        start_fresh_idx = 0
         retry_idx = 1
         give_up_idx = 2
     stripped = msg.strip().lstrip("#").strip()
     auto_relax_entry = False
+    start_fresh = False
     if stripped.isdigit():
         n = int(stripped)
         if auto_relax_idx and n == auto_relax_idx:
             auto_relax_entry = True
+        elif start_fresh_idx and n == start_fresh_idx:
+            start_fresh = True
         elif n == retry_idx:
             lc = "retry"  # promote to text-token retry path below
         elif n == give_up_idx:
@@ -1953,9 +2145,12 @@ def _advance_review_empty(
                     return AdvanceResult(reply=outcome.reply, journey=journey)
                 # noop falls through to re-ask
     else:
-        # Token-form: check auto-relax-enter tokens first; if no
-        # match, fall through to widening-affordance tokens.
-        if offered and parse_menu_auto_relax_entry(msg):
+        # Token-form: check final-state start-fresh tokens first
+        # (sub-state-scoped to in_final_state per Q-E verdict), then
+        # auto-relax-enter tokens, then widening-affordance tokens.
+        if in_final_state and lc in _REVIEW_EMPTY_START_FRESH_TOKENS:
+            start_fresh = True
+        elif offered and parse_menu_auto_relax_entry(msg):
             auto_relax_entry = True
         else:
             chosen = parse_affordance_choice(msg, offered)
@@ -1975,6 +2170,20 @@ def _advance_review_empty(
                 if outcome.action == "ask_confirm_laterals":
                     return AdvanceResult(reply=outcome.reply, journey=journey)
                 # noop falls through to re-ask
+
+    if start_fresh:
+        # Bug C piece 6 (2026-05-20): exhausted-recovery action.
+        # Reset all discover/search/review state per the operator-
+        # approved preserve/reset list, route the journey to
+        # PHASE_DISCOVER + DISCOVER_ASK_ROLE, and emit the bridge
+        # message ending with the standard DISCOVER_ASK_ROLE prompt.
+        # The next user message lands in _advance_discover at
+        # DISCOVER_ASK_ROLE and gets parsed as the role answer.
+        _reset_for_fresh_search(journey)
+        return AdvanceResult(
+            reply=_START_FRESH_BRIDGE_REPLY,
+            journey=journey,
+        )
 
     if auto_relax_entry:
         # Enter auto-mode. Pick the first eligible affordance per

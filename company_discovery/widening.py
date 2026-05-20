@@ -169,6 +169,21 @@ WIDEN_LOCATION = "widen_location"
 DROP_SENIORITY = "drop_seniority"
 TRY_LATERALS = "try_laterals"
 
+# Bug C piece 6 (2026-05-20): static labels for the final-state
+# summary block. These are the past-tense user-facing names used
+# when enumerating which widenings the user has already applied
+# in the exhausted-recovery summary. Kept here (not in journey.py)
+# so widening.py owns all widening-affordance UX strings — same
+# pattern as the present-tense labels in WideningAffordance.label
+# (e.g. "Widen location" -> "Widened location"). DE-bundle wiring
+# captured in Phase 2 backlog #75 for the whole affordance label
+# set; current rendering is EN-only consistent with pieces 1-5.
+WIDENING_LABEL: dict[str, str] = {
+    WIDEN_LOCATION: "Widened location",
+    DROP_SENIORITY: "Dropped seniority qualifier",
+    TRY_LATERALS: "Tried lateral roles",
+}
+
 # Affordance order for unconstrained personas (Yusuf / Maria /
 # Käthe / Tobias). Neutral: widen first, then seniority, then
 # laterals.
