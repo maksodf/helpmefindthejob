@@ -35,6 +35,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+from typing import Any
 
 
 # Visa-constraint classifier — pattern-match against the
@@ -567,19 +568,147 @@ def next_auto_relax_suggestion(
     return offered[0] if offered else None
 
 
+def format_count_text(n: int | None) -> str:
+    """Render a cache-probed count for menu / auto-relax surface text.
+
+    Piece 5 (2026-05-20):
+      - ``None``  -> ""              (cold cache or no engine — omit)
+      - ``0``     -> "(0 postings)"  (exact zero shown WITHOUT tilde
+                                       per operator Q3: stale-cache-
+                                       plus-new-postings is a real
+                                       scenario; honesty > UX-protective
+                                       omission. The tilde-prefix is
+                                       reserved for approximate counts.)
+      - ``N > 0`` -> "(~N postings)" (approximate, cache snapshot)
+
+    Caller is responsible for any leading separator (space, comma).
+    """
+    if n is None:
+        return ""
+    if n == 0:
+        return "(0 postings)"
+    return f"(~{n} postings)"
+
+
+def probe_count_for_affordance(
+    journey,  # type: ignore[no-untyped-def]
+    affordance: WideningAffordance,
+    *,
+    lateral_options: list[str] | None = None,
+    engine: Any = None,  # type: ignore[name-defined]  # noqa: F821 - lazy import
+) -> int | None:
+    """Compute a single representative count for a widening affordance.
+
+    Piece 5 (2026-05-20): replaces piece-4's per-affordance probe
+    logic that lived in journey._probe_auto_relax_count for
+    WIDEN_LOCATION + DROP_SENIORITY. Extends with TRY_LATERALS
+    AGGREGATE: sum of per-lateral counts iff EVERY lateral has a
+    cache count; otherwise None (operator Q2 — strict honesty about
+    partial data).
+
+    Per-lateral granular counts are surfaced separately via
+    ``probe_lateral_counts`` (used in the auto-relax suggestion text).
+
+    Returns None when no engine OR cold cache OR (for TRY_LATERALS)
+    when at least one lateral is cold.
+    """
+    if engine is None or affordance is None:
+        return None
+    primary = (
+        journey.target_roles[0]
+        if journey.target_roles
+        else (journey.role_text or "")
+    )
+    try:
+        if affordance.id == WIDEN_LOCATION:
+            # Probe: same role, no location filter (what widen-location
+            # would search).
+            return engine.probe_cached_count(query=primary, location=None)
+        if affordance.id == DROP_SENIORITY:
+            stripped = strip_seniority_prefix(primary)
+            return engine.probe_cached_count(
+                query=stripped, location=journey.location or None
+            )
+        if affordance.id == TRY_LATERALS:
+            if not lateral_options:
+                return None
+            counts: list[int | None] = []
+            for lat in lateral_options:
+                # Operator Q4 (2026-05-20): probe with
+                # journey.location INTACT. The TRY_LATERALS
+                # affordance widens ROLE, not LOCATION; counting
+                # against the user's stated location reflects what
+                # they would actually search. Do NOT probe with
+                # location=None here — that would conflate two
+                # different widening affordances.
+                counts.append(
+                    engine.probe_cached_count(
+                        query=lat, location=journey.location or None
+                    )
+                )
+            # Aggregate iff ALL laterals warm (operator Q2):
+            # partial-data sum would be decision-misleading.
+            if any(c is None for c in counts):
+                return None
+            return sum(counts)
+    except Exception:  # noqa: BLE001 - count surface is optional; never fail the caller
+        return None
+    return None
+
+
+def probe_lateral_counts(
+    journey,  # type: ignore[no-untyped-def]
+    lateral_options: list[str],
+    *,
+    engine: Any = None,  # type: ignore[name-defined]  # noqa: F821 - lazy import
+) -> list[int | None]:
+    """Per-lateral cache counts, list aligned with ``lateral_options``.
+
+    Piece 5 (2026-05-20): powers the auto-relax suggestion text's
+    per-lateral granular display (operator Q1 — per-lateral in auto-
+    relax, aggregate in menu). Returns a list of ``int | None`` of
+    the same length as ``lateral_options``; each entry is the cache
+    count for that specific lateral or None if cold.
+
+    Operator Q4: probe with journey.location intact (same as
+    probe_count_for_affordance — TRY_LATERALS widens role, not
+    location).
+    """
+    if not lateral_options:
+        return []
+    if engine is None:
+        return [None] * len(lateral_options)
+    out: list[int | None] = []
+    for lat in lateral_options:
+        try:
+            out.append(
+                engine.probe_cached_count(
+                    query=lat, location=journey.location or None
+                )
+            )
+        except Exception:  # noqa: BLE001
+            out.append(None)
+    return out
+
+
 def format_auto_relax_suggestion(
     affordance: WideningAffordance,
     *,
     lateral_options: list[str] | None = None,
+    lateral_counts: list[int | None] | None = None,
     count: int | None = None,
 ) -> str:
     """Compose the user-facing suggestion text for a single
-    auto-relax step. Piece 4 (2026-05-20).
+    auto-relax step. Piece 4 (2026-05-20) + piece 5 (per-lateral
+    mixed-state rendering, 2026-05-20).
 
-    Cold cache: no count surfacing — just the proposal + action
-    prompt. Warm cache: count appended honestly with "recent
-    searches show ~N postings" framing (matches piece-2 prose
-    convention: never invent counts).
+    Cold cache: no count surfacing. Warm cache:
+      - WIDEN_LOCATION / DROP_SENIORITY: trailing "Recent searches
+        show **(~N postings)**" (or "(0 postings)" for exact zero).
+      - TRY_LATERALS: per-lateral counts INLINE with each role name
+        (mixed warm/cold state handled — laterals without a cache
+        hit render without a count parenthetical, no fabricated
+        placeholder).
     """
     if affordance.id == WIDEN_LOCATION:
         suggestion = (
@@ -591,7 +720,18 @@ def format_auto_relax_suggestion(
         )
     elif affordance.id == TRY_LATERALS:
         if lateral_options:
-            roles_list = ", ".join(f"**{r}**" for r in lateral_options[:5])
+            # Render per-lateral inline; mixed-state handled by
+            # format_count_text returning "" for None entries.
+            counts = lateral_counts or [None] * len(lateral_options)
+            parts: list[str] = []
+            for i, role in enumerate(lateral_options[:5]):
+                lc = counts[i] if i < len(counts) else None
+                cnt_text = format_count_text(lc)
+                if cnt_text:
+                    parts.append(f"**{role}** {cnt_text}")
+                else:
+                    parts.append(f"**{role}**")
+            roles_list = ", ".join(parts)
             suggestion = (
                 f"Try widening to **lateral roles**? Would search "
                 f"these too: {roles_list}."
@@ -601,8 +741,16 @@ def format_auto_relax_suggestion(
     else:
         suggestion = f"Try **{affordance.label}**?"
 
-    if count is not None and count > 0:
-        suggestion += f" Recent searches show **~{count} posting(s)**."
+    # Count tail — applies to WIDEN_LOCATION + DROP_SENIORITY (where
+    # ``count`` is the single relevant probe). Skipped for
+    # TRY_LATERALS because the per-lateral counts already surface
+    # inline above; appending an aggregate tail here would either
+    # be redundant (all warm) or hide partial-data state (operator
+    # Q1 — aggregate not surfaced in auto-relax).
+    if affordance.id != TRY_LATERALS:
+        cnt_text = format_count_text(count)
+        if cnt_text:
+            suggestion += f" Recent searches show **{cnt_text}**."
 
     if affordance.caveat:
         suggestion += f"\n\n{affordance.caveat}"

@@ -1752,7 +1752,10 @@ def _compute_new_laterals(journey: UserJourney) -> list[str]:
 
 
 def _format_review_empty_reply(
-    journey: UserJourney, diagnostic_text: str | None = None
+    journey: UserJourney,
+    diagnostic_text: str | None = None,
+    *,
+    engine: Any = None,
 ) -> str:
     """Build the empty-state reply: leading fact (diagnostic OR
     strict-fact fallback) + action prompt.
@@ -1785,19 +1788,40 @@ def _format_review_empty_reply(
             f"No matches found for **{target_display}** in "
             f"**{loc_display}** with these preferences."
         )
-    # Piece 3 + 4 (2026-05-20): persona-aware widening affordances +
-    # auto-relax entry slot. Render as a numbered menu so user can
-    # pick by number or token. Auto-relax slot is hidden when N=0
-    # (no eligible widenings — auto-relax would have nothing to
-    # suggest, theatrical doctrine).
-    from company_discovery.widening import available_affordances
+    # Piece 3 + 4 + 5 (2026-05-20): persona-aware widening affordances
+    # + auto-relax entry slot + adjacent-criterion counts. Render as
+    # a numbered menu so user can pick by number or token. Auto-relax
+    # slot is hidden when N=0 (no eligible widenings — auto-relax
+    # would have nothing to suggest, theatrical doctrine). Per-
+    # affordance counts surface from the aggregator cache when warm;
+    # cold cache cleanly omits.
+    from company_discovery.widening import (
+        TRY_LATERALS,
+        available_affordances,
+        format_count_text,
+        probe_count_for_affordance,
+    )
 
     new_laterals = _compute_new_laterals(journey)
     offered = available_affordances(journey, new_laterals_count=len(new_laterals))
     menu_lines: list[str] = ["What next?"]
     n = 0
     for n, a in enumerate(offered, start=1):
-        menu_lines.append(f"  {n}. **{a.label}** — {a.description}")
+        # Piece 5: probe per-affordance count from the cache via the
+        # diagnostic engine. None when no engine OR cold cache OR
+        # (for TRY_LATERALS) when any lateral has no cache hit
+        # (operator Q2 — aggregate omitted on partial data).
+        count = probe_count_for_affordance(
+            journey,
+            a,
+            lateral_options=new_laterals if a.id == TRY_LATERALS else None,
+            engine=engine,
+        )
+        count_text = format_count_text(count)
+        line = f"  {n}. **{a.label}** — {a.description}"
+        if count_text:
+            line += f" {count_text}"
+        menu_lines.append(line)
         if a.caveat:
             # Indent the caveat as a continuation of the numbered
             # item so the visual hierarchy is clear.
@@ -1850,14 +1874,15 @@ def _advance_review_empty(
     via the search-dispatch path.
     """
     if journey.review_substate == "laterals_offered":
-        return _advance_review_laterals_offered(journey, msg)
+        return _advance_review_laterals_offered(journey, msg, engine=engine)
     if journey.review_substate == "auto_relax_offering":
         return _advance_review_auto_relax_offering(journey, msg, engine=engine)
 
     if not msg.strip():
         return AdvanceResult(
             reply=_format_review_empty_reply(
-                journey, diagnostic_text=journey.diagnostic_text or None
+                journey, diagnostic_text=journey.diagnostic_text or None,
+                engine=engine,
             ),
             journey=journey,
             persist=False,
@@ -1992,7 +2017,8 @@ def _advance_review_empty(
     # exit — operator's never-implicit-done invariant.
     return AdvanceResult(
         reply=_format_review_empty_reply(
-            journey, diagnostic_text=journey.diagnostic_text or None
+            journey, diagnostic_text=journey.diagnostic_text or None,
+            engine=engine,
         ),
         journey=journey,
         persist=False,
@@ -2008,7 +2034,7 @@ _LATERAL_CONFIRM_NO_TOKENS = frozenset(
 
 
 def _advance_review_laterals_offered(
-    journey: UserJourney, msg: str
+    journey: UserJourney, msg: str, *, engine: Any = None
 ) -> AdvanceResult:
     """Sub-state handler for the laterals-confirmation step.
 
@@ -2044,7 +2070,8 @@ def _advance_review_laterals_offered(
         journey.review_substate = "empty"
         return AdvanceResult(
             reply=_format_review_empty_reply(
-                journey, diagnostic_text=journey.diagnostic_text or None
+                journey, diagnostic_text=journey.diagnostic_text or None,
+                engine=engine,
             ),
             journey=journey,
             persist=False,
@@ -2136,7 +2163,8 @@ def _enter_auto_relax(
             reply=(
                 "I've gone through all the widening options I have.\n\n"
                 + _format_review_empty_reply(
-                    journey, diagnostic_text=journey.diagnostic_text or None
+                    journey, diagnostic_text=journey.diagnostic_text or None,
+                    engine=engine,
                 )
             ),
             journey=journey,
@@ -2144,55 +2172,54 @@ def _enter_auto_relax(
     journey.auto_relax_active = True
     journey.auto_relax_offered_id = affordance.id
     journey.review_substate = "auto_relax_offering"
-    count = _probe_auto_relax_count(journey, affordance, engine=engine)
     lateral_options = new_laterals if affordance.id == TRY_LATERALS else None
+    # Piece 5: per-affordance count (aggregate for TRY_LATERALS iff
+    # ALL laterals warm) + per-lateral counts for inline rendering.
+    count = _probe_auto_relax_count(
+        journey, affordance, lateral_options=lateral_options, engine=engine
+    )
+    from company_discovery.widening import probe_lateral_counts
+
+    lateral_counts = (
+        probe_lateral_counts(journey, lateral_options or [], engine=engine)
+        if affordance.id == TRY_LATERALS
+        else None
+    )
     suggestion = format_auto_relax_suggestion(
-        affordance, lateral_options=lateral_options, count=count
+        affordance,
+        lateral_options=lateral_options,
+        lateral_counts=lateral_counts,
+        count=count,
     )
     return AdvanceResult(reply=suggestion, journey=journey)
 
 
 def _probe_auto_relax_count(
-    journey: UserJourney, affordance: Any, *, engine: Any = None
+    journey: UserJourney,
+    affordance: Any,
+    *,
+    lateral_options: list[str] | None = None,
+    engine: Any = None,
 ) -> int | None:
     """Compute the cached-count for an auto-relax suggestion via the
     diagnostic engine. Returns None when no engine OR cold cache —
-    caller composes suggestion without count surfacing."""
-    if engine is None:
-        return None
-    from company_discovery.widening import (
-        DROP_SENIORITY,
-        TRY_LATERALS,
-        WIDEN_LOCATION,
-        strip_seniority_prefix,
-    )
+    caller composes suggestion without count surfacing.
 
-    primary = journey.target_roles[0] if journey.target_roles else (journey.role_text or "")
-    if affordance.id == WIDEN_LOCATION:
-        # Count for the same query with location dropped.
-        try:
-            return engine.probe_cached_count(query=primary, location=None)
-        except Exception:  # noqa: BLE001 - count surface is optional
-            return None
-    if affordance.id == DROP_SENIORITY:
-        stripped = strip_seniority_prefix(primary)
-        try:
-            return engine.probe_cached_count(
-                query=stripped, location=journey.location or None
-            )
-        except Exception:  # noqa: BLE001
-            return None
-    if affordance.id == TRY_LATERALS:
-        # We could probe per-lateral; piece 4 surfaces a single count
-        # for the first lateral as a representative — honest about
-        # the data we have, not an inflated sum.
-        # Caller passes new_laterals through journey.proposed_laterals
-        # only after apply_widening; for the suggestion-text turn we
-        # don't have a stable single query, so omit count here.
-        # Piece 5 will compute per-lateral counts as adjacent-criterion
-        # data when the index lands.
-        return None
-    return None
+    PART 6 Bug C piece 5 (2026-05-20): delegates to
+    ``widening.probe_count_for_affordance`` so the menu and auto-
+    relax modes share one count-computation primitive. For
+    TRY_LATERALS the aggregate is the sum of per-lateral counts iff
+    EVERY lateral has a cache hit, else None (operator Q2 — no
+    aggregate over partial data).
+    """
+    from company_discovery.widening import probe_count_for_affordance
+
+    return probe_count_for_affordance(
+        journey,
+        affordance,
+        lateral_options=lateral_options,
+        engine=engine,
+    )
 
 
 def _advance_review_auto_relax_offering(
@@ -2247,18 +2274,31 @@ def _advance_review_auto_relax_offering(
             journey.review_substate = "empty"
             return AdvanceResult(
                 reply=_format_review_empty_reply(
-                    journey, diagnostic_text=journey.diagnostic_text or None
+                    journey, diagnostic_text=journey.diagnostic_text or None,
+                    engine=engine,
                 ),
                 journey=journey,
                 persist=False,
             )
         # Keep offered_id consistent with what we render.
         journey.auto_relax_offered_id = next_a.id
-        count = _probe_auto_relax_count(journey, next_a, engine=engine)
         lateral_options = new_laterals if next_a.id == TRY_LATERALS else None
+        from company_discovery.widening import probe_lateral_counts
+
+        count = _probe_auto_relax_count(
+            journey, next_a, lateral_options=lateral_options, engine=engine
+        )
+        lateral_counts = (
+            probe_lateral_counts(journey, lateral_options or [], engine=engine)
+            if next_a.id == TRY_LATERALS
+            else None
+        )
         return AdvanceResult(
             reply=format_auto_relax_suggestion(
-                next_a, lateral_options=lateral_options, count=count
+                next_a,
+                lateral_options=lateral_options,
+                lateral_counts=lateral_counts,
+                count=count,
             ),
             journey=journey,
             persist=False,
@@ -2291,7 +2331,8 @@ def _advance_review_auto_relax_offering(
         journey.review_substate = "empty"
         return AdvanceResult(
             reply=_format_review_empty_reply(
-                journey, diagnostic_text=journey.diagnostic_text or None
+                journey, diagnostic_text=journey.diagnostic_text or None,
+                engine=engine,
             ),
             journey=journey,
             persist=False,
@@ -2313,17 +2354,30 @@ def _advance_review_auto_relax_offering(
                 reply=(
                     "I've gone through all the widening options I have.\n\n"
                     + _format_review_empty_reply(
-                        journey, diagnostic_text=journey.diagnostic_text or None
+                        journey, diagnostic_text=journey.diagnostic_text or None,
+                        engine=engine,
                     )
                 ),
                 journey=journey,
             )
         journey.auto_relax_offered_id = next_a.id
-        count = _probe_auto_relax_count(journey, next_a, engine=engine)
         lateral_options = new_laterals if next_a.id == TRY_LATERALS else None
+        from company_discovery.widening import probe_lateral_counts
+
+        count = _probe_auto_relax_count(
+            journey, next_a, lateral_options=lateral_options, engine=engine
+        )
+        lateral_counts = (
+            probe_lateral_counts(journey, lateral_options or [], engine=engine)
+            if next_a.id == TRY_LATERALS
+            else None
+        )
         return AdvanceResult(
             reply=format_auto_relax_suggestion(
-                next_a, lateral_options=lateral_options, count=count
+                next_a,
+                lateral_options=lateral_options,
+                lateral_counts=lateral_counts,
+                count=count,
             ),
             journey=journey,
         )

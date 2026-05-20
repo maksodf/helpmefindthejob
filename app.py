@@ -3897,6 +3897,7 @@ class AppState:
                         TRY_LATERALS,
                         format_auto_relax_suggestion,
                         next_auto_relax_suggestion,
+                        probe_lateral_counts,
                     )
 
                     new_laterals = _compute_new_laterals(journey2)
@@ -3904,15 +3905,28 @@ class AppState:
                         journey2, new_laterals_count=len(new_laterals)
                     )
                     if next_a is not None:
-                        count = _probe_auto_relax_count(
-                            journey2, next_a, engine=self.diagnostic_engine
-                        )
                         lateral_options = (
                             new_laterals if next_a.id == TRY_LATERALS else None
+                        )
+                        count = _probe_auto_relax_count(
+                            journey2,
+                            next_a,
+                            lateral_options=lateral_options,
+                            engine=self.diagnostic_engine,
+                        )
+                        lateral_counts = (
+                            probe_lateral_counts(
+                                journey2,
+                                lateral_options or [],
+                                engine=self.diagnostic_engine,
+                            )
+                            if next_a.id == TRY_LATERALS
+                            else None
                         )
                         summary_msg = format_auto_relax_suggestion(
                             next_a,
                             lateral_options=lateral_options,
+                            lateral_counts=lateral_counts,
                             count=count,
                         )
                     else:
@@ -3923,6 +3937,7 @@ class AppState:
                         summary_msg = _format_review_empty_reply(
                             journey2,
                             diagnostic_text=journey2.diagnostic_text or None,
+                            engine=self.diagnostic_engine,
                         )
                 else:
                     from company_discovery.journey import (
@@ -3932,6 +3947,7 @@ class AppState:
                     summary_msg = _format_review_empty_reply(
                         journey2,
                         diagnostic_text=journey2.diagnostic_text or None,
+                        engine=self.diagnostic_engine,
                     )
             else:
                 jobs_summary = "\n".join(
