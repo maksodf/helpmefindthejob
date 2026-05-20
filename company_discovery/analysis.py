@@ -286,11 +286,25 @@ SCORE: <integer 0-100, MUST equal the sum of the four sub-scores above>
 REASON: <one short sentence, max 25 words, naming the dominant driver of the score>
 GAPS: <up to three short skill phrases, comma-separated, that the JD demands but the candidate's CV does not show. Use empty string when no clear gaps>
 
+Anchor scale for every sub-score (each sub-score is on 0-25; the bands span the full range):
+  22-25 = exceptional match on this criterion — the CV directly meets or exceeds the JD's bar at the level requested (rare; reserve for cases where you can name the specific match)
+  17-21 = good match — most of the criterion's requirements are met with one or two minor gaps
+  13-16 = moderate match — some requirements met, several gaps but transferable
+  8-12 = weak match — few requirements met, significant gaps
+  0-7 = wrong domain entirely for this criterion (or N/A treated as neutral-low)
+
+Calibration: a job that genuinely matches the candidate's target role
++ experience + language + friction context should aggregate to
+SCORE >= 75 (good-to-exceptional across the four criteria). A
+moderate match should land 50-65. A weak / wrong-domain match should
+land < 30.
+
 Strict rules:
 - Do NOT invent facts about the candidate beyond what the profile block contains.
 - Do NOT invent facts about the job beyond what the snippet contains.
 - The four sub-scores MUST sum to exactly the SCORE total.
 - Avoid round-number anchoring: if the granular sub-scores sum to 73, output 73, NOT 75.
+- Avoid anchor-point parking: do NOT default to the exact band-edge values (22, 17, 13, 8, 2). Use the full range within each band when the match falls between anchors — e.g., a strong-but-not-exceptional skill match scores 19, not 17 or 22.
 
 Candidate target profile:
 {profile_block}
