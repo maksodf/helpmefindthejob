@@ -5066,39 +5066,105 @@ const TYPING_LABELS = {
   ],
 };
 
-function typingLabelFor(message, lastJourneyPhase) {
+function typingCategoryFor(message, lastJourneyPhase) {
+  // PART 9 Loop 29: factored out from typingLabelFor so the
+  // completion-footer + explainer logic can route off the same
+  // category without re-running the regex chain.
   const m = (message || "").trim().toLowerCase();
   const phase = (lastJourneyPhase || "").toLowerCase();
-  // Slash commands — deterministic intent
-  if (m === "/tailor" || m.startsWith("/tailor ")) return TYPING_LABELS.tailor;
-  if (m === "/letter" || m === "/motivation" || m.startsWith("/letter ") || m.startsWith("/motivation ")) return TYPING_LABELS.letter;
-  if (m === "/consult" || m === "/enhance" || m.startsWith("/consult ") || m.startsWith("/enhance ")) return TYPING_LABELS.consult;
-  if (m === "/find" || m === "/search" || m.startsWith("/find ") || m.startsWith("/search ")) return TYPING_LABELS.search;
-  // Natural-language search intents
-  if (/^(find|search|suche|finde)\s+/.test(m)) return TYPING_LABELS.search;
-  if (/^(find a job|search jobs|jobs suchen)\b/.test(m)) return TYPING_LABELS.search;
-  // Phase-aware contextual triggers
-  // - preferences -> any non-empty input triggers the search dispatch
-  if (phase === "preferences" && m.length > 0) return TYPING_LABELS.search;
-  // - review phase -> numeric pick / "yes" trigger search via widening
-  if (phase === "review" && /^(1|2|3|yes|y|ja|retry|nochmal)$/.test(m)) return TYPING_LABELS.search;
-  // - inspire phase -> AI lateral-role suggestion runs on any non-decline input
-  if (phase === "inspire" && !/^(no|n|nein|skip|stick|none|keine|nope)$/.test(m)) return TYPING_LABELS.inspire;
-  // - tailor phase choice menu -> map to specific AI op
+  if (m === "/tailor" || m.startsWith("/tailor ")) return "tailor";
+  if (m === "/letter" || m === "/motivation" || m.startsWith("/letter ") || m.startsWith("/motivation ")) return "letter";
+  if (m === "/consult" || m === "/enhance" || m.startsWith("/consult ") || m.startsWith("/enhance ")) return "consult";
+  if (m === "/find" || m === "/search" || m.startsWith("/find ") || m.startsWith("/search ")) return "search";
+  if (/^(find|search|suche|finde)\s+/.test(m)) return "search";
+  if (/^(find a job|search jobs|jobs suchen)\b/.test(m)) return "search";
+  if (phase === "preferences" && m.length > 0) return "search";
+  if (phase === "review" && /^(1|2|3|yes|y|ja|retry|nochmal)$/.test(m)) return "search";
+  if (phase === "inspire" && !/^(no|n|nein|skip|stick|none|keine|nope)$/.test(m)) return "inspire";
   if (phase === "tailor") {
-    if (m.includes("letter") || m.includes("motivation") || m.includes("schreiben")) return TYPING_LABELS.letter;
-    if (m.includes("consult") || m.includes("enhance") || m.includes("improve")) return TYPING_LABELS.consult;
-    if (m.includes("tailor")) return TYPING_LABELS.tailor;
+    if (m.includes("letter") || m.includes("motivation") || m.includes("schreiben")) return "letter";
+    if (m.includes("consult") || m.includes("enhance") || m.includes("improve")) return "consult";
+    if (m.includes("tailor")) return "tailor";
   }
-  return TYPING_LABELS.default;
+  return "default";
+}
+
+function typingLabelFor(message, lastJourneyPhase) {
+  const category = typingCategoryFor(message, lastJourneyPhase);
+  return TYPING_LABELS[category] || TYPING_LABELS.default;
+}
+
+// PART 9 Loop 29 (2026-05-21): one-time "behind the scenes"
+// explainer for the search category. Tailor / letter / consult
+// already self-narrate via TYPING_LABELS rotation (Loop 28) AND
+// already carry a "this can take 30-90s" expectation. Search has
+// the strongest "where is my time going?" question because the
+// provider fan-out is invisible. Future expansion to other
+// categories sits behind Phase 2 #75 i18n + a UX review.
+const EXPLAINER_TEXT = {
+  search: (
+    "Heads up — searching runs across multiple job-board providers in turn " +
+    "(Adzuna, JSearch, Greenhouse, Lever, Personio, EURES, Remotive, " +
+    "WeWorkRemotely), then ranks the merged results. Typical wait is 5-20 " +
+    "seconds depending on each provider's response time. Partial results " +
+    "are still shown when some providers are temporarily unavailable. " +
+    "_(Shown once — close this for good by sending your next message.)_"
+  ),
+};
+
+function maybeShowExplainer(category) {
+  if (!category || !EXPLAINER_TEXT[category]) return;
+  const flagKey = "helpmefindthejob_explainer_seen_" + category;
+  try {
+    if (localStorage.getItem(flagKey)) return;
+    localStorage.setItem(flagKey, String(Date.now()));
+  } catch (_) {
+    // localStorage may be disabled (private browsing, storage quota,
+    // sandboxed iframe) — skip the explainer silently rather than
+    // showing it every send.
+    return;
+  }
+  chatAppendBubble("assistant", EXPLAINER_TEXT[category]);
+}
+
+// PART 9 Loop 29: compose the post-op elapsed-time footer once the
+// reply lands. Categories that benefit from the footer right now:
+// "search" (provider count + elapsed give the user agency over
+// "why did that take 15s?"). Other categories rely on the existing
+// rotating label messaging.
+function elapsedFooterFor(category, elapsedMs, payload) {
+  if (category !== "search") return "";
+  if (elapsedMs < 3000) return ""; // brief / cache-hit — no footer noise
+  const seconds = (elapsedMs / 1000).toFixed(1);
+  const errored = (payload && Array.isArray(payload.erroredOutcomes))
+    ? payload.erroredOutcomes
+    : [];
+  const totalProviders = (payload && typeof payload.totalProviders === "number")
+    ? payload.totalProviders
+    : null;
+  if (totalProviders === null) {
+    return `_Took ${seconds}s_`;
+  }
+  const failed = errored.length;
+  const succeeded = totalProviders - failed;
+  if (failed > 0) {
+    return `_Took ${seconds}s across ${totalProviders} providers — ${succeeded} succeeded, ${failed} unavailable._`;
+  }
+  return `_Took ${seconds}s across ${totalProviders} providers._`;
 }
 
 async function chatSend(message) {
   if (message == null) return;
   chatAppendBubble("user", message || "(skip)");
-  // Loop 14.1: phase-aware typing label (Gate 6.6). state.lastJourneyPhase
-  // is cached after each chat response below.
-  const typingLabel = typingLabelFor(message, state.lastJourneyPhase || "");
+  // PART 9 Loop 29: resolve typing category once + use it for both
+  // the rotating label AND the one-time explainer + the
+  // elapsed-time completion footer.
+  const category = typingCategoryFor(message, state.lastJourneyPhase || "");
+  maybeShowExplainer(category);
+  // Loop 14.1 + Loop 28: phase-aware rotating typing label
+  // (Gate 6.6 closure + PART 9 Loop 28 rotation refactor).
+  const typingLabel = TYPING_LABELS[category] || TYPING_LABELS.default;
+  const startMs = Date.now();
   const typingBubble = chatAppendBubble("assistant", "…", {typing: true, typingLabel});
   try {
     const payload = await api("/api/chat/message", {
@@ -5112,6 +5178,14 @@ async function chatSend(message) {
       state.lastJourneyPhase = payload.journeyPhase;
     }
     chatAppendBubble("assistant", payload.reply || "(no reply)");
+    // PART 9 Loop 29: post-op elapsed-time footer with provider
+    // count for search ops. Other categories self-narrate via the
+    // rotating typing label and don't need a footer.
+    const elapsedMs = Date.now() - startMs;
+    const footer = elapsedFooterFor(category, elapsedMs, payload);
+    if (footer) {
+      chatAppendBubble("assistant", footer);
+    }
     // R21.x: render the search-results canvas whenever a payload
     // carries jobs — regardless of whether it came from the
     // executed-command path (find_jobs direct) OR the journey path

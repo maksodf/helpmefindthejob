@@ -3434,6 +3434,12 @@ class AppState:
                 {"provider": o.provider, "error": o.error}
                 for o in errored_outcomes
             ],
+            # PART 9 Loop 29: total provider count so the client's
+            # post-op elapsed-time footer can say "took 12.3s across
+            # N providers (M succeeded, K unavailable)" — gives the
+            # user agency over "where did my time go" without
+            # introducing real streaming (Phase 2 #77).
+            "totalProviders": len(outcomes),
             # Tell the client to switch the canvas to the search-results
             # view so the user can SEE the results, not just hear that
             # they exist.
