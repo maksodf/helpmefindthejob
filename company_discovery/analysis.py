@@ -299,7 +299,14 @@ Anchor scale for SCORE_SKILLS, SCORE_EXPERIENCE, SCORE_LOCATION_LANGUAGE (each o
   0-7 = wrong domain entirely for this criterion (or N/A treated as neutral-low)
 
 SCORE_FRICTION_FIT anchor scale uses pathway-differentiation (NOT the generic match scale above — friction-fit asks "does THIS job accommodate the candidate's documented friction?", not "does the candidate match the criterion?"):
-  22-25 = friction present + CLEAN pathway + employer accommodation. The job is EXPLICITLY structured to accommodate the candidate's friction class: Anerkennung-friendly clinical role; EU Blue Card sponsorship for non-EU professionals; English-team for non-German-fluent applicants; §16d-recognised positions; Wiedereinstiegsprogramm for returners; Ausbildung path for §4 AsylG subsidiary-protection holders; mentor-program for late-career pivots.
+  22-25 = friction present + CLEAN pathway + employer accommodation. The job is EXPLICITLY structured to accommodate the candidate's friction class. DECISION RULE (apply mechanically — if the JD names ANY of these AND the candidate's friction context matches, score 22+; do NOT downgrade to "ambiguous" just because the language isn't ornate):
+    - JD names "EU Blue Card" / "Blue Card sponsorship" / "Blaue Karte" — AND candidate is a non-EU professional whose residency_status implies Blue Card need (e.g., Turkish national targeting Germany; non-EU professional with a degree-equivalent qualification): CLEAN
+    - JD names "English-team" / "English-speaking team" / "English-language work environment" / "international working language" — AND candidate's German is below C1 (residency_status / friction_notes indicates B1/B2/learning German): CLEAN
+    - JD names "Anerkennungs-freundlich" / "Anerkennung-friendly" / "supports Anerkennung process" / "Anerkennungspartner" — AND candidate is on §16d AufenthG or otherwise in recognition pathway: CLEAN
+    - JD names "Wiedereinstiegsprogramm" / "Wiedereinstiegspflege" / "returner mentor-program" — AND candidate is a Wiedereinsteigerin (gap of 5+ years from prior career): CLEAN
+    - JD names "Ausbildung" / "duale Ausbildung" / "Trainee-Programm" / "Quereinsteiger willkommen" — AND candidate is a §4 AsylG subsidiary-protection holder, late-career pivot, or career changer: CLEAN
+    - JD names "§16d" / "§24 AufenthG recognition" / "post-Brexit residency support" — AND candidate's status directly matches: CLEAN
+  If the JD does NOT name an element matching the candidate's friction, fall through to 17-21 (clear pathway) or below per the rest of this scale. The decision rule does NOT shift the anchor scale up — it tells you when to award the top band that already exists.
   17-21 = friction present + CLEAR pathway. The employer mentions relevant pathway elements (visa-sponsorship language, language-school benefit, returner-mentorship) without being explicitly structured around the candidate's friction class.
   12-16 = friction present + AMBIGUOUS pathway. The JD doesn't address the candidate's friction explicitly; not hostile, but not welcoming either.
   5-11 = friction present + HIGH BARRIER. Requirements don't fit the candidate's friction profile (C2 German required for B1 candidate; permanent-residence-required for §16d holder; no language support listed for a non-German-fluent applicant).
@@ -320,7 +327,7 @@ Strict rules:
 - Do NOT invent facts about the job beyond what the snippet contains.
 - The four sub-scores MUST sum to exactly the SCORE total.
 - Avoid round-number anchoring: if the granular sub-scores sum to 73, output 73, NOT 75.
-- Avoid anchor-point parking: the anchors (22, 17, 13, 8, 2 — and 22, 17, 12, 5, 0 for SCORE_FRICTION_FIT) are LANDMARKS, not targets. Most actual sub-scores fall BETWEEN anchors. If your gut says "17", ask whether the match is genuinely a clean "good" (17), slightly stronger (18-21), or slightly weaker (14-16). Use intermediate values like 3, 6, 11, 14, 19, 24 frequently — they describe matches that fall between anchor landmarks.
+- Avoid anchor-point parking (SELF-CHECK rule): the anchors (22, 17, 13, 8, 2 — and 22, 17, 12, 5, 0 for SCORE_FRICTION_FIT) describe the CENTER of each band; real matches almost never land EXACTLY on an anchor because the underlying signal is continuous. SELF-CHECK after drafting your four sub-scores: count how many are at exact anchor values (22, 17, 13, 12, 8, 5, 2, 0). If 3 or 4 of your sub-scores are at exact anchors, you are parking — revise at least 2 of them by ±1 to ±3 to reflect the specific signal you actually observed (a "good" match slightly stronger than textbook is 18 or 19, not 17 or 22; a "moderate" match at the higher end of moderate is 15 or 16, not 13). Default to intermediate values (3-4, 6-7, 9-12, 14-16, 18-21, 23-24) when the match doesn't sit at the textbook center of a band.
 
 Candidate target profile:
 {profile_block}
