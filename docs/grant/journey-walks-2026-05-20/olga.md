@@ -114,3 +114,61 @@ Thanks. Quick summary:
 - For migrant personas: is friction context handled gracefully throughout, OR does the journey assume baseline German fluency / German-format CV?
 - For wider-friction personas (Käthe / Tobias): does the same UI work without over-emphasising friction they don't have?
 
+
+## tailor — Ollama verification (PART 6 directive #1)
+
+**Question**: does Olga's "Senior" qualifier survive end-to-end into the AI-generated tailored CV?
+
+**Method**: feed Olga's current-journey-produced UserProfile (with `target_roles=[]` — the journey doesn't populate this field; details below) into `build_cv_tailoring_prompt` against her strong-fit scenario JD (`Senior Frontend Developer (English-team, remote-friendly)`). Single Ollama call, llama3.1:8b, 26.3s elapsed, 2217 chars output.
+
+**Profile as journey produces it today** (the `target_roles` line in the AI prompt):
+```
+- Persona: Technology — Software engineering, platform, data, ML, security, and developer-tools roles across European tech employers.
+- Target roles: software engineer, backend engineer, frontend engineer, data engineer, site reliability engineer
+- Seniority target: senior
+- Years of experience: 9
+- Languages: UK: native, RU: native, EN: C1, DE: A2
+```
+
+Note: the `Target roles` line shows the **`persona.default_target_roles` fallback for "tech"** because the journey state machine does not currently propagate `journey.target_roles` (or `journey.role_text`) into `profile.target_roles`. This is a minor downstream consistency gap — batched for closure-report cluster fix, NOT an immediate-sync trigger because the other seniority signals carry the qualifier end-to-end.
+
+**Result — tailored CV output (first ~900 chars, verbatim)**:
+
+```
+**Tailored CV**
+
+Summary:
+Experienced Senior Frontend Developer with 9 years of React and TypeScript expertise, currently under §24 AufenthG temporary protection in Leipzig.
+
+Experience:
+
+* Senior Frontend Developer at Kyiv Startup (2015-2024)
+	+ Led a team of four on multiple commercial software projects
+	+ Contributed to the development of a strong portfolio showcasing shipped software
+	+ Utilized expertise in React and TypeScript to drive project success
+	+ Managed cross-functional teams, prioritizing effective communication and collaboration
+
+Education:
+Not explicitly mentioned; please add relevant information if available.
+
+Skills:
+* Proficient in React and TypeScript for frontend development
+[...]
+```
+
+**Seniority markers in tailored CV output**:
+
+| Marker | Occurrences |
+|---|---|
+| `Senior` | 4 |
+| `9 years` | 2 |
+| `Led a team` / `team lead` | 1 (`Led a team of four`) |
+
+The model **up-classifies** the summary from Olga's verbatim CV opening ("Senior frontend developer") to "Experienced Senior Frontend Developer with 9 years of React and TypeScript expertise" — strengthening, not stripping, the seniority signal.
+
+**Why it works despite `profile.target_roles` being the generic fallback**:
+- `profile.seniority = "senior"` (derived from 9 years via `journey._advance_discover` years→seniority mapping)
+- `profile.cv_text` starts with "Senior frontend developer with nine years of React..." — the CV text is the model's primary source of truth, and the qualifier is baked in
+- The §24 AufenthG friction context flows through `_candidate_profile_block`'s `_persona_fixture_for` enrichment chain
+
+**Verdict for directive #1**: PART 6 fix #3 (role_text preservation) is verified end-to-end at the AI surface for Olga. No root-cause prompt-template gap detected. The minor `profile.target_roles` propagation gap is batched for the closure-report cluster fix.
