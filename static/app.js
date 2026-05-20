@@ -4902,10 +4902,22 @@ function chatAppendBubble(role, text, opts = {}) {
     bubble.style.alignSelf = isUser ? "flex-end" : "flex-start";
     bubble.style.maxWidth = "82%";
     if (opts.typing) {
-      bubble.classList.add("chat-bubble-typing");
       bubble.setAttribute("aria-live", "polite");
-      bubble.setAttribute("aria-label", "Assistant is typing");
-      bubble.innerHTML = "<span class='dot-1'>·</span><span class='dot-2'>·</span><span class='dot-3'>·</span>";
+      if (opts.typingLabel) {
+        // Loop 14.1 (2026-05-20): phase-aware narration replaces
+        // silent dots when the helper resolved a specific label.
+        // EN-only Phase 1; DE bundle wiring tracked in Phase 2
+        // backlog #75 (expanded to include typing labels).
+        // textContent (not innerHTML) -- labels are hard-coded
+        // constants but textContent is the XSS-safe default.
+        bubble.classList.add("chat-bubble-narration");
+        bubble.setAttribute("aria-label", opts.typingLabel);
+        bubble.textContent = opts.typingLabel;
+      } else {
+        bubble.classList.add("chat-bubble-typing");
+        bubble.setAttribute("aria-label", "Assistant is typing");
+        bubble.innerHTML = "<span class='dot-1'>·</span><span class='dot-2'>·</span><span class='dot-3'>·</span>";
+      }
     } else {
       if (isUser) bubble.textContent = text == null ? "" : String(text);
       else bubble.innerHTML = chatRenderInline(text);
@@ -4927,20 +4939,75 @@ function chatAppendBubble(role, text, opts = {}) {
   };
 }
 
+// Loop 14.1 (2026-05-20): phase-aware typing labels (Gate 6.6).
+// Maps (last user input + last server-known journey phase) to a
+// human-readable narration string shown in the typing bubble
+// during the wait for the chat-message response. Closes the
+// "silent waits >=2s" gap surfaced in the Loop 14 read-through.
+//
+// Phase 1 is intentionally static: no streaming infrastructure,
+// no per-provider / per-token live progress. The label is a
+// CONTEXTUAL placeholder that tells the user WHAT the assistant
+// is doing during the wait. Live streaming refactor scoped to
+// Phase 2 backlog #77 (combined SSE + concurrent fan-out +
+// token-streamed AI + frontend in-place bubble mutation).
+//
+// EN-only Phase 1; DE bundle wiring tracked in Phase 2 backlog
+// #75 (operator-expanded Loop 14.1 to cover typing labels).
+const TYPING_LABELS = {
+  search: "Searching jobs across 8 providers (typically 2-3 s)…",
+  tailor: "Tailoring your CV with local AI — this can take 30-90 s with Ollama; faster with cloud providers…",
+  letter: "Drafting your motivation letter — this can take 30-90 s with local AI…",
+  consult: "Analyzing your CV for improvement suggestions — this can take 30-90 s…",
+  inspire: "Suggesting lateral roles based on your profile — this can take 5-15 s…",
+  default: "Thinking…",
+};
+
+function typingLabelFor(message, lastJourneyPhase) {
+  const m = (message || "").trim().toLowerCase();
+  const phase = (lastJourneyPhase || "").toLowerCase();
+  // Slash commands — deterministic intent
+  if (m === "/tailor" || m.startsWith("/tailor ")) return TYPING_LABELS.tailor;
+  if (m === "/letter" || m === "/motivation" || m.startsWith("/letter ") || m.startsWith("/motivation ")) return TYPING_LABELS.letter;
+  if (m === "/consult" || m === "/enhance" || m.startsWith("/consult ") || m.startsWith("/enhance ")) return TYPING_LABELS.consult;
+  if (m === "/find" || m === "/search" || m.startsWith("/find ") || m.startsWith("/search ")) return TYPING_LABELS.search;
+  // Natural-language search intents
+  if (/^(find|search|suche|finde)\s+/.test(m)) return TYPING_LABELS.search;
+  if (/^(find a job|search jobs|jobs suchen)\b/.test(m)) return TYPING_LABELS.search;
+  // Phase-aware contextual triggers
+  // - preferences -> any non-empty input triggers the search dispatch
+  if (phase === "preferences" && m.length > 0) return TYPING_LABELS.search;
+  // - review phase -> numeric pick / "yes" trigger search via widening
+  if (phase === "review" && /^(1|2|3|yes|y|ja|retry|nochmal)$/.test(m)) return TYPING_LABELS.search;
+  // - inspire phase -> AI lateral-role suggestion runs on any non-decline input
+  if (phase === "inspire" && !/^(no|n|nein|skip|stick|none|keine|nope)$/.test(m)) return TYPING_LABELS.inspire;
+  // - tailor phase choice menu -> map to specific AI op
+  if (phase === "tailor") {
+    if (m.includes("letter") || m.includes("motivation") || m.includes("schreiben")) return TYPING_LABELS.letter;
+    if (m.includes("consult") || m.includes("enhance") || m.includes("improve")) return TYPING_LABELS.consult;
+    if (m.includes("tailor")) return TYPING_LABELS.tailor;
+  }
+  return TYPING_LABELS.default;
+}
+
 async function chatSend(message) {
   if (message == null) return;
   chatAppendBubble("user", message || "(skip)");
-  // Show a typing indicator so the user knows the assistant is
-  // working — LLM intent classification can take 500ms-2s and
-  // silent input feels broken. The bubble is removed when the
-  // real response lands (success or error).
-  const typingBubble = chatAppendBubble("assistant", "…", {typing: true});
+  // Loop 14.1: phase-aware typing label (Gate 6.6). state.lastJourneyPhase
+  // is cached after each chat response below.
+  const typingLabel = typingLabelFor(message, state.lastJourneyPhase || "");
+  const typingBubble = chatAppendBubble("assistant", "…", {typing: true, typingLabel});
   try {
     const payload = await api("/api/chat/message", {
       method: "POST",
       body: JSON.stringify({ message }),
     });
     if (typingBubble) typingBubble.remove();
+    // Loop 14.1: cache the server-known journey phase for the
+    // next chatSend's typingLabelFor() lookup.
+    if (payload.journeyPhase) {
+      state.lastJourneyPhase = payload.journeyPhase;
+    }
     chatAppendBubble("assistant", payload.reply || "(no reply)");
     // R21.x: render the search-results canvas whenever a payload
     // carries jobs — regardless of whether it came from the

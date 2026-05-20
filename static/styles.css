@@ -3541,6 +3541,16 @@ details[open] .collapsible-chevron { transform: rotate(180deg); }
   letter-spacing: 4px;
   opacity: 0.7;
 }
+/* Loop 14.1 (2026-05-20): phase-aware narration bubble. Used when
+ * typingLabelFor() resolves a specific label (search / tailor /
+ * letter / consult / inspire / default "Thinking…"). Italic +
+ * dimmed to signal "in-progress, not the real reply". Closes
+ * Gate 6.6 ("every >=2s op narrates SOMETHING to the user during
+ * the wait"). DE bundle wiring tracked in Phase 2 backlog #75. */
+.chat-bubble-narration {
+  opacity: 0.7;
+  font-style: italic;
+}
 .chat-bubble-typing .dot-1,
 .chat-bubble-typing .dot-2,
 .chat-bubble-typing .dot-3 {
