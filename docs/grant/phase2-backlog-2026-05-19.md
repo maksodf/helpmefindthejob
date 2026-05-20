@@ -70,7 +70,7 @@ the 65 inventory items. The 53 remaining items are catalogued below.
 | 55 | Persona panel — at least one real-world user interview per persona to validate the synthesised friction patterns. | 4 wk wall | 2026 Q4 |
 | 56 | Persona localisation: normalise content depth across the panel; render path for non-EN/DE locales when those translations land. | 1 wk | 2026 Q4 |
 | 57 | No-AI templated-fallback verification: confirm every one of the 13 MCP tools has a meaningful templated fallback when no AI provider is configured (rather than erroring out). | 0.5 wk | 2026 Q4 |
-| 58 | Cost-saving doctrine measured-outcome instrumentation — design the metric collection (with deployer consent) that turns the doctrine into a measured claim. | 1 wk | 2027 Q1 |
+| 69 | Cost-saving doctrine measured-outcome instrumentation — design the metric collection (with deployer consent) that turns the doctrine into a measured claim. | 1 wk | 2027 Q1 |
 
 ## Documentation drift (#33–#40)
 
@@ -183,6 +183,7 @@ shift quarter get a dated note appended below.
 - **2026-05-21**: item #78 added — Database-error surfacing UX.
 - **2026-05-21**: item #79 added — Claude Desktop manual-walk automation via Ghost-OS MCP (PART 7 Loop 23).
 - **2026-05-21**: item #80 added — Cover-letter section UI split + interactive citation verifier (PART 8 Loop 25).
+- **2026-05-21**: PART 11 Loop 36 audit — duplicate #58 renumbered. The active "Cost-saving doctrine measured-outcome instrumentation" item was re-using #58 (which had already been used by a CLOSED historical entry). Renumbered the active item to #69 (the only unused slot in the 50-79 range) so each line has a unique number. Historical CLOSED #58 entry preserved verbatim.
   Surfaced during PART 6 Loop 16 (Gate 6.5) as Layer 11 of the
   14-error-layer audit. Cross-cutting design decision (which
   database-write failures should surface to users with what
