@@ -159,20 +159,39 @@ class MCPHarness:
             "method": method,
             "params": params or {},
         }
+        return self._send_and_read(json.dumps(message) + "\n", context=method)
+
+    def send_raw_line(self, line: str) -> dict[str, Any]:
+        """Send a raw text line to the server and read one response line.
+
+        Bypasses the normal JSON-RPC framing. Used to exercise the
+        ``run_stdio`` parse-error path (JSON-RPC ``-32700``) by sending
+        intentionally malformed JSON. Appends a trailing newline if
+        the caller omitted it."""
+
+        if not line.endswith("\n"):
+            line = line + "\n"
+        return self._send_and_read(line, context="<raw>")
+
+    def _send_and_read(self, payload: str, *, context: str) -> dict[str, Any]:
+        if self._proc is None:
+            raise MCPHarnessError(
+                "harness not started; call start() or use the context manager"
+            )
         assert self._proc.stdin is not None
         assert self._proc.stdout is not None
         try:
-            self._proc.stdin.write(json.dumps(message) + "\n")
+            self._proc.stdin.write(payload)
             self._proc.stdin.flush()
         except BrokenPipeError as error:
             raise MCPHarnessError(
-                f"MCP server pipe broken during {method!r} -- server may have crashed.\n"
+                f"MCP server pipe broken during {context!r} -- server may have crashed.\n"
                 f"stderr tail:\n{self._read_stderr_tail()}"
             ) from error
         line = self._proc.stdout.readline()
         if not line:
             raise MCPHarnessError(
-                f"MCP server returned no response for {method!r} -- server may have exited.\n"
+                f"MCP server returned no response for {context!r} -- server may have exited.\n"
                 f"stderr tail:\n{self._read_stderr_tail()}"
             )
         return json.loads(line)
