@@ -119,45 +119,6 @@ def _register(client: _Client) -> str:
     return email
 
 
-def _verify_persona_fixture_test_hook_active() -> None:
-    """Loop 9.3 workaround for Bug F: verify the server-side test
-    hook is active. The hook is in
-    ``company_discovery.analysis._persona_fixture_for`` and gates on
-    the env var ``HELPMEFINDTHEJOB_TEST_PERSONA_FIXTURE`` (set by
-    the bash wrapper). When active, every call to
-    ``_persona_fixture_for`` returns the named fixture, bypassing
-    the production lookup chain that would otherwise return None
-    for fresh users (whose ``persona_id`` defaults to the registry
-    ID ``healthcare-management``, never a fixture slug).
-
-    First-iteration attempts (rejected):
-      1. POST /api/profile with personaId="aicha" -- rejected by
-         update_profile's registry validation (app.py:742); the API
-         is correctly closed to fixture slugs.
-      2. Direct sqlite mutation of user_profiles payload -- the
-         server's in-memory profile cache (set 1) becomes stale; the
-         mutation never reaches the running process.
-
-    The env-var test hook is the cleanest pragmatic path: a single,
-    documented, production-must-not-set switch in
-    ``_persona_fixture_for`` that forces the fixture lookup. Bug F's
-    real-user fix (Option B's friction_class additive field) lands
-    in Loop 10.
-    """
-    import os
-    slug = os.environ.get("HELPMEFINDTHEJOB_TEST_PERSONA_FIXTURE", "")
-    if not slug:
-        raise RuntimeError(
-            "Bug F workaround env var "
-            "HELPMEFINDTHEJOB_TEST_PERSONA_FIXTURE not set. The bash "
-            "wrapper run-post-bug-c-aicha-walk.sh sets this for the "
-            "running server. If you're invoking the walk script "
-            "directly, export the env var before launching the "
-            "server: "
-            "HELPMEFINDTHEJOB_TEST_PERSONA_FIXTURE=aicha"
-        )
-
-
 def _send(client: _Client, msg: str, timeout: float = 120.0) -> tuple[dict, int]:
     started = time.monotonic()
     s, p = client.request("POST", "/api/chat/message", {"message": msg}, timeout=timeout)
@@ -408,7 +369,7 @@ def write_walk_md(out_dir: Path, captured: list[dict], signals: dict, base: str)
     lines: list[str] = [
         "<!-- SPDX-License-Identifier: Apache-2.0 -->",
         "",
-        "# Aïcha Loop 9.3 re-walk — post-Bug-C + post-Bug-E + persona_id workaround",
+        "# Aïcha Loop 10.3 re-walk — Bug F Option B substrate live-validation (NO env-hook workaround)",
         "",
         f"**Walked**: {now} (UTC)  |  **Persona**: {aicha.display_name} ({aicha.slug})  |  **Cohort**: {aicha.cohort}",
         f"**Server**: {base}  |  **Provider**: Ollama llama3.1:8b",
@@ -417,25 +378,20 @@ def write_walk_md(out_dir: Path, captured: list[dict], signals: dict, base: str)
         "",
         "## Purpose",
         "",
-        "Loop 9.3 of PART 6 — Aïcha re-walk continuation after Bug E",
-        "(routing gap, Loop 9.1) + Bug E.2 (token-collision audit,",
-        "Loops 9.1.5 + 9.1.5b) fixes landed. Drives the full 12-phase",
-        "journey against the now-clean dispatcher.",
+        "Loop 10.3 of PART 6 — Aïcha live re-walk validating Bug F",
+        "Option B substrate end-to-end. NO env-hook workaround used.",
+        "The persona-fixture resolution comes from REAL classification",
+        "of the pasted CV via friction_classifier (Loop 10.1) writing",
+        "profile.friction_class (Loop 10.2) which the empty-state",
+        "dispatcher reads via the rewired _persona_fixture_for call",
+        "(this loop, app.py:3869 + analysis.py:147).",
         "",
-        "**Bug F workaround (operator-approved)**: this walk manually",
-        "sets `UserProfile.persona_id=\"aicha\"` immediately after",
-        "registration so the production persona-fixture lookup chain",
-        "resolves correctly and Bug C piece-3 constrained ordering +",
-        "Ausländerbehörde caveat actually activate. Without the",
-        "workaround the dispatcher's `_persona_fixture_for(persona_id)`",
-        "would return None (default `persona_id=\"healthcare-management\"`)",
-        "and `visa_constrained` would silently stay False.",
-        "",
-        "The workaround is honest: it validates **\"is the code correct",
-        "given correct inputs?\"** (yes — validated here) separately from",
-        "**\"are inputs correct for real users?\"** (no — Bug F",
-        "investigation report at `bug-f-investigation.md` documents the",
-        "gap; Option B fix scheduled as Loop 10).",
+        "**Validation contract** (per operator directive): all 6",
+        "Bug-C signals must fire identically to Loop 9.3's workaround",
+        "run. If they don't, the substrate has a wiring issue and",
+        "Loop 10.3 is NOT closed. Compare against",
+        "`aicha-loop-9-3-rewalk.md` (workaround-based) — signals",
+        "should match exactly.",
         "",
         "## Bug-C signal summary",
         "",
@@ -543,7 +499,7 @@ def write_walk_md(out_dir: Path, captured: list[dict], signals: dict, base: str)
         "- Per-turn latency over 30s",
         "",
     ]
-    out_path = out_dir / "aicha-loop-9-3-rewalk.md"
+    out_path = out_dir / "aicha-loop-10-3-rewalk.md"
     out_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     return out_path
 
@@ -557,12 +513,6 @@ def main() -> int:
     parser.add_argument("--max-turns", type=int, default=MAX_TURNS)
     args = parser.parse_args()
 
-    # Loop 9.3 Bug F workaround: confirm the server-side test hook
-    # is active before doing anything else. If the env var isn't
-    # set, fail fast rather than walking 12 turns to discover
-    # piece-3 doesn't activate.
-    _verify_persona_fixture_test_hook_active()
-
     client = _Client(args.base)
     print(f"[walk] base={args.base}", flush=True)
 
@@ -570,7 +520,11 @@ def main() -> int:
     started = time.monotonic()
     email = _register(client)
     print(f"[walk] registered {email} ({int((time.monotonic()-started)*1000)} ms)", flush=True)
-    print("[walk] persona-fixture test hook active (Bug F workaround)", flush=True)
+    print(
+        "[walk] Loop 10.3: friction_class classifier active "
+        "(no workaround); Aïcha CV will classify natively",
+        flush=True,
+    )
 
     # Drive walk
     captured, signals = walk_aicha(client, max_turns=args.max_turns)

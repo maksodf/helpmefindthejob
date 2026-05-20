@@ -3857,10 +3857,14 @@ class AppState:
                 # Piece 3: classify visa-constraint from persona fixture
                 # so the widening menu can order affordances + surface
                 # the Ausländerbehörde caveat. Look up the user's
-                # persona_id → PersonaFixture → residency_status, then
-                # classify. Defaults to False if persona_id isn't in
-                # the panel (e.g., "tech" / "healthcare-management"
-                # generic registry entries → unconstrained).
+                # friction_class → PersonaFixture → residency_status,
+                # then classify. Bug F Option B (Loop 10.3, 2026-05-20):
+                # the fixture lookup uses profile.friction_class (set
+                # by the cv_check classifier hook) NOT profile.persona_id
+                # (which only ever resolves to the 15-industry
+                # registry, never to a fixture slug — Loop 9.2
+                # investigation). Defaults to False when friction_class
+                # is "" (classifier didn't resolve) → unconstrained UX.
                 from company_discovery.widening import (
                     classify_visa_constraint,
                 )
@@ -3870,12 +3874,12 @@ class AppState:
                     user_profile = self.profile_for(user_id)
                 except Exception:  # noqa: BLE001 - empty-state path; failure must not break the caller
                     user_profile = None
-                pid = (
-                    user_profile.persona_id
-                    if user_profile and getattr(user_profile, "persona_id", None)
-                    else None
+                fclass = (
+                    user_profile.friction_class
+                    if user_profile and getattr(user_profile, "friction_class", None)
+                    else ""
                 )
-                fixture = _persona_fixture_for(pid)
+                fixture = _persona_fixture_for(fclass)
                 residency = getattr(fixture, "residency_status", "") or ""
                 journey2.visa_constrained = classify_visa_constraint(residency)
             else:

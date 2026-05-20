@@ -39,9 +39,10 @@ _HEALTHCARE_SECTION_LABEL = "Healthcare relevance"
 _GENERIC_SECTION_LABEL = "Persona relevance"
 
 
-def _persona_fixture_for(persona_id: str | None):
-    """Lookup the canonical :class:`PersonaFixture` for ``persona_id``,
-    or ``None`` if the id isn't in the seven-panel fixture set.
+def _persona_fixture_for(slug: str | None):
+    """Lookup the canonical :class:`PersonaFixture` for the friction-
+    class slug, or ``None`` if the slug isn't in the seven-panel
+    fixture set.
 
     The fixture carries fields the lighter ``Persona`` object does not:
     ``residency_status`` (visa / Aufenthaltstitel), ``friction_notes``
@@ -50,44 +51,24 @@ def _persona_fixture_for(persona_id: str | None):
     candidate's real friction context, not a generic role-and-industry
     sketch.
 
+    Bug F Option B (Loop 10.3, 2026-05-20): callers pass
+    ``profile.friction_class`` (set by the cv_check classification
+    hook from CV text). Earlier consumers passed ``profile.persona_id``
+    which never resolved to a fixture slug -- Loop 9.2 investigation
+    confirmed that production users only ever land in the 15-industry
+    registry, not the 7-fixture panel, so the lookup always returned
+    None. The friction_class field (Loop 10.2) closes that gap.
+
     Defensive lookup: any failure returns ``None`` so the prompt
     builder degrades gracefully to the lighter ``Persona`` context.
-
-    Loop 9.3 test-mode override (Bug F workaround, 2026-05-20): when
-    the env var ``HELPMEFINDTHEJOB_TEST_PERSONA_FIXTURE`` is set to a
-    fixture slug, the function returns the named fixture regardless
-    of the ``persona_id`` input. Used exclusively by the Loop 9.3
-    walk harness to validate Bug C pieces 3-6 end-to-end with a
-    fixture-resolving persona, while Bug F's real-user persona-
-    classification fix is decided separately (Loop 10, Option B per
-    operator). PRODUCTION DEPLOYMENTS MUST NOT SET THIS ENV VAR --
-    it forces every user through the named fixture's friction
-    context, which would be wrong for any user who isn't actually
-    that fixture archetype.
     """
-    import os
-    test_fixture_slug = os.environ.get(
-        "HELPMEFINDTHEJOB_TEST_PERSONA_FIXTURE"
-    )
-    if test_fixture_slug:
-        try:
-            from company_discovery.persona_fixtures import PERSONAS
-
-            for fixture in PERSONAS:
-                if fixture.slug == test_fixture_slug:
-                    return fixture
-        except Exception:  # noqa: BLE001 - test hook must degrade gracefully
-            pass
-        # Fall through to normal lookup if env-var slug doesn't match
-        # a real fixture (e.g., typo in the bash wrapper).
-
-    if not persona_id:
+    if not slug:
         return None
     try:
         from company_discovery.persona_fixtures import PERSONAS
 
         for fixture in PERSONAS:
-            if fixture.slug == persona_id:
+            if fixture.slug == slug:
                 return fixture
         return None
     except Exception:  # noqa: BLE001, S110 - persona-fixture lookup is best-effort context enrichment; failure must not break the AI call
@@ -144,7 +125,17 @@ def _candidate_profile_block(
         lines.append(f"- Candidate notes: {profile.notes.strip()}")
 
     # Friction-context enrichment from PersonaFixture when available.
-    fixture = _persona_fixture_for(persona_id)
+    # Bug F Option B (Loop 10.3, 2026-05-20): the fixture lookup
+    # uses profile.friction_class (the cv_check-classified slug),
+    # NOT profile.persona_id. persona_id stays as the industry-
+    # segment registry signal driving breadth context above; the
+    # friction-class slug drives the friction-context enrichment
+    # below. Two fields, two concerns.
+    fixture_slug = (
+        profile.friction_class if profile and profile.friction_class
+        else ""
+    )
+    fixture = _persona_fixture_for(fixture_slug)
     if fixture is not None:
         if fixture.residency_status:
             lines.append(f"- Aufenthaltstitel / residency status: {fixture.residency_status}")
