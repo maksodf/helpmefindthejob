@@ -223,24 +223,9 @@ class AutoRelaxOfferingSubstateRoutesToAutoHandlerTests(unittest.TestCase):
 
     def test_menu_token_exits_auto_mode_to_menu(self):
         """Auto-relax handler's cancel branch exits auto-mode and
-        returns to the empty-state menu. NOTE: this test uses the
-        "menu" token (an _AUTO_RELAX_CANCEL_TOKENS member) instead
-        of the bare "cancel" token because "cancel" is in the
-        UNIVERSAL ``_CANCEL_TOKENS`` set at the top of ``advance()``
-        and aborts the entire journey before sub-state routing
-        runs.
-
-        Bug E.2 (Loop 9.1 meta-coverage finding, 2026-05-20): the
-        universal cancel/help/back set at advance() top intercepts
-        4 tokens that are ALSO listed in
-        ``_AUTO_RELAX_CANCEL_TOKENS`` (cancel, stop, abbrechen) and
-        ``_AUTO_RELAX_GIVE_UP_TOKENS`` (exit, quit). The cross-sub-
-        state token collision documentation block in widening.py
-        documents the intent (e.g. "cancel in auto_relax_offering
-        exits auto-mode to menu") but the universal interception
-        wins in practice. Surface as separate finding for operator
-        direction; not fixed in Loop 9.1 (scope: Bug E routing
-        gap + meta-coverage only)."""
+        returns to the empty-state menu. Uses the "menu" token (an
+        _AUTO_RELAX_CANCEL_TOKENS member that is NOT in the
+        universal _CANCEL_TOKENS set, so no collision)."""
         j = _make_journey_with_substate(
             "auto_relax_offering",
             applied_widenings=[],
@@ -254,19 +239,45 @@ class AutoRelaxOfferingSubstateRoutesToAutoHandlerTests(unittest.TestCase):
         # No search fired (menu returns to menu, not search).
         self.assertIsNone(result.run_search_with)
 
-    def test_bare_cancel_is_intercepted_by_universal_handler(self):
-        """**Bug E.2 finding** — pinned as documented behavior, not
-        as a passing-correctness invariant. Bare "cancel" matches
-        the universal ``_CANCEL_TOKENS`` set; the handler at the
-        top of ``advance()`` sets ``phase=PHASE_DONE`` and aborts.
-        The sub-state-scoped cancel branch in
-        ``_advance_review_auto_relax_offering`` is unreachable for
-        this token. Surface to operator (Loop 9.1 status sync) for
-        verdict on whether to: (a) fix at advance() so universal
-        cancel respects sub-state context, (b) document this as
-        intended behavior and remove "cancel" from sub-state token
-        sets, or (c) defer to a coordinated token-collision audit.
-        """
+
+# ─── Bug E.2 fix regression — universal cancel respects substate ─
+class UniversalCancelRespectsSubstateTests(unittest.TestCase):
+    """**Bug E.2 fix regression** (Loop 9.1.5, 2026-05-20).
+
+    The universal ``_CANCEL_TOKENS`` set at ``advance()`` top
+    collides with three sub-state cancel-mode token sets. The fix:
+    per-token check via ``_should_defer_cancel_to_substate`` --
+    only DEFER the universal interception when the typed token is
+    actually in the current substate's cancel-mode set.
+
+    Collisions fixed in this loop:
+      - laterals_offered:   "cancel"
+      - auto_relax_offering: "cancel", "stop", "abbrechen"
+
+    Out-of-scope (inventoried in Loop 9.1.5 status sync):
+      - "exit"/"quit" vs sub-state give-up sets
+      - "abbrechen"/"exit"/"quit"/"stop" vs _REVIEW_EMPTY_GIVE_UP_TOKENS
+      - "reset" vs _REVIEW_EMPTY_START_FRESH_TOKENS
+    """
+
+    def test_cancel_in_laterals_offered_cancels_laterals_not_journey(self):
+        j = _make_journey_with_substate(
+            "laterals_offered",
+            applied_widenings=[WIDEN_LOCATION],
+            proposed_laterals=["Lateral A", "Lateral B"],
+        )
+        result = advance(j, "cancel")
+        # Laterals canceled; journey stays in PHASE_REVIEW with the
+        # empty-state menu re-shown.
+        self.assertEqual(j.phase, PHASE_REVIEW)
+        self.assertFalse(result.done)
+        # Proposed laterals cleared; sub-state back to "empty".
+        self.assertEqual(j.proposed_laterals, [])
+        self.assertEqual(j.review_substate, "empty")
+        # TRY_LATERALS NOT marked applied (cancel doesn't apply).
+        self.assertNotIn(TRY_LATERALS, j.applied_widenings)
+
+    def test_cancel_in_auto_relax_exits_auto_mode_not_journey(self):
         j = _make_journey_with_substate(
             "auto_relax_offering",
             applied_widenings=[],
@@ -274,13 +285,85 @@ class AutoRelaxOfferingSubstateRoutesToAutoHandlerTests(unittest.TestCase):
             auto_relax_offered_id=WIDEN_LOCATION,
         )
         result = advance(j, "cancel")
-        # Documents observed behavior: universal cancel wins.
+        # Auto-mode exited; journey stays in PHASE_REVIEW.
+        self.assertEqual(j.phase, PHASE_REVIEW)
+        self.assertFalse(result.done)
+        self.assertFalse(j.auto_relax_active)
+        self.assertEqual(j.review_substate, "empty")
+
+    def test_stop_in_auto_relax_exits_auto_mode_not_journey(self):
+        """`stop` is in _AUTO_RELAX_CANCEL_TOKENS — sub-state owns it
+        in auto_relax_offering."""
+        j = _make_journey_with_substate(
+            "auto_relax_offering",
+            applied_widenings=[],
+            auto_relax_active=True,
+            auto_relax_offered_id=WIDEN_LOCATION,
+        )
+        result = advance(j, "stop")
+        self.assertEqual(j.phase, PHASE_REVIEW)
+        self.assertFalse(result.done)
+        self.assertFalse(j.auto_relax_active)
+
+    def test_abbrechen_in_auto_relax_exits_auto_mode_not_journey(self):
+        j = _make_journey_with_substate(
+            "auto_relax_offering",
+            applied_widenings=[],
+            auto_relax_active=True,
+            auto_relax_offered_id=WIDEN_LOCATION,
+        )
+        result = advance(j, "abbrechen")
+        self.assertEqual(j.phase, PHASE_REVIEW)
+        self.assertFalse(result.done)
+        self.assertFalse(j.auto_relax_active)
+
+    def test_cancel_in_empty_menu_still_ends_journey(self):
+        """Empty-state menu (substate="empty") does NOT own
+        cancel-mode tokens — universal cancel preserved."""
+        j = _make_journey_with_substate("empty")
+        result = advance(j, "cancel")
         self.assertEqual(j.phase, PHASE_DONE)
         self.assertTrue(result.done)
-        # Auto-relax state NOT cleaned up by universal cancel --
-        # phase=PHASE_DONE but auto_relax_active is whatever it
-        # was. This is the observation that motivates option (a)
-        # in the operator-direction note above.
+
+    def test_cancel_outside_phase_review_still_ends_journey(self):
+        """Cancel in PHASE_DISCOVER (or any non-review phase) is
+        always universal — sub-state collisions only happen in
+        PHASE_REVIEW Bug-C sub-states."""
+        j = UserJourney(
+            phase=PHASE_DISCOVER,
+            review_substate="",
+            role_text="",
+        )
+        result = advance(j, "cancel")
+        self.assertEqual(j.phase, PHASE_DONE)
+        self.assertTrue(result.done)
+
+    def test_stop_in_laterals_offered_still_universal_cancel(self):
+        """`stop` is NOT in _LATERAL_CONFIRM_NO_TOKENS — laterals
+        substate doesn't own it. Universal cancel still wins."""
+        j = _make_journey_with_substate(
+            "laterals_offered",
+            applied_widenings=[WIDEN_LOCATION],
+            proposed_laterals=["Lateral A"],
+        )
+        result = advance(j, "stop")
+        self.assertEqual(j.phase, PHASE_DONE)
+        self.assertTrue(result.done)
+
+    def test_exit_in_auto_relax_still_universal_cancel(self):
+        """`exit` is in _AUTO_RELAX_GIVE_UP_TOKENS, NOT in
+        _AUTO_RELAX_CANCEL_TOKENS — per Loop 9.1.5 scope, not
+        deferred. Universal cancel still wins. Surfaced as
+        inventory item for operator (cancel-vs-give-up collision)."""
+        j = _make_journey_with_substate(
+            "auto_relax_offering",
+            applied_widenings=[],
+            auto_relax_active=True,
+            auto_relax_offered_id=WIDEN_LOCATION,
+        )
+        result = advance(j, "exit")
+        self.assertEqual(j.phase, PHASE_DONE)
+        self.assertTrue(result.done)
 
 
 # ─── Routing invariant 4: final-state rendering ──────────────────

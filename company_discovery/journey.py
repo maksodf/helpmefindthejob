@@ -402,6 +402,49 @@ def is_cancel_token(msg: str) -> bool:
     return lc in _CANCEL_TOKENS
 
 
+def _should_defer_cancel_to_substate(
+    journey: UserJourney, msg_lower: str
+) -> bool:
+    """Bug E.2 fix (Loop 9.1.5, 2026-05-20). Determine whether the
+    universal cancel interception should be SKIPPED because the
+    user's current Bug-C sub-state owns a cancel-mode meaning for
+    the typed token.
+
+    The cross-sub-state-scoped parsing invariant established in
+    Loop 6 (piece 4 design) requires that documented sub-state
+    cancel semantics actually fire. The universal ``_CANCEL_TOKENS``
+    set at ``advance()`` top would otherwise pre-empt sub-state
+    routing for tokens like "cancel" (which is in BOTH the
+    universal set AND ``_LATERAL_CONFIRM_NO_TOKENS`` +
+    ``_AUTO_RELAX_CANCEL_TOKENS``).
+
+    Per-token check (not blanket suppression) per operator scope:
+    only DEFER tokens that are actually in the sub-state's cancel-
+    mode set. Tokens like "stop" in laterals_offered (not in
+    ``_LATERAL_CONFIRM_NO_TOKENS``) still get the universal cancel
+    treatment because the sub-state doesn't claim them.
+
+    Collisions IN-SCOPE for this fix:
+      - laterals_offered:   "cancel"
+      - auto_relax_offering: "cancel", "stop", "abbrechen"
+
+    Collisions surfaced but OUT-OF-SCOPE (see Loop 9.1.5 status
+    sync inventory):
+      - "exit", "quit" vs sub-state give-up sets
+      - "abbrechen", "exit", "quit", "stop" vs _REVIEW_EMPTY_GIVE_UP_TOKENS
+      - "reset" vs _REVIEW_EMPTY_START_FRESH_TOKENS
+    """
+    if journey.phase != PHASE_REVIEW:
+        return False
+    if journey.review_substate == "laterals_offered":
+        return msg_lower in _LATERAL_CONFIRM_NO_TOKENS
+    if journey.review_substate == "auto_relax_offering":
+        from company_discovery.widening import _AUTO_RELAX_CANCEL_TOKENS
+
+        return msg_lower in _AUTO_RELAX_CANCEL_TOKENS
+    return False
+
+
 def is_help_token(msg: str) -> bool:
     lc = (msg or "").strip().casefold()
     return lc in _HELP_TOKENS
@@ -647,7 +690,23 @@ def advance(
     # can always bail / get help / pause without typing the right
     # command syntax. Returning to GREET resets the journey but
     # preserves whatever profile data we've already saved.
-    if is_cancel_token(msg):
+    #
+    # Bug E.2 fix (Loop 9.1.5, 2026-05-20): the universal
+    # ``_CANCEL_TOKENS`` set collides with sub-state-specific
+    # cancel-mode token sets when the user is in a Bug-C sub-state
+    # that owns that meaning. ``_should_defer_cancel_to_substate``
+    # checks the per-substate cancel-mode set (laterals_offered ->
+    # _LATERAL_CONFIRM_NO_TOKENS, auto_relax_offering ->
+    # _AUTO_RELAX_CANCEL_TOKENS) and returns True iff the typed
+    # token is OWNED by the sub-state. In that case we skip the
+    # universal interception and let the sub-state handler parse it.
+    # Collisions fixed in this loop: "cancel" (both substates),
+    # "stop" + "abbrechen" (auto_relax_offering only). Collisions
+    # surfaced but NOT fixed: cancel-vs-give-up + cancel-vs-start-
+    # fresh — see Loop 9.1.5 status sync inventory.
+    if is_cancel_token(msg) and not _should_defer_cancel_to_substate(
+        journey, msg.casefold()
+    ):
         journey.phase = PHASE_DONE
         return AdvanceResult(
             reply=(
