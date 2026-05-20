@@ -175,6 +175,22 @@ class UserJourney:
     # caller substitutes the strict-fact fallback message via
     # _format_review_empty_reply. PART 6 Bug C piece 2 (2026-05-20).
     diagnostic_text: str = ""
+    # Bug C piece 3 (2026-05-20): persona-aware widening affordances.
+    # Set at empty-state entry from the persona-fixture residency_status
+    # via widening.classify_visa_constraint. Drives both the ordering
+    # of widening affordances (safer first for visa-constrained) and
+    # the Ausländerbehörde caveat under the widen-location affordance.
+    visa_constrained: bool = False
+    # Cumulative-shrink ledger of which widening affordances have
+    # been applied in this empty-state recovery cycle. Each applied
+    # widening drops out of subsequent offered lists. Cleared when
+    # the journey advances to PHASE_DONE (give-up) or back to a
+    # populated PHASE_REVIEW (a widening succeeded → results found).
+    applied_widenings: list[str] = field(default_factory=list)
+    # Holding state for the laterals-confirmation sub-flow.
+    # Populated when the user picks "try laterals"; cleared when
+    # they confirm or decline. Bug C piece 3 (2026-05-20).
+    proposed_laterals: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -202,6 +218,9 @@ class UserJourney:
             "pickedJobId": self.picked_job_id,
             "reviewSubstate": self.review_substate,
             "diagnosticText": self.diagnostic_text,
+            "visaConstrained": self.visa_constrained,
+            "appliedWidenings": list(self.applied_widenings),
+            "proposedLaterals": list(self.proposed_laterals),
         }
 
     @classmethod
@@ -233,6 +252,9 @@ class UserJourney:
             picked_job_id=payload.get("pickedJobId") or "",
             review_substate=payload.get("reviewSubstate") or "",
             diagnostic_text=payload.get("diagnosticText") or "",
+            visa_constrained=bool(payload.get("visaConstrained")),
+            applied_widenings=list(payload.get("appliedWidenings") or []),
+            proposed_laterals=list(payload.get("proposedLaterals") or []),
         )
 
 
@@ -1673,12 +1695,36 @@ _REVIEW_EMPTY_RETRY_TOKENS = frozenset(
 )
 
 
-_REVIEW_EMPTY_ACTION_PROMPT = (
-    "What next?\n"
-    "  - **retry** / **nochmal** / **search again** — try the same search again\n"
-    "  - **give up** / **done** / **fertig** — end this journey\n\n"
-    "(More widening choices coming in upcoming pieces of the empty-state recovery.)"
-)
+def _compute_new_laterals(journey: UserJourney) -> list[str]:
+    """Return lateral roles not already in journey.target_roles.
+
+    PART 6 Bug C piece 3 (2026-05-20): deterministic — calls
+    ``_suggest_lateral_roles`` with ai_available=False to get the
+    bucket-fallback / generic-list path. Dedup is case-insensitive
+    against the current target_roles. If 0 new candidates remain,
+    the ``try_laterals`` affordance is hidden from the empty-state
+    menu (operator-required: don't offer affordances with no effect).
+    """
+    suggestion = _suggest_lateral_roles(
+        role_text=journey.role_text or "",
+        bucket_key=journey.bucket_key or "",
+        years_experience=journey.years_experience,
+        ai_available=False,
+        ai_caller=None,
+    )
+    candidates = suggestion.get("roles") or []
+    existing_lower = {(r or "").casefold().strip() for r in journey.target_roles}
+    new: list[str] = []
+    seen: set[str] = set()
+    for r in candidates:
+        if not isinstance(r, str):
+            continue
+        rl = r.casefold().strip()
+        if not rl or rl in existing_lower or rl in seen:
+            continue
+        seen.add(rl)
+        new.append(r)
+    return new
 
 
 def _format_review_empty_reply(
@@ -1715,24 +1761,56 @@ def _format_review_empty_reply(
             f"No matches found for **{target_display}** in "
             f"**{loc_display}** with these preferences."
         )
-    return f"{leading}\n\n{_REVIEW_EMPTY_ACTION_PROMPT}"
+    # Piece 3 (2026-05-20): persona-aware widening affordances.
+    # Compute available affordances + retry + give-up; render as a
+    # numbered menu so user can pick by number or token.
+    from company_discovery.widening import available_affordances
+
+    new_laterals = _compute_new_laterals(journey)
+    offered = available_affordances(journey, new_laterals_count=len(new_laterals))
+    menu_lines: list[str] = ["What next?"]
+    n = 0
+    for n, a in enumerate(offered, start=1):
+        menu_lines.append(f"  {n}. **{a.label}** — {a.description}")
+        if a.caveat:
+            # Indent the caveat as a continuation of the numbered
+            # item so the visual hierarchy is clear.
+            for cline in a.caveat.split("\n"):
+                menu_lines.append(f"     {cline}")
+    retry_n = n + 1
+    give_up_n = n + 2
+    menu_lines.append(
+        f"  {retry_n}. **Retry** the same search "
+        f"(or type `retry` / `nochmal` / `search again`)"
+    )
+    menu_lines.append(
+        f"  {give_up_n}. **Give up** — end this journey "
+        f"(or type `give up` / `done` / `fertig`)"
+    )
+    return f"{leading}\n\n" + "\n".join(menu_lines)
 
 
 def _advance_review_empty(journey: UserJourney, msg: str) -> AdvanceResult:
-    """Empty-state review handler. PART 6 Bug C piece 1 (2026-05-20).
+    """Empty-state review handler. PART 6 Bug C pieces 1-3 (2026-05-20).
 
     Never-implicit-done contract:
       - "give up" / "done" / "fertig" / etc. (explicit) -> PHASE_DONE
       - "retry" / "nochmal" / etc. -> re-fire search with same
         criteria; if still 0, app.py routes back to empty_state
         (loop-back invariant)
+      - widening affordance (number or token) -> apply via widening
+        module, fire re-search OR enter laterals-confirmation sub-state
       - empty / whitespace / gibberish -> re-ask, never advance,
         never exit
 
-    Pieces 2-6 will layer onto this: piece 2 diagnostic engine,
-    piece 3 widening affordances, piece 4 consented auto-relax,
-    piece 5 adjacent-criterion counts, piece 6 final-state recovery.
+    Sub-state "laterals_offered" handled by
+    ``_advance_review_laterals_offered`` — user confirms which lateral
+    roles to include, then the journey returns to PHASE_REVIEW.empty
+    via the search-dispatch path.
     """
+    if journey.review_substate == "laterals_offered":
+        return _advance_review_laterals_offered(journey, msg)
+
     if not msg.strip():
         return AdvanceResult(
             reply=_format_review_empty_reply(
@@ -1745,6 +1823,85 @@ def _advance_review_empty(journey: UserJourney, msg: str) -> AdvanceResult:
     if lc in _REVIEW_EMPTY_GIVE_UP_TOKENS:
         journey.phase = PHASE_DONE
         journey.review_substate = ""
+        journey.applied_widenings = []
+        journey.proposed_laterals = []
+        return AdvanceResult(
+            reply=(
+                "OK — ending this search. Type `find a job` anytime "
+                "to start fresh with different criteria."
+            ),
+            journey=journey,
+            done=True,
+        )
+    # Piece 3 (2026-05-20): parse widening-affordance choice. The
+    # numbered menu shows widenings 1..N then retry at N+1 and
+    # give-up at N+2; here we dispatch widenings first, then fall
+    # through to retry/give-up text tokens (and the numeric
+    # retry/give-up are handled in the offered-affordances-count
+    # arithmetic below).
+    from company_discovery.widening import (
+        apply_widening,
+        available_affordances,
+        parse_affordance_choice,
+    )
+
+    new_laterals = _compute_new_laterals(journey)
+    offered = available_affordances(journey, new_laterals_count=len(new_laterals))
+    # Numbered retry / give-up live at N+1 and N+2 of the menu.
+    retry_idx = len(offered) + 1
+    give_up_idx = len(offered) + 2
+    stripped = msg.strip().lstrip("#").strip()
+    if stripped.isdigit():
+        n = int(stripped)
+        if n == retry_idx:
+            lc = "retry"  # promote to text-token retry path below
+        elif n == give_up_idx:
+            lc = "give up"  # promote to text-token give-up path
+        else:
+            chosen = parse_affordance_choice(msg, offered)
+            if chosen is not None:
+                outcome = apply_widening(
+                    journey, chosen.id, new_laterals=new_laterals
+                )
+                if outcome.action == "fire_search":
+                    return AdvanceResult(
+                        reply=(
+                            f"OK — re-running search with **{chosen.label}** "
+                            f"applied: searching for "
+                            f"**{', '.join(journey.target_roles)}** in "
+                            f"**{journey.location or 'anywhere'}**…"
+                        ),
+                        journey=journey,
+                        run_search_with=outcome.search_criteria,
+                    )
+                if outcome.action == "ask_confirm_laterals":
+                    return AdvanceResult(reply=outcome.reply, journey=journey)
+                # noop falls through to re-ask
+    else:
+        # Token-form widening choice
+        chosen = parse_affordance_choice(msg, offered)
+        if chosen is not None:
+            outcome = apply_widening(journey, chosen.id, new_laterals=new_laterals)
+            if outcome.action == "fire_search":
+                return AdvanceResult(
+                    reply=(
+                        f"OK — re-running search with **{chosen.label}** "
+                        f"applied: searching for "
+                        f"**{', '.join(journey.target_roles)}** in "
+                        f"**{journey.location or 'anywhere'}**…"
+                    ),
+                    journey=journey,
+                    run_search_with=outcome.search_criteria,
+                )
+            if outcome.action == "ask_confirm_laterals":
+                return AdvanceResult(reply=outcome.reply, journey=journey)
+            # noop falls through to re-ask
+    # Re-check give-up after potential promotion from numeric.
+    if lc in _REVIEW_EMPTY_GIVE_UP_TOKENS:
+        journey.phase = PHASE_DONE
+        journey.review_substate = ""
+        journey.applied_widenings = []
+        journey.proposed_laterals = []
         return AdvanceResult(
             reply=(
                 "OK — ending this search. Type `find a job` anytime "
@@ -1781,6 +1938,123 @@ def _advance_review_empty(journey: UserJourney, msg: str) -> AdvanceResult:
         journey=journey,
         persist=False,
     )
+
+
+_LATERAL_CONFIRM_YES_TOKENS = frozenset(
+    {"yes", "y", "all", "alle", "ja", "sure", "ok", "okay", "include all"}
+)
+_LATERAL_CONFIRM_NO_TOKENS = frozenset(
+    {"no", "n", "nein", "cancel", "skip", "back", "abbruch"}
+)
+
+
+def _advance_review_laterals_offered(
+    journey: UserJourney, msg: str
+) -> AdvanceResult:
+    """Sub-state handler for the laterals-confirmation step.
+
+    PART 6 Bug C piece 3 (2026-05-20): when the user picks
+    ``try_laterals`` from the empty-state menu, ``apply_widening``
+    populates ``journey.proposed_laterals`` and sets
+    ``review_substate="laterals_offered"``. This handler accepts:
+
+      - "yes" / "all" / "alle" / "ja" -> include all proposed laterals
+      - "no" / "nein" / "cancel" / "skip" -> drop proposal, return to
+        empty_state without applying
+      - Numbered pick(s) like "1", "1, 3", "2 3" -> include the picked
+        subset
+      - Anything else -> re-ask with the laterals list
+
+    On confirmation: extends target_roles, marks TRY_LATERALS in
+    applied_widenings, clears proposed_laterals + sub-state, fires
+    run_search_with.
+    """
+    if not msg.strip():
+        return AdvanceResult(
+            reply=_reask_laterals_reply(journey),
+            journey=journey,
+            persist=False,
+        )
+    lc = msg.lower().strip()
+    chosen: list[str] | None = None
+    if lc in _LATERAL_CONFIRM_YES_TOKENS:
+        chosen = list(journey.proposed_laterals)
+    elif lc in _LATERAL_CONFIRM_NO_TOKENS:
+        # Cancel without applying — return to empty_state menu
+        journey.proposed_laterals = []
+        journey.review_substate = "empty"
+        return AdvanceResult(
+            reply=_format_review_empty_reply(
+                journey, diagnostic_text=journey.diagnostic_text or None
+            ),
+            journey=journey,
+            persist=False,
+        )
+    else:
+        # Try numbered picks (e.g., "1", "1, 3", "2 3")
+        picked_indices: list[int] = []
+        seen_idx: set[int] = set()
+        for token in re.findall(r"\d+", msg):
+            idx = int(token) - 1
+            if 0 <= idx < len(journey.proposed_laterals) and idx not in seen_idx:
+                seen_idx.add(idx)
+                picked_indices.append(idx)
+        if picked_indices:
+            chosen = [journey.proposed_laterals[i] for i in picked_indices]
+
+    if not chosen:
+        # Unparseable input — re-ask, never silently advance.
+        return AdvanceResult(
+            reply=_reask_laterals_reply(journey),
+            journey=journey,
+            persist=False,
+        )
+
+    # Apply: extend target_roles with the chosen laterals, mark
+    # TRY_LATERALS applied, clear sub-state.
+    existing_lower = {r.casefold().strip() for r in journey.target_roles}
+    added = 0
+    for r in chosen:
+        rl = r.casefold().strip()
+        if rl and rl not in existing_lower:
+            journey.target_roles.append(r)
+            existing_lower.add(rl)
+            added += 1
+    from company_discovery.widening import TRY_LATERALS as _TRY_LATERALS_ID
+
+    if _TRY_LATERALS_ID not in journey.applied_widenings:
+        journey.applied_widenings.append(_TRY_LATERALS_ID)
+    journey.proposed_laterals = []
+    journey.review_substate = "empty"
+    return AdvanceResult(
+        reply=(
+            f"OK — added {added} lateral role(s). Re-running search "
+            f"for **{', '.join(journey.target_roles)}** in "
+            f"**{journey.location or 'anywhere'}**…"
+        ),
+        journey=journey,
+        run_search_with={
+            "target_roles": list(journey.target_roles),
+            "location": journey.location or None,
+            "remote_required": journey.remote_required,
+            "salary_floor": journey.salary_floor,
+            "company_size": journey.company_size or None,
+        },
+    )
+
+
+def _reask_laterals_reply(journey: UserJourney) -> str:
+    """Re-render the laterals-confirmation prompt when the user
+    sent gibberish / empty in the laterals_offered sub-state."""
+    lines = ["I can also search these related role names:", ""]
+    for i, role in enumerate(journey.proposed_laterals, start=1):
+        lines.append(f"  {i}. **{role}**")
+    lines.append("")
+    lines.append(
+        "Reply **yes** to include all, **no** to cancel, or pick by "
+        "number (e.g. `1` or `1, 3`)."
+    )
+    return "\n".join(lines)
 
 
 def _advance_review(journey: UserJourney, msg: str) -> AdvanceResult:

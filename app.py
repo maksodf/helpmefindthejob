@@ -3789,17 +3789,12 @@ class AppState:
             journey2.search_results_by_category = categorized
             journey2.search_jobs_by_id = jobs_by_id
             if not jobs:
-                # PART 6 Bug C piece 1 (2026-05-20): never-implicit-
-                # done. The 0-results branch routes to
-                # PHASE_REVIEW.empty so the user can explicitly
-                # retry or give up — see
-                # company_discovery/journey._advance_review_empty.
-                # Piece 2 (2026-05-20): cache-only DiagnosticEngine
-                # probes for relaxation-candidate counts and writes
-                # the diagnostic text onto journey state so
-                # subsequent re-asks within empty_state reuse it.
+                # PART 6 Bug C piece 1-3 (2026-05-20): never-implicit-
+                # done + cache-only diagnostic + persona-aware widening
+                # affordances.
                 journey2.phase = PHASE_REVIEW
                 journey2.review_substate = "empty"
+                # Piece 2: compute diagnostic via cache-only engine.
                 diag = self.diagnostic_engine.generate(
                     role_text=(
                         (journey2.target_roles[0] if journey2.target_roles else "")
@@ -3813,10 +3808,39 @@ class AppState:
                     },
                 )
                 journey2.diagnostic_text = diag or ""
+                # Piece 3: classify visa-constraint from persona fixture
+                # so the widening menu can order affordances + surface
+                # the Ausländerbehörde caveat. Look up the user's
+                # persona_id → PersonaFixture → residency_status, then
+                # classify. Defaults to False if persona_id isn't in
+                # the panel (e.g., "tech" / "healthcare-management"
+                # generic registry entries → unconstrained).
+                from company_discovery.widening import (
+                    classify_visa_constraint,
+                )
+                from company_discovery.analysis import _persona_fixture_for
+
+                try:
+                    user_profile = self.profile_for(user_id)
+                except Exception:  # noqa: BLE001 - empty-state path; failure must not break the caller
+                    user_profile = None
+                pid = (
+                    user_profile.persona_id
+                    if user_profile and getattr(user_profile, "persona_id", None)
+                    else None
+                )
+                fixture = _persona_fixture_for(pid)
+                residency = getattr(fixture, "residency_status", "") or ""
+                journey2.visa_constrained = classify_visa_constraint(residency)
             else:
                 journey2.phase = PHASE_REVIEW
                 journey2.review_substate = ""  # clear if previously set
                 journey2.diagnostic_text = ""
+                # A successful search clears the widening ledger — the
+                # next empty-state recovery (if it happens later) starts
+                # fresh.
+                journey2.applied_widenings = []
+                journey2.proposed_laterals = []
             self._journey_save(user_id, journey2)
             if not jobs:
                 from company_discovery.journey import _format_review_empty_reply

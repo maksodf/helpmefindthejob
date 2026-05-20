@@ -176,13 +176,25 @@ class UnrecognizedInputReasksTests(unittest.TestCase):
     """Gibberish / question-marks / numeric ambiguity — re-ask,
     never silently advance, never silently exit."""
 
+    # Inputs that have NO piece-3 menu meaning. Numeric inputs (1, 2,
+    # 3, ...) are deliberately omitted: piece 3 numbers them as
+    # widening / retry / give-up menu choices, so a numeric "1" is
+    # potentially a valid menu pick depending on what's offered.
+    # See test_each_persona_expected_affordance_list in
+    # test_widening.py for per-persona numeric semantics; this test
+    # focuses on text inputs that should still re-ask.
     UNRECOGNIZED = (
         "?", "huh", "what", "what?", "help",
-        "1", "2", "ok", "okay", "yes", "yeah", "ja", "no", "nein",
+        "ok", "okay", "yes", "yeah", "ja", "no", "nein",
         "asdf", "xyz", "keine Ahnung", "weiß nicht",
-        # Things that might look like preferences but shouldn't
-        # advance from empty_state (they belong in PHASE_PREFS):
-        "remote", "min 50k", "startup",
+        # Preference-phase tokens that should NOT advance from
+        # empty_state (they belong in PHASE_PREFS):
+        "min 50k", "startup",
+        # "remote" is in widening's _WIDEN_LOCATION_TOKENS to handle
+        # the "anywhere" remote-search intent inline — but it would
+        # only match when WIDEN_LOCATION is in offered affordances.
+        # For test fixtures with location set, widen_location IS
+        # offered, so "remote" would match. Omit from this test.
     )
 
     def test_each_reasks(self) -> None:
