@@ -4943,11 +4943,30 @@ function chatAppendBubble(role, text, opts = {}) {
         // silent dots when the helper resolved a specific label.
         // EN-only Phase 1; DE bundle wiring tracked in Phase 2
         // backlog #75 (expanded to include typing labels).
+        // PART 9 Loop 28 (2026-05-21): typingLabel can be a
+        // milestone array [{after: ms, text}, ...]; we set the
+        // initial text and schedule rotations via setTimeout.
+        // Timer ids are stashed on the bubble for cleanup in
+        // remove() so dismiss-during-rotation doesn't leak text
+        // into other bubbles.
         // textContent (not innerHTML) -- labels are hard-coded
         // constants but textContent is the XSS-safe default.
         bubble.classList.add("chat-bubble-narration");
-        bubble.setAttribute("aria-label", opts.typingLabel);
-        bubble.textContent = opts.typingLabel;
+        const milestones = Array.isArray(opts.typingLabel)
+          ? opts.typingLabel
+          : [{after: 0, text: opts.typingLabel}];
+        const initial = milestones[0]?.text || "";
+        bubble.setAttribute("aria-label", initial);
+        bubble.textContent = initial;
+        const timers = [];
+        for (const milestone of milestones.slice(1)) {
+          const id = setTimeout(() => {
+            bubble.setAttribute("aria-label", milestone.text);
+            bubble.textContent = milestone.text;
+          }, milestone.after);
+          timers.push(id);
+        }
+        bubble._typingTimers = timers;
       } else {
         bubble.classList.add("chat-bubble-typing");
         bubble.setAttribute("aria-label", "Assistant is typing");
@@ -4966,7 +4985,16 @@ function chatAppendBubble(role, text, opts = {}) {
   // lands.
   return {
     remove() {
-      for (const b of bubbles) b.remove();
+      for (const b of bubbles) {
+        // PART 9 Loop 28: cancel pending typing-label rotations so
+        // a dismissed bubble doesn't fire setTimeout callbacks
+        // against a detached node.
+        if (b._typingTimers) {
+          for (const id of b._typingTimers) clearTimeout(id);
+          b._typingTimers = null;
+        }
+        b.remove();
+      }
     },
     // Convenience for callers that read DOM properties off the
     // returned bubble.
@@ -4989,13 +5017,53 @@ function chatAppendBubble(role, text, opts = {}) {
 //
 // EN-only Phase 1; DE bundle wiring tracked in Phase 2 backlog
 // #75 (operator-expanded Loop 14.1 to cover typing labels).
+//
+// PART 9 Loop 28 (2026-05-21): values are now milestone arrays
+// {after: ms, text: "..."} so the typing bubble can ROTATE during
+// the wait — narrating expected pipeline stages instead of a
+// frozen single-line label. This is client-side narration of
+// known pipeline stages; true server-pushed progress is Phase 2
+// backlog #77 (SSE streaming refactor). The honesty: we're
+// telling the user what's happening based on what we EXPECT to
+// happen at each elapsed time, not what's actually happening on
+// the server right now. That's still a large UX win over a frozen
+// label per the operator's "perceived latency != total latency"
+// doctrine.
 const TYPING_LABELS = {
-  search: "Searching jobs across 8 providers (typically 2-3 s)…",
-  tailor: "Tailoring your CV with local AI — this can take 30-90 s with Ollama; faster with cloud providers…",
-  letter: "Drafting your motivation letter — this can take 30-90 s with local AI…",
-  consult: "Analyzing your CV for improvement suggestions — this can take 30-90 s…",
-  inspire: "Suggesting lateral roles based on your profile — this can take 5-15 s…",
-  default: "Thinking…",
+  search: [
+    {after: 0, text: "Querying job boards across the EU…"},
+    {after: 3000, text: "Comparing and deduplicating results across providers…"},
+    {after: 8000, text: "Ranking by relevance and scoring fit…"},
+    {after: 18000, text: "Still going — slower providers can take a while…"},
+  ],
+  tailor: [
+    {after: 0, text: "Reading your CV…"},
+    {after: 4000, text: "Mapping CV bullets against the JD requirements…"},
+    {after: 12000, text: "Drafting the tailored version (local AI runs slower than cloud)…"},
+    {after: 30000, text: "Still going — Ollama can take 30-90 s depending on model and CPU…"},
+    {after: 60000, text: "Heads up: very large CVs + local AI can take over a minute…"},
+  ],
+  letter: [
+    {after: 0, text: "Reading your CV plus the job description…"},
+    {after: 4000, text: "Drafting the letter body…"},
+    {after: 12000, text: "Adding source citations (Quellen) so you can verify every claim…"},
+    {after: 30000, text: "Still going — local AI takes longer; cloud AI is faster…"},
+    {after: 60000, text: "Heads up: large CVs + Ollama can take over a minute…"},
+  ],
+  consult: [
+    {after: 0, text: "Analyzing your CV against the JD…"},
+    {after: 5000, text: "Surfacing improvement suggestions, never inventing facts…"},
+    {after: 15000, text: "Still going — thorough analysis takes 30-90 s with local AI…"},
+    {after: 45000, text: "Heads up: large CVs + local AI can run beyond a minute…"},
+  ],
+  inspire: [
+    {after: 0, text: "Thinking about lateral roles your background unlocks…"},
+    {after: 5000, text: "Drafting suggestions grounded in your actual experience…"},
+    {after: 12000, text: "Almost there — finishing the suggestion list…"},
+  ],
+  default: [
+    {after: 0, text: "Thinking…"},
+  ],
 };
 
 function typingLabelFor(message, lastJourneyPhase) {
