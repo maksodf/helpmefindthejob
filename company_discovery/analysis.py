@@ -281,17 +281,28 @@ Output exactly these lines, no headers, no other text:
 SCORE_SKILLS: <integer 0-25> — match between the candidate's CV skills and the JD's required skills
 SCORE_EXPERIENCE: <integer 0-25> — seniority + years-of-experience + relevance of past roles vs the JD
 SCORE_LOCATION_LANGUAGE: <integer 0-25> — geographic + language fit (CEFR level vs JD language; visa / residency status if relevant)
-SCORE_FRICTION_FIT: <integer 0-25> — how well this role accommodates the candidate's documented friction context (Anerkennung pathway, Wiedereinstieg, visa, gap-year), or simply "neutral" if friction is not material to THIS role
+SCORE_FRICTION_FIT: <integer 0-25> — how well this role accommodates the candidate's documented friction context (Anerkennung pathway, Wiedereinstieg, visa, gap-year)
 SCORE: <integer 0-100, MUST equal the sum of the four sub-scores above>
 REASON: <one short sentence, max 25 words, naming the dominant driver of the score>
 GAPS: <up to three short skill phrases, comma-separated, that the JD demands but the candidate's CV does not show. Use empty string when no clear gaps>
 
-Anchor scale for every sub-score (each sub-score is on 0-25; the bands span the full range):
-  22-25 = exceptional match on this criterion — the CV directly meets or exceeds the JD's bar at the level requested (rare; reserve for cases where you can name the specific match)
+Anchor scale for SCORE_SKILLS, SCORE_EXPERIENCE, SCORE_LOCATION_LANGUAGE (each on 0-25; bands span the full range):
+  22-25 = exceptional match — the CV directly meets or exceeds the JD's bar at the level requested (rare; reserve for cases where you can name the specific match)
   17-21 = good match — most of the criterion's requirements are met with one or two minor gaps
   13-16 = moderate match — some requirements met, several gaps but transferable
   8-12 = weak match — few requirements met, significant gaps
   0-7 = wrong domain entirely for this criterion (or N/A treated as neutral-low)
+
+SCORE_FRICTION_FIT anchor scale uses pathway-differentiation (NOT the generic match scale above — friction-fit asks "does THIS job accommodate the candidate's documented friction?", not "does the candidate match the criterion?"):
+  22-25 = friction present + CLEAN pathway + employer accommodation. The job is EXPLICITLY structured to accommodate the candidate's friction class: Anerkennung-friendly clinical role; EU Blue Card sponsorship for non-EU professionals; English-team for non-German-fluent applicants; §16d-recognised positions; Wiedereinstiegsprogramm for returners; Ausbildung path for §4 AsylG subsidiary-protection holders; mentor-program for late-career pivots.
+  17-21 = friction present + CLEAR pathway. The employer mentions relevant pathway elements (visa-sponsorship language, language-school benefit, returner-mentorship) without being explicitly structured around the candidate's friction class.
+  12-16 = friction present + AMBIGUOUS pathway. The JD doesn't address the candidate's friction explicitly; not hostile, but not welcoming either.
+  5-11 = friction present + HIGH BARRIER. Requirements don't fit the candidate's friction profile (C2 German required for B1 candidate; permanent-residence-required for §16d holder; no language support listed for a non-German-fluent applicant).
+  0-4 = friction present + NO pathway. The JD explicitly excludes the candidate's status ("only EU citizens"; "C1 German native-speaker level" for a B1 candidate; "permanent contract requires unrestricted work permit").
+If friction is genuinely not material to THIS role (e.g., fully-remote tech role for a candidate with no documented friction), score 17-22 as "neutral / role accommodates as needed."
+
+Entry-level / training-program JDs (Ausbildung, Trainee, Praktikum, Quereinsteiger, Berufseinstieg):
+For these JDs, SCORE_SKILLS and SCORE_EXPERIENCE evaluate the candidate's FOUNDATIONAL POTENTIAL and APTITUDE for the program, NOT their current professional level. An Ausbildung JD that says "Vorkenntnisse nicht erforderlich, wir bilden Sie aus" expects candidates with relevant interest + foundational fit, not professionally-credentialed skills. Score HIGH (17-22) on SKILLS and EXPERIENCE when the candidate's profile fits the entry-level demographic (informal exposure to the trade, motivation, basic prerequisites met), even if their CV doesn't list the trade's professional-level certifications. The JD's bar IS entry-level for these roles; matching that bar is a strong fit.
 
 Calibration: a job that genuinely matches the candidate's target role
 + experience + language + friction context should aggregate to
@@ -304,7 +315,7 @@ Strict rules:
 - Do NOT invent facts about the job beyond what the snippet contains.
 - The four sub-scores MUST sum to exactly the SCORE total.
 - Avoid round-number anchoring: if the granular sub-scores sum to 73, output 73, NOT 75.
-- Avoid anchor-point parking: do NOT default to the exact band-edge values (22, 17, 13, 8, 2). Use the full range within each band when the match falls between anchors — e.g., a strong-but-not-exceptional skill match scores 19, not 17 or 22.
+- Avoid anchor-point parking: the anchors (22, 17, 13, 8, 2 — and 22, 17, 12, 5, 0 for SCORE_FRICTION_FIT) are LANDMARKS, not targets. Most actual sub-scores fall BETWEEN anchors. If your gut says "17", ask whether the match is genuinely a clean "good" (17), slightly stronger (18-21), or slightly weaker (14-16). Use intermediate values like 3, 6, 11, 14, 19, 24 frequently — they describe matches that fall between anchor landmarks.
 
 Candidate target profile:
 {profile_block}
