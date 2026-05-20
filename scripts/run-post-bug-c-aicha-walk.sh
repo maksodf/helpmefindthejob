@@ -81,8 +81,14 @@ echo "[walk] server healthy; starting walk"
 
 # Run walk (may take many minutes; Ollama latency hits per AI call)
 set +e
+# Loop 11 (2026-05-20): WALK_PERSONA env var picks which persona
+# the walk script drives. Defaults to aicha for Loop 10.3 backwards
+# compat. Walks 2-7 set WALK_PERSONA={yusuf,olga,mahmoud,maria,
+# kaethe,tobias}.
+WALK_PERSONA="${WALK_PERSONA:-aicha}"
 "$PYTHON_BIN" scripts/post_bug_c_aicha_walk.py \
-  --base "http://127.0.0.1:$PORT" 2>&1 | tee "$WALK_LOG"
+  --base "http://127.0.0.1:$PORT" \
+  --persona "$WALK_PERSONA" 2>&1 | tee "$WALK_LOG"
 status=$?
 set -e
 

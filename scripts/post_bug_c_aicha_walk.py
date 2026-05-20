@@ -102,8 +102,8 @@ class _Client:
                 return e.code, raw
 
 
-def _register(client: _Client) -> str:
-    email = f"aicha-post-bug-c+{secrets.token_hex(4)}@example.test"
+def _register(client: _Client, persona_slug: str = "aicha") -> str:
+    email = f"{persona_slug}-walk+{secrets.token_hex(4)}@example.test"
     client.request("GET", "/")
     s, p = client.request(
         "POST", "/api/auth/register",
@@ -134,31 +134,46 @@ def _send(client: _Client, msg: str, timeout: float = 120.0) -> tuple[dict, int]
 
 
 def _aicha_cv_paste() -> str:
-    """Build a CV-shaped paste from Aïcha's persona fixture. Includes
-    enough markers (email, phone, date range, section header,
-    bullets) to pass looks_like_pasted_cv (>= 80 chars + at least one
-    marker + no complaint tells)."""
-    aicha = next(p for p in PERSONAS if p.slug == "aicha")
+    """Backwards-compatible wrapper retained for any external
+    callers; new code should use _cv_paste_for(persona_slug)."""
+    return _cv_paste_for("aicha")
+
+
+def _cv_paste_for(persona_slug: str) -> str:
+    """Build a CV-shaped paste from the named persona's fixture.
+
+    Includes enough markers (email, phone, date range, section
+    header, bullets) to pass looks_like_pasted_cv (>= 80 chars +
+    at least one marker + no complaint tells). The paste is
+    intentionally fixture-shaped (not natural-prose) so the
+    friction_classifier sees enough STRONG_MARKERS to resolve
+    cleanly. Real-user CV vocabulary tested separately via Phase 2
+    telemetry refinement (Phase 2 backlog #76).
+    """
+    persona = next(p for p in PERSONAS if p.slug == persona_slug)
     return (
-        f"{aicha.display_name}\n"
-        f"Email: aicha.post-bug-c@example.test\n"
+        f"{persona.display_name}\n"
+        f"Email: {persona_slug}.walk@example.test\n"
         f"Phone: +49 30 1234-5678\n"
-        f"Location: {aicha.location}\n"
-        f"Residency status: {aicha.residency_status}\n\n"
+        f"Location: {persona.location}\n"
+        f"Residency status: {persona.residency_status}\n\n"
         f"Profile / Summary:\n"
-        f"{aicha.cv_summary}\n\n"
+        f"{persona.cv_summary}\n\n"
         f"Experience:\n"
-        f"  - 2019 - 2026 — Geriatric ward, regional hospital, Tunis (registered nurse)\n"
-        f"  - 2016 - 2019 — General medical ward, Tunis (registered nurse)\n\n"
+        f"  - 2019 - 2026 — {persona.industry} role, {persona.location}\n"
+        f"  - 2016 - 2019 — Prior {persona.industry} role\n\n"
         f"Skills:\n"
-        + "\n".join(f"  - {s}" for s in aicha.skills)
+        + "\n".join(f"  - {s}" for s in persona.skills)
         + "\n\n"
-        f"Languages: {', '.join(aicha.languages)}\n\n"
-        f"Friction context: {aicha.friction_notes}\n"
+        f"Languages: {', '.join(persona.languages)}\n\n"
+        f"Friction context: {persona.friction_notes}\n"
     )
 
 
-def _next_input(reply: str, phase: str | None, prior: list[dict]) -> str | None:
+def _next_input(
+    reply: str, phase: str | None, prior: list[dict],
+    persona_slug: str = "aicha",
+) -> str | None:
     """Decide the next user input given the current response shape.
 
     Returns None when the walk should stop (terminal state reached or
@@ -170,7 +185,8 @@ def _next_input(reply: str, phase: str | None, prior: list[dict]) -> str | None:
     final-state check before laterals/auto markers before generic
     empty-state markers.
     """
-    aicha = next(p for p in PERSONAS if p.slug == "aicha")
+    persona = next(p for p in PERSONAS if p.slug == persona_slug)
+    aicha = persona  # alias for legacy references below
     rlow = (reply or "").lower()
 
     # Terminal / done
@@ -206,7 +222,16 @@ def _next_input(reply: str, phase: str | None, prior: list[dict]) -> str | None:
             or "what next?" in rlow
         ):
             return "1"
-        # Populated review: category list. Pick #1.
+        # Populated review: category-pick prompt. Server asks for
+        # category NAME (not a number) -- "Which category should I
+        # dig into? Reply with one of:  - <name1>  - <name2>".
+        # Parse the first "  - <name>" line and return that.
+        if "which category should i dig into" in rlow:
+            import re
+            m = re.search(r"^\s*[-•]\s+(.+)$", reply, re.MULTILINE)
+            if m:
+                return m.group(1).strip()
+        # Fallback (shouldn't fire under current dispatcher shapes)
         return "1"
 
     # ─── Discover phase ───
@@ -224,10 +249,10 @@ def _next_input(reply: str, phase: str | None, prior: list[dict]) -> str | None:
     # ─── CV check ───
     if phase == "cv_check":
         if "paste" in rlow or "drop the whole text" in rlow or "lebenslauf" in rlow:
-            return _aicha_cv_paste()
+            return _cv_paste_for(persona_slug)
         if "thanks" in rlow or "got your cv" in rlow or "saved" in rlow:
             return "ok"
-        return _aicha_cv_paste()
+        return _cv_paste_for(persona_slug)
 
     # ─── Inspire ───
     if phase == "inspire":
@@ -251,7 +276,15 @@ def _next_input(reply: str, phase: str | None, prior: list[dict]) -> str | None:
         return "/consult"
 
     if phase == "cv_consult":
-        return "I have geriatric experience from Tunis and §16d residency."
+        # Post-/consult choice menu: server emits
+        # "Reply **save** to wrap up, **consult** for CV
+        # enhancements, or **letter** for the motivation draft."
+        # Send "save" to reach PHASE_DONE -- terminates the walk
+        # cleanly via the `if actual_phase == "done"` check at the
+        # bottom of the walk loop. Loop 11 walk-script fix.
+        if "save to wrap up" in rlow or "**save**" in rlow:
+            return "save"
+        return "save"
 
     if phase in (None, "greet"):
         return "/start"
@@ -259,8 +292,23 @@ def _next_input(reply: str, phase: str | None, prior: list[dict]) -> str | None:
     return "/start"
 
 
-def walk_aicha(client: _Client, max_turns: int = MAX_TURNS) -> list[dict]:
-    """Drive the walk. Returns the full captured turn log."""
+def walk_aicha(client: _Client, max_turns: int = MAX_TURNS) -> tuple[list[dict], dict]:
+    """Backwards-compatible wrapper. New code should call walk_persona."""
+    return walk_persona(client, "aicha", max_turns=max_turns)
+
+
+def walk_persona(
+    client: _Client, persona_slug: str, max_turns: int = MAX_TURNS,
+    terminate_after_first_start_fresh: bool = True,
+) -> tuple[list[dict], dict]:
+    """Drive the walk for the named persona. Returns (captured, signals).
+
+    ``terminate_after_first_start_fresh`` (default True per Loop 11
+    operator directive): stop the walk after the first time the
+    server's response is the start-fresh bridge reply
+    (PHASE_DISCOVER post-final-state). One complete Bug-C cycle
+    per walk; cycles 2..N would just re-walk the same path. Set to
+    False to run the legacy max_turns cap behaviour."""
     captured: list[dict] = []
 
     # Turn 0 is implicit (greet — the server's initial state). We
@@ -342,10 +390,28 @@ def walk_aicha(client: _Client, max_turns: int = MAX_TURNS) -> list[dict]:
         last_phase = actual_phase
 
         # Decide next input
-        next_input = _next_input(reply, actual_phase, captured)
+        next_input = _next_input(reply, actual_phase, captured, persona_slug)
 
         if actual_phase == "done":
             print("    journey reached PHASE_DONE; stopping walk", flush=True)
+            break
+
+        # Loop 11 (2026-05-20) early-termination: stop after the
+        # first complete Bug-C cycle reaches start-fresh. The
+        # start-fresh bridge reply transitions from PHASE_REVIEW
+        # (final-state) to PHASE_DISCOVER with the operator-
+        # approved "Let's try with different criteria" prelude.
+        # Detect via the bridge text in the reply we JUST received.
+        if (
+            terminate_after_first_start_fresh
+            and "clearing your old search" in (reply or "").lower()
+            and actual_phase == "discover"
+        ):
+            print(
+                "    start-fresh bridge reached; stopping walk "
+                "(first complete cycle captured)",
+                flush=True,
+            )
             break
 
     signals = {
@@ -362,8 +428,11 @@ def walk_aicha(client: _Client, max_turns: int = MAX_TURNS) -> list[dict]:
 # ───────────────────────── Markdown writer ────────────────────────
 
 
-def write_walk_md(out_dir: Path, captured: list[dict], signals: dict, base: str) -> Path:
-    aicha = next(p for p in PERSONAS if p.slug == "aicha")
+def write_walk_md(
+    out_dir: Path, captured: list[dict], signals: dict, base: str,
+    walk_persona_slug: str = "aicha",
+) -> Path:
+    aicha = next(p for p in PERSONAS if p.slug == walk_persona_slug)
     now = dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")
 
     lines: list[str] = [
@@ -499,7 +568,12 @@ def write_walk_md(out_dir: Path, captured: list[dict], signals: dict, base: str)
         "- Per-turn latency over 30s",
         "",
     ]
-    out_path = out_dir / "aicha-loop-10-3-rewalk.md"
+    # Per Loop 11 directive (2026-05-20): walks 2-7 land at
+    # docs/grant/journey-walks-2026-05-20/{slug}.md. Aïcha's
+    # Loop 10.3 evidence stays at aicha-loop-10-3-rewalk.md;
+    # this writer falls back to that filename when called with
+    # the legacy walk_aicha helper for backwards compatibility.
+    out_path = out_dir / f"{walk_persona_slug}.md"
     out_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     return out_path
 
@@ -511,28 +585,43 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--base", default=DEFAULT_BASE)
     parser.add_argument("--max-turns", type=int, default=MAX_TURNS)
+    parser.add_argument(
+        "--persona", default="aicha",
+        choices=[p.slug for p in PERSONAS],
+        help="Persona-fixture slug to walk (Loop 11+: walks 2-7).",
+    )
+    parser.add_argument(
+        "--no-early-terminate", action="store_true",
+        help="Disable Loop 11 early-termination (run to max-turns).",
+    )
     args = parser.parse_args()
 
     client = _Client(args.base)
-    print(f"[walk] base={args.base}", flush=True)
+    print(f"[walk] base={args.base}  persona={args.persona}", flush=True)
 
     # Register fresh user
     started = time.monotonic()
-    email = _register(client)
+    email = _register(client, args.persona)
     print(f"[walk] registered {email} ({int((time.monotonic()-started)*1000)} ms)", flush=True)
     print(
-        "[walk] Loop 10.3: friction_class classifier active "
-        "(no workaround); Aïcha CV will classify natively",
+        f"[walk] Bug F Option B active: {args.persona} CV will "
+        "classify natively (no env-hook workaround)",
         flush=True,
     )
 
     # Drive walk
-    captured, signals = walk_aicha(client, max_turns=args.max_turns)
+    captured, signals = walk_persona(
+        client, args.persona, max_turns=args.max_turns,
+        terminate_after_first_start_fresh=not args.no_early_terminate,
+    )
     print(f"[walk] walked {len(captured)} turns; Bug-C signals: {signals}", flush=True)
 
     out_dir = ROOT / "docs" / "grant" / "journey-walks-2026-05-20"
     out_dir.mkdir(parents=True, exist_ok=True)
-    out_path = write_walk_md(out_dir, captured, signals, args.base)
+    out_path = write_walk_md(
+        out_dir, captured, signals, args.base,
+        walk_persona_slug=args.persona,
+    )
     print(f"[walk] wrote {out_path.relative_to(ROOT)}", flush=True)
     return 0
 
