@@ -115,6 +115,8 @@ Helpmefindthejob does not force a single AI provider on you. The deployment can 
 
 If you are not comfortable sending your CV slice to a third-party AI provider, choose Ollama (your own machine, no egress) or manual handoff (you control exactly what is sent and where) or deterministic templates (no AI).
 
+The honest tradeoffs between local AI (Ollama) and cloud AI (OpenAI, Anthropic, Google, DeepSeek, etc.) are documented in the [AI provider honesty matrix](../docs/grant/15-ai-provider-honesty-matrix.md) — quality, latency, privacy, cost, EU AI Act surface, per-use-case recommendations. The project explicitly does not pick a "best" provider for you; the matrix lets you weigh the tradeoffs against your own priorities. Switch provider any time in Settings; the system never silently reroutes to a different provider than the one you picked.
+
 You can change your AI provider at any time. You can revoke AI consent at any time. The system records each consent change in the audit log so you have a record of what was active when.
 
 ---
