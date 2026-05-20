@@ -128,6 +128,7 @@ the 65 inventory items. The 53 remaining items are catalogued below.
 | 64 | Open the live NLnet submission form to cross-check question wording + word limits against the draft. | 1 h | 2026 Q3 |
 | 65 | External-reader recruit — at minimum one human read of the application before submission. | 1 wk wall | 2026 Q3 |
 | 66 | **Methodology band recalibration (Path B reserve)** — if real user feedback post-deployment shows the post-Path-A fit-score calibration is off (e.g., users perceive "Fit: 78%" as undersold for jobs that match them perfectly, or "Fit: 45%" as oversold for jobs they consider weak), recalibrate the methodology's `expected_score_min` / `expected_score_max` bands per persona in `persona_fixtures.PERSONAS` and the corresponding ranges in `compliance/accuracy-and-bias-testing.md` §2.4. **Cross-surface dependency note**: downstream features depend on this calibration — (a) Slack notification threshold (`UserProfile.slack_fit_threshold`, default 0.70); (b) "high fit" UX labels in the queue; (c) queue ranking by fit score; (d) Pro+ auto-fit-on-discovery threshold. Any recalibration is a coordinated cross-surface change — re-evaluate all four downstream thresholds + the seven persona fixtures + the methodology doc in one slice. Reserved as Path B per operator decision 2026-05-20 (Path A approved as the calibration-preserves-UX-continuity move; Path B held back for if real-world data contradicts Path A's outcome). | 1 day (recalibration) + 0.5 day (downstream audit) | unscheduled (trigger-driven) |
+| 67 | **Cloud-AI re-validation of PART 5 F1/F2 gates post-deployment** — PART 5 iter#3 closed under "top-tier within open-source-AI scope" per the operator's hard-convergence rule (2026-05-20). Strict residual margins on Ollama `llama3.1:8b`: (a) Mahmoud + `ausbildung_shk_hamburg` margin fail at 72 (sample variance 56→81→80→72 across 4 dated runs; capability ceiling); (b) skills+exp anchor parking exactly at 30% boundary (improved 46% → 36% → 30% across iterations 1/2/3). Once the first deployer configures a cloud-AI provider (GPT-4 / Claude / Gemini Pro) in production telemetry, re-run `tests.test_bias_methodology` against that provider + verify Mahmoud ausbildung ≥75 reliably + skills+exp parking <25% reliably. Expected outcome: cloud-AI closes both margins without prompt changes — that's the cloud-AI capability premium documented in PART 10 honesty matrix. Trigger: first cloud-AI-provider deployment with telemetry consent. Effort: 1 day (re-run + analysis + update PART 10 entry). | 1 day | unscheduled (trigger-driven) |
 
 ---
 
@@ -136,8 +137,8 @@ the 65 inventory items. The 53 remaining items are catalogued below.
 - **Items closed in this slice (pre-submission scope-tightening)**: 12
   (#4, #5, #6, #7, #9, #10, #11, #12, #15, #19, #34, #37, #58, #61
   partly — counted as 12 distinct closures by inventory number).
-- **Items remaining**: 54.
-- **Targets**: 2026 Q3 = 24 items; 2026 Q4 = 17 items; 2027 Q1 = 12 items; trigger-driven (Path B) = 1.
+- **Items remaining**: 55.
+- **Targets**: 2026 Q3 = 24 items; 2026 Q4 = 17 items; 2027 Q1 = 12 items; trigger-driven = 2.
 
 This backlog is the contract: every item here is tracked, with an
 owner-rough effort estimate, and an honest quarter target. Items that
@@ -154,3 +155,10 @@ shift quarter get a dated note appended below.
   feedback shows the post-Path-A calibration is off, this item gets
   scheduled with the cross-surface downstream audit. Currently
   reserved; no quarter assigned.
+- **2026-05-20**: item #67 added — Cloud-AI re-validation of PART 5
+  F1/F2 gates. Trigger-driven (first cloud-AI deployer with
+  telemetry consent). Captures the open-source-AI ceiling margins
+  documented in PART 5 closure: Mahmoud ausbildung ≥75 sample
+  variance on llama3.1:8b + parking 30% boundary residual. Expected
+  outcome: cloud-AI closes both margins without prompt changes;
+  becomes a PART 10 honesty-matrix entry.
