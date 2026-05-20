@@ -496,6 +496,17 @@ class AppState:
             providers=aggregator_providers,
             cache=self.aggregator_cache,
         )
+        # Bug C piece 2 (2026-05-20): cache-only, deterministic
+        # diagnostic engine for the empty-state review phase. Reads
+        # AggregatorResultCache; never live-probes (operator decision
+        # 2026-05-20 — free-tier providers' coverage skew would inject
+        # structural bias against the migrant-five personas).
+        from company_discovery.diagnostic_engine import DiagnosticEngine
+
+        self.diagnostic_engine = DiagnosticEngine(
+            cache=self.aggregator_cache,
+            providers=aggregator_providers,
+        )
         # one-shot migration: pull legacy JSON schedules into the durable scheduler
         legacy = self._load_watchlist_schedules()
         for user_id, item in legacy.items():
@@ -3779,27 +3790,41 @@ class AppState:
             journey2.search_jobs_by_id = jobs_by_id
             if not jobs:
                 # PART 6 Bug C piece 1 (2026-05-20): never-implicit-
-                # done. The 0-results branch previously routed
-                # straight to PHASE_DONE, dead-ending the user with
-                # no recovery path beyond restarting the whole
-                # journey. The new contract routes to PHASE_REVIEW
-                # with review_substate="empty" so the user can
-                # explicitly retry or give up — see
+                # done. The 0-results branch routes to
+                # PHASE_REVIEW.empty so the user can explicitly
+                # retry or give up — see
                 # company_discovery/journey._advance_review_empty.
-                # Pieces 2-6 will add diagnostic explanation,
-                # widening affordances, consented auto-relax,
-                # adjacent-criterion counts, and final-state
-                # recovery onto this foundation.
+                # Piece 2 (2026-05-20): cache-only DiagnosticEngine
+                # probes for relaxation-candidate counts and writes
+                # the diagnostic text onto journey state so
+                # subsequent re-asks within empty_state reuse it.
                 journey2.phase = PHASE_REVIEW
                 journey2.review_substate = "empty"
+                diag = self.diagnostic_engine.generate(
+                    role_text=(
+                        (journey2.target_roles[0] if journey2.target_roles else "")
+                        or ""
+                    ),
+                    location=journey2.location or None,
+                    filters={
+                        "remote_required": journey2.remote_required,
+                        "salary_floor": journey2.salary_floor,
+                        "company_size": journey2.company_size or None,
+                    },
+                )
+                journey2.diagnostic_text = diag or ""
             else:
                 journey2.phase = PHASE_REVIEW
                 journey2.review_substate = ""  # clear if previously set
+                journey2.diagnostic_text = ""
             self._journey_save(user_id, journey2)
             if not jobs:
                 from company_discovery.journey import _format_review_empty_reply
 
-                summary_msg = _format_review_empty_reply(journey2)
+                summary_msg = _format_review_empty_reply(
+                    journey2,
+                    diagnostic_text=journey2.diagnostic_text or None,
+                )
             else:
                 jobs_summary = "\n".join(
                     f"  - **{c}**: {len(ids)} job(s)" for c, ids in categorized.items()

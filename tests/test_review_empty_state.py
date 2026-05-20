@@ -226,16 +226,26 @@ class DiagnosticSeamTests(unittest.TestCase):
         reply = _format_review_empty_reply(j, diagnostic_text="")
         # No leading newlines from an empty diagnostic
         self.assertFalse(reply.startswith("\n"))
-        self.assertIn("No jobs found", reply)
+        # Piece 2 wording: "No matches found" (strict-fact fallback)
+        self.assertIn("No matches found", reply)
 
-    def test_diagnostic_text_appears_above_action_prompt(self) -> None:
+    def test_diagnostic_text_replaces_fallback(self) -> None:
+        """Piece 2 contract change: when diagnostic_text is provided,
+        it REPLACES the strict-fact fallback (it doesn't prepend to
+        it). Pre-piece-2 the action prompt embedded the 'No jobs
+        found' line; piece 2 split lead vs. action so the diagnostic
+        is the lead when present, fallback otherwise."""
         j = _empty_state_journey()
-        diag = "Senior + Berlin + English-team is a narrow combination."
+        diag = (
+            "No matches found for **Registered nurse** in **Berlin**. "
+            "Recent searches without the seniority qualifier returned "
+            "**47 posting(s)** for **nurse** in **Berlin**."
+        )
         reply = _format_review_empty_reply(j, diagnostic_text=diag)
-        # Diagnostic appears first, then a blank-line separator,
-        # then the action prompt
+        # Diagnostic appears first
         self.assertTrue(reply.startswith(diag))
-        self.assertIn("\n\nNo jobs found", reply)
+        # Action prompt is appended after a blank line
+        self.assertIn("What next?", reply)
         self.assertIn("retry", reply)
 
 
