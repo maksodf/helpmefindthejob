@@ -82,6 +82,31 @@ guidance is actually useful to someone navigating §16d, Blue Card, §24,
 subsidiary protection, or Romanian / EU-citizen tracks rather than a
 generic English-speaking job market.
 
+## Chat — slash commands
+
+The in-product chat accepts both free-form natural language (EN +
+DE; AI-router classifies intent) and explicit slash commands for
+deterministic routing. Type `/help` in the chat to get the full
+list at any time. The most common ones:
+
+| Slash | What it does |
+|---|---|
+| `/start` / `/journey` | Begin the guided job-search journey |
+| `/find` / `/search` | One-off job search across 8 providers |
+| `/tailor` | Tailor your CV for a specific imported job |
+| `/letter` / `/motivation` | Draft a DACH-norm motivation letter |
+| `/consult` / `/enhance-cv` | Compare CV vs picked JD; surface gap-questions |
+| `/profile` | Update persona / location / target roles |
+| `/applied` / `/mark` | Mark an imported job as applied |
+| `/add` / `/watch` | Add a company to your watchlist |
+| `/cv` / `/build-cv` | Open the CV builder |
+| `/help` / `/?` | Full command list with descriptions |
+
+Plus universal escape hatches recognised at any phase: `cancel`,
+`exit`, `quit`, `stop`, `nevermind`, `abbrechen`, `vergiss es`,
+`vergiss das`, `stop bitte` — all reset the current flow and
+preserve profile data.
+
 ## Quickstart
 
 A clean clone should land you at a working local instance in five

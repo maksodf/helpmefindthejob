@@ -1119,14 +1119,34 @@ def is_confirmation_no(message: str) -> bool:
 def render_help_text() -> str:
     """The help command's text body — kept plain (no Markdown) because
     the chat surface renders bubbles as ``textContent`` and ``**bold**``
-    would show literally."""
+    would show literally.
+
+    Loop 17 (2026-05-20): Gate 6.3 — enriched output now includes
+    the first sentence of each command's description so /help is a
+    real discoverability surface instead of an alias dump. Falls
+    back to label-only when description is empty (defensive)."""
     lines = ["Here's what I can do:\n"]
     for c in REGISTRY.values():
         aliases = ", ".join(c.slash_aliases) or "—"
-        lines.append(f"• {c.label} ({aliases})")
+        # First sentence of the description (truncate at "." followed
+        # by space or EOL). Keeps the help text scannable while
+        # surfacing what each command actually does.
+        desc = (c.description or "").strip()
+        if desc:
+            first_period = desc.find(". ")
+            if first_period > 0:
+                desc = desc[: first_period + 1]
+            lines.append(f"• {c.label} ({aliases})")
+            lines.append(f"    {desc}")
+        else:
+            lines.append(f"• {c.label} ({aliases})")
     lines.append(
         "\nYou can describe what you want in plain language too — "
         'e.g., "watch Charité, career page karriere.charite.de" or '
         '"I need to build a CV".'
+    )
+    lines.append(
+        "Universal escape hatches at any phase: cancel / exit / "
+        "quit / stop / nevermind / abbrechen / vergiss es."
     )
     return "\n".join(lines)
