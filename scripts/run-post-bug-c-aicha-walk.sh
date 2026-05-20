@@ -47,12 +47,14 @@ cleanup() {
 trap cleanup EXIT INT TERM
 
 echo "[walk] booting helpmefindthejob server on http://127.0.0.1:$PORT  data=$DATA_DIR"
+echo "[walk] Loop 9.3 Bug F workaround: HELPMEFINDTHEJOB_TEST_PERSONA_FIXTURE=aicha"
 COMPANY_DISCOVERY_DATA_DIR="$DATA_DIR" \
   COMPANY_DISCOVERY_ENV=development \
   DIRECTJOB_ALLOW_REGISTRATION=true \
   DIRECTJOB_REQUIRE_EMAIL_VERIFICATION=false \
   HELPMEFINDTHEJOB_COOKIE_SECURE=false \
   HELPMEFINDTHEJOB_AUDIT_LOG_SALT="loop9-walk-salt-32chars-abcd1234efgh" \
+  HELPMEFINDTHEJOB_TEST_PERSONA_FIXTURE="${WALK_PERSONA_FIXTURE:-aicha}" \
   DIRECTJOB_AI_PROVIDER=ollama \
   DIRECTJOB_AI_MODEL=llama3.1:8b \
   OLLAMA_HOST="${OLLAMA_HOST:-http://127.0.0.1:11434}" \
@@ -80,7 +82,8 @@ echo "[walk] server healthy; starting walk"
 
 # Run walk (may take many minutes; Ollama latency hits per AI call)
 set +e
-"$PYTHON_BIN" scripts/post_bug_c_aicha_walk.py \
+HELPMEFINDTHEJOB_TEST_PERSONA_FIXTURE="${WALK_PERSONA_FIXTURE:-aicha}" \
+  "$PYTHON_BIN" scripts/post_bug_c_aicha_walk.py \
   --base "http://127.0.0.1:$PORT" 2>&1 | tee "$WALK_LOG"
 status=$?
 set -e

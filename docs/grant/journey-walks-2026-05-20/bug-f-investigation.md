@@ -91,8 +91,24 @@ def update_profile(self, user_id: str, payload: dict[str, Any]) -> UserProfile:
         payload.get("personaId")
         or payload.get("persona_id")
         or existing.persona_id
+        or DEFAULT_PERSONA_ID
     )
+    if persona_id not in PERSONAS:   # ←─── registry validation
+        raise ValueError("unknown_persona")
 ```
+
+**Correction (Loop 9.3, 2026-05-20)**: an earlier draft of this
+report said `update_profile` accepts any string for `personaId`
+without validation. That is incorrect — `app.py:742` explicitly
+validates `persona_id` against the `PERSONAS` registry and raises
+`ValueError("unknown_persona")` for any string not in the 15-
+industry set. Fixture slugs (`aicha` / `yusuf` / etc.) are rejected
+at the API boundary. Loop 9.3's initial workaround attempt (POST
+`/api/profile {"personaId": "aicha"}`) failed with HTTP 400
+`unknown_persona`; the CORRECTED workaround uses an env-var test
+hook in `_persona_fixture_for` (`HELPMEFINDTHEJOB_TEST_PERSONA_FIXTURE`)
+that bypasses the lookup chain entirely. Documented in
+`aicha-loop-9-3-rewalk.md`.
 
 UI surfaces that hit this endpoint:
 

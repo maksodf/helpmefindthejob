@@ -52,7 +52,35 @@ def _persona_fixture_for(persona_id: str | None):
 
     Defensive lookup: any failure returns ``None`` so the prompt
     builder degrades gracefully to the lighter ``Persona`` context.
+
+    Loop 9.3 test-mode override (Bug F workaround, 2026-05-20): when
+    the env var ``HELPMEFINDTHEJOB_TEST_PERSONA_FIXTURE`` is set to a
+    fixture slug, the function returns the named fixture regardless
+    of the ``persona_id`` input. Used exclusively by the Loop 9.3
+    walk harness to validate Bug C pieces 3-6 end-to-end with a
+    fixture-resolving persona, while Bug F's real-user persona-
+    classification fix is decided separately (Loop 10, Option B per
+    operator). PRODUCTION DEPLOYMENTS MUST NOT SET THIS ENV VAR --
+    it forces every user through the named fixture's friction
+    context, which would be wrong for any user who isn't actually
+    that fixture archetype.
     """
+    import os
+    test_fixture_slug = os.environ.get(
+        "HELPMEFINDTHEJOB_TEST_PERSONA_FIXTURE"
+    )
+    if test_fixture_slug:
+        try:
+            from company_discovery.persona_fixtures import PERSONAS
+
+            for fixture in PERSONAS:
+                if fixture.slug == test_fixture_slug:
+                    return fixture
+        except Exception:  # noqa: BLE001 - test hook must degrade gracefully
+            pass
+        # Fall through to normal lookup if env-var slug doesn't match
+        # a real fixture (e.g., typo in the bash wrapper).
+
     if not persona_id:
         return None
     try:
