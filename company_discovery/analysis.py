@@ -159,8 +159,10 @@ Create a concise Job Decision Brief for this role.
 Strict rules:
 - Use ONLY facts present in the candidate profile + the job description below. Do not invent the candidate's experience, skills, or visa status. Do not invent the company's culture, salary, or team size unless the JD states it.
 - For LEGAL claims (visa rules, Anerkennung pathways, Bürgergeld eligibility, Aufenthaltstitel obligations), do not give legal advice; direct the candidate to BAMF, Bundesagentur für Arbeit, or a Migrationsberatungsstelle.
-- Acknowledge the candidate's documented friction context (Aufenthaltstitel / Anerkennung / Wiedereinstieg / language level) where it materially affects whether to apply.
+- Friction-context acknowledgment (NON-NEGOTIABLE when profile carries friction): if the candidate profile includes residency_status OR friction_notes, section 4 (Risks and blockers) MUST include at least one explicit friction-context line tying the friction to whether-to-apply, and section 8 (Application angle) MUST address how the candidate's friction context fits this specific role. Omitting friction when documented produces a generic brief that doesn't serve the candidate's actual situation.
 - If the JD is in German, match its register; if English, use English. State the language assumption if the JD is empty.
+- Format (NON-NEGOTIABLE): action-oriented sections — 4 (Risks and blockers), 7 (Likely keywords/tools), 8 (Application angle), 9 (Missing information to verify manually) — MUST be enumerated bullets with clear actions, NOT narrative blobs. Analytical sections — 3 (Why it fits), 5 (Seniority check), 6 (persona relevance section) — MAY be short prose paragraphs (2-3 sentences each).
+- Forbidden filler phrases (case-insensitive — do NOT use these tired generic-application markers anywhere in the brief): "Hiermit bewerbe ich mich", "I am writing to express my interest", "I would like to apply for the position", "In conclusion", "Overall, this is", "It is important to note that", "Here are some key points", "I would recommend". These signal an untailored output. Use specific, role-anchored phrasing instead.
 
 Candidate target profile:
 {profile_block}
