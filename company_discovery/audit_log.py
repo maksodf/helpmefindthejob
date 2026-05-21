@@ -258,8 +258,16 @@ class AuditLogEmitter:
                 # canonical record EXCLUDING the chain_hmac field
                 # itself (chicken-and-egg) but INCLUDING the
                 # sequence_no — so reordering records is detectable.
-                self._last_sequence_no += 1
-                record["sequence_no"] = self._last_sequence_no
+                # Quality-audit (2026-05-21): we MUST bump the in-
+                # memory chain state ONLY AFTER the file write
+                # succeeds. The previous version bumped first +
+                # wrote second — a single OSError between bump
+                # and write would silently corrupt the chain for
+                # every subsequent record (record N missing on
+                # disk; record N+1 chains from N's in-memory HMAC
+                # which no auditor can recompute).
+                tentative_seq = self._last_sequence_no + 1
+                record["sequence_no"] = tentative_seq
                 # Canonical form for HMAC: sorted keys, no whitespace,
                 # ensure_ascii so the byte stream is stable across
                 # platforms / Python versions.
@@ -269,16 +277,22 @@ class AuditLogEmitter:
                     separators=(",", ":"),
                     ensure_ascii=True,
                 )
-                new_hmac = self._compute_chain_hmac(
+                tentative_hmac = self._compute_chain_hmac(
                     self._last_chain_hmac, canonical
                 )
-                record["chain_hmac"] = new_hmac
-                self._last_chain_hmac = new_hmac
+                record["chain_hmac"] = tentative_hmac
                 self._rotate_if_needed()
                 self.log_path.parent.mkdir(parents=True, exist_ok=True)
                 with self.log_path.open("a", encoding="utf-8") as handle:
                     json.dump(record, handle, ensure_ascii=False, sort_keys=True)
                     handle.write("\n")
+                # Commit the in-memory state ONLY after the write
+                # succeeds. If the open or write raised an OSError,
+                # we fall through to the except below WITHOUT
+                # advancing the counters — the next write retries
+                # with the same sequence_no, no chain gap.
+                self._last_sequence_no = tentative_seq
+                self._last_chain_hmac = tentative_hmac
         except OSError as exc:
             print(f"[audit_log] failed to write record: {exc!r}", file=sys.stderr)
 

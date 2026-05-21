@@ -246,6 +246,48 @@ class SchemaVersionGate(unittest.TestCase):
         self.assertEqual(record["schema_version"], "v2")
 
 
+class WriteFailureDoesNotCorruptChain(unittest.TestCase):
+    """Quality-audit (2026-05-21): a single file-write failure
+    between bump+write would corrupt the chain for every
+    subsequent record. The in-memory counters must only advance
+    AFTER the write succeeds — never before."""
+
+    def test_failed_write_does_not_advance_sequence(self) -> None:
+        emitter, log_path, tmp = _make_emitter()
+        self.addCleanup(tmp.cleanup)
+        emitter.emit("system_event", outcome="ok")
+        self.assertEqual(emitter._last_sequence_no, 1)
+        # Force the next write to fail by making the log path
+        # un-writable. We monkey-patch the open() call inside
+        # _write to raise OSError.
+        original_open = type(log_path).open
+        def failing_open(self, *args, **kwargs):
+            if self == log_path:
+                raise OSError("disk full simulation")
+            return original_open(self, *args, **kwargs)
+        type(log_path).open = failing_open
+        try:
+            emitter.emit("system_event", outcome="ok")
+        finally:
+            type(log_path).open = original_open
+        # In-memory counter must NOT have advanced — the failed
+        # write left no record on disk, so sequence_no=2 is still
+        # available for the next attempt
+        self.assertEqual(
+            emitter._last_sequence_no,
+            1,
+            "Sequence must not advance on failed write — "
+            "advancing would gap the chain for every future record",
+        )
+        # And the recovery: a successful write next attempt picks
+        # up at sequence_no=2 and the chain validates
+        emitter.emit("system_event", outcome="ok")
+        self.assertEqual(emitter._last_sequence_no, 2)
+        result = verify_chain([log_path], emitter.salt)
+        self.assertTrue(result.ok, f"Chain validation: {result.to_dict()}")
+        self.assertEqual(result.records_checked, 2)
+
+
 class WrongSaltDetection(unittest.TestCase):
     def test_verify_with_wrong_salt_fails(self) -> None:
         """Defense: an attacker with file write access but no salt
