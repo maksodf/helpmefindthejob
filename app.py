@@ -6534,6 +6534,258 @@ class Handler(BaseHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(html_body.encode("utf-8"))
                 return
+            # SSO/OIDC routes (13-plan item 12/13; gap #21).
+            # Unauthenticated — these establish a session for a
+            # federated user who doesn't have one yet.
+            if parsed.path == "/api/auth/sso/oidc/providers":
+                from company_discovery.sso_oidc import load_providers_from_env
+
+                providers = load_providers_from_env()
+                # NEVER expose client_secret to the frontend
+                public = [
+                    {
+                        "providerId": p.provider_id,
+                        "issuer": p.issuer,
+                        "emailDomain": p.email_domain or None,
+                        "loginUrl": f"/api/auth/sso/oidc/{p.provider_id}/login",
+                    }
+                    for p in providers
+                ]
+                self.send_json({"providers": public})
+                return
+            sso_login_match = re.match(
+                r"^/api/auth/sso/oidc/([^/]+)/login$", parsed.path
+            )
+            if sso_login_match:
+                from company_discovery.sso_oidc import (
+                    AuthRequest,
+                    OidcDiscoveryError,
+                    discover,
+                    generate_pkce,
+                    load_providers_from_env,
+                    build_authorization_url,
+                    sign_auth_request,
+                )
+
+                provider_id = sso_login_match.group(1)
+                providers = load_providers_from_env()
+                provider = next(
+                    (p for p in providers if p.provider_id == provider_id), None
+                )
+                if provider is None:
+                    self.send_error_json(
+                        HTTPStatus.NOT_FOUND,
+                        "unknown_oidc_provider",
+                        f"Provider '{provider_id}' is not configured.",
+                    )
+                    return
+                try:
+                    discovery = discover(provider.issuer)
+                except OidcDiscoveryError as err:
+                    self.send_error_json(
+                        HTTPStatus.BAD_GATEWAY,
+                        "oidc_discovery_failed",
+                        str(err)[:200],
+                    )
+                    return
+                # Generate the per-login secrets
+                state = secrets.token_urlsafe(32)
+                nonce = secrets.token_urlsafe(32)
+                verifier, challenge = generate_pkce()
+                # Build the callback URL from the current host. We
+                # trust the Host header here — same trust model as
+                # the rest of the app's URL composition.
+                public_url = (
+                    get_env("HELPMEFINDTHEJOB_PUBLIC_URL", "DIRECTJOB_PUBLIC_URL", "")
+                    or f"http://{self.headers.get('Host', 'localhost')}"
+                )
+                redirect_uri = f"{public_url.rstrip('/')}/api/auth/sso/oidc/{provider_id}/callback"
+                auth_request = AuthRequest(
+                    provider_id=provider_id,
+                    state=state,
+                    nonce=nonce,
+                    code_verifier=verifier,
+                    redirect_uri=redirect_uri,
+                )
+                cookie_value = sign_auth_request(auth_request, secret_key=SECRET_KEY)
+                authorize_url = build_authorization_url(
+                    provider,
+                    discovery,
+                    redirect_uri=redirect_uri,
+                    state=state,
+                    nonce=nonce,
+                    code_challenge=challenge,
+                )
+                self.send_response(HTTPStatus.SEE_OTHER)
+                self.send_header("Location", authorize_url)
+                # Set the auth-state cookie. HttpOnly + SameSite=Lax;
+                # Secure when behind HTTPS. 10-minute TTL matches the
+                # cookie helper's internal expiry.
+                cookie_parts = [
+                    f"sso_auth_state={cookie_value}",
+                    "Path=/",
+                    "Max-Age=600",
+                    "HttpOnly",
+                    "SameSite=Lax",
+                ]
+                if COOKIE_SECURE:
+                    cookie_parts.append("Secure")
+                self.send_header("Set-Cookie", "; ".join(cookie_parts))
+                self.end_headers()
+                return
+            sso_callback_match = re.match(
+                r"^/api/auth/sso/oidc/([^/]+)/callback$", parsed.path
+            )
+            if sso_callback_match:
+                from company_discovery.sso_oidc import (
+                    OidcError,
+                    OidcStateMismatchError,
+                    discover,
+                    exchange_code_for_tokens,
+                    load_providers_from_env,
+                    validate_id_token,
+                    verify_auth_request,
+                )
+
+                provider_id = sso_callback_match.group(1)
+                # Parse the IdP's redirect query string
+                from urllib.parse import parse_qs as _pq
+
+                qs = _pq(parsed.query or "")
+                code = (qs.get("code", [""])[0] or "").strip()
+                returned_state = (qs.get("state", [""])[0] or "").strip()
+                error_param = (qs.get("error", [""])[0] or "").strip()
+                if error_param:
+                    self.send_error_json(
+                        HTTPStatus.BAD_REQUEST,
+                        "idp_error",
+                        f"IdP rejected the login: {error_param}"[:200],
+                    )
+                    return
+                if not code or not returned_state:
+                    self.send_error_json(
+                        HTTPStatus.BAD_REQUEST,
+                        "missing_code_or_state",
+                        "The IdP callback was missing code/state — the login can't continue.",
+                    )
+                    return
+                # Read + verify the signed auth-state cookie
+                cookie_value = self.headers.get("Cookie", "")
+                stored_cookie = ""
+                for pair in cookie_value.split(";"):
+                    pair = pair.strip()
+                    if pair.startswith("sso_auth_state="):
+                        stored_cookie = pair[len("sso_auth_state=") :]
+                        break
+                if not stored_cookie:
+                    self.send_error_json(
+                        HTTPStatus.BAD_REQUEST,
+                        "missing_auth_state_cookie",
+                        "The browser didn't carry the sso_auth_state cookie. Restart the login.",
+                    )
+                    return
+                try:
+                    auth_request = verify_auth_request(
+                        stored_cookie, secret_key=SECRET_KEY
+                    )
+                except OidcStateMismatchError as err:
+                    self.send_error_json(
+                        HTTPStatus.BAD_REQUEST,
+                        "auth_state_invalid",
+                        str(err),
+                    )
+                    return
+                # State match — defends against forged callbacks
+                if auth_request.state != returned_state:
+                    self.send_error_json(
+                        HTTPStatus.BAD_REQUEST,
+                        "state_mismatch",
+                        "Callback state does not match the cookie. Forged callback rejected.",
+                    )
+                    return
+                if auth_request.provider_id != provider_id:
+                    self.send_error_json(
+                        HTTPStatus.BAD_REQUEST,
+                        "provider_mismatch",
+                        "Callback provider does not match the login.",
+                    )
+                    return
+                # Look up the provider config + run the discovery
+                providers = load_providers_from_env()
+                provider = next(
+                    (p for p in providers if p.provider_id == provider_id), None
+                )
+                if provider is None:
+                    self.send_error_json(
+                        HTTPStatus.NOT_FOUND,
+                        "unknown_oidc_provider",
+                        f"Provider '{provider_id}' is not configured.",
+                    )
+                    return
+                try:
+                    discovery = discover(provider.issuer)
+                    tokens = exchange_code_for_tokens(
+                        provider,
+                        discovery,
+                        code=code,
+                        code_verifier=auth_request.code_verifier,
+                        redirect_uri=auth_request.redirect_uri,
+                    )
+                    claims = validate_id_token(
+                        tokens["id_token"],
+                        provider=provider,
+                        discovery=discovery,
+                        expected_nonce=auth_request.nonce,
+                    )
+                except OidcError as err:
+                    self.send_error_json(
+                        HTTPStatus.BAD_GATEWAY,
+                        "oidc_error",
+                        str(err)[:200],
+                    )
+                    return
+                # JIT-provision + establish session
+                try:
+                    user = STATE.auth_store.find_or_create_sso_user(
+                        provider_id=provider_id,
+                        subject=claims.subject,
+                        email=claims.email,
+                        provider_kind="oidc",
+                        attributes=claims.raw_claims,
+                    )
+                except ValueError as err:
+                    self.send_error_json(
+                        HTTPStatus.BAD_REQUEST,
+                        "jit_provision_failed",
+                        str(err)[:200],
+                    )
+                    return
+                session = STATE.auth_store.create_session(user)
+                STATE.log_analytics(
+                    user.id,
+                    "sso_login",
+                    {
+                        "providerId": provider_id,
+                        "providerKind": "oidc",
+                        "issuer": claims.issuer,
+                    },
+                )
+                # Set session + clear auth-state cookie. Redirect to /.
+                self.send_response(HTTPStatus.SEE_OTHER)
+                self.send_header("Location", "/")
+                self.send_header(
+                    "Set-Cookie",
+                    session_cookie_header(
+                        session.token,
+                        max_age=int(STATE.auth_store.session_ttl.total_seconds()),
+                    ),
+                )
+                self.send_header(
+                    "Set-Cookie",
+                    "sso_auth_state=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax",
+                )
+                self.end_headers()
+                return
             if parsed.path == "/api/auth/status":
                 session = self.current_session()
                 # ``hasUsers`` lets the frontend decide whether the

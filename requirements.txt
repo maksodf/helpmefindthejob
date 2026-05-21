@@ -25,3 +25,12 @@ cryptography>=42.0.0,<50.0.0
 # jsonschema enforces MCP tools/call inputSchema validation before dispatch
 # (mcp_server.py). Light dependency, well-maintained, no native code.
 jsonschema==4.25.1
+# PyJWT backs the OIDC ID-token signature verification in
+# company_discovery/sso_oidc.py (13-plan item 12/13). RS256 + ES256 are
+# the algorithms every major IdP (Okta, Azure AD, Google Workspace,
+# Keycloak, Auth0) ships by default. Implementing JWT verification by
+# hand against arbitrary IdP key sets is security-critical — PyJWT
+# is the industry standard. Builds on the existing cryptography
+# dependency (no new transitive surface). Active maintenance + audited
+# security history; the Python community's de-facto JWT layer.
+PyJWT[crypto]>=2.8.0,<3.0.0

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+import json
 import os
 import re
 import secrets
@@ -360,6 +361,29 @@ class AuthStore:
             )
             """
         )
+        # SSO linkage table (13-plan item 12/13). Maps a federated
+        # identity (provider_id + subject) to a local user. Keyed
+        # on (provider_id, subject) — the IdP's subject is the
+        # long-term stable identity; email can change at the IdP
+        # without breaking the link.
+        self.connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS sso_links (
+                provider_id TEXT NOT NULL,
+                subject TEXT NOT NULL,
+                user_id TEXT NOT NULL,
+                provider_kind TEXT NOT NULL DEFAULT 'oidc',
+                created_at TEXT NOT NULL,
+                last_login_at TEXT,
+                attributes_json TEXT,
+                PRIMARY KEY (provider_id, subject),
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+            """
+        )
+        self.connection.execute(
+            "CREATE INDEX IF NOT EXISTS idx_sso_links_user ON sso_links(user_id)"
+        )
         self._ensure_admin_exists()
         self.connection.commit()
 
@@ -510,6 +534,152 @@ class AuthStore:
             last_login_at=login_at,
             last_active_at=login_at,
         )
+
+    def find_or_create_sso_user(
+        self,
+        *,
+        provider_id: str,
+        subject: str,
+        email: str,
+        provider_kind: str = "oidc",
+        attributes: dict | None = None,
+    ) -> AuthUser:
+        """JIT-provision a user from SSO.
+
+        Resolution order:
+        1. (provider_id, subject) match → existing linked user
+        2. email match → link the existing local user to this SSO
+           identity, return them. Use case: deployer turns on SSO
+           after the team already has password accounts; first SSO
+           login auto-links instead of creating a duplicate.
+        3. Neither matches → create a new user with this email,
+           random unusable password, and link them.
+
+        Updates ``last_login_at`` on the sso_links row on every
+        call. Returns the AuthUser ready for ``create_session``.
+
+        13-plan item 12/13 (SSO/SAML).
+        """
+
+        if not provider_id or not subject:
+            raise ValueError("provider_id_and_subject_required")
+        normalized_email = _normalize_email(email)
+        if not is_valid_email_shape(normalized_email):
+            raise ValueError("invalid_email")
+        now_iso = now_utc().isoformat()
+        attributes_json = json.dumps(attributes or {}, default=str)
+
+        # 1) Look up by (provider_id, subject)
+        row = self.connection.execute(
+            "SELECT user_id FROM sso_links WHERE provider_id = ? AND subject = ?",
+            (provider_id, subject),
+        ).fetchone()
+        if row:
+            user_id = row[0]
+            self.connection.execute(
+                """
+                UPDATE sso_links
+                SET last_login_at = ?, attributes_json = ?
+                WHERE provider_id = ? AND subject = ?
+                """,
+                (now_iso, attributes_json, provider_id, subject),
+            )
+            self.connection.execute(
+                "UPDATE users SET last_login_at = ?, last_active_at = ? WHERE id = ?",
+                (now_iso, now_iso, user_id),
+            )
+            self.connection.commit()
+            return self.get_user(user_id)
+
+        # 2) Email match: link existing local user to this SSO identity
+        existing_email_row = self.connection.execute(
+            "SELECT id FROM users WHERE email = ?", (normalized_email,)
+        ).fetchone()
+        if existing_email_row:
+            user_id = existing_email_row[0]
+            self.connection.execute(
+                """
+                INSERT INTO sso_links
+                (provider_id, subject, user_id, provider_kind,
+                 created_at, last_login_at, attributes_json)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    provider_id,
+                    subject,
+                    user_id,
+                    provider_kind,
+                    now_iso,
+                    now_iso,
+                    attributes_json,
+                ),
+            )
+            self.connection.execute(
+                "UPDATE users SET last_login_at = ?, last_active_at = ? WHERE id = ?",
+                (now_iso, now_iso, user_id),
+            )
+            self.connection.commit()
+            return self.get_user(user_id)
+
+        # 3) Create new user with random unusable password (SSO is
+        # the only login path for this account unless an admin
+        # later sets a password). The password is high-entropy and
+        # never returned to the user.
+        random_password = secrets.token_urlsafe(48)
+        user = self.create_user(
+            normalized_email, random_password, role="member"
+        )
+        # Mark email-verified — the IdP has already verified ownership
+        # (the user proved control of the SSO identity, which by
+        # construction owns the email at the IdP's authority)
+        self.mark_email_verified(user.id)
+        self.connection.execute(
+            """
+            INSERT INTO sso_links
+            (provider_id, subject, user_id, provider_kind,
+             created_at, last_login_at, attributes_json)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                provider_id,
+                subject,
+                user.id,
+                provider_kind,
+                now_iso,
+                now_iso,
+                attributes_json,
+            ),
+        )
+        self.connection.execute(
+            "UPDATE users SET last_login_at = ?, last_active_at = ? WHERE id = ?",
+            (now_iso, now_iso, user.id),
+        )
+        self.connection.commit()
+        return self.get_user(user.id)
+
+    def list_sso_links_for_user(self, user_id: str) -> list[dict]:
+        """Return all SSO identities linked to ``user_id``. Used
+        by the admin UI to show "this user has Okta + Google
+        linked"."""
+
+        rows = self.connection.execute(
+            """
+            SELECT provider_id, subject, provider_kind, created_at, last_login_at
+            FROM sso_links WHERE user_id = ?
+            ORDER BY created_at DESC
+            """,
+            (user_id,),
+        ).fetchall()
+        return [
+            {
+                "providerId": r[0],
+                "subject": r[1],
+                "providerKind": r[2],
+                "createdAt": r[3],
+                "lastLoginAt": r[4],
+            }
+            for r in rows
+        ]
 
     def create_session(self, user: AuthUser) -> AuthSession:
         token = secrets.token_urlsafe(48)
