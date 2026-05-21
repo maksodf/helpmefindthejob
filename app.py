@@ -6760,6 +6760,19 @@ class Handler(BaseHTTPRequestHandler):
             if parsed.path == "/api/workspaces":
                 self.send_json({"workspaces": STATE.list_user_workspaces(user_id)})
                 return
+            if parsed.path == "/api/funnel/summary":
+                # gap #10: user-facing apply→reply→interview funnel.
+                # Reads the user's imported jobs, computes the
+                # FunnelSummary (status counts, conversion rates,
+                # velocity medians) and returns it. The frontend
+                # mounts this on the dashboard.
+                from company_discovery.funnel import build_funnel_summary
+
+                eff_user_id = STATE.effective_user_id(user_id)
+                jobs = STATE.repository.list_imported_jobs(eff_user_id)
+                summary = build_funnel_summary(jobs)
+                self.send_json({"funnel": summary.to_dict()})
+                return
             if parsed.path == "/api/push/key":
                 self.send_json(
                     {

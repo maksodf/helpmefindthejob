@@ -690,6 +690,7 @@ function render() {
   // already succeeded server-side.
   const renderers = [
     renderDashboard, renderSkillGapsCard, renderReplyRateCard,
+    renderFunnelCard,
     renderOnboarding, renderTemplates, renderSavedSearches,
     renderCompanies, renderDetail, renderJobs, renderProvider,
     renderProfile, renderTotpCard, renderNotifySettings,
@@ -795,6 +796,85 @@ function renderSkillGapsCard() {
     }
     list.append(li);
   }
+}
+
+async function renderFunnelCard() {
+  // 13-plan item 3/13: apply→reply→interview funnel UI.
+  // Fetches /api/funnel/summary lazily (only when the dashboard
+  // is the active view) and renders stage counts + conversion
+  // rates + median-velocity hints. Hidden when the user has zero
+  // imported jobs.
+  const card = document.querySelector("#funnelCard");
+  if (!card) return;
+  let payload;
+  try {
+    const response = await fetch("/api/funnel/summary", { credentials: "same-origin" });
+    if (!response.ok) {
+      card.hidden = true;
+      return;
+    }
+    payload = await response.json();
+  } catch (_) {
+    card.hidden = true;
+    return;
+  }
+  const f = payload && payload.funnel;
+  if (!f || f.total_jobs === 0) {
+    card.hidden = true;
+    return;
+  }
+  card.hidden = false;
+
+  // Render stages in canonical order. The status labels come
+  // from translation; we fall back to the bare slug so a new
+  // status added server-side still renders something readable.
+  const stageOrder = ["saved", "interested", "applied", "interview", "rejected", "archived"];
+  const stagesEl = document.querySelector("#funnelStages");
+  stagesEl.innerHTML = "";
+  for (const slug of stageOrder) {
+    const count = (f.by_status && f.by_status[slug]) || 0;
+    const label = t(`dashboard.funnel.stage.${slug}`, slug);
+    const li = document.createElement("li");
+    li.className = "funnel-stage";
+    li.dataset.stage = slug;
+    li.innerHTML = `<span class="funnel-stage-count">${count}</span> <span class="funnel-stage-label">${label}</span>`;
+    stagesEl.append(li);
+  }
+
+  // Render conversion rates. Null rates render as "—" so the
+  // user doesn't see a misleading 0% when no data exists yet.
+  const ratesEl = document.querySelector("#funnelRates");
+  ratesEl.innerHTML = "";
+  const rateRows = [
+    ["apply", f.apply_rate, "dashboard.funnel.applyRate"],
+    ["reply", f.reply_rate, "dashboard.funnel.replyRate"],
+    ["interview", f.interview_rate, "dashboard.funnel.interviewRate"],
+    ["offer", f.offer_rate, "dashboard.funnel.offerRate"],
+  ];
+  for (const [slug, rate, key] of rateRows) {
+    const dt = document.createElement("dt");
+    dt.textContent = t(key, slug + " rate");
+    const dd = document.createElement("dd");
+    dd.textContent = rate === null || rate === undefined ? "—" : `${Math.round(rate * 100)}%`;
+    dd.dataset.rateSlug = slug;
+    ratesEl.append(dt, dd);
+  }
+
+  // Velocity line: median hours, rendered as days when > 48h
+  const velocity = document.querySelector("#funnelVelocity");
+  const parts = [];
+  const fmt = (hours) => {
+    if (hours === null || hours === undefined) return null;
+    if (hours >= 48) return `${Math.round(hours / 24)} days`;
+    return `${Math.round(hours)} hours`;
+  };
+  const toApply = fmt(f.median_hours_to_apply);
+  const toReply = fmt(f.median_hours_apply_to_reply);
+  const toInterview = fmt(f.median_hours_apply_to_interview);
+  if (toApply) parts.push(`Median save → apply: ${toApply}`);
+  if (toReply) parts.push(`Apply → first reply: ${toReply}`);
+  if (toInterview) parts.push(`Apply → interview: ${toInterview}`);
+  velocity.textContent = parts.length ? parts.join(" · ") : "";
 }
 
 function renderReplyRateCard() {

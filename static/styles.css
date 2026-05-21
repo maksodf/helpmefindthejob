@@ -3864,3 +3864,48 @@ html[dir="rtl"] table td[data-numeric="true"] {
   text-align: left;
   direction: ltr;
 }
+
+/* Funnel card (13-plan item 3/13) */
+.funnel-card { display: flex; flex-direction: column; gap: 0.8rem; }
+.funnel-stages {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 0.5rem;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+.funnel-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0.6rem 0.8rem;
+  background: var(--surface-elev-1, rgba(255,255,255,0.04));
+  border-radius: 8px;
+  border: 1px solid var(--border-color, rgba(255,255,255,0.08));
+}
+.funnel-stage-count {
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: var(--text, #e8e8f0);
+}
+.funnel-stage-label {
+  font-size: 0.8rem;
+  color: var(--text-muted, #a0a0b0);
+}
+.funnel-rates {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 0.4rem 1rem;
+  margin: 0;
+}
+.funnel-rates dt {
+  font-size: 0.8rem;
+  color: var(--text-muted, #a0a0b0);
+}
+.funnel-rates dd {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0;
+}
+html[dir="rtl"] .funnel-stage { align-items: flex-end; }
