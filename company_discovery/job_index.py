@@ -388,6 +388,87 @@ class JobIndex:
             row = self._connection.execute(sql, params).fetchone()
         return int(row[0]) if row else 0
 
+    def count_with_adjacent_cities(
+        self,
+        *,
+        location: str,
+        role_bucket: str | None = None,
+        seniority_class: str | None = None,
+        language_detected: str | None = None,
+        max_minutes: int | None = None,
+        ttl_now: int | None = None,
+    ) -> dict[str, object]:
+        """Phase 2 #71 Phase D / #74 substrate (2026-05-21).
+
+        Return a structured count breakdown that splits same-city
+        postings from commute-range adjacent-city postings, using
+        the curated graph in
+        :mod:`company_discovery.city_adjacency`. Shape::
+
+            {
+                "city": "berlin",
+                "city_count": 47,
+                "adjacent": [
+                    {"city": "potsdam", "count": 12, "minutes": 30, "mode": "S-Bahn"},
+                    {"city": "brandenburg", "count": 3, "minutes": 65, "mode": "RE/IC"},
+                ],
+                "total_with_adjacent": 62,
+            }
+
+        Unknown cities (not in the adjacency graph) yield a result
+        with ``adjacent=[]`` so callers can render the same-city
+        count without special-casing.
+        """
+
+        from company_discovery.city_adjacency import neighbour_keys
+
+        same_count = self.count_by_facets(
+            location=location,
+            role_bucket=role_bucket,
+            seniority_class=seniority_class,
+            language_detected=language_detected,
+            ttl_now=ttl_now,
+        )
+        neighbours = neighbour_keys(location, max_minutes=max_minutes)
+        adjacent_payload: list[dict[str, object]] = []
+        if neighbours:
+            # Import here to keep the module-level cycle clean
+            from company_discovery.city_adjacency import (
+                _norm_city,
+                adjacent_cities,
+            )
+
+            edges = adjacent_cities(location, max_minutes=max_minutes)
+            src_key = _norm_city(location)
+            edge_by_neighbour: dict[str, object] = {}
+            for edge in edges:
+                other = edge.b if edge.a == src_key else edge.a
+                edge_by_neighbour[other] = edge
+            for nkey in neighbours:
+                ncount = self.count_by_facets(
+                    location=nkey,
+                    role_bucket=role_bucket,
+                    seniority_class=seniority_class,
+                    language_detected=language_detected,
+                    ttl_now=ttl_now,
+                )
+                edge_obj = edge_by_neighbour.get(nkey)
+                adjacent_payload.append(
+                    {
+                        "city": nkey,
+                        "count": ncount,
+                        "minutes": getattr(edge_obj, "minutes", None),
+                        "mode": getattr(edge_obj, "mode", None),
+                    }
+                )
+        total = same_count + sum(int(a["count"] or 0) for a in adjacent_payload)
+        return {
+            "city": _norm_location(location),
+            "city_count": same_count,
+            "adjacent": adjacent_payload,
+            "total_with_adjacent": total,
+        }
+
     def jobs_by_facets(
         self,
         *,
