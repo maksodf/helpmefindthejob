@@ -76,12 +76,50 @@ class PushPayload:
         )
 
 
+# HTTP status codes the push service uses to say "this subscription
+# is permanently dead, stop trying". Per RFC 8030 + WebPush spec,
+# 404 means the endpoint URL is invalid, 410 means the subscription
+# was revoked by the user. In either case, the subscription record
+# should be deleted from our DB — keeping it means every future
+# notify_new_matches call wastes time on a guaranteed failure.
+PUSH_SUBSCRIPTION_GONE_STATUSES: frozenset[int] = frozenset({404, 410})
+
+
+def classify_push_exception(exception: BaseException) -> str:
+    """Classify a ``send_push`` failure so the caller knows what
+    to do with the subscription.
+
+    Returns one of:
+
+    - ``"gone"`` — push service returned 404 or 410. Delete the
+      subscription from the DB.
+    - ``"unavailable"`` — VAPID keys are unset; no further pushes
+      can succeed in this process. Abort the loop.
+    - ``"transient"`` — network blip, 5xx, rate-limit, etc. Keep
+      the subscription, retry on next tick.
+
+    Stays pure (no DB side effects) so the call site can compose
+    the decision into its own transaction.
+    """
+
+    if isinstance(exception, PushUnavailableError):
+        return "unavailable"
+    # pywebpush raises WebPushException wrapping the http response.
+    # We inspect the response status if available.
+    response = getattr(exception, "response", None)
+    status = getattr(response, "status_code", None)
+    if isinstance(status, int) and status in PUSH_SUBSCRIPTION_GONE_STATUSES:
+        return "gone"
+    return "transient"
+
+
 def send_push(subscription: PushSubscription, payload: PushPayload) -> None:
     """Send ``payload`` to the user agent identified by ``subscription``.
 
     Raises :class:`PushUnavailableError` when VAPID keys aren't set.
     Other failures (404 gone, 410 expired) propagate as ``WebPushException``
     so the caller can decide whether to delete the stale subscription.
+    Use :func:`classify_push_exception` to make that decision uniformly.
     """
 
     keys = _vapid_keys()

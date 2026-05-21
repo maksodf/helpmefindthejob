@@ -142,6 +142,7 @@ from company_discovery.personas import (
 from company_discovery.push_transport import (
     PushPayload,
     PushUnavailableError,
+    classify_push_exception,
     is_push_configured,
     send_push,
     vapid_public_key,
@@ -2466,9 +2467,23 @@ class AppState:
                 try:
                     send_push(sub, push_payload)
                     sent += 1
-                except PushUnavailableError:
-                    return {"status": "push_unavailable", "sent": sent}
-                except Exception:  # noqa: BLE001 — stale subscription, just skip
+                except Exception as exc:  # noqa: BLE001 - we classify, see below
+                    action = classify_push_exception(exc)
+                    if action == "unavailable":
+                        return {"status": "push_unavailable", "sent": sent}
+                    if action == "gone":
+                        # 404 / 410 — push service says this subscription
+                        # is permanently dead. Delete it so subsequent
+                        # notify_new_matches calls don't waste time
+                        # retrying it. Without this, dead subs
+                        # accumulate forever (a real bug surfaced by
+                        # the invariant-9 alert-verification audit).
+                        try:
+                            self.repository.delete_push_subscription(sub.id)
+                        except Exception:  # noqa: BLE001, S110 - best-effort prune
+                            pass
+                        continue
+                    # "transient" — keep the sub, try again next tick
                     continue
         if candidates:
             profile.last_push_notified_at = now_utc()
@@ -8921,11 +8936,26 @@ class Handler(BaseHTTPRequestHandler):
                     try:
                         send_push(sub, payload_obj)
                         outcomes.append({"id": sub.id, "status": "sent"})
-                    except PushUnavailableError as error:
-                        outcomes.append(
-                            {"id": sub.id, "status": "unavailable", "error": str(error)}
-                        )
-                    except Exception as error:  # noqa: BLE001 — push service may 404/410
+                    except Exception as error:  # noqa: BLE001 - we classify, see below
+                        action = classify_push_exception(error)
+                        if action == "unavailable":
+                            outcomes.append(
+                                {"id": sub.id, "status": "unavailable", "error": str(error)}
+                            )
+                            continue
+                        if action == "gone":
+                            # 404/410 — prune the dead sub so the next
+                            # call doesn't waste time on it. Surface
+                            # the prune in the outcome so the admin
+                            # sees what happened.
+                            try:
+                                STATE.repository.delete_push_subscription(sub.id)
+                            except Exception:  # noqa: BLE001, S110 - best-effort prune
+                                pass
+                            outcomes.append(
+                                {"id": sub.id, "status": "pruned_gone", "error": str(error)[:200]}
+                            )
+                            continue
                         outcomes.append(
                             {"id": sub.id, "status": "error", "error": str(error)[:200]}
                         )
