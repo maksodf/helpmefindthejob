@@ -70,6 +70,7 @@ class SqliteCompanyDiscoveryRepository(InMemoryCompanyDiscoveryRepository):
         # next save.
         self._crypto = crypto
         self._create_schema()
+        self._apply_migrations()
         self._load()
 
     @retry_on_lock()
@@ -288,6 +289,34 @@ class SqliteCompanyDiscoveryRepository(InMemoryCompanyDiscoveryRepository):
     def close(self) -> None:
         with self._lock:
             self._connection.close()
+
+    def _apply_migrations(self) -> None:
+        """Apply pending versioned migrations from
+        ``<repo_root>/migrations/`` via the runner in
+        :mod:`company_discovery.migrations`. Idempotent — re-running
+        when the DB is already at the latest version is a no-op.
+
+        The baseline migration (``001_baseline.sql``) is a no-op for
+        databases that went through :meth:`_create_schema` first
+        (CREATE TABLE IF NOT EXISTS short-circuits). Future schema
+        changes ship as ``002_*.sql``, ``003_*.sql``, etc.
+
+        Failure here means the DB is at an unexpected version — we
+        log + propagate so the operator sees the problem at boot
+        rather than encountering a "missing column" error at first
+        write.
+        """
+
+        from company_discovery import migrations as _m
+
+        repo_root = Path(__file__).resolve().parent.parent
+        migrations_dir = repo_root / "migrations"
+        if not migrations_dir.exists():
+            # Migrations directory absent — likely a test environment
+            # or a stripped-down deploy. The schema is already valid
+            # via _create_schema; no migrations to apply.
+            return
+        _m.run_migrations(self._connection, migrations_dir)
 
     def _create_schema(self) -> None:
         for table in (

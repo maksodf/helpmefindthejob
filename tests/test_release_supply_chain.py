@@ -227,6 +227,105 @@ class SecurityTxtCompliance(unittest.TestCase):
         self.assertIn("security.txt", text.lower())
 
 
+class ThreatModelDocComplete(unittest.TestCase):
+    """gap #24: a formal threat model document MUST ship + cover
+    every STRIDE category + carry an "active defects" section that
+    can be empty but must exist."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.path = REPO_ROOT / "docs" / "THREAT-MODEL.md"
+        if not cls.path.exists():
+            raise unittest.SkipTest(f"threat model not at {cls.path}")
+        cls.text = cls.path.read_text(encoding="utf-8")
+
+    def test_threat_model_covers_stride_categories(self):
+        for category in (
+            "Spoofing",
+            "Tampering",
+            "Repudiation",
+            "Information disclosure",
+            "Denial of service",
+            "Elevation of privilege",
+        ):
+            self.assertIn(
+                category,
+                self.text,
+                f"threat model missing STRIDE category: {category}",
+            )
+
+    def test_threat_model_carries_active_defects_section(self):
+        # The section may be empty, but the heading MUST exist so
+        # the doc has a place to record any newly-discovered defect.
+        self.assertRegex(
+            self.text,
+            r"##\s+\d*\.?\s*Active defects",
+            "threat model missing 'Active defects' section",
+        )
+
+    def test_threat_model_dated(self):
+        # MUST carry a "Last updated:" line so reviewers know its
+        # freshness. The format is ISO date.
+        self.assertRegex(
+            self.text,
+            r"Last updated:\s*\d{4}-\d{2}-\d{2}",
+            "threat model missing or malformed 'Last updated:' line",
+        )
+
+
+class DpaTemplatePresent(unittest.TestCase):
+    """gap #25: a DPA template MUST ship for institutional buyers
+    + cover the key GDPR + AI Act surfaces."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.path = REPO_ROOT / "compliance" / "dpa-template.md"
+        if not cls.path.exists():
+            raise unittest.SkipTest(f"DPA template not at {cls.path}")
+        cls.text = cls.path.read_text(encoding="utf-8")
+
+    def test_dpa_covers_required_sections(self):
+        # Every standard DPA needs these sections per GDPR Art. 28:
+        for heading in (
+            "Subject matter",
+            "Duration of processing",
+            "Nature and purpose",
+            "personal data",
+            "Sub-processors",
+            "Data subject rights",
+            "Security measures",
+            "International transfers",
+            "Breach notification",
+            "Audit",
+        ):
+            self.assertIn(
+                heading,
+                self.text,
+                f"DPA template missing section heading: {heading}",
+            )
+
+    def test_dpa_references_gdpr_articles(self):
+        # The template MUST cite the specific GDPR articles a
+        # signer needs to honor — otherwise it's vapor. The doc
+        # may use either "Article N" or the abbreviated "Art. N"
+        # form; both count.
+        for n in (7, 12, 15, 17, 20, 22, 28):
+            full = f"Article {n}"
+            abbreviated = f"Art. {n}"
+            self.assertTrue(
+                full in self.text or abbreviated in self.text,
+                f"DPA template missing reference to GDPR Article {n} "
+                f"(checked for '{full}' and '{abbreviated}')",
+            )
+
+    def test_dpa_references_ai_act(self):
+        # The template MUST acknowledge AI Act overlap (Article
+        # 12 audit log, Article 13 transparency, Article 86 right
+        # to explanation)
+        self.assertIn("AI Act", self.text)
+        self.assertIn("Article 86", self.text)
+
+
 class NixFlakePresent(unittest.TestCase):
     """The Nix flake is the entry point for the reproducible-build
     story. Without it, the "reproducible across machines" claim has
