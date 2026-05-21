@@ -14,6 +14,7 @@ import mimetypes
 import os
 import re
 import secrets
+import sqlite3
 import time
 from dataclasses import asdict, fields, is_dataclass
 from datetime import datetime, timezone
@@ -6105,6 +6106,12 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json({"summary": STATE.repository.watchlist_summary(user_id)})
                 return
             self.serve_static(parsed.path)
+        except sqlite3.Error as error:
+            # Phase 2 #78 Layer 2 — route DB errors through the
+            # policy classifier (lock-busy / disk-full / referential /
+            # schema-drift / internal) → friendly message + correct
+            # HTTP status + admin alert for Cases B & D.
+            self._handle_db_error(error)
         except Exception as error:  # noqa: BLE001 - top-level HTTP boundary
             self.send_error_json(HTTPStatus.INTERNAL_SERVER_ERROR, "internal_error", str(error))
 
@@ -6120,6 +6127,8 @@ class Handler(BaseHTTPRequestHandler):
                 )
                 return
             self.serve_static(parsed.path, include_body=False)
+        except sqlite3.Error as error:
+            self._handle_db_error(error, include_body=False)
         except Exception as error:  # noqa: BLE001 - top-level HTTP boundary
             self.send_error_json(
                 HTTPStatus.INTERNAL_SERVER_ERROR, "internal_error", str(error), include_body=False
@@ -8794,6 +8803,10 @@ class Handler(BaseHTTPRequestHandler):
             self.send_error_json(HTTPStatus.NOT_FOUND, "not_found", "Unknown endpoint")
         except QuotaError as error:
             self.send_error_json(HTTPStatus.TOO_MANY_REQUESTS, error.code, error.message)
+        except sqlite3.Error as error:
+            # Phase 2 #78 Layer 2 — DB-error policy.
+            self._handle_db_error(error)
+            return
         except (KeyError, ValueError) as error:
             self.send_error_json(
                 HTTPStatus.BAD_REQUEST, "bad_request", f"Missing or invalid field: {error}"
@@ -8869,6 +8882,10 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json({"company": company, "bootstrap": STATE.bootstrap(user_id)})
                 return
             self.send_error_json(HTTPStatus.NOT_FOUND, "not_found", "Unknown endpoint")
+        except sqlite3.Error as error:
+            # Phase 2 #78 Layer 2 — DB-error policy.
+            self._handle_db_error(error)
+            return
         except (KeyError, ValueError) as error:
             self.send_error_json(
                 HTTPStatus.BAD_REQUEST, "bad_request", f"Missing or invalid field: {error}"
@@ -8935,6 +8952,10 @@ class Handler(BaseHTTPRequestHandler):
                 )
                 return
             self.send_error_json(HTTPStatus.NOT_FOUND, "not_found", "Unknown endpoint")
+        except sqlite3.Error as error:
+            # Phase 2 #78 Layer 2 — DB-error policy.
+            self._handle_db_error(error)
+            return
         except KeyError as error:
             self.send_error_json(
                 HTTPStatus.BAD_REQUEST, "bad_request", f"Missing or invalid field: {error}"
@@ -8975,6 +8996,61 @@ class Handler(BaseHTTPRequestHandler):
         self.send_json(
             {"error": {"code": code, "message": message}}, status, include_body=include_body
         )
+
+    def _request_locale(self) -> str:
+        """Phase 2 #78 — derive the user's locale for friendly-message
+        rendering. Prefers ``Accept-Language: de`` over English. Pure
+        header-based (no profile lookup) so it works at the top-level
+        HTTP boundary where the profile may not be loaded."""
+
+        accept = (self.headers.get("Accept-Language") or "").lower()
+        # Match "de", "de-DE", "de;q=0.9, en;q=0.8", etc.
+        for tag in re.split(r"[,;]", accept):
+            primary = tag.strip().split("-")[0]
+            if primary == "de":
+                return "de"
+            if primary == "en":
+                return "en"
+        return "en"
+
+    def _handle_db_error(self, error: BaseException, *, include_body: bool = True) -> None:
+        """Phase 2 #78 Layer 2 — top-level HTTP boundary integration of
+        the database-error surfacing policy.
+
+        Classifies the exception per
+        ``docs/grant/17-database-error-policy.md``, looks up the
+        friendly message in the request's locale, fires the admin
+        alert for Cases B + D, and writes the HTTP response via
+        :meth:`send_error_json`. Idempotent / never raises (so the
+        top-level catch can always call it safely)."""
+
+        from company_discovery.db_errors import (
+            classify_db_error,
+            emit_admin_alert,
+            format_user_message,
+            http_status_for,
+        )
+
+        try:
+            code = classify_db_error(error)
+            status = HTTPStatus(http_status_for(code))
+            locale = self._request_locale()
+            message = format_user_message(code, locale=locale)
+            emit_admin_alert(code, str(error))
+            self.send_error_json(status, code, message, include_body=include_body)
+        except Exception:  # noqa: BLE001 - last-resort fallback if the policy layer itself errors
+            # If our policy-handling code itself raises, surface a
+            # plain 500. Never reraise — the top-level catch already
+            # caught us; raising here would crash the handler.
+            try:
+                self.send_error_json(
+                    HTTPStatus.INTERNAL_SERVER_ERROR,
+                    "internal_error",
+                    str(error),
+                    include_body=include_body,
+                )
+            except Exception:  # noqa: BLE001, S110 - response already sent, nothing more to do
+                pass
 
     def send_text(
         self,
