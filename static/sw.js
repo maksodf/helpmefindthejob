@@ -12,8 +12,14 @@
  * by default. We still cache the shell so the app loads under flaky
  * connectivity and offline reads work.
  */
-const CACHE_VERSION = "v0.19.0";
-const SHELL_CACHE = `directjob-shell-${CACHE_VERSION}`;
+const CACHE_VERSION = "v0.20.0";
+// Cache name prefix bumped from `directjob-shell-` → `helpmefindthejob-shell-`
+// during the rename pass. The activate handler below explicitly cleans
+// up BOTH prefixes so users who installed the PWA pre-rename don't
+// carry dead `directjob-shell-*` cache buckets forever.
+const CACHE_PREFIX = "helpmefindthejob-shell-";
+const LEGACY_CACHE_PREFIX = "directjob-shell-";
+const SHELL_CACHE = `${CACHE_PREFIX}${CACHE_VERSION}`;
 const SHELL_PATHS = [
   "/",
   "/index.html",
@@ -23,6 +29,9 @@ const SHELL_PATHS = [
   "/icons/icon.svg",
   "/i18n/en.json",
   "/i18n/de.json",
+  // Locale registry (W3 D15 multilingual scaffolding). Cached so the
+  // frontend's loadLocaleRegistry() works offline.
+  "/i18n/locales.json",
 ];
 
 self.addEventListener("install", (event) => {
@@ -39,7 +48,16 @@ self.addEventListener("activate", (event) => {
       const keys = await caches.keys();
       await Promise.all(
         keys
-          .filter((key) => key.startsWith("directjob-shell-") && key !== SHELL_CACHE)
+          .filter((key) => {
+            // Clean any cache from EITHER prefix that isn't the
+            // current SHELL_CACHE. This covers:
+            //   - old versions of the new prefix
+            //   - every legacy `directjob-shell-*` cache from
+            //     before the rename pass
+            const isOurs =
+              key.startsWith(CACHE_PREFIX) || key.startsWith(LEGACY_CACHE_PREFIX);
+            return isOurs && key !== SHELL_CACHE;
+          })
           .map((key) => caches.delete(key))
       );
       await self.clients.claim();

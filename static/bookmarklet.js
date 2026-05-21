@@ -4,7 +4,7 @@
  * user drags to their bookmark bar. When they click it on Indeed / LinkedIn /
  * StepStone / Xing (or any job page), it opens
  * https://app.helpmefindthejob.com/capture?u=…&t=… in a new tab. The capture page is
- * served by app.py's /capture route, requires the user's existing DirectJob
+ * served by app.py's /capture route, requires the user's existing Helpmefindthejob
  * session, persists the URL+title as a DiscoveredJob, then redirects back to
  * /queue.
  *

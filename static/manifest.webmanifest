@@ -1,7 +1,7 @@
 {
-  "name": "DirectJob Scout",
-  "short_name": "DirectJob",
-  "description": "Healthcare-management and multi-persona job-search assistant.",
+  "name": "Helpmefindthejob",
+  "short_name": "Helpmefindthejob",
+  "description": "EU-wide civic employment commons — friction-class navigation of HR + bureaucratic surfaces, with first reference deployment in Germany.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

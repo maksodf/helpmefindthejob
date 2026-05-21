@@ -6003,7 +6003,7 @@ STATE = AppState()
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = f"DirectJobScout/{APP_VERSION}"
+    server_version = f"Helpmefindthejob/{APP_VERSION}"
 
     def end_headers(self) -> None:
         self.send_header("X-Content-Type-Options", "nosniff")
