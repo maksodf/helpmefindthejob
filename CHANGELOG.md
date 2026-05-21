@@ -313,10 +313,51 @@ to The Commons Conservancy pending, EU AI Act compliant by design.
 - **`ROADMAP.md`** at repo root — quarterly milestones 2026 Q3 → 2028
   Q2 (this release).
 - **`CHANGELOG.md`** at repo root (this file).
-- **994 tests in the suite** — up from ~925 pre-sprint; new coverage
-  for the MCP integration end-to-end path, the AI Act audit-log
-  layer, the §2.3 composition tools, the §2.4 ESCO + EURES surface,
-  and the AEAD migration for TOTP secrets.
+- **994 → 1829 tests in the suite (+835)** — measured at the
+  v0.1.0 tag vs `HEAD` on `claude/project-analysis-bpHCo` as of
+  2026-05-21. The breakdown by sprint area (rounded to the
+  nearest 10; some tests touch multiple areas — buckets are by
+  primary subject):
+  - **+~50 (v0.1.0 → 994)**: Week 2 baseline — MCP integration
+    end-to-end path, AI Act audit-log layer, §2.3 composition
+    tools, §2.4 ESCO + EURES surface, AEAD migration for TOTP
+    secrets.
+  - **+~410**: bias-methodology + persona accuracy gates
+    (Phase 2 PART 4 + PART 5) — `test_round*`, `test_round12`,
+    `test_round13`, `test_round14`, `test_bias_methodology`,
+    `test_friction_class_*` family. Driving force: closing the
+    +27/-70 friction-context gap in the R12-polish report.
+  - **+~110**: journey + chat UX (Phase 2 PART 6 gates 6.1–6.8)
+    — 7-persona × 12-phase walks, error-recovery paths, partial-
+    results streaming, mobile-viewport smoke, slash-command
+    intent recognition.
+  - **+~100**: AI dispatch infrastructure — token-streaming
+    refactor (#77), cost-cap chokepoint (#46), prompt-injection
+    sanitiser (#45) — backend + frontend contract tests across
+    `test_chat_*_streaming`, `test_cost_caps`, `test_cost_cap_
+    integration`, `test_prompt_injection_suite`.
+  - **+~50**: security audit suite — CSRF/CORS/rate-limit/SQL
+    (#47), session-invalidation completeness (#48), 2FA recovery
+    codes (#49), audit-log tamper-evidence (#13). Files:
+    `test_security_audit_47`, `test_session_invalidation_48`,
+    `test_recovery_codes_49`, `test_audit_log_tamper_evidence_13`.
+  - **+~50**: GDPR + compliance — Article 20 portable export
+    (#54), CV-photo encryption + WebP EXIF stripping (#32),
+    Article 7 consent timestamp. Files: `test_gdpr_article_20_
+    export`, `test_cv_photo_gdpr_32`.
+  - **+~30**: cost-saving doctrine measurement substrate (#69),
+    city-adjacency graph (#71 Phase D + #74 substrate),
+    database-error policy classifier (#78 substrate), disk-full
+    sessionStorage preservation.
+  - **+~25**: no-AI templated-fallback verification (#57 —
+    found + fixed the EURES tool's silent-failure mode);
+    red-team adversarial harness as unittest target (#29).
+  - **+~10**: documentation drift-guards — ESCO shortageDE
+    count (#60), accessibility surface/instance counting notes
+    (#39 + #40), MCP-tool count guard.
+  Each test files maps 1:1 to a backlog item or sprint commit;
+  the cross-reference is captured in
+  `docs/grant/phase2-backlog-2026-05-19.md`.
 
 ### Changed
 
