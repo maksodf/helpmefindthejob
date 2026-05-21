@@ -97,9 +97,18 @@ class DiagnosticEngine:
         self,
         cache: AggregatorResultCache | None,
         providers: list[_ProviderName] | None = None,
+        index: object | None = None,
     ) -> None:
         self.cache = cache
         self.providers = list(providers or [])
+        # Phase 2 #71 Phase C: optional persistent JobIndex. When
+        # configured, _cache_count_across_providers prefers it over
+        # the provider cache (the index gives a direct facet count
+        # across the deployment's 14-day-deduped view, vs the
+        # cache's per-(provider, query) 1-hour snapshot). Typed as
+        # ``object`` to avoid a circular import; runtime contract is
+        # "count_by_facets(role_bucket=, location=) -> int".
+        self.index = index
 
     def generate(
         self,
@@ -236,7 +245,41 @@ class DiagnosticEngine:
 
         Private implementation; piece-2 internals call this name.
         Public callers use the alias ``probe_cached_count`` above.
+
+        Phase 2 #71 Phase C: when a persistent JobIndex is configured
+        on this engine, it's queried FIRST (single SQL query against
+        the 14-day-deduped view of all jobs the deployment has seen).
+        The cache path is the fallback for legacy / index-unconfigured
+        deployments. The index count is a STRICT IMPROVEMENT for the
+        DiagnosticEngine's use case (substantive facet counts), so
+        when index returns > 0 we use it. Index returning 0 means
+        either (a) genuinely zero matches OR (b) the index hasn't seen
+        this facet combo yet — we fall through to the cache to avoid
+        false "no facts available" responses early in deployment.
         """
+        # Index-first path (#71 Phase C).
+        if self.index is not None:
+            try:
+                from company_discovery.job_index import classify_seniority
+
+                # Derive the role_bucket + seniority that the index
+                # would have tagged when the search ran. role_bucket
+                # is identify_bucket(query); seniority is from the
+                # query text itself (matching the heuristic applied
+                # at write-through).
+                from company_discovery.job_type_filter import identify_bucket
+
+                bucket = identify_bucket(query)
+                seniority = classify_seniority(query)
+                index_count = self.index.count_by_facets(
+                    role_bucket=bucket or None,
+                    location=location,
+                    seniority_class=seniority or None,
+                )
+                if index_count > 0:
+                    return int(index_count)
+            except Exception:  # noqa: BLE001 - index is optional; degrade to cache on any failure
+                pass
         if self.cache is None:
             return None
         qh = canonical_query(query, location)
