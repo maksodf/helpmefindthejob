@@ -846,10 +846,15 @@ class AppState:
         if "notes" in payload:
             existing.notes = str(payload.get("notes") or "").strip() or None
         if "locale" in payload:
-            from company_discovery.models import SUPPORTED_LOCALES
+            # Phase 2 #56 (2026-05-21): use the runtime locale set
+            # discovered from static/i18n/*.json so dropping in a
+            # new translation bundle activates it without a code
+            # change. Falls back to SUPPORTED_LOCALES if the i18n
+            # directory isn't readable.
+            from company_discovery.models import available_locales
 
             raw_locale = str(payload.get("locale") or "en").strip().lower()
-            if raw_locale not in SUPPORTED_LOCALES:
+            if raw_locale not in available_locales():
                 raise ValueError("unsupported_locale")
             existing.locale = raw_locale
         if "theme" in payload:

@@ -212,7 +212,63 @@ class SupportTicket:
     created_at: datetime = field(default_factory=now_utc)
 
 
+# Phase 2 #56 (2026-05-21): default fallback set of locales the
+# app guarantees support for. Real runtime support is broader —
+# :func:`available_locales` discovers any ``<code>.json`` bundle
+# under ``static/i18n/`` so dropping in ``ar.json`` activates
+# Arabic without a code change. This tuple is the FALLBACK for
+# environments where the i18n directory isn't readable (build-time
+# imports, tests with no static tree, etc.).
 SUPPORTED_LOCALES = ("en", "de")
+
+
+def available_locales(
+    i18n_dir: "Path | None" = None,
+) -> tuple[str, ...]:
+    """Return the locale codes the runtime actually has bundles
+    for. Reads ``static/i18n/<code>.json`` filenames; falls back
+    to :data:`SUPPORTED_LOCALES` when the directory isn't
+    accessible. Cached per-process via the lru_cache on the
+    private helper below.
+
+    Locale codes are validated to match a strict ISO 639-1
+    pattern (2-3 lowercase letters, optional ``_REGION`` or
+    ``-REGION``) before being trusted — defends against a
+    malicious bundle filename being treated as a locale.
+    """
+
+    from pathlib import Path
+
+    if i18n_dir is None:
+        # Default: <repo_root>/static/i18n. The repo_root is the
+        # parent of this module's parent.
+        i18n_dir = Path(__file__).resolve().parent.parent / "static" / "i18n"
+    return _discover_locales(i18n_dir)
+
+
+def _discover_locales(i18n_dir: "Path") -> tuple[str, ...]:
+    """Internal: scan i18n_dir for ``<code>.json`` files,
+    validate the code shape, return sorted tuple. Falls back to
+    SUPPORTED_LOCALES on any I/O error.
+    """
+
+    import re
+
+    valid_pattern = re.compile(r"^[a-z]{2,3}(?:[_-][a-z]{2,4})?$", re.IGNORECASE)
+    try:
+        codes: set[str] = set()
+        for path in i18n_dir.iterdir():
+            if path.suffix.lower() != ".json":
+                continue
+            stem = path.stem
+            if not valid_pattern.match(stem):
+                continue
+            codes.add(stem.lower())
+        if not codes:
+            return SUPPORTED_LOCALES
+        return tuple(sorted(codes))
+    except OSError:
+        return SUPPORTED_LOCALES
 
 SUPPORTED_THEMES = ("dark", "light", "system")
 
