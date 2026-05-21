@@ -330,6 +330,49 @@ class RemoveMemberAuthorization(unittest.TestCase):
             )
 
 
+class FrontendUIPresenceContract(unittest.TestCase):
+    """The user-facing surface MUST exist + reference the
+    endpoints the backend ships. A regression here means we
+    have admin endpoints but no way to use them."""
+
+    def test_index_html_has_members_card(self):
+        text = Path(
+            "/Users/fouad./Desktop/NasserMCPserver/static/index.html"
+        ).read_text(encoding="utf-8")
+        self.assertIn('id="workspaceMembersCard"', text)
+        self.assertIn('id="workspaceMembersTable"', text)
+        self.assertIn('id="workspaceMembersBody"', text)
+
+    def test_app_js_has_renderer_and_fetches_endpoint(self):
+        text = Path(
+            "/Users/fouad./Desktop/NasserMCPserver/static/app.js"
+        ).read_text(encoding="utf-8")
+        self.assertIn("renderWorkspaceMembersCard", text)
+        self.assertIn("/api/workspaces/", text)
+        # The renderer is in the dispatch list
+        self.assertRegex(text, r"renderers\s*=\s*\[[^\]]*renderWorkspaceMembersCard")
+        # PATCH + DELETE helpers exist
+        self.assertIn("_changeMemberRole", text)
+        self.assertIn("_removeMember", text)
+
+    def test_i18n_workspace_members_keys_present(self):
+        import json
+
+        for locale in ("en", "de"):
+            bundle = json.loads(
+                Path(
+                    f"/Users/fouad./Desktop/NasserMCPserver/static/i18n/{locale}.json"
+                ).read_text(encoding="utf-8")
+            )
+            for key in (
+                "settings.workspace.members.heading",
+                "settings.workspace.members.col.email",
+                "settings.workspace.members.col.role",
+                "settings.workspace.members.col.actions",
+            ):
+                self.assertIn(key, bundle, f"missing in {locale}.json: {key}")
+
+
 class RoutesPresenceContract(unittest.TestCase):
     """The HTTP layer is a thin wrapper. Pin that the routes
     exist in app.py source so a future refactor that quietly

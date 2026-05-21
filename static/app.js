@@ -690,7 +690,7 @@ function render() {
   // already succeeded server-side.
   const renderers = [
     renderDashboard, renderSkillGapsCard, renderReplyRateCard,
-    renderFunnelCard,
+    renderFunnelCard, renderWorkspaceMembersCard,
     renderOnboarding, renderTemplates, renderSavedSearches,
     renderCompanies, renderDetail, renderJobs, renderProvider,
     renderProfile, renderTotpCard, renderNotifySettings,
@@ -795,6 +795,156 @@ function renderSkillGapsCard() {
       li.append(ex);
     }
     list.append(li);
+  }
+}
+
+async function renderWorkspaceMembersCard() {
+  // 13-plan item 4/13: workspace admin UI. Renders the member
+  // table for the active workspace. Hidden when:
+  //   - no active workspace selected
+  //   - the API returns 403 (user isn't a member)
+  // Owners see role-change <select> + Remove buttons; admins see
+  // Remove for regular members only; everyone else sees a flat
+  // table (read-only).
+  const card = document.querySelector("#workspaceMembersCard");
+  if (!card) return;
+  const wsId = state.activeWorkspaceId;
+  if (!wsId) {
+    card.hidden = true;
+    return;
+  }
+  let payload;
+  try {
+    const resp = await fetch(`/api/workspaces/${encodeURIComponent(wsId)}/members`, {
+      credentials: "same-origin",
+    });
+    if (!resp.ok) {
+      card.hidden = true;
+      return;
+    }
+    payload = await resp.json();
+  } catch (_) {
+    card.hidden = true;
+    return;
+  }
+  const members = payload && payload.members;
+  if (!Array.isArray(members) || members.length === 0) {
+    card.hidden = true;
+    return;
+  }
+  card.hidden = false;
+  const me = (state.auth && state.auth.user && state.auth.user.id) || "";
+  const meMember = members.find((m) => m.userId === me);
+  const myRole = meMember ? meMember.role : "member";
+
+  const tbody = document.querySelector("#workspaceMembersBody");
+  tbody.innerHTML = "";
+  for (const m of members) {
+    const tr = document.createElement("tr");
+    // Email
+    const tdEmail = document.createElement("td");
+    tdEmail.textContent = m.email;
+    if (m.isSelf) {
+      const badge = document.createElement("span");
+      badge.className = "muted small";
+      badge.textContent = " (you)";
+      tdEmail.append(badge);
+    }
+    // Role — editable select for owner, read-only label otherwise
+    const tdRole = document.createElement("td");
+    if (myRole === "owner" && m.role !== "owner") {
+      const select = document.createElement("select");
+      select.dataset.membershipId = m.membershipId;
+      for (const role of ["member", "admin"]) {
+        const opt = document.createElement("option");
+        opt.value = role;
+        opt.textContent = role;
+        if (m.role === role) opt.selected = true;
+        select.append(opt);
+      }
+      select.addEventListener("change", async () => {
+        await _changeMemberRole(wsId, m.membershipId, select.value);
+        renderWorkspaceMembersCard();
+      });
+      tdRole.append(select);
+    } else {
+      tdRole.textContent = m.role;
+    }
+    // Joined
+    const tdJoined = document.createElement("td");
+    tdJoined.textContent = m.joinedAt ? m.joinedAt.slice(0, 10) : "—";
+    // Actions
+    const tdActions = document.createElement("td");
+    if (_canRemoveMember(myRole, m, meMember)) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "btn btn-ghost btn-small";
+      btn.textContent = m.isSelf ? "Leave" : "Remove";
+      btn.addEventListener("click", async () => {
+        const confirmMsg = m.isSelf
+          ? "Leave this workspace? You'll lose access to its data."
+          : `Remove ${m.email} from this workspace?`;
+        if (!window.confirm(confirmMsg)) return;
+        await _removeMember(wsId, m.membershipId);
+        renderWorkspaceMembersCard();
+      });
+      tdActions.append(btn);
+    } else {
+      tdActions.textContent = "—";
+    }
+    tr.append(tdEmail, tdRole, tdJoined, tdActions);
+    tbody.append(tr);
+  }
+}
+
+function _canRemoveMember(myRole, target, meMember) {
+  if (target.role === "owner") return false;
+  if (target.isSelf) return true; // self-leave allowed for non-owner
+  if (myRole === "owner") return true; // owner removes anyone
+  if (myRole === "admin" && target.role === "member") return true;
+  return false;
+}
+
+async function _changeMemberRole(workspaceId, membershipId, newRole) {
+  const csrf = (state.auth && state.auth.user && state.auth.user.csrfToken) || "";
+  try {
+    const resp = await fetch(
+      `/api/workspaces/${encodeURIComponent(workspaceId)}/members/${encodeURIComponent(membershipId)}`,
+      {
+        method: "PATCH",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json", "X-CSRF-Token": csrf },
+        body: JSON.stringify({ role: newRole }),
+      }
+    );
+    if (!resp.ok) {
+      const status = document.querySelector("#workspaceMembersStatus");
+      if (status) status.textContent = `Couldn't change role (${resp.status}).`;
+    }
+  } catch (_) {
+    const status = document.querySelector("#workspaceMembersStatus");
+    if (status) status.textContent = "Network error changing role.";
+  }
+}
+
+async function _removeMember(workspaceId, membershipId) {
+  const csrf = (state.auth && state.auth.user && state.auth.user.csrfToken) || "";
+  try {
+    const resp = await fetch(
+      `/api/workspaces/${encodeURIComponent(workspaceId)}/members/${encodeURIComponent(membershipId)}`,
+      {
+        method: "DELETE",
+        credentials: "same-origin",
+        headers: { "X-CSRF-Token": csrf },
+      }
+    );
+    if (!resp.ok) {
+      const status = document.querySelector("#workspaceMembersStatus");
+      if (status) status.textContent = `Couldn't remove member (${resp.status}).`;
+    }
+  } catch (_) {
+    const status = document.querySelector("#workspaceMembersStatus");
+    if (status) status.textContent = "Network error removing member.";
   }
 }
 

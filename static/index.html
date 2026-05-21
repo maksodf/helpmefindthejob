@@ -1096,6 +1096,25 @@
             <p id="accountMessage" class="muted small" role="alert" aria-live="polite"></p>
           </section>
 
+          <section id="workspaceMembersCard" class="card" aria-label="Workspace members" data-tab="workspace" hidden>
+            <div class="card-heading">
+              <h2 data-i18n="settings.workspace.members.heading">Members</h2>
+              <p class="muted small" data-i18n="settings.workspace.members.lead">Everyone who can access this workspace. Owners can change roles; admins can remove regular members; anyone can leave.</p>
+            </div>
+            <table id="workspaceMembersTable" class="data-table">
+              <thead>
+                <tr>
+                  <th data-i18n="settings.workspace.members.col.email">Email</th>
+                  <th data-i18n="settings.workspace.members.col.role">Role</th>
+                  <th data-i18n="settings.workspace.members.col.joined">Joined</th>
+                  <th data-i18n="settings.workspace.members.col.actions">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="workspaceMembersBody"></tbody>
+            </table>
+            <p id="workspaceMembersStatus" class="muted small" role="status" aria-live="polite"></p>
+          </section>
+
           <section class="card" aria-label="Workspace backup" data-tab="workspace">
             <div class="card-heading">
               <h2 data-i18n="settings.backup.heading">Backup &amp; restore</h2>
