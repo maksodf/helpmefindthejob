@@ -3754,6 +3754,113 @@ class AppState:
             "tailoredExcerpt": (result.output or "")[:400],
         }
 
+    def chat_handler_tailor_cv_streaming(self, user_id: str, args: dict):
+        """Streaming variant of :meth:`chat_handler_tailor_cv`.
+
+        Generator yielding ``("ai_token", {"text": "..."})`` events as
+        the AI emits tokens, then a final ``("done_payload", dict)``
+        event whose payload is shaped like the single-shot return
+        value. Mirrors the motivation_letter streaming pattern (Phase
+        2 #77 sub-pieces c+d).
+
+        Top-tier upgrade item 3 (2026-05-21): extends #77's token-
+        streaming surface from motivation_letter to tailor_cv so the
+        user sees the tailored CV bullets stream in rather than
+        waiting silently for the whole result.
+
+        Note: consult (suggest_cv_enhancements) is NOT streamed —
+        its output is a structured ``[{gap, question}]`` list, not
+        free-form text. Streaming tokens would just emit
+        unparseable partial JSON; the user can't act on a partial
+        gap list. consult stays on the JSON path.
+        """
+        from company_discovery.analysis import build_cv_tailoring_prompt
+        from company_discovery.persona_fixtures import friction_keywords_for
+
+        imported_id = args.get("importedJobId", "")
+        imported = self.repository.imported_jobs.get(imported_id)
+        if not imported or imported.user_id != user_id:
+            yield (
+                "done_payload",
+                {"ok": False, "message": f"Imported job {imported_id!r} not found."},
+            )
+            return
+        profile = self.profile_for(user_id)
+        if not (profile.cv_text or "").strip():
+            yield (
+                "done_payload",
+                {"ok": False, "message": "Add a CV first (CV Builder or Settings)."},
+            )
+            return
+        provider = self.ai_provider_for(user_id)
+        if not _ai_consent_satisfied(profile, provider):
+            yield (
+                "done_payload",
+                {
+                    "ok": False,
+                    "message": "AI consent required — confirm in Settings first.",
+                },
+            )
+            return
+
+        streaming_caller = self._journey_ai_streaming_caller(user_id)
+        accumulated: list[str] = []
+        if streaming_caller is not None:
+            brief = build_cv_tailoring_prompt(
+                imported,
+                provider,
+                profile,
+                friction_keywords=friction_keywords_for(profile.persona_id),
+            )
+            # build_cv_tailoring_prompt returns a single prompt string in
+            # the "prompt" key; for the streaming caller we split system
+            # vs user on the first double-newline (mirrors the existing
+            # _journey_ai_streaming_caller contract).
+            full_prompt = brief["prompt"]
+            parts = full_prompt.split("\n\n", 1)
+            system = parts[0]
+            user_msg = parts[1] if len(parts) > 1 else ""
+            try:
+                for kind, payload in streaming_caller(
+                    system, user_msg, purpose="tailor_cv"
+                ):
+                    if kind == "token":
+                        accumulated.append(payload)
+                        yield ("ai_token", {"text": payload})
+                    elif kind == "final":
+                        if not accumulated:
+                            accumulated.append((payload.output or "") if payload else "")
+                        break
+            except Exception:  # noqa: BLE001 - best-effort; produce empty output on failure
+                accumulated = []
+
+        tailored = "".join(accumulated)
+        status = "completed" if tailored else "provider_error"
+        self.log_analytics(
+            user_id,
+            "chat_cmd",
+            {
+                "name": "tailor_cv",
+                "id": imported_id,
+                "status": status,
+                "streamed": True,
+                "chars": len(tailored),
+            },
+        )
+        yield (
+            "done_payload",
+            {
+                "ok": bool(tailored),
+                "message": (
+                    f"Tailored CV {status} for **{imported.title}**"
+                    if tailored
+                    else f"Tailor result: {status}. AI streaming returned no text."
+                ),
+                "tailoredExcerpt": tailored[:400],
+                "tailored": tailored,
+            },
+        )
+
     def chat_handler_run_saved_search(self, user_id: str, args: dict) -> dict:
         search_id = args["searchId"]
         try:
@@ -7154,7 +7261,7 @@ class Handler(BaseHTTPRequestHandler):
                 # ``find_jobs`` for backwards compat with the v1
                 # contract.
                 kind = str(payload.get("kind") or "find_jobs").strip().lower()
-                if kind not in {"find_jobs", "draft_motivation_letter"}:
+                if kind not in {"find_jobs", "draft_motivation_letter", "tailor_cv"}:
                     self.send_error_json(
                         HTTPStatus.BAD_REQUEST,
                         "unsupported_kind",
@@ -7214,6 +7321,14 @@ class Handler(BaseHTTPRequestHandler):
                     elif kind == "draft_motivation_letter":
                         stream_iter = STATE.chat_handler_draft_motivation_letter_streaming(
                             data_user_id, {}
+                        )
+                    elif kind == "tailor_cv":
+                        # Top-tier upgrade item 3 (2026-05-21): tailor
+                        # streams tokens of the rewritten CV.
+                        # importedJobId comes through the request body.
+                        imported_id = str(payload.get("importedJobId") or "").strip()
+                        stream_iter = STATE.chat_handler_tailor_cv_streaming(
+                            data_user_id, {"importedJobId": imported_id}
                         )
                     else:
                         # Defensive — should be caught by the

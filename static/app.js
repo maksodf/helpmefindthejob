@@ -1317,6 +1317,28 @@ async function tailorCv(importedJobId) {
   const credentialValue = $("#providerRuntimeKey")?.value || "";
   const status = $("#tailorCvStatus");
   if (status) status.textContent = "Tailoring…";
+  // Phase 2 #77 top-tier upgrade item 3 (2026-05-21): try the
+  // streaming SSE path first so the user sees tokens land in the
+  // #briefPrompt textarea in real time. Falls back to the JSON
+  // endpoint on any transport failure (no provider, network error,
+  // CSRF missing, etc.).
+  const streamed = await tailorCvStreaming(importedJobId);
+  if (streamed && streamed.ok) {
+    state.analysisBrief = {
+      title: "Tailored CV",
+      prompt: streamed.tailored || "",
+      providerLabel: "streaming",
+      invocationMode: "sse",
+    };
+    if ($("#briefMeta")) {
+      $("#briefMeta").textContent = "Tailored CV · streaming";
+    }
+    if (status) status.textContent = "Status: completed (streamed)";
+    if ($("#providerRuntimeKey")) $("#providerRuntimeKey").value = "";
+    showToast("Tailored CV ready in the AI Brief view.", "success");
+    navigate("brief");
+    return;
+  }
   try {
     const payload = await api(`/api/imported-jobs/${encodeURIComponent(importedJobId)}/tailor-cv`, {
       method: "POST",
@@ -5766,6 +5788,75 @@ async function chatSendLetterStreaming(rawMessage, category) {
       );
     },
   );
+}
+
+// Tailor-CV streaming — non-chat variant used by the AI Brief button
+// flow (tailorCv()). Streams tokens directly into the
+// #briefPrompt textarea so the user sees the rewrite happen in real
+// time instead of waiting silently for a blocking POST. On
+// transport failure the caller falls back to the JSON endpoint.
+//
+// Returns the final donePayload on success, or null on failure.
+async function tailorCvStreaming(importedJobId) {
+  if (typeof window === "undefined" || !window.ReadableStream || typeof fetch !== "function") {
+    return null;
+  }
+  const briefPromptEl = document.querySelector("#briefPrompt");
+  const status = document.querySelector("#tailorCvStatus");
+  let response;
+  try {
+    response = await fetch("/api/chat/message/stream", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "text/event-stream",
+        ...(state.auth?.user?.csrfToken
+          ? { "X-CSRF-Token": state.auth.user.csrfToken }
+          : {}),
+      },
+      credentials: "same-origin",
+      body: JSON.stringify({ kind: "tailor_cv", importedJobId }),
+    });
+  } catch (_err) {
+    return null;
+  }
+  if (!response || !response.ok || !response.body) return null;
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder("utf-8");
+  let buffer = "";
+  let accumulated = "";
+  let donePayload = null;
+  if (briefPromptEl) briefPromptEl.value = "";
+  if (status) status.textContent = "Streaming…";
+  try {
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      let sep;
+      while ((sep = buffer.indexOf("\n\n")) !== -1) {
+        const rawChunk = buffer.slice(0, sep);
+        buffer = buffer.slice(sep + 2);
+        const event = parseSseChunk(rawChunk);
+        if (!event) continue;
+        if (event.kind === "ai_token") {
+          accumulated += event.data.text || "";
+          if (briefPromptEl) {
+            briefPromptEl.value = accumulated;
+            briefPromptEl.scrollTop = briefPromptEl.scrollHeight;
+          }
+        } else if (event.kind === "done_payload") {
+          donePayload = event.data;
+        } else if (event.kind === "error") {
+          if (status) status.textContent = `Error: ${event.data.message || "stream failed"}`;
+          return null;
+        }
+      }
+    }
+  } catch (_err) {
+    return null;
+  }
+  return donePayload;
 }
 
 // Phase 2 #77 sub-piece (d): parse one raw SSE event chunk
