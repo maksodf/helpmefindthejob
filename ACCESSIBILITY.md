@@ -237,6 +237,57 @@ Combined across all three passes: **30 violation instances pre-fix
 → 0 post-fix**. Thresholds NOT manipulated. axe-core's default
 rule set preserved.
 
+### Counting note: "violation instances" vs "fixes shipped"
+
+Two numbers appear in this document and they measure different
+things — both honest, but a reviewer should know the distinction
+before quoting either in a downstream report:
+
+- **30 violation instances closed**: every distinct match a
+  rule found in axe's raw output. One CSS contrast bug can
+  surface as 5 instances if it affects 5 different elements
+  on the same page, or 12 instances if it surfaces on 6 pages
+  × 2 colour schemes. The "instances" number is the rule-by-
+  rule pre-fix count from the per-capture totals tables above,
+  summed across all three passes.
+- **16 fixes shipped**: the number of CHANGES that landed in
+  the codebase to close those instances. One fix often closes
+  many instances simultaneously (e.g. Fix 4 — palette `--text-
+  soft` contrast — closed dozens of contrast-instance violations
+  across every page where that token was used). The "fixes"
+  number is the count of "### Fix N" sections below.
+
+The mapping is many-to-many in principle (a fix can close
+multiple instances; rarely an instance is the union of two
+fixes) but on this codebase the actual breakdown is 16 fixes →
+30 instances, ratio ≈ 1.9 instances per fix.
+
+When citing this work to a reviewer, prefer **"30 violation
+instances closed via 16 distinct fixes across 25 unique
+surfaces (33 captures including colour-scheme variants)"** as
+the compact, honest summary that distinguishes all three
+numbers.
+
+### Counting note: "33 captures" vs "25 unique surfaces"
+
+The per-pass tables above and the changelog row dated 2026-05-19
+report "33 captures". That's the raw count of axe-core
+invocations: 8 app pages + 5 docs pages (= 13 unauth) + 8 auth
+states × 2 colour schemes (= 16 auth) + 4 dynamic states
+(= 4 dynamic) = 33 captures.
+
+The dedupe-on-URL **unique surface** count is lower because
+colour-scheme variants of the same URL aren't a separate
+surface for the purposes of "what part of the app did we
+audit". Deduping the 8 auth states × 2 schemes → 8 auth
+surfaces, the total is 8 + 5 + 8 + 4 = **25 unique surfaces**.
+
+Both numbers are accurate; they answer different questions.
+"How many times did we run axe?" → 33. "How many distinct
+parts of the app are covered?" → 25. The changelog row uses
+"captures" deliberately to signal it's the larger of the two
+counts.
+
 ## Fixes shipped in the §3.6 first-pass slice
 
 ### Fix 1 — App landing page `<main>` landmark
