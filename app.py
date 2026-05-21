@@ -6927,6 +6927,63 @@ class Handler(BaseHTTPRequestHandler):
             if parsed.path == "/api/workspaces":
                 self.send_json({"workspaces": STATE.list_user_workspaces(user_id)})
                 return
+            # /api/experiments/<name>/variant — return the variant
+            # assigned to the current user for an A/B experiment.
+            # 13-plan item 6/13. Builds on the feature-flag
+            # substrate from item 5/13.
+            exp_variant_match = re.match(
+                r"^/api/experiments/([^/]+)/variant$", parsed.path
+            )
+            if exp_variant_match:
+                from company_discovery.experiments import (
+                    EXPERIMENTS,
+                    get_variant,
+                )
+
+                experiment_name = exp_variant_match.group(1)
+                if experiment_name not in EXPERIMENTS:
+                    self.send_error_json(
+                        HTTPStatus.NOT_FOUND,
+                        "unknown_experiment",
+                        f"Experiment '{experiment_name}' is not registered.",
+                    )
+                    return
+                eff_user_id = STATE.effective_user_id(user_id)
+                variant = get_variant(experiment_name, eff_user_id)
+                self.send_json(
+                    {
+                        "experimentName": experiment_name,
+                        "variant": variant,
+                        "status": EXPERIMENTS[experiment_name].status,
+                    }
+                )
+                return
+            # /api/experiments/<name>/summary — aggregate per-variant
+            # outcomes for an experiment. Admin-only (per-variant
+            # counts could be sensitive in a small-cohort case).
+            exp_summary_match = re.match(
+                r"^/api/experiments/([^/]+)/summary$", parsed.path
+            )
+            if exp_summary_match:
+                if not self.require_admin(session):
+                    return
+                from company_discovery.experiments import (
+                    EXPERIMENTS,
+                    summarize_experiment,
+                )
+                from dataclasses import asdict
+
+                experiment_name = exp_summary_match.group(1)
+                if experiment_name not in EXPERIMENTS:
+                    self.send_error_json(
+                        HTTPStatus.NOT_FOUND,
+                        "unknown_experiment",
+                        f"Experiment '{experiment_name}' is not registered.",
+                    )
+                    return
+                summary = summarize_experiment(experiment_name, STATE.repository)
+                self.send_json({"summary": asdict(summary)})
+                return
             # /api/workspaces/<workspace_id>/members — list members
             # of a workspace (workspace admin UI completion).
             ws_members_match = re.match(
