@@ -862,15 +862,29 @@ def rank_aggregated(
 
 
 class JobAggregationEngine:
-    """Fan-out + cache for many ``JobAggregatorProvider`` instances."""
+    """Fan-out + cache for many ``JobAggregatorProvider`` instances.
+
+    Phase 2 #71: optional ``index`` parameter wires a persistent
+    :class:`JobIndex` for write-through at search-fan-out time.
+    Cache (existing) is per-(provider, query) for 1h to dedupe
+    provider-quota burn; index (new) is per-source_url for 14d to
+    power DiagnosticEngine facet analytics. Both can coexist.
+    """
 
     def __init__(
         self,
         providers: Iterable[JobAggregatorProvider] | None = None,
         cache: AggregatorResultCache | None = None,
+        index: object | None = None,
     ) -> None:
         self.providers: list[JobAggregatorProvider] = list(providers or [])
         self.cache = cache
+        # Typed as ``object`` here to avoid a circular import with
+        # company_discovery.job_index (which imports AggregatedJob
+        # from this module). The runtime contract is "any object with
+        # upsert_jobs(jobs, role_bucket=...) → int". JobIndex
+        # satisfies it; mocks for tests can too.
+        self.index = index
 
     def search(
         self,
@@ -879,6 +893,7 @@ class JobAggregationEngine:
         location: str | None,
         limit_per_provider: int = 25,
         persona_id: str | None = None,
+        role_bucket: str | None = None,
     ) -> tuple[list[AggregatedJob], list[AggregationOutcome]]:
         """Synchronous façade — drains :meth:`search_streaming` and
         returns the merged (jobs, outcomes) tuple. Existing callers
@@ -889,6 +904,11 @@ class JobAggregationEngine:
         (SSE streaming endpoint, Phase 2 #77) should call
         :meth:`search_streaming` directly and consume the event
         sequence.
+
+        ``role_bucket`` (Phase 2 #71): when set + the engine has an
+        ``index`` configured, the dedup'd job list is written through
+        to the persistent job-index with this bucket tag. Optional —
+        omitting it skips the write-through.
         """
         final_jobs: list[AggregatedJob] = []
         final_outcomes: list[AggregationOutcome] = []
@@ -897,6 +917,7 @@ class JobAggregationEngine:
             location=location,
             limit_per_provider=limit_per_provider,
             persona_id=persona_id,
+            role_bucket=role_bucket,
         ):
             if event[0] == "done":
                 final_jobs = event[1]["jobs"]
@@ -911,6 +932,7 @@ class JobAggregationEngine:
         limit_per_provider: int = 25,
         persona_id: str | None = None,
         max_workers: int | None = None,
+        role_bucket: str | None = None,
     ) -> Iterator[tuple[str, dict]]:
         """Yield events as providers complete + a final ``done`` event
         carrying the merged dedup'd jobs + outcomes.
@@ -1089,9 +1111,24 @@ class JobAggregationEngine:
             if provider.name in provider_outcomes
         ]
         ordered_outcomes.extend(skipped_outcomes)
+        dedup_jobs = list(seen.values())
+
+        # Phase 2 #71 write-through: persist the dedup'd jobs to the
+        # job-index when one is configured. Tagged with role_bucket
+        # when the caller supplied one (e.g. from
+        # ``identify_bucket(query)`` in chat_handler_find_jobs).
+        # Best-effort: failures here must not abort the streaming
+        # response. Seniority + language facets land in Phase B.
+        index = getattr(self, "index", None)
+        if index is not None and dedup_jobs:
+            try:
+                index.upsert_jobs(dedup_jobs, role_bucket=role_bucket)
+            except Exception:  # noqa: BLE001 - write-through is best-effort; never break the search
+                pass
+
         yield (
             "done",
-            {"jobs": list(seen.values()), "outcomes": ordered_outcomes},
+            {"jobs": dedup_jobs, "outcomes": ordered_outcomes},
         )
 
     def attributions(self) -> list[ProviderAttribution]:
