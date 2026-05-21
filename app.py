@@ -6927,6 +6927,24 @@ class Handler(BaseHTTPRequestHandler):
             if parsed.path == "/api/workspaces":
                 self.send_json({"workspaces": STATE.list_user_workspaces(user_id)})
                 return
+            # ------------------------------------------------------
+            # Public REST API (13-plan item 7/13) — thin wrapper
+            # over the MCP tool catalogue. Same surface that MCP
+            # exposes is also reachable via plain HTTP for partners
+            # who don't speak MCP. Version pinned in URL: /api/v1/.
+            # ------------------------------------------------------
+            if parsed.path == "/api/v1/openapi.json":
+                from company_discovery import rest_api as _rest
+
+                spec = _rest.build_openapi_spec()
+                self.send_json(spec)
+                return
+            if parsed.path == "/api/v1/tools":
+                from company_discovery import rest_api as _rest
+
+                self.send_json({"tools": _rest.list_tools_for_rest()})
+                return
+
             # /api/experiments/<name>/variant — return the variant
             # assigned to the current user for an A/B experiment.
             # 13-plan item 6/13. Builds on the feature-flag
@@ -9490,6 +9508,43 @@ class Handler(BaseHTTPRequestHandler):
                     user_id, "billing_portal_opened", {"sessionId": result.get("id")}
                 )
                 self.send_json({"portal": result})
+                return
+            # POST /api/v1/tools/<name> — dispatch a tool call.
+            # 13-plan item 7/13. The MCP tool catalogue is the
+            # source of truth; this route mirrors it via REST so
+            # partners who don't speak MCP can still call tools.
+            tool_call_match = re.match(r"^/api/v1/tools/([^/]+)$", parsed.path)
+            if tool_call_match:
+                tool_name = tool_call_match.group(1)
+                from company_discovery import rest_api as _rest
+
+                # Lazy-build the MCP tools instance per call so we
+                # reuse the same dispatch surface MCP uses.
+                from mcp_server import build_tools as _build_mcp_tools
+
+                tools_instance = _build_mcp_tools(data_path=STATE.data_path)
+                try:
+                    result = _rest.dispatch_tool_call(
+                        tool_name,
+                        payload or {},
+                        tools_instance,
+                        inject_user_id=STATE.effective_user_id(user_id),
+                    )
+                except _rest.ToolNotFoundError:
+                    self.send_error_json(
+                        HTTPStatus.NOT_FOUND,
+                        "tool_not_found",
+                        f"Tool '{tool_name}' is not in the catalogue.",
+                    )
+                    return
+                except _rest.ToolValidationError as err:
+                    self.send_error_json(
+                        HTTPStatus.BAD_REQUEST,
+                        "invalid_payload",
+                        str(err),
+                    )
+                    return
+                self.send_json({"result": result})
                 return
             if parsed.path == "/api/analytics/event":
                 kind = str(payload.get("kind") or "").strip()
