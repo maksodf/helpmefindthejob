@@ -219,6 +219,23 @@ COOKIE_SECURE = get_env_bool(
     "DIRECTJOB_COOKIE_SECURE",
     default=(APP_ENV == "production"),
 )
+# Phase 2 #47 (2026-05-21): HSTS only when the operator has marked
+# the deployment as HTTPS-only. Defaults to the same condition as
+# COOKIE_SECURE because the two flags are semantically linked —
+# both say "this deployment is behind TLS".
+HSTS_ENABLED = get_env_bool(
+    "HELPMEFINDTHEJOB_HSTS",
+    "DIRECTJOB_HSTS",
+    default=(APP_ENV == "production"),
+)
+
+
+def _hsts_enabled() -> bool:
+    """Module-level helper so the response-header path can be
+    monkey-patched in tests without rewriting the env-var lookup.
+    """
+
+    return HSTS_ENABLED
 ALLOW_REGISTRATION = get_env_bool(
     "HELPMEFINDTHEJOB_ALLOW_REGISTRATION",
     "DIRECTJOB_ALLOW_REGISTRATION",
@@ -449,6 +466,15 @@ class AppState:
         self._active_company_scans: set[tuple[str, str]] = set()
         self._login_lock = Lock()
         self._login_attempts: dict[str, list[float]] = {}
+        # Phase 2 #47 (2026-05-21): per-user request-rate limit.
+        # Existing quotas cover AI (can_run_ai), scans
+        # (can_start_scan), and auth (login/register/reset) but
+        # NOT general state-mutating endpoints (profile updates,
+        # captures, etc.). A compromised account could otherwise
+        # spam these to exhaust DB write capacity. Sliding 60s
+        # window of timestamps per user_id.
+        self._user_request_lock = Lock()
+        self._user_request_timestamps: dict[str, list[float]] = {}
         self._reset_request_lock = Lock()
         self._reset_requests: dict[str, list[float]] = {}
         self._register_request_lock = Lock()
@@ -1799,6 +1825,40 @@ class AppState:
                 return False
             attempts.append(now)
             self._login_attempts[client_id] = attempts
+            return True
+
+    def claim_user_request_slot(
+        self, user_id: str, *, cap: int = 600, window_seconds: int = 60
+    ) -> bool:
+        """Phase 2 #47 (2026-05-21): atomic check-and-claim of a
+        per-user request slot for state-mutating endpoints.
+
+        Default cap is 600 requests / 60s = 10 RPS sustained, which
+        is ~20× the heaviest normal user. Anything beyond is almost
+        certainly a compromised account or a malicious script.
+
+        Returns True if the call may proceed, False if the user is
+        over their cap (caller should send HTTP 429).
+
+        Empty user_id (anonymous / pre-auth) passes through — those
+        paths are rate-limited by the per-IP login/register/reset
+        buckets, not this cap.
+        """
+
+        if not user_id:
+            return True
+        now = time.time()
+        with self._user_request_lock:
+            timestamps = [
+                t
+                for t in self._user_request_timestamps.get(user_id, [])
+                if now - t < window_seconds
+            ]
+            if len(timestamps) >= cap:
+                self._user_request_timestamps[user_id] = timestamps
+                return False
+            timestamps.append(now)
+            self._user_request_timestamps[user_id] = timestamps
             return True
 
     def refund_login_slot(self, client_id: str) -> None:
@@ -5752,6 +5812,26 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("X-Frame-Options", "DENY")
         self.send_header("Referrer-Policy", "same-origin")
         self.send_header("Permissions-Policy", "geolocation=(), microphone=(), camera=()")
+        # Phase 2 #47 (2026-05-21): cross-origin isolation headers.
+        # COOP same-origin prevents window.opener attacks where a
+        # cross-origin pop-up can manipulate the opener. CORP
+        # same-origin blocks cross-origin <img>/<script> from
+        # embedding our resources (defense-in-depth against
+        # Spectre-class side-channel leaks). Both are part of the
+        # cross-origin isolation triad recommended by web.dev /
+        # OWASP 2024.
+        self.send_header("Cross-Origin-Opener-Policy", "same-origin")
+        self.send_header("Cross-Origin-Resource-Policy", "same-origin")
+        # HSTS — only sent when the operator has explicitly marked
+        # this deployment as HTTPS-only. Sending HSTS over plain HTTP
+        # is a no-op (browsers ignore it on non-secure transport),
+        # but the explicit env gate documents intent and keeps the
+        # local dev experience clean.
+        if _hsts_enabled():
+            self.send_header(
+                "Strict-Transport-Security",
+                "max-age=63072000; includeSubDomains",
+            )
         self.send_header(
             "Content-Security-Policy",
             "default-src 'self'; "
@@ -5801,6 +5881,26 @@ class Handler(BaseHTTPRequestHandler):
                 # job for the signed-in user, then redirects to /?captured=1.
                 from urllib.parse import parse_qs as _parse_qs
 
+                # Phase 2 #47 (2026-05-21): /capture is a state-mutating
+                # GET endpoint (it saves a discovered_job for the
+                # signed-in user). That makes it CSRF-vulnerable to
+                # cross-site <img src=...> attacks. Defense:
+                # Fetch-Metadata Request Headers. A legitimate
+                # bookmarklet click navigates the document — modern
+                # browsers send Sec-Fetch-Dest: document and
+                # Sec-Fetch-Mode: navigate. An <img src> attack sends
+                # Sec-Fetch-Dest: image. Reject anything that is not a
+                # navigation. We accept absent headers (older browsers,
+                # non-Chrome agents) because we'd rather accept legit
+                # bookmarklet clicks from Firefox/Safari than break
+                # them — the per-account damage is bounded and the
+                # user can delete fake captures.
+                fetch_dest = self.headers.get("Sec-Fetch-Dest", "").lower()
+                if fetch_dest and fetch_dest not in {"document", "empty"}:
+                    self.send_response(HTTPStatus.SEE_OTHER)
+                    self.send_header("Location", "/?capture=blocked_csrf")
+                    self.end_headers()
+                    return
                 session = self.current_session()
                 if session is None:
                     # Send to login first; the bookmarklet user might be in
@@ -6895,8 +6995,18 @@ class Handler(BaseHTTPRequestHandler):
                 return
 
             if parsed.path == "/api/auth/logout":
+                # Phase 2 #47 security audit (2026-05-21): require CSRF.
+                # Without it, a cross-origin attacker could POST to this
+                # endpoint via a hidden form and log the user out at
+                # will — a low-severity but real CSRF defect. We do
+                # NOT require auth (logging out without a session is a
+                # no-op, not a crash) but if a session is present we
+                # MUST verify CSRF before destroying it.
                 session = self.current_session()
-                if session:
+                if session is not None:
+                    if not self.require_csrf(session):
+                        # require_csrf already wrote the 403 response
+                        return
                     STATE.auth_store.delete_session(session.token)
                 self.send_json(
                     {"status": "signed_out"},
@@ -6989,6 +7099,18 @@ class Handler(BaseHTTPRequestHandler):
                 if session is None or not self.require_csrf(session):
                     return
                 user_id = session.user.id
+                # Phase 2 #47 per-user request-rate limit. Catches
+                # compromised accounts / malicious scripts that pass
+                # auth + CSRF but spam state-mutating endpoints.
+                # 600/min = 10 RPS sustained, ~20× heaviest legit
+                # usage. Refused with 429 — the client can back off.
+                if not STATE.claim_user_request_slot(user_id):
+                    self.send_error_json(
+                        HTTPStatus.TOO_MANY_REQUESTS,
+                        "rate_limited",
+                        "Too many requests — please slow down and try again in a minute.",
+                    )
+                    return
                 data_user_id = STATE.effective_user_id(user_id)
 
             if parsed.path == "/api/auth/change-password":
@@ -9293,6 +9415,14 @@ class Handler(BaseHTTPRequestHandler):
             if session is None or not self.require_csrf(session):
                 return
             user_id = session.user.id
+            # Phase 2 #47: per-user request-rate limit (same as POST chokepoint)
+            if not STATE.claim_user_request_slot(user_id):
+                self.send_error_json(
+                    HTTPStatus.TOO_MANY_REQUESTS,
+                    "rate_limited",
+                    "Too many requests — please slow down and try again in a minute.",
+                )
+                return
             data_user_id = STATE.effective_user_id(user_id)
             if len(parts) == 4 and parts[:3] == ["api", "admin", "users"]:
                 if not self.require_admin(session):
@@ -9372,6 +9502,14 @@ class Handler(BaseHTTPRequestHandler):
             if session is None or not self.require_csrf(session):
                 return
             user_id = session.user.id
+            # Phase 2 #47: per-user request-rate limit (same as POST chokepoint)
+            if not STATE.claim_user_request_slot(user_id):
+                self.send_error_json(
+                    HTTPStatus.TOO_MANY_REQUESTS,
+                    "rate_limited",
+                    "Too many requests — please slow down and try again in a minute.",
+                )
+                return
             data_user_id = STATE.effective_user_id(user_id)
             if len(parts) == 3 and parts[:2] == ["api", "companies"]:
                 # Cross-user / missing-id deletes must surface as 404

@@ -153,6 +153,46 @@ def verify_password(password: str, encoded: str) -> bool:
     return hmac.compare_digest(expected.hex(), digest_hex)
 
 
+# Phase 2 #47 (2026-05-21): SQL-identifier defenders. SQLite has no
+# parameter binding for identifiers (table / column names) so any
+# such interpolation must validate the identifier shape strictly.
+# Migration callers pass static identifiers; this guard catches the
+# day someone refactors a migration to take a user-controlled name.
+_SAFE_IDENTIFIER = re.compile(r"^[A-Za-z_][A-Za-z0-9_]{0,63}$")
+# Allowed SQL types / column-definition tokens. Pragmatic, not
+# exhaustive — extend as new migrations need new types.
+_SAFE_COLUMN_DEFINITION_TOKEN = re.compile(
+    r"^(?:"
+    r"[A-Za-z_][A-Za-z0-9_]*(?:\([A-Za-z0-9_, ]+\))?"  # type name with optional paren-args (VARCHAR(255))
+    r"|NULL|NOT|DEFAULT|TRUE|FALSE"
+    r"|'[A-Za-z0-9_\-: ]*'"  # quoted string default
+    r"|-?\d+(?:\.\d+)?"  # numeric default
+    r")$"
+)
+
+
+def _assert_safe_identifier(name: str) -> None:
+    """Raise ValueError when ``name`` doesn't match the strict SQL-
+    identifier grammar. Defends string-interpolated identifiers
+    against any future caller that might smuggle in user input.
+    """
+
+    if not isinstance(name, str) or not _SAFE_IDENTIFIER.match(name):
+        raise ValueError(f"unsafe_sql_identifier:{name!r}")
+
+
+def _assert_safe_column_definition(definition: str) -> None:
+    """Same idea for the type+constraints fragment of an ALTER
+    TABLE. Each whitespace-separated token must match the safe-
+    token grammar. Rejects everything containing SQL meta-chars."""
+
+    if not isinstance(definition, str):
+        raise ValueError(f"unsafe_sql_definition:{definition!r}")
+    for token in definition.split():
+        if not _SAFE_COLUMN_DEFINITION_TOKEN.match(token):
+            raise ValueError(f"unsafe_sql_definition_token:{token!r}")
+
+
 @dataclass(frozen=True)
 class AuthUser:
     id: str
@@ -351,6 +391,18 @@ class AuthStore:
         return cursor.rowcount == 1
 
     def _add_column_if_missing(self, table: str, column: str, definition: str) -> None:
+        # Phase 2 #47 (2026-05-21): SQL identifier defense-in-depth.
+        # SQLite cannot parameterise table/column names so we MUST
+        # string-interpolate. To make sure no future caller can
+        # smuggle a user-controlled string in, validate every
+        # identifier strictly against the SQL-identifier grammar
+        # (ASCII letter or _ followed by ASCII alphanumerics + _).
+        # The definition string is similarly restricted to a known-
+        # safe vocabulary. Migration-internal callers pass static
+        # strings; this guard catches future misuse at the door.
+        _assert_safe_identifier(table)
+        _assert_safe_identifier(column)
+        _assert_safe_column_definition(definition)
         columns = {
             row[1] for row in self.connection.execute(f"PRAGMA table_info({table})").fetchall()
         }

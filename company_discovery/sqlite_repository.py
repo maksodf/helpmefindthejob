@@ -493,5 +493,12 @@ class SqliteCompanyDiscoveryRepository(InMemoryCompanyDiscoveryRepository):
             self.push_subscriptions[sub.id] = sub
 
     def _load_payloads(self, table: str) -> list[dict[str, Any]]:
+        # Phase 2 #47 (2026-05-21): defend the string-interpolated
+        # table name. SQLite can't bind identifiers; the strict
+        # regex check ensures no future caller can pass a user-
+        # controlled string through this path.
+        from company_discovery.auth import _assert_safe_identifier
+
+        _assert_safe_identifier(table)
         rows = self._connection.execute(f"SELECT payload FROM {table}").fetchall()
         return [json.loads(row[0]) for row in rows]
