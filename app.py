@@ -1991,6 +1991,11 @@ class AppState:
                 "location": profile.location,
                 "cvText": profile.cv_text,
                 "cvPhotoDataUri": profile.cv_photo_data_uri,
+                "cvPhotoConsentAt": (
+                    profile.cv_photo_consent_at.isoformat()
+                    if profile.cv_photo_consent_at
+                    else None
+                ),
                 "cvSections": cv_sections,
                 "targetRoles": list(profile.target_roles or []),
                 "industry": profile.industry,
@@ -7626,12 +7631,23 @@ class Handler(BaseHTTPRequestHandler):
                     return
                 profile = STATE.profile_for(user_id)
                 profile.cv_photo_data_uri = data_uri
+                # Phase 2 #32 (2026-05-21): GDPR Article 7
+                # demonstrable-consent timestamp. The user actively
+                # uploading the photo IS the consent action; we
+                # record WHEN so an Article 7 audit can demonstrate
+                # the controller had consent at that moment.
+                profile.cv_photo_consent_at = now_utc()
                 STATE.repository.save_user_profile(profile)
-                STATE.log_analytics(user_id, "cv_photo_uploaded", {"sizeBytes": len(raw)})
+                STATE.log_analytics(
+                    user_id,
+                    "cv_photo_uploaded",
+                    {"sizeBytes": len(raw), "consentAt": profile.cv_photo_consent_at.isoformat()},
+                )
                 self.send_json(
                     {
                         "cvPhotoDataUri": data_uri,
                         "sizeBytes": len(raw),
+                        "consentAt": profile.cv_photo_consent_at.isoformat(),
                     }
                 )
                 return
@@ -7646,7 +7662,11 @@ class Handler(BaseHTTPRequestHandler):
                     return
                 profile = STATE.profile_for(user_id)
                 profile.cv_photo_data_uri = None
+                # Phase 2 #32: consent timestamp cleared on removal —
+                # a future re-upload re-establishes consent.
+                profile.cv_photo_consent_at = None
                 STATE.repository.save_user_profile(profile)
+                STATE.log_analytics(user_id, "cv_photo_removed", {})
                 self.send_json({"cvPhotoDataUri": None})
                 return
             if parsed.path == "/api/profile/cv-upload":

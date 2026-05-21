@@ -123,6 +123,51 @@ def _strip_jpeg_exif(raw: bytes) -> bytes:
     return bytes(out)
 
 
+def _strip_webp_metadata(raw: bytes) -> bytes:
+    """Phase 2 #32 (2026-05-21): strip EXIF + XMP chunks from a
+    WebP file. WebP is a RIFF container; metadata lives in
+    optional "EXIF" and "XMP " chunks. We keep VP8/VP8L/VP8X/
+    ALPH/ANIM/ANMF/ICCP (image data + animation + color profile)
+    and drop EXIF + XMP (PII).
+
+    The container header is fixed-size: 12 bytes ("RIFF" + 4-byte
+    little-endian size + "WEBP"). After that, chunks are
+    8-byte-header + payload + 1-byte pad-to-even.
+    """
+
+    import struct
+
+    if len(raw) < 12 or raw[:4] != b"RIFF" or raw[8:12] != b"WEBP":
+        return raw  # Not WebP — leave alone
+
+    body = raw[12:]
+    out_chunks: list[bytes] = []
+    pos = 0
+    while pos + 8 <= len(body):
+        fourcc = body[pos : pos + 4]
+        size = struct.unpack("<I", body[pos + 4 : pos + 8])[0]
+        chunk_end = pos + 8 + size
+        if chunk_end > len(body):
+            # Truncated chunk — bail; return original to avoid corrupting
+            return raw
+        payload = body[pos + 8 : chunk_end]
+        # Strip EXIF + XMP. Note: VP8X has a flags byte indicating
+        # presence; we deliberately leave VP8X alone (recomputing
+        # would require parsing the canvas dimensions). Browsers
+        # tolerate VP8X with EXIF flag set even when EXIF chunk is
+        # absent — they just don't render metadata.
+        if fourcc not in (b"EXIF", b"XMP "):
+            out_chunks.append(body[pos : chunk_end])
+        # Chunks are padded to even byte boundary
+        pos = chunk_end + (chunk_end % 2)
+
+    new_body = b"".join(out_chunks)
+    # Rebuild RIFF header with new size (size field = body length + 4
+    # for the "WEBP" tag).
+    new_size = len(new_body) + 4
+    return b"RIFF" + struct.pack("<I", new_size) + b"WEBP" + new_body
+
+
 def _strip_png_metadata(raw: bytes) -> bytes:
     """Remove ancillary PNG chunks (text/timestamp/EXIF). PNG structure:
     8-byte signature + chunks. Each chunk: length(4) + type(4) +
@@ -174,8 +219,15 @@ def normalise_photo_upload(raw: bytes) -> str:
         cleaned = _strip_jpeg_exif(raw)
     elif mime == "image/png":
         cleaned = _strip_png_metadata(raw)
+    elif mime == "image/webp":
+        # Phase 2 #32 (2026-05-21): WebP EXIF + XMP stripping. The
+        # earlier "rare on real CVs" comment was true but not a
+        # GDPR-safe default — modern phone cameras export WebP with
+        # location-tagged EXIF.
+        cleaned = _strip_webp_metadata(raw)
     else:
-        # WebP — no metadata stripping for now (rare on real CVs).
+        # Unknown MIME (shouldn't reach here — detect_image_mime
+        # only returns the three known types) — pass through.
         cleaned = raw
     encoded = base64.b64encode(cleaned).decode("ascii")
     return f"data:{mime};base64,{encoded}"

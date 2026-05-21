@@ -301,6 +301,12 @@ class UserProfile:
     # upload. PNG/JPEG only — SVG and other formats are rejected
     # because they can carry script.
     cv_photo_data_uri: str | None = None
+    # Phase 2 #32 (2026-05-21): GDPR Article 7 demonstrable-consent
+    # timestamp for the cv_photo. Set when the user uploads a photo;
+    # cleared on removal. Article 7 requires the controller to be
+    # able to demonstrate WHEN consent was given, not just that it
+    # was given — this timestamp is that demonstration.
+    cv_photo_consent_at: datetime | None = None
     # Chat-router session state — persisted across server restarts so an
     # in-flight ``/add-company`` flow survives a deploy. Shape matches
     # ChatSession.to_dict() (history + pending). Capped at ~50 turns by

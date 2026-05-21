@@ -180,6 +180,19 @@ class SqliteCompanyDiscoveryRepository(InMemoryCompanyDiscoveryRepository):
                     cv,
                     aad=profile.user_id.encode("utf-8"),
                 )
+            # Phase 2 #32 (2026-05-21): encrypt cv_photo_data_uri at
+            # rest. Photos are biometric-class personal data
+            # (face = identifying biometric per GDPR Article 9) and
+            # must receive the same encryption-at-rest treatment as
+            # cv_text. AAD is bound to user_id so a copy-paste of
+            # one user's ciphertext into another user's row would
+            # fail to decrypt.
+            photo = payload.get("cv_photo_data_uri")
+            if self._crypto and photo and not is_aead_blob(photo):
+                payload["cv_photo_data_uri"] = self._crypto.encrypt(
+                    photo,
+                    aad=profile.user_id.encode("utf-8"),
+                )
             self._upsert(
                 "user_profiles",
                 profile.user_id,
@@ -455,6 +468,19 @@ class SqliteCompanyDiscoveryRepository(InMemoryCompanyDiscoveryRepository):
                         )
                     except ValueError:
                         payload["cv_text"] = None
+            # Phase 2 #32: same dance for cv_photo_data_uri
+            photo = payload.get("cv_photo_data_uri")
+            if photo and is_aead_blob(photo):
+                if self._crypto is None:
+                    payload["cv_photo_data_uri"] = None
+                else:
+                    try:
+                        payload["cv_photo_data_uri"] = self._crypto.decrypt(
+                            photo,
+                            aad=payload["user_id"].encode("utf-8"),
+                        )
+                    except ValueError:
+                        payload["cv_photo_data_uri"] = None
             profile = UserProfile(
                 **_drop_none(
                     {
