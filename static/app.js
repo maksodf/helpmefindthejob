@@ -5153,13 +5153,271 @@ function elapsedFooterFor(category, elapsedMs, payload) {
   return `_Took ${seconds}s across ${totalProviders} providers._`;
 }
 
+// Phase 2 #77 sub-piece (d): parse a find-intent message into a
+// {query, location} pair the SSE endpoint accepts. Mirrors the
+// server-side parsing in chat_router for the find_jobs slash + NL
+// patterns (slash /find, slash /search, "find …", "search …", DE
+// "suche …" / "finde …", and the "find a job in <city>" phrasing).
+// Returns null when the message clearly isn't a find intent so the
+// caller can fall back to the JSON endpoint.
+function parseFindIntent(message, defaultLocation) {
+  if (!message) return null;
+  let m = String(message).trim();
+  // Strip slash command prefix
+  m = m.replace(/^\/(?:find|search)\s+/i, "");
+  // Strip natural-language find/search verb
+  m = m.replace(/^(?:find a job|search jobs|jobs suchen)\b\s*/i, "");
+  m = m.replace(/^(?:find|search|suche|finde)\s+/i, "");
+  if (!m) return null;
+  // Extract trailing "in <city>" / "in Berlin" suffix
+  let location = defaultLocation || "";
+  // Allow letters (incl umlauts + sharp s), digits, hyphens, spaces; one or two words
+  const locMatch = m.match(/\s+in\s+([\wäöüÄÖÜß\-]+(?:\s+[\wäöüÄÖÜß\-]+)?)\s*$/i);
+  if (locMatch) {
+    location = locMatch[1].trim();
+    m = m.slice(0, locMatch.index).trim();
+  }
+  const query = m.trim();
+  if (!query) return null;
+  return { query, location };
+}
+
+// Phase 2 #77 sub-piece (d): consume an SSE event chunk + update the
+// typing bubble's running narration. Appends a one-line summary per
+// event, capped at 6 lines so the bubble doesn't grow unbounded.
+// First real event cancels the Loop 28 rotation timers — we're
+// getting actual server-side progress now, not expected stages.
+function handleStreamEvent(event, typingBubble) {
+  if (!typingBubble || !typingBubble.nodes) return;
+  // First real event: cancel pending milestone timers from Loop 28
+  // rotation so they don't fight the actual server narration.
+  for (const node of typingBubble.nodes) {
+    if (node._typingTimers) {
+      for (const id of node._typingTimers) clearTimeout(id);
+      node._typingTimers = null;
+    }
+  }
+
+  let line = "";
+  if (event.kind === "search_started") {
+    const providers = event.data.providers || [];
+    line = `Querying ${providers.length} provider${providers.length !== 1 ? "s" : ""}…`;
+  } else if (event.kind === "provider_ok") {
+    const { provider, job_count, cached } = event.data;
+    const cachedTag = cached ? " (cached)" : "";
+    line = `✓ ${provider}: ${job_count} job${job_count !== 1 ? "s" : ""}${cachedTag}`;
+  } else if (event.kind === "provider_error") {
+    const { provider, error } = event.data;
+    const errLabel = (error || "").split(":")[0] || "failed";
+    line = `✗ ${provider}: ${errLabel}`;
+  } else if (event.kind === "done_payload") {
+    // No bubble update — the caller replaces the bubble with the
+    // final reply on done_payload.
+    return;
+  } else if (event.kind === "error") {
+    line = `Error: ${event.data.message || "stream failed"}`;
+  }
+
+  if (!line) return;
+  for (const node of typingBubble.nodes) {
+    const existing = node.textContent || "";
+    const lines = existing.split("\n").filter((l) => l.trim());
+    lines.push(line);
+    const capped = lines.slice(-6);
+    node.textContent = capped.join("\n");
+    node.setAttribute("aria-label", capped.join("; "));
+  }
+}
+
+// Phase 2 #77 sub-piece (d): drive the SSE endpoint for find-intent
+// messages. Returns true on a successful stream (final done_payload
+// event arrived + UI updated), false on any failure (caller falls
+// back to the JSON endpoint).
+async function chatSendFindStreaming(rawMessage, intent, category) {
+  chatAppendBubble("user", rawMessage || "(skip)");
+  maybeShowExplainer(category);
+  const typingLabel = TYPING_LABELS[category] || TYPING_LABELS.default;
+  const startMs = Date.now();
+  const typingBubble = chatAppendBubble("assistant", "…", {
+    typing: true,
+    typingLabel,
+  });
+
+  let response;
+  try {
+    response = await fetch("/api/chat/message/stream", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: {
+        "Content-Type": "application/json",
+        ...(state.auth?.user?.csrfToken
+          ? { "X-CSRF-Token": state.auth.user.csrfToken }
+          : {}),
+      },
+      body: JSON.stringify({
+        query: intent.query,
+        location: intent.location || "",
+      }),
+    });
+  } catch (_) {
+    // Network error — clean up + fall back to JSON path
+    if (typingBubble) typingBubble.remove();
+    return false;
+  }
+
+  if (!response.ok || !response.body) {
+    if (typingBubble) typingBubble.remove();
+    return false;
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let donePayload = null;
+  let errorEvent = null;
+
+  try {
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      const { value, done } = await reader.read();
+      if (value) {
+        buffer += decoder.decode(value, { stream: true });
+        let idx;
+        while ((idx = buffer.indexOf("\n\n")) !== -1) {
+          const rawChunk = buffer.slice(0, idx);
+          buffer = buffer.slice(idx + 2);
+          const event = parseSseChunk(rawChunk);
+          if (!event) continue;
+          handleStreamEvent(event, typingBubble);
+          if (event.kind === "done_payload") donePayload = event.data;
+          if (event.kind === "error") errorEvent = event.data;
+        }
+      }
+      if (done) break;
+    }
+    // Flush any final partial chunk
+    if (buffer.trim()) {
+      const event = parseSseChunk(buffer);
+      if (event) {
+        handleStreamEvent(event, typingBubble);
+        if (event.kind === "done_payload") donePayload = event.data;
+        if (event.kind === "error") errorEvent = event.data;
+      }
+    }
+  } catch (err) {
+    if (typingBubble) typingBubble.remove();
+    chatAppendBubble("assistant", `Streaming error: ${err.message}`);
+    return true; // We "succeeded" in the sense of emitting an error to the user
+  }
+
+  if (typingBubble) typingBubble.remove();
+
+  if (errorEvent) {
+    chatAppendBubble(
+      "assistant",
+      `Error: ${errorEvent.message || "stream failed"}`,
+    );
+    return true;
+  }
+
+  if (!donePayload) {
+    chatAppendBubble(
+      "assistant",
+      "Streaming response ended without a final payload.",
+    );
+    return true;
+  }
+
+  // Render the final payload — same logic the JSON path uses below.
+  if (donePayload.journeyPhase) {
+    state.lastJourneyPhase = donePayload.journeyPhase;
+  }
+  chatAppendBubble(
+    "assistant",
+    donePayload.message || donePayload.reply || "(no reply)",
+  );
+  const elapsedMs = Date.now() - startMs;
+  const footer = elapsedFooterFor(category, elapsedMs, donePayload);
+  if (footer) {
+    chatAppendBubble("assistant", footer);
+  }
+  const payloadJobs = donePayload.jobs;
+  if (Array.isArray(payloadJobs) && payloadJobs.length) {
+    state.lastSearchResults = {
+      jobs: payloadJobs,
+      query: intent.query,
+      location: intent.location || "",
+      categories: donePayload.categories,
+    };
+    renderSearchResults();
+  }
+  const navTarget = donePayload.navigateTo;
+  if (navTarget) {
+    const navBtn = document.querySelector(`.nav-item[data-view='${navTarget}']`);
+    if (navBtn) {
+      navBtn.click();
+    } else if (navTarget === "searchResults") {
+      navigate("searchResults");
+    }
+  }
+  return true;
+}
+
+// Phase 2 #77 sub-piece (d): parse one raw SSE event chunk
+// ("event: <kind>\ndata: <json>") into a {kind, data} object.
+// Returns null on parse failure (silent — the chunk is just skipped).
+function parseSseChunk(rawChunk) {
+  if (!rawChunk) return null;
+  const lines = rawChunk.split("\n");
+  let kind = "";
+  let dataStr = "";
+  for (const line of lines) {
+    if (line.startsWith("event:")) {
+      kind = line.slice(6).trim();
+    } else if (line.startsWith("data:")) {
+      // Allow multi-line data per SSE spec (concatenate with \n)
+      dataStr = dataStr ? dataStr + "\n" + line.slice(5).trim() : line.slice(5).trim();
+    }
+  }
+  if (!kind) return null;
+  try {
+    return { kind, data: JSON.parse(dataStr) };
+  } catch (_) {
+    return null;
+  }
+}
+
 async function chatSend(message) {
   if (message == null) return;
+  const category = typingCategoryFor(message, state.lastJourneyPhase || "");
+  // Phase 2 #77 sub-piece (d): route find-intent messages through the
+  // SSE endpoint when (a) the category is "search", (b) the message
+  // parses as a find intent (slash / NL find verb), and (c) the
+  // browser supports fetch with ReadableStream body. Otherwise fall
+  // back to the JSON endpoint below — the JSON endpoint still benefits
+  // from the parallel-fan-out speedup (sub-piece b) so non-streaming
+  // clients aren't penalised.
+  if (
+    category === "search"
+    && typeof window !== "undefined"
+    && window.ReadableStream
+    && typeof fetch === "function"
+  ) {
+    const intent = parseFindIntent(
+      message,
+      state.profile?.location || state.profile?.locationFilter || "",
+    );
+    if (intent && intent.query) {
+      const streamed = await chatSendFindStreaming(message, intent, category);
+      if (streamed) return;
+      // chatSendFindStreaming returned falsy → fell back to JSON path
+      // (network or HTTP error). Continue below with JSON dispatch.
+    }
+  }
   chatAppendBubble("user", message || "(skip)");
   // PART 9 Loop 29: resolve typing category once + use it for both
   // the rotating label AND the one-time explainer + the
   // elapsed-time completion footer.
-  const category = typingCategoryFor(message, state.lastJourneyPhase || "");
   maybeShowExplainer(category);
   // Loop 14.1 + Loop 28: phase-aware rotating typing label
   // (Gate 6.6 closure + PART 9 Loop 28 rotation refactor).
