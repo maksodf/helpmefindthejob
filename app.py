@@ -3833,15 +3833,46 @@ class AppState:
         provider = self.ai_provider_for(user_id)
         if not _ai_consent_satisfied(profile, provider):
             return {"ok": False, "message": "AI consent required — confirm in Settings first."}
-        from company_discovery.analysis import execute_cv_tailoring
+        from company_discovery.analysis import build_cv_tailoring_prompt, execute_cv_tailoring
         from company_discovery.persona_fixtures import friction_keywords_for
+        from company_discovery.cost_caps import CostCapExceeded, enforce_cap, record_invocation
 
+        # Phase 2 #46 integration (2026-05-21): pre-flight cost-cap
+        # gate. Refuse the call if it would push the user over their
+        # personal monthly cap. Local-mode invocations always pass.
+        brief = build_cv_tailoring_prompt(
+            imported,
+            provider,
+            profile,
+            friction_keywords=friction_keywords_for(profile.persona_id),
+        )
+        try:
+            enforce_cap(
+                user_id=user_id,
+                repository=self.repository,
+                cap_eur=float(profile.monthly_spend_cap_eur or 0.0),
+                provider_id=provider.provider_id,
+                invocation_mode=provider.invocation_mode,
+                prompt_text=brief["prompt"],
+                locale=profile.locale or "en",
+            )
+        except CostCapExceeded as cap_err:
+            return {"ok": False, "message": str(cap_err), "code": "cost_cap_exceeded"}
         result = execute_cv_tailoring(
             imported,
             provider,
             "",
             profile,
             friction_keywords=friction_keywords_for(profile.persona_id),
+        )
+        # Post-call cost recording so future cap checks see this run.
+        record_invocation(
+            user_id=user_id,
+            repository=self.repository,
+            provider_id=provider.provider_id,
+            invocation_mode=provider.invocation_mode,
+            prompt_text=brief["prompt"],
+            response_text=(result.output or ""),
         )
         self.log_analytics(
             user_id, "chat_cmd", {"name": "tailor_cv", "id": imported_id, "status": result.status}
@@ -3914,6 +3945,35 @@ class AppState:
                 profile,
                 friction_keywords=friction_keywords_for(profile.persona_id),
             )
+            # Phase 2 #46 integration: pre-flight cost-cap gate before
+            # opening a streaming connection (which is more expensive
+            # to abort mid-flight than to refuse up front).
+            from company_discovery.cost_caps import (
+                CostCapExceeded,
+                enforce_cap,
+                record_invocation,
+            )
+
+            try:
+                enforce_cap(
+                    user_id=user_id,
+                    repository=self.repository,
+                    cap_eur=float(profile.monthly_spend_cap_eur or 0.0),
+                    provider_id=provider.provider_id,
+                    invocation_mode=provider.invocation_mode,
+                    prompt_text=brief["prompt"],
+                    locale=profile.locale or "en",
+                )
+            except CostCapExceeded as cap_err:
+                yield (
+                    "done_payload",
+                    {
+                        "ok": False,
+                        "message": str(cap_err),
+                        "code": "cost_cap_exceeded",
+                    },
+                )
+                return
             # build_cv_tailoring_prompt returns a single prompt string in
             # the "prompt" key; for the streaming caller we split system
             # vs user on the first double-newline (mirrors the existing
@@ -3935,6 +3995,16 @@ class AppState:
                         break
             except Exception:  # noqa: BLE001 - best-effort; produce empty output on failure
                 accumulated = []
+            # Post-call cost recording (best-effort) so subsequent
+            # cap checks see this stream's actual cost.
+            record_invocation(
+                user_id=user_id,
+                repository=self.repository,
+                provider_id=provider.provider_id,
+                invocation_mode=provider.invocation_mode,
+                prompt_text=brief["prompt"],
+                response_text="".join(accumulated),
+            )
 
         tailored = "".join(accumulated)
         status = "completed" if tailored else "provider_error"
@@ -4830,6 +4900,44 @@ class AppState:
                 ),
             }
         ai_caller = self._journey_ai_caller(user_id)
+        # Phase 2 #46 integration: gate the AI call on the cost cap.
+        # Templated fallback (when ai_caller is None) is always free
+        # so the gate only applies to the AI path.
+        if ai_caller is not None:
+            from company_discovery.cost_caps import (
+                CostCapExceeded,
+                enforce_cap,
+                record_invocation,
+            )
+            from company_discovery.motivation_letter import build_letter_prompt
+
+            provider = self.ai_provider_for(user_id)
+            prompt_text = build_letter_prompt(
+                job=job,
+                cv_text=cv_text,
+                user_name="",
+                user_location=profile.location or "",
+            )
+            try:
+                enforce_cap(
+                    user_id=user_id,
+                    repository=self.repository,
+                    cap_eur=float(profile.monthly_spend_cap_eur or 0.0),
+                    provider_id=provider.provider_id,
+                    invocation_mode=provider.invocation_mode,
+                    prompt_text=prompt_text,
+                    locale=profile.locale or "en",
+                )
+            except CostCapExceeded as cap_err:
+                # Cap hit → fall through to the templated fallback so
+                # the user still gets a draft, with a banner.
+                ai_caller = None
+                cap_banner = str(cap_err)
+            else:
+                cap_banner = ""
+        else:
+            cap_banner = ""
+
         letter = draft_with_ai(
             job=job,
             cv_text=cv_text,
@@ -4842,6 +4950,19 @@ class AppState:
                 job=job,
                 user_name="",
                 user_location=profile.location or "",
+            )
+        if ai_caller is not None and letter:
+            # Best-effort cost-event write for cap accounting
+            from company_discovery.cost_caps import record_invocation as _record
+
+            provider2 = self.ai_provider_for(user_id)
+            _record(
+                user_id=user_id,
+                repository=self.repository,
+                provider_id=provider2.provider_id,
+                invocation_mode=provider2.invocation_mode,
+                prompt_text=letter[:0],  # response-only cost not yet tracked separately
+                response_text=letter,
             )
         # Persist to the journey for the next phase to consult against.
         # We don't auto-write to imported_job here because the user

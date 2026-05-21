@@ -1,0 +1,160 @@
+# Copyright (c) 2026 Helpmefindthejob contributors
+# SPDX-License-Identifier: Apache-2.0
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License. You may obtain
+# a copy of the License at http://www.apache.org/licenses/LICENSE-2.0.
+"""Phase 2 #46 chat-handler integration — verify the cost-cap gate
+actually refuses AI invocations at the handler boundary."""
+
+from __future__ import annotations
+
+import unittest
+from pathlib import Path
+from tempfile import TemporaryDirectory
+
+from app import AppState
+from company_discovery.models import AnalyticsEvent, ImportedJob
+
+
+def _make_state() -> tuple[AppState, str]:
+    tmp = TemporaryDirectory()
+    root = Path(tmp.name)
+    state = AppState(
+        root / "company.sqlite3",
+        root / "auth.sqlite3",
+        root / "ai.json",
+        root / "schedule.json",
+        start_scheduler=False,
+    )
+    state._test_tmp = tmp  # noqa: SLF001
+    user = state.auth_store.create_user("cap-int@example.com", "secret-pass-12345678")
+    return state, user.id
+
+
+def _seed_imported_job(state: AppState, user_id: str) -> ImportedJob:
+    job = ImportedJob(
+        user_id=user_id,
+        company_id="c-cap-int-1",
+        discovered_job_id="d-cap-int-1",
+        source_url="https://example.invalid/job/cap-1",
+        title="Backend Engineer",
+        company_name="Test GmbH",
+        location="Berlin",
+        description="Backend role.",
+    )
+    state.repository.save_imported_job(job)
+    return job
+
+
+class CostCapChatHandlerIntegration(unittest.TestCase):
+    def setUp(self) -> None:
+        self.state, self.user_id = _make_state()
+        self.addCleanup(self.state.auth_store.close)
+        self.addCleanup(self.state.repository.close)
+        self.addCleanup(lambda: self.state._test_tmp.cleanup())  # noqa: SLF001
+
+    def _set_paid_api_provider(self) -> None:
+        # Bypass plan-tier gating (tests run as the default plan,
+        # which may not allow byok; the integration we care about
+        # is the cost-cap gate, not the plan gate). Setting the
+        # provider dict directly.
+        from company_discovery.ai_providers import AIProviderConfig
+
+        self.state.ai_providers[self.user_id] = AIProviderConfig(
+            provider_id="openai",
+            invocation_mode="api",
+            credential_reference="OPENAI_API_KEY_TEST",
+        )
+
+    def _seed_spend(self, eur: float) -> None:
+        self.state.repository.save_analytics_event(
+            AnalyticsEvent(
+                user_id=self.user_id,
+                kind="ai_invocation_cost",
+                payload={"estimated_eur": eur},
+            )
+        )
+
+    def test_tailor_cv_returns_cap_exceeded_when_user_is_over_cap(self) -> None:
+        self._set_paid_api_provider()
+        profile = self.state.profile_for(self.user_id)
+        profile.cv_text = "Sample CV text " * 50
+        profile.monthly_spend_cap_eur = 1.0
+        profile.ai_consent_provider_id = "openai"
+        from datetime import datetime, timezone
+
+        profile.ai_consent_at = datetime.now(timezone.utc)
+        self.state.repository.save_user_profile(profile)
+        job = _seed_imported_job(self.state, self.user_id)
+        # Seed spend that exceeds the cap
+        self._seed_spend(2.5)
+
+        result = self.state.chat_handler_tailor_cv(
+            self.user_id, {"importedJobId": job.id}
+        )
+        self.assertFalse(result["ok"])
+        self.assertEqual(result.get("code"), "cost_cap_exceeded")
+        self.assertIn("€", result["message"])
+
+    def test_tailor_cv_streaming_yields_cap_exceeded_done_payload(self) -> None:
+        self._set_paid_api_provider()
+        profile = self.state.profile_for(self.user_id)
+        profile.cv_text = "Sample CV text " * 50
+        profile.monthly_spend_cap_eur = 1.0
+        profile.ai_consent_provider_id = "openai"
+        from datetime import datetime, timezone
+
+        profile.ai_consent_at = datetime.now(timezone.utc)
+        self.state.repository.save_user_profile(profile)
+        job = _seed_imported_job(self.state, self.user_id)
+        self._seed_spend(2.5)
+
+        events = list(
+            self.state.chat_handler_tailor_cv_streaming(
+                self.user_id, {"importedJobId": job.id}
+            )
+        )
+        finals = [e for e in events if e[0] == "done_payload"]
+        # The streaming variant should yield exactly one done_payload
+        # with cost_cap_exceeded. It must NOT have yielded any tokens
+        # (the cap check refuses the call up front).
+        self.assertEqual(len(finals), 1)
+        payload = finals[0][1]
+        self.assertFalse(payload["ok"])
+        self.assertEqual(payload.get("code"), "cost_cap_exceeded")
+        ai_tokens = [e for e in events if e[0] == "ai_token"]
+        self.assertEqual(len(ai_tokens), 0)
+
+    def test_local_provider_never_hits_cap_even_with_seeded_spend(self) -> None:
+        # Set provider to ollama (local_http, free) — no matter how
+        # much spend is seeded, the handler must NOT refuse the call.
+        from company_discovery.ai_providers import AIProviderConfig
+
+        self.state.ai_providers[self.user_id] = AIProviderConfig(
+            provider_id="ollama",
+            invocation_mode="local_http",
+            base_url="http://localhost:11434",
+            model="llama3.2",
+        )
+        profile = self.state.profile_for(self.user_id)
+        profile.cv_text = "Sample CV text " * 50
+        profile.monthly_spend_cap_eur = 0.01  # impossible cap
+        profile.ai_consent_provider_id = "ollama"
+        from datetime import datetime, timezone
+
+        profile.ai_consent_at = datetime.now(timezone.utc)
+        self.state.repository.save_user_profile(profile)
+        job = _seed_imported_job(self.state, self.user_id)
+        self._seed_spend(100.0)
+
+        result = self.state.chat_handler_tailor_cv(
+            self.user_id, {"importedJobId": job.id}
+        )
+        # The call may fail for other reasons (no real ollama
+        # running), but it must NOT fail with cost_cap_exceeded.
+        self.assertNotEqual(result.get("code"), "cost_cap_exceeded")
+
+
+if __name__ == "__main__":
+    unittest.main()
