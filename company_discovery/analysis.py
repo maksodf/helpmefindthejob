@@ -792,17 +792,40 @@ def _dispatch_provider(
             )
         # enforce_cap raises CostCapExceeded if over budget. We let
         # it propagate so the caller can render a friendly UX
-        # surface; the audit log captures the refusal via the
-        # error_class field below.
-        enforce_cap(
-            user_id=cap_context.user_id,
-            repository=cap_context.repository,
-            cap_eur=cap_context.cap_eur,
-            provider_id=provider.provider_id,
-            invocation_mode=provider.invocation_mode,
-            prompt_text=prompt,
-            locale=cap_context.locale,
-        )
+        # surface. We log an analytics event for the refusal here
+        # so ops + the user's own activity log carry visibility
+        # — without it, refused calls would be invisible.
+        from company_discovery.cost_caps import CostCapExceeded as _CCE
+        from company_discovery.models import AnalyticsEvent as _AE
+
+        try:
+            enforce_cap(
+                user_id=cap_context.user_id,
+                repository=cap_context.repository,
+                cap_eur=cap_context.cap_eur,
+                provider_id=provider.provider_id,
+                invocation_mode=provider.invocation_mode,
+                prompt_text=prompt,
+                locale=cap_context.locale,
+            )
+        except _CCE as cap_err:
+            try:
+                cap_context.repository.save_analytics_event(
+                    _AE(
+                        user_id=cap_context.user_id,
+                        kind="ai_invocation_refused_cap",
+                        payload={
+                            "purpose": purpose,
+                            "provider_id": provider.provider_id,
+                            "cap_eur": cap_err.cap_eur,
+                            "spent_eur": cap_err.spent_eur,
+                            "next_call_eur": cap_err.next_call_eur,
+                        },
+                    )
+                )
+            except Exception:  # noqa: BLE001 - Case E best-effort: refusal log failure must not break the refusal itself
+                pass
+            raise
 
     started = time.monotonic()
     result: AnalysisExecutionResult | None = None
@@ -1190,15 +1213,41 @@ def _dispatch_provider_streaming(
             )
         # Pre-flight cap check. Raises CostCapExceeded if over budget;
         # generator caller catches and yields a friendly done_payload.
-        enforce_cap(
-            user_id=cap_context.user_id,
-            repository=cap_context.repository,
-            cap_eur=cap_context.cap_eur,
-            provider_id=provider.provider_id,
-            invocation_mode=provider.invocation_mode,
-            prompt_text=prompt,
-            locale=cap_context.locale,
-        )
+        # Refusal is logged via ai_invocation_refused_cap analytics
+        # event for ops + user visibility (same shape as the non-
+        # streaming chokepoint).
+        from company_discovery.cost_caps import CostCapExceeded as _CCE
+        from company_discovery.models import AnalyticsEvent as _AE
+
+        try:
+            enforce_cap(
+                user_id=cap_context.user_id,
+                repository=cap_context.repository,
+                cap_eur=cap_context.cap_eur,
+                provider_id=provider.provider_id,
+                invocation_mode=provider.invocation_mode,
+                prompt_text=prompt,
+                locale=cap_context.locale,
+            )
+        except _CCE as cap_err:
+            try:
+                cap_context.repository.save_analytics_event(
+                    _AE(
+                        user_id=cap_context.user_id,
+                        kind="ai_invocation_refused_cap",
+                        payload={
+                            "purpose": purpose,
+                            "provider_id": provider.provider_id,
+                            "cap_eur": cap_err.cap_eur,
+                            "spent_eur": cap_err.spent_eur,
+                            "next_call_eur": cap_err.next_call_eur,
+                            "streaming": True,
+                        },
+                    )
+                )
+            except Exception:  # noqa: BLE001 - Case E best-effort
+                pass
+            raise
 
     started = _time.monotonic()
     final_result: AnalysisExecutionResult | None = None

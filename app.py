@@ -1915,6 +1915,9 @@ class AppState:
                 "theme": profile.theme,
                 "frictionClass": profile.friction_class,
                 "retentionDays": profile.retention_days,
+                "monthlySpendCapEur": float(
+                    getattr(profile, "monthly_spend_cap_eur", 5.0) or 0.0
+                ),
                 "dismissedTerms": list(profile.dismissed_terms or []),
                 "hiddenSources": list(profile.hidden_sources or []),
                 "aiConsentProviderId": profile.ai_consent_provider_id,
@@ -3190,6 +3193,7 @@ class AppState:
         "via_managed": 0,
         "no_provider_available": 0,
         "rate_limited": 0,
+        "cap_exhausted": 0,  # Phase 2 #46: AI router refused due to cost cap
     }
 
     def _chat_router_cache_key(self, message: str, history: list[ChatTurn]) -> tuple:
@@ -3342,9 +3346,7 @@ class AppState:
                 # typed a normal message). The downstream handler
                 # that actually drafts the letter / tailor will
                 # surface the cap properly.
-                self.chat_router_metrics["cap_exhausted"] = (
-                    self.chat_router_metrics.get("cap_exhausted", 0) + 1
-                )
+                self.chat_router_metrics["cap_exhausted"] += 1
                 self._chat_router_cache_put(cache_key, None)
                 return None
             if result.status != "completed" or not result.output:
@@ -8919,12 +8921,23 @@ class Handler(BaseHTTPRequestHandler):
                         "Confirm consent in Settings before running AI on your CV.",
                     )
                     return
-                result = execute_job_decision_brief(
-                    imported,
-                    provider,
-                    runtime_credential,
-                    profile,
-                )
+                from company_discovery.cost_caps import CostCapExceeded
+
+                try:
+                    result = execute_job_decision_brief(
+                        imported,
+                        provider,
+                        runtime_credential,
+                        profile,
+                        cap_context=STATE.cost_cap_context_for(user_id),
+                    )
+                except CostCapExceeded as cap_err:
+                    self.send_error_json(
+                        HTTPStatus.PAYMENT_REQUIRED,
+                        "cost_cap_exceeded",
+                        str(cap_err),
+                    )
+                    return
                 STATE.quota_store.record_ai_run(user_id)
                 imported.analysis_status = result.status
                 imported.analysis_output = result.output or None
@@ -9113,13 +9126,24 @@ class Handler(BaseHTTPRequestHandler):
                     return
                 company = STATE.repository.companies.get(discovered.company_id)
                 company_name = company.name if company else "Unknown company"
-                result = execute_auto_fit(
-                    discovered,
-                    company_name,
-                    provider,
-                    runtime_credential,
-                    profile,
-                )
+                from company_discovery.cost_caps import CostCapExceeded
+
+                try:
+                    result = execute_auto_fit(
+                        discovered,
+                        company_name,
+                        provider,
+                        runtime_credential,
+                        profile,
+                        cap_context=STATE.cost_cap_context_for(user_id),
+                    )
+                except CostCapExceeded as cap_err:
+                    self.send_error_json(
+                        HTTPStatus.PAYMENT_REQUIRED,
+                        "cost_cap_exceeded",
+                        str(cap_err),
+                    )
+                    return
                 STATE.quota_store.record_ai_run(user_id)
                 if result.status == "completed":
                     score, reason, gaps = parse_auto_fit_output(result.output)
@@ -9172,6 +9196,15 @@ class Handler(BaseHTTPRequestHandler):
                     if not j.imported_job_id and j.auto_fit_score is None
                 ][:limit]
                 outcomes: list[dict[str, Any]] = []
+                # Phase 2 #46 (2026-05-21): build the cap context
+                # ONCE per batch — re-querying month-to-date for
+                # every job in the loop would be wasteful. The
+                # in-loop enforce_cap inside _dispatch_provider
+                # still reads the (live) repository each time so
+                # mid-batch overspend halts the loop honestly.
+                from company_discovery.cost_caps import CostCapExceeded
+
+                batch_cap_ctx = STATE.cost_cap_context_for(user_id)
                 for job in jobs:
                     try:
                         STATE.quota_store.can_run_ai(user_id)
@@ -9186,7 +9219,27 @@ class Handler(BaseHTTPRequestHandler):
                         break
                     company = companies_by_id.get(job.company_id)
                     company_name = company.name if company else "Unknown company"
-                    res = execute_auto_fit(job, company_name, provider, runtime_credential, profile)
+                    try:
+                        res = execute_auto_fit(
+                            job,
+                            company_name,
+                            provider,
+                            runtime_credential,
+                            profile,
+                            cap_context=batch_cap_ctx,
+                        )
+                    except CostCapExceeded as cap_err:
+                        outcomes.append(
+                            {
+                                "discoveredJobId": job.id,
+                                "status": "cost_cap_exceeded",
+                                "code": "cost_cap_exceeded",
+                                "message": str(cap_err),
+                            }
+                        )
+                        # Halt the batch — every subsequent call
+                        # would just hit the same cap.
+                        break
                     STATE.quota_store.record_ai_run(user_id)
                     if res.status == "completed":
                         score, reason, gaps = parse_auto_fit_output(res.output)

@@ -248,6 +248,43 @@ class CostCapChatHandlerIntegration(unittest.TestCase):
         with self.assertRaises(CostCapExceeded):
             execute_cv_tailoring(job, provider, "", profile, cap_context=zero_ctx)
 
+    def test_cap_refusal_writes_analytics_event(self) -> None:
+        """Refused calls leave no AI-invocation audit (no call
+        happened) but MUST leave an ai_invocation_refused_cap
+        analytics event so ops + the user can see refusal
+        history. Without this, refused calls would be invisible.
+        """
+
+        from company_discovery.analysis import execute_cv_tailoring
+        from company_discovery.cost_caps import CostCapExceeded
+
+        self._set_paid_api_provider()
+        profile = self.state.profile_for(self.user_id)
+        profile.cv_text = "Sample CV"
+        profile.monthly_spend_cap_eur = 1.0
+        profile.ai_consent_provider_id = "openai"
+        from datetime import datetime, timezone
+
+        profile.ai_consent_at = datetime.now(timezone.utc)
+        self.state.repository.save_user_profile(profile)
+        job = _seed_imported_job(self.state, self.user_id)
+        self._seed_spend(2.5)
+
+        provider = self.state.ai_provider_for(self.user_id)
+        ctx = self.state.cost_cap_context_for(self.user_id)
+        with self.assertRaises(CostCapExceeded):
+            execute_cv_tailoring(job, provider, "", profile, cap_context=ctx)
+
+        # Refusal event present
+        events = self.state.repository.list_analytics_events(user_id=self.user_id)
+        refusals = [e for e in events if e.kind == "ai_invocation_refused_cap"]
+        self.assertEqual(len(refusals), 1)
+        payload = refusals[0].payload
+        self.assertEqual(payload["purpose"], "tailor_cv")
+        self.assertEqual(payload["provider_id"], "openai")
+        self.assertEqual(payload["cap_eur"], 1.0)
+        self.assertEqual(payload["spent_eur"], 2.5)
+
     def test_local_provider_never_hits_cap_even_with_seeded_spend(self) -> None:
         # Set provider to ollama (local_http, free) — no matter how
         # much spend is seeded, the handler must NOT refuse the call.
