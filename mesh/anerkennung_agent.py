@@ -50,6 +50,7 @@ from mesh.common import (
 
 AGENT_NAME = "anerkennung-agent"
 AGENT_VERSION = "0.1.0"
+AGENT_DID = "did:web:anerkennung-agent.helpmefindthejob.com"
 
 
 # Three demo recognition pathways. Each maps a (country_of_origin,
@@ -164,14 +165,18 @@ def _make_verification_decision(payload: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _make_verifiable_credential_stub(
+def _build_unsigned_credential(
     decision: dict[str, Any], user_id: str
 ) -> dict[str, Any]:
-    """W3C Verifiable Credentials Data Model 2.0 stub. The full
-    signing pipeline lands in week 2's verifiable-credentials
-    integration; this stub establishes the shape so downstream
-    agents can already consume it.
+    """Construct the unsigned VC body. The real Ed25519 proof is
+    attached by :class:`mesh.verifiable_credentials.Ed25519Signer`
+    in :func:`issue_signed_credential`.
+
+    Closed during W2 D10 — the prior version returned a
+    ``PendingSignaturePlaceholder`` proof. That stub is gone;
+    every issued VC now carries a real Ed25519 signature.
     """
+
     return {
         "@context": [
             "https://www.w3.org/ns/credentials/v2",
@@ -179,7 +184,7 @@ def _make_verifiable_credential_stub(
         ],
         "id": f"urn:uuid:{uuid.uuid4()}",
         "type": ["VerifiableCredential", "AnerkennungCredential"],
-        "issuer": f"did:web:anerkennung-agent.helpmefindthejob.com",
+        "issuer": AGENT_DID,
         "validFrom": now_iso(),
         "credentialSubject": {
             "id": f"did:web:user.helpmefindthejob.com:{_short_hash(user_id)}",
@@ -190,22 +195,23 @@ def _make_verifiable_credential_stub(
             "missingRequirements": decision["missingRequirements"],
             "estimatedCompletionMonths": decision["estimatedCompletionMonths"],
         },
-        # Signature placeholder — replaced by real Sigstore-style
-        # signature in week 2 of the 4-week plan.
-        "proof": {
-            "type": "PendingSignaturePlaceholder",
-            "created": now_iso(),
-            "note": (
-                "Real W3C VC signature lands in week 2 — this stub "
-                "ships the data shape so downstream agents can be "
-                "wired today and only the signature step needs to "
-                "be added later."
-            ),
-        },
     }
 
 
-def make_handler(audit: AgentAuditLog) -> type[JsonRequestHandler]:
+def issue_signed_credential(
+    decision: dict[str, Any], user_id: str, signer
+) -> dict[str, Any]:
+    """Build + sign a VC. ``signer`` is an
+    :class:`mesh.verifiable_credentials.Ed25519Signer` whose
+    ``signer_did`` equals :data:`AGENT_DID` (the signer enforces
+    the match).
+    """
+
+    unsigned = _build_unsigned_credential(decision, user_id)
+    return signer.sign_credential(unsigned)
+
+
+def make_handler(audit: AgentAuditLog, signer=None) -> type[JsonRequestHandler]:
     decisions: dict[str, dict[str, Any]] = {}
 
     def health(_handler, _payload):
@@ -253,13 +259,28 @@ def make_handler(audit: AgentAuditLog) -> type[JsonRequestHandler]:
                 "status": "not_found",
                 "decisionId": decision_id,
             }
-        vc = _make_verifiable_credential_stub(decision, user_id)
+        if signer is None:
+            # Tests run without a signer and still want the VC
+            # shape; emit an unsigned VC + clear status. Production
+            # never hits this branch — main() always wires a signer.
+            vc = _build_unsigned_credential(decision, user_id)
+            audit.emit(
+                "verifiable_credential_issued_unsigned",
+                {"vcId": vc["id"], "decisionId": decision_id, "userId": user_id},
+            )
+            return {
+                "status": "ok",
+                "verifiableCredential": vc,
+                "warning": "vc_unsigned_test_mode",
+            }
+        vc = issue_signed_credential(decision, user_id, signer)
         audit.emit(
             "verifiable_credential_issued",
             {
                 "vcId": vc["id"],
                 "decisionId": decision_id,
                 "userId": user_id,
+                "signerDid": signer.signer_did,
             },
         )
         return {"status": "ok", "verifiableCredential": vc}
@@ -292,12 +313,41 @@ def main() -> None:
             "MESH_ANERKENNUNG_AUDIT", "data/mesh/anerkennung-agent-audit.log"
         ),
     )
+    parser.add_argument(
+        "--signing-key",
+        default=os.environ.get(
+            "MESH_ANERKENNUNG_SIGNING_KEY",
+            "data/mesh/anerkennung-agent-signing-key.json",
+        ),
+        help="Ed25519 keypair file; generated on first launch.",
+    )
     args = parser.parse_args()
     audit = AgentAuditLog(Path(args.audit_path))
-    handler = make_handler(audit)
+    from mesh.verifiable_credentials import (
+        Ed25519Signer,
+        IssuerRecord,
+        default_registry,
+    )
+
+    signer = Ed25519Signer.from_file_or_create(
+        Path(args.signing_key), signer_did=AGENT_DID
+    )
+    # Register ourselves in the in-process registry so a same-
+    # process verifier can find us. Production deploys publish
+    # the DID document at /.well-known/did.json — see
+    # build_did_document() in mesh.verifiable_credentials.
+    default_registry().register(
+        IssuerRecord(
+            issuer_did=AGENT_DID,
+            public_key_multibase=signer.public_key_multibase(),
+        )
+    )
+    handler = make_handler(audit, signer=signer)
     server = serve_until_stopped(handler, args.host, args.port)
     print(f"[{AGENT_NAME}] listening on http://{args.host}:{args.port}", flush=True)
     print(f"[{AGENT_NAME}] audit log: {args.audit_path}", flush=True)
+    print(f"[{AGENT_NAME}] signing key: {args.signing_key}", flush=True)
+    print(f"[{AGENT_NAME}] issuer DID: {AGENT_DID}", flush=True)
     try:
         import signal
 
