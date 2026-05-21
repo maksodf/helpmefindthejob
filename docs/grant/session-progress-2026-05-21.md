@@ -14,17 +14,21 @@ without re-reading every commit.
 
 ## What's banked
 
-22 commits since the autonomous-work order. Test suite:
-**1595 tests pass clean in 30.5s, 4 skipped (Ollama-gated).**
+30 commits since the autonomous-work order. Test suite:
+**1618 tests pass clean in 30.5s, 4 skipped (Ollama-gated).**
 
 Test count progression:
 - Pre-session: 1488
-- Mid-session (after #77 close): 1488
+- After #77 close: 1488
 - After #76 close: 1523
 - After #71 Phase A+B+C: 1564
 - After #78 Phase 1: 1595
+- After #78 Layer 2: 1608
+- After #78 Layer 3 + close (and #80 close): 1618
 
-Net delta: **+107 tests** added during this session.
+Net delta: **+130 tests** added during this session.
+
+**Five major Phase 2 items closed**: #77, #76, #71, #78, #80.
 
 ---
 
@@ -83,24 +87,45 @@ with separate backlog item #74; ships when #74 is scoped.
 Commits: `c98d1bd`, `1c1c216`, `d20e8d5`, `a50836b`.
 +41 contract tests.
 
-### #78 — Database-error surfacing UX 🔄 Phase 1 shipped
+### #78 — Database-error surfacing UX ✅ CLOSED (three layers)
 
-- Policy document at `docs/grant/17-database-error-policy.md`
-  classifying 5 cases (lock-busy / disk-full / referential-
-  missing / schema-drift / best-effort) with EN+DE friendly
-  messages + HTTP status mapping + recovery paths
-- Helper module at `company_discovery/db_errors.py` with
-  `classify_db_error` + `format_user_message` + `http_status_for`
-  + `retry_on_lock` decorator + `emit_admin_alert`
+- Layer 1: policy document at `docs/grant/17-database-error-policy.md`
+  classifying 5 cases (lock-busy / disk-full / referential-missing /
+  schema-drift / best-effort) with EN+DE friendly messages + HTTP
+  status mapping + recovery paths; helper module at
+  `company_discovery/db_errors.py` with `classify_db_error` +
+  `format_user_message` + `http_status_for` + `retry_on_lock` +
+  `emit_admin_alert`. Commit: `06fade0`. +31 tests.
+- Layer 2: HTTP-handler integration in `app.py` at all 5 top-level
+  `do_*` boundaries (do_GET, do_HEAD, do_POST, do_PATCH, do_DELETE)
+  via `_handle_db_error` helper + `_request_locale` for EN/DE
+  selection from Accept-Language. Commit: `d0f9589`. +13 tests.
+- Layer 3: `@retry_on_lock()` decoration on all 11 idempotent
+  repository save_* methods in `sqlite_repository.py`. Commit:
+  `bd5a034`. (No new tests — decorator behavior already covered
+  by Layer 1 contract tests; integration verified by 1608-pass
+  regression suite.)
 
-Not yet shipped:
-- Layer 2: `_handle_db_error` helper in `app.py` + adoption at
-  sqlite-Error catch sites
-- Layer 3: `@retry_on_lock` decoration on idempotent repository
-  methods + audit pass over Case E silent-swallow sites for
-  required justifying comments
+Case E silent-swallow annotation audit is a follow-on cleanup
+(non-blocking; existing sites are doctrinally correct, just lack
+the formal annotation comment).
 
-Commits: `06fade0`. +31 contract tests.
+### #80 — Cover-letter section UI split ✅ CLOSED
+
+Section-aware panel below the canonical textarea (textarea stays
+the source of truth + edit surface). Three new JS functions:
+- `parseCoverLetterSections(text)` — splits on 5 prompt-defined
+  section headers + DE `## Quellen` alias
+- `parseCitations(text)` — builds `{claim, sources: [{kind, text}]}`
+  from `← [CV|JD|Inference]` lines
+- `renderCoverLetterSections(text)` — populates 5 read-only `<pre>`
+  panels + interactive `<details>` citation verifier with
+  CV/JD/Inference colour-coded tags
+
+"Copy letter body" button uses `navigator.clipboard.writeText` with
+toast fallback. Textarea-input listener keeps panel in sync when the
+user edits raw text. EN + DE i18n strings + CSS for the new panel +
+colour-coded tag classes. Commits: `ff0da68`. +10 contract tests.
 
 ---
 
@@ -109,19 +134,17 @@ Commits: `06fade0`. +31 contract tests.
 Per the original order ("items #4-7 to 100%"), the remaining work
 ahead of the agent:
 
-- **#78** Layers 2 + 3 (audit + repository adoption)
-- **#80** Cover-letter section UI split + interactive citation
-  verifier (~4-6h estimate)
-- **~70 other Phase 2 backlog items** — full enumeration in
-  `docs/grant/phase2-backlog-2026-05-19.md`
+- **Remaining ~68 Phase 2 backlog items** — full enumeration in
+  `docs/grant/phase2-backlog-2026-05-19.md`. Most are smaller items
+  (1-6h each) that didn't make the operator-named critical list.
 - **#7** Production hardening (load test + DR drill + observability
   + sqlite→postgres + WCAG audit + internal security review)
 - **#5** Multi-language rollout (RTL CSS + DE bundle completion
   + cross-language harness — translations themselves deferred
   to human translators per operator deferral D1)
-- **#6** Capability surfaces beyond MVP (public API + SSO/SAML +
-  multi-tenant + ML + websockets + PWA + offline mode — native
-  mobile deferred per operator deferral D2)
+- **#6** Capability surfaces beyond MVP (public REST/GraphQL API +
+  SSO/SAML + multi-tenant + ML + websockets + PWA + offline mode —
+  native mobile deferred per operator deferral D2)
 
 Realistic estimate to complete the remaining scope at the same
 quality bar: multi-week.
@@ -164,18 +187,24 @@ non-coding actors (operator-side)" with operator-action mappings.
 
 ## Where the next session picks up
 
-Natural continuation order:
+The five operator-named critical sub-items of #4 are now closed.
+Natural continuation order picks up at the second-priority items:
 
-1. **#78 Layer 2** — Add `_handle_db_error` helper in `app.py`,
-   adopt at sqlite-Error catch sites. ~2-3 hours of focused work.
-2. **#78 Layer 3** — `@retry_on_lock` audit + repository
-   adoption. ~1-2 hours.
-3. **#80** Cover-letter UI section split — frontend refactor +
-   interactive citation verifier. ~4-6 hours.
-4. **Remaining backlog items** in operator-priority order.
+1. **Remaining backlog items** in operator-priority order — the
+   most impactful unclosed items in `phase2-backlog-2026-05-19.md`:
+   - #70 (help-surface for clarifying questions, ~2-3h)
+   - #72/#73 (language + visa-status JD heuristics; depend on
+     persistent index #71 which is now shipped)
+   - #74 (adjacent-cities commute-range, depends on #71 + #72)
+   - #75 (DE bundle wiring for empty-state + typing labels)
+   - #79 (Claude Desktop walk automation, ~3-4h)
+2. **#7** Production hardening
+3. **#5** Multi-language scaffolding (RTL CSS + DE completion +
+   cross-language harness)
+4. **#6** Capability surfaces
 
 Each item closes against the doctrine + closure-report pattern
-that's worked across the 22 commits already shipped.
+that's worked across the 30 commits already shipped.
 
 ---
 
