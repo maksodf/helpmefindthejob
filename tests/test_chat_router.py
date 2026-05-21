@@ -34,7 +34,7 @@ from company_discovery.chat_router import (
 
 
 class RegistryShapeTests(unittest.TestCase):
-    def test_nineteen_core_commands(self):
+    def test_twentyone_core_commands(self):
         names = set(REGISTRY)
         self.assertEqual(
             names,
@@ -58,6 +58,10 @@ class RegistryShapeTests(unittest.TestCase):
                 "delete_account",
                 "download_cv",
                 "help",
+                # Phase 2 #76 sub-piece (a) — friction-class chat
+                # control surface (change + skip).
+                "friction_class_change",
+                "friction_class_skip",
             },
         )
 
@@ -72,7 +76,9 @@ class RegistryShapeTests(unittest.TestCase):
 
     def test_list_commands_payload_shape(self):
         payload = list_commands()
-        self.assertEqual(len(payload), 19)
+        # 19 baseline commands + 2 friction-class chat commands
+        # (Phase 2 #76 sub-piece a) = 21.
+        self.assertEqual(len(payload), 21)
         for item in payload:
             self.assertIn("name", item)
             self.assertIn("label", item)

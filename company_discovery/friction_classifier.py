@@ -183,6 +183,42 @@ SCORED_PATTERNS: dict[str, tuple[str, ...]] = {
 SCORED_MIN_HITS = 2
 
 
+# ─── Public slug → human-readable label map ─────────────────────
+#
+# Used by the chat UX (Phase 2 #76 sub-piece a — user-confirmation
+# flow at classification time) and the Settings page (#76 sub-piece d
+# — read-only display). The labels are operator-curated and follow
+# the project's translation convention: German bureaucratic terms
+# (§16d AufenthG, EU Blue Card, Anerkennungsweg, Wiedereinstieg,
+# Quereinstieg) stay verbatim regardless of UI locale.
+
+FRICTION_CLASS_LABELS: dict[str, str] = {
+    "aicha": "§16d Anerkennungsweg (regulated profession, migrant)",
+    "yusuf": "EU Blue Card (high-skilled migrant, portable across EU)",
+    "olga": "§24 humanitarian protection (Ukrainian temp protection)",
+    "mahmoud": "§4 AsylG (asylum, work permit)",
+    "maria": "EU citizen (no visa constraint)",
+    "kaethe": "Wiedereinstieg (returning after career break)",
+    "tobias": "Quereinstieg (career changer, native-DACH)",
+}
+
+
+def label_for(slug: str) -> str:
+    """Return a human-readable label for a friction-class slug, or
+    an empty string for unknown / empty slugs."""
+
+    return FRICTION_CLASS_LABELS.get(slug, "")
+
+
+def all_labels() -> list[tuple[str, str]]:
+    """Return the (slug, label) pairs for all known friction classes.
+    Useful for rendering the 7-option pick list in the chat confirmation
+    flow + the Settings card. Order is stable (alphabetical by slug,
+    matching the classifier's tie-break order)."""
+
+    return [(slug, FRICTION_CLASS_LABELS[slug]) for slug in sorted(FRICTION_CLASS_LABELS)]
+
+
 # ─── Output dataclass ────────────────────────────────────────────
 
 

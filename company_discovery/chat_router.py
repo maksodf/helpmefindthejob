@@ -623,6 +623,51 @@ def _build_registry() -> dict[str, Command]:
                 confirmation_template="Listing the {n} commands I understand.",
                 requires_confirmation=False,
             ),
+            # Phase 2 #76 sub-piece (a): user-confirmation flow for the
+            # friction-class classification. After a CV paste, the
+            # journey reply tells the user what was inferred + invites
+            # them to "change classification" or "skip classification".
+            Command(
+                name="friction_class_change",
+                label="Change your friction-class classification",
+                description="Pick a different friction-class (Aïcha / Yusuf / Olga / Mahmoud / Maria / Käthe / Tobias) than the one inferred from your CV.",
+                slash_aliases=["/friction", "/friction-class"],
+                keywords=[
+                    r"\bchange (?:my )?classification\b",
+                    r"\bchange (?:my )?friction[- ]class\b",
+                    r"\bpick (?:a )?different (?:friction[- ]class|classification|process)\b",
+                    # DE coverage
+                    r"\bklassifikation (?:ändern|wechseln)\b",
+                    r"\bfriktionsklasse (?:ändern|wechseln)\b",
+                ],
+                params=[
+                    CommandParam(
+                        "slug",
+                        "Which friction class? (aicha / yusuf / olga / mahmoud / maria / kaethe / tobias, or 'list' to see all 7 with labels)",
+                        validator=_validate_string,
+                    ),
+                ],
+                confirmation_template=(
+                    "Setting your friction-class classification to **{slug}**. Confirm?"
+                ),
+                requires_confirmation=False,
+            ),
+            Command(
+                name="friction_class_skip",
+                label="Skip the friction-class classification",
+                description="Clear the auto-inferred friction-class so downstream UX treats you as no-clear-match (opts out of class-aware routing for this session).",
+                slash_aliases=["/skip-friction", "/friction-skip"],
+                keywords=[
+                    r"\bskip (?:my )?(?:friction[- ]class|classification)\b",
+                    r"\bopt out (?:of )?(?:friction[- ]class|classification)\b",
+                    # DE coverage
+                    r"\b(?:friktions)?klassifikation überspringen\b",
+                    r"\bfriktionsklasse löschen\b",
+                ],
+                params=[],
+                confirmation_template="Clearing your friction-class classification.",
+                requires_confirmation=False,
+            ),
         ]
     }
 

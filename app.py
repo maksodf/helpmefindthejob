@@ -3588,6 +3588,95 @@ class AppState:
         self.log_analytics(user_id, "chat_cmd", {"name": "help"})
         return {"ok": True, "message": render_help_text()}
 
+    def chat_handler_friction_class_change(self, user_id: str, args: dict) -> dict:
+        """Phase 2 #76 sub-piece (a): chat-driven friction-class change.
+
+        Accepts a ``slug`` arg. If the slug is "list" (or empty), shows
+        the 7 friction-class options with labels + slash invocations
+        the user can pick from. Otherwise validates the slug against
+        the known set and updates UserProfile.friction_class.
+        """
+        from company_discovery.friction_classifier import (
+            FRICTION_CLASS_LABELS,
+            all_labels,
+        )
+
+        slug = (args.get("slug") or "").strip().lower()
+        if not slug or slug == "list":
+            lines = [
+                f"  {i + 1}. **`/friction {s}`** — {label}"
+                for i, (s, label) in enumerate(all_labels())
+            ]
+            return {
+                "ok": True,
+                "message": (
+                    "Friction-class options (pick one to update your "
+                    "classification):\n\n"
+                    + "\n".join(lines)
+                    + "\n\n"
+                    "Or type **/skip-friction** to opt out entirely."
+                ),
+            }
+        if slug not in FRICTION_CLASS_LABELS:
+            valid = ", ".join(sorted(FRICTION_CLASS_LABELS))
+            return {
+                "ok": False,
+                "message": (
+                    f"Unknown friction-class slug **{slug}**. Valid "
+                    f"options: {valid}. Type **/friction list** to "
+                    "see them with labels."
+                ),
+            }
+        profile = self.profile_for(user_id)
+        profile.friction_class = slug
+        self.repository.save_user_profile(profile)
+        self.log_analytics(
+            user_id,
+            "friction_class_classified",
+            {
+                "resolved": slug,
+                "confidence": "user_pick",
+                "match_count": 1,
+                "source": "chat_change",
+            },
+        )
+        return {
+            "ok": True,
+            "message": (
+                f"Got it — set your friction-class to "
+                f"**{FRICTION_CLASS_LABELS[slug]}**. Downstream UX "
+                "(search affordances + AI prompt context) will route "
+                "for this class. Change it any time with "
+                "**/friction <slug>** or in Settings."
+            ),
+            "frictionClass": slug,
+        }
+
+    def chat_handler_friction_class_skip(self, user_id: str, args: dict) -> dict:
+        """Phase 2 #76 sub-piece (a): chat-driven friction-class skip.
+        Clears UserProfile.friction_class so downstream UX treats the
+        user as no-clear-match (no class-aware routing)."""
+
+        profile = self.profile_for(user_id)
+        prior_slug = profile.friction_class
+        profile.friction_class = ""
+        self.repository.save_user_profile(profile)
+        self.log_analytics(
+            user_id,
+            "friction_class_cleared",
+            {"prior_resolved": prior_slug, "source": "chat_skip"},
+        )
+        return {
+            "ok": True,
+            "message": (
+                "Cleared your friction-class classification. Downstream "
+                "UX will treat you as no-clear-match (no class-aware "
+                "routing). Re-run the classifier any time from Settings "
+                "or by pasting an updated CV."
+            ),
+            "frictionClass": "",
+        }
+
     def chat_handler_open_cv_builder(self, user_id: str, args: dict) -> dict:
         """Navigate-style command — tells the client to open the CV
         Builder view. The client looks at result.navigateTo and
@@ -4732,6 +4821,8 @@ class AppState:
             "delete_account": self.chat_handler_delete_account,
             "download_cv": self.chat_handler_download_cv,
             "help": self.chat_handler_help,
+            "friction_class_change": self.chat_handler_friction_class_change,
+            "friction_class_skip": self.chat_handler_friction_class_skip,
         }
         if command_name not in handlers:
             return {"ok": False, "message": f"Unknown command: {command_name}."}

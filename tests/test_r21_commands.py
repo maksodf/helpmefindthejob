@@ -207,10 +207,12 @@ class DeleteAccountCommandTests(unittest.TestCase):
 
 
 class CommandRegistryShapeTests(unittest.TestCase):
-    def test_19_commands(self):
+    def test_21_commands(self):
         # If you add or remove a command, update this number and
-        # the explicit list in test_chat_router.py too.
-        self.assertEqual(len(REGISTRY), 19)
+        # the explicit list in test_chat_router.py too. Phase 2 #76
+        # sub-piece (a) added friction_class_change +
+        # friction_class_skip (19 → 21).
+        self.assertEqual(len(REGISTRY), 21)
 
 
 if __name__ == "__main__":

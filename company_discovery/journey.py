@@ -1442,6 +1442,7 @@ def _advance_cv_check(journey: UserJourney, msg: str, *, has_existing_cv: bool) 
             # classify must clear the field, not retain).
             from company_discovery.friction_classifier import (
                 classify_with_telemetry,
+                label_for,
             )
 
             classification = classify_with_telemetry(msg)
@@ -1455,8 +1456,28 @@ def _advance_cv_check(journey: UserJourney, msg: str, *, has_existing_cv: bool) 
                     "resolved": classification.slug,
                     "confidence": classification.confidence,
                     "match_count": classification.match_count,
+                    "source": "paste",
                 }),
             )
+            # Phase 2 #76 sub-piece (a): user-confirmation flow.
+            # Surface the classification in the chat reply so the user
+            # knows what was inferred + can change or skip it. Non-
+            # gating: the user proceeds with the inspire phase
+            # immediately; the affordances are routed through chat
+            # tokens "change classification" / "skip classification"
+            # which are handled by the AppState handlers (#76(a) +
+            # #76(d) /api/profile/friction-class/* endpoints provide
+            # the persistent control).
+            label = label_for(classification.slug)
+            if classification.slug and label:
+                friction_note = (
+                    f"\n\n_Classified as **{label}** "
+                    f"(confidence: {classification.confidence}). "
+                    f"Reply **change classification** to pick a "
+                    f"different process, or **skip classification** "
+                    f"to opt out._"
+                )
+                chained.reply = chained.reply + friction_note
             return chained
         # Couldn't determine intent — re-ask.
         existing_hint = '  - Reply **"reuse"** to use your existing CV\n' if has_existing_cv else ""
