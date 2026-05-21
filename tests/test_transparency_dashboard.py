@@ -40,6 +40,7 @@ from company_discovery.transparency import (
     cached_aggregate_for_path,
     render_html,
     render_public_aggregates,
+    render_public_cost_saving_snapshot,
 )
 
 
@@ -296,6 +297,78 @@ class PublicShapeContract(unittest.TestCase):
         # cleanly:
         self.assertIsInstance(a["totalInvocations"], int)
         self.assertIsInstance(b["totalInvocations"], int)
+
+
+class CostSavingDPContract(unittest.TestCase):
+    """Privacy-posture parity for the cost-saving snapshot. Earlier
+    the dashboard showed cost-saving events as RAW counts — that
+    leaked the size of the deployer's user base. This contract
+    pins that the same DP + suppression is applied to the
+    cost-saving side."""
+
+    def test_none_snapshot_returns_none(self):
+        self.assertIsNone(render_public_cost_saving_snapshot(None))
+
+    def test_small_event_counts_suppressed(self):
+        snapshot = {
+            "mechanisms": {
+                "shorter_journey": {"events": 3, "users": 2, "total": 5.0, "unit": "h", "confidence": "aspirational"},
+            },
+            "uniqueUsers": 2,
+            "windowDays": 30,
+        }
+        public = render_public_cost_saving_snapshot(snapshot, seed_for_reproducibility=42)
+        mech = public["mechanisms"]["shorter_journey"]
+        # 3 events + noise + suppression → expect "<5"
+        self.assertEqual(mech["events"], f"<{SUPPRESSION_THRESHOLD}")
+        # confidence + unit pass-through (not noised)
+        self.assertEqual(mech["confidence"], "aspirational")
+        self.assertEqual(mech["unit"], "h")
+
+    def test_large_event_counts_survive_with_noise(self):
+        snapshot = {
+            "mechanisms": {
+                "shorter_journey": {
+                    "events": 1000,
+                    "users": 500,
+                    "total": 5000.0,
+                    "unit": "h",
+                    "confidence": "proven",
+                },
+            },
+            "uniqueUsers": 500,
+            "windowDays": 30,
+        }
+        public = render_public_cost_saving_snapshot(snapshot, seed_for_reproducibility=42)
+        mech = public["mechanisms"]["shorter_journey"]
+        self.assertIsInstance(mech["events"], int)
+        # Within Laplace tail of truth
+        self.assertGreater(mech["events"], 990)
+        self.assertLess(mech["events"], 1010)
+        self.assertEqual(mech["confidence"], "proven")
+
+    def test_malformed_mechanism_entry_is_skipped(self):
+        """Defensive: if a mechanism stat is not a dict (corrupt
+        snapshot), skip it rather than crash."""
+
+        snapshot = {
+            "mechanisms": {
+                "good": {"events": 100, "users": 50, "total": 200, "unit": "x", "confidence": "plausible"},
+                "bad": "not a dict",
+            },
+            "uniqueUsers": 50,
+            "windowDays": 30,
+        }
+        public = render_public_cost_saving_snapshot(snapshot, seed_for_reproducibility=1)
+        self.assertIn("good", public["mechanisms"])
+        self.assertNotIn("bad", public["mechanisms"])
+
+    def test_privacy_metadata_present(self):
+        snapshot = {"mechanisms": {}, "uniqueUsers": 0, "windowDays": 30}
+        public = render_public_cost_saving_snapshot(snapshot)
+        self.assertIn("privacy", public)
+        self.assertEqual(public["privacy"]["dpEpsilon"], DEFAULT_DP_EPSILON)
+        self.assertEqual(public["privacy"]["suppressionThreshold"], SUPPRESSION_THRESHOLD)
 
 
 class PIISafetyContract(unittest.TestCase):

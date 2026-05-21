@@ -6275,9 +6275,16 @@ class Handler(BaseHTTPRequestHandler):
                         cost_snapshot = cs_log.snapshot()
                 except Exception:  # noqa: BLE001 - transparency surface MUST stay up even if metrics read fails
                     cost_snapshot = None
+                # Apply DP noise + suppression to the cost-saving
+                # snapshot too — earlier the raw snapshot leaked the
+                # exact user count behind each mechanism. Mirrors
+                # the AI-invocation side's privacy posture.
+                cost_snapshot_public = _transparency.render_public_cost_saving_snapshot(
+                    cost_snapshot
+                )
                 if parsed.path == "/transparency.json":
                     self.send_json(
-                        {"aiInvocations": public, "costSaving": cost_snapshot},
+                        {"aiInvocations": public, "costSaving": cost_snapshot_public},
                         headers={
                             "X-Content-Type-Options": "nosniff",
                             "Cache-Control": "public, max-age=60",
@@ -6285,7 +6292,7 @@ class Handler(BaseHTTPRequestHandler):
                         },
                     )
                     return
-                html_body = _transparency.render_html(public, cost_saving_snapshot=cost_snapshot)
+                html_body = _transparency.render_html(public, cost_saving_snapshot=cost_snapshot_public)
                 # Bracket the response with the same security-header
                 # discipline the auth pages use: no embedding (X-Frame-
                 # Options DENY), no MIME sniffing, and a strict CSP

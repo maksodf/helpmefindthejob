@@ -254,6 +254,57 @@ def aggregate_ai_invocations(
     }
 
 
+def render_public_cost_saving_snapshot(
+    snapshot: dict[str, Any] | None,
+    *,
+    epsilon: float = DEFAULT_DP_EPSILON,
+    rng: random.Random | None = None,
+    seed_for_reproducibility: int | None = None,
+) -> dict[str, Any] | None:
+    """Apply DP noise + suppression to a cost-saving metrics
+    snapshot before public exposure.
+
+    Mirrors :func:`render_public_aggregates` for the AI invocation
+    side. Both surfaces on /transparency now go through DP — the
+    earlier version showed cost-saving event counts in the clear,
+    which leaked the size of the deployer's user base.
+
+    The ``confidence`` field is preserved as-is (it's a public
+    classification, not a noise-sensitive count). ``events``,
+    ``users``, and ``total`` get noise. ``unit`` is metadata.
+    """
+
+    if not snapshot:
+        return None
+    if rng is None:
+        rng = random.Random(seed_for_reproducibility)
+
+    def _noise_value(v: int | float) -> int | str:
+        return _apply_suppression(apply_dp_noise(int(v), epsilon=epsilon, rng=rng))
+
+    out_mechanisms: dict[str, dict[str, Any]] = {}
+    for mech, stats in (snapshot.get("mechanisms") or {}).items():
+        if not isinstance(stats, dict):
+            continue
+        out_mechanisms[mech] = {
+            "events": _noise_value(stats.get("events", 0)),
+            "users": _noise_value(stats.get("users", 0)),
+            "total": _noise_value(stats.get("total", 0)),
+            "unit": stats.get("unit", ""),
+            "confidence": stats.get("confidence", "aspirational"),
+        }
+    return {
+        "mechanisms": out_mechanisms,
+        "windowDays": snapshot.get("windowDays", 0),
+        "uniqueUsers": _noise_value(snapshot.get("uniqueUsers", 0)),
+        "privacy": {
+            "dpEpsilon": epsilon,
+            "suppressionThreshold": SUPPRESSION_THRESHOLD,
+            "note": "Counts noised; confidence + unit pass-through.",
+        },
+    }
+
+
 def render_public_aggregates(
     aggregates: dict[str, Any],
     *,
