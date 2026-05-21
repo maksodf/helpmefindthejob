@@ -703,7 +703,7 @@ def probe_lateral_counts(
                     query=lat, location=journey.location or None
                 )
             )
-        except Exception:  # noqa: BLE001
+        except Exception:  # noqa: BLE001 - Case E best-effort: count is decorative on the menu (None renders as "—"); never fail the lateral list assembly
             out.append(None)
     return out
 

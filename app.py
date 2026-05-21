@@ -4216,7 +4216,7 @@ class AppState:
                         )
 
                         laterals_count = len(_compute_new_laterals(journey2))
-                    except Exception:  # noqa: BLE001
+                    except Exception:  # noqa: BLE001 - Case E best-effort: lateral count is decorative; failure to compute it must not block auto-relax offer
                         laterals_count = 0
                     next_a = next_auto_relax_suggestion(
                         journey2, new_laterals_count=laterals_count

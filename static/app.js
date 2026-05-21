@@ -211,6 +211,77 @@ function confirmDialog({ title = "Confirm", body = "", confirmLabel = "Confirm",
 
 /* ---------- API ---------- */
 
+// Phase 2 #78 top-tier upgrade item 4 (2026-05-21): Case B
+// (db_disk_full) sessionStorage preservation. The api() error path
+// calls preservePendingWrite() so the user's in-flight POST/PATCH/
+// DELETE body survives the disk-full window. getPendingDiskFullWrites
+// / clearPendingDiskFullWrites are exported on window so UI surfaces
+// can read + drain the queue when the operator restores capacity.
+const _PENDING_WRITES_KEY = "__dj_pending_disk_full_writes_v1";
+
+function preservePendingWrite(path, method, body) {
+  if (typeof sessionStorage === "undefined") return;
+  // Skip GETs and bodies we can't serialise meaningfully
+  if ((method || "GET").toUpperCase() === "GET") return;
+  if (body === undefined || body === null) return;
+  let bodyStr;
+  if (typeof body === "string") {
+    bodyStr = body;
+  } else {
+    try {
+      bodyStr = JSON.stringify(body);
+    } catch (_e) {
+      return;
+    }
+  }
+  let queue = [];
+  try {
+    const existing = sessionStorage.getItem(_PENDING_WRITES_KEY);
+    if (existing) queue = JSON.parse(existing) || [];
+  } catch (_e) {
+    queue = [];
+  }
+  queue.push({
+    path,
+    method: method || "POST",
+    body: bodyStr,
+    timestamp: Date.now(),
+  });
+  // Cap at 20 entries — beyond that the user has bigger problems
+  // and we don't want to balloon sessionStorage past its quota.
+  if (queue.length > 20) queue = queue.slice(-20);
+  try {
+    sessionStorage.setItem(_PENDING_WRITES_KEY, JSON.stringify(queue));
+  } catch (_e) {
+    // sessionStorage full or unavailable — best-effort, swallow.
+  }
+}
+
+function getPendingDiskFullWrites() {
+  if (typeof sessionStorage === "undefined") return [];
+  try {
+    const existing = sessionStorage.getItem(_PENDING_WRITES_KEY);
+    return existing ? JSON.parse(existing) || [] : [];
+  } catch (_e) {
+    return [];
+  }
+}
+
+function clearPendingDiskFullWrites() {
+  if (typeof sessionStorage === "undefined") return;
+  try {
+    sessionStorage.removeItem(_PENDING_WRITES_KEY);
+  } catch (_e) {
+    // best-effort
+  }
+}
+
+if (typeof window !== "undefined") {
+  window.preservePendingWrite = preservePendingWrite;
+  window.getPendingDiskFullWrites = getPendingDiskFullWrites;
+  window.clearPendingDiskFullWrites = clearPendingDiskFullWrites;
+}
+
 async function api(path, options = {}) {
   setStatus("Working", "busy");
   const method = options.method || "GET";
@@ -250,6 +321,18 @@ async function api(path, options = {}) {
     ) {
       clearAuthenticatedState();
       renderAuth();
+    }
+    // Phase 2 #78 top-tier upgrade item 4 (2026-05-21): Case B
+    // (db_disk_full) preserves the in-flight write in
+    // sessionStorage so the user's work survives the saving-
+    // unavailable window. The friendly message already says
+    // "Your work is preserved in this session" — without this
+    // queue the message was a lie. preservePendingWrite() is a
+    // no-op for GETs and for non-JSON bodies (we can't replay
+    // FormData / Blob meaningfully in JS without much heavier
+    // machinery).
+    if (code === "db_disk_full") {
+      preservePendingWrite(path, method, options.body);
     }
     const message = friendlyError(payload.error?.message, code);
     setStatus("Error", "error");
