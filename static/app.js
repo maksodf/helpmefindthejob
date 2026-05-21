@@ -5183,10 +5183,14 @@ function parseFindIntent(message, defaultLocation) {
 }
 
 // Phase 2 #77 sub-piece (d): consume an SSE event chunk + update the
-// typing bubble's running narration. Appends a one-line summary per
-// event, capped at 6 lines so the bubble doesn't grow unbounded.
-// First real event cancels the Loop 28 rotation timers — we're
-// getting actual server-side progress now, not expected stages.
+// typing bubble's running narration. Three event families:
+// - search_started / provider_ok / provider_error: append one-line
+//   summary, cap at 6 lines so the bubble doesn't grow unbounded
+// - ai_token: append tokens IN-PLACE to a single growing letter body
+//   (no per-line summary; the body itself IS the narration)
+// - done_payload / error: terminal — caller replaces the bubble
+// First real event cancels the Loop 28 rotation timers since we now
+// have actual server-side progress.
 function handleStreamEvent(event, typingBubble) {
   if (!typingBubble || !typingBubble.nodes) return;
   // First real event: cancel pending milestone timers from Loop 28
@@ -5196,6 +5200,26 @@ function handleStreamEvent(event, typingBubble) {
       for (const id of node._typingTimers) clearTimeout(id);
       node._typingTimers = null;
     }
+  }
+
+  if (event.kind === "ai_token") {
+    // AI token streaming: append text in-place to the running letter
+    // body. Each node carries its own accumulated buffer because they
+    // mirror across multiple chat surfaces (transcript + dock).
+    const token = (event.data && event.data.text) || "";
+    if (!token) return;
+    for (const node of typingBubble.nodes) {
+      if (typeof node._streamBuffer !== "string") node._streamBuffer = "";
+      node._streamBuffer += token;
+      // Show the full accumulated text — letter bodies stay readable.
+      // Soft-cap rendering at 5000 chars (one full letter + a bit
+      // more) so the bubble doesn't grow pathologically; tokens are
+      // still buffered in _streamBuffer for the final replacement.
+      const display = node._streamBuffer.slice(-5000);
+      node.textContent = display;
+      node.setAttribute("aria-label", "Drafting…");
+    }
+    return;
   }
 
   let line = "";
@@ -5229,11 +5253,13 @@ function handleStreamEvent(event, typingBubble) {
   }
 }
 
-// Phase 2 #77 sub-piece (d): drive the SSE endpoint for find-intent
-// messages. Returns true on a successful stream (final done_payload
-// event arrived + UI updated), false on any failure (caller falls
-// back to the JSON endpoint).
-async function chatSendFindStreaming(rawMessage, intent, category) {
+// Phase 2 #77 sub-piece (d): generic SSE consumer used by both the
+// find-jobs and AI-streaming paths. Takes a body to POST and a
+// `onDonePayload(payload, elapsedMs)` callback that renders the
+// final-payload-specific UI (search canvas vs letter draft).
+// Returns true on a successful stream, false on transport failure
+// (caller falls back to JSON path).
+async function chatSendStreaming(rawMessage, body, category, onDonePayload) {
   chatAppendBubble("user", rawMessage || "(skip)");
   maybeShowExplainer(category);
   const typingLabel = TYPING_LABELS[category] || TYPING_LABELS.default;
@@ -5254,13 +5280,9 @@ async function chatSendFindStreaming(rawMessage, intent, category) {
           ? { "X-CSRF-Token": state.auth.user.csrfToken }
           : {}),
       },
-      body: JSON.stringify({
-        query: intent.query,
-        location: intent.location || "",
-      }),
+      body: JSON.stringify(body),
     });
   } catch (_) {
-    // Network error — clean up + fall back to JSON path
     if (typingBubble) typingBubble.remove();
     return false;
   }
@@ -5295,7 +5317,6 @@ async function chatSendFindStreaming(rawMessage, intent, category) {
       }
       if (done) break;
     }
-    // Flush any final partial chunk
     if (buffer.trim()) {
       const event = parseSseChunk(buffer);
       if (event) {
@@ -5307,7 +5328,7 @@ async function chatSendFindStreaming(rawMessage, intent, category) {
   } catch (err) {
     if (typingBubble) typingBubble.remove();
     chatAppendBubble("assistant", `Streaming error: ${err.message}`);
-    return true; // We "succeeded" in the sense of emitting an error to the user
+    return true;
   }
 
   if (typingBubble) typingBubble.remove();
@@ -5328,39 +5349,68 @@ async function chatSendFindStreaming(rawMessage, intent, category) {
     return true;
   }
 
-  // Render the final payload — same logic the JSON path uses below.
-  if (donePayload.journeyPhase) {
-    state.lastJourneyPhase = donePayload.journeyPhase;
-  }
-  chatAppendBubble(
-    "assistant",
-    donePayload.message || donePayload.reply || "(no reply)",
-  );
   const elapsedMs = Date.now() - startMs;
-  const footer = elapsedFooterFor(category, elapsedMs, donePayload);
-  if (footer) {
-    chatAppendBubble("assistant", footer);
-  }
-  const payloadJobs = donePayload.jobs;
-  if (Array.isArray(payloadJobs) && payloadJobs.length) {
-    state.lastSearchResults = {
-      jobs: payloadJobs,
-      query: intent.query,
-      location: intent.location || "",
-      categories: donePayload.categories,
-    };
-    renderSearchResults();
-  }
-  const navTarget = donePayload.navigateTo;
-  if (navTarget) {
-    const navBtn = document.querySelector(`.nav-item[data-view='${navTarget}']`);
-    if (navBtn) {
-      navBtn.click();
-    } else if (navTarget === "searchResults") {
-      navigate("searchResults");
-    }
+  if (typeof onDonePayload === "function") {
+    onDonePayload(donePayload, elapsedMs);
   }
   return true;
+}
+
+// Find-jobs streaming — thin wrapper around chatSendStreaming with the
+// find-specific final-payload rendering (search canvas + nav).
+async function chatSendFindStreaming(rawMessage, intent, category) {
+  return chatSendStreaming(
+    rawMessage,
+    { kind: "find_jobs", query: intent.query, location: intent.location || "" },
+    category,
+    (donePayload, elapsedMs) => {
+      if (donePayload.journeyPhase) state.lastJourneyPhase = donePayload.journeyPhase;
+      chatAppendBubble(
+        "assistant",
+        donePayload.message || donePayload.reply || "(no reply)",
+      );
+      const footer = elapsedFooterFor(category, elapsedMs, donePayload);
+      if (footer) chatAppendBubble("assistant", footer);
+      const payloadJobs = donePayload.jobs;
+      if (Array.isArray(payloadJobs) && payloadJobs.length) {
+        state.lastSearchResults = {
+          jobs: payloadJobs,
+          query: intent.query,
+          location: intent.location || "",
+          categories: donePayload.categories,
+        };
+        renderSearchResults();
+      }
+      const navTarget = donePayload.navigateTo;
+      if (navTarget) {
+        const navBtn = document.querySelector(
+          `.nav-item[data-view='${navTarget}']`,
+        );
+        if (navBtn) {
+          navBtn.click();
+        } else if (navTarget === "searchResults") {
+          navigate("searchResults");
+        }
+      }
+    },
+  );
+}
+
+// Motivation-letter streaming — thin wrapper around chatSendStreaming
+// with the letter-specific final-payload rendering.
+async function chatSendLetterStreaming(rawMessage, category) {
+  return chatSendStreaming(
+    rawMessage,
+    { kind: "draft_motivation_letter" },
+    category,
+    (donePayload, _elapsedMs) => {
+      if (donePayload.journeyPhase) state.lastJourneyPhase = donePayload.journeyPhase;
+      chatAppendBubble(
+        "assistant",
+        donePayload.message || donePayload.reply || "(no reply)",
+      );
+    },
+  );
 }
 
 // Phase 2 #77 sub-piece (d): parse one raw SSE event chunk
@@ -5398,20 +5448,27 @@ async function chatSend(message) {
   // from the parallel-fan-out speedup (sub-piece b) so non-streaming
   // clients aren't penalised.
   if (
-    category === "search"
-    && typeof window !== "undefined"
+    typeof window !== "undefined"
     && window.ReadableStream
     && typeof fetch === "function"
   ) {
-    const intent = parseFindIntent(
-      message,
-      state.profile?.location || state.profile?.locationFilter || "",
-    );
-    if (intent && intent.query) {
-      const streamed = await chatSendFindStreaming(message, intent, category);
+    if (category === "search") {
+      const intent = parseFindIntent(
+        message,
+        state.profile?.location || state.profile?.locationFilter || "",
+      );
+      if (intent && intent.query) {
+        const streamed = await chatSendFindStreaming(message, intent, category);
+        if (streamed) return;
+        // chatSendFindStreaming returned falsy → fell back to JSON path
+        // (network or HTTP error). Continue below with JSON dispatch.
+      }
+    } else if (category === "letter") {
+      // Phase 2 #77 sub-piece (c+d): motivation-letter requests stream
+      // tokens as the AI generates them. Picked job comes from the
+      // server's journey state — no extra body parsing needed.
+      const streamed = await chatSendLetterStreaming(message, category);
       if (streamed) return;
-      // chatSendFindStreaming returned falsy → fell back to JSON path
-      // (network or HTTP error). Continue below with JSON dispatch.
     }
   }
   chatAppendBubble("user", message || "(skip)");

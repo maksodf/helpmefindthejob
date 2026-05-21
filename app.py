@@ -3803,6 +3803,47 @@ class AppState:
 
         return _call
 
+    def _journey_ai_streaming_caller(self, user_id: str):
+        """Streaming counterpart to :meth:`_journey_ai_caller`.
+
+        Returns a generator-factory callable(system, user_msg) ->
+        Iterator[("token"|"final", value)] when AI is available, or
+        None otherwise. Wraps :func:`_dispatch_provider_streaming`
+        with the same consent + provider checks as the single-shot
+        caller. Phase 2 #77 sub-piece (c) wiring: lets a chat handler
+        stream tokens to the frontend via the SSE endpoint while
+        preserving the existing single-shot path.
+        """
+        profile = self.profile_for(user_id)
+        provider = self.ai_provider_for(user_id)
+        if provider is None or provider.provider_id == "manual":
+            return None
+        if not _ai_consent_satisfied(profile, provider):
+            return None
+        from company_discovery.analysis import _dispatch_provider_streaming
+
+        def _stream(system: str, user_msg: str, *, purpose: str = "unknown"):
+            prompt = f"{system}\n\n{user_msg}"
+            try:
+                yield from _dispatch_provider_streaming(
+                    prompt, provider, "", purpose=purpose
+                )
+            except Exception as exc:  # noqa: BLE001 - best-effort; convert to terminal final
+                from company_discovery.analysis import AnalysisExecutionResult
+
+                yield (
+                    "final",
+                    AnalysisExecutionResult(
+                        "provider_error",
+                        provider.provider_id,
+                        provider.invocation_mode,
+                        prompt=prompt,
+                        error=f"{type(exc).__name__}: {exc}"[:200],
+                    ),
+                )
+
+        return _stream
+
     def chat_handler_start_job_journey(self, user_id: str, args: dict) -> dict:
         from company_discovery.journey import PHASE_GREET, UserJourney
 
@@ -4500,6 +4541,140 @@ class AppState:
             "letter": letter,
             "letterChars": len(letter),
         }
+
+    def chat_handler_draft_motivation_letter_streaming(self, user_id: str, args: dict):
+        """Streaming variant of :meth:`chat_handler_draft_motivation_letter`.
+
+        Generator yielding ``("ai_token", {"text": "..."})`` events as
+        the AI emits tokens, then a final ``("done_payload", dict)``
+        event whose payload is byte-equivalent to the single-shot
+        return value. When the configured AI is single-shot only
+        (CLI / manual / templated-fallback path), the entire letter
+        arrives in one ``ai_token`` event before ``done_payload`` so
+        the SSE consumer's logic stays uniform.
+        """
+        from company_discovery.motivation_letter import (
+            build_letter_prompt,
+            looks_like_dach_letter,
+            templated_fallback,
+        )
+
+        journey = self._journey_load(user_id)
+        if not journey.picked_job_id:
+            yield (
+                "done_payload",
+                {
+                    "ok": False,
+                    "message": (
+                        "I don't know which job to write about yet. "
+                        "Pick one from the journey first (type "
+                        "`find a job`, drill into a category, then "
+                        "pick a number)."
+                    ),
+                },
+            )
+            return
+        job = journey.search_jobs_by_id.get(journey.picked_job_id, {})
+        if not job:
+            yield (
+                "done_payload",
+                {
+                    "ok": False,
+                    "message": "Picked job's details are missing — try /start to refresh.",
+                },
+            )
+            return
+        profile = self.profile_for(user_id)
+        cv_text = (profile.cv_text or "").strip()
+        if not cv_text:
+            yield (
+                "done_payload",
+                {
+                    "ok": False,
+                    "message": (
+                        "I need a CV to draft a letter. Type "
+                        "**build my CV** and I'll walk you through "
+                        "5 quick questions, or paste your full CV "
+                        "text here right now."
+                    ),
+                },
+            )
+            return
+
+        streaming_caller = self._journey_ai_streaming_caller(user_id)
+        letter = ""
+        ai_used = False
+        if streaming_caller is not None:
+            ai_used = True
+            system, user_prompt = build_letter_prompt(
+                job_title=job.get("title", ""),
+                company=job.get("company", ""),
+                location=job.get("location", ""),
+                job_url=job.get("url", ""),
+                cv_text=cv_text,
+                user_name="",
+                user_location=profile.location or "",
+            )
+            accumulated: list[str] = []
+            try:
+                for kind, payload in streaming_caller(
+                    system, user_prompt, purpose="motivation_letter"
+                ):
+                    if kind == "token":
+                        accumulated.append(payload)
+                        yield ("ai_token", {"text": payload})
+                    elif kind == "final":
+                        # AnalysisExecutionResult — completion signal.
+                        # Fill output from accumulated if streaming
+                        # came through, else use the final's output
+                        # (CLI / single-shot wrappers populate it).
+                        if accumulated:
+                            letter = "".join(accumulated)
+                        else:
+                            letter = (payload.output or "") if payload else ""
+                        break
+            except Exception:  # noqa: BLE001 - best-effort; fall through to template
+                letter = ""
+            if not looks_like_dach_letter(letter):
+                letter = ""
+        if not letter:
+            ai_used = False
+            letter = templated_fallback(
+                job=job,
+                user_name="",
+                user_location=profile.location or "",
+            )
+            # Emit the templated text as a single ai_token event so the
+            # frontend's bubble update path is uniform across both
+            # streaming and fallback paths.
+            yield ("ai_token", {"text": letter})
+
+        self.log_analytics(
+            user_id,
+            "chat_cmd",
+            {
+                "name": "draft_motivation_letter",
+                "jobUrl": job.get("url", "")[:120],
+                "aiUsed": ai_used,
+                "chars": len(letter),
+                "streamed": True,
+            },
+        )
+        yield (
+            "done_payload",
+            {
+                "ok": True,
+                "message": (
+                    f"Here's the draft for **{job.get('title', '')}** "
+                    f"at **{job.get('company', '')}**:\n\n"
+                    f"---\n\n{letter}\n\n---\n\n"
+                    "Reply **save** to keep it on your applications, or "
+                    "**consult** to get CV enhancement ideas for this JD."
+                ),
+                "letter": letter,
+                "letterChars": len(letter),
+            },
+        )
 
     def chat_handler_build_cv_via_chat(self, user_id: str, args: dict) -> dict:
         """Start the sectional CV-build flow. Works from ANY journey
@@ -6786,9 +6961,23 @@ class Handler(BaseHTTPRequestHandler):
             # sends find-intent messages to this endpoint and everything
             # else to /api/chat/message.
             if parsed.path == "/api/chat/message/stream":
+                # Phase 2 #77 sub-piece (c+d) extension: the endpoint
+                # now routes by ``kind`` so AI-streaming ops (letter /
+                # tailor / consult) can stream tokens alongside the
+                # find_jobs per-provider events. Default kind is
+                # ``find_jobs`` for backwards compat with the v1
+                # contract.
+                kind = str(payload.get("kind") or "find_jobs").strip().lower()
+                if kind not in {"find_jobs", "draft_motivation_letter"}:
+                    self.send_error_json(
+                        HTTPStatus.BAD_REQUEST,
+                        "unsupported_kind",
+                        f"Streaming kind {kind!r} is not supported on this endpoint yet.",
+                    )
+                    return
                 query = str(payload.get("query") or "").strip()
                 location = str(payload.get("location") or "").strip() or None
-                if not query:
+                if kind == "find_jobs" and not query:
                     self.send_error_json(
                         HTTPStatus.BAD_REQUEST,
                         "empty_query",
@@ -6832,14 +7021,24 @@ class Handler(BaseHTTPRequestHandler):
                 session.history.append(ChatTurn(role="user", content=query))
 
                 try:
-                    for event_kind, event_payload in STATE.chat_handler_find_jobs_streaming(
-                        data_user_id, {"query": query, "location": location}
-                    ):
+                    if kind == "find_jobs":
+                        stream_iter = STATE.chat_handler_find_jobs_streaming(
+                            data_user_id, {"query": query, "location": location}
+                        )
+                    elif kind == "draft_motivation_letter":
+                        stream_iter = STATE.chat_handler_draft_motivation_letter_streaming(
+                            data_user_id, {}
+                        )
+                    else:
+                        # Defensive — should be caught by the
+                        # unsupported_kind validation above.
+                        stream_iter = iter([])
+                    for event_kind, event_payload in stream_iter:
                         _write_event(event_kind, event_payload)
                 except (BrokenPipeError, ConnectionResetError):
                     # Client gone — silently stop. The audit-log
                     # write for the partial dispatch already happened
-                    # inside chat_handler_find_jobs_streaming.
+                    # inside the streaming handler.
                     return
                 except Exception as exc:  # noqa: BLE001 - SSE terminator must always fire
                     _write_event(
