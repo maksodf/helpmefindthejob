@@ -114,7 +114,7 @@ The skill entries are categorised (`language`, `healthcare`, `engineering`, `it`
 
 ## Coverage relative to the Bundesagentur 2025 shortage list
 
-The Bundesagentur für Arbeit 2025 shortage-occupations statement names 163 shortage occupations across the German labour market. The `shortageDE2024: true` flag on each occupation entry tracks intersection with that list. As of v1-curated-2026-05-18 the curated set covers **21 of the 30 occupations** as Bundesagentur-flagged shortages, concentrated in healthcare, engineering, IT, and construction trades — the four areas the persona panel was designed around.
+The Bundesagentur für Arbeit 2025 shortage-occupations statement names 163 shortage occupations across the German labour market. The `shortageDE2024: true` flag on each occupation entry tracks intersection with that list. As of v1-curated-2026-05-18 the curated set covers **25 of the 30 occupations** as Bundesagentur-flagged shortages, concentrated in healthcare, engineering, IT, and construction trades — the four areas the persona panel was designed around. (Corrected from "21 of the 30" on 2026-05-21 — the original claim under-counted by 4; the canonical count is `sum(1 for o in occupations.json["entries"] if o["shortageDE2024"] is True)`, pinned by a regression test at `tests/test_esco_shortage_count_60.py` so future doc-drift is caught immediately.)
 
 A reviewer cross-checking the project's "cost-saving doctrine mechanism 1" (lower advisor caseload per case served — most acute for the migrant subset) claim can use this overlap to verify that the project is genuinely targeting where institutional cost relief is most acute, not painting the persona panel against a generic labour-market backdrop.
 
