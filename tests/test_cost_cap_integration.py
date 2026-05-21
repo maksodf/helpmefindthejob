@@ -126,6 +126,90 @@ class CostCapChatHandlerIntegration(unittest.TestCase):
         ai_tokens = [e for e in events if e[0] == "ai_token"]
         self.assertEqual(len(ai_tokens), 0)
 
+    def test_execute_cv_tailoring_enforces_cap_at_chokepoint(self) -> None:
+        """Phase 2 #46 root-cause refactor verification: even when a
+        caller bypasses the chat handler (e.g. direct REST endpoint
+        call to /api/imported-jobs/{id}/tailor-cv), the cap must
+        still be enforced because the chokepoint is at
+        _dispatch_provider, not at the handler.
+        """
+
+        from company_discovery.analysis import execute_cv_tailoring
+        from company_discovery.cost_caps import CostCapExceeded
+
+        self._set_paid_api_provider()
+        profile = self.state.profile_for(self.user_id)
+        profile.cv_text = "Sample CV text " * 50
+        profile.monthly_spend_cap_eur = 1.0
+        profile.ai_consent_provider_id = "openai"
+        from datetime import datetime, timezone
+
+        profile.ai_consent_at = datetime.now(timezone.utc)
+        self.state.repository.save_user_profile(profile)
+        job = _seed_imported_job(self.state, self.user_id)
+        self._seed_spend(2.5)
+
+        provider = self.state.ai_provider_for(self.user_id)
+        ctx = self.state.cost_cap_context_for(self.user_id)
+        with self.assertRaises(CostCapExceeded):
+            execute_cv_tailoring(
+                job, provider, "", profile, cap_context=ctx
+            )
+
+    def test_execute_cover_letter_brief_enforces_cap_at_chokepoint(self) -> None:
+        """Same as above for the cover-letter path. Closes the
+        bypass at the /api/imported-jobs/{id}/draft-cover-letter
+        REST endpoint."""
+
+        from company_discovery.analysis import execute_cover_letter_brief
+        from company_discovery.cost_caps import CostCapExceeded
+
+        self._set_paid_api_provider()
+        profile = self.state.profile_for(self.user_id)
+        profile.cv_text = "Sample CV text"
+        profile.monthly_spend_cap_eur = 1.0
+        profile.ai_consent_provider_id = "openai"
+        from datetime import datetime, timezone
+
+        profile.ai_consent_at = datetime.now(timezone.utc)
+        self.state.repository.save_user_profile(profile)
+        job = _seed_imported_job(self.state, self.user_id)
+        self._seed_spend(2.5)
+
+        provider = self.state.ai_provider_for(self.user_id)
+        ctx = self.state.cost_cap_context_for(self.user_id)
+        with self.assertRaises(CostCapExceeded):
+            execute_cover_letter_brief(
+                job, provider, "", profile, cap_context=ctx
+            )
+
+    def test_cap_context_with_zero_cap_blocks_any_charged_call(self) -> None:
+        """Sanity: a cap of 0 must block any non-free call. This
+        catches off-by-one bugs in the > vs >= comparison."""
+
+        from company_discovery.analysis import execute_cv_tailoring
+        from company_discovery.cost_caps import CostCapContext, CostCapExceeded
+
+        self._set_paid_api_provider()
+        profile = self.state.profile_for(self.user_id)
+        profile.cv_text = "Sample CV"
+        profile.ai_consent_provider_id = "openai"
+        from datetime import datetime, timezone
+
+        profile.ai_consent_at = datetime.now(timezone.utc)
+        self.state.repository.save_user_profile(profile)
+        job = _seed_imported_job(self.state, self.user_id)
+
+        provider = self.state.ai_provider_for(self.user_id)
+        zero_ctx = CostCapContext(
+            user_id=self.user_id,
+            repository=self.state.repository,
+            cap_eur=0.0,
+            locale="en",
+        )
+        with self.assertRaises(CostCapExceeded):
+            execute_cv_tailoring(job, provider, "", profile, cap_context=zero_ctx)
+
     def test_local_provider_never_hits_cap_even_with_seeded_spend(self) -> None:
         # Set provider to ollama (local_http, free) — no matter how
         # much spend is seeded, the handler must NOT refuse the call.

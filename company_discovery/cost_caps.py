@@ -79,6 +79,31 @@ DEFAULT_MONTHLY_CAP_EUR: float = 5.0
 
 
 @dataclass(frozen=True)
+class CostCapContext:
+    """Bundle of context the dispatch chokepoint needs to enforce a
+    per-user cap. Handlers and REST endpoints construct this once and
+    pass it through to :func:`_dispatch_provider`; the dispatch path
+    calls :func:`enforce_cap` before the AI invocation and
+    :func:`record_invocation` after.
+
+    A ``None`` context means "no cap enforcement on this call" — the
+    sole legitimate use is for system-internal calls that aren't
+    user-attributable (e.g. a maintenance migration). All user-
+    initiated dispatches MUST provide a context.
+    """
+
+    user_id: str
+    repository: object  # SqliteCompanyDiscoveryRepository — duck-typed to avoid circular import
+    cap_eur: float
+    locale: str = "en"
+
+    def with_locale(self, locale: str) -> "CostCapContext":
+        from dataclasses import replace
+
+        return replace(self, locale=locale)
+
+
+@dataclass(frozen=True)
 class CostEstimate:
     """Structured estimate of one invocation's cost. The dataclass
     shape is part of the public API so test fixtures and the

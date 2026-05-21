@@ -144,10 +144,55 @@ _EDGES: tuple[AdjacencyEdge, ...] = (
 )
 
 
+# Common cross-language aliases for DACH cities. A user might
+# enter "Munich" (EN) while the canonical graph key is "munchen"
+# (de-accented). Same for "Cologne" → "koln", "Vienna" → "wien",
+# "Zurich" → "zurich" (no alias needed), "Hanover" → "hannover",
+# "Nuremberg" → "nurnberg", "Brunswick" → "braunschweig", etc.
+# The alias table maps the de-accented form of the foreign-language
+# name to the canonical key.
+_CITY_ALIASES: dict[str, str] = {
+    # English exonyms
+    "munich": "munchen",
+    "cologne": "koln",
+    "hanover": "hannover",
+    "nuremberg": "nurnberg",
+    "brunswick": "braunschweig",
+    "vienna": "wien",
+    # Common German alternate spellings (oe / ue / ae for umlauts)
+    "muenchen": "munchen",
+    "koeln": "koln",
+    "duesseldorf": "dusseldorf",
+    "luebeck": "lubeck",
+    "lueneburg": "luneburg",
+    "nuernberg": "nurnberg",
+    "fuerth": "furth",
+    "wuerzburg": "wurzburg",
+    "ingolstadt": "ingolstadt",
+    "muenster": "munster",
+    "osnabrueck": "osnabruck",
+    "saarbruecken": "saarbrucken",
+    "tuebingen": "tubingen",
+    "goettingen": "gottingen",
+    "stadtkroenung": "stadtkronung",
+    # Common short forms / abbreviations
+    "ffm": "frankfurt",
+    "muc": "munchen",
+    "hh": "hamburg",
+    "bln": "berlin",
+}
+
+
 def _norm_city(text: str | None) -> str:
     """City-key normaliser, identical in shape to
     :func:`company_discovery.job_index._norm_location` so the
     adjacency keys round-trip with the index facet keys.
+
+    Phase 2 #74 alias fix (2026-05-21): after de-accenting + lower-
+    casing, we resolve common cross-language exonyms (Munich ↔
+    München, Cologne ↔ Köln, Vienna ↔ Wien, etc.) through the
+    :data:`_CITY_ALIASES` table so adjacency lookups work regardless
+    of which spelling the job posting carried.
     """
 
     if not text:
@@ -156,7 +201,8 @@ def _norm_city(text: str | None) -> str:
     folded = "".join(c for c in folded if not unicodedata.combining(c))
     folded = folded.casefold().strip()
     first = folded.split(",")[0].strip()
-    return re.sub(r"\s+", " ", first)
+    normalised = re.sub(r"\s+", " ", first)
+    return _CITY_ALIASES.get(normalised, normalised)
 
 
 def _build_adjacency_map() -> dict[str, tuple[AdjacencyEdge, ...]]:

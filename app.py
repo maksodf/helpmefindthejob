@@ -965,6 +965,29 @@ class AppState:
     def ai_provider_for(self, user_id: str) -> AIProviderConfig:
         return self.ai_providers.get(user_id) or AIProviderConfig()
 
+    def cost_cap_context_for(self, user_id: str):
+        """Phase 2 #46 root-cause refactor (2026-05-21): produce the
+        :class:`CostCapContext` every user-attributable AI dispatch
+        site MUST pass through to ``_dispatch_provider``. The
+        context binds (user_id, repository, cap_eur, locale) — the
+        chokepoint then enforces the cap before the call and
+        records the actual cost after.
+
+        Every chat handler + REST endpoint that hands a prompt to
+        the model goes through this helper. Single source of truth;
+        no per-handler enforce_cap wiring.
+        """
+
+        from company_discovery.cost_caps import CostCapContext
+
+        profile = self.profile_for(user_id)
+        return CostCapContext(
+            user_id=user_id,
+            repository=self.repository,
+            cap_eur=float(profile.monthly_spend_cap_eur or 0.0),
+            locale=(profile.locale or "en"),
+        )
+
     def update_ai_provider(self, user_id: str, payload: dict[str, Any]) -> AIProviderConfig:
         config = AIProviderConfig(
             provider_id=payload.get("providerId") or payload.get("provider_id") or "manual",
@@ -3283,8 +3306,28 @@ class AppState:
         )
         try:
             from company_discovery.analysis import _dispatch_provider
+            from company_discovery.cost_caps import CostCapExceeded
 
-            result = _dispatch_provider(prompt, provider, "")
+            try:
+                result = _dispatch_provider(
+                    prompt,
+                    provider,
+                    "",
+                    purpose="chat_router",
+                    cap_context=self.cost_cap_context_for(user_id),
+                )
+            except CostCapExceeded:
+                # Cap exhausted → silently fall back to heuristic
+                # routing. The router is best-effort; surfacing the
+                # cap error here would be jarring (the user just
+                # typed a normal message). The downstream handler
+                # that actually drafts the letter / tailor will
+                # surface the cap properly.
+                self.chat_router_metrics["cap_exhausted"] = (
+                    self.chat_router_metrics.get("cap_exhausted", 0) + 1
+                )
+                self._chat_router_cache_put(cache_key, None)
+                return None
             if result.status != "completed" or not result.output:
                 self.chat_router_metrics["errors"] += 1
                 self._chat_router_cache_put(cache_key, None)
@@ -3833,47 +3876,25 @@ class AppState:
         provider = self.ai_provider_for(user_id)
         if not _ai_consent_satisfied(profile, provider):
             return {"ok": False, "message": "AI consent required — confirm in Settings first."}
-        from company_discovery.analysis import build_cv_tailoring_prompt, execute_cv_tailoring
+        from company_discovery.analysis import execute_cv_tailoring
+        from company_discovery.cost_caps import CostCapExceeded
         from company_discovery.persona_fixtures import friction_keywords_for
-        from company_discovery.cost_caps import CostCapExceeded, enforce_cap, record_invocation
 
-        # Phase 2 #46 integration (2026-05-21): pre-flight cost-cap
-        # gate. Refuse the call if it would push the user over their
-        # personal monthly cap. Local-mode invocations always pass.
-        brief = build_cv_tailoring_prompt(
-            imported,
-            provider,
-            profile,
-            friction_keywords=friction_keywords_for(profile.persona_id),
-        )
+        # Phase 2 #46 root-cause refactor: cost cap is enforced at
+        # the _dispatch_provider chokepoint via cap_context. The
+        # handler just builds the context and surfaces the
+        # CostCapExceeded exception as a friendly response.
         try:
-            enforce_cap(
-                user_id=user_id,
-                repository=self.repository,
-                cap_eur=float(profile.monthly_spend_cap_eur or 0.0),
-                provider_id=provider.provider_id,
-                invocation_mode=provider.invocation_mode,
-                prompt_text=brief["prompt"],
-                locale=profile.locale or "en",
+            result = execute_cv_tailoring(
+                imported,
+                provider,
+                "",
+                profile,
+                friction_keywords=friction_keywords_for(profile.persona_id),
+                cap_context=self.cost_cap_context_for(user_id),
             )
         except CostCapExceeded as cap_err:
             return {"ok": False, "message": str(cap_err), "code": "cost_cap_exceeded"}
-        result = execute_cv_tailoring(
-            imported,
-            provider,
-            "",
-            profile,
-            friction_keywords=friction_keywords_for(profile.persona_id),
-        )
-        # Post-call cost recording so future cap checks see this run.
-        record_invocation(
-            user_id=user_id,
-            repository=self.repository,
-            provider_id=provider.provider_id,
-            invocation_mode=provider.invocation_mode,
-            prompt_text=brief["prompt"],
-            response_text=(result.output or ""),
-        )
         self.log_analytics(
             user_id, "chat_cmd", {"name": "tailor_cv", "id": imported_id, "status": result.status}
         )
@@ -3945,39 +3966,13 @@ class AppState:
                 profile,
                 friction_keywords=friction_keywords_for(profile.persona_id),
             )
-            # Phase 2 #46 integration: pre-flight cost-cap gate before
-            # opening a streaming connection (which is more expensive
-            # to abort mid-flight than to refuse up front).
-            from company_discovery.cost_caps import (
-                CostCapExceeded,
-                enforce_cap,
-                record_invocation,
-            )
+            # Phase 2 #46 root-cause refactor: the streaming caller's
+            # cap_context is bound in _journey_ai_streaming_caller;
+            # enforce_cap fires at the chokepoint and raises
+            # CostCapExceeded which propagates through the generator.
+            # We catch it here to convert to a friendly done_payload.
+            from company_discovery.cost_caps import CostCapExceeded
 
-            try:
-                enforce_cap(
-                    user_id=user_id,
-                    repository=self.repository,
-                    cap_eur=float(profile.monthly_spend_cap_eur or 0.0),
-                    provider_id=provider.provider_id,
-                    invocation_mode=provider.invocation_mode,
-                    prompt_text=brief["prompt"],
-                    locale=profile.locale or "en",
-                )
-            except CostCapExceeded as cap_err:
-                yield (
-                    "done_payload",
-                    {
-                        "ok": False,
-                        "message": str(cap_err),
-                        "code": "cost_cap_exceeded",
-                    },
-                )
-                return
-            # build_cv_tailoring_prompt returns a single prompt string in
-            # the "prompt" key; for the streaming caller we split system
-            # vs user on the first double-newline (mirrors the existing
-            # _journey_ai_streaming_caller contract).
             full_prompt = brief["prompt"]
             parts = full_prompt.split("\n\n", 1)
             system = parts[0]
@@ -3993,18 +3988,18 @@ class AppState:
                         if not accumulated:
                             accumulated.append((payload.output or "") if payload else "")
                         break
+            except CostCapExceeded as cap_err:
+                yield (
+                    "done_payload",
+                    {
+                        "ok": False,
+                        "message": str(cap_err),
+                        "code": "cost_cap_exceeded",
+                    },
+                )
+                return
             except Exception:  # noqa: BLE001 - best-effort; produce empty output on failure
                 accumulated = []
-            # Post-call cost recording (best-effort) so subsequent
-            # cap checks see this stream's actual cost.
-            record_invocation(
-                user_id=user_id,
-                repository=self.repository,
-                provider_id=provider.provider_id,
-                invocation_mode=provider.invocation_mode,
-                prompt_text=brief["prompt"],
-                response_text="".join(accumulated),
-            )
 
         tailored = "".join(accumulated)
         status = "completed" if tailored else "provider_error"
@@ -4175,7 +4170,18 @@ class AppState:
 
     def _journey_ai_caller(self, user_id: str):
         """Return a callable(system, user) -> str | None that asks the
-        configured AI provider, or None if no AI is available."""
+        configured AI provider, or None if no AI is available.
+
+        Phase 2 #46 root-cause refactor (2026-05-21): binds the
+        cap_context once at caller-construction so every dispatch
+        through this closure passes through the chokepoint
+        enforcement. The closure RE-RAISES :class:`CostCapExceeded`
+        (does not swallow it) so the calling handler can choose
+        between a friendly cap message and a templated fallback. All
+        other exceptions are still swallowed (best-effort journey
+        path falls back to template silently).
+        """
+
         profile = self.profile_for(user_id)
         provider = self.ai_provider_for(user_id)
         if provider is None or provider.provider_id == "manual":
@@ -4184,17 +4190,23 @@ class AppState:
             return None
         from company_discovery.analysis import _dispatch_provider
 
+        cap_ctx = self.cost_cap_context_for(user_id)
+
         def _call(system: str, user_msg: str) -> str | None:
-            # We bundle system + user into one prompt since the
-            # existing _dispatch_provider takes a single string. The
-            # provider adapters split on \n\n correctly. Errors are
-            # swallowed; journey state machine falls back to template.
+            from company_discovery.cost_caps import CostCapExceeded
+
             prompt = f"{system}\n\n{user_msg}"
             try:
-                result = _dispatch_provider(prompt, provider, "")
+                result = _dispatch_provider(
+                    prompt, provider, "", cap_context=cap_ctx
+                )
                 if result.status != "completed":
                     return None
                 return result.output
+            except CostCapExceeded:
+                # Cap rejections must surface to the handler — they
+                # are not "AI errors", they are user-budget events.
+                raise
             except Exception:  # noqa: BLE001 - best-effort path; failure must not break the caller
                 return None
 
@@ -4219,12 +4231,29 @@ class AppState:
             return None
         from company_discovery.analysis import _dispatch_provider_streaming
 
+        # Phase 2 #46 root-cause refactor: bind the cap context once
+        # at caller-construction so every streaming dispatch through
+        # this closure passes through the chokepoint enforcement.
+        cap_ctx = self.cost_cap_context_for(user_id)
+
         def _stream(system: str, user_msg: str, *, purpose: str = "unknown"):
+            from company_discovery.cost_caps import CostCapExceeded
+
             prompt = f"{system}\n\n{user_msg}"
             try:
                 yield from _dispatch_provider_streaming(
-                    prompt, provider, "", purpose=purpose
+                    prompt,
+                    provider,
+                    "",
+                    purpose=purpose,
+                    cap_context=cap_ctx,
                 )
+            except CostCapExceeded:
+                # Phase 2 #46: cap rejections must propagate up so
+                # the streaming handler can yield a friendly
+                # cost_cap_exceeded done_payload — NOT a generic
+                # provider_error final.
+                raise
             except Exception as exc:  # noqa: BLE001 - best-effort; convert to terminal final
                 from company_discovery.analysis import AnalysisExecutionResult
 
@@ -4899,70 +4928,34 @@ class AppState:
                     "text here right now."
                 ),
             }
+        # Phase 2 #46 root-cause refactor: _journey_ai_caller binds
+        # cap_context at construction time, so the dispatch inside
+        # draft_with_ai will raise CostCapExceeded if over budget.
+        # We catch it here, fall back to the templated draft, and
+        # PASS THE BANNER to the user so they know what happened.
         ai_caller = self._journey_ai_caller(user_id)
-        # Phase 2 #46 integration: gate the AI call on the cost cap.
-        # Templated fallback (when ai_caller is None) is always free
-        # so the gate only applies to the AI path.
-        if ai_caller is not None:
-            from company_discovery.cost_caps import (
-                CostCapExceeded,
-                enforce_cap,
-                record_invocation,
-            )
-            from company_discovery.motivation_letter import build_letter_prompt
+        cap_banner = ""
+        from company_discovery.cost_caps import CostCapExceeded
 
-            provider = self.ai_provider_for(user_id)
-            prompt_text = build_letter_prompt(
-                job=job,
-                cv_text=cv_text,
-                user_name="",
-                user_location=profile.location or "",
-            )
+        letter = ""
+        if ai_caller is not None:
             try:
-                enforce_cap(
-                    user_id=user_id,
-                    repository=self.repository,
-                    cap_eur=float(profile.monthly_spend_cap_eur or 0.0),
-                    provider_id=provider.provider_id,
-                    invocation_mode=provider.invocation_mode,
-                    prompt_text=prompt_text,
-                    locale=profile.locale or "en",
+                letter = draft_with_ai(
+                    job=job,
+                    cv_text=cv_text,
+                    user_name="",
+                    user_location=profile.location or "",
+                    ai_caller=ai_caller,
                 )
             except CostCapExceeded as cap_err:
-                # Cap hit → fall through to the templated fallback so
-                # the user still gets a draft, with a banner.
-                ai_caller = None
                 cap_banner = str(cap_err)
-            else:
-                cap_banner = ""
-        else:
-            cap_banner = ""
-
-        letter = draft_with_ai(
-            job=job,
-            cv_text=cv_text,
-            user_name="",
-            user_location=profile.location or "",
-            ai_caller=ai_caller,
-        )
+                ai_caller = None
+                letter = ""
         if not letter:
             letter = templated_fallback(
                 job=job,
                 user_name="",
                 user_location=profile.location or "",
-            )
-        if ai_caller is not None and letter:
-            # Best-effort cost-event write for cap accounting
-            from company_discovery.cost_caps import record_invocation as _record
-
-            provider2 = self.ai_provider_for(user_id)
-            _record(
-                user_id=user_id,
-                repository=self.repository,
-                provider_id=provider2.provider_id,
-                invocation_mode=provider2.invocation_mode,
-                prompt_text=letter[:0],  # response-only cost not yet tracked separately
-                response_text=letter,
             )
         # Persist to the journey for the next phase to consult against.
         # We don't auto-write to imported_job here because the user
@@ -4975,12 +4968,16 @@ class AppState:
                 "jobUrl": job.get("url", "")[:120],
                 "aiUsed": ai_caller is not None,
                 "chars": len(letter),
+                "capHit": bool(cap_banner),
             },
         )
+        # If we hit the cap, prepend the banner so the user knows
+        # they got the templated fallback rather than an AI draft.
+        prefix = f"_{cap_banner}_\n\n" if cap_banner else ""
         return {
             "ok": True,
             "message": (
-                f"Here's the draft for **{job.get('title', '')}** "
+                f"{prefix}Here's the draft for **{job.get('title', '')}** "
                 f"at **{job.get('company', '')}**:\n\n"
                 f"---\n\n{letter}\n\n---\n\n"
                 "Reply **save** to keep it on your applications, or "
@@ -4988,6 +4985,8 @@ class AppState:
             ),
             "letter": letter,
             "letterChars": len(letter),
+            "capBanner": cap_banner or None,
+            "code": "cost_cap_exceeded" if cap_banner else None,
         }
 
     def chat_handler_draft_motivation_letter_streaming(self, user_id: str, args: dict):
@@ -5228,8 +5227,19 @@ class AppState:
         if not _ai_consent_satisfied(profile, provider):
             return raw_text, 1.0, False
         from company_discovery.analysis import _dispatch_provider
+        from company_discovery.cost_caps import CostCapExceeded
 
-        result = _dispatch_provider(prompt, provider, "")
+        try:
+            result = _dispatch_provider(
+                prompt,
+                provider,
+                "",
+                purpose="cv_builder_format",
+                cap_context=self.cost_cap_context_for(user_id),
+            )
+        except CostCapExceeded:
+            # Cap exhausted → return raw text without AI formatting
+            return raw_text, 1.0, False
         if result.status != "completed" or not result.output:
             return raw_text, 1.0, False
         ai_output = result.output.strip()
@@ -8913,12 +8923,23 @@ class Handler(BaseHTTPRequestHandler):
                         "Confirm consent in Settings before running AI on your CV.",
                     )
                     return
-                result = execute_cover_letter_brief(
-                    imported,
-                    provider,
-                    runtime_credential,
-                    profile,
-                )
+                from company_discovery.cost_caps import CostCapExceeded
+
+                try:
+                    result = execute_cover_letter_brief(
+                        imported,
+                        provider,
+                        runtime_credential,
+                        profile,
+                        cap_context=STATE.cost_cap_context_for(user_id),
+                    )
+                except CostCapExceeded as cap_err:
+                    self.send_error_json(
+                        HTTPStatus.PAYMENT_REQUIRED,
+                        "cost_cap_exceeded",
+                        str(cap_err),
+                    )
+                    return
                 STATE.quota_store.record_ai_run(user_id)
                 if result.status == "completed" and result.output:
                     imported.cover_letter_draft = result.output
@@ -8965,14 +8986,24 @@ class Handler(BaseHTTPRequestHandler):
                     )
                     return
                 from company_discovery.persona_fixtures import friction_keywords_for
+                from company_discovery.cost_caps import CostCapExceeded
 
-                result = execute_cv_tailoring(
-                    imported,
-                    provider,
-                    runtime_credential,
-                    profile,
-                    friction_keywords=friction_keywords_for(profile.persona_id),
-                )
+                try:
+                    result = execute_cv_tailoring(
+                        imported,
+                        provider,
+                        runtime_credential,
+                        profile,
+                        friction_keywords=friction_keywords_for(profile.persona_id),
+                        cap_context=STATE.cost_cap_context_for(user_id),
+                    )
+                except CostCapExceeded as cap_err:
+                    self.send_error_json(
+                        HTTPStatus.PAYMENT_REQUIRED,
+                        "cost_cap_exceeded",
+                        str(cap_err),
+                    )
+                    return
                 STATE.quota_store.record_ai_run(user_id)
                 # CV variant attribution (#44): persist a small record
                 # of every successful tailoring run so we can correlate

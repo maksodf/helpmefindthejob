@@ -184,6 +184,50 @@ class JobIndexAdjacencyIntegration(unittest.TestCase):
         self.assertEqual(out["city_count"], 1)
         self.assertEqual(out["total_with_adjacent"], 1)
 
+    def test_munich_munchen_alias_unifies_counts(self) -> None:
+        """Phase 2 #74 alias fix (2026-05-21): a job posting using
+        English "Munich" and another using German "München" must be
+        counted as the SAME city. Without alias resolution, the
+        index would split them into "munich" vs "munchen" and
+        adjacency lookups for one would miss the other.
+        """
+        self._seed(
+            [
+                self._job("https://e.x/M1", "Software", "Munich"),
+                self._job("https://e.x/M2", "Software", "München"),
+                self._job("https://e.x/M3", "Software", "Muenchen"),  # oe-form
+                self._job("https://e.x/A1", "Software", "Augsburg"),
+            ]
+        )
+        # Query for either spelling should aggregate all 3 Munich postings
+        out_en = self.index.count_with_adjacent_cities(location="Munich")
+        out_de = self.index.count_with_adjacent_cities(location="München")
+        self.assertEqual(out_en["city_count"], 3)
+        self.assertEqual(out_de["city_count"], 3)
+        # Augsburg is an adjacent city in our graph (40 min RE/IC)
+        augsburg_en = next((a for a in out_en["adjacent"] if a["city"] == "augsburg"), None)
+        augsburg_de = next((a for a in out_de["adjacent"] if a["city"] == "augsburg"), None)
+        self.assertIsNotNone(augsburg_en)
+        self.assertIsNotNone(augsburg_de)
+        self.assertEqual(augsburg_en["count"], 1)
+        self.assertEqual(augsburg_de["count"], 1)
+
+    def test_cologne_koln_alias_unifies_counts(self) -> None:
+        """Same as Munich test but for Köln/Cologne — second-most-
+        common EN-spelling-vs-DE-spelling case."""
+        self._seed(
+            [
+                self._job("https://e.x/K1", "Dev", "Cologne"),
+                self._job("https://e.x/K2", "Dev", "Köln"),
+                self._job("https://e.x/B1", "Dev", "Bonn"),
+            ]
+        )
+        out = self.index.count_with_adjacent_cities(location="Cologne")
+        self.assertEqual(out["city_count"], 2)
+        bonn = next((a for a in out["adjacent"] if a["city"] == "bonn"), None)
+        self.assertIsNotNone(bonn)
+        self.assertEqual(bonn["count"], 1)
+
     def test_default_call_aggregates_all_role_buckets(self) -> None:
         # No filter on role_bucket: every posting should count.
         self._seed(

@@ -1422,6 +1422,20 @@ async function tailorCv(importedJobId) {
     navigate("brief");
     return;
   }
+  // Phase 2 #46 root-cause refactor (2026-05-21): if the streaming
+  // path REJECTED the call because the cost cap was exceeded,
+  // re-trying via the JSON endpoint would ALSO hit the cap (the
+  // backend gates both paths via _dispatch_provider). Worse, before
+  // the refactor only one path was gated, so the JSON fallback
+  // actually bypassed the cap — that's the bug we fixed. Even now
+  // that both paths are gated, falling through gives the user TWO
+  // identical refusal messages. Surface the streaming refusal
+  // directly and stop.
+  if (streamed && streamed.code === "cost_cap_exceeded") {
+    if (status) status.textContent = "Status: monthly cap reached";
+    showToast(streamed.message || "Monthly BYO-AI cap reached.", "error");
+    return;
+  }
   try {
     const payload = await api(`/api/imported-jobs/${encodeURIComponent(importedJobId)}/tailor-cv`, {
       method: "POST",

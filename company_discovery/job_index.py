@@ -156,7 +156,16 @@ def classify_language(description: str | None) -> str:
 def _norm_location(text: str | None) -> str:
     """Case-folded, accent-stripped, leading/trailing-whitespace-
     trimmed form of a location string for facet matching. Maps e.g.
-    "Berlin, Deutschland", "berlin", "Berlin DE" → "berlin"."""
+    "Berlin, Deutschland", "berlin", "Berlin DE" → "berlin".
+
+    Phase 2 #74 alias resolution (2026-05-21): after de-accenting +
+    lower-casing, applies the cross-language alias table from
+    :mod:`company_discovery.city_adjacency` so "Munich" and
+    "München" both store as the canonical "munchen". Adjacency
+    lookups then work regardless of which spelling the job posting
+    carried. The alias resolution is at WRITE time (here) so the
+    index storage is canonical; readers don't need to expand.
+    """
 
     if not text:
         return ""
@@ -169,7 +178,15 @@ def _norm_location(text: str | None) -> str:
     # postal-code clutter).
     first = folded.split(",")[0].strip()
     # Collapse internal whitespace
-    return re.sub(r"\s+", " ", first)
+    normalised = re.sub(r"\s+", " ", first)
+    # Cross-language alias resolution. Import locally to avoid a
+    # module-import cycle (city_adjacency is the consumer of this
+    # function in some paths).
+    try:
+        from company_discovery.city_adjacency import _CITY_ALIASES
+        return _CITY_ALIASES.get(normalised, normalised)
+    except ImportError:
+        return normalised
 
 
 def _norm_title(text: str | None) -> str:

@@ -499,10 +499,16 @@ def execute_cv_query_expansion(
     free_text: str | None,
     provider: AIProviderConfig,
     runtime_credential: str = "",
+    *,
+    cap_context=None,
 ) -> AnalysisExecutionResult:
     brief = build_cv_query_expansion_prompt(profile, free_text, provider)
     return _dispatch_provider(
-        brief["prompt"], provider, runtime_credential, purpose="cv_query_expansion"
+        brief["prompt"],
+        provider,
+        runtime_credential,
+        purpose="cv_query_expansion",
+        cap_context=cap_context,
     )
 
 
@@ -556,9 +562,17 @@ def execute_auto_fit(
     provider: AIProviderConfig,
     runtime_credential: str = "",
     profile: UserProfile | None = None,
+    *,
+    cap_context=None,
 ) -> AnalysisExecutionResult:
     brief = build_auto_fit_prompt(job, company_name, provider, profile)
-    return _dispatch_provider(brief["prompt"], provider, runtime_credential, purpose="fit_score")
+    return _dispatch_provider(
+        brief["prompt"],
+        provider,
+        runtime_credential,
+        purpose="fit_score",
+        cap_context=cap_context,
+    )
 
 
 def build_cv_tailoring_prompt(
@@ -685,9 +699,17 @@ def execute_cv_tailoring(
     runtime_credential: str = "",
     profile: UserProfile | None = None,
     friction_keywords: list[str] | None = None,
+    *,
+    cap_context=None,
 ) -> AnalysisExecutionResult:
     brief = build_cv_tailoring_prompt(job, provider, profile, friction_keywords=friction_keywords)
-    return _dispatch_provider(brief["prompt"], provider, runtime_credential, purpose="tailor_cv")
+    return _dispatch_provider(
+        brief["prompt"],
+        provider,
+        runtime_credential,
+        purpose="tailor_cv",
+        cap_context=cap_context,
+    )
 
 
 def execute_job_decision_brief(
@@ -695,10 +717,16 @@ def execute_job_decision_brief(
     provider: AIProviderConfig,
     runtime_credential: str = "",
     profile: UserProfile | None = None,
+    *,
+    cap_context=None,
 ) -> AnalysisExecutionResult:
     brief = build_job_decision_brief_prompt(job, provider, profile)
     return _dispatch_provider(
-        brief["prompt"], provider, runtime_credential, purpose="job_decision_brief"
+        brief["prompt"],
+        provider,
+        runtime_credential,
+        purpose="job_decision_brief",
+        cap_context=cap_context,
     )
 
 
@@ -707,9 +735,17 @@ def execute_cover_letter_brief(
     provider: AIProviderConfig,
     runtime_credential: str = "",
     profile: UserProfile | None = None,
+    *,
+    cap_context=None,
 ) -> AnalysisExecutionResult:
     brief = build_cover_letter_brief_prompt(job, provider, profile)
-    return _dispatch_provider(brief["prompt"], provider, runtime_credential, purpose="cover_letter")
+    return _dispatch_provider(
+        brief["prompt"],
+        provider,
+        runtime_credential,
+        purpose="cover_letter",
+        cap_context=cap_context,
+    )
 
 
 def _dispatch_provider(
@@ -718,6 +754,7 @@ def _dispatch_provider(
     runtime_credential: str,
     *,
     purpose: str = "unknown",
+    cap_context=None,
 ) -> AnalysisExecutionResult:
     """Dispatch the prompt to the configured AI provider and emit an
     AI Act Article 12 audit-log ``ai_invocation`` event around the call.
@@ -730,7 +767,43 @@ def _dispatch_provider(
 
     Existing callers that omit ``purpose`` log as ``"unknown"``; new
     callers should pass an explicit value.
+
+    Phase 2 #46 root-cause refactor (2026-05-21): ``cap_context`` is
+    the single per-user cost-cap gate. When set to a
+    :class:`company_discovery.cost_caps.CostCapContext`, this
+    function will (a) call ``enforce_cap`` before the AI invocation
+    — raising :class:`CostCapExceeded` if the user is over budget —
+    and (b) call ``record_invocation`` after the call so the next
+    cap check sees this run's cost. ``None`` means "no cap" (only
+    legitimate for system-internal calls that aren't user-
+    attributable). Every user-initiated dispatch site MUST pass a
+    context; un-gated user calls are a security bug.
     """
+    from company_discovery.cost_caps import (
+        CostCapContext,
+        enforce_cap,
+        record_invocation,
+    )
+
+    if cap_context is not None:
+        if not isinstance(cap_context, CostCapContext):
+            raise TypeError(
+                f"cap_context must be a CostCapContext, got {type(cap_context).__name__}"
+            )
+        # enforce_cap raises CostCapExceeded if over budget. We let
+        # it propagate so the caller can render a friendly UX
+        # surface; the audit log captures the refusal via the
+        # error_class field below.
+        enforce_cap(
+            user_id=cap_context.user_id,
+            repository=cap_context.repository,
+            cap_eur=cap_context.cap_eur,
+            provider_id=provider.provider_id,
+            invocation_mode=provider.invocation_mode,
+            prompt_text=prompt,
+            locale=cap_context.locale,
+        )
+
     started = time.monotonic()
     result: AnalysisExecutionResult | None = None
     error_class: str | None = None
@@ -749,6 +822,22 @@ def _dispatch_provider(
             result=result,
             error_class=error_class,
         )
+        # Post-call cost recording — runs even on dispatch failure
+        # so a partial response is still accounted for. Case E best-
+        # effort: a failed write must not break the AI call.
+        if cap_context is not None:
+            try:
+                response_text = (result.output if result else "") or ""
+                record_invocation(
+                    user_id=cap_context.user_id,
+                    repository=cap_context.repository,
+                    provider_id=provider.provider_id,
+                    invocation_mode=provider.invocation_mode,
+                    prompt_text=prompt,
+                    response_text=response_text,
+                )
+            except Exception:  # noqa: BLE001 - Case E best-effort
+                pass
 
 
 def _emit_dispatch_audit(
@@ -1052,6 +1141,7 @@ def _dispatch_provider_streaming(
     runtime_credential: str,
     *,
     purpose: str = "unknown",
+    cap_context=None,
 ):
     """Streaming counterpart to :func:`_dispatch_provider`.
 
@@ -1060,6 +1150,13 @@ def _dispatch_provider_streaming(
     accumulated output + status. Mirrors the audit-log emission shape
     of :func:`_dispatch_provider` — one ``ai_invocation`` event fires
     after the stream completes (success or failure).
+
+    Phase 2 #46 root-cause refactor (2026-05-21): when ``cap_context``
+    is set, this generator calls ``enforce_cap`` BEFORE opening the
+    streaming connection (refusing up front is cheaper than aborting
+    mid-stream) and ``record_invocation`` AFTER the stream completes.
+    ``None`` means "no cap" — only legitimate for system-internal
+    calls.
 
     Per-provider streaming support:
     - ``ollama`` (local_http): NDJSON streaming via /api/generate with
@@ -1079,6 +1176,29 @@ def _dispatch_provider_streaming(
     - ``manual`` / ``managed`` (manual): handoff or single-event final.
     """
     import time as _time
+
+    from company_discovery.cost_caps import (
+        CostCapContext,
+        enforce_cap,
+        record_invocation,
+    )
+
+    if cap_context is not None:
+        if not isinstance(cap_context, CostCapContext):
+            raise TypeError(
+                f"cap_context must be a CostCapContext, got {type(cap_context).__name__}"
+            )
+        # Pre-flight cap check. Raises CostCapExceeded if over budget;
+        # generator caller catches and yields a friendly done_payload.
+        enforce_cap(
+            user_id=cap_context.user_id,
+            repository=cap_context.repository,
+            cap_eur=cap_context.cap_eur,
+            provider_id=provider.provider_id,
+            invocation_mode=provider.invocation_mode,
+            prompt_text=prompt,
+            locale=cap_context.locale,
+        )
 
     started = _time.monotonic()
     final_result: AnalysisExecutionResult | None = None
@@ -1103,6 +1223,19 @@ def _dispatch_provider_streaming(
             result=final_result,
             error_class=error_class,
         )
+        if cap_context is not None:
+            try:
+                response_text = (final_result.output if final_result else "") or ""
+                record_invocation(
+                    user_id=cap_context.user_id,
+                    repository=cap_context.repository,
+                    provider_id=provider.provider_id,
+                    invocation_mode=provider.invocation_mode,
+                    prompt_text=prompt,
+                    response_text=response_text,
+                )
+            except Exception:  # noqa: BLE001 - Case E best-effort
+                pass
 
 
 def _dispatch_provider_streaming_impl(
