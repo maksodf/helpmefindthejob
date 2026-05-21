@@ -110,6 +110,25 @@ class InMemoryCompanyDiscoveryRepository:
                 removed += 1
         return removed
 
+    def get_discovered_job(
+        self, user_id: str, discovered_job_id: str
+    ) -> DiscoveredJob | None:
+        """Phase 2 #57 (2026-05-21): missing accessor that the
+        export_eures_compatible MCP tool relied on. Without it
+        every call returned 'not_found' via the AttributeError-
+        catch path, so the EURES projection was effectively dead.
+
+        Returns ``None`` when the id doesn't resolve OR resolves to
+        a row owned by a different user — never raises. Cross-
+        tenant isolation enforced here is the same guarantee the
+        list_discovered_jobs accessor makes.
+        """
+
+        job = self.discovered_jobs.get(discovered_job_id)
+        if job is None or job.user_id != user_id:
+            return None
+        return job
+
     def list_discovered_jobs(
         self, user_id: str, company_id: str | None = None
     ) -> list[DiscoveredJob]:
