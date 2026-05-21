@@ -115,6 +115,15 @@ const state = {
   theme: "dark",
   pollTimer: null,
 };
+// Expose `state` on window so e2e smoke tests can seed it directly.
+// Harmless in production — the browser-side app already manages
+// this single instance; the alias just lets external scripts read /
+// write to it. (Phase 2 #80 in-context-highlight smoke depends on
+// being able to set state.profile.cvText + state.activeImportedJob
+// without booting through the full bootstrap flow.)
+if (typeof window !== "undefined") {
+  window.state = state;
+}
 
 const companyTemplate = $("#companyTemplate");
 const jobTemplate = $("#jobTemplate");
@@ -1737,6 +1746,10 @@ function renderApplicationForm() {
   $("#applicationNextAction").value = job.next_action || "";
   $("#applicationNotes").value = job.application_notes || "";
   $("#applicationCoverLetter").value = job.cover_letter_draft || "";
+  // Phase 2 #80 in-context-highlight: stash the active job on state
+  // so renderCoverLetterSections can resolve [JD] citations against
+  // the real job description. The reverse (CV) comes from state.profile.
+  state.activeImportedJob = job;
   // Phase 2 #80: section-aware re-render whenever the application
   // view loads a job (or switches between jobs).
   renderCoverLetterSections(job.cover_letter_draft || "");
@@ -5351,11 +5364,69 @@ function parseCitations(citationsText) {
   return entries.filter((e) => e.claim || e.sources.length > 0);
 }
 
+// Phase 2 #80 in-context-highlight upgrade: locate a cited excerpt
+// inside the source text + return surrounding context for rendering.
+// Returns {found: true, before, match, after} when the excerpt is
+// substring-matched in the source, or {found: false} otherwise.
+// Context window: ~100 chars before + ~100 chars after the match,
+// trimmed to word boundaries so the snippet doesn't start mid-word.
+function locateExcerptInSource(excerpt, sourceText) {
+  if (!excerpt || !sourceText) return {found: false};
+  const ex = String(excerpt).trim().replace(/^"|"$/g, "");
+  if (!ex) return {found: false};
+  const src = String(sourceText);
+  const idx = src.indexOf(ex);
+  if (idx < 0) {
+    // Try a case-insensitive search as fallback (AI may have
+    // re-cased the citation).
+    const lower = src.toLowerCase();
+    const idxCi = lower.indexOf(ex.toLowerCase());
+    if (idxCi < 0) return {found: false};
+    return _buildContext(src, idxCi, ex.length);
+  }
+  return _buildContext(src, idx, ex.length);
+}
+function _buildContext(src, idx, matchLen) {
+  const beforeStart = Math.max(0, idx - 100);
+  const afterEnd = Math.min(src.length, idx + matchLen + 100);
+  let before = src.slice(beforeStart, idx);
+  let after = src.slice(idx + matchLen, afterEnd);
+  // Trim to word boundaries so we don't start/end mid-word.
+  if (beforeStart > 0) {
+    const firstSpace = before.indexOf(" ");
+    if (firstSpace >= 0 && firstSpace < 30) {
+      before = "…" + before.slice(firstSpace);
+    }
+  }
+  if (afterEnd < src.length) {
+    const lastSpace = after.lastIndexOf(" ");
+    if (lastSpace > after.length - 30) {
+      after = after.slice(0, lastSpace) + "…";
+    }
+  }
+  return {
+    found: true,
+    before,
+    match: src.slice(idx, idx + matchLen),
+    after,
+  };
+}
+
 // Phase 2 #80: render the parsed sections into the Settings UI
 // panel. Called from renderApplication() + the
 // draft_cover_letter response handler so the panel updates
 // whenever the textarea value changes. Citations are rendered as
 // expandable <details> cards.
+//
+// In-context highlighting (top-tier upgrade): each [CV] / [JD]
+// source is matched against the user's actual CV (state.profile.cvText)
+// or the picked job's description (state.lastSearchResults's picked
+// job, or the active imported job). When the excerpt is located,
+// the surrounding context is shown with the excerpt wrapped in a
+// <mark> tag for visual highlight. Excerpts NOT found in source get
+// a "verify manually" warning — that's a genuine signal something
+// could be off (AI may have invented the citation, or the user's CV
+// changed since the draft was generated).
 function renderCoverLetterSections(text) {
   const sections = parseCoverLetterSections(text);
   const subjectEl = $("#coverLetterSectionSubject");
@@ -5369,6 +5440,14 @@ function renderCoverLetterSections(text) {
   const citationsEl = $("#coverLetterCitationsList");
   if (citationsEl) {
     const entries = parseCitations(sections.citations);
+    // Sources for in-context highlighting. CV = the user's profile;
+    // JD = the active imported job's description (or "" if no
+    // job context).
+    const cvText = state.profile?.cvText || state.profile?.cv_text || "";
+    const jdText =
+      state.activeImportedJob?.description
+      || state.activeImportedJob?.discoveredDescription
+      || "";
     citationsEl.innerHTML = "";
     if (entries.length === 0) {
       const li = document.createElement("li");
@@ -5394,6 +5473,38 @@ function renderCoverLetterSections(text) {
           textNode.textContent = " " + src.text;
           sli.appendChild(kindTag);
           sli.appendChild(textNode);
+          // In-context-highlight upgrade: when source kind is CV or
+          // JD, attempt to locate the excerpt in the actual source
+          // text and render the surrounding context with the
+          // excerpt wrapped in <mark>.
+          if (src.kind === "CV" || src.kind === "JD") {
+            const sourceText = src.kind === "CV" ? cvText : jdText;
+            if (sourceText) {
+              const located = locateExcerptInSource(src.text, sourceText);
+              const ctx = document.createElement("div");
+              ctx.className = "cover-letter-citation-context";
+              if (located.found) {
+                const beforeSpan = document.createElement("span");
+                beforeSpan.className = "cover-letter-citation-context-before";
+                beforeSpan.textContent = located.before;
+                const mark = document.createElement("mark");
+                mark.className = "cover-letter-citation-context-match";
+                mark.textContent = located.match;
+                const afterSpan = document.createElement("span");
+                afterSpan.className = "cover-letter-citation-context-after";
+                afterSpan.textContent = located.after;
+                ctx.appendChild(beforeSpan);
+                ctx.appendChild(mark);
+                ctx.appendChild(afterSpan);
+              } else {
+                const warn = document.createElement("span");
+                warn.className = "cover-letter-citation-context-missing";
+                warn.textContent = `Excerpt not located in ${src.kind === "CV" ? "your CV" : "the job description"} — verify manually before sending.`;
+                ctx.appendChild(warn);
+              }
+              sli.appendChild(ctx);
+            }
+          }
           ul.appendChild(sli);
         }
         details.appendChild(ul);

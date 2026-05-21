@@ -153,6 +153,30 @@ def _seed_textarea_and_render(page, text: str) -> None:
                 form.removeAttribute('hidden');
                 form.style.display = 'grid';
             }
+            // Seed state.profile.cvText + state.activeImportedJob so
+            // the in-context-highlight pass can resolve [CV] / [JD]
+            // citations against real source text. Mirrors the shapes
+            // bootstrap + renderApplication produce.
+            if (window.state) {
+                window.state.profile = window.state.profile || {};
+                window.state.profile.cvText = (
+                    "Aïcha Ben Salah\\n" +
+                    "Berlin\\n\\n" +
+                    "EXPERIENCE\\n" +
+                    "Hôpital Habib Bourguiba, Tunis — Krankenpflegerin, 2018-2025 (7 years).\\n" +
+                    "Geriatric ward 2 years; general medical ward 5 years.\\n\\n" +
+                    "RESIDENCY STATUS\\n" +
+                    "§16d AufenthG (visa for purpose of recognition of foreign qualification)."
+                );
+                window.state.activeImportedJob = {
+                    description: (
+                        "Krankenhaus in Berlin sucht Krankenpflegekraft. " +
+                        "Anerkennung-friendly: Wir nehmen Bewerber:innen im laufenden Anerkennungsverfahren auf " +
+                        "und arbeiten Sie ein, bis das Anerkennungsschreiben da ist. " +
+                        "Erfahrung in der Geriatrie erwünscht."
+                    ),
+                };
+            }
             const el = document.getElementById('applicationCoverLetter');
             if (!el) return;
             el.value = text;
@@ -251,6 +275,47 @@ def main() -> int:
                 )
             except Exception as exc:  # noqa: BLE001
                 report("citation expand shows tagged source", False, str(exc))
+
+            # Test 4b: in-context highlight renders the matched CV/JD
+            # excerpt with a <mark> wrap + surrounding context. The
+            # missing-excerpt path renders the warning class.
+            try:
+                ctx_state = page.evaluate(
+                    """() => {
+                        const list = document.getElementById('coverLetterCitationsList');
+                        if (!list) return {found: false};
+                        const marks = list.querySelectorAll('.cover-letter-citation-context-match');
+                        const ctxs = list.querySelectorAll('.cover-letter-citation-context');
+                        const missing = list.querySelectorAll('.cover-letter-citation-context-missing');
+                        return {
+                            ctxCount: ctxs.length,
+                            markCount: marks.length,
+                            missingCount: missing.length,
+                            firstMarkText: marks[0] ? marks[0].textContent : '',
+                        };
+                    }"""
+                )
+                # We expect: 3 [CV] + 1 [JD] = 4 CV-or-JD sources across
+                # citations. All 4 should produce a context block. Most
+                # should match (the sample CV / JD contain the cited
+                # excerpts); the unmatched ones surface the warning.
+                ctx_ok = ctx_state.get("ctxCount", 0) >= 4
+                mark_ok = ctx_state.get("markCount", 0) >= 2
+                # The first <mark>'s text should be a substring of the
+                # cited excerpt (the located excerpt verbatim).
+                report(
+                    "in-context highlight renders context blocks",
+                    ctx_ok,
+                    f"ctxCount={ctx_state.get('ctxCount')} (expect >=4 for 3 CV + 1 JD)",
+                )
+                report(
+                    "in-context highlight wraps matched excerpts in <mark>",
+                    mark_ok,
+                    f"markCount={ctx_state.get('markCount')} firstMark={ctx_state.get('firstMarkText', '')[:50]!r}",
+                )
+            except Exception as exc:  # noqa: BLE001
+                report("in-context highlight renders context blocks", False, str(exc))
+                report("in-context highlight wraps matched excerpts in <mark>", False, str(exc))
 
             # Test 5: Copy-letter-body button is wired up. Visibility
             # depends on the applications view's CSS chain (which the

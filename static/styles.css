@@ -3133,6 +3133,36 @@ details[open] .collapsible-chevron { transform: rotate(180deg); }
   color: var(--text);
 }
 
+/* Phase 2 #80 in-context-highlight: render the surrounding CV/JD
+   context with the cited excerpt wrapped in <mark> for visual
+   verification. "Excerpt not located" warning gets a subtle amber
+   tone so the user can tell at a glance that this claim needs
+   manual review. */
+.cover-letter-citation-context {
+  margin: 4px 0 4px 8px;
+  padding: 6px 10px;
+  border-left: 2px solid var(--border-subtle);
+  background: var(--surface);
+  font-size: 0.85rem;
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  color: var(--text-muted);
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+.cover-letter-citation-context-match {
+  background: rgba(255, 220, 80, 0.4);
+  color: var(--text);
+  font-weight: 600;
+  padding: 0 2px;
+  border-radius: 3px;
+}
+.cover-letter-citation-context-missing {
+  display: block;
+  color: rgba(220, 140, 40, 0.95);
+  font-style: italic;
+  font-family: inherit;
+}
+
 .application-history {
   margin-top: 16px;
   padding: 12px 14px;
