@@ -218,6 +218,20 @@ def _current_month_window(now: datetime | None = None) -> tuple[datetime, dateti
     return start, end
 
 
+class CostHistoryUnavailable(Exception):
+    """Phase 2 #46 quality audit (2026-05-21): raised by
+    :func:`month_to_date_eur` when the analytics repository read
+    fails. The caller's enforce_cap MUST treat this as a fail-
+    closed signal (refuse the AI invocation) — never fail-open.
+
+    Previous behaviour silently returned 0.0 on read failure
+    which effectively disabled the cap whenever the repository
+    misbehaved. A real attacker / runaway loop could exploit
+    that by inducing transient DB errors. Fail-closed is the
+    only honest default for a spend-protection surface.
+    """
+
+
 def month_to_date_eur(
     user_id: str,
     repository,
@@ -227,6 +241,10 @@ def month_to_date_eur(
     """Sum the ``estimated_eur`` field across the user's
     ``ai_invocation_cost`` analytics events for the current
     calendar month. Returns 0.0 for users with no events.
+
+    Raises :class:`CostHistoryUnavailable` if the repository
+    read fails. The cap enforcer treats this as fail-closed —
+    we never let an AI call through with unknown spend history.
     """
 
     if not user_id:
@@ -235,8 +253,10 @@ def month_to_date_eur(
     total = 0.0
     try:
         events = repository.list_analytics_events(user_id=user_id, limit=10_000)
-    except Exception:  # noqa: BLE001 - Case E best-effort: failing to load history means we conservatively assume 0 spend (won't block, but won't over-block)
-        return 0.0
+    except Exception as exc:  # noqa: BLE001 - re-raised as a typed fail-closed signal below
+        raise CostHistoryUnavailable(
+            f"could not load spend history: {type(exc).__name__}: {exc}"[:200]
+        ) from exc
     for event in events:
         if getattr(event, "kind", None) != "ai_invocation_cost":
             continue
@@ -285,7 +305,21 @@ def enforce_cap(
         return estimate
     if estimate.total_eur <= 0:
         return estimate
-    spent = month_to_date_eur(user_id, repository, now=now)
+    try:
+        spent = month_to_date_eur(user_id, repository, now=now)
+    except CostHistoryUnavailable as exc:
+        # Fail-closed: if we can't verify spend, refuse the call.
+        # Quality audit fix (2026-05-21): previous code silently
+        # returned spent=0 here, effectively disabling the cap
+        # whenever the analytics DB hiccupped. A real attacker
+        # could induce transient errors to bypass the cap.
+        raise CostCapExceeded(
+            cap_eur=cap_eur,
+            spent_eur=cap_eur,  # signal "we don't know — assume worst"
+            next_call_eur=estimate.total_eur,
+            provider_id=provider_id,
+            locale=locale,
+        ) from exc
     if spent + estimate.total_eur > cap_eur:
         raise CostCapExceeded(
             cap_eur=cap_eur,

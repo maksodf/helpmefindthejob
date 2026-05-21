@@ -228,6 +228,17 @@ class AuditLogEmitter:
         return hmac.new(self.salt, msg, hashlib.sha256).hexdigest()
 
     def _write(self, record: dict[str, Any]) -> None:
+        # Concurrency contract (2026-05-21 quality audit):
+        # The threading.Lock here protects intra-process concurrency.
+        # The audit log is single-writer by design — ops deploying
+        # the server with multiple worker processes (gunicorn etc.)
+        # MUST configure each worker to write to a per-worker log
+        # file or use a single-worker config. Cross-process writes
+        # to the same file would produce a sequence_no race
+        # (both workers stamp the same N+1) and verify_chain would
+        # detect that as a chain break — fail-loud, not silent.
+        # The Article 12 audit log is not a high-throughput
+        # telemetry surface; single-writer is the correct trade.
         try:
             with self._lock:
                 if not self._chain_loaded:

@@ -92,7 +92,31 @@ _INJECTION_PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
 
 # Control characters that can flip downstream rendering or hide
 # content from the test inspection. We strip them entirely.
-_CONTROL_CHAR_PATTERN = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
+# - C0 controls (\x00-\x1f minus \t \n \r) and DEL (\x7f)
+# - Quality-audit addition (2026-05-21): Unicode bidi controls
+#   (Trojan Source / CVE-2021-42574). These let an attacker
+#   render benign text on screen while injecting different
+#   tokens into the LLM context:
+#     U+202A LEFT-TO-RIGHT EMBEDDING
+#     U+202B RIGHT-TO-LEFT EMBEDDING
+#     U+202C POP DIRECTIONAL FORMATTING
+#     U+202D LEFT-TO-RIGHT OVERRIDE
+#     U+202E RIGHT-TO-LEFT OVERRIDE
+#     U+2066 LEFT-TO-RIGHT ISOLATE
+#     U+2067 RIGHT-TO-LEFT ISOLATE
+#     U+2068 FIRST STRONG ISOLATE
+#     U+2069 POP DIRECTIONAL ISOLATE
+# - Zero-width characters that can hide injection tokens between
+#   benign-looking letters:
+#     U+200B ZERO WIDTH SPACE
+#     U+200C ZERO WIDTH NON-JOINER
+#     U+200D ZERO WIDTH JOINER
+#     U+FEFF ZERO WIDTH NO-BREAK SPACE / BOM
+_CONTROL_CHAR_PATTERN = re.compile(
+    r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f"
+    r"‪-‮⁦-⁩"
+    r"​-‍﻿]"
+)
 
 # Raw markdown headers (h1-h6) that would collide with our own
 # SECTION markers. We strip just the leading ``#`` chars; the text

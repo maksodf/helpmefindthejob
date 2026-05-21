@@ -276,10 +276,82 @@ function clearPendingDiskFullWrites() {
   }
 }
 
+// Quality-audit (2026-05-21): the Case B preserve-pending-write
+// queue is useless without a replay path. Once capacity is
+// restored, the user (or an operator-driven banner) needs to be
+// able to re-issue every queued write. retryPendingDiskFullWrites
+// walks the queue, attempts each request, and removes entries
+// that succeed (status 2xx) or that fail with a 4xx that's NOT
+// 507-disk-full (a 4xx means the request is permanently bad —
+// stale data, no point retrying). Disk-full responses leave the
+// entry on the queue for another retry later.
+async function retryPendingDiskFullWrites() {
+  if (typeof sessionStorage === "undefined" || typeof fetch !== "function") {
+    return { retried: 0, succeeded: 0, stillQueued: 0 };
+  }
+  const queue = getPendingDiskFullWrites();
+  if (!queue.length) return { retried: 0, succeeded: 0, stillQueued: 0 };
+  const remaining = [];
+  let succeeded = 0;
+  for (const entry of queue) {
+    let response;
+    try {
+      response = await fetch(entry.path, {
+        method: entry.method || "POST",
+        credentials: "same-origin",
+        headers: {
+          "Content-Type": "application/json",
+          ...(state.auth?.user?.csrfToken
+            ? { "X-CSRF-Token": state.auth.user.csrfToken }
+            : {}),
+        },
+        body: entry.body,
+      });
+    } catch (_networkErr) {
+      // Network failure — keep on queue for next retry
+      remaining.push(entry);
+      continue;
+    }
+    if (response.ok) {
+      succeeded += 1;
+      continue;
+    }
+    // 507 Insufficient Storage = still disk-full; keep on queue
+    if (response.status === 507) {
+      remaining.push(entry);
+      continue;
+    }
+    // 4xx (other than 507) = permanently bad; drop from queue.
+    // 5xx (other than 507) = transient server error; keep on queue.
+    if (response.status >= 400 && response.status < 500) {
+      // Drop — don't keep on queue
+      continue;
+    }
+    remaining.push(entry);
+  }
+  // Atomically replace the queue with whatever's left
+  try {
+    if (remaining.length) {
+      sessionStorage.setItem(_PENDING_WRITES_KEY, JSON.stringify(remaining));
+    } else {
+      sessionStorage.removeItem(_PENDING_WRITES_KEY);
+    }
+  } catch (_e) {
+    // Best-effort — if storage write fails, queue may double-count
+    // but never under-count
+  }
+  return {
+    retried: queue.length,
+    succeeded,
+    stillQueued: remaining.length,
+  };
+}
+
 if (typeof window !== "undefined") {
   window.preservePendingWrite = preservePendingWrite;
   window.getPendingDiskFullWrites = getPendingDiskFullWrites;
   window.clearPendingDiskFullWrites = clearPendingDiskFullWrites;
+  window.retryPendingDiskFullWrites = retryPendingDiskFullWrites;
 }
 
 async function api(path, options = {}) {

@@ -207,6 +207,42 @@ The migration discipline mirrors the project's approach to other schemas (JSON S
 
 ---
 
+## 8a. Concurrency contract (single-writer)
+
+**The audit log is single-writer by design.** The intra-process
+`threading.Lock` in `AuditLogEmitter._write` protects same-
+process concurrency (multiple chat handlers / background threads
+writing to the same emitter instance). It does **not** protect
+cross-process writes to the same file.
+
+**Deployer guidance**:
+
+- If running with multiple worker processes (e.g. gunicorn with
+  `workers > 1`, or `--preload` off): EACH worker MUST write to
+  a per-worker log file (`audit-worker-${WORKER_ID}.log`) so each
+  worker owns its own monotonic-sequence + HMAC chain.
+- For aggregation, run `verify_chain` per-worker-file separately
+  during compliance review. A regulator with N worker files
+  gets N parallel chains, each verifiable.
+- Single-worker deployments (the default) write one file and
+  one chain — no extra configuration needed.
+
+Why this design: the Article 12 audit log is a compliance
+surface, not a high-throughput telemetry surface. Cross-process
+write coordination via OS file locks would slow every audit
+write (a major operational tax) for a vanishingly small
+operational benefit — and would silently degrade in the
+presence of NFS-mounted log directories where file locks are
+unreliable. Per-worker files preserve the verifiability claim
+without performance cost.
+
+If two workers DO mistakenly write to the same file, the result
+is detectable: `verify_chain` reports `sequence_gap` or
+`hmac_mismatch` at the point of overlap, which is exactly the
+"fail-loud, not silent" outcome we want.
+
+---
+
 ## 9. What the audit log is **not**
 
 - It is **not** a substitute for application logs. Operational debugging logs live separately and have their own retention.

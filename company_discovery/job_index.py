@@ -183,8 +183,8 @@ def _norm_location(text: str | None) -> str:
     # module-import cycle (city_adjacency is the consumer of this
     # function in some paths).
     try:
-        from company_discovery.city_adjacency import _CITY_ALIASES
-        return _CITY_ALIASES.get(normalised, normalised)
+        from company_discovery.city_adjacency import CITY_ALIASES
+        return CITY_ALIASES.get(normalised, normalised)
     except ImportError:
         return normalised
 
@@ -451,12 +451,12 @@ class JobIndex:
         if neighbours:
             # Import here to keep the module-level cycle clean
             from company_discovery.city_adjacency import (
-                _norm_city,
+                normalise_city,
                 adjacent_cities,
             )
 
             edges = adjacent_cities(location, max_minutes=max_minutes)
-            src_key = _norm_city(location)
+            src_key = normalise_city(location)
             edge_by_neighbour: dict[str, object] = {}
             for edge in edges:
                 other = edge.b if edge.a == src_key else edge.a

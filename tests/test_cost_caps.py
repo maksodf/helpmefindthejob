@@ -213,6 +213,45 @@ class EnforceCap(unittest.TestCase):
             )
         self.assertIn("Monatliches", str(cm.exception))
 
+    def test_repository_read_failure_triggers_fail_closed(self) -> None:
+        """Quality audit (2026-05-21): if the analytics-events read
+        fails, enforce_cap MUST refuse the AI call. Previous
+        behaviour silently assumed 0 spend on read failure, which
+        would effectively disable the cap whenever the DB
+        hiccupped — a cap-bypass vector."""
+
+        class BrokenRepository:
+            def list_analytics_events(self, **_kwargs):
+                raise RuntimeError("simulated_db_failure")
+
+        broken = BrokenRepository()
+        with self.assertRaises(CostCapExceeded) as cm:
+            enforce_cap(
+                user_id="u",
+                repository=broken,
+                cap_eur=100.0,
+                provider_id="openai",
+                invocation_mode="api",
+                prompt_text="x" * 1000,
+            )
+        # The synthetic exception carries cap_eur as spent_eur to
+        # signal "we don't know, assume worst" to operators.
+        self.assertEqual(cm.exception.spent_eur, 100.0)
+
+    def test_month_to_date_raises_typed_exception_on_repo_failure(self) -> None:
+        """The fail-closed contract: month_to_date_eur raises
+        CostHistoryUnavailable on repo failure, not a generic
+        Exception. Callers depend on the typed signal."""
+
+        from company_discovery.cost_caps import CostHistoryUnavailable
+
+        class BrokenRepository:
+            def list_analytics_events(self, **_kwargs):
+                raise RuntimeError("simulated_db_failure")
+
+        with self.assertRaises(CostHistoryUnavailable):
+            month_to_date_eur("u", BrokenRepository())
+
     def test_default_cap_constant_is_modest_but_nonzero(self) -> None:
         # Sanity: the default must be > 0 (else no one can call API
         # without configuring) and < 50 EUR (else not really a cap).

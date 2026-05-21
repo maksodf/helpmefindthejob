@@ -151,7 +151,15 @@ _EDGES: tuple[AdjacencyEdge, ...] = (
 # "Nuremberg" → "nurnberg", "Brunswick" → "braunschweig", etc.
 # The alias table maps the de-accented form of the foreign-language
 # name to the canonical key.
-_CITY_ALIASES: dict[str, str] = {
+# Public alias table — consumed by job_index._norm_location so the
+# index storage uses canonical keys regardless of which spelling
+# (English exonym, German oe/ue/ae alternate, ISO short form) the
+# job posting carried. Quality-audit (2026-05-21): promoted from
+# the original leading-underscore `_CITY_ALIASES` to a public name
+# because cross-module consumers shouldn't reach into private
+# symbols. The old name remains as an alias for backward
+# compatibility with any external code reading the dataset.
+CITY_ALIASES: dict[str, str] = {
     # English exonyms
     "munich": "munchen",
     "cologne": "koln",
@@ -182,18 +190,17 @@ _CITY_ALIASES: dict[str, str] = {
     "bln": "berlin",
 }
 
+# Backward-compatible alias for the original private name. Kept
+# so any external tests / tooling that imported the old symbol
+# still resolves. New consumers should use ``CITY_ALIASES``.
+_CITY_ALIASES = CITY_ALIASES
 
-def _norm_city(text: str | None) -> str:
-    """City-key normaliser, identical in shape to
-    :func:`company_discovery.job_index._norm_location` so the
-    adjacency keys round-trip with the index facet keys.
 
-    Phase 2 #74 alias fix (2026-05-21): after de-accenting + lower-
-    casing, we resolve common cross-language exonyms (Munich ↔
-    München, Cologne ↔ Köln, Vienna ↔ Wien, etc.) through the
-    :data:`_CITY_ALIASES` table so adjacency lookups work regardless
-    of which spelling the job posting carried.
-    """
+def normalise_city(text: str | None) -> str:
+    """Public city-key normaliser. Quality-audit (2026-05-21):
+    promoted from ``_norm_city`` so cross-module consumers don't
+    reach into private symbols. The private name remains as a
+    backward-compat alias."""
 
     if not text:
         return ""
@@ -202,7 +209,14 @@ def _norm_city(text: str | None) -> str:
     folded = folded.casefold().strip()
     first = folded.split(",")[0].strip()
     normalised = re.sub(r"\s+", " ", first)
-    return _CITY_ALIASES.get(normalised, normalised)
+    return CITY_ALIASES.get(normalised, normalised)
+
+
+def _norm_city(text: str | None) -> str:
+    """Backward-compat alias for :func:`normalise_city`. New
+    consumers should use the public name."""
+
+    return normalise_city(text)
 
 
 def _build_adjacency_map() -> dict[str, tuple[AdjacencyEdge, ...]]:
