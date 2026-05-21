@@ -54,6 +54,105 @@ from .aggregators import AggregatedJob, _decode, _encode
 _DEFAULT_TTL_SECONDS = 14 * 24 * 3600  # 14 days
 
 
+# ─── Phase B heuristics: seniority + language classification ───────
+
+
+# Seniority markers — ordered from highest to lowest precedence.
+# First match wins, so a title like "Lead Senior Engineer" resolves
+# to "lead" (the more specific token). Tokens are case-folded and
+# word-bounded.
+_SENIORITY_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
+    ("staff", re.compile(r"\bstaff\b", re.IGNORECASE)),
+    ("principal", re.compile(r"\bprincipal\b", re.IGNORECASE)),
+    ("director", re.compile(r"\b(?:director|vp|vice president|head of)\b", re.IGNORECASE)),
+    # German compound forms: "Teamleiter" / "Abteilungsleiterin" /
+    # "Projektleitung" — \b doesn't fire inside the compound, so we
+    # match the leiter/leiterin/leitung suffix without trailing \b.
+    ("lead", re.compile(
+        r"\b(?:lead|teamlead)\b|\b\w*leiter(?:in)?\b|\b\w*leitung\b",
+        re.IGNORECASE,
+    )),
+    ("senior", re.compile(r"\b(?:senior|sr\.?|sn\.?|erfahren(?:e[rn]?)?)\b", re.IGNORECASE)),
+    ("junior", re.compile(r"\b(?:junior|jr\.?|einstieg|entry[- ]level|berufseinsteiger)\b", re.IGNORECASE)),
+    ("intern", re.compile(r"\b(?:intern|praktikant(?:in)?|trainee|werkstudent(?:in)?)\b", re.IGNORECASE)),
+    ("apprentice", re.compile(r"\b(?:apprentice|auszubildende[rn]?|azubi|ausbildung)\b", re.IGNORECASE)),
+]
+
+
+def classify_seniority(title: str | None) -> str:
+    """Phase 2 #71 Phase B — title-based seniority heuristic.
+
+    Returns one of: "staff" / "principal" / "director" / "lead" /
+    "senior" / "junior" / "intern" / "apprentice" / "". Empty means
+    no marker matched — we treat that as "mid-level / unmarked"
+    rather than guessing.
+
+    Heuristic precedence: more specific markers (staff / principal /
+    director) win over generic ones (senior / lead). Case-insensitive
+    word-bounded matching. German equivalents recognised alongside
+    English (Leiter, Senior, Junior, Praktikant, Auszubildender).
+    """
+
+    if not title:
+        return ""
+    for label, pattern in _SENIORITY_PATTERNS:
+        if pattern.search(title):
+            return label
+    return ""
+
+
+# Language detection — substring-frequency heuristic on the
+# description. We compare counts of common DE function-words vs
+# common EN function-words. The higher-frequency language wins;
+# ties / both-zero return "".
+_DE_FUNCTION_WORDS = {
+    "und", "der", "die", "das", "ein", "eine", "ist", "sind", "wir",
+    "uns", "sie", "ihre", "wird", "werden", "mit", "für", "von",
+    "auch", "nicht", "haben", "hat", "kann", "können",
+}
+_EN_FUNCTION_WORDS = {
+    "the", "and", "you", "your", "we", "our", "with", "for", "are",
+    "is", "this", "that", "have", "has", "will", "can", "should",
+    "would", "also", "not",
+}
+
+
+def classify_language(description: str | None) -> str:
+    """Phase 2 #71 Phase B — description-based language heuristic.
+
+    Returns one of: "de" / "en" / "". Empty means insufficient signal
+    (short / mixed / non-Latin-script descriptions). Algorithm:
+    tokenise into lowercase word-tokens, count function-word hits in
+    each set, pick the higher count.
+
+    Used as a facet column on the persistent index so
+    DiagnosticEngine can later answer "47 German-language postings
+    for X in Berlin" — which #72 (the language-detection heuristic
+    affordance) will surface to the user. This module ships the
+    heuristic; #72 owns the user-facing rendering.
+    """
+
+    if not description:
+        return ""
+    text = description.casefold()
+    # Tokenise on word boundaries
+    tokens = re.findall(r"[a-zäöüß]+", text)
+    if not tokens:
+        return ""
+    token_set = set(tokens)
+    de_hits = len(token_set & _DE_FUNCTION_WORDS)
+    en_hits = len(token_set & _EN_FUNCTION_WORDS)
+    # Require a minimum signal threshold (avoids classifying very
+    # short descriptions as either language).
+    if de_hits < 3 and en_hits < 3:
+        return ""
+    if de_hits > en_hits:
+        return "de"
+    if en_hits > de_hits:
+        return "en"
+    return ""  # Tie — abstain rather than guess
+
+
 def _norm_location(text: str | None) -> str:
     """Case-folded, accent-stripped, leading/trailing-whitespace-
     trimmed form of a location string for facet matching. Maps e.g.
@@ -167,6 +266,13 @@ class JobIndex:
         search hits the index with a known role_bucket + location).
 
         Returns the number of rows written.
+
+        Phase 2 #71 Phase B: when ``seniority_class`` / ``language_detected``
+        are not supplied by the caller, the heuristics
+        :func:`classify_seniority` (title-based) and
+        :func:`classify_language` (description-based) populate them
+        per-row. The caller's explicit value (if any) always wins —
+        the heuristic only fires when the caller is silent.
         """
         now = int(time.time())
         ttl_at = now + self.ttl_seconds
@@ -182,6 +288,19 @@ class JobIndex:
                     posted_at = int(job.posted_at.timestamp())
                 except Exception:  # noqa: BLE001 - posted_at may be malformed; degrade to None
                     posted_at = None
+            # Phase B: per-row heuristic classification when the
+            # caller didn't pre-supply the facet. Heuristics are
+            # cheap (substring matches), safe to run on every row.
+            row_seniority = (
+                seniority_class
+                if seniority_class is not None
+                else classify_seniority(job.title)
+            )
+            row_language = (
+                language_detected
+                if language_detected is not None
+                else classify_language(description)
+            )
             rows.append(
                 (
                     job.source_url,
@@ -192,8 +311,8 @@ class JobIndex:
                     _norm_location(job.location),
                     job.source or "",
                     role_bucket or "",
-                    seniority_class or "",
-                    language_detected or "",
+                    row_seniority or "",
+                    row_language or "",
                     description_excerpt,
                     posted_at,
                     now,

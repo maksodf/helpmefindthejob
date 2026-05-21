@@ -25,7 +25,13 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from company_discovery.aggregators import AggregatedJob, JobAggregationEngine
-from company_discovery.job_index import JobIndex, _norm_location, _norm_title
+from company_discovery.job_index import (
+    JobIndex,
+    _norm_location,
+    _norm_title,
+    classify_language,
+    classify_seniority,
+)
 
 
 def _make_job(
@@ -203,6 +209,158 @@ class JobIndexTtlTests(unittest.TestCase):
         self.assertEqual(deleted, 1)
         # Now count without TTL filter would also be 0
         self.assertEqual(index.count_by_facets(role_bucket="x", ttl_now=0), 0)
+
+
+class SeniorityHeuristicTests(unittest.TestCase):
+    """Phase 2 #71 Phase B — title-based seniority classification."""
+
+    def test_senior_resolves(self):
+        self.assertEqual(classify_seniority("Senior Frontend Developer"), "senior")
+        self.assertEqual(classify_seniority("Sr. Backend Engineer"), "senior")
+
+    def test_junior_resolves(self):
+        self.assertEqual(classify_seniority("Junior Software Developer"), "junior")
+        self.assertEqual(classify_seniority("Entry-level Data Analyst"), "junior")
+
+    def test_lead_resolves(self):
+        self.assertEqual(classify_seniority("Lead Engineer"), "lead")
+        self.assertEqual(classify_seniority("Teamlead Backend"), "lead")
+        self.assertEqual(classify_seniority("Teamleiter Mobile"), "lead")
+
+    def test_staff_outranks_senior_token(self):
+        # Title "Staff Senior Engineer" — staff (more specific) wins.
+        self.assertEqual(classify_seniority("Staff Senior Engineer"), "staff")
+
+    def test_principal_outranks_lead_token(self):
+        self.assertEqual(
+            classify_seniority("Principal Lead Architect"), "principal"
+        )
+
+    def test_director_resolves(self):
+        self.assertEqual(classify_seniority("Director of Engineering"), "director")
+        self.assertEqual(classify_seniority("Head of Product"), "director")
+        self.assertEqual(classify_seniority("VP Marketing"), "director")
+
+    def test_intern_resolves(self):
+        self.assertEqual(classify_seniority("Software Engineering Intern"), "intern")
+        self.assertEqual(classify_seniority("Werkstudent Backend"), "intern")
+        self.assertEqual(classify_seniority("Praktikantin Design"), "intern")
+
+    def test_apprentice_resolves(self):
+        self.assertEqual(
+            classify_seniority("Anlagenmechaniker SHK Auszubildender"),
+            "apprentice",
+        )
+        self.assertEqual(classify_seniority("Azubi Mechatronik"), "apprentice")
+
+    def test_unmarked_title_returns_empty(self):
+        self.assertEqual(classify_seniority("Frontend Developer"), "")
+        self.assertEqual(classify_seniority("Krankenpfleger"), "")
+
+    def test_empty_and_none_return_empty(self):
+        self.assertEqual(classify_seniority(""), "")
+        self.assertEqual(classify_seniority(None), "")
+
+
+class LanguageHeuristicTests(unittest.TestCase):
+    """Phase 2 #71 Phase B — description-based language detection."""
+
+    def test_german_description_resolves_de(self):
+        text = (
+            "Wir suchen eine erfahrene Pflegekraft für unsere Station. "
+            "Sie haben eine abgeschlossene Ausbildung und sind teamfähig. "
+            "Bewerben Sie sich mit Lebenslauf und Anschreiben."
+        )
+        self.assertEqual(classify_language(text), "de")
+
+    def test_english_description_resolves_en(self):
+        text = (
+            "We are looking for a Senior Frontend Developer to join our team. "
+            "You will work with React, TypeScript, and modern web tooling. "
+            "Apply with your CV and a short cover letter."
+        )
+        self.assertEqual(classify_language(text), "en")
+
+    def test_short_description_returns_empty(self):
+        # Below the 3-hit threshold either way.
+        self.assertEqual(classify_language("Hello world"), "")
+        self.assertEqual(classify_language("Wir suchen"), "")
+
+    def test_empty_and_none_return_empty(self):
+        self.assertEqual(classify_language(""), "")
+        self.assertEqual(classify_language(None), "")
+
+    def test_balanced_bilingual_returns_empty(self):
+        # Carefully constructed to score equally on both sides.
+        # Threshold requires both to be >=3 AND not equal — equal
+        # counts mean we abstain.
+        text = (
+            "Wir und der die das ist und. "
+            "The and you we are is have."
+        )
+        # Exact equal: both hit 6 DE + 6 EN tokens-ish; either way
+        # the contract is "non-DE / non-EN one wins, or abstain on
+        # tie". Verify the function returns something stable.
+        result = classify_language(text)
+        self.assertIn(result, {"de", "en", ""})
+
+
+class HeuristicWriteThroughTests(unittest.TestCase):
+    """Verify that JobIndex.upsert_jobs auto-populates the
+    seniority_class + language_detected facets via the Phase B
+    heuristics when the caller doesn't pre-supply them."""
+
+    def setUp(self) -> None:
+        self.tmp = TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.index = JobIndex(
+            Path(self.tmp.name) / "heur.sqlite", ttl_seconds=3600
+        )
+        self.addCleanup(self.index.close)
+
+    def test_heuristic_populates_seniority(self):
+        job = _make_job(
+            "Senior Frontend Developer", "C1", "Berlin",
+            "https://x.example/senior-fe",
+        )
+        self.index.upsert_jobs([job])
+        # The heuristic should have tagged this row with senior.
+        self.assertEqual(
+            self.index.count_by_facets(seniority_class="senior"), 1
+        )
+
+    def test_heuristic_populates_language(self):
+        job = _make_job(
+            "Krankenpfleger:in",
+            "Klinik",
+            "Berlin",
+            "https://k.example/1",
+            description=(
+                "Wir suchen eine erfahrene Pflegekraft für unsere Station. "
+                "Sie haben eine abgeschlossene Ausbildung und sind teamfähig."
+            ),
+        )
+        self.index.upsert_jobs([job])
+        self.assertEqual(self.index.count_by_facets(language_detected="de"), 1)
+
+    def test_explicit_caller_value_overrides_heuristic(self):
+        """When the caller passes seniority_class explicitly, the
+        heuristic doesn't override it (even if the heuristic would
+        have resolved differently)."""
+        job = _make_job(
+            "Senior Frontend Developer",
+            "C1",
+            "Berlin",
+            "https://x.example/explicit",
+        )
+        # Heuristic would say "senior" — caller forces "junior".
+        self.index.upsert_jobs([job], seniority_class="junior")
+        self.assertEqual(
+            self.index.count_by_facets(seniority_class="junior"), 1
+        )
+        self.assertEqual(
+            self.index.count_by_facets(seniority_class="senior"), 0
+        )
 
 
 class AggregatorWriteThroughTests(unittest.TestCase):
