@@ -1789,17 +1789,119 @@ class AppState:
             self._login_attempts.pop(client_id, None)
 
     def export_data(self, user_id: str) -> dict[str, Any]:
+        """GDPR Article 20 data-portability export.
+
+        Returns a structured, machine-readable snapshot of all personal
+        data the controller holds for ``user_id``. The shape mirrors
+        the repository's storage model so the export round-trips
+        through :meth:`import_data` (within the same schema version).
+
+        Phase 2 backlog #54 (2026-05-21) extended this beyond the
+        original watchlist-scoped snapshot to cover all user-owned
+        tables: profile (including ``cv_text`` and CV-builder
+        sections), chat session state + journey state, saved searches,
+        analytics events about the user, support tickets the user
+        filed, push subscriptions, workspace memberships, and the
+        user's own auth-record identity (id + email + role + 2FA
+        enrolment flag — no password hashes, no session secrets).
+
+        The export is plain JSON. Encrypted-at-rest columns (e.g.
+        CV builder section JSON, auth-store secrets) are decrypted
+        for the export — that's the whole point of Article 20: the
+        user receives THEIR data in usable form.
+        """
+
+        profile = self.profile_for(user_id)
+        user_record = self.auth_store.get_user(user_id)
+        # CV-builder sections live in an in-memory session dict; if
+        # the user opened the builder, the structured sections are
+        # available via to_dict(). Empty dict means the builder
+        # hasn't been touched this session.
+        try:
+            cv_state = self.cv_builder_state_for(user_id)
+            cv_sections = cv_state.to_dict()
+        except Exception:  # noqa: BLE001 - Case E best-effort: a corrupt CV-builder state must not block the entire export
+            cv_sections = None
+        try:
+            chat_session = self.chat_session_for(user_id)
+            chat_history = [
+                {"role": t.role, "content": t.content}
+                for t in (chat_session.history or [])
+            ]
+        except Exception:  # noqa: BLE001 - Case E best-effort: chat-history failure must not block GDPR export
+            chat_history = []
+        try:
+            journey_state = self._journey_load(user_id).to_dict()
+        except Exception:  # noqa: BLE001 - Case E best-effort: a malformed journey must not block GDPR export
+            journey_state = None
         return {
             "schemaVersion": EXPORT_SCHEMA_VERSION,
             "exportedAt": now_utc().isoformat(),
             "appVersion": APP_VERSION,
+            # Identity (no secrets, no password hashes)
+            "user": (
+                {
+                    "id": user_record.id,
+                    "email": user_record.email,
+                    "role": user_record.role,
+                    "active": user_record.active,
+                    "createdAt": (
+                        user_record.created_at.isoformat()
+                        if user_record.created_at
+                        else None
+                    ),
+                    "twoFactorEnrolled": bool(getattr(user_record, "totp_secret", None)),
+                }
+                if user_record is not None
+                else None
+            ),
+            # Profile (PII the user provided)
+            "profile": {
+                "userId": profile.user_id,
+                "personaId": profile.persona_id,
+                "location": profile.location,
+                "cvText": profile.cv_text,
+                "cvPhotoDataUri": profile.cv_photo_data_uri,
+                "cvSections": cv_sections,
+                "targetRoles": list(profile.target_roles or []),
+                "industry": profile.industry,
+                "seniority": profile.seniority,
+                "yearsExperience": profile.years_experience,
+                "languages": list(profile.languages or []),
+                "notes": profile.notes,
+                "locale": profile.locale,
+                "theme": profile.theme,
+                "frictionClass": profile.friction_class,
+                "retentionDays": profile.retention_days,
+                "dismissedTerms": list(profile.dismissed_terms or []),
+                "hiddenSources": list(profile.hidden_sources or []),
+                "aiConsentProviderId": profile.ai_consent_provider_id,
+                "aiConsentAt": (
+                    profile.ai_consent_at.isoformat()
+                    if profile.ai_consent_at
+                    else None
+                ),
+            },
+            # Watchlist + applications
             "companies": self.repository.list_companies(user_id),
             "discoveredJobs": self.repository.list_discovered_jobs(user_id),
             "importedJobs": self.repository.list_imported_jobs(user_id),
             "scans": self.repository.list_scans(user_id),
             "discoveryRuns": self.repository.list_discovery_runs(user_id),
+            "savedSearches": self.repository.list_saved_searches(user_id),
             "watchlistSchedule": self.schedule_for(user_id),
             "aiProvider": self.ai_provider_for(user_id).public_dict(),
+            # Conversational state
+            "chatHistory": chat_history,
+            "journeyState": journey_state,
+            # User-owned auxiliary records
+            "analyticsEvents": self.repository.list_analytics_events(user_id, limit=5000),
+            "supportTickets": [
+                t
+                for t in self.repository.list_support_tickets(user_id=user_id)
+            ],
+            "pushSubscriptions": self.repository.list_push_subscriptions(user_id),
+            "workspaceMemberships": self.repository.list_workspace_memberships(user_id),
         }
 
     def import_data(self, user_id: str, payload: dict[str, Any]) -> dict[str, Any]:
