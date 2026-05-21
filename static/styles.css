@@ -3046,6 +3046,93 @@ details[open] .collapsible-chevron { transform: rotate(180deg); }
   margin-bottom: 6px;
 }
 
+/* Phase 2 #80: section-aware cover-letter panel. */
+.cover-letter-sections {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+.cover-letter-sections > summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+.cover-letter-section-grid {
+  display: grid;
+  gap: 14px;
+  margin-top: 12px;
+}
+.cover-letter-section h4 {
+  margin: 0 0 6px;
+  font-size: 0.95rem;
+  color: var(--text);
+}
+.cover-letter-section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.cover-letter-section-body {
+  margin: 0;
+  padding: 8px 10px;
+  background: var(--surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  font-family: inherit;
+  font-size: 0.9rem;
+  color: var(--text);
+  max-height: 240px;
+  overflow-y: auto;
+}
+.cover-letter-citations {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.cover-letter-citation {
+  padding: 6px 0;
+  border-bottom: 1px dashed var(--border-subtle);
+}
+.cover-letter-citation:last-child {
+  border-bottom: 0;
+}
+.cover-letter-citation summary {
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+.cover-letter-citation-sources {
+  margin: 6px 0 0;
+  padding: 0 0 0 18px;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.cover-letter-citation-tag {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.cover-letter-citation-tag-cv {
+  background: rgba(64, 156, 255, 0.18);
+  color: var(--text);
+}
+.cover-letter-citation-tag-jd {
+  background: rgba(120, 200, 120, 0.18);
+  color: var(--text);
+}
+.cover-letter-citation-tag-inference {
+  background: rgba(200, 160, 80, 0.18);
+  color: var(--text);
+}
+
 .application-history {
   margin-top: 16px;
   padding: 12px 14px;

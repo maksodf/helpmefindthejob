@@ -698,6 +698,40 @@
                 </div>
                 <textarea id="applicationCoverLetter" rows="6" placeholder="Click 'Draft cover letter' to generate one with your AI provider, or paste your own."></textarea>
                 <p class="muted small" data-i18n="applications.coverLetter.sectionHint">AI drafts include five sections: subject + letter body, editing notes, draft assumptions, and a "Source citations (Quellen)" trace. Review the citations section before sending — every non-trivial claim should map back to your CV or the job description. The citations section is for your verification only and should be removed from what you actually send.</p>
+                <!-- Phase 2 #80: section-aware panel below the
+                     textarea. The textarea remains the canonical
+                     source; the panel parses + renders per-section
+                     read-only views + a "Copy letter body only"
+                     button + interactive citation expander. -->
+                <details class="cover-letter-sections" id="coverLetterSectionsPanel">
+                  <summary data-i18n="applications.coverLetter.sectionsToggle">Show parsed sections + citation verifier</summary>
+                  <div class="cover-letter-section-grid">
+                    <div class="cover-letter-section" data-section="subject">
+                      <h4 data-i18n="applications.coverLetter.section.subject">Subject + opening salutation</h4>
+                      <pre class="cover-letter-section-body" id="coverLetterSectionSubject"></pre>
+                    </div>
+                    <div class="cover-letter-section" data-section="body">
+                      <div class="cover-letter-section-head">
+                        <h4 data-i18n="applications.coverLetter.section.body">Letter body</h4>
+                        <button id="coverLetterCopyBodyBtn" class="btn btn-sm" type="button" data-i18n="applications.coverLetter.copyBody">Copy letter body</button>
+                      </div>
+                      <pre class="cover-letter-section-body" id="coverLetterSectionBody"></pre>
+                    </div>
+                    <div class="cover-letter-section" data-section="editingNotes">
+                      <h4 data-i18n="applications.coverLetter.section.editingNotes">Editing notes</h4>
+                      <pre class="cover-letter-section-body" id="coverLetterSectionEditingNotes"></pre>
+                    </div>
+                    <div class="cover-letter-section" data-section="assumptions">
+                      <h4 data-i18n="applications.coverLetter.section.assumptions">Draft assumptions</h4>
+                      <pre class="cover-letter-section-body" id="coverLetterSectionAssumptions"></pre>
+                    </div>
+                    <div class="cover-letter-section" data-section="citations">
+                      <h4 data-i18n="applications.coverLetter.section.citations">Source citations (Quellen) — verifier</h4>
+                      <ul id="coverLetterCitationsList" class="cover-letter-citations"></ul>
+                      <p class="muted small" data-i18n="applications.coverLetter.citationsHint">Click each claim to expand the cited CV / JD excerpt. Citations should reference your CV (class E) or the job description (class E); explicit [Inference] tags are honest about assumed context.</p>
+                    </div>
+                  </div>
+                </details>
               </label>
               <details class="application-extras field wide">
                 <summary data-i18n="applications.extras.summary">More — checklist, history note</summary>

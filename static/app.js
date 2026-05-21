@@ -1737,6 +1737,9 @@ function renderApplicationForm() {
   $("#applicationNextAction").value = job.next_action || "";
   $("#applicationNotes").value = job.application_notes || "";
   $("#applicationCoverLetter").value = job.cover_letter_draft || "";
+  // Phase 2 #80: section-aware re-render whenever the application
+  // view loads a job (or switches between jobs).
+  renderCoverLetterSections(job.cover_letter_draft || "");
   const checklistText = (job.documents_checklist || [])
     .map((item) => `${item.complete ? "[x]" : "[ ]"} ${item.label}`)
     .join("\n");
@@ -3373,6 +3376,9 @@ async function draftCoverLetter(importedJobId) {
     }
     if (draft.status === "completed" && draft.output) {
       $("#applicationCoverLetter").value = draft.output;
+      // Phase 2 #80: section-aware re-render alongside the
+      // canonical textarea value.
+      renderCoverLetterSections(draft.output);
       showToast("Cover letter drafted.", "success");
     } else if (draft.status === "handoff_required") {
       showToast("AI provider not configured — copy the prompt instead (Cover-letter prompt button).", "info");
@@ -4497,6 +4503,29 @@ $("#cvUploadInput")?.addEventListener("change", handleCvUpload);
 // Phase 2 #76 sub-piece (d): user-visible friction-class actions on
 // the Settings page. Re-classify re-runs the deterministic classifier
 // against the user's current CV text; Clear sets friction_class="".
+// Phase 2 #80: Copy-letter-body button + textarea-input listener so
+// the section-aware panel stays in sync when the user edits the
+// textarea directly.
+$("#coverLetterCopyBodyBtn")?.addEventListener("click", () => {
+  const sections = parseCoverLetterSections($("#applicationCoverLetter")?.value || "");
+  const body = sections.body || "";
+  if (!body) {
+    showToast("No letter body parsed — paste a draft first.", "info");
+    return;
+  }
+  if (navigator.clipboard?.writeText) {
+    navigator.clipboard.writeText(body).then(
+      () => showToast("Letter body copied to clipboard.", "success"),
+      () => showToast("Clipboard write blocked by browser — select + copy manually.", "info"),
+    );
+  } else {
+    showToast("Clipboard API unavailable in this browser.", "info");
+  }
+});
+$("#applicationCoverLetter")?.addEventListener("input", (event) => {
+  renderCoverLetterSections(event.target?.value || "");
+});
+
 $("#frictionClassReclassifyBtn")?.addEventListener("click", async () => {
   const statusEl = $("#frictionClassStatus");
   if (statusEl) statusEl.textContent = "";
@@ -5229,6 +5258,152 @@ function elapsedFooterFor(category, elapsedMs, payload) {
 // "suche …" / "finde …", and the "find a job in <city>" phrasing).
 // Returns null when the message clearly isn't a find intent so the
 // caller can fall back to the JSON endpoint.
+// Phase 2 #80: parse the AI cover-letter output into its 5 sections.
+// The text-shape build_cover_letter_brief_prompt tells the AI to
+// emit ("1. Subject ... 2. Cover letter body ... 3. Editing notes
+// ... 4. Draft assumptions ... 5. Source citations (Quellen)"). The
+// parser splits on those section headers + tolerates the DE-locale
+// "Quellen" alias. Returns {subject, body, editingNotes, assumptions,
+// citations} with empty strings for sections not detected. Fallback:
+// a non-sectioned input returns the whole text as `body` so the UI
+// still renders something useful.
+function parseCoverLetterSections(text) {
+  const empty = {
+    subject: "",
+    body: "",
+    editingNotes: "",
+    assumptions: "",
+    citations: "",
+  };
+  if (!text || !text.trim()) return empty;
+  const markers = [
+    {key: "subject", pattern: /^\s*1\.\s*Subject\s*line[^\n]*$/im},
+    {key: "body", pattern: /^\s*2\.\s*Cover\s*letter\s*body[^\n]*$/im},
+    {key: "editingNotes", pattern: /^\s*3\.\s*Editing\s*notes[^\n]*$/im},
+    {key: "assumptions", pattern: /^\s*4\.\s*Draft\s*assumptions[^\n]*$/im},
+    {
+      key: "citations",
+      pattern: /^\s*(?:5\.\s*Source\s*citations|##\s*Quellen|Quellen\s*\(Source)[^\n]*$/im,
+    },
+  ];
+  const positions = [];
+  for (const {key, pattern} of markers) {
+    const match = text.match(pattern);
+    if (match) {
+      positions.push({
+        key,
+        start: match.index,
+        headerEnd: match.index + match[0].length,
+      });
+    }
+  }
+  if (positions.length === 0) {
+    return {...empty, body: text.trim()};
+  }
+  positions.sort((a, b) => a.start - b.start);
+  const out = {...empty};
+  for (let i = 0; i < positions.length; i++) {
+    const pos = positions[i];
+    const next = positions[i + 1];
+    const slice = next
+      ? text.slice(pos.headerEnd, next.start)
+      : text.slice(pos.headerEnd);
+    out[pos.key] = slice.trim();
+  }
+  return out;
+}
+
+// Phase 2 #80: parse the Source citations block into structured
+// {claim, sources: [{kind, text}]} entries. Lines like:
+//   - "<claim sentence>"
+//     ← [CV] "<excerpt>"
+//     ← [JD] "<excerpt>"
+//   - "<other claim>"
+//     ← [Inference] (assumption)
+// Tolerant of extra whitespace + missing quotes around the
+// claim/excerpt. Returns an array of entries; empty array on empty
+// input.
+function parseCitations(citationsText) {
+  if (!citationsText || !citationsText.trim()) return [];
+  const lines = citationsText.split("\n");
+  const entries = [];
+  let current = null;
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    if (!line) continue;
+    if (line.startsWith("-") || line.startsWith("•") || line.startsWith("*")) {
+      if (current) entries.push(current);
+      const claimText = line.replace(/^[-•*]\s*/, "").replace(/^"|"$/g, "").trim();
+      current = {claim: claimText, sources: []};
+    } else if (line.startsWith("←") || line.startsWith("→")) {
+      const sourceMatch = line.match(/^[←→]\s*\[(CV|JD|Inference)\]\s*(.*)$/);
+      if (sourceMatch && current) {
+        const text = sourceMatch[2].replace(/^"|"$/g, "").trim();
+        current.sources.push({kind: sourceMatch[1], text});
+      }
+    } else if (current && current.sources.length > 0) {
+      // Continuation of the previous source line — append to last source
+      const last = current.sources[current.sources.length - 1];
+      last.text = (last.text + " " + line.replace(/^"|"$/g, "").trim()).trim();
+    }
+  }
+  if (current) entries.push(current);
+  return entries.filter((e) => e.claim || e.sources.length > 0);
+}
+
+// Phase 2 #80: render the parsed sections into the Settings UI
+// panel. Called from renderApplication() + the
+// draft_cover_letter response handler so the panel updates
+// whenever the textarea value changes. Citations are rendered as
+// expandable <details> cards.
+function renderCoverLetterSections(text) {
+  const sections = parseCoverLetterSections(text);
+  const subjectEl = $("#coverLetterSectionSubject");
+  if (subjectEl) subjectEl.textContent = sections.subject || "—";
+  const bodyEl = $("#coverLetterSectionBody");
+  if (bodyEl) bodyEl.textContent = sections.body || "—";
+  const editingEl = $("#coverLetterSectionEditingNotes");
+  if (editingEl) editingEl.textContent = sections.editingNotes || "—";
+  const assumpEl = $("#coverLetterSectionAssumptions");
+  if (assumpEl) assumpEl.textContent = sections.assumptions || "—";
+  const citationsEl = $("#coverLetterCitationsList");
+  if (citationsEl) {
+    const entries = parseCitations(sections.citations);
+    citationsEl.innerHTML = "";
+    if (entries.length === 0) {
+      const li = document.createElement("li");
+      li.className = "muted small";
+      li.textContent = "—";
+      citationsEl.appendChild(li);
+    } else {
+      for (const entry of entries) {
+        const li = document.createElement("li");
+        li.className = "cover-letter-citation";
+        const details = document.createElement("details");
+        const summary = document.createElement("summary");
+        summary.textContent = entry.claim || "(unlabelled claim)";
+        details.appendChild(summary);
+        const ul = document.createElement("ul");
+        ul.className = "cover-letter-citation-sources";
+        for (const src of entry.sources) {
+          const sli = document.createElement("li");
+          const kindTag = document.createElement("span");
+          kindTag.className = `cover-letter-citation-tag cover-letter-citation-tag-${src.kind.toLowerCase()}`;
+          kindTag.textContent = `[${src.kind}]`;
+          const textNode = document.createElement("span");
+          textNode.textContent = " " + src.text;
+          sli.appendChild(kindTag);
+          sli.appendChild(textNode);
+          ul.appendChild(sli);
+        }
+        details.appendChild(ul);
+        li.appendChild(details);
+        citationsEl.appendChild(li);
+      }
+    }
+  }
+}
+
 function parseFindIntent(message, defaultLocation) {
   if (!message) return null;
   let m = String(message).trim();
