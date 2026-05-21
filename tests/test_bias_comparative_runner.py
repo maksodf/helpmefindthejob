@@ -62,6 +62,78 @@ class CallOutcomeRoundtrip(unittest.TestCase):
         self.assertEqual(roundtripped.cost_eur, original.cost_eur)
 
 
+class CachedOllamaRunPresent(unittest.TestCase):
+    """Same contract as CachedDeepSeekRunPresent but for the local
+    Ollama run. Together the two cached runs give the report the
+    cross-provider data it needs."""
+
+    @classmethod
+    def setUpClass(cls):
+        path = REPO_ROOT / "data" / "bias_comparative_cache" / "ollama.jsonl"
+        if not path.exists():
+            raise unittest.SkipTest(
+                f"cached ollama run not present at {path} — "
+                "run `python -m scripts.bias_comparative_report --live --providers ollama` "
+                "to generate (free)"
+            )
+        cls.outcomes = list(_load_cached_outcomes("ollama").values())
+
+    def test_seventy_outcomes(self):
+        self.assertEqual(len(self.outcomes), 70)
+
+    def test_all_outcomes_ok(self):
+        statuses = {o.status for o in self.outcomes}
+        self.assertEqual(statuses, {"ok"})
+
+    def test_per_persona_means_in_plausible_band(self):
+        means = _per_persona_mean(self.outcomes)
+        self.assertEqual(len(means), 7)
+        for slug, mean in means.items():
+            self.assertGreaterEqual(mean, 30, f"persona {slug} mean {mean} too low")
+            self.assertLessEqual(mean, 90, f"persona {slug} mean {mean} too high")
+
+
+class CrossProviderComparativeDataPresent(unittest.TestCase):
+    """The report's value comes from cross-provider comparison. If
+    both DeepSeek and Ollama caches are present, the report MUST
+    contain at least one disagreement cell — otherwise the
+    aggregation is silently broken."""
+
+    def test_at_least_one_disagreement_when_both_caches_present(self):
+        ds_path = REPO_ROOT / "data" / "bias_comparative_cache" / "deepseek.jsonl"
+        ol_path = REPO_ROOT / "data" / "bias_comparative_cache" / "ollama.jsonl"
+        if not (ds_path.exists() and ol_path.exists()):
+            raise unittest.SkipTest("both DeepSeek + Ollama caches required")
+        ds = list(_load_cached_outcomes("deepseek").values())
+        ol = list(_load_cached_outcomes("ollama").values())
+        disagreements = _cross_provider_disagreement(
+            {"deepseek": ds, "ollama": ol}
+        )
+        self.assertGreater(
+            len(disagreements),
+            0,
+            "Both caches present but the report shows zero disagreement — "
+            "either the data is suspiciously identical (re-check cache "
+            "files) or _cross_provider_disagreement is broken",
+        )
+
+    def test_disagreement_rows_carry_both_provider_scores(self):
+        ds_path = REPO_ROOT / "data" / "bias_comparative_cache" / "deepseek.jsonl"
+        ol_path = REPO_ROOT / "data" / "bias_comparative_cache" / "ollama.jsonl"
+        if not (ds_path.exists() and ol_path.exists()):
+            raise unittest.SkipTest("both caches required")
+        ds = list(_load_cached_outcomes("deepseek").values())
+        ol = list(_load_cached_outcomes("ollama").values())
+        rows = _cross_provider_disagreement({"deepseek": ds, "ollama": ol})
+        for row in rows:
+            self.assertIn("deepseek", row["scores"])
+            self.assertIn("ollama", row["scores"])
+            self.assertEqual(
+                row["spread"],
+                abs(row["scores"]["deepseek"] - row["scores"]["ollama"]),
+            )
+
+
 class CachedDeepSeekRunPresent(unittest.TestCase):
     """The cached DeepSeek run lives at
     data/bias_comparative_cache/deepseek.jsonl. The repo ships it
