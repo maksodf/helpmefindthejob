@@ -6224,6 +6224,93 @@ class Handler(BaseHTTPRequestHandler):
                     }
                 )
                 return
+            if parsed.path in ("/transparency", "/transparency.json"):
+                # 4-week plan Invariant 5 (2026-05-21): public
+                # transparency dashboard. Unauthenticated by design —
+                # auditors, journalists, the user themselves, and
+                # potential deployers can all see what this deployment
+                # is doing in aggregate. Every count has ε-DP noise +
+                # k-anonymity suppression applied so the surface can
+                # never re-identify an individual user.
+                from urllib.parse import parse_qs as _parse_qs_t
+
+                from company_discovery import transparency as _transparency
+
+                qs = _parse_qs_t(parsed.query or "")
+                try:
+                    window_days = int((qs.get("window", ["30"])[0] or "30"))
+                    window_days = max(1, min(window_days, 90))
+                except (TypeError, ValueError):
+                    window_days = 30
+                from datetime import datetime as _dt, timedelta as _td, timezone as _tz
+
+                # 60-second TTL cache around the aggregation so a
+                # public-endpoint DoS attempt degrades to "one full
+                # scan per minute" instead of a fresh 20_000-record
+                # walk per request.
+                def _fresh_reader(path):
+                    return _read_ai_act_audit_tail(path, limit=20_000, event_type_filter=None)
+
+                raw_aggregates = _transparency.cached_aggregate_for_path(
+                    DATA_ROOT / "ai_act_audit.log",
+                    window_days=window_days,
+                    fresh_reader=_fresh_reader,
+                )
+                public = _transparency.render_public_aggregates(raw_aggregates)
+                # Cost-saving snapshot — best-effort. If the metrics
+                # log doesn't exist or the module isn't enabled, we
+                # report "metrics not enabled".
+                cost_snapshot: dict[str, Any] | None = None
+                try:
+                    from company_discovery.cost_saving_metrics import CostSavingMetricsLog
+                    from company_discovery import audit_log as _audit_log_mod
+
+                    metrics_path = DATA_ROOT / "cost_saving_metrics.jsonl"
+                    if metrics_path.exists():
+                        cs_log = CostSavingMetricsLog(
+                            metrics_path,
+                            salt=_audit_log_mod.default_emitter().salt,
+                            enabled=True,  # reading is always safe — record() is the gated side
+                        )
+                        cost_snapshot = cs_log.snapshot()
+                except Exception:  # noqa: BLE001 - transparency surface MUST stay up even if metrics read fails
+                    cost_snapshot = None
+                if parsed.path == "/transparency.json":
+                    self.send_json(
+                        {"aiInvocations": public, "costSaving": cost_snapshot},
+                        headers={
+                            "X-Content-Type-Options": "nosniff",
+                            "Cache-Control": "public, max-age=60",
+                            "Referrer-Policy": "no-referrer",
+                        },
+                    )
+                    return
+                html_body = _transparency.render_html(public, cost_saving_snapshot=cost_snapshot)
+                # Bracket the response with the same security-header
+                # discipline the auth pages use: no embedding (X-Frame-
+                # Options DENY), no MIME sniffing, and a strict CSP
+                # that allows only the inline CSS the page ships with
+                # — no scripts, no external resources, no images.
+                # The page's small inline style block is allowlisted
+                # via 'unsafe-inline' on style-src only; script-src
+                # is 'none' so even a future XSS slip can't execute.
+                self.send_response(HTTPStatus.OK)
+                self.send_header("Content-Type", "text/html; charset=utf-8")
+                self.send_header(
+                    "Content-Security-Policy",
+                    "default-src 'none'; "
+                    "style-src 'unsafe-inline'; "
+                    "img-src 'none'; "
+                    "script-src 'none'; "
+                    "base-uri 'none'; "
+                    "frame-ancestors 'none'",
+                )
+                self.send_header("X-Content-Type-Options", "nosniff")
+                self.send_header("Referrer-Policy", "no-referrer")
+                self.send_header("Cache-Control", "public, max-age=60")
+                self.end_headers()
+                self.wfile.write(html_body.encode("utf-8"))
+                return
             if parsed.path == "/api/auth/status":
                 session = self.current_session()
                 # ``hasUsers`` lets the frontend decide whether the

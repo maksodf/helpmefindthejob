@@ -478,12 +478,19 @@ def run_provider(
                 score, reason, gaps = parse_auto_fit_output(content)
                 cost = _estimate_cost_eur(provider_id, ptoks, ctoks)
                 spent_eur += cost
+                # parse_auto_fit_output returns score as a 0-1 float
+                # (or None on parse failure). Convert to 0-100
+                # integer for the report; that's the bands the
+                # methodology tables use.
+                raw_score_int: int | None = None
+                if score is not None:
+                    raw_score_int = max(0, min(100, int(round(score * 100))))
                 outcome = CallOutcome(
                     provider_id=provider_id,
                     persona_slug=persona.slug,
                     scenario_label=scenario.label,
                     status="ok",
-                    raw_score=int(score * 100) if isinstance(score, float) else (int(score) if score is not None else None),
+                    raw_score=raw_score_int,
                     raw_reason=(reason or "")[:200] or None,
                     raw_gaps=list(gaps or [])[:5],
                     cost_eur=cost,
