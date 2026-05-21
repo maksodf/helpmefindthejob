@@ -239,6 +239,16 @@ class AuditLogEmitter:
         # detect that as a chain break — fail-loud, not silent.
         # The Article 12 audit log is not a high-throughput
         # telemetry surface; single-writer is the correct trade.
+        #
+        # Lock contract: we hold _lock for the ENTIRE write — the
+        # chain-state load is included so two concurrent first-
+        # writes can't both compute sequence_no=N+1 from a fresh
+        # cache. The load is O(records_in_all_files) so on first
+        # write after restart of a long-running deployment (>1GB
+        # of rotated logs) this can take seconds. That's an
+        # acceptable trade for chain integrity — losing the chain
+        # would invalidate every regulator audit, while a 5-second
+        # blip after restart is recoverable.
         try:
             with self._lock:
                 if not self._chain_loaded:

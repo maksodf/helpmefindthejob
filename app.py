@@ -1947,6 +1947,15 @@ class AppState:
 
         profile = self.profile_for(user_id)
         user_record = self.auth_store.get_user(user_id)
+        # Quality-audit (2026-05-21): the previous version silently
+        # returned None on partial-load failure. That violates GDPR
+        # Article 12 transparency — a regulator reading the export
+        # would have no way to know whether a category was empty by
+        # design (the user has none) or absent due to load failure.
+        # The export now carries an ``_exportWarnings`` list so the
+        # operator can see which categories degraded + why.
+        export_warnings: list[dict[str, Any]] = []
+
         # CV-builder sections live in an in-memory session dict; if
         # the user opened the builder, the structured sections are
         # available via to_dict(). Empty dict means the builder
@@ -1954,20 +1963,41 @@ class AppState:
         try:
             cv_state = self.cv_builder_state_for(user_id)
             cv_sections = cv_state.to_dict()
-        except Exception:  # noqa: BLE001 - Case E best-effort: a corrupt CV-builder state must not block the entire export
+        except Exception as exc:  # noqa: BLE001 - failure must not block the whole export, but it MUST be recorded
             cv_sections = None
+            export_warnings.append(
+                {
+                    "category": "cvSections",
+                    "code": "load_failed",
+                    "detail": f"{type(exc).__name__}: {exc}"[:200],
+                }
+            )
         try:
             chat_session = self.chat_session_for(user_id)
             chat_history = [
                 {"role": t.role, "content": t.content}
                 for t in (chat_session.history or [])
             ]
-        except Exception:  # noqa: BLE001 - Case E best-effort: chat-history failure must not block GDPR export
+        except Exception as exc:  # noqa: BLE001 - same rationale as cvSections
             chat_history = []
+            export_warnings.append(
+                {
+                    "category": "chatHistory",
+                    "code": "load_failed",
+                    "detail": f"{type(exc).__name__}: {exc}"[:200],
+                }
+            )
         try:
             journey_state = self._journey_load(user_id).to_dict()
-        except Exception:  # noqa: BLE001 - Case E best-effort: a malformed journey must not block GDPR export
+        except Exception as exc:  # noqa: BLE001 - same rationale
             journey_state = None
+            export_warnings.append(
+                {
+                    "category": "journeyState",
+                    "code": "load_failed",
+                    "detail": f"{type(exc).__name__}: {exc}"[:200],
+                }
+            )
         return {
             "schemaVersion": EXPORT_SCHEMA_VERSION,
             "exportedAt": now_utc().isoformat(),
@@ -2044,6 +2074,14 @@ class AppState:
             ],
             "pushSubscriptions": self.repository.list_push_subscriptions(user_id),
             "workspaceMemberships": self.repository.list_workspace_memberships(user_id),
+            # Quality-audit transparency surface (2026-05-21): any
+            # category that failed to load is listed here with the
+            # exception class + truncated detail. Empty list means
+            # the export is complete. Required for GDPR Article 12
+            # transparency — the data subject + a regulator must be
+            # able to tell apart "category empty by design" from
+            # "category failed to load".
+            "_exportWarnings": export_warnings,
         }
 
     def import_data(self, user_id: str, payload: dict[str, Any]) -> dict[str, Any]:

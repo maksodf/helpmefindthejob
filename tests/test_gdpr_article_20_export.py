@@ -157,6 +157,39 @@ class Article20ExportContract(unittest.TestCase):
         self.assertNotIn("bob-secret-message", alice_flat)
         self.assertNotIn("bob@example.com", alice_flat)
 
+    def test_export_carries_warnings_field_empty_on_clean_load(self) -> None:
+        """Quality-audit transparency surface: every export carries
+        _exportWarnings, empty when nothing failed to load."""
+        out = self.state.export_data(self.alice_id)
+        self.assertIn("_exportWarnings", out)
+        self.assertEqual(out["_exportWarnings"], [])
+
+    def test_export_warnings_populated_on_partial_load_failure(self) -> None:
+        """If a category fails to load, the export must record
+        WHY in _exportWarnings — never silently drop. A regulator
+        reading the export needs to tell apart 'no data' from
+        'data not loaded'."""
+        # Force the journey loader to raise
+        original_journey_load = self.state._journey_load
+        def _broken_journey(uid):
+            raise RuntimeError("simulated journey corruption")
+        self.state._journey_load = _broken_journey
+        try:
+            out = self.state.export_data(self.alice_id)
+        finally:
+            self.state._journey_load = original_journey_load
+        warnings = out["_exportWarnings"]
+        # Exactly one warning for journeyState
+        journey_warnings = [w for w in warnings if w["category"] == "journeyState"]
+        self.assertEqual(len(journey_warnings), 1)
+        self.assertEqual(journey_warnings[0]["code"], "load_failed")
+        self.assertIn("simulated journey corruption", journey_warnings[0]["detail"])
+        # journeyState itself is None — but the rest of the export
+        # is intact (no cascading failure)
+        self.assertIsNone(out["journeyState"])
+        self.assertIsNotNone(out["user"])
+        self.assertIsNotNone(out["profile"])
+
     def test_export_works_for_minimal_user_with_no_data(self) -> None:
         # A fresh user with no seeded data should still get a
         # well-formed export — the user has the right to KNOW that

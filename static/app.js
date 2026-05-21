@@ -2811,6 +2811,71 @@ function renderTotpCard() {
       }
     });
     host.append(disableBtn);
+
+    // Quality-audit (2026-05-21): surface remaining-recovery-codes
+    // count + a regenerate button so the user can refresh their
+    // codes BEFORE running out. Without this, the backend
+    // count_remaining_recovery_codes endpoint and the
+    // regenerate-recovery-codes endpoint are unreachable from
+    // the UI — half-finished features.
+    const remaining = Number(state.auth?.user?.recoveryCodesRemaining ?? 0);
+    const codeStatus = document.createElement("p");
+    codeStatus.className = "muted small";
+    if (remaining === 0) {
+      codeStatus.textContent = t(
+        "settings.totp.codesGone",
+        "No recovery codes left. Regenerate now so you can sign in if you lose your device.",
+      );
+      codeStatus.style.color = "var(--danger, #c0392b)";
+    } else if (remaining <= 2) {
+      codeStatus.textContent = t(
+        "settings.totp.codesLow",
+        `Only ${remaining} recovery code${remaining === 1 ? "" : "s"} left. Regenerate to refill the set.`,
+      );
+      codeStatus.style.color = "var(--warning, #d68910)";
+    } else {
+      codeStatus.textContent = t(
+        "settings.totp.codesOk",
+        `${remaining} recovery codes remaining.`,
+      );
+    }
+    host.append(codeStatus);
+
+    const regenBtn = document.createElement("button");
+    regenBtn.type = "button";
+    regenBtn.className = "btn";
+    regenBtn.textContent = t(
+      "settings.totp.regenerateBtn",
+      "Regenerate recovery codes",
+    );
+    regenBtn.addEventListener("click", async () => {
+      const password = window.prompt(
+        t(
+          "settings.totp.regeneratePrompt",
+          "Enter your password to issue 8 fresh recovery codes. The old codes will stop working immediately.",
+        ),
+      );
+      if (!password) return;
+      try {
+        const result = await api("/api/auth/totp/regenerate-recovery-codes", {
+          method: "POST",
+          body: JSON.stringify({ password }),
+        });
+        if (state.auth?.user) state.auth.user.recoveryCodesRemaining = 8;
+        const codes = result.recoveryCodes || [];
+        // Show codes ONCE — they're plaintext and never re-fetchable
+        window.alert(
+          t(
+            "settings.totp.regenerateDone",
+            "New recovery codes (save these somewhere safe — they cannot be shown again):\n\n",
+          ) + codes.join("\n"),
+        );
+        renderTotpCard();
+      } catch (error) {
+        showToast(error.message, "error");
+      }
+    });
+    host.append(regenBtn);
     return;
   }
   const enableBtn = document.createElement("button");

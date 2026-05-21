@@ -54,9 +54,14 @@ def _extract_preserve_helpers() -> str:
     snippets: list[str] = []
     # The three functions are declared at module scope as
     # ``function name(...) { ... }``. Match each one's full body.
-    for name in ("preservePendingWrite", "getPendingDiskFullWrites", "clearPendingDiskFullWrites"):
+    for name in (
+        "preservePendingWrite",
+        "getPendingDiskFullWrites",
+        "clearPendingDiskFullWrites",
+        "retryPendingDiskFullWrites",
+    ):
         match = re.search(
-            r"^function " + re.escape(name) + r"\([^)]*\)\s*\{",
+            r"^(?:async\s+)?function " + re.escape(name) + r"\([^)]*\)\s*\{",
             source,
             re.MULTILINE,
         )
@@ -210,6 +215,125 @@ class CaseBFrontendContract(unittest.TestCase):
             "process.stdout.write(JSON.stringify({len: getPendingDiskFullWrites().length}));\n"
         )
         self.assertEqual(out["len"], 0)
+
+
+class CaseBRetryContract(unittest.TestCase):
+    """Quality-audit (2026-05-21): the preserve queue is useless
+    without a replay path. retryPendingDiskFullWrites walks the
+    queue and re-issues each request. These tests pin its
+    behaviour using a stubbed global fetch() so we control the
+    response per call."""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        try:
+            result = subprocess.run(
+                ["node", "--version"], capture_output=True, text=True, timeout=5
+            )
+            if result.returncode != 0:
+                raise unittest.SkipTest("node not available")
+        except (FileNotFoundError, subprocess.TimeoutExpired):
+            raise unittest.SkipTest("node not available")
+        cls.helpers_js = _extract_preserve_helpers()
+
+    def _run_retry(self, queue_body: str, fetch_stub_js: str) -> dict:
+        """Set up the queue + stub fetch + invoke retry. Returns
+        the JSON result printed to stdout."""
+        prelude = (
+            "const __store = {};\n"
+            "global.sessionStorage = {\n"
+            "  getItem: (k) => (k in __store ? __store[k] : null),\n"
+            "  setItem: (k, v) => { __store[k] = String(v); },\n"
+            "  removeItem: (k) => { delete __store[k]; },\n"
+            "};\n"
+            "global.window = {};\n"
+            # state with no csrfToken — retry tolerates this
+            "global.state = { auth: { user: null } };\n"
+            f"global.fetch = {fetch_stub_js};\n"
+        )
+        prog = (
+            prelude
+            + self.helpers_js
+            + "\n"
+            + queue_body
+            + "\n"
+            + "retryPendingDiskFullWrites().then(r => {\n"
+            + "  const remaining = getPendingDiskFullWrites();\n"
+            + "  process.stdout.write(JSON.stringify({...r, remainingQueue: remaining}));\n"
+            + "});\n"
+        )
+        result = subprocess.run(
+            ["node", "-e", prog],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        if result.returncode != 0:
+            raise AssertionError(
+                f"Node exited {result.returncode}; stderr:\n{result.stderr}"
+            )
+        return json.loads(result.stdout or "{}")
+
+    def test_retry_drains_queue_when_all_succeed(self) -> None:
+        out = self._run_retry(
+            queue_body=(
+                'preservePendingWrite("/api/a", "POST", "{}");\n'
+                'preservePendingWrite("/api/b", "POST", "{}");\n'
+            ),
+            fetch_stub_js="async () => ({ ok: true, status: 200 })",
+        )
+        self.assertEqual(out["retried"], 2)
+        self.assertEqual(out["succeeded"], 2)
+        self.assertEqual(out["stillQueued"], 0)
+        self.assertEqual(out["remainingQueue"], [])
+
+    def test_retry_keeps_507_disk_full_entries(self) -> None:
+        out = self._run_retry(
+            queue_body=(
+                'preservePendingWrite("/api/x", "POST", "{}");\n'
+                'preservePendingWrite("/api/y", "POST", "{}");\n'
+            ),
+            fetch_stub_js="async () => ({ ok: false, status: 507 })",
+        )
+        self.assertEqual(out["retried"], 2)
+        self.assertEqual(out["succeeded"], 0)
+        self.assertEqual(out["stillQueued"], 2)
+
+    def test_retry_drops_other_4xx_entries(self) -> None:
+        """A 400/403/404 means the request is permanently bad
+        (stale data, missing route, no CSRF). No point retrying."""
+        out = self._run_retry(
+            queue_body='preservePendingWrite("/api/dead", "POST", "{}");\n',
+            fetch_stub_js="async () => ({ ok: false, status: 403 })",
+        )
+        self.assertEqual(out["retried"], 1)
+        self.assertEqual(out["succeeded"], 0)
+        self.assertEqual(out["stillQueued"], 0)
+
+    def test_retry_keeps_5xx_other_than_507_entries(self) -> None:
+        """A 500/503 is transient; keep for next retry."""
+        out = self._run_retry(
+            queue_body='preservePendingWrite("/api/transient", "POST", "{}");\n',
+            fetch_stub_js="async () => ({ ok: false, status: 503 })",
+        )
+        self.assertEqual(out["stillQueued"], 1)
+
+    def test_retry_keeps_network_failure_entries(self) -> None:
+        """A fetch reject (network down) keeps the entry on queue."""
+        out = self._run_retry(
+            queue_body='preservePendingWrite("/api/x", "POST", "{}");\n',
+            fetch_stub_js='async () => { throw new Error("network down"); }',
+        )
+        self.assertEqual(out["stillQueued"], 1)
+
+    def test_retry_with_empty_queue_returns_zeroes(self) -> None:
+        out = self._run_retry(
+            queue_body="",
+            fetch_stub_js="async () => ({ ok: true, status: 200 })",
+        )
+        self.assertEqual(out["retried"], 0)
+        self.assertEqual(out["succeeded"], 0)
+        self.assertEqual(out["stillQueued"], 0)
 
 
 if __name__ == "__main__":
