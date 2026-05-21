@@ -7176,7 +7176,26 @@ class Handler(BaseHTTPRequestHandler):
                     self.send_error_json(HTTPStatus.BAD_REQUEST, str(error), str(error))
                     return
                 STATE.log_analytics(user_id, "totp_enabled", {})
-                self.send_json({"status": "enabled", "recoveryCodes": recovery_codes})
+                # Phase 2 #48 (2026-05-21): confirm_totp_enrollment
+                # invalidated all sessions including the current one
+                # to defend against compromised-cookie persistence.
+                # Re-issue a fresh session for the current device so
+                # the user isn't bounced to login immediately after
+                # enabling 2FA. The new session covers a freshly-
+                # authenticated user.
+                user = STATE.auth_store.get_user(user_id)
+                new_session = STATE.auth_store.create_session(user)
+                max_age = int((new_session.expires_at - now_utc()).total_seconds())
+                self.send_json(
+                    {
+                        "status": "enabled",
+                        "recoveryCodes": recovery_codes,
+                        "user": make_user_payload(user, new_session.csrf_token),
+                    },
+                    headers={
+                        "Set-Cookie": session_cookie_header(new_session.token, max_age)
+                    },
+                )
                 return
 
             if parsed.path == "/api/auth/totp/disable":
@@ -7187,7 +7206,19 @@ class Handler(BaseHTTPRequestHandler):
                     self.send_error_json(HTTPStatus.FORBIDDEN, str(error), str(error))
                     return
                 STATE.log_analytics(user_id, "totp_disabled", {})
-                self.send_json({"status": "disabled"})
+                # Phase 2 #48: same re-issue pattern as totp/confirm.
+                user = STATE.auth_store.get_user(user_id)
+                new_session = STATE.auth_store.create_session(user)
+                max_age = int((new_session.expires_at - now_utc()).total_seconds())
+                self.send_json(
+                    {
+                        "status": "disabled",
+                        "user": make_user_payload(user, new_session.csrf_token),
+                    },
+                    headers={
+                        "Set-Cookie": session_cookie_header(new_session.token, max_age)
+                    },
+                )
                 return
 
             if parsed.path == "/api/admin/users":

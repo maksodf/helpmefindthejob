@@ -715,7 +715,17 @@ class AuthStore:
 
     def confirm_totp_enrollment(self, user_id: str, code: str) -> list[str]:
         """Verify the supplied code and, on success, persist 8 recovery codes
-        (returning the *plaintext* codes so they can be shown once)."""
+        (returning the *plaintext* codes so they can be shown once).
+
+        Phase 2 #48 (2026-05-21): on successful enrollment, invalidate
+        ALL of the user's other sessions. The threat model: if an
+        attacker has compromised a session, the victim enabling 2FA
+        is the natural defensive response. Without bulk-invalidation,
+        the attacker's session would survive 2FA enrollment because
+        it doesn't require re-auth. We deliberately invalidate the
+        current session too — the caller is expected to re-issue
+        a fresh session for the current device.
+        """
 
         import json
 
@@ -735,6 +745,7 @@ class AuthStore:
             (json.dumps(hashed), user_id),
         )
         self.connection.commit()
+        self.delete_user_sessions(user_id)
         return plaintext_codes
 
     def verify_user_totp(self, user_id: str, code: str) -> bool:
@@ -1091,7 +1102,13 @@ class AuthStore:
 
     def disable_totp(self, user_id: str, password: str) -> None:
         """Turn off 2FA. Requires password verification to prevent a
-        stolen session from silently disabling 2FA."""
+        stolen session from silently disabling 2FA.
+
+        Phase 2 #48 (2026-05-21): on successful disable, invalidate
+        all other sessions. Disabling 2FA is an auth-sensitive
+        change; other sessions should re-authenticate so a stolen
+        cookie from before the disable can't keep working.
+        """
 
         row = self.connection.execute(
             "SELECT password_hash FROM users WHERE id = ?", (user_id,)
@@ -1103,6 +1120,7 @@ class AuthStore:
             (user_id,),
         )
         self.connection.commit()
+        self.delete_user_sessions(user_id)
 
     def update_user(
         self,
@@ -1133,7 +1151,18 @@ class AuthStore:
                 (new_role, 1 if new_active else 0, hash_password(password), user_id),
             )
         self.connection.commit()
-        if password is not None or not new_active:
+        # Phase 2 #48 (2026-05-21): session-invalidation completeness.
+        # Invalidate all sessions when ANY of the following change:
+        # - password (existing behaviour)
+        # - active=False (existing behaviour — deactivated account)
+        # - role (NEW — demoting an admin must immediately revoke
+        #   the admin-scoped session the demoted user still holds;
+        #   otherwise they keep admin powers until token expiry)
+        if (
+            password is not None
+            or not new_active
+            or new_role != user.role
+        ):
             self.delete_user_sessions(user_id)
         return self.get_user(user_id)
 

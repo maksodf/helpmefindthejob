@@ -319,6 +319,14 @@ class HttpAdminExtrasTests(unittest.TestCase):
             body={"role": "admin"},
         )
         self.assertEqual(code, 200)
+        # Phase 2 #48 (2026-05-21): role changes now invalidate all
+        # of the user's sessions (security: a demoted admin must not
+        # retain admin-scoped powers via cached cookies). That means
+        # self.admin's cookie is dead now. Re-login so other test
+        # methods in this class still have a valid admin session.
+        self.admin.cookie = None
+        self.admin.csrf = ""
+        self.admin.login("admin@example.com", "very-secure-admin-pass-9")
 
 
 if __name__ == "__main__":
