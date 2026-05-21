@@ -426,6 +426,90 @@ class EndToEndMeshWalk(unittest.TestCase):
                 f"{label} agent did not record {expected_event}",
             )
 
+    def test_yusuf_blue_card_walk(self):
+        """Yusuf scenario: §4 AsylG engineering pathway + Munich
+        Blue Card housing + social-services NOT matched (above
+        Bürgergeld threshold)."""
+        # Anerkennung
+        decision = _post_json(
+            f"http://127.0.0.1:{self.anerkennung_port}/v1/verify-credential",
+            {
+                "userId": "test-yusuf",
+                "qualificationField": "Electrical Engineering",
+                "countryOfOrigin": "Syria",
+                "residencyStatus": "§ 4 AsylG",
+            },
+        )["decision"]
+        self.assertEqual(decision["pathway"], "engineering_paragraph_4_asylg")
+        # Housing — Munich Blue Card cohort
+        intake = _post_json(
+            f"http://127.0.0.1:{self.housing_port}/v1/intake",
+            {
+                "referral": _aicha_referral(
+                    "housing-agent",
+                    "needs_housing_munich",
+                    {"city": "munich", "residency_status": "Blue Card"},
+                )
+            },
+        )["intake"]
+        self.assertEqual(intake["cohort"], "munich_blue_card")
+        # Social — must NOT match the §16d cohort (Yusuf is yusuf, not aicha)
+        rec = _post_json(
+            f"http://127.0.0.1:{self.social_port}/v1/eligibility-check",
+            {
+                "profile": {
+                    "userId": "test-yusuf",
+                    "frictionClass": "yusuf",
+                    "residencyStatus": "Blue Card",
+                    "hasChildren": False,
+                }
+            },
+        )["recommendation"]
+        # Falls through to default — that's the correct civic-tech outcome
+        self.assertEqual(rec["cohort"], "default_unmatched")
+
+    def test_olga_family_walk(self):
+        """Olga scenario: §24 Ukraine medicine + Hamburg family
+        housing + Bürgergeld + Kinderzuschlag."""
+        # Anerkennung
+        decision = _post_json(
+            f"http://127.0.0.1:{self.anerkennung_port}/v1/verify-credential",
+            {
+                "userId": "test-olga",
+                "qualificationField": "General Medicine",
+                "countryOfOrigin": "Ukraine",
+                "residencyStatus": "§24 Ukraine",
+            },
+        )["decision"]
+        self.assertEqual(decision["pathway"], "medicine_paragraph_24_ukraine")
+        # Housing
+        intake = _post_json(
+            f"http://127.0.0.1:{self.housing_port}/v1/intake",
+            {
+                "referral": _aicha_referral(
+                    "housing-agent",
+                    "needs_housing_hamburg_family",
+                    {"city": "hamburg", "residency_status": "§24", "family_size": 3},
+                )
+            },
+        )["intake"]
+        self.assertEqual(intake["cohort"], "hamburg_paragraph_24_ukraine")
+        # Social with family
+        rec = _post_json(
+            f"http://127.0.0.1:{self.social_port}/v1/eligibility-check",
+            {
+                "profile": {
+                    "userId": "test-olga",
+                    "frictionClass": "olga",
+                    "residencyStatus": "§24 Ukraine",
+                    "hasChildren": True,
+                }
+            },
+        )["recommendation"]
+        self.assertEqual(rec["cohort"], "olga_paragraph_24_family")
+        # Family-bracket recommendation includes Kinderzuschlag
+        self.assertIn("Kinderzuschlag", rec["primaryBenefit"])
+
     def test_invalid_referral_is_rejected_by_housing_agent(self):
         bad_ref = _aicha_referral("housing-agent", "x", {})
         del bad_ref["userId"]
