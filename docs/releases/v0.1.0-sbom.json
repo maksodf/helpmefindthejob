@@ -2329,7 +2329,16 @@
       "name": "pywebpush",
       "purl": "pkg:pypi/pywebpush@1.14.0",
       "type": "library",
-      "version": "1.14.0"
+      "version": "1.14.0",
+      "licenses": [
+        {
+          "license": {
+            "acknowledgement": "concluded",
+            "id": "MPL-2.0",
+            "url": "https://www.mozilla.org/en-US/MPL/2.0/"
+          }
+        }
+      ]
     },
     {
       "bom-ref": "pyyaml_env_tag==1.1",
