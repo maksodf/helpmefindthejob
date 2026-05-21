@@ -9755,14 +9755,22 @@ class Handler(BaseHTTPRequestHandler):
                                 job.gaps = gaps
                             STATE.repository.save_discovered_job(job)
                             STATE.maybe_notify_slack(user_id, job)
-                    outcomes.append(
-                        {
-                            "discoveredJobId": job.id,
-                            "status": res.status,
-                            "score": job.auto_fit_score,
-                            "error": res.error or None,
-                        }
-                    )
+                    outcome = {
+                        "discoveredJobId": job.id,
+                        "status": res.status,
+                        "score": job.auto_fit_score,
+                        "error": res.error or None,
+                    }
+                    # Invariant 9 (no-AI fallback completeness): when
+                    # the batch hits a manual-mode handoff, surface
+                    # the prompt so the user can actually do the
+                    # copy/paste handoff. Without this, the batch is
+                    # unusable for manual-mode deployers — they'd
+                    # see a list of "handoff_required" statuses with
+                    # no prompts to act on.
+                    if res.status == "handoff_required" and getattr(res, "prompt", None):
+                        outcome["prompt"] = res.prompt
+                    outcomes.append(outcome)
                 STATE.log_analytics(
                     user_id,
                     "auto_fit_batch",
