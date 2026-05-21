@@ -3748,3 +3748,112 @@ details[open] .collapsible-chevron { transform: rotate(180deg); }
   /* Sidebar nav: hide labels, show only icons on the narrowest phones.
      The user toggles via the menu button (already present). */
 }
+
+/* ============================================================
+ * RTL scaffolding (4-week plan invariant 15)
+ *
+ * When the locale registry marks a locale as RTL (Arabic is the
+ * Phase 1 case), the JS layer sets `html[dir="rtl"]`. These
+ * overrides flip the layout-critical properties so the UI works
+ * end-to-end in RTL from day one.
+ *
+ * Strategy: small, targeted overrides rather than a full logical-
+ * property refactor of all 3700+ lines. As translator coverage
+ * lands, individual components can opt into more refined RTL via
+ * `[dir="rtl"]` selectors. The defaults here keep RTL functional
+ * (readable, navigable, no broken alignment) even before any
+ * locale-specific polish.
+ *
+ * Future work: convert margin-left / padding-left / left / right
+ * to margin-inline-start / padding-inline-start / inset-inline-*
+ * so the cascade auto-flips. That's a Phase 2 refactor scoped
+ * separately. The block here is the bridge until that lands.
+ */
+
+html[dir="rtl"] {
+  /* Default text-align flip for the document */
+  text-align: right;
+}
+
+html[dir="rtl"] body,
+html[dir="rtl"] .app-shell,
+html[dir="rtl"] .panel,
+html[dir="rtl"] .card,
+html[dir="rtl"] .chat-message,
+html[dir="rtl"] .job-card,
+html[dir="rtl"] .company-card {
+  text-align: right;
+}
+
+/* Flex direction: the sidebar nav lives on the right in RTL */
+html[dir="rtl"] .app-shell {
+  flex-direction: row-reverse;
+}
+
+/* Form inputs: align text right but keep number / tel / url
+ * inputs LTR per Unicode bidi rules (numbers + URLs are
+ * inherently LTR even in RTL UIs). */
+html[dir="rtl"] input[type="text"],
+html[dir="rtl"] input[type="search"],
+html[dir="rtl"] input[type="email"],
+html[dir="rtl"] input[type="password"],
+html[dir="rtl"] textarea,
+html[dir="rtl"] select {
+  text-align: right;
+  direction: rtl;
+}
+html[dir="rtl"] input[type="number"],
+html[dir="rtl"] input[type="tel"],
+html[dir="rtl"] input[type="url"],
+html[dir="rtl"] code,
+html[dir="rtl"] pre,
+html[dir="rtl"] .audit-log-entry code,
+html[dir="rtl"] .ai-prompt-block {
+  direction: ltr;
+  text-align: left;
+}
+
+/* Icons that face a direction (chevrons, arrows): mirror them */
+html[dir="rtl"] .icon-chevron-right,
+html[dir="rtl"] .icon-arrow-right,
+html[dir="rtl"] .icon-back,
+html[dir="rtl"] .icon-forward {
+  transform: scaleX(-1);
+}
+
+/* Lists: bullet positioning works because list-style-position is
+ * outside by default and the browser handles it; we only need to
+ * shift the indent. */
+html[dir="rtl"] ul,
+html[dir="rtl"] ol {
+  padding-right: 1.5em;
+  padding-left: 0;
+}
+
+/* Notifications + toasts: anchor to the inline-start (left in
+ * LTR, right in RTL) so they don't collide with the scroll edge */
+html[dir="rtl"] .toast,
+html[dir="rtl"] .notification {
+  right: auto;
+  left: 1rem;
+}
+
+/* Sidebar (#side-nav) lives on the right in RTL */
+html[dir="rtl"] #side-nav,
+html[dir="rtl"] .sidebar {
+  border-left: 1px solid var(--border-color, #e0e0e0);
+  border-right: none;
+}
+
+/* Tables: keep numeric columns LTR (numbers read left-to-right
+ * universally), but flip header alignment to right */
+html[dir="rtl"] table th,
+html[dir="rtl"] table td {
+  text-align: right;
+}
+html[dir="rtl"] table td.numeric,
+html[dir="rtl"] table td.tabular,
+html[dir="rtl"] table td[data-numeric="true"] {
+  text-align: left;
+  direction: ltr;
+}

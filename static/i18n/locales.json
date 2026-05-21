@@ -1,0 +1,65 @@
+{
+  "$schema-comment": "Locale registry for the multilingual scaffolding (4-week plan invariant 15). Each entry describes one locale the project can render in. Adding a new locale = (1) add an entry here, (2) drop a translation JSON at static/i18n/<code>.json. No app-code changes needed — the registry drives locale selection, direction (LTR/RTL), and the language-picker UI.",
+  "version": "1.0.0",
+  "default": "en",
+  "locales": [
+    {
+      "code": "en",
+      "name": "English",
+      "endonym": "English",
+      "direction": "ltr",
+      "status": "shipped",
+      "translationCoverage": 1.0,
+      "fallback": null
+    },
+    {
+      "code": "de",
+      "name": "German",
+      "endonym": "Deutsch",
+      "direction": "ltr",
+      "status": "shipped",
+      "translationCoverage": 1.0,
+      "fallback": "en"
+    },
+    {
+      "code": "ar",
+      "name": "Arabic",
+      "endonym": "العربية",
+      "direction": "rtl",
+      "status": "planned",
+      "translationCoverage": 0.0,
+      "fallback": "en",
+      "rationaleNote": "Highest-priority post-grant locale: Aïcha persona + significant share of Anerkennung migration pathway users. RTL infrastructure landed in W3 D15 so translators can plug strings in via Weblate without app-code changes."
+    },
+    {
+      "code": "uk",
+      "name": "Ukrainian",
+      "endonym": "Українська",
+      "direction": "ltr",
+      "status": "planned",
+      "translationCoverage": 0.0,
+      "fallback": "en",
+      "rationaleNote": "Olga persona — §24 Aufenthaltsgesetz Ukraine. Pluralisation is complex (3 forms); the Intl.PluralRules path handles it correctly without per-locale code."
+    },
+    {
+      "code": "tr",
+      "name": "Turkish",
+      "endonym": "Türkçe",
+      "direction": "ltr",
+      "status": "planned",
+      "translationCoverage": 0.0,
+      "fallback": "en",
+      "rationaleNote": "Yusuf persona + large Turkish-speaking labour-market cohort in Germany. Agglutinative morphology — translators may need longer keys; the loader handles arbitrary key length."
+    },
+    {
+      "code": "ro",
+      "name": "Romanian",
+      "endonym": "Română",
+      "direction": "ltr",
+      "status": "planned",
+      "translationCoverage": 0.0,
+      "fallback": "en",
+      "rationaleNote": "Maria persona — EU intra-mobility cohort. Pluralisation has 3 forms (one, few, other) — same scaffolding as Ukrainian handles it."
+    }
+  ]
+}

@@ -1,0 +1,38 @@
+# Weblate configuration for helpmefindthejob (4-week plan invariant 15).
+#
+# Weblate is the community translation platform of choice for many
+# civic-tech and FLOSS projects. This config lets translators join via
+# https://hosted.weblate.org/projects/helpmefindthejob/ without
+# touching git directly — Weblate commits + pushes via a project token
+# that has scoped write access to static/i18n/<locale>.json files only.
+#
+# This file is the .weblate-style INI consumed by `wlc` (the Weblate
+# command-line client). Maintainer workflow:
+#
+#   wlc                       # show project status
+#   wlc list-translations     # per-locale completion %
+#   wlc pull                  # fetch latest translator commits
+#   wlc commit                # push local changes upstream
+#
+# Project setup (one-time):
+#   1. Operator creates project at https://hosted.weblate.org/create/
+#   2. Add component "frontend":
+#        file mask: static/i18n/*.json
+#        template:  static/i18n/en.json
+#        format:    JSON (i18next)
+#   3. Configure repo: this GitHub repo via the Weblate App.
+#   4. Token: store in WEBLATE_API_KEY (operator's local env), used
+#      by `wlc` to authenticate. Never commit.
+#
+# Translator workflow (no git needed):
+#   1. Sign up at https://hosted.weblate.org
+#   2. Pick a language at /projects/helpmefindthejob/frontend/
+#   3. Translate strings inline; Weblate validates the JSON
+#   4. Commits roll up + appear as PRs against this repo
+
+[weblate]
+url = https://hosted.weblate.org/api/
+
+[component "frontend"]
+slug = frontend
+project = helpmefindthejob

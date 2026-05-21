@@ -104,9 +104,17 @@ PRESERVED_TERMS: tuple[str, ...] = (
 
 
 def _locale_bundles() -> dict[str, dict[str, str]]:
-    """Load every ``static/i18n/*.json`` keyed by locale code."""
+    """Load every ``static/i18n/*.json`` keyed by locale code.
+
+    Excludes ``locales.json`` — that file is the W3 D15 multilingual-
+    scaffolding registry (locale codes + directions + statuses), not a
+    translation bundle. It has its own shape contract pinned in
+    :mod:`tests.test_multilingual_scaffolding`."""
+
     bundles: dict[str, dict[str, str]] = {}
     for path in sorted(I18N_DIR.glob("*.json")):
+        if path.name == "locales.json":
+            continue
         bundles[path.stem] = json.loads(path.read_text(encoding="utf-8"))
     return bundles
 

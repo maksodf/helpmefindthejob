@@ -2073,38 +2073,146 @@ function applyTheme(theme) {
   if (select) select.value = state.theme;
 }
 
+// Locale registry — fetched once at boot from /i18n/locales.json.
+// Drives the supported-locale list, the direction (LTR/RTL) per
+// locale, and the fallback chain. Keep this in sync with
+// static/i18n/locales.json — the runtime defaults below are a
+// minimal fallback if the registry can't be fetched.
+let _localeRegistry = null;
+const _LOCALE_REGISTRY_FALLBACK = {
+  default: "en",
+  locales: [
+    { code: "en", direction: "ltr", status: "shipped", fallback: null },
+    { code: "de", direction: "ltr", status: "shipped", fallback: "en" },
+  ],
+};
+
+async function loadLocaleRegistry() {
+  if (_localeRegistry) return _localeRegistry;
+  try {
+    const cacheBust = state.appVersion ? `?v=${encodeURIComponent(state.appVersion)}` : "";
+    const response = await fetch(`/i18n/locales.json${cacheBust}`);
+    if (response.ok) {
+      _localeRegistry = await response.json();
+      return _localeRegistry;
+    }
+  } catch (_) {}
+  _localeRegistry = _LOCALE_REGISTRY_FALLBACK;
+  return _localeRegistry;
+}
+
+function _lookupLocale(registry, code) {
+  return (registry.locales || []).find((l) => l.code === code) || null;
+}
+
 async function loadLocale(locale) {
   const target = (locale || "en").toLowerCase();
-  if (target !== "en" && target !== "de") {
-    state.locale = "en";
+  const registry = await loadLocaleRegistry();
+  const entry = _lookupLocale(registry, target);
+
+  // Reject unknown locales — fall back to default.
+  if (!entry) {
+    state.locale = registry.default || "en";
     state.translations = {};
+    _applyLocaleDirection(registry, state.locale);
     applyTranslations();
     return;
   }
-  if (target === "en") {
-    state.locale = "en";
+
+  // Planned but not-yet-shipped locales: load whatever translations
+  // do exist so partial coverage is usable (Weblate-driven contribs
+  // can ship incrementally). Missing keys fall through to the
+  // English baseline via t().
+  if (entry.status !== "shipped" && entry.status !== "planned") {
+    state.locale = registry.default || "en";
     state.translations = {};
+    _applyLocaleDirection(registry, state.locale);
     applyTranslations();
-    try { localStorage.setItem("dj_locale", "en"); } catch (_) {}
     return;
   }
+
+  // English is the source-of-truth — no translation file needed
+  // (strings are baked into the HTML / JS).
+  if (target === (registry.default || "en")) {
+    state.locale = target;
+    state.translations = {};
+    _applyLocaleDirection(registry, target);
+    applyTranslations();
+    try { localStorage.setItem("dj_locale", target); } catch (_) {}
+    return;
+  }
+
   try {
     // Cache-bust so a re-deploy with new copy doesn't get masked by the
-    // browser's cached i18n bundle. The version is the running app's
-    // /api/health version (refreshed once per session via state.appVersion).
+    // browser's cached i18n bundle.
     const cacheBust = state.appVersion ? `?v=${encodeURIComponent(state.appVersion)}` : `?t=${Date.now()}`;
     const response = await fetch(`/i18n/${target}.json${cacheBust}`);
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     state.translations = await response.json();
     state.locale = target;
-    document.documentElement.lang = target;
+    _applyLocaleDirection(registry, target);
     try { localStorage.setItem("dj_locale", target); } catch (_) {}
   } catch (error) {
-    state.locale = "en";
+    // Planned locale with no JSON yet → fall back to the default
+    // (English) so the UI renders something rather than nothing.
+    const fallbackCode = entry.fallback || registry.default || "en";
+    state.locale = fallbackCode;
     state.translations = {};
-    document.documentElement.lang = "en";
+    _applyLocaleDirection(registry, fallbackCode);
   }
   applyTranslations();
+}
+
+function _applyLocaleDirection(registry, code) {
+  const entry = _lookupLocale(registry, code);
+  const direction = (entry && entry.direction) || "ltr";
+  document.documentElement.lang = code;
+  document.documentElement.dir = direction;
+}
+
+// Intl.PluralRules wrapper — picks the right plural form for the
+// current locale. Translation keys can carry plural variants
+// keyed by the CLDR plural categories: zero / one / two / few /
+// many / other. Example translation block:
+//   "scan.jobsFound": {
+//       "one":   "{{count}} job found",
+//       "other": "{{count}} jobs found",
+//       "few":   "{{count}} pasujące oferty",     # Polish-style
+//       "many":  "{{count}} ofert"                # Polish-style
+//   }
+// For locales without plural data the "other" form is the safe
+// default per CLDR.
+function tPlural(key, count, replacements) {
+  const node = t(key, null);
+  if (node && typeof node === "object") {
+    let form = "other";
+    try {
+      if (typeof Intl !== "undefined" && Intl.PluralRules) {
+        const pr = new Intl.PluralRules(state.locale || "en");
+        form = pr.select(count);
+      } else {
+        form = count === 1 ? "one" : "other";
+      }
+    } catch (_) {
+      form = count === 1 ? "one" : "other";
+    }
+    const template = node[form] || node["other"] || node["one"] || "";
+    return _interpolate(template, { count, ...(replacements || {}) });
+  }
+  // Plain string translation — interpolate {{count}} + other vars
+  if (typeof node === "string") {
+    return _interpolate(node, { count, ...(replacements || {}) });
+  }
+  // Missing key — return the key itself so a missing-translation
+  // is obvious to a reviewer.
+  return key;
+}
+
+function _interpolate(template, vars) {
+  if (!template) return "";
+  return String(template).replace(/\{\{(\w+)\}\}/g, (_, name) => {
+    return name in vars ? String(vars[name]) : `{{${name}}}`;
+  });
 }
 
 // Apply cached locale at boot so the auth gate (and other pre-login views)

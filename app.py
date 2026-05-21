@@ -345,6 +345,40 @@ def session_cookie_header(token: str, max_age: int) -> str:
     return "; ".join(parts)
 
 
+def _i18n_bootstrap_block() -> dict[str, Any]:
+    """Return the i18n block for the admin bootstrap response.
+
+    Reads the locale registry at static/i18n/locales.json (the W3 D15
+    multilingual scaffolding source-of-truth) when present; falls back
+    to file-system discovery via :func:`available_locales` if the
+    registry is missing or unreadable. Either way the admin metric
+    reflects the real deployment locale set rather than the stale
+    hardcoded ["en", "de"] it used to carry.
+    """
+
+    from company_discovery.models import available_locales
+
+    registry_path = STATIC_ROOT / "i18n" / "locales.json"
+    locales_list: list[str] = []
+    default_locale = "en"
+    if registry_path.exists():
+        try:
+            registry = json.loads(registry_path.read_text(encoding="utf-8"))
+            default_locale = registry.get("default", "en")
+            for entry in registry.get("locales", []):
+                if isinstance(entry, dict) and entry.get("code"):
+                    locales_list.append(entry["code"])
+        except (OSError, json.JSONDecodeError):
+            locales_list = []
+    if not locales_list:
+        locales_list = list(available_locales())
+    return {
+        "locales": locales_list,
+        "default": default_locale,
+        "registryPath": "/i18n/locales.json",
+    }
+
+
 def _read_ai_act_audit_tail(
     log_path: Path, limit: int, event_type_filter: str | None
 ) -> list[dict[str, Any]]:
@@ -1348,7 +1382,7 @@ class AppState:
                 "lastArchiveAt": last_backup,
             },
             "workspaces": {"membershipsTotal": memberships},
-            "i18n": {"locales": ["en", "de"]},
+            "i18n": _i18n_bootstrap_block(),
             "legalReviewed": get_env_bool(
                 "HELPMEFINDTHEJOB_LEGAL_REVIEWED",
                 "DIRECTJOB_LEGAL_REVIEWED",
