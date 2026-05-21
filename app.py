@@ -6764,6 +6764,92 @@ class Handler(BaseHTTPRequestHandler):
                 return
             # ---------------- Chat-router API ----------------
             #
+            # /api/chat/message/stream — Phase 2 #77 sub-piece (a).
+            # Server-Sent Events endpoint for the find_jobs path that
+            # emits per-provider progress events as the aggregator
+            # fan-out runs, then a final ``done_payload`` event with
+            # the same dict /api/chat/message would have returned.
+            #
+            # Contract:
+            # - Body: {"query": "...", "location": "..."} (location optional)
+            # - Auth: same session/quota gates as /api/chat/message
+            # - Response: text/event-stream with events:
+            #     event: search_started   data: {"providers":[...], "skipped":[...]}
+            #     event: provider_ok      data: {"provider":name, "job_count":N, "cached":bool}
+            #     event: provider_error   data: {"provider":name, "error":"..."}
+            #     event: done_payload     data: <chat_handler_find_jobs return dict>
+            #     event: error            data: {"message":"..."}   (terminal on exception)
+            #
+            # This endpoint is the search-specific streaming path. The
+            # full conversation router (slash → keyword → AI → ask-for-
+            # help → journey) stays on /api/chat/message. The frontend
+            # sends find-intent messages to this endpoint and everything
+            # else to /api/chat/message.
+            if parsed.path == "/api/chat/message/stream":
+                query = str(payload.get("query") or "").strip()
+                location = str(payload.get("location") or "").strip() or None
+                if not query:
+                    self.send_error_json(
+                        HTTPStatus.BAD_REQUEST,
+                        "empty_query",
+                        "Streaming search requires a non-empty 'query' field.",
+                    )
+                    return
+                # Note: /api/chat/message has no chat-quota gate today
+                # (quota_store only tracks AI runs); auto-fit AI calls
+                # downstream are gated inside the dispatch.
+                self.send_response(HTTPStatus.OK)
+                self.send_header("Content-Type", "text/event-stream; charset=utf-8")
+                self.send_header("Cache-Control", "no-cache, no-transform")
+                self.send_header("Connection", "keep-alive")
+                # Hint to reverse proxies (nginx) to not buffer the SSE
+                # stream; without this the events arrive in one chunk
+                # at the end of the response, defeating the streaming
+                # UX entirely.
+                self.send_header("X-Accel-Buffering", "no")
+                self.end_headers()
+
+                def _write_event(kind: str, data: dict) -> None:
+                    """Encode + flush one SSE event. ``data`` is JSON-
+                    serialised; events are separated by the SSE
+                    spec's `\\n\\n` terminator."""
+                    line = (
+                        f"event: {kind}\n"
+                        f"data: {json.dumps(data, ensure_ascii=False, default=str)}\n\n"
+                    )
+                    try:
+                        self.wfile.write(line.encode("utf-8"))
+                        self.wfile.flush()
+                    except (BrokenPipeError, ConnectionResetError):
+                        # Client disconnected mid-stream — best-effort,
+                        # nothing else we can do beyond stopping.
+                        raise
+
+                # Record the user turn in the chat session history so
+                # the conversational context downstream sees this
+                # message arrived (parity with the JSON endpoint).
+                session = STATE.chat_session_for(data_user_id)
+                session.history.append(ChatTurn(role="user", content=query))
+
+                try:
+                    for event_kind, event_payload in STATE.chat_handler_find_jobs_streaming(
+                        data_user_id, {"query": query, "location": location}
+                    ):
+                        _write_event(event_kind, event_payload)
+                except (BrokenPipeError, ConnectionResetError):
+                    # Client gone — silently stop. The audit-log
+                    # write for the partial dispatch already happened
+                    # inside chat_handler_find_jobs_streaming.
+                    return
+                except Exception as exc:  # noqa: BLE001 - SSE terminator must always fire
+                    _write_event(
+                        "error",
+                        {
+                            "message": f"{type(exc).__name__}: {exc}"[:200],
+                        },
+                    )
+                return
+
             # /api/chat/message — user sends a message. The server
             # routes it (slash → keyword → AI → ask-for-help), elicits
             # missing params one at a time, shows a confirmation prompt
