@@ -864,6 +864,22 @@ class AppState:
             except (TypeError, ValueError) as err:
                 raise ValueError("invalid_retention_days") from err
             existing.retention_days = max(0, min(3650, days))
+        if (
+            "monthlySpendCapEur" in payload
+            or "monthly_spend_cap_eur" in payload
+        ):
+            # Phase 2 #46 (2026-05-21): BYO-AI monthly cap.
+            # Bounded 0–500 EUR; 0 means "no API calls allowed",
+            # 500 is generous-enough headroom for power users who
+            # genuinely run several hundred fit-score calls a month.
+            raw = payload.get(
+                "monthlySpendCapEur", payload.get("monthly_spend_cap_eur")
+            )
+            try:
+                cap = float(raw) if raw is not None else 5.0
+            except (TypeError, ValueError) as err:
+                raise ValueError("invalid_monthly_spend_cap_eur") from err
+            existing.monthly_spend_cap_eur = max(0.0, min(500.0, cap))
         if "onboardingDismissed" in payload or "onboarding_dismissed" in payload:
             existing.onboarding_dismissed = bool(
                 payload.get("onboardingDismissed", payload.get("onboarding_dismissed"))
@@ -925,6 +941,9 @@ class AppState:
             "activeWorkspaceId": profile.active_workspace_id,
             "onboardingDismissed": bool(getattr(profile, "onboarding_dismissed", False)),
             "retentionDays": int(getattr(profile, "retention_days", 90) or 0),
+            "monthlySpendCapEur": float(
+                getattr(profile, "monthly_spend_cap_eur", 5.0) or 0.0
+            ),
             "slackWebhookConfigured": bool(getattr(profile, "slack_webhook_url", "") or ""),
             "slackFitThreshold": float(getattr(profile, "slack_fit_threshold", 0.70) or 0.0),
             "aiConsentAt": profile.ai_consent_at.isoformat()
@@ -4839,12 +4858,42 @@ class AppState:
                     "5 quick questions, or paste your CV here."
                 ),
             }
+        from company_discovery.cost_caps import CostCapExceeded
+
         ai_caller = self._journey_ai_caller(user_id)
-        gaps, used_ai = consult(
-            job=job,
-            cv_text=cv_text,
-            ai_caller=ai_caller,
-        )
+        try:
+            gaps, used_ai = consult(
+                job=job,
+                cv_text=cv_text,
+                ai_caller=ai_caller,
+            )
+        except CostCapExceeded as cap_err:
+            # Cap hit → fall back to heuristic gap detection
+            # (the consult() function already supports ai_caller=None
+            # as the heuristic-only mode).
+            gaps, used_ai = consult(job=job, cv_text=cv_text, ai_caller=None)
+            self.log_analytics(
+                user_id,
+                "chat_cmd",
+                {
+                    "name": "suggest_cv_enhancements",
+                    "jobUrl": job.get("url", "")[:120],
+                    "gapCount": len(gaps),
+                    "capHit": True,
+                },
+            )
+            return {
+                "ok": True,
+                "message": (
+                    f"_{cap_err}_\n\n"
+                    "Falling back to heuristic gap detection — "
+                    "less precise than the AI version but still "
+                    "useful. Raise the cap in Settings to use AI."
+                ),
+                "suggestions": gaps,
+                "capBanner": str(cap_err),
+                "code": "cost_cap_exceeded",
+            }
         self.log_analytics(
             user_id,
             "chat_cmd",

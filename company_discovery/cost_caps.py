@@ -52,23 +52,32 @@ from datetime import datetime, timezone
 # bills per-call rather than per-token, we fall back to an
 # approximation calibrated to a 1k-token call.
 #
+# Keys MUST match the provider_id values defined in
+# :data:`company_discovery.ai_providers.PROVIDER_OPTIONS`. Drift
+# here = cap bypass (an un-listed provider_id matches no entry →
+# 0 rate → cap never triggers).
+#
 # Each entry: provider_id → {"prompt_per_mtok": float, "completion_per_mtok": float}
+# Pessimistic-by-design: we use the upper bound across the
+# provider's model lineup (e.g. "openai" → GPT-4o rate, not 4o-
+# mini) so a user who hasn't told us their model gets billed as
+# if they were running the expensive one. Under-billing would
+# let runaway calls past the cap; over-billing only refuses one
+# extra call when the user is near the cap.
 PROVIDER_RATES_EUR_PER_MTOK: dict[str, dict[str, float]] = {
-    # Cloud — paid (per-token)
-    "openai": {"prompt_per_mtok": 2.30, "completion_per_mtok": 9.20},  # gpt-4o-ish
-    "openai_4o_mini": {"prompt_per_mtok": 0.14, "completion_per_mtok": 0.55},
-    "openai_o1": {"prompt_per_mtok": 13.80, "completion_per_mtok": 55.20},
-    "gemini": {"prompt_per_mtok": 1.15, "completion_per_mtok": 3.45},  # 1.5 Pro
-    "gemini_flash": {"prompt_per_mtok": 0.07, "completion_per_mtok": 0.28},
+    # Cloud — paid (per-token). Keys match PROVIDER_OPTIONS ids.
+    "openai": {"prompt_per_mtok": 2.30, "completion_per_mtok": 9.20},  # gpt-4o upper bound
     "anthropic": {"prompt_per_mtok": 2.76, "completion_per_mtok": 13.80},  # Sonnet 4
-    "anthropic_haiku": {"prompt_per_mtok": 0.74, "completion_per_mtok": 3.68},
-    "anthropic_opus": {"prompt_per_mtok": 13.80, "completion_per_mtok": 69.00},
+    "google_gemini": {"prompt_per_mtok": 1.15, "completion_per_mtok": 3.45},  # 1.5 Pro
     "deepseek": {"prompt_per_mtok": 0.13, "completion_per_mtok": 0.25},
-    "openrouter": {"prompt_per_mtok": 2.30, "completion_per_mtok": 9.20},  # varies by route; use OpenAI-ish as upper bound
+    "openrouter": {"prompt_per_mtok": 2.30, "completion_per_mtok": 9.20},  # OpenAI-ish upper bound
+    "custom": {"prompt_per_mtok": 2.30, "completion_per_mtok": 9.20},  # unknown endpoint; use OpenAI-ish upper bound
     # Local / managed — free at point of use (no per-call charge to the user)
     "ollama": {"prompt_per_mtok": 0.0, "completion_per_mtok": 0.0},
     "manual": {"prompt_per_mtok": 0.0, "completion_per_mtok": 0.0},
     "claude_code": {"prompt_per_mtok": 0.0, "completion_per_mtok": 0.0},
+    "codex_cli": {"prompt_per_mtok": 0.0, "completion_per_mtok": 0.0},  # CLI session-auth, no per-call charge
+    "managed": {"prompt_per_mtok": 0.0, "completion_per_mtok": 0.0},  # operator-side managed AI
 }
 
 # Default cap when the user has not configured one (a profile that

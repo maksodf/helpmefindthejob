@@ -65,6 +65,40 @@ class CostEstimation(unittest.TestCase):
             self.assertGreaterEqual(rates["prompt_per_mtok"], 0)
             self.assertGreaterEqual(rates["completion_per_mtok"], 0)
 
+    def test_every_PROVIDER_OPTIONS_id_has_a_rate_entry(self) -> None:
+        """Drift guard: every provider_id in PROVIDER_OPTIONS MUST
+        have a rate-table entry. A missing entry = cap bypass (the
+        estimate falls to 0 → user can spend unlimited)."""
+
+        from company_discovery.ai_providers import PROVIDER_OPTIONS
+
+        configured_ids = {opt.id for opt in PROVIDER_OPTIONS}
+        rate_table_ids = set(PROVIDER_RATES_EUR_PER_MTOK.keys())
+        missing = configured_ids - rate_table_ids
+        self.assertFalse(
+            missing,
+            f"Rate table missing entries for provider_id(s) {sorted(missing)} — cap bypass risk",
+        )
+
+    def test_paid_cloud_providers_have_nonzero_rates(self) -> None:
+        """Specific provider_ids known to be paid APIs MUST have
+        non-zero rates. This catches the specific bug where
+        'google_gemini' was missing → users could spend unlimited."""
+
+        paid = {"openai", "anthropic", "google_gemini", "deepseek", "openrouter", "custom"}
+        for pid in paid:
+            rates = PROVIDER_RATES_EUR_PER_MTOK[pid]
+            self.assertGreater(
+                rates["prompt_per_mtok"],
+                0,
+                f"{pid} is a paid API but has zero prompt rate — cap bypass",
+            )
+            self.assertGreater(
+                rates["completion_per_mtok"],
+                0,
+                f"{pid} is a paid API but has zero completion rate — cap bypass",
+            )
+
 
 class MonthToDate(unittest.TestCase):
     def setUp(self) -> None:

@@ -183,6 +183,44 @@ class CostCapChatHandlerIntegration(unittest.TestCase):
                 job, provider, "", profile, cap_context=ctx
             )
 
+    def test_update_profile_persists_monthly_cap(self) -> None:
+        """The user must be able to change their cap via the
+        profile-update API. Without this, the default 5.0 is
+        unchangeable — a UX gap."""
+
+        profile = self.state.update_profile(
+            self.user_id, {"monthlySpendCapEur": 25.0}
+        )
+        self.assertEqual(profile.monthly_spend_cap_eur, 25.0)
+
+    def test_update_profile_clamps_cap_to_safe_range(self) -> None:
+        """Cap is clamped 0–500 EUR. Negative values become 0;
+        anything over 500 becomes 500."""
+
+        profile = self.state.update_profile(
+            self.user_id, {"monthlySpendCapEur": -10.0}
+        )
+        self.assertEqual(profile.monthly_spend_cap_eur, 0.0)
+        profile = self.state.update_profile(
+            self.user_id, {"monthlySpendCapEur": 99999.0}
+        )
+        self.assertEqual(profile.monthly_spend_cap_eur, 500.0)
+
+    def test_update_profile_rejects_non_numeric_cap(self) -> None:
+        """Garbage values raise — not silently default to 5.0."""
+
+        with self.assertRaises(ValueError):
+            self.state.update_profile(
+                self.user_id, {"monthlySpendCapEur": "expensive"}
+            )
+
+    def test_bootstrap_payload_surfaces_cap(self) -> None:
+        """The Settings UI reads the cap from the bootstrap payload."""
+
+        self.state.update_profile(self.user_id, {"monthlySpendCapEur": 7.5})
+        bootstrap = self.state.bootstrap(self.user_id)
+        self.assertEqual(bootstrap["profile"]["monthlySpendCapEur"], 7.5)
+
     def test_cap_context_with_zero_cap_blocks_any_charged_call(self) -> None:
         """Sanity: a cap of 0 must block any non-free call. This
         catches off-by-one bugs in the > vs >= comparison."""
