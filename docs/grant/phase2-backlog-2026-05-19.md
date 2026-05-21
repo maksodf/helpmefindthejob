@@ -156,6 +156,18 @@ This backlog is the contract: every item here is tracked, with an
 owner-rough effort estimate, and an honest quarter target. Items that
 shift quarter get a dated note appended below.
 
+## Items deferred to non-coding actors (operator-side)
+
+These three items are formally deferred from the in-flight "items #4–7 to 100%" execution because they structurally require resources outside the coding-agent loop. The operator engages them in parallel; they converge into 100% completion alongside the code work.
+
+| # | Title | Why deferred | Operator action |
+|---|---|---|---|
+| D1 | **Translate 4 new language bundles** (Arabic, Ukrainian, Turkish, Romanian) | Auto-translation via DeepL / Google would compromise the project's stated accuracy bar (PART 5 + PART 8 doctrines require source-grounded language); human translators are the right path. The Arabic translation also needs careful RTL-aware copywriting (UI hint paragraphs, button labels, regulatory citations like §16d AufenthG translated into culturally-appropriate phrasing). | Operator engages 4 translators (one per language) ideally with civic / employment / migration domain familiarity. Coding agent ships RTL CSS + i18n bundle scaffolding + AI quality parity testing against whatever translations arrive. |
+| D2 | **Native iOS (Swift) + Android (Kotlin) mobile apps** | Coding agent's Python + JS stack doesn't cover native Swift / Kotlin development. Cross-platform alternatives (Flutter, React Native) are possible fallbacks but compromise on platform-native UX patterns; native is the higher bar. | Operator engages mobile developers OR confirms cross-platform Flutter/RN is acceptable. Coding agent ships PWA (Progressive Web App) variant + responsive web in the meantime — PWA covers most native-app affordances (offline, install-to-home-screen, push notifications) without platform-specific code. |
+| D3 | **External penetration test by an accredited security firm** | The coding agent can ship an internal security review (code audit, threat-model document, dependency-vulnerability scan, authn/authz audit) but a real third-party pentest requires a contracted firm with offensive-security credentials (ideally one that's worked with EU civic-tech projects so they understand the threat model). | Operator contracts a security firm (suggestions: Cure53, Trail of Bits, NCC Group, ProtectInfo for EU coverage) for a formal pentest. Coding agent ships the internal review + scope-of-work template the firm can quote against. |
+
+These three deferrals do NOT block grant submission readiness. They're the items where money / human time / external contracting is the rate-limiting resource, not coding hours.
+
 ## Append log
 
 - **2026-05-19**: file created during the pre-submission

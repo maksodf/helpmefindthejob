@@ -3230,6 +3230,114 @@ class AppState:
         guided journey. Single code path — fixes the R18 bug where
         slash `/find` left the user stranded with no way to see or
         interact with the results.
+
+        Single-shot variant: blocks until all providers complete, then
+        builds the journey-style payload via :meth:`_find_jobs_post_process`.
+        Callers wanting per-provider progress events should use
+        :meth:`chat_handler_find_jobs_streaming` instead — it shares
+        the same post-process so the final payload is byte-equivalent.
+        """
+        from company_discovery.job_type_filter import identify_bucket
+
+        profile = self.profile_for(user_id)
+        query = args["query"]
+        location = args.get("location") or profile.location or None
+        bucket_key = identify_bucket(query)
+        jobs, outcomes = self.aggregator_engine.search(
+            query=query,
+            location=location,
+            limit_per_provider=10,
+            persona_id=profile.persona_id,
+        )
+        return self._find_jobs_post_process(
+            user_id=user_id,
+            profile=profile,
+            query=query,
+            location=location,
+            bucket_key=bucket_key,
+            jobs=jobs,
+            outcomes=outcomes,
+        )
+
+    def chat_handler_find_jobs_streaming(self, user_id: str, args: dict):
+        """Streaming variant of :meth:`chat_handler_find_jobs` — a
+        generator that yields per-provider events while the aggregator
+        fan-out runs, then yields a final ``("done_payload", dict)``
+        event whose payload is byte-equivalent to the single-shot
+        return value.
+
+        Event sequence:
+
+        - ``("search_started", {"providers": [...], "skipped": [...]})``
+        - ``("provider_ok", {"provider": name, "job_count": N, "cached": bool})``
+        - ``("provider_error", {"provider": name, "error": "..."})``
+        - ``("done_payload", <same dict chat_handler_find_jobs returns>)``
+
+        The post-search work (filter / rank / cluster / journey state
+        write / message build) happens server-side after the streaming
+        completes and is delivered as the final ``done_payload`` event;
+        the SSE consumer wires it in-place at the bottom of the
+        narrated bubble.
+        """
+        from company_discovery.job_type_filter import identify_bucket
+
+        profile = self.profile_for(user_id)
+        query = args["query"]
+        location = args.get("location") or profile.location or None
+        bucket_key = identify_bucket(query)
+
+        final_jobs: list = []
+        final_outcomes: list = []
+        for event in self.aggregator_engine.search_streaming(
+            query=query,
+            location=location,
+            limit_per_provider=10,
+            persona_id=profile.persona_id,
+        ):
+            kind, payload = event
+            if kind == "started":
+                yield ("search_started", payload)
+            elif kind == "provider_ok":
+                yield ("provider_ok", payload)
+            elif kind == "provider_error":
+                yield ("provider_error", payload)
+            elif kind == "done":
+                final_jobs = payload["jobs"]
+                final_outcomes = payload["outcomes"]
+                # don't yield the raw "done" event — the streaming
+                # post-process below builds the user-facing payload
+                # and yields it as "done_payload".
+        result_dict = self._find_jobs_post_process(
+            user_id=user_id,
+            profile=profile,
+            query=query,
+            location=location,
+            bucket_key=bucket_key,
+            jobs=final_jobs,
+            outcomes=final_outcomes,
+        )
+        yield ("done_payload", result_dict)
+
+    def _find_jobs_post_process(
+        self,
+        *,
+        user_id: str,
+        profile,
+        query: str,
+        location: str | None,
+        bucket_key: str | None,
+        jobs: list,
+        outcomes: list,
+    ) -> dict:
+        """Shared post-search logic for the single-shot and streaming
+        find-jobs variants. Takes the aggregator results + persona/
+        journey context, runs filter/rank/cluster, mutates the profile
+        for journey state + bucket filter + auto-persona-switch (single
+        save), logs analytics, and returns the user-facing dict the
+        chat reply renders from.
+
+        PART 9 Loop 29 carries ``totalProviders`` (len of outcomes) into
+        the response for the client's elapsed-time footer.
         """
         from company_discovery.aggregators import rank_aggregated
         from company_discovery.job_type_filter import (
@@ -3237,7 +3345,6 @@ class AppState:
         )
         from company_discovery.job_type_filter import (
             filter_malformed_jobs,
-            identify_bucket,
             normalize_location,
             persona_for_bucket,
         )
@@ -3248,18 +3355,6 @@ class AppState:
             cluster_jobs,
         )
         from company_discovery.personas import get_persona
-
-        profile = self.profile_for(user_id)
-        query = args["query"]
-        location = args.get("location") or profile.location or None
-
-        bucket_key = identify_bucket(query)
-        jobs, outcomes = self.aggregator_engine.search(
-            query=query,
-            location=location,
-            limit_per_provider=10,
-            persona_id=profile.persona_id,
-        )
         if bucket_key:
             jobs = filter_jobs_by_type(jobs, job_type=bucket_key, location=location)
         elif normalize_location(location):
