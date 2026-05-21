@@ -475,6 +475,9 @@ class AppState:
         # window of timestamps per user_id.
         self._user_request_lock = Lock()
         self._user_request_timestamps: dict[str, list[float]] = {}
+        # Sweep counter — every 256 successful claims we GC stale
+        # buckets to keep memory bounded on long-lived servers.
+        self._rate_limit_sweep_counter: int = 0
         self._reset_request_lock = Lock()
         self._reset_requests: dict[str, list[float]] = {}
         self._register_request_lock = Lock()
@@ -1859,6 +1862,20 @@ class AppState:
                 return False
             timestamps.append(now)
             self._user_request_timestamps[user_id] = timestamps
+            # Panic-round addition (2026-05-21): opportunistic GC of
+            # empty buckets so the user-id dict doesn't grow without
+            # bound for a long-lived server. We sweep every 256 calls
+            # (cheap counter check) and drop user_ids whose timestamp
+            # list is empty after pruning.
+            self._rate_limit_sweep_counter += 1
+            if self._rate_limit_sweep_counter % 256 == 0:
+                stale = [
+                    uid
+                    for uid, ts in self._user_request_timestamps.items()
+                    if not [t for t in ts if now - t < window_seconds]
+                ]
+                for uid in stale:
+                    self._user_request_timestamps.pop(uid, None)
             return True
 
     def refund_login_slot(self, client_id: str) -> None:
@@ -5895,8 +5912,17 @@ class Handler(BaseHTTPRequestHandler):
                 # bookmarklet clicks from Firefox/Safari than break
                 # them — the per-account damage is bounded and the
                 # user can delete fake captures.
+                # Tightened during panic round: bookmarklet navigations
+                # always set fetch_dest="document". An `<img src>`
+                # attack sets "image", `<script src>` sets "script",
+                # `fetch()` sets "empty" (which would only succeed
+                # same-origin anyway, but we don't have any same-
+                # origin fetch() call to /capture, so allowing
+                # "empty" is needless attack surface). Only accept
+                # "document" or absent (older browsers / proxy-
+                # stripped clients).
                 fetch_dest = self.headers.get("Sec-Fetch-Dest", "").lower()
-                if fetch_dest and fetch_dest not in {"document", "empty"}:
+                if fetch_dest and fetch_dest != "document":
                     self.send_response(HTTPStatus.SEE_OTHER)
                     self.send_header("Location", "/?capture=blocked_csrf")
                     self.end_headers()

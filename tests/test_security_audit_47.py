@@ -68,6 +68,27 @@ class PerUserRequestRateLimit(unittest.TestCase):
         )
         self.assertTrue(self.state.claim_user_request_slot(other.id, cap=5))
 
+    def test_stale_buckets_get_gc_on_periodic_sweep(self) -> None:
+        """Panic-round addition: the rate-limit dict must not grow
+        without bound on a long-lived server. Every 256 successful
+        claims, stale user_ids (no timestamps inside the window)
+        get evicted.
+        """
+
+        import time as _time
+
+        # Manually back-date timestamps so they fall outside the window
+        for i in range(50):
+            uid = f"stale-{i}"
+            self.state._user_request_timestamps[uid] = [_time.time() - 9999]
+        self.assertEqual(len(self.state._user_request_timestamps), 50)
+        # Pump 256 fresh claims to trigger the sweep
+        for _ in range(256):
+            self.state.claim_user_request_slot(self.user_id, cap=10_000)
+        # Stale entries gone; only the active user remains
+        self.assertNotIn("stale-0", self.state._user_request_timestamps)
+        self.assertIn(self.user_id, self.state._user_request_timestamps)
+
     def test_empty_user_id_passes_through(self) -> None:
         # Anonymous calls (no user_id) MUST pass — they're rate-limited
         # by the per-IP login/register/reset buckets, not this cap.
