@@ -8,8 +8,9 @@ Usage:
 
 The verifier reads the deployer's salt from one of:
 
-1. ``HELPMEFINDTHEJOB_AUDIT_LOG_SALT`` env var (base64-encoded)
-2. ``DIRECTJOB_AUDIT_LOG_SALT`` env var (legacy alias)
+1. ``HELPMEFINDTHEJOB_AUDIT_SALT`` env var (base64-encoded) —
+   the same salt the audit-log emitter uses
+2. ``DIRECTJOB_AUDIT_SALT`` env var (legacy alias)
 3. ``--salt-b64 <base64-string>`` CLI flag
 
 Exit codes:
@@ -46,14 +47,14 @@ def _resolve_salt(salt_b64: str | None) -> bytes:
     no salt is available."""
     raw_b64 = (
         salt_b64
-        or os.environ.get("HELPMEFINDTHEJOB_AUDIT_LOG_SALT")
-        or os.environ.get("DIRECTJOB_AUDIT_LOG_SALT")
+        or os.environ.get("HELPMEFINDTHEJOB_AUDIT_SALT")
+        or os.environ.get("DIRECTJOB_AUDIT_SALT")
     )
     if not raw_b64:
         print(
             "ERROR: deployer salt required.\n"
             "  Either pass --salt-b64 <base64-string>\n"
-            "  OR set HELPMEFINDTHEJOB_AUDIT_LOG_SALT env var\n"
+            "  OR set HELPMEFINDTHEJOB_AUDIT_SALT env var\n"
             "  (request the salt from the deployer per GDPR Article 15)",
             file=sys.stderr,
         )

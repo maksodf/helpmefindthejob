@@ -204,8 +204,12 @@ class VerifyTrustReceipt(unittest.TestCase):
 
 class ReceiptIdentifierAndKnownDecisions(unittest.TestCase):
     def test_known_decisions_count(self):
-        # 7 decision types as of v1
-        self.assertEqual(len(KNOWN_DECISIONS), 7)
+        # 9 decision types as of v1 — every user-visible AI output
+        # type is covered. Chat-router intent classification is NOT
+        # in this list by design: it runs many times per
+        # conversation and produces no user-visible artifact, so
+        # emitting receipts for it would flood the user's log.
+        self.assertEqual(len(KNOWN_DECISIONS), 9)
 
     def test_looks_like_receipt_id_accepts_real(self):
         self.assertTrue(looks_like_receipt_id("rcpt-0123456789ab"))

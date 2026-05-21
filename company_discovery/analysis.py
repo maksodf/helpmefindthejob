@@ -501,6 +501,7 @@ def execute_cv_query_expansion(
     runtime_credential: str = "",
     *,
     cap_context=None,
+    receipt_emitter=None,
 ) -> AnalysisExecutionResult:
     brief = build_cv_query_expansion_prompt(profile, free_text, provider)
     return _dispatch_provider(
@@ -509,6 +510,7 @@ def execute_cv_query_expansion(
         runtime_credential,
         purpose="cv_query_expansion",
         cap_context=cap_context,
+        receipt_emitter=receipt_emitter,
     )
 
 
@@ -564,6 +566,7 @@ def execute_auto_fit(
     profile: UserProfile | None = None,
     *,
     cap_context=None,
+    receipt_emitter=None,
 ) -> AnalysisExecutionResult:
     brief = build_auto_fit_prompt(job, company_name, provider, profile)
     return _dispatch_provider(
@@ -572,6 +575,7 @@ def execute_auto_fit(
         runtime_credential,
         purpose="fit_score",
         cap_context=cap_context,
+        receipt_emitter=receipt_emitter,
     )
 
 
@@ -701,6 +705,7 @@ def execute_cv_tailoring(
     friction_keywords: list[str] | None = None,
     *,
     cap_context=None,
+    receipt_emitter=None,
 ) -> AnalysisExecutionResult:
     brief = build_cv_tailoring_prompt(job, provider, profile, friction_keywords=friction_keywords)
     return _dispatch_provider(
@@ -709,6 +714,7 @@ def execute_cv_tailoring(
         runtime_credential,
         purpose="tailor_cv",
         cap_context=cap_context,
+        receipt_emitter=receipt_emitter,
     )
 
 
@@ -719,6 +725,7 @@ def execute_job_decision_brief(
     profile: UserProfile | None = None,
     *,
     cap_context=None,
+    receipt_emitter=None,
 ) -> AnalysisExecutionResult:
     brief = build_job_decision_brief_prompt(job, provider, profile)
     return _dispatch_provider(
@@ -727,6 +734,7 @@ def execute_job_decision_brief(
         runtime_credential,
         purpose="job_decision_brief",
         cap_context=cap_context,
+        receipt_emitter=receipt_emitter,
     )
 
 
@@ -737,6 +745,7 @@ def execute_cover_letter_brief(
     profile: UserProfile | None = None,
     *,
     cap_context=None,
+    receipt_emitter=None,
 ) -> AnalysisExecutionResult:
     brief = build_cover_letter_brief_prompt(job, provider, profile)
     return _dispatch_provider(
@@ -745,6 +754,7 @@ def execute_cover_letter_brief(
         runtime_credential,
         purpose="cover_letter",
         cap_context=cap_context,
+        receipt_emitter=receipt_emitter,
     )
 
 
@@ -755,6 +765,7 @@ def _dispatch_provider(
     *,
     purpose: str = "unknown",
     cap_context=None,
+    receipt_emitter=None,
 ) -> AnalysisExecutionResult:
     """Dispatch the prompt to the configured AI provider and emit an
     AI Act Article 12 audit-log ``ai_invocation`` event around the call.
@@ -858,6 +869,22 @@ def _dispatch_provider(
                     invocation_mode=provider.invocation_mode,
                     prompt_text=prompt,
                     response_text=response_text,
+                )
+            except Exception:  # noqa: BLE001 - Case E best-effort
+                pass
+        # Post-call Trust Receipt emission (Invariant 2). The receipt
+        # is emitted only on completed dispatches with output —
+        # there's nothing to attest to on a failed call. Case E
+        # best-effort: receipt-emit failure must NEVER break the
+        # AI call, even though it's the user's evidence packet.
+        # A failed receipt leaves the audit log + result intact.
+        if receipt_emitter is not None and result is not None and result.output:
+            try:
+                receipt_emitter(
+                    purpose=purpose,
+                    prompt_text=prompt,
+                    response_text=result.output or "",
+                    provider_id=result.provider_id or provider.provider_id,
                 )
             except Exception:  # noqa: BLE001 - Case E best-effort
                 pass
@@ -1165,6 +1192,7 @@ def _dispatch_provider_streaming(
     *,
     purpose: str = "unknown",
     cap_context=None,
+    receipt_emitter=None,
 ):
     """Streaming counterpart to :func:`_dispatch_provider`.
 
@@ -1282,6 +1310,23 @@ def _dispatch_provider_streaming(
                     invocation_mode=provider.invocation_mode,
                     prompt_text=prompt,
                     response_text=response_text,
+                )
+            except Exception:  # noqa: BLE001 - Case E best-effort
+                pass
+        # Trust Receipt emission for streaming dispatches — same
+        # contract as the single-shot path. Only fires on a
+        # completed stream with non-empty output.
+        if (
+            receipt_emitter is not None
+            and final_result is not None
+            and final_result.output
+        ):
+            try:
+                receipt_emitter(
+                    purpose=purpose,
+                    prompt_text=prompt,
+                    response_text=final_result.output or "",
+                    provider_id=final_result.provider_id or provider.provider_id,
                 )
             except Exception:  # noqa: BLE001 - Case E best-effort
                 pass

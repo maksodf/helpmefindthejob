@@ -496,6 +496,17 @@ class AppState:
         self.ai_providers = self._load_ai_providers()
         self.token_store = TokenStore(self.token_path, SECRET_KEY)
         self.quota_store = QuotaStore(self.quota_path)
+        # 4-week plan Invariant 2 (2026-05-21): Trust Receipt store.
+        # Shares the audit-log salt so receipts cryptographically link
+        # to the audit-log chain. Located under data/trust_receipts/.
+        from company_discovery.trust_receipt_store import TrustReceiptStore
+        from company_discovery import audit_log as _audit_log_mod
+
+        _receipt_salt = _audit_log_mod.default_emitter().salt
+        self.trust_receipt_store = TrustReceiptStore(
+            self.data_path.parent / "trust_receipts",
+            salt=_receipt_salt,
+        )
         self.email_transport: EmailTransport = email_transport or build_transport(
             outbox_path=self.data_path.parent / "email_outbox.log",
         )
@@ -1050,6 +1061,59 @@ class AppState:
             cap_eur=float(profile.monthly_spend_cap_eur or 0.0),
             locale=(profile.locale or "en"),
         )
+
+    def receipt_emitter_for(self, user_id: str):
+        """4-week plan Invariant 2 (2026-05-21): produce a closure
+        the dispatch chokepoint calls post-AI to mint a Trust
+        Receipt and store it on the user's receipt log.
+
+        The closure binds (user_id) so the chokepoint doesn't need
+        to know about user identity. It is best-effort by contract
+        — a receipt-emit failure NEVER breaks the AI call (the
+        chokepoint wraps the call in Case-E try/except).
+
+        Returns None when the project is misconfigured (no audit
+        salt). In that mode the dispatch proceeds without a
+        receipt — the audit log still records the call.
+        """
+
+        store = getattr(self, "trust_receipt_store", None)
+        if store is None:
+            return None
+        from company_discovery import audit_log as _audit_log_mod
+        from company_discovery.trust_receipt import build_trust_receipt
+
+        # Snapshot the audit-log emitter's chain state AT EMISSION TIME
+        # (not at construction). This makes the receipt's
+        # auditLogSequenceNo + auditLogChainHmac point at the
+        # MOST RECENT chain head — which is the same record the
+        # audit-log emitter just appended for the AI invocation.
+        def _emit(*, purpose: str, prompt_text: str, response_text: str, provider_id: str) -> None:
+            try:
+                emitter = _audit_log_mod.default_emitter()
+                seq = getattr(emitter, "_last_sequence_no", None)
+                chain = getattr(emitter, "_last_chain_hmac", None) or None
+                receipt = build_trust_receipt(
+                    decision_type=purpose,
+                    user_id=user_id,
+                    ai_provider=provider_id,
+                    prompt_template_id=purpose,
+                    prompt_text=prompt_text,
+                    response_text=response_text,
+                    salt=store.salt,
+                    audit_log_sequence_no=seq,
+                    audit_log_chain_hmac=chain,
+                )
+                store.save(user_id, receipt)
+            except ValueError:
+                # Decision type not in KNOWN_DECISIONS — silently
+                # skip; the dispatch already succeeded. Adding a
+                # new decision type means adding it to
+                # trust_receipt.KNOWN_DECISIONS, not silently
+                # losing receipts.
+                pass
+
+        return _emit
 
     def update_ai_provider(self, user_id: str, payload: dict[str, Any]) -> AIProviderConfig:
         config = AIProviderConfig(
@@ -4048,6 +4112,7 @@ class AppState:
                 profile,
                 friction_keywords=friction_keywords_for(profile.persona_id),
                 cap_context=self.cost_cap_context_for(user_id),
+                receipt_emitter=self.receipt_emitter_for(user_id),
             )
         except CostCapExceeded as cap_err:
             return {"ok": False, "message": str(cap_err), "code": "cost_cap_exceeded"}
@@ -4347,6 +4412,7 @@ class AppState:
         from company_discovery.analysis import _dispatch_provider
 
         cap_ctx = self.cost_cap_context_for(user_id)
+        receipt_emit = self.receipt_emitter_for(user_id)
 
         def _call(system: str, user_msg: str) -> str | None:
             from company_discovery.cost_caps import CostCapExceeded
@@ -4354,7 +4420,12 @@ class AppState:
             prompt = f"{system}\n\n{user_msg}"
             try:
                 result = _dispatch_provider(
-                    prompt, provider, "", cap_context=cap_ctx
+                    prompt,
+                    provider,
+                    "",
+                    purpose="motivation_letter",
+                    cap_context=cap_ctx,
+                    receipt_emitter=receipt_emit,
                 )
                 if result.status != "completed":
                     return None
@@ -4391,6 +4462,7 @@ class AppState:
         # at caller-construction so every streaming dispatch through
         # this closure passes through the chokepoint enforcement.
         cap_ctx = self.cost_cap_context_for(user_id)
+        receipt_emit = self.receipt_emitter_for(user_id)
 
         def _stream(system: str, user_msg: str, *, purpose: str = "unknown"):
             from company_discovery.cost_caps import CostCapExceeded
@@ -4403,6 +4475,7 @@ class AppState:
                     "",
                     purpose=purpose,
                     cap_context=cap_ctx,
+                    receipt_emitter=receipt_emit,
                 )
             except CostCapExceeded:
                 # Phase 2 #46: cap rejections must propagate up so
@@ -5422,6 +5495,7 @@ class AppState:
                 "",
                 purpose="cv_builder_format",
                 cap_context=self.cost_cap_context_for(user_id),
+                receipt_emitter=self.receipt_emitter_for(user_id),
             )
         except CostCapExceeded:
             # Cap exhausted → return raw text without AI formatting
@@ -6646,6 +6720,69 @@ class Handler(BaseHTTPRequestHandler):
                 return
             if parsed.path == "/api/data/export":
                 self.send_json(STATE.export_data(user_id))
+                return
+            # 4-week plan Invariant 2 (2026-05-21): Trust Receipts.
+            # Three endpoints:
+            #   GET /api/receipts          — list user's receipts (JSON)
+            #   GET /api/receipts/<id>.json — download one receipt JSON
+            #   GET /api/receipts/<id>.md   — download one receipt Markdown
+            # All scoped to the authenticated user; cross-tenant
+            # lookup returns 404.
+            if parsed.path == "/api/receipts":
+                store = STATE.trust_receipt_store
+                self.send_json(
+                    {"receipts": store.list_for_user(data_user_id)}
+                )
+                return
+            if parsed.path.startswith("/api/receipts/"):
+                from company_discovery.trust_receipt import (
+                    looks_like_receipt_id,
+                    render_receipt_markdown,
+                )
+
+                suffix = parsed.path[len("/api/receipts/") :]
+                receipt_id: str
+                fmt: str
+                if suffix.endswith(".json"):
+                    receipt_id = suffix[: -len(".json")]
+                    fmt = "json"
+                elif suffix.endswith(".md"):
+                    receipt_id = suffix[: -len(".md")]
+                    fmt = "md"
+                else:
+                    self.send_error_json(
+                        HTTPStatus.BAD_REQUEST,
+                        "bad_format",
+                        "Receipt URL must end with .json or .md",
+                    )
+                    return
+                if not looks_like_receipt_id(receipt_id):
+                    self.send_error_json(
+                        HTTPStatus.BAD_REQUEST,
+                        "bad_receipt_id",
+                        "Receipt id must match rcpt-<12-hex>",
+                    )
+                    return
+                receipt = STATE.trust_receipt_store.get(data_user_id, receipt_id)
+                if receipt is None:
+                    self.send_error_json(
+                        HTTPStatus.NOT_FOUND,
+                        "not_found",
+                        f"Receipt {receipt_id} not found in your account",
+                    )
+                    return
+                if fmt == "json":
+                    self.send_text(
+                        json.dumps(receipt, indent=2, sort_keys=True),
+                        content_type="application/json",
+                        filename=f"{receipt_id}.json",
+                    )
+                else:
+                    self.send_text(
+                        render_receipt_markdown(receipt),
+                        content_type="text/markdown",
+                        filename=f"{receipt_id}.md",
+                    )
                 return
             if parsed.path.startswith("/api/admin/users/") and parsed.path.endswith("/export"):
                 if not self.require_admin(session):
@@ -9204,6 +9341,7 @@ class Handler(BaseHTTPRequestHandler):
                         runtime_credential,
                         profile,
                         cap_context=STATE.cost_cap_context_for(user_id),
+                        receipt_emitter=STATE.receipt_emitter_for(user_id),
                     )
                 except CostCapExceeded as cap_err:
                     self.send_error_json(
@@ -9268,6 +9406,7 @@ class Handler(BaseHTTPRequestHandler):
                         runtime_credential,
                         profile,
                         cap_context=STATE.cost_cap_context_for(user_id),
+                        receipt_emitter=STATE.receipt_emitter_for(user_id),
                     )
                 except CostCapExceeded as cap_err:
                     self.send_error_json(
@@ -9332,6 +9471,7 @@ class Handler(BaseHTTPRequestHandler):
                         profile,
                         friction_keywords=friction_keywords_for(profile.persona_id),
                         cap_context=STATE.cost_cap_context_for(user_id),
+                        receipt_emitter=STATE.receipt_emitter_for(user_id),
                     )
                 except CostCapExceeded as cap_err:
                     self.send_error_json(
@@ -9410,6 +9550,7 @@ class Handler(BaseHTTPRequestHandler):
                         runtime_credential,
                         profile,
                         cap_context=STATE.cost_cap_context_for(user_id),
+                        receipt_emitter=STATE.receipt_emitter_for(user_id),
                     )
                 except CostCapExceeded as cap_err:
                     self.send_error_json(
@@ -9501,6 +9642,7 @@ class Handler(BaseHTTPRequestHandler):
                             runtime_credential,
                             profile,
                             cap_context=batch_cap_ctx,
+                            receipt_emitter=STATE.receipt_emitter_for(user_id),
                         )
                     except CostCapExceeded as cap_err:
                         outcomes.append(
