@@ -380,6 +380,13 @@ textarea {
 
 a {
   color: var(--accent);
+  /* WCAG 1.4.1 Use of Color: in-prose links MUST be distinguishable
+   * by more than color alone (W4 D16-17 a11y AAA-leaning pass).
+   * Class-styled links (nav-item, btn, .job-link, .skip-link) keep
+   * their own `text-decoration: none` overrides via specificity. */
+  text-decoration: underline;
+  text-decoration-thickness: 0.06em;
+  text-underline-offset: 0.18em;
 }
 
 .skip-link {
