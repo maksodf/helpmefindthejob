@@ -1456,10 +1456,11 @@ def _advance_cv_check(journey: UserJourney, msg: str, *, has_existing_cv: bool) 
                     "resolved": classification.slug,
                     "confidence": classification.confidence,
                     "match_count": classification.match_count,
+                    "tied_slugs": list(classification.tied_slugs),
                     "source": "paste",
                 }),
             )
-            # Phase 2 #76 sub-piece (a): user-confirmation flow.
+            # Phase 2 #76 sub-piece (a) + (b): user-confirmation flow.
             # Surface the classification in the chat reply so the user
             # knows what was inferred + can change or skip it. Non-
             # gating: the user proceeds with the inspire phase
@@ -1468,11 +1469,27 @@ def _advance_cv_check(journey: UserJourney, msg: str, *, has_existing_cv: bool) 
             # which are handled by the AppState handlers (#76(a) +
             # #76(d) /api/profile/friction-class/* endpoints provide
             # the persistent control).
+            #
+            # (b) multi-match disambiguation: when the scored fallback
+            # had ties (classification.tied_slugs non-empty), name the
+            # alternatives so the user knows the inference wasn't
+            # unique and can override explicitly.
             label = label_for(classification.slug)
             if classification.slug and label:
+                tied_clause = ""
+                if classification.tied_slugs:
+                    tied_labels = ", ".join(
+                        label_for(s) or s for s in classification.tied_slugs
+                    )
+                    tied_clause = (
+                        f" Note: tied with {tied_labels} at the same "
+                        f"score — alphabetical tie-break picked "
+                        f"{label} first."
+                    )
                 friction_note = (
                     f"\n\n_Classified as **{label}** "
-                    f"(confidence: {classification.confidence}). "
+                    f"(confidence: {classification.confidence})."
+                    f"{tied_clause} "
                     f"Reply **change classification** to pick a "
                     f"different process, or **skip classification** "
                     f"to opt out._"
@@ -1522,6 +1539,7 @@ def _advance_cv_check(journey: UserJourney, msg: str, *, has_existing_cv: bool) 
                             "resolved": classification.slug,
                             "confidence": classification.confidence,
                             "match_count": classification.match_count,
+                            "tied_slugs": list(classification.tied_slugs),
                             "source": "cv_build_via_chat",
                         },
                     ),

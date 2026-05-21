@@ -243,6 +243,144 @@ class TelemetryContractTests(unittest.TestCase):
         self.assertEqual(result.confidence, "none")
         self.assertEqual(result.match_count, 0)
 
+    def test_strong_match_has_empty_tied_slugs(self):
+        cv = "§16d Anerkennung process"
+        result = classify_with_telemetry(cv)
+        self.assertEqual(result.confidence, "strong")
+        self.assertEqual(result.tied_slugs, ())
+
+    def test_none_match_has_empty_tied_slugs(self):
+        result = classify_with_telemetry("Software engineer in Berlin.")
+        self.assertEqual(result.confidence, "none")
+        self.assertEqual(result.tied_slugs, ())
+
+
+class PersonaFrictionReconciliationTests(unittest.TestCase):
+    """Phase 2 #76 sub-piece (b): persona-vs-friction-class mismatch
+    reconciliation. Returns a hint string when persona industry
+    doesn't overlap with friction-class typical industry; "" when
+    aligned / no constraint / no signal."""
+
+    def test_aligned_persona_friction_returns_empty(self):
+        from company_discovery.friction_classifier import (
+            reconcile_persona_and_friction_class,
+        )
+        # Healthcare persona + Aïcha (healthcare friction) — aligned.
+        hint = reconcile_persona_and_friction_class(
+            persona_industry_terms=("health", "gesund", "klinik"),
+            friction_slug="aicha",
+        )
+        self.assertEqual(hint, "")
+
+    def test_marketing_persona_aicha_friction_flags_mismatch(self):
+        from company_discovery.friction_classifier import (
+            reconcile_persona_and_friction_class,
+        )
+        hint = reconcile_persona_and_friction_class(
+            persona_industry_terms=("marketing", "brand", "growth"),
+            friction_slug="aicha",
+        )
+        self.assertTrue(hint)
+        self.assertIn("§16d", hint)  # Aïcha label
+        self.assertIn("marketing", hint)
+
+    def test_empty_friction_slug_returns_empty(self):
+        from company_discovery.friction_classifier import (
+            reconcile_persona_and_friction_class,
+        )
+        hint = reconcile_persona_and_friction_class(
+            persona_industry_terms=("marketing",),
+            friction_slug="",
+        )
+        self.assertEqual(hint, "")
+
+    def test_kaethe_wiedereinstieg_never_flags_mismatch(self):
+        """Käthe = Wiedereinstieg returner; industry-broad — no
+        mismatch ever surfaces regardless of persona."""
+        from company_discovery.friction_classifier import (
+            reconcile_persona_and_friction_class,
+        )
+        for terms in (
+            ("marketing", "brand"),
+            ("finance", "bank"),
+            ("tech", "saas"),
+            ("trade", "handwerk"),
+            (),  # no persona signal at all
+        ):
+            hint = reconcile_persona_and_friction_class(
+                persona_industry_terms=terms, friction_slug="kaethe"
+            )
+            self.assertEqual(hint, "", msg=f"unexpected hint for terms={terms}")
+
+    def test_empty_persona_terms_returns_empty(self):
+        from company_discovery.friction_classifier import (
+            reconcile_persona_and_friction_class,
+        )
+        # No persona industry signal — can't reconcile, so no hint.
+        hint = reconcile_persona_and_friction_class(
+            persona_industry_terms=(), friction_slug="aicha"
+        )
+        self.assertEqual(hint, "")
+
+    def test_unknown_friction_slug_returns_empty(self):
+        from company_discovery.friction_classifier import (
+            reconcile_persona_and_friction_class,
+        )
+        hint = reconcile_persona_and_friction_class(
+            persona_industry_terms=("marketing",), friction_slug="totally-bogus"
+        )
+        self.assertEqual(hint, "")
+
+    def test_case_insensitive_overlap(self):
+        from company_discovery.friction_classifier import (
+            reconcile_persona_and_friction_class,
+        )
+        # Persona terms in uppercase, expected industry tokens in
+        # lowercase — should still resolve as aligned.
+        hint = reconcile_persona_and_friction_class(
+            persona_industry_terms=("HEALTH", "KLINIK"),
+            friction_slug="aicha",
+        )
+        self.assertEqual(hint, "")
+
+
+class TiedSlugsTests(unittest.TestCase):
+    """Phase 2 #76 sub-piece (b): scored fallback now surfaces tied
+    alternatives in ClassificationResult.tied_slugs so the chat UX
+    can name them ("you might also be in Y") + let the user override
+    via the change flow. Alphabetical tie-break still picks the
+    winner deterministically."""
+
+    def test_tied_slugs_is_tuple(self):
+        result = classify_with_telemetry("§16d Anerkennung process")
+        self.assertIsInstance(result.tied_slugs, tuple)
+
+    def test_tied_slugs_excludes_the_winning_slug(self):
+        from company_discovery.friction_classifier import (
+            SCORED_PATTERNS,
+            SCORED_MIN_HITS,
+        )
+
+        # Construct a CV that packs SCORED_MIN_HITS markers from two
+        # different slugs so both qualify with equal counts at the
+        # scored fallback. Alphabetical tie-break picks one; the
+        # other is reported in tied_slugs.
+        slug_a = sorted(SCORED_PATTERNS.keys())[0]
+        slug_b = sorted(SCORED_PATTERNS.keys())[1]
+        markers_a = list(SCORED_PATTERNS[slug_a])[:SCORED_MIN_HITS]
+        markers_b = list(SCORED_PATTERNS[slug_b])[:SCORED_MIN_HITS]
+        cv = " ".join(markers_a + markers_b) + " — generic resume body."
+        result = classify_with_telemetry(cv)
+        # Contract: tied_slugs is a tuple of strings, winner not in
+        # it. Specific tied content depends on which markers happen
+        # to overlap with STRONG_MARKERS — the assertions below are
+        # the universal invariants.
+        self.assertIsInstance(result.tied_slugs, tuple)
+        self.assertNotIn(result.slug, result.tied_slugs)
+        for tied in result.tied_slugs:
+            self.assertIsInstance(tied, str)
+            self.assertTrue(tied)
+
 
 # ─── Case-insensitive matching ──────────────────────────────────
 

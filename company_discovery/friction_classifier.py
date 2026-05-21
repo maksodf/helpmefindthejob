@@ -219,6 +219,88 @@ def all_labels() -> list[tuple[str, str]]:
     return [(slug, FRICTION_CLASS_LABELS[slug]) for slug in sorted(FRICTION_CLASS_LABELS)]
 
 
+# Phase 2 #76 sub-piece (b): persona-vs-friction-class mismatch
+# reconciliation. Each friction-class slug carries a typical
+# industry profile derived from the persona-fixture context
+# (Aïcha + Maria are healthcare; Yusuf + Olga + Tobias are
+# engineering / tech; Mahmoud is trade / construction; Käthe
+# is broad because Wiedereinsteigerinnen come from many sectors).
+# When a user's persona_id implies a different industry than their
+# friction-class, the chat / Settings surface a soft hint inviting
+# reconciliation. The tokens here match the persona registry's
+# industry_match_terms convention.
+
+_FRICTION_CLASS_INDUSTRY_TOKENS: dict[str, tuple[str, ...]] = {
+    "aicha": ("health", "gesund", "klinik", "pflege", "krankenhaus", "med"),
+    "maria": ("pflege", "altenpflege", "betreuung", "care", "health", "gesund"),
+    "yusuf": ("engineering", "mechanical", "industrial", "manufacturing", "auto"),
+    "olga": ("tech", "software", "saas", "frontend", "developer", "engineer"),
+    "tobias": ("trade", "handwerk", "shk", "anlagen", "tech", "engineer", "construction"),
+    "mahmoud": ("trade", "handwerk", "shk", "anlagen", "construction", "bau"),
+    # Käthe = Wiedereinstieg returner. Sector is whatever she was in
+    # before the break — too broad to constrain. Empty tokens =
+    # never flagged as a mismatch.
+    "kaethe": (),
+}
+
+
+def expected_industry_tokens_for(slug: str) -> tuple[str, ...]:
+    """Return the typical-industry tokens for a friction-class slug.
+    Empty tuple when the class is industry-broad (Käthe Wiedereinstieg)
+    or unknown — callers treat that as "no constraint" rather than
+    "no industry"."""
+
+    return _FRICTION_CLASS_INDUSTRY_TOKENS.get(slug, ())
+
+
+def reconcile_persona_and_friction_class(
+    *, persona_industry_terms: tuple[str, ...] | list[str], friction_slug: str
+) -> str:
+    """Soft reconciliation hint: returns a user-facing message when
+    the persona's typical industry doesn't overlap with the
+    friction-class's typical industry, otherwise "".
+
+    Empty when:
+    - friction_slug is "" or unknown
+    - friction-class has no industry constraint (Käthe Wiedereinstieg)
+    - persona_industry_terms is empty (no persona industry signal)
+    - persona_industry_terms overlaps with friction-class expected
+      tokens (full or partial token-set overlap = aligned)
+
+    The hint is *soft* (suggests reconciliation, doesn't block) because
+    a user genuinely can be a Wiedereinsteigerin moving from healthcare
+    to tech, or an Aïcha-pattern nurse seeking a marketing role — both
+    are legitimate trajectories. The system surfaces the mismatch so
+    the user can confirm, override, or update their persona/CV.
+    """
+
+    if not friction_slug:
+        return ""
+    expected = expected_industry_tokens_for(friction_slug)
+    if not expected:
+        return ""  # industry-broad class — no constraint
+    persona_terms = tuple(t.casefold() for t in persona_industry_terms or ())
+    if not persona_terms:
+        return ""  # no persona signal — can't reconcile
+    expected_cf = {t.casefold() for t in expected}
+    persona_cf = set(persona_terms)
+    if expected_cf & persona_cf:
+        return ""  # aligned
+    # Mismatch — return a hint.
+    label = label_for(friction_slug) or friction_slug
+    expected_summary = ", ".join(expected[:4])
+    persona_summary = ", ".join(persona_terms[:3])
+    return (
+        f"Your friction-class is **{label}** (typically: "
+        f"{expected_summary}), but your persona is tuned for "
+        f"**{persona_summary}**. These are legitimate trajectories "
+        f"(e.g. Wiedereinstieg into a different sector) — but if "
+        f"this is unexpected, re-classify from your latest CV "
+        f"(Settings → Friction-class) or change your persona "
+        f"(Settings → Persona & profile)."
+    )
+
+
 # ─── Output dataclass ────────────────────────────────────────────
 
 
@@ -232,11 +314,22 @@ class ClassificationResult:
                        For "strong" always 1 (single-marker wins);
                        for "scored" the actual hit count; for
                        "none" always 0.
+    ``tied_slugs``  — Phase 2 #76 sub-piece (b): other slugs that
+                       scored equally to the winner. Empty tuple
+                       when there's a unique winner (the common
+                       case). Non-empty when the scored fallback
+                       had multiple slugs at the same max count;
+                       the algorithm picks alphabetically first
+                       (operator-spec deterministic), but the
+                       chat UX surfaces the alternatives so the
+                       user can override via the change flow.
+                       Always empty for "strong" + "none" results.
     """
 
     slug: str
     confidence: str
     match_count: int
+    tied_slugs: tuple[str, ...] = ()
 
 
 # ─── Public API ──────────────────────────────────────────────────
@@ -299,6 +392,14 @@ def classify_with_telemetry(cv_text: str) -> ClassificationResult:
     winners = sorted(
         slug for slug, count in scored.items() if count == max_count
     )
+    # Phase 2 #76 sub-piece (b): surface the tied alternatives so the
+    # chat UX can mention them ("you might also be in Y") and let the
+    # user override via the change flow. Tied list excludes the
+    # winning slug itself.
+    tied = tuple(winners[1:])
     return ClassificationResult(
-        slug=winners[0], confidence="scored", match_count=max_count,
+        slug=winners[0],
+        confidence="scored",
+        match_count=max_count,
+        tied_slugs=tied,
     )

@@ -2713,6 +2713,19 @@ function renderProfile() {
   // re-classify / clear it from the Settings card.
   const frictionInput = $("#frictionClassCurrent");
   if (frictionInput) frictionInput.value = profile.frictionClass || "";
+  // Phase 2 #76 sub-piece (b): persona-vs-friction-class reconciliation
+  // banner. Show when the server computed a non-empty mismatch hint.
+  const mismatchEl = $("#frictionClassMismatchHint");
+  if (mismatchEl) {
+    const hint = profile.frictionClassMismatchHint || "";
+    if (hint) {
+      mismatchEl.textContent = hint;
+      mismatchEl.hidden = false;
+    } else {
+      mismatchEl.textContent = "";
+      mismatchEl.hidden = true;
+    }
+  }
   const hint = $("#profileCvHint");
   if (hint) {
     const length = (profile.cvText || "").length;

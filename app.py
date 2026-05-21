@@ -931,8 +931,35 @@ class AppState:
             else None,
             "aiConsentProviderId": getattr(profile, "ai_consent_provider_id", None),
             "frictionClass": getattr(profile, "friction_class", "") or "",
+            "frictionClassMismatchHint": self._friction_class_mismatch_hint(profile),
             "updatedAt": profile.updated_at.isoformat() if profile.updated_at else None,
         }
+
+    def _friction_class_mismatch_hint(self, profile) -> str:
+        """Phase 2 #76 sub-piece (b): compute the persona/friction-
+        class mismatch hint for the current profile. Returns a
+        user-facing string (rendered as a banner in the Settings
+        card) or "" when there's no mismatch / no constraint to
+        check. Wraps :func:`reconcile_persona_and_friction_class`
+        with the persona's industry_match_terms."""
+
+        friction_slug = getattr(profile, "friction_class", "") or ""
+        if not friction_slug:
+            return ""
+        from company_discovery.friction_classifier import (
+            reconcile_persona_and_friction_class,
+        )
+        from company_discovery.personas import get_persona
+
+        try:
+            persona = get_persona(profile.persona_id)
+            persona_terms = persona.industry_match_terms
+        except Exception:  # noqa: BLE001 - unknown persona id; degrade gracefully
+            persona_terms = ()
+        return reconcile_persona_and_friction_class(
+            persona_industry_terms=persona_terms,
+            friction_slug=friction_slug,
+        )
 
     def ai_provider_for(self, user_id: str) -> AIProviderConfig:
         return self.ai_providers.get(user_id) or AIProviderConfig()
