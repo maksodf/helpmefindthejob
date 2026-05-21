@@ -1,0 +1,68 @@
+# Copyright (c) 2026 Helpmefindthejob contributors
+# SPDX-License-Identifier: Apache-2.0
+#
+# Civic-services mesh: the employment-agent (this project) + 3
+# simulator stubs (housing, Anerkennung, social-services).
+#
+# Bring up:    docker compose -f mesh/mesh-docker-compose.yml up -d
+# Demo:        python -m mesh.demo_aicha_walk
+# Bring down:  docker compose -f mesh/mesh-docker-compose.yml down
+
+services:
+
+  housing-agent:
+    image: python:3.12-slim
+    container_name: mesh-housing-agent
+    working_dir: /app
+    volumes:
+      - ..:/app:ro
+      - ../data/mesh:/app/data/mesh
+    command: ["python", "-m", "mesh.housing_agent", "--host", "0.0.0.0", "--port", "8101"]
+    environment:
+      - PYTHONPATH=/app
+      - MESH_HOUSING_AUDIT=/app/data/mesh/housing-agent-audit.log
+    ports:
+      - "8101:8101"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; r=urllib.request.urlopen('http://127.0.0.1:8101/v1/health',timeout=3); sys.exit(0 if r.status==200 else 1)"]
+      interval: 5s
+      timeout: 3s
+      retries: 6
+
+  anerkennung-agent:
+    image: python:3.12-slim
+    container_name: mesh-anerkennung-agent
+    working_dir: /app
+    volumes:
+      - ..:/app:ro
+      - ../data/mesh:/app/data/mesh
+    command: ["python", "-m", "mesh.anerkennung_agent", "--host", "0.0.0.0", "--port", "8102"]
+    environment:
+      - PYTHONPATH=/app
+      - MESH_ANERKENNUNG_AUDIT=/app/data/mesh/anerkennung-agent-audit.log
+    ports:
+      - "8102:8102"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; r=urllib.request.urlopen('http://127.0.0.1:8102/v1/health',timeout=3); sys.exit(0 if r.status==200 else 1)"]
+      interval: 5s
+      timeout: 3s
+      retries: 6
+
+  social-services-agent:
+    image: python:3.12-slim
+    container_name: mesh-social-services-agent
+    working_dir: /app
+    volumes:
+      - ..:/app:ro
+      - ../data/mesh:/app/data/mesh
+    command: ["python", "-m", "mesh.social_services_agent", "--host", "0.0.0.0", "--port", "8103"]
+    environment:
+      - PYTHONPATH=/app
+      - MESH_SOCIAL_AUDIT=/app/data/mesh/social-services-agent-audit.log
+    ports:
+      - "8103:8103"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; r=urllib.request.urlopen('http://127.0.0.1:8103/v1/health',timeout=3); sys.exit(0 if r.status==200 else 1)"]
+      interval: 5s
+      timeout: 3s
+      retries: 6
