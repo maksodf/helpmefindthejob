@@ -2708,6 +2708,11 @@ function renderProfile() {
   $("#profileLanguages").value = (profile.languages || []).join(", ");
   $("#profileCvText").value = profile.cvText || "";
   $("#profileNotes").value = profile.notes || "";
+  // Phase 2 #76 sub-piece (d): populate the friction-class display
+  // on render so the user sees their classification slug + can
+  // re-classify / clear it from the Settings card.
+  const frictionInput = $("#frictionClassCurrent");
+  if (frictionInput) frictionInput.value = profile.frictionClass || "";
   const hint = $("#profileCvHint");
   if (hint) {
     const length = (profile.cvText || "").length;
@@ -4475,6 +4480,57 @@ $("#saveProviderBtn").addEventListener("click", saveProvider);
 $("#saveProfileBtn")?.addEventListener("click", saveProfile);
 $("#cvUploadBtn")?.addEventListener("click", () => $("#cvUploadInput")?.click());
 $("#cvUploadInput")?.addEventListener("change", handleCvUpload);
+
+// Phase 2 #76 sub-piece (d): user-visible friction-class actions on
+// the Settings page. Re-classify re-runs the deterministic classifier
+// against the user's current CV text; Clear sets friction_class="".
+$("#frictionClassReclassifyBtn")?.addEventListener("click", async () => {
+  const statusEl = $("#frictionClassStatus");
+  if (statusEl) statusEl.textContent = "";
+  try {
+    const payload = await api("/api/profile/friction-class/reclassify", {
+      method: "POST",
+      body: JSON.stringify({}),
+    });
+    if (state.profile) state.profile.frictionClass = payload.frictionClass || "";
+    const input = $("#frictionClassCurrent");
+    if (input) input.value = payload.frictionClass || "";
+    if (statusEl) {
+      statusEl.textContent =
+        t("settings.frictionClass.reclassified", "Re-classified — current value: ") +
+        (payload.frictionClass || "—");
+    }
+  } catch (err) {
+    if (statusEl) {
+      if ((err.message || "").includes("no_cv")) {
+        statusEl.textContent = t(
+          "settings.frictionClass.noCv",
+          "No CV to classify — paste or build your CV first.",
+        );
+      } else {
+        statusEl.textContent = `Error: ${err.message}`;
+      }
+    }
+  }
+});
+$("#frictionClassClearBtn")?.addEventListener("click", async () => {
+  const statusEl = $("#frictionClassStatus");
+  if (statusEl) statusEl.textContent = "";
+  try {
+    await api("/api/profile/friction-class/clear", {
+      method: "POST",
+      body: JSON.stringify({}),
+    });
+    if (state.profile) state.profile.frictionClass = "";
+    const input = $("#frictionClassCurrent");
+    if (input) input.value = "";
+    if (statusEl) {
+      statusEl.textContent = t("settings.frictionClass.cleared", "Cleared.");
+    }
+  } catch (err) {
+    if (statusEl) statusEl.textContent = `Error: ${err.message}`;
+  }
+});
 $("#findJobsForm")?.addEventListener("submit", findJobs);
 
 // ----------------- CV Builder -----------------

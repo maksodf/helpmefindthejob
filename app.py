@@ -930,6 +930,7 @@ class AppState:
             if getattr(profile, "ai_consent_at", None)
             else None,
             "aiConsentProviderId": getattr(profile, "ai_consent_provider_id", None),
+            "frictionClass": getattr(profile, "friction_class", "") or "",
             "updatedAt": profile.updated_at.isoformat() if profile.updated_at else None,
         }
 
@@ -6793,6 +6794,64 @@ class Handler(BaseHTTPRequestHandler):
                         "bootstrap": STATE.bootstrap(user_id),
                     }
                 )
+                return
+            # Phase 2 #76 sub-piece (d): user-visible friction-class
+            # classification surface. Two endpoints let the user re-
+            # classify on demand or clear the field entirely:
+            #   POST /api/profile/friction-class/reclassify
+            #     -> re-runs the friction_classifier on the current
+            #        cv_text. Logs an analytics event with
+            #        source=reclassify_button. Returns {slug, confidence,
+            #        match_count, friction_class}.
+            #   POST /api/profile/friction-class/clear
+            #     -> sets friction_class = "" + logs the clear event.
+            #        Returns the cleared profile.
+            if parsed.path == "/api/profile/friction-class/reclassify":
+                profile = STATE.profile_for(user_id)
+                cv_text = (profile.cv_text or "").strip()
+                if not cv_text:
+                    self.send_error_json(
+                        HTTPStatus.BAD_REQUEST,
+                        "no_cv",
+                        "No CV to classify. Paste or build your CV first.",
+                    )
+                    return
+                from company_discovery.friction_classifier import (
+                    classify_with_telemetry,
+                )
+
+                classification = classify_with_telemetry(cv_text)
+                profile.friction_class = classification.slug
+                STATE.repository.save_user_profile(profile)
+                STATE.log_analytics(
+                    user_id,
+                    "friction_class_classified",
+                    {
+                        "resolved": classification.slug,
+                        "confidence": classification.confidence,
+                        "match_count": classification.match_count,
+                        "source": "reclassify_button",
+                    },
+                )
+                self.send_json(
+                    {
+                        "frictionClass": classification.slug,
+                        "confidence": classification.confidence,
+                        "matchCount": classification.match_count,
+                    }
+                )
+                return
+            if parsed.path == "/api/profile/friction-class/clear":
+                profile = STATE.profile_for(user_id)
+                prior_slug = profile.friction_class
+                profile.friction_class = ""
+                STATE.repository.save_user_profile(profile)
+                STATE.log_analytics(
+                    user_id,
+                    "friction_class_cleared",
+                    {"prior_resolved": prior_slug, "source": "clear_button"},
+                )
+                self.send_json({"frictionClass": ""})
                 return
             if parsed.path == "/api/profile/photo-upload":
                 # CV photo upload. Accept base64 just like cv-upload.

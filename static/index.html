@@ -879,6 +879,35 @@
             <p id="profileMessage" class="muted small" role="status" aria-live="polite"></p>
           </section>
 
+          <!-- Phase 2 #76 sub-piece (d): user-visible friction-class
+               classification surface. Read-only display + Re-classify +
+               Clear actions. The friction-class is derived from the
+               user's CV; users can see it, refresh it (re-run the
+               classifier against their current CV text), or clear it
+               entirely. -->
+          <section class="card" aria-label="Friction-class classification" data-tab="profile">
+            <div class="card-heading">
+              <div>
+                <h2 data-i18n="settings.frictionClass.heading">Friction-class classification</h2>
+                <p class="muted" data-i18n="settings.frictionClass.lead">A deterministic classifier reads your CV and tags one of 7 friction-class patterns (Aïcha §16d / Yusuf Blue Card / Olga §24 / Mahmoud §4 AsylG / Maria EU citizen / Käthe Wiedereinstieg / Tobias Quereinstieg) when relevant. This routes downstream UX (search affordances, AI prompt context) appropriately. Empty means "no clear match" — handled gracefully.</p>
+              </div>
+            </div>
+            <div class="provider-grid">
+              <label class="field">
+                <span data-i18n="settings.frictionClass.current">Current classification</span>
+                <input id="frictionClassCurrent" type="text" readonly aria-readonly="true" placeholder="—" />
+              </label>
+              <div class="field">
+                <span data-i18n="settings.frictionClass.actions">Actions</span>
+                <div class="cv-upload-toolbar">
+                  <button id="frictionClassReclassifyBtn" class="btn" type="button" data-i18n="settings.frictionClass.reclassify">Re-classify from current CV</button>
+                  <button id="frictionClassClearBtn" class="btn" type="button" data-i18n="settings.frictionClass.clear">Clear</button>
+                </div>
+              </div>
+            </div>
+            <p id="frictionClassStatus" class="muted small" role="status" aria-live="polite"></p>
+          </section>
+
           <section class="card" aria-label="Notifications" id="notificationsCard" data-tab="notifications">
             <div class="card-heading">
               <div>
