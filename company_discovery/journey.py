@@ -1477,10 +1477,34 @@ def _advance_cv_check(journey: UserJourney, msg: str, *, has_existing_cv: bool) 
         if step == "done":
             assembled = assemble_cv_from_build(journey.cv_build_answers)
             journey.phase = PHASE_INSPIRE
+            # Phase 2 #76 sub-piece (e): classify the assembled CV so
+            # users who build via chat get the same friction-class
+            # routing as users who paste. Unconditional overwrite
+            # mirrors the paste-branch semantics (operator-spec
+            # re-classification: stale > none).
+            from company_discovery.friction_classifier import (
+                classify_with_telemetry,
+            )
+
+            classification = classify_with_telemetry(assembled)
             return AdvanceResult(
                 reply=(f"Saved CV ({len(assembled)} chars). Moving on to suggestions."),
                 journey=journey,
-                profile_updates={"cv_text": assembled},
+                profile_updates={
+                    "cv_text": assembled,
+                    "friction_class": classification.slug,
+                },
+                analytics_events=[
+                    (
+                        "friction_class_classified",
+                        {
+                            "resolved": classification.slug,
+                            "confidence": classification.confidence,
+                            "match_count": classification.match_count,
+                            "source": "cv_build_via_chat",
+                        },
+                    ),
+                ],
             )
         # Empty message at the kick-off — just ask the current step.
         if not msg:

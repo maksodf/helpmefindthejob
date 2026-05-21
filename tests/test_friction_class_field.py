@@ -271,9 +271,15 @@ class AdvanceResultAnalyticsChannelTests(unittest.TestCase):
 
 
 class HookFiresOnlyOnPasteTests(unittest.TestCase):
-    """The classification hook lives INSIDE the paste branch of
-    _advance_cv_check. Non-paste inputs (reuse, build, ambiguous
-    text) must NOT emit the event."""
+    """The classification hook fires on paste (immediate) OR build-
+    completion (when the sectional CV-build flow assembles the text).
+    Non-classifiable branch ENTRIES (reuse, build kick-off, ambiguous
+    text) must NOT emit the event — only the actual classifiable text
+    arrival does.
+
+    The build-completion path is covered separately by
+    :class:`CvBuildClassificationHookTests` below (Phase 2 #76
+    sub-piece (e))."""
 
     def test_reuse_branch_no_classification(self):
         from company_discovery.journey import _advance_cv_check
@@ -282,7 +288,10 @@ class HookFiresOnlyOnPasteTests(unittest.TestCase):
         event_names = [n for (n, _) in result.analytics_events]
         self.assertNotIn("friction_class_classified", event_names)
 
-    def test_build_branch_no_classification(self):
+    def test_build_kickoff_branch_no_classification(self):
+        """Build KICK-OFF (transition to cv_status="building") doesn't
+        classify — there's no assembled text yet. Build COMPLETION
+        does classify (covered separately)."""
         from company_discovery.journey import _advance_cv_check
         journey = UserJourney(phase=PHASE_CV_CHECK, cv_status="unknown")
         result = _advance_cv_check(journey, "build", has_existing_cv=False)
@@ -295,6 +304,62 @@ class HookFiresOnlyOnPasteTests(unittest.TestCase):
         result = _advance_cv_check(journey, "???", has_existing_cv=False)
         event_names = [n for (n, _) in result.analytics_events]
         self.assertNotIn("friction_class_classified", event_names)
+
+
+class CvBuildClassificationHookTests(unittest.TestCase):
+    """Phase 2 #76 sub-piece (e): when the sectional CV-build flow
+    completes (step == "done"), the assembled CV is classified and
+    saved to UserProfile.friction_class — same contract as the
+    paste-branch hook. Users who build via chat get the same
+    downstream friction-aware routing as users who paste."""
+
+    def _drive_to_done(self):
+        """Walk the journey straight to step="done" with Aïcha-shaped
+        answers + return the final AdvanceResult that contains the
+        classification."""
+        from company_discovery.journey import _advance_cv_check
+        journey = UserJourney(phase=PHASE_CV_CHECK, cv_status="building")
+        # Seed answers from a persona-shaped CV (Aïcha §16d) so
+        # classification reliably resolves.
+        journey.cv_build_answers = {
+            "name": "Aïcha Ben Salah",
+            "location": "Berlin",
+            "summary": (
+                "Registered nurse with 7 years' clinical experience in "
+                "Tunisia. Currently on §16d AufenthG (visa for purpose of "
+                "recognition of foreign qualification)."
+            ),
+            "recent_role": (
+                "Hôpital Habib Bourguiba, Tunis — Krankenpflegerin "
+                "(2018-2025). Geriatric ward 2 years; general medical "
+                "ward 5 years."
+            ),
+            "skills": "Patient documentation; medication administration; multidisciplinary handover; Anerkennungsverfahren",
+        }
+        journey.cv_build_step = "done"
+        return _advance_cv_check(journey, "", has_existing_cv=False)
+
+    def test_build_completion_classifies_assembled_cv(self) -> None:
+        result = self._drive_to_done()
+        # profile_updates carries the friction_class slug + the
+        # assembled cv_text.
+        self.assertIn("friction_class", result.profile_updates)
+        self.assertIn("cv_text", result.profile_updates)
+        # The slug is non-empty for an Aïcha-shaped CV (regulatory
+        # markers present).
+        self.assertEqual(result.profile_updates["friction_class"], "aicha")
+
+    def test_build_completion_emits_telemetry_event(self) -> None:
+        result = self._drive_to_done()
+        event_names = [n for (n, _) in result.analytics_events]
+        self.assertIn("friction_class_classified", event_names)
+        # Event payload carries the cv_build_via_chat source tag so
+        # production telemetry can distinguish paste-branch
+        # classifications from build-branch ones.
+        evt = next(p for (n, p) in result.analytics_events if n == "friction_class_classified")
+        self.assertEqual(evt.get("source"), "cv_build_via_chat")
+        self.assertIn("confidence", evt)
+        self.assertIn("match_count", evt)
 
 
 if __name__ == "__main__":
