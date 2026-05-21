@@ -298,6 +298,7 @@ def _ai_consent_satisfied(profile, provider) -> bool:
 
 
 def make_user_payload(user: AuthUser, csrf_token: str) -> dict[str, Any]:
+    totp_enabled = STATE.auth_store.has_totp_enabled(user.id) if STATE else False
     return {
         "id": user.id,
         "email": user.email,
@@ -305,7 +306,16 @@ def make_user_payload(user: AuthUser, csrf_token: str) -> dict[str, Any]:
         "active": user.active,
         "isAdmin": user.is_admin,
         "csrfToken": csrf_token,
-        "totpEnabled": STATE.auth_store.has_totp_enabled(user.id) if STATE else False,
+        "totpEnabled": totp_enabled,
+        # Phase 2 #49 (2026-05-21): surface remaining recovery-code
+        # count so the UI can nudge users to regenerate before
+        # they run out. 0 means either no 2FA enrolled or
+        # codes exhausted.
+        "recoveryCodesRemaining": (
+            STATE.auth_store.count_remaining_recovery_codes(user.id)
+            if (STATE and totp_enabled)
+            else 0
+        ),
     }
 
 
@@ -7195,6 +7205,28 @@ class Handler(BaseHTTPRequestHandler):
                     headers={
                         "Set-Cookie": session_cookie_header(new_session.token, max_age)
                     },
+                )
+                return
+
+            if parsed.path == "/api/auth/totp/regenerate-recovery-codes":
+                # Phase 2 #49 (2026-05-21): re-issue 8 fresh codes.
+                # Requires password — a compromised session can't
+                # silently regenerate the user's lifeline.
+                password = str(payload.get("password") or "")
+                try:
+                    new_codes = STATE.auth_store.regenerate_recovery_codes(
+                        user_id, password
+                    )
+                except ValueError as error:
+                    self.send_error_json(
+                        HTTPStatus.FORBIDDEN, str(error), str(error)
+                    )
+                    return
+                STATE.log_analytics(
+                    user_id, "totp_recovery_codes_regenerated", {}
+                )
+                self.send_json(
+                    {"status": "regenerated", "recoveryCodes": new_codes}
                 )
                 return
 

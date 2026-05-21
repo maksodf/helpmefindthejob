@@ -758,6 +758,61 @@ class AuthStore:
         self._migrate_legacy_totp_if_needed(user_id, row[0])
         return verify_totp(secret, code)
 
+    def regenerate_recovery_codes(self, user_id: str, password: str) -> list[str]:
+        """Phase 2 #49 (2026-05-21): re-issue 8 fresh recovery codes.
+
+        Requires password verification (the threat model: a
+        compromised session shouldn't be able to silently re-issue
+        codes that the attacker would then have). The OLD codes
+        are invalidated atomically when the new codes are written.
+
+        Only callable when TOTP is enrolled — without a TOTP
+        secret on file, recovery codes serve no purpose.
+        """
+
+        import json
+
+        row = self.connection.execute(
+            "SELECT password_hash, totp_enabled FROM users WHERE id = ?",
+            (user_id,),
+        ).fetchone()
+        if not row:
+            raise ValueError("unknown_user")
+        if not verify_password(password, row[0]):
+            raise ValueError("invalid_password")
+        if not int(row[1] or 0):
+            raise ValueError("totp_not_enabled")
+        plaintext_codes = [secrets.token_hex(5) for _ in range(8)]
+        hashed = [_hash_token(self.secret_key, c) for c in plaintext_codes]
+        self.connection.execute(
+            "UPDATE users SET recovery_codes = ? WHERE id = ?",
+            (json.dumps(hashed), user_id),
+        )
+        self.connection.commit()
+        return plaintext_codes
+
+    def count_remaining_recovery_codes(self, user_id: str) -> int:
+        """Phase 2 #49: how many recovery codes the user has left.
+
+        The list is hashed, so we never expose the codes themselves
+        — just the integer count. Surfaced in the user-info /
+        bootstrap response so the UI can warn the user when their
+        code stock is getting low (≤ 2 codes left = nudge to
+        regenerate).
+        """
+
+        import json
+
+        row = self.connection.execute(
+            "SELECT recovery_codes FROM users WHERE id = ?", (user_id,)
+        ).fetchone()
+        if not row or not row[0]:
+            return 0
+        try:
+            return len(json.loads(row[0]) or [])
+        except json.JSONDecodeError:
+            return 0
+
     def consume_recovery_code(self, user_id: str, code: str) -> bool:
         import json
 
