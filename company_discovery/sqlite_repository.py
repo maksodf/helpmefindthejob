@@ -16,6 +16,7 @@ from threading import RLock
 from typing import Any
 
 from .crypto_kit import EncryptionAtRest, is_aead_blob
+from .db_errors import retry_on_lock
 from .models import (
     AnalyticsEvent,
     CareerPageScan,
@@ -71,7 +72,13 @@ class SqliteCompanyDiscoveryRepository(InMemoryCompanyDiscoveryRepository):
         self._create_schema()
         self._load()
 
+    @retry_on_lock()
     def save_company(self, company: Company) -> Company:
+        # Phase 2 #78 Layer 3: @retry_on_lock — Case A (concurrency
+        # lock) retries inside the helper before propagating; if the
+        # underlying sqlite still raises after 3 attempts the policy
+        # classifier at the HTTP boundary maps it to db_lock_busy
+        # + friendly user message.
         with self._lock:
             result = super().save_company(company)
             self._upsert("companies", company.id, company.user_id, None, asdict(company))
@@ -102,30 +109,35 @@ class SqliteCompanyDiscoveryRepository(InMemoryCompanyDiscoveryRepository):
                     )
             self._connection.commit()
 
+    @retry_on_lock()
     def save_discovery_run(self, run: CompanyDiscoveryRun) -> CompanyDiscoveryRun:
         with self._lock:
             result = super().save_discovery_run(run)
             self._upsert("discovery_runs", run.id, run.user_id, run.company_id, asdict(run))
             return result
 
+    @retry_on_lock()
     def save_scan(self, scan: CareerPageScan) -> CareerPageScan:
         with self._lock:
             result = super().save_scan(scan)
             self._upsert("scans", scan.id, scan.user_id, scan.company_id, asdict(scan))
             return result
 
+    @retry_on_lock()
     def save_discovered_job(self, job: DiscoveredJob) -> DiscoveredJob:
         with self._lock:
             result = super().save_discovered_job(job)
             self._upsert("discovered_jobs", job.id, job.user_id, job.company_id, asdict(job))
             return result
 
+    @retry_on_lock()
     def save_imported_job(self, job: ImportedJob) -> ImportedJob:
         with self._lock:
             result = super().save_imported_job(job)
             self._upsert("imported_jobs", job.id, job.user_id, job.company_id, asdict(job))
             return result
 
+    @retry_on_lock()
     def save_saved_search(self, search: SavedSearch) -> SavedSearch:
         with self._lock:
             result = super().save_saved_search(search)
@@ -141,18 +153,21 @@ class SqliteCompanyDiscoveryRepository(InMemoryCompanyDiscoveryRepository):
             )
             self._connection.commit()
 
+    @retry_on_lock()
     def save_analytics_event(self, event: AnalyticsEvent) -> AnalyticsEvent:
         with self._lock:
             result = super().save_analytics_event(event)
             self._upsert("analytics_events", event.id, event.user_id, None, asdict(event))
             return result
 
+    @retry_on_lock()
     def save_support_ticket(self, ticket: SupportTicket) -> SupportTicket:
         with self._lock:
             result = super().save_support_ticket(ticket)
             self._upsert("support_tickets", ticket.id, ticket.user_id, None, asdict(ticket))
             return result
 
+    @retry_on_lock()
     def save_user_profile(self, profile: UserProfile) -> UserProfile:
         with self._lock:
             result = super().save_user_profile(profile)
@@ -183,6 +198,7 @@ class SqliteCompanyDiscoveryRepository(InMemoryCompanyDiscoveryRepository):
             )
             self._connection.commit()
 
+    @retry_on_lock()
     def save_push_subscription(self, subscription: PushSubscription) -> PushSubscription:
         with self._lock:
             result = super().save_push_subscription(subscription)
@@ -204,6 +220,7 @@ class SqliteCompanyDiscoveryRepository(InMemoryCompanyDiscoveryRepository):
             )
             self._connection.commit()
 
+    @retry_on_lock()
     def save_workspace_membership(self, membership: WorkspaceMembership) -> WorkspaceMembership:
         with self._lock:
             result = super().save_workspace_membership(membership)
