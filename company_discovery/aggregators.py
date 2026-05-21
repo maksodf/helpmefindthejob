@@ -45,11 +45,12 @@ import re
 import sqlite3
 import time
 import unicodedata
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from threading import RLock
-from typing import Iterable, Protocol
+from typing import Iterable, Iterator, Protocol
 
 # ---------- locale-tolerant location matching ----------------------------
 
@@ -879,19 +880,84 @@ class JobAggregationEngine:
         limit_per_provider: int = 25,
         persona_id: str | None = None,
     ) -> tuple[list[AggregatedJob], list[AggregationOutcome]]:
-        all_jobs: list[AggregatedJob] = []
-        outcomes: list[AggregationOutcome] = []
+        """Synchronous façade — drains :meth:`search_streaming` and
+        returns the merged (jobs, outcomes) tuple. Existing callers
+        keep their existing semantics + get the parallel-fan-out
+        speedup automatically.
+
+        Callers that want per-provider progress events as they arrive
+        (SSE streaming endpoint, Phase 2 #77) should call
+        :meth:`search_streaming` directly and consume the event
+        sequence.
+        """
+        final_jobs: list[AggregatedJob] = []
+        final_outcomes: list[AggregationOutcome] = []
+        for event in self.search_streaming(
+            query=query,
+            location=location,
+            limit_per_provider=limit_per_provider,
+            persona_id=persona_id,
+        ):
+            if event[0] == "done":
+                final_jobs = event[1]["jobs"]
+                final_outcomes = event[1]["outcomes"]
+        return final_jobs, final_outcomes
+
+    def search_streaming(
+        self,
+        *,
+        query: str,
+        location: str | None,
+        limit_per_provider: int = 25,
+        persona_id: str | None = None,
+        max_workers: int | None = None,
+    ) -> Iterator[tuple[str, dict]]:
+        """Yield events as providers complete + a final ``done`` event
+        carrying the merged dedup'd jobs + outcomes.
+
+        Event sequence:
+
+        - ``("started", {"providers": [...], "skipped": [...]})`` —
+          fired once at the start. ``providers`` is the list of
+          provider names that will be queried; ``skipped`` is the
+          list of skipped (provider, reason) pairs (e.g. remote-only
+          feed skipped on a city-search).
+        - ``("provider_ok", {"provider": name, "job_count": N,
+          "cached": bool})`` — fired as each provider's search
+          completes successfully.
+        - ``("provider_error", {"provider": name, "error": "..."})``
+          — fired when a provider's search raises.
+        - ``("done", {"jobs": [...], "outcomes": [...]})`` — fired
+          last with the merged + dedup'd result. ``outcomes`` carries
+          the per-provider :class:`AggregationOutcome` list in input
+          (non-skipped) order, followed by the skipped outcomes.
+
+        Concurrency: uses a :class:`ThreadPoolExecutor` to fan out
+        the per-provider ``provider.search(...)`` calls. Providers are
+        expected to be thread-safe (stateless after __init__ + stateless
+        HTTP fetches; the project's :class:`AggregatorResultCache` is
+        RLock-protected). ``max_workers`` defaults to one worker per
+        provider, capped at 16.
+        """
         query_hash = canonical_query(query, location)
         accepts_remote = _user_wants_remote(location)
+
+        # First pass: split providers into "to query" vs "skip" buckets,
+        # emit the started event so downstream consumers know what to
+        # expect.
+        to_query: list[JobAggregatorProvider] = []
+        skipped_outcomes: list[AggregationOutcome] = []
+        skipped_pairs: list[tuple[str, str]] = []
         for provider in self.providers:
-            # Skip remote-only feeds (Remotive / WeWorkRemotely) when
-            # the user's saved search names a specific city/region. A
-            # "Berlin" search should not return remote-anywhere jobs —
-            # those bleed into the queue and break reply-rate +
-            # skill-gap analytics. The user opts into remote feeds by
-            # leaving location empty or putting "remote" in it.
             if not accepts_remote and getattr(provider, "remote_only", False):
-                outcomes.append(
+                # Skip remote-only feeds (Remotive / WeWorkRemotely)
+                # when the user's saved search names a specific city/
+                # region. A "Berlin" search should not return remote-
+                # anywhere jobs — those bleed into the queue and break
+                # reply-rate + skill-gap analytics. The user opts into
+                # remote feeds by leaving location empty or putting
+                # "remote" in it.
+                skipped_outcomes.append(
                     AggregationOutcome(
                         provider=provider.name,
                         job_count=0,
@@ -899,7 +965,26 @@ class JobAggregationEngine:
                         error="skipped_remote_only_for_location_search",
                     )
                 )
-                continue
+                skipped_pairs.append(
+                    (provider.name, "skipped_remote_only_for_location_search")
+                )
+            else:
+                to_query.append(provider)
+
+        yield (
+            "started",
+            {
+                "providers": [p.name for p in to_query],
+                "skipped": [{"provider": n, "reason": r} for (n, r) in skipped_pairs],
+            },
+        )
+
+        # Inline the cache-hit + provider.search() unit so the
+        # ThreadPoolExecutor can fan out cleanly. Each task returns
+        # (provider_name, AggregationOutcome, [AggregatedJob...]).
+        def _one_provider(
+            provider: JobAggregatorProvider,
+        ) -> tuple[str, AggregationOutcome, list[AggregatedJob]]:
             cached = False
             jobs: list[AggregatedJob] = []
             error: str | None = None
@@ -918,31 +1003,72 @@ class JobAggregationEngine:
                             persona_id=persona_id,
                         )
                     )
-                except Exception as exc:  # noqa: BLE001 - best-effort path; failure must not break the caller
+                except Exception as exc:  # noqa: BLE001 - best-effort; failure must not break the caller
                     error = f"{type(exc).__name__}: {exc}"[:200]
                     jobs = []
                 if self.cache is not None and jobs:
                     self.cache.put(provider.name, query_hash, jobs)
-            outcomes.append(
-                AggregationOutcome(
-                    provider=provider.name,
-                    job_count=len(jobs),
-                    cached=cached,
-                    error=error,
-                )
+            outcome = AggregationOutcome(
+                provider=provider.name,
+                job_count=len(jobs),
+                cached=cached,
+                error=error,
             )
-            all_jobs.extend(jobs)
-        # Cross-provider host-priority dedup: collapse identical canonical
-        # source URLs, prefer the provider with the longest description.
-        # Canonicalization strips: scheme, www. prefix, query/fragment,
-        # and trailing slash — so a job at
+            return (provider.name, outcome, jobs)
+
+        # Streaming fan-out. Results arrive in completion-time order
+        # (fastest provider first), which is what the SSE consumer
+        # wants. We accumulate jobs + outcomes for the final ``done``
+        # event in the same map.
+        accumulated_jobs: list[AggregatedJob] = []
+        provider_outcomes: dict[str, AggregationOutcome] = {}
+        if to_query:
+            worker_count = max_workers if max_workers is not None else min(len(to_query), 16)
+            with ThreadPoolExecutor(max_workers=worker_count) as executor:
+                future_to_provider = {
+                    executor.submit(_one_provider, provider): provider.name
+                    for provider in to_query
+                }
+                for future in as_completed(future_to_provider):
+                    name = future_to_provider[future]
+                    try:
+                        _, outcome, jobs = future.result()
+                    except BaseException as exc:  # noqa: BLE001 - executor errors shouldn't tear down the stream
+                        outcome = AggregationOutcome(
+                            provider=name,
+                            job_count=0,
+                            cached=False,
+                            error=f"{type(exc).__name__}: {exc}"[:200],
+                        )
+                        jobs = []
+                    provider_outcomes[name] = outcome
+                    accumulated_jobs.extend(jobs)
+                    if outcome.error and outcome.error != "skipped_remote_only_for_location_search":
+                        yield (
+                            "provider_error",
+                            {"provider": name, "error": outcome.error},
+                        )
+                    else:
+                        yield (
+                            "provider_ok",
+                            {
+                                "provider": name,
+                                "job_count": outcome.job_count,
+                                "cached": outcome.cached,
+                            },
+                        )
+
+        # Cross-provider host-priority dedup: collapse identical
+        # canonical source URLs, prefer the provider with the longest
+        # description. Canonicalization strips: scheme, www. prefix,
+        # query/fragment, and trailing slash — so a job at
         #   https://acme.example/jobs/42
         #   https://www.acme.example/jobs/42/
         #   https://acme.example/jobs/42?utm_source=indeed
         # all dedupe to the same canonical key.
         seen: dict[str, AggregatedJob] = {}
         host_pattern = re.compile(r"^https?://([^/]+)/(.+?)(?:\?|#|$)")
-        for job in all_jobs:
+        for job in accumulated_jobs:
             match = host_pattern.match(job.source_url)
             if match:
                 host = match.group(1).lower().removeprefix("www.")
@@ -953,7 +1079,20 @@ class JobAggregationEngine:
             existing = seen.get(host_path)
             if existing is None or len(job.description or "") > len(existing.description or ""):
                 seen[host_path] = job
-        return list(seen.values()), outcomes
+
+        # Final outcomes list: preserve the legacy ordering shape
+        # callers depend on (queried providers in input order, then
+        # skipped ones at the tail).
+        ordered_outcomes: list[AggregationOutcome] = [
+            provider_outcomes[provider.name]
+            for provider in to_query
+            if provider.name in provider_outcomes
+        ]
+        ordered_outcomes.extend(skipped_outcomes)
+        yield (
+            "done",
+            {"jobs": list(seen.values()), "outcomes": ordered_outcomes},
+        )
 
     def attributions(self) -> list[ProviderAttribution]:
         out: list[ProviderAttribution] = []
