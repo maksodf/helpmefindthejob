@@ -34,6 +34,7 @@ from __future__ import annotations
 import base64
 import contextvars
 import hashlib
+import hmac
 import json
 import secrets
 import sys
@@ -73,6 +74,17 @@ class AuditLogEmitter:
         self.plaintext_pii = plaintext_pii
         self.rotate_bytes = int(rotate_bytes)
         self._lock = threading.Lock()
+        # Phase 2 #13 (2026-05-21): tamper-evidence via monotonic
+        # sequence number + HMAC chain. State is loaded lazily on
+        # the first write so cheap construct/destroy in tests
+        # doesn't pay an I/O cost. Each record carries
+        # sequence_no (1-indexed monotonic) and chain_hmac
+        # (HMAC-SHA256(salt, prev_chain_hmac || canonical_record)).
+        # The chain runs across rotated files so deletion of a
+        # rotated file is detectable (sequence_no gap).
+        self._chain_loaded: bool = False
+        self._last_sequence_no: int = 0
+        self._last_chain_hmac: str = ""
 
     # ------------------------------------------------------------------ utils
 
@@ -153,9 +165,87 @@ class AuditLogEmitter:
 
     # -------------------------------------------------------------- internals
 
+    # -------------------------------------------------------- chain helpers
+
+    def _load_chain_state(self) -> None:
+        """Phase 2 #13: scan existing log files (current + rotated)
+        to recover ``(last_sequence_no, last_chain_hmac)``. Called
+        once on the first write of an emitter instance.
+
+        Rotated files share the ``<basename>.<timestamp>-<nonce>``
+        pattern from :meth:`_rotate_if_needed`. We sort lexically
+        (timestamps in the name sort chronologically) so the
+        highest-sequence record across all files anchors the chain.
+        """
+
+        last_seq = 0
+        last_hmac = ""
+        parent = self.log_path.parent
+        basename = self.log_path.name
+        candidates: list[Path] = []
+        if self.log_path.exists():
+            candidates.append(self.log_path)
+        try:
+            for sibling in parent.iterdir():
+                if sibling.name.startswith(basename + ".") and sibling != self.log_path:
+                    candidates.append(sibling)
+        except OSError:
+            pass
+        for path in candidates:
+            try:
+                with path.open("r", encoding="utf-8") as handle:
+                    for raw in handle:
+                        line = raw.strip()
+                        if not line:
+                            continue
+                        try:
+                            obj = json.loads(line)
+                        except json.JSONDecodeError:
+                            continue
+                        seq = obj.get("sequence_no")
+                        if isinstance(seq, int) and seq > last_seq:
+                            last_seq = seq
+                            last_hmac = str(obj.get("chain_hmac", "") or "")
+            except OSError:
+                continue
+        self._last_sequence_no = last_seq
+        self._last_chain_hmac = last_hmac
+        self._chain_loaded = True
+
+    def _compute_chain_hmac(self, prev_hmac: str, canonical_record: str) -> str:
+        """HMAC-SHA256 over (prev_hmac || canonical_record) keyed by
+        the deployer salt. Returns hex. The first record in a chain
+        has prev_hmac == "" (empty string)."""
+
+        msg = (prev_hmac + "\n" + canonical_record).encode("utf-8")
+        return hmac.new(self.salt, msg, hashlib.sha256).hexdigest()
+
     def _write(self, record: dict[str, Any]) -> None:
         try:
             with self._lock:
+                if not self._chain_loaded:
+                    self._load_chain_state()
+                # Stamp the record with its sequence + chain HMAC
+                # BEFORE serialisation. The HMAC is computed over the
+                # canonical record EXCLUDING the chain_hmac field
+                # itself (chicken-and-egg) but INCLUDING the
+                # sequence_no — so reordering records is detectable.
+                self._last_sequence_no += 1
+                record["sequence_no"] = self._last_sequence_no
+                # Canonical form for HMAC: sorted keys, no whitespace,
+                # ensure_ascii so the byte stream is stable across
+                # platforms / Python versions.
+                canonical = json.dumps(
+                    {k: v for k, v in record.items() if k != "chain_hmac"},
+                    sort_keys=True,
+                    separators=(",", ":"),
+                    ensure_ascii=True,
+                )
+                new_hmac = self._compute_chain_hmac(
+                    self._last_chain_hmac, canonical
+                )
+                record["chain_hmac"] = new_hmac
+                self._last_chain_hmac = new_hmac
                 self._rotate_if_needed()
                 self.log_path.parent.mkdir(parents=True, exist_ok=True)
                 with self.log_path.open("a", encoding="utf-8") as handle:
@@ -393,6 +483,146 @@ def _now_iso() -> str:
 # ``audit_log.emit_ai_invocation(...)`` rather than the full ``emit`` call
 # with the event_type spelled out. They are syntactic sugar; the underlying
 # emit() is the same.
+
+
+# Phase 2 #13 (2026-05-21): tamper-evidence verification surface.
+# Regulators / external auditors run verify_chain to confirm the
+# log hasn't been tampered with. Returns a structured report
+# rather than raising — auditors want detail, not exceptions.
+
+
+class ChainVerificationResult:
+    """Outcome of :func:`verify_chain`. Fields are simple primitives
+    so the report serialises cleanly into JSON for audit tooling.
+    """
+
+    __slots__ = (
+        "ok",
+        "records_checked",
+        "first_break_at_sequence",
+        "first_break_reason",
+        "missing_sequence_numbers",
+    )
+
+    def __init__(
+        self,
+        *,
+        ok: bool,
+        records_checked: int,
+        first_break_at_sequence: int | None = None,
+        first_break_reason: str | None = None,
+        missing_sequence_numbers: list[int] | None = None,
+    ) -> None:
+        self.ok = ok
+        self.records_checked = records_checked
+        self.first_break_at_sequence = first_break_at_sequence
+        self.first_break_reason = first_break_reason
+        self.missing_sequence_numbers = missing_sequence_numbers or []
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "ok": self.ok,
+            "recordsChecked": self.records_checked,
+            "firstBreakAtSequence": self.first_break_at_sequence,
+            "firstBreakReason": self.first_break_reason,
+            "missingSequenceNumbers": list(self.missing_sequence_numbers),
+        }
+
+
+def verify_chain(log_paths: list[Path], salt: bytes) -> ChainVerificationResult:
+    """Walk one or more audit log files in sequence-number order and
+    confirm the HMAC chain is intact.
+
+    Returns ``ChainVerificationResult(ok=True)`` when:
+    - Every record has a sequence_no
+    - Sequence numbers are dense (1, 2, 3, ... no gaps)
+    - Each record's chain_hmac matches the recomputed HMAC
+
+    Returns ``ok=False`` with diagnostic fields when any of the
+    above fails. Designed to be called by an external auditor
+    over the rotated + current log files of a deployment.
+    """
+
+    all_records: list[tuple[int, dict[str, Any]]] = []
+    for path in log_paths:
+        try:
+            with path.open("r", encoding="utf-8") as handle:
+                for raw in handle:
+                    line = raw.strip()
+                    if not line:
+                        continue
+                    try:
+                        obj = json.loads(line)
+                    except json.JSONDecodeError:
+                        return ChainVerificationResult(
+                            ok=False,
+                            records_checked=len(all_records),
+                            first_break_reason="malformed_json",
+                        )
+                    seq = obj.get("sequence_no")
+                    if not isinstance(seq, int):
+                        return ChainVerificationResult(
+                            ok=False,
+                            records_checked=len(all_records),
+                            first_break_reason="missing_sequence_no",
+                        )
+                    all_records.append((seq, obj))
+        except OSError as exc:
+            return ChainVerificationResult(
+                ok=False,
+                records_checked=len(all_records),
+                first_break_reason=f"file_read_error:{exc!r}"[:200],
+            )
+
+    all_records.sort(key=lambda pair: pair[0])
+
+    # Check for sequence gaps. The chain MUST start at 1 (no
+    # records before the first).
+    seq_numbers = [pair[0] for pair in all_records]
+    if seq_numbers and seq_numbers[0] != 1:
+        return ChainVerificationResult(
+            ok=False,
+            records_checked=len(all_records),
+            first_break_at_sequence=seq_numbers[0],
+            first_break_reason="chain_does_not_start_at_1",
+        )
+    missing: list[int] = []
+    for expected in range(1, len(seq_numbers) + 1):
+        if expected != seq_numbers[expected - 1]:
+            # Find every missing number up to current
+            present = set(seq_numbers)
+            missing = [n for n in range(1, seq_numbers[-1] + 1) if n not in present]
+            return ChainVerificationResult(
+                ok=False,
+                records_checked=len(all_records),
+                first_break_at_sequence=expected,
+                first_break_reason="sequence_gap",
+                missing_sequence_numbers=missing,
+            )
+
+    # Recompute the HMAC chain
+    prev_hmac = ""
+    for seq, obj in all_records:
+        stored_hmac = str(obj.get("chain_hmac", "") or "")
+        canonical = json.dumps(
+            {k: v for k, v in obj.items() if k != "chain_hmac"},
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=True,
+        )
+        recomputed = hmac.new(
+            salt, (prev_hmac + "\n" + canonical).encode("utf-8"), hashlib.sha256
+        ).hexdigest()
+        if not hmac.compare_digest(stored_hmac, recomputed):
+            return ChainVerificationResult(
+                ok=False,
+                records_checked=len(all_records),
+                first_break_at_sequence=seq,
+                first_break_reason="hmac_mismatch",
+            )
+        prev_hmac = stored_hmac
+
+    return ChainVerificationResult(ok=True, records_checked=len(all_records))
 
 
 def emit_ai_invocation(
