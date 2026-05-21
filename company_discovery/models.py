@@ -337,6 +337,16 @@ class UserProfile:
     # consent banner persists this on first AI invocation.
     ai_consent_at: datetime | None = None
     ai_consent_provider_id: str | None = None
+    # Phase 2 #46 (2026-05-21): per-user BYO-AI monthly spend cap in
+    # EUR. When the user runs in API mode (their own OpenAI / Gemini
+    # / Anthropic / DeepSeek key), every invocation is cost-estimated
+    # and the cap-enforcer at company_discovery.cost_caps refuses any
+    # call that would push the calendar-month total over this cap.
+    # Local providers (ollama / manual / claude_code) never trigger
+    # the cap regardless of value. Default 5.0 EUR — modest enough
+    # that normal workflows don't hit it but a runaway loop is
+    # caught before €100 is gone.
+    monthly_spend_cap_eur: float = 5.0
     # Strict job-type filter — set by the chat router when the user runs
     # /find against a known role bucket. Watchlist auto-discovery scans
     # honour this filter so the queue stays focused. Key is one of the
