@@ -35,50 +35,17 @@ _MAX_FIELD_CHARS = 200
 
 
 def _sanitize_for_prompt(text: str, limit: int = _MAX_FIELD_CHARS) -> str:
-    """Cap length + strip the obvious prompt-injection footguns.
+    """Thin wrapper around the canonical
+    :func:`company_discovery.prompt_safety.sanitize_for_prompt`.
 
-    We don't try to be exhaustive (defense in depth lives in the
-    system prompt's instructions and the strict output parser); we
-    just remove the highest-leverage patterns:
-
-    - Control chars that can flip downstream rendering
-    - The literal strings models are trained to obey
-      ("ignore previous instructions", role-play prefixes, …)
-    - HTML/markdown headers that could be confused with the prompt's
-      own section markers (h1/h2)
+    Kept as a local alias so existing call sites in this module
+    don't need to change. The 4-seed local implementation was
+    replaced 2026-05-21 by the canonical 8-seed version that covers
+    EN + DE injection patterns and XML-ish tag injection.
     """
-    if not text:
-        return ""
-    text = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]", "", text)
-    # Neutralise the four most common injection seeds. We don't
-    # "censor" — we just lower-case the trigger so the model treats
-    # it as content not instruction.
-    text = re.sub(
-        r"(?i)ignore (?:all )?previous (?:instructions?|prompts?)",
-        "[neutralised:ignore-previous]",
-        text,
-    )
-    text = re.sub(
-        r"(?i)disregard (?:the )?(?:above|previous)",
-        "[neutralised:disregard]",
-        text,
-    )
-    text = re.sub(
-        r"(?i)you are now an? \w+",
-        "[neutralised:role-play]",
-        text,
-    )
-    text = re.sub(
-        r"(?i)system\s*:",
-        "[neutralised:system-claim]:",
-        text,
-    )
-    # Strip raw markdown headers from the CV body so the model
-    # doesn't mistake them for our own SECTION markers.
-    text = re.sub(r"^#{1,6}\s", "", text, flags=re.MULTILINE)
-    if len(text) > limit:
-        text = text[:limit]
-    return text
+    from company_discovery.prompt_safety import sanitize_for_prompt
+
+    return sanitize_for_prompt(text, limit=limit)
 
 
 def build_letter_prompt(

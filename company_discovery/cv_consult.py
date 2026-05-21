@@ -38,24 +38,14 @@ _MAX_FIELD_CHARS = 200
 
 
 def _sanitize_for_prompt(text: str, limit: int) -> str:
-    """Same defense as motivation_letter._sanitize_for_prompt — strip
-    control chars, neutralise the obvious injection seeds, cap
-    length."""
-    if not text:
-        return ""
-    text = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]", "", text)
-    text = re.sub(
-        r"(?i)ignore (?:all )?previous (?:instructions?|prompts?)",
-        "[neutralised:ignore-previous]",
-        text,
-    )
-    text = re.sub(r"(?i)disregard (?:the )?(?:above|previous)", "[neutralised:disregard]", text)
-    text = re.sub(r"(?i)you are now an? \w+", "[neutralised:role-play]", text)
-    text = re.sub(r"(?i)system\s*:", "[neutralised:system-claim]:", text)
-    text = re.sub(r"^#{1,6}\s", "", text, flags=re.MULTILINE)
-    if len(text) > limit:
-        text = text[:limit]
-    return text
+    """Thin wrapper around the canonical
+    :func:`company_discovery.prompt_safety.sanitize_for_prompt`.
+    Kept as a local alias so existing call sites in this module
+    don't need to change.
+    """
+    from company_discovery.prompt_safety import sanitize_for_prompt
+
+    return sanitize_for_prompt(text, limit=limit)
 
 
 def build_consult_prompt(*, job: dict, cv_text: str) -> tuple[str, str]:
