@@ -1046,6 +1046,420 @@ def _execute_google_gemini(
     )
 
 
+def _dispatch_provider_streaming(
+    prompt: str,
+    provider: AIProviderConfig,
+    runtime_credential: str,
+    *,
+    purpose: str = "unknown",
+):
+    """Streaming counterpart to :func:`_dispatch_provider`.
+
+    Generator: yields ``("token", str)`` events as token chunks arrive,
+    then a final ``("final", AnalysisExecutionResult)`` event with
+    accumulated output + status. Mirrors the audit-log emission shape
+    of :func:`_dispatch_provider` — one ``ai_invocation`` event fires
+    after the stream completes (success or failure).
+
+    Per-provider streaming support:
+    - ``ollama`` (local_http): NDJSON streaming via /api/generate with
+      ``stream: true``. Each line is ``{"response": "<token>",
+      "done": bool}``.
+    - ``openai`` / ``deepseek`` / ``openrouter`` / ``custom`` (api): SSE
+      streaming via /v1/chat/completions with ``stream: true``. Each
+      ``data:`` line is a ChatCompletion chunk; ``[DONE]`` terminates.
+    - ``google_gemini`` (api): NDJSON-style streamGenerateContent
+      endpoint. Each chunk is a partial GenerateContentResponse.
+    - CLI providers (``codex_cli`` / ``claude_code`` / ``anthropic`` via
+      CLI / ``custom`` via CLI): the underlying CLI is single-shot —
+      we wrap the result as a one-event ``("final", ...)`` yield. The
+      caller still benefits from the unified streaming interface but
+      doesn't see per-token narration until the CLI itself supports
+      streaming (Phase 2 follow-on).
+    - ``manual`` / ``managed`` (manual): handoff or single-event final.
+    """
+    import time as _time
+
+    started = _time.monotonic()
+    final_result: AnalysisExecutionResult | None = None
+    error_class: str | None = None
+    try:
+        for event in _dispatch_provider_streaming_impl(
+            prompt, provider, runtime_credential
+        ):
+            yield event
+            if isinstance(event, tuple) and event[0] == "final":
+                final_result = event[1]
+                break
+    except BaseException as exc:
+        error_class = type(exc).__name__
+        raise
+    finally:
+        _emit_dispatch_audit(
+            prompt=prompt,
+            provider=provider,
+            purpose=purpose,
+            started=started,
+            result=final_result,
+            error_class=error_class,
+        )
+
+
+def _dispatch_provider_streaming_impl(
+    prompt: str,
+    provider: AIProviderConfig,
+    runtime_credential: str,
+):
+    """Route to the per-provider streaming function. Mirrors the
+    invocation-mode dispatch in :func:`_dispatch_provider_impl`.
+    Yields ``("token", str)`` events then a final ``("final",
+    AnalysisExecutionResult)`` event."""
+
+    if provider.invocation_mode == "manual" or provider.provider_id == "manual":
+        yield (
+            "final",
+            AnalysisExecutionResult(
+                status="handoff_required",
+                provider_id=provider.provider_id,
+                invocation_mode=provider.invocation_mode,
+                prompt=prompt,
+                error="No AI execution provider selected.",
+            ),
+        )
+        return
+    # Managed AI: rebind to the operator's upstream provider before
+    # the streaming dispatch (parity with _dispatch_provider_impl).
+    if provider.provider_id == "managed":
+        upstream = (
+            (
+                get_env("HELPMEFINDTHEJOB_MANAGED_AI_PROVIDER", "DIRECTJOB_MANAGED_AI_PROVIDER")
+                or "openai"
+            )
+            .strip()
+            .lower()
+        )
+        if upstream not in {"openai", "anthropic", "google_gemini", "deepseek", "openrouter"}:
+            yield (
+                "final",
+                AnalysisExecutionResult(
+                    status="configuration_error",
+                    provider_id="managed",
+                    invocation_mode=provider.invocation_mode,
+                    prompt=prompt,
+                    error="HELPMEFINDTHEJOB_MANAGED_AI_PROVIDER must be one of: openai, anthropic, google_gemini, deepseek, openrouter.",
+                ),
+            )
+            return
+        if not (
+            get_env("HELPMEFINDTHEJOB_MANAGED_AI_KEY", "DIRECTJOB_MANAGED_AI_KEY") or ""
+        ).strip():
+            yield (
+                "final",
+                AnalysisExecutionResult(
+                    status="configuration_error",
+                    provider_id="managed",
+                    invocation_mode=provider.invocation_mode,
+                    prompt=prompt,
+                    error="Managed AI is enabled in the picker but HELPMEFINDTHEJOB_MANAGED_AI_KEY is not set on the server.",
+                ),
+            )
+            return
+        provider = AIProviderConfig(
+            provider_id=upstream,
+            invocation_mode="api",
+            model=(
+                get_env("HELPMEFINDTHEJOB_MANAGED_AI_MODEL", "DIRECTJOB_MANAGED_AI_MODEL")
+                or provider.model
+                or ""
+            ).strip(),
+            credential_reference="HELPMEFINDTHEJOB_MANAGED_AI_KEY",
+            base_url=(
+                get_env("HELPMEFINDTHEJOB_MANAGED_AI_BASE_URL", "DIRECTJOB_MANAGED_AI_BASE_URL")
+                or ""
+            ).strip(),
+            command="",
+            notes="managed",
+        )
+    if provider.invocation_mode == "local_http" and provider.provider_id == "ollama":
+        yield from _execute_ollama_streaming(prompt, provider)
+        return
+    if provider.invocation_mode == "api" and provider.provider_id in {
+        "openai",
+        "deepseek",
+        "openrouter",
+        "custom",
+    }:
+        yield from _execute_openai_compatible_streaming(prompt, provider, runtime_credential)
+        return
+    if provider.invocation_mode == "api" and provider.provider_id == "google_gemini":
+        yield from _execute_google_gemini_streaming(prompt, provider, runtime_credential)
+        return
+    if provider.invocation_mode == "cli" and provider.provider_id in {
+        "codex_cli",
+        "claude_code",
+        "anthropic",
+        "custom",
+    }:
+        # CLI providers are single-shot today. Wrap the result as a
+        # one-event "final" yield so the consumer sees the unified
+        # streaming contract. Per-token CLI streaming is a Phase 2
+        # follow-on (depends on the upstream CLI supporting it).
+        result = _execute_cli(prompt, provider)
+        yield ("final", result)
+        return
+    yield (
+        "final",
+        AnalysisExecutionResult(
+            status="unsupported",
+            provider_id=provider.provider_id,
+            invocation_mode=provider.invocation_mode,
+            prompt=prompt,
+            error="No direct adapter is available for this provider/mode yet. Use the handoff prompt.",
+        ),
+    )
+
+
+def _execute_ollama_streaming(prompt: str, provider: AIProviderConfig):
+    """Stream tokens from a local Ollama via /api/generate with
+    ``stream: true``. Yields ``("token", str)`` per response chunk
+    and a final ``("final", AnalysisExecutionResult)`` carrying the
+    accumulated output."""
+
+    base_url = (provider.base_url or "http://127.0.0.1:11434").rstrip("/")
+    parsed = urlparse(base_url)
+    if parsed.scheme != "http" or parsed.hostname not in {"127.0.0.1", "localhost"}:
+        yield (
+            "final",
+            AnalysisExecutionResult(
+                "configuration_error",
+                provider.provider_id,
+                provider.invocation_mode,
+                prompt=prompt,
+                error="Ollama execution is limited to local http://127.0.0.1 or localhost.",
+            ),
+        )
+        return
+    payload = {"model": provider.model or "llama3.1", "prompt": prompt, "stream": True}
+    request = Request(
+        f"{base_url}/api/generate",
+        data=json.dumps(payload).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    accumulated: list[str] = []
+    try:
+        with urlopen(request, timeout=300) as response:
+            for raw_line in response:
+                line = raw_line.decode("utf-8").strip()
+                if not line:
+                    continue
+                try:
+                    chunk = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                token = chunk.get("response", "")
+                if token:
+                    accumulated.append(token)
+                    yield ("token", token)
+                if chunk.get("done"):
+                    break
+    except (HTTPError, OSError, URLError) as error:
+        yield (
+            "final",
+            AnalysisExecutionResult(
+                "provider_error",
+                provider.provider_id,
+                provider.invocation_mode,
+                output="".join(accumulated),
+                prompt=prompt,
+                error=str(error),
+            ),
+        )
+        return
+    output = "".join(accumulated)
+    yield (
+        "final",
+        AnalysisExecutionResult(
+            "completed" if output else "provider_error",
+            provider.provider_id,
+            provider.invocation_mode,
+            output=output,
+            prompt=prompt,
+            error="" if output else "Ollama returned no text.",
+        ),
+    )
+
+
+def _execute_openai_compatible_streaming(
+    prompt: str, provider: AIProviderConfig, runtime_credential: str
+):
+    """Stream tokens from an OpenAI-compatible chat-completions endpoint
+    (OpenAI, DeepSeek, OpenRouter, custom) via SSE with ``stream: true``.
+    Each ``data:`` line carries a ChatCompletion chunk;  ``[DONE]``
+    terminates."""
+
+    api_key, _key_source = _resolve_api_key(provider, runtime_credential)
+    if not api_key:
+        yield (
+            "final",
+            AnalysisExecutionResult(
+                "configuration_error",
+                provider.provider_id,
+                provider.invocation_mode,
+                prompt=prompt,
+                error="API key not provided. Set the env var or pass a session key.",
+            ),
+        )
+        return
+    base_url = (provider.base_url or "https://api.openai.com/v1").rstrip("/")
+    body = {
+        "model": provider.model or "gpt-4o-mini",
+        "messages": [{"role": "user", "content": prompt}],
+        "stream": True,
+    }
+    request = Request(
+        f"{base_url}/chat/completions",
+        data=json.dumps(body).encode("utf-8"),
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}",
+            "Accept": "text/event-stream",
+        },
+        method="POST",
+    )
+    accumulated: list[str] = []
+    try:
+        with urlopen(request, timeout=300) as response:
+            for raw_line in response:
+                line = raw_line.decode("utf-8").rstrip()
+                if not line or not line.startswith("data:"):
+                    continue
+                data_str = line[5:].strip()
+                if data_str == "[DONE]":
+                    break
+                try:
+                    chunk = json.loads(data_str)
+                except json.JSONDecodeError:
+                    continue
+                try:
+                    token = chunk["choices"][0]["delta"].get("content", "") or ""
+                except (KeyError, IndexError, TypeError):
+                    token = ""
+                if token:
+                    accumulated.append(token)
+                    yield ("token", token)
+    except (HTTPError, OSError, URLError) as error:
+        yield (
+            "final",
+            AnalysisExecutionResult(
+                "provider_error",
+                provider.provider_id,
+                provider.invocation_mode,
+                output="".join(accumulated),
+                prompt=prompt,
+                error=str(error),
+            ),
+        )
+        return
+    output = "".join(accumulated)
+    yield (
+        "final",
+        AnalysisExecutionResult(
+            "completed" if output else "provider_error",
+            provider.provider_id,
+            provider.invocation_mode,
+            output=output,
+            prompt=prompt,
+            error="" if output else "OpenAI-compatible stream returned no text.",
+        ),
+    )
+
+
+def _execute_google_gemini_streaming(
+    prompt: str, provider: AIProviderConfig, runtime_credential: str
+):
+    """Stream tokens from Google Gemini's streamGenerateContent endpoint.
+    The response is a JSON array streamed as it's generated; each
+    element is a partial GenerateContentResponse."""
+
+    api_key, _key_source = _resolve_api_key(provider, runtime_credential)
+    if not api_key:
+        yield (
+            "final",
+            AnalysisExecutionResult(
+                "configuration_error",
+                provider.provider_id,
+                provider.invocation_mode,
+                prompt=prompt,
+                error="API key not provided. Set GEMINI_API_KEY or pass a session key.",
+            ),
+        )
+        return
+    model = provider.model or "gemini-1.5-flash"
+    base_url = (
+        provider.base_url
+        or "https://generativelanguage.googleapis.com/v1beta"
+    ).rstrip("/")
+    url = (
+        f"{base_url}/models/{model}:streamGenerateContent"
+        f"?alt=sse&key={api_key}"
+    )
+    body = {"contents": [{"parts": [{"text": prompt}]}]}
+    request = Request(
+        url,
+        data=json.dumps(body).encode("utf-8"),
+        headers={"Content-Type": "application/json", "Accept": "text/event-stream"},
+        method="POST",
+    )
+    accumulated: list[str] = []
+    try:
+        with urlopen(request, timeout=300) as response:
+            for raw_line in response:
+                line = raw_line.decode("utf-8").rstrip()
+                if not line or not line.startswith("data:"):
+                    continue
+                data_str = line[5:].strip()
+                if not data_str or data_str == "[DONE]":
+                    continue
+                try:
+                    chunk = json.loads(data_str)
+                except json.JSONDecodeError:
+                    continue
+                try:
+                    parts = chunk["candidates"][0]["content"]["parts"]
+                    token = "".join(p.get("text", "") for p in parts)
+                except (KeyError, IndexError, TypeError):
+                    token = ""
+                if token:
+                    accumulated.append(token)
+                    yield ("token", token)
+    except (HTTPError, OSError, URLError) as error:
+        yield (
+            "final",
+            AnalysisExecutionResult(
+                "provider_error",
+                provider.provider_id,
+                provider.invocation_mode,
+                output="".join(accumulated),
+                prompt=prompt,
+                error=str(error),
+            ),
+        )
+        return
+    output = "".join(accumulated)
+    yield (
+        "final",
+        AnalysisExecutionResult(
+            "completed" if output else "provider_error",
+            provider.provider_id,
+            provider.invocation_mode,
+            output=output,
+            prompt=prompt,
+            error="" if output else "Gemini stream returned no text.",
+        ),
+    )
+
+
 def _execute_ollama(prompt: str, provider: AIProviderConfig) -> AnalysisExecutionResult:
     base_url = (provider.base_url or "http://127.0.0.1:11434").rstrip("/")
     parsed = urlparse(base_url)
