@@ -108,7 +108,7 @@ class AuditLogEmitterTests(unittest.TestCase):
         records = _read_log_lines(self.log_path)
         self.assertEqual(len(records), 1)
         rec = records[0]
-        self.assertEqual(rec["schema_version"], "v1")
+        self.assertEqual(rec["schema_version"], "v2")
         self.assertEqual(rec["event_type"], "ai_invocation")
         self.assertEqual(rec["outcome"], "ok")
         self.assertEqual(rec["duration_ms"], 42)

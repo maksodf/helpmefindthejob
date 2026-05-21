@@ -6,7 +6,7 @@
 **Audience**: provider, deployer, oversight person, and any auditor reviewing the system's Article 12 record-keeping.
 **Article**: AI Act Article 12 (record-keeping).
 **Pairs with**: [`../company_discovery/audit_log.py`](../company_discovery/audit_log.py) (the emitter) and the `/api/admin/oversight/queue` admin endpoint.
-**Status**: living document. The on-disk schema is versioned; this document reflects schema **v1**.
+**Status**: living document. The on-disk schema is versioned; this document reflects schema **v2** (current, since 2026-05-21). v1 is the prior schema without tamper-evidence fields — see the changelog at the bottom for what changed.
 
 ---
 
@@ -33,7 +33,9 @@ Every event record has these fields:
 
 | Field | Type | Required | Description |
 |---|---|---|---|
-| `schema_version` | string | yes | Always `"v1"` for this schema. |
+| `schema_version` | string | yes | Always `"v2"` for this schema (was `"v1"` before 2026-05-21). |
+| `sequence_no` | integer ≥ 1 | yes (v2+) | Monotonic per-deployment sequence number. Gaps reveal deletion. **Added in v2.** |
+| `chain_hmac` | string (64-char hex) | yes (v2+) | HMAC-SHA256 keyed by deployer salt over `prev_chain_hmac \|\| canonical_record_minus_chain_hmac`. Modifying any record breaks the chain from there onwards. Verified by `verify_chain()` in [`../company_discovery/audit_log.py`](../company_discovery/audit_log.py). **Added in v2.** |
 | `event_id` | string (UUID v4) | yes | Unique identifier for this event. |
 | `event_type` | string (enum) | yes | One of the event types in §4. |
 | `timestamp` | string (ISO 8601, UTC, microsecond precision) | yes | When the event happened. |
@@ -217,3 +219,4 @@ The migration discipline mirrors the project's approach to other schemas (JSON S
 ## 10. Append log
 
 - **2026-05-18**: schema v1 drafted as part of Week 2 task 2.8 of the NLnet NGI Zero Commons Fund grant sprint. Emitter implementation in [`../company_discovery/audit_log.py`](../company_discovery/audit_log.py) and tests in `tests/test_phase13_audit_log.py`.
+- **2026-05-21**: schema bumped v1 → v2 (Phase 2 backlog #13). Added two required fields for tamper-evidence: `sequence_no` (monotonic per-deployment integer) and `chain_hmac` (HMAC-SHA256 chain keyed by the deployer salt). A new public helper `verify_chain(log_paths, salt) -> ChainVerificationResult` walks records in sequence-number order, recomputes the HMAC chain, and reports any mismatch / sequence gap / malformed record. Mixed v1+v2 logs fail verification — operators with pre-2026-05-21 records must archive them separately rather than expect verify_chain to silently accept un-chained surfaces. Reader-side tooling (`_read_ai_act_audit_tail` in `app.py`) continues to handle v1 records gracefully for the oversight queue surface — only `verify_chain` is strict about v2 requirements.

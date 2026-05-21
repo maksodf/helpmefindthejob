@@ -46,7 +46,14 @@ from typing import Any
 
 from company_discovery.env_compat import get_env
 
-SCHEMA_VERSION = "v1"
+# Phase 2 #13 (2026-05-21): schema bumped v1 → v2. The new
+# version adds required tamper-evidence fields (sequence_no +
+# chain_hmac). v1 readers can still load v2 records (extra
+# fields ignored). verify_chain requires v2 — a mixed-version
+# log fails verification with a specific error code, prompting
+# the operator to archive pre-v2 records separately rather than
+# silently accepting an un-chained surface.
+SCHEMA_VERSION = "v2"
 
 # ContextVar default is None (not an empty dict) so concurrent contexts
 # cannot accidentally share the same mutable default instance — see
@@ -558,6 +565,19 @@ def verify_chain(log_paths: list[Path], salt: bytes) -> ChainVerificationResult:
                             ok=False,
                             records_checked=len(all_records),
                             first_break_reason="malformed_json",
+                        )
+                    # Phase 2 #13: reject mixed v1+v2 logs at the
+                    # verify boundary. Pre-v2 records lack
+                    # tamper-evidence and accepting them silently
+                    # would defeat the integrity claim.
+                    schema_v = obj.get("schema_version")
+                    if schema_v != "v2":
+                        return ChainVerificationResult(
+                            ok=False,
+                            records_checked=len(all_records),
+                            first_break_reason=(
+                                f"unsupported_schema_version:{schema_v!r}"
+                            ),
                         )
                     seq = obj.get("sequence_no")
                     if not isinstance(seq, int):

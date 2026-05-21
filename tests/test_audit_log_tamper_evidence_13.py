@@ -216,6 +216,36 @@ class ChainAcrossRotations(unittest.TestCase):
         self.assertTrue(result.ok)
 
 
+class SchemaVersionGate(unittest.TestCase):
+    def test_v1_legacy_record_rejected_by_verify_chain(self) -> None:
+        """An attacker can't downgrade a v2 chain to v1 records to
+        defeat verification — verify_chain rejects anything that
+        isn't schema v2."""
+        emitter, log_path, tmp = _make_emitter()
+        self.addCleanup(tmp.cleanup)
+        # Write a fake v1 legacy record directly (bypasses emitter)
+        with log_path.open("w", encoding="utf-8") as fh:
+            fh.write(
+                json.dumps({
+                    "schema_version": "v1",
+                    "event_id": "legacy-001",
+                    "event_type": "system_event",
+                    "outcome": "ok",
+                })
+                + "\n"
+            )
+        result = verify_chain([log_path], emitter.salt)
+        self.assertFalse(result.ok)
+        self.assertIn("unsupported_schema_version", result.first_break_reason)
+
+    def test_emitter_writes_schema_version_v2(self) -> None:
+        emitter, log_path, tmp = _make_emitter()
+        self.addCleanup(tmp.cleanup)
+        emitter.emit("system_event", outcome="ok")
+        record = json.loads(log_path.read_text().splitlines()[0])
+        self.assertEqual(record["schema_version"], "v2")
+
+
 class WrongSaltDetection(unittest.TestCase):
     def test_verify_with_wrong_salt_fails(self) -> None:
         """Defense: an attacker with file write access but no salt
