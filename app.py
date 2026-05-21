@@ -807,6 +807,173 @@ class AppState:
             raise ValueError("workspace_forbidden")
         return membership.workspace_owner_id
 
+    def list_workspace_members_enriched(
+        self, session_user_id: str, workspace_id: str
+    ) -> list[dict[str, Any]]:
+        """Return all members of ``workspace_id`` enriched with the
+        user's email + a flag indicating the requester's relationship
+        to each member.
+
+        Authorization: only members of the workspace can list. Non-
+        owners + non-admins see ONLY themselves (privacy floor —
+        regular members shouldn't enumerate the whole org).
+
+        13-plan item 4/13 — workspace admin UI completion.
+        """
+
+        own_membership = self.repository.find_workspace_membership(
+            session_user_id, workspace_id
+        )
+        if own_membership is None:
+            # Fall through: the session user may be the implicit
+            # owner of their own auto-created workspace (no row
+            # exists until ensure_owner_membership is called).
+            own_workspace = self.workspace_id_for_owner(session_user_id)
+            if workspace_id != own_workspace:
+                raise ValueError("workspace_forbidden")
+            self.ensure_owner_membership(session_user_id)
+            own_membership = self.repository.find_workspace_membership(
+                session_user_id, workspace_id
+            )
+            if own_membership is None:
+                raise ValueError("workspace_forbidden")
+
+        all_members = self.repository.list_workspace_members(workspace_id)
+        # Privacy floor: regular members see only themselves
+        if own_membership.role not in ("owner", "admin"):
+            all_members = [m for m in all_members if m.user_id == session_user_id]
+
+        result: list[dict[str, Any]] = []
+        for membership in all_members:
+            try:
+                member_user = self.auth_store.get_user(membership.user_id)
+                email = member_user.email
+            except KeyError:
+                # Stale membership for a deleted user — surface as
+                # "(removed user)" so the owner can clean it up
+                email = "(removed user)"
+            result.append(
+                {
+                    "membershipId": membership.id,
+                    "userId": membership.user_id,
+                    "email": email,
+                    "role": membership.role,
+                    "joinedAt": membership.created_at.isoformat(),
+                    "isSelf": membership.user_id == session_user_id,
+                }
+            )
+        # Stable order: owner first, then admins, then members,
+        # alphabetical by email within each group
+        role_priority = {"owner": 0, "admin": 1, "member": 2}
+        result.sort(
+            key=lambda r: (role_priority.get(r["role"], 99), r["email"].lower())
+        )
+        return result
+
+    def update_workspace_member_role(
+        self,
+        *,
+        actor_user_id: str,
+        workspace_id: str,
+        membership_id: str,
+        new_role: str,
+    ) -> dict[str, Any]:
+        """Change a member's role. Owner-only. Cannot change the
+        owner's role. Returns the updated member dict.
+
+        Raises:
+            ValueError("workspace_forbidden") — actor isn't the owner
+            ValueError("invalid_role") — new_role not in WORKSPACE_ROLES
+            ValueError("cannot_change_owner_role") — target is the owner
+            KeyError(membership_id) — membership doesn't exist
+        """
+
+        from company_discovery.models import WORKSPACE_ROLES
+
+        if new_role not in WORKSPACE_ROLES:
+            raise ValueError("invalid_role")
+        # Only the OWNER can change roles (not admins — admins can
+        # invite but not promote/demote, per least-privilege)
+        actor_membership = self.repository.find_workspace_membership(
+            actor_user_id, workspace_id
+        )
+        if actor_membership is None or actor_membership.role != "owner":
+            raise ValueError("workspace_forbidden")
+        target = self.repository.workspace_memberships.get(membership_id)
+        if target is None or target.workspace_id != workspace_id:
+            raise KeyError(membership_id)
+        if target.role == "owner":
+            raise ValueError("cannot_change_owner_role")
+        target.role = new_role
+        self.repository.save_workspace_membership(target)
+        self.log_analytics(
+            actor_user_id,
+            "workspace_role_change",
+            {
+                "workspaceId": workspace_id,
+                "membershipId": membership_id,
+                "newRole": new_role,
+            },
+        )
+        return {
+            "membershipId": target.id,
+            "userId": target.user_id,
+            "role": target.role,
+        }
+
+    def remove_workspace_member(
+        self,
+        *,
+        actor_user_id: str,
+        workspace_id: str,
+        membership_id: str,
+    ) -> None:
+        """Remove a member from the workspace. Authorization:
+        - Owner can remove anyone except themselves (cannot
+          orphan the workspace).
+        - Admin can remove regular members (not other admins,
+          not the owner).
+        - A non-owner member can remove themselves (voluntary
+          leave).
+
+        Raises:
+            ValueError("workspace_forbidden") — actor lacks permission
+            ValueError("cannot_remove_owner") — target is the owner
+            KeyError(membership_id) — membership doesn't exist
+        """
+
+        actor_membership = self.repository.find_workspace_membership(
+            actor_user_id, workspace_id
+        )
+        if actor_membership is None:
+            raise ValueError("workspace_forbidden")
+        target = self.repository.workspace_memberships.get(membership_id)
+        if target is None or target.workspace_id != workspace_id:
+            raise KeyError(membership_id)
+        if target.role == "owner":
+            raise ValueError("cannot_remove_owner")
+        # Self-removal is always allowed (for non-owners)
+        is_self = target.user_id == actor_user_id
+        if not is_self:
+            # Cross-user removal: actor must be owner OR admin
+            # removing a regular member
+            if actor_membership.role == "owner":
+                pass  # owner can remove anyone (except self, caught above)
+            elif actor_membership.role == "admin" and target.role == "member":
+                pass  # admin can remove regular members
+            else:
+                raise ValueError("workspace_forbidden")
+        self.repository.delete_workspace_membership(membership_id)
+        self.log_analytics(
+            actor_user_id,
+            "workspace_member_removed",
+            {
+                "workspaceId": workspace_id,
+                "membershipId": membership_id,
+                "selfRemoval": is_self,
+            },
+        )
+
     def profile_for(self, user_id: str) -> UserProfile:
         existing = self.repository.get_user_profile(user_id)
         if existing is not None:
@@ -6760,6 +6927,26 @@ class Handler(BaseHTTPRequestHandler):
             if parsed.path == "/api/workspaces":
                 self.send_json({"workspaces": STATE.list_user_workspaces(user_id)})
                 return
+            # /api/workspaces/<workspace_id>/members — list members
+            # of a workspace (workspace admin UI completion).
+            ws_members_match = re.match(
+                r"^/api/workspaces/([^/]+)/members$", parsed.path
+            )
+            if ws_members_match:
+                workspace_id = ws_members_match.group(1)
+                try:
+                    members = STATE.list_workspace_members_enriched(
+                        user_id, workspace_id
+                    )
+                except ValueError:
+                    self.send_error_json(
+                        HTTPStatus.FORBIDDEN,
+                        "workspace_forbidden",
+                        "You are not a member of that workspace.",
+                    )
+                    return
+                self.send_json({"members": members})
+                return
             if parsed.path == "/api/funnel/summary":
                 # gap #10: user-facing apply→reply→interview funnel.
                 # Reads the user's imported jobs, computes the
@@ -9897,6 +10084,40 @@ class Handler(BaseHTTPRequestHandler):
                 )
                 return
             data_user_id = STATE.effective_user_id(user_id)
+            # PATCH /api/workspaces/<id>/members/<membership_id>
+            # — change a member's role. Owner-only.
+            if (
+                len(parts) == 5
+                and parts[:2] == ["api", "workspaces"]
+                and parts[3] == "members"
+            ):
+                workspace_id = parts[2]
+                membership_id = parts[4]
+                payload = self.read_json_body()
+                new_role = str(payload.get("role") or "").strip()
+                try:
+                    updated = STATE.update_workspace_member_role(
+                        actor_user_id=user_id,
+                        workspace_id=workspace_id,
+                        membership_id=membership_id,
+                        new_role=new_role,
+                    )
+                except ValueError as err:
+                    code = str(err)
+                    status_code = HTTPStatus.FORBIDDEN
+                    if code == "invalid_role":
+                        status_code = HTTPStatus.BAD_REQUEST
+                    self.send_error_json(status_code, code, code)
+                    return
+                except KeyError:
+                    self.send_error_json(
+                        HTTPStatus.NOT_FOUND,
+                        "membership_not_found",
+                        "Membership not found in this workspace.",
+                    )
+                    return
+                self.send_json({"member": updated})
+                return
             if len(parts) == 4 and parts[:3] == ["api", "admin", "users"]:
                 if not self.require_admin(session):
                     return
@@ -9984,6 +10205,35 @@ class Handler(BaseHTTPRequestHandler):
                 )
                 return
             data_user_id = STATE.effective_user_id(user_id)
+            # DELETE /api/workspaces/<id>/members/<membership_id>
+            # — remove member. Owner removes anyone; admin removes
+            # regular members; any non-owner can self-remove.
+            if (
+                len(parts) == 5
+                and parts[:2] == ["api", "workspaces"]
+                and parts[3] == "members"
+            ):
+                workspace_id = parts[2]
+                membership_id = parts[4]
+                try:
+                    STATE.remove_workspace_member(
+                        actor_user_id=user_id,
+                        workspace_id=workspace_id,
+                        membership_id=membership_id,
+                    )
+                except ValueError as err:
+                    code = str(err)
+                    self.send_error_json(HTTPStatus.FORBIDDEN, code, code)
+                    return
+                except KeyError:
+                    self.send_error_json(
+                        HTTPStatus.NOT_FOUND,
+                        "membership_not_found",
+                        "Membership not found in this workspace.",
+                    )
+                    return
+                self.send_json({"status": "removed"})
+                return
             if len(parts) == 3 and parts[:2] == ["api", "companies"]:
                 # Cross-user / missing-id deletes must surface as 404
                 # rather than a generic 400 — the row simply doesn't
