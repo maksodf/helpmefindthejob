@@ -228,13 +228,18 @@ def available_locales(
     """Return the locale codes the runtime actually has bundles
     for. Reads ``static/i18n/<code>.json`` filenames; falls back
     to :data:`SUPPORTED_LOCALES` when the directory isn't
-    accessible. Cached per-process via the lru_cache on the
-    private helper below.
+    accessible.
 
     Locale codes are validated to match a strict ISO 639-1
     pattern (2-3 lowercase letters, optional ``_REGION`` or
     ``-REGION``) before being trusted — defends against a
     malicious bundle filename being treated as a locale.
+
+    Cached per-process per-directory: i18n bundles don't change
+    at runtime, so re-scanning the directory on every locale
+    validation is wasteful. Tests that need to exercise
+    different bundle sets pass an explicit ``i18n_dir`` (each
+    distinct path is cached separately).
     """
 
     from pathlib import Path
@@ -243,13 +248,44 @@ def available_locales(
         # Default: <repo_root>/static/i18n. The repo_root is the
         # parent of this module's parent.
         i18n_dir = Path(__file__).resolve().parent.parent / "static" / "i18n"
-    return _discover_locales(i18n_dir)
+    # Stringify for cache-key stability (Path objects with the
+    # same target compare equal but lru_cache hashes by identity
+    # for some Path implementations, so we normalise).
+    return _discover_locales_cached(str(i18n_dir.resolve()))
+
+
+def _discover_locales_cached(i18n_dir_str: str) -> tuple[str, ...]:
+    """Module-level functools.lru_cache wrapper. Separate from
+    :func:`_discover_locales` so tests can call the inner function
+    directly without hitting the cache."""
+
+    from functools import lru_cache
+    from pathlib import Path
+
+    # First call sets up the cache. Subsequent calls hit it.
+    global _DISCOVER_LOCALES_LRU
+    if "_DISCOVER_LOCALES_LRU" not in globals() or _DISCOVER_LOCALES_LRU is None:
+        @lru_cache(maxsize=32)
+        def _cached(path_str: str) -> tuple[str, ...]:
+            return _discover_locales(Path(path_str))
+
+        _DISCOVER_LOCALES_LRU = _cached
+    return _DISCOVER_LOCALES_LRU(i18n_dir_str)
+
+
+# Lazily-initialised cache wrapper. See _discover_locales_cached.
+_DISCOVER_LOCALES_LRU = None
 
 
 def _discover_locales(i18n_dir: "Path") -> tuple[str, ...]:
     """Internal: scan i18n_dir for ``<code>.json`` files,
     validate the code shape, return sorted tuple. Falls back to
     SUPPORTED_LOCALES on any I/O error.
+
+    Tests should call this directly to bypass the per-process
+    cache (each test wants a fresh scan of its TemporaryDirectory).
+    Production code goes through :func:`available_locales` which
+    wraps this with the lru_cache.
     """
 
     import re

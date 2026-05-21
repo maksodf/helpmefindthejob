@@ -137,6 +137,26 @@ class DynamicLocaleDiscovery(unittest.TestCase):
             self.assertNotIn("..etc", codes)
             self.assertNotIn("with space", codes)
 
+    def test_available_locales_caches_results(self) -> None:
+        """Quality-audit (2026-05-21): the original implementation
+        rescanned the directory on every call. available_locales
+        now caches results per resolved-directory-path so the
+        validator hot path doesn't pay an iterdir cost on every
+        request."""
+        from company_discovery.models import available_locales
+
+        # Two calls with the default dir should return identical
+        # tuples (cached). We can't easily test "did NOT scan"
+        # without a side-channel, but we CAN test that the return
+        # value is stable across calls (which is the user-facing
+        # guarantee).
+        first = available_locales()
+        second = available_locales()
+        self.assertEqual(first, second)
+        # And the tuple identity equality is the cache marker —
+        # uncached calls would each build a fresh tuple
+        self.assertIs(first, second)
+
     def test_repo_default_includes_at_least_en_and_de(self) -> None:
         # The repo ships en.json + de.json today; available_locales()
         # should return at least these two when called without args.
