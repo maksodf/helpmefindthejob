@@ -73,7 +73,70 @@ echo "$HEADERS" | grep -iq '^x-frame-options: DENY' || fail "X-Frame-Options mis
 echo "$HEADERS" | grep -iq '^content-security-policy' || fail "Content-Security-Policy missing"
 echo "$HEADERS" | grep -iq '^referrer-policy' || fail "Referrer-Policy missing"
 
-# 5. Optional authenticated probe
+# 5. Unauthenticated landing mission block renders. Without this
+# block the apex shows only a sign-in gate — a wasted first
+# impression for NLnet reviewers + first-time visitors. We use
+# shell pattern matching instead of echo|grep -q to avoid the
+# broken-pipe noise under `set -eu` (grep -q closes the pipe
+# early; echo then complains to stderr but the test outcome is
+# fine — the cleaner idiom is `case`).
+step "Landing mission block on $APP_BASE_URL/"
+INDEX_BODY="$(curl -sS --fail --max-time 10 "$APP_BASE_URL/")"
+case "$INDEX_BODY" in
+  *'class="auth-mission"'*) ;;
+  *) fail "landing mission block missing from / — visitors see only the sign-in gate" ;;
+esac
+case "$INDEX_BODY" in
+  *'data-i18n="landing.headline"'*) ;;
+  *) fail "landing headline missing" ;;
+esac
+
+# 6. Dynamic SEO surfaces (phase2-backlog #10 / SSR for SEO)
+step "GET $APP_BASE_URL/sitemap.xml"
+SITEMAP="$(curl -sS --fail --max-time 10 "$APP_BASE_URL/sitemap.xml")"
+echo "$SITEMAP" | grep -q '<urlset' || fail "/sitemap.xml is not a valid sitemap"
+if echo "$SITEMAP" | grep -q 'khalo.org'; then
+  fail "/sitemap.xml leaked legacy khalo.org domain (sanitization regression)"
+fi
+
+step "GET $APP_BASE_URL/robots.txt"
+ROBOTS="$(curl -sS --fail --max-time 10 "$APP_BASE_URL/robots.txt")"
+echo "$ROBOTS" | grep -iq 'sitemap:' || fail "/robots.txt missing Sitemap: line"
+
+# 7. MCP catalogue surface (phase2-backlog §2.2 deferred items)
+step "GET $APP_BASE_URL/mcp/version"
+MCP_VERSION="$(curl -sS --fail --max-time 10 "$APP_BASE_URL/mcp/version")"
+echo "$MCP_VERSION" | grep -q '"protocolVersion"' \
+  || fail "/mcp/version missing protocolVersion"
+echo "$MCP_VERSION" | grep -q '"helpmefindthejob"' \
+  || fail "/mcp/version serverInfo.name not 'helpmefindthejob'"
+
+step "GET $APP_BASE_URL/mcp/schemas.json"
+MCP_SCHEMAS="$(curl -sS --fail --max-time 10 "$APP_BASE_URL/mcp/schemas.json")"
+echo "$MCP_SCHEMAS" | grep -q '"tools"' \
+  || fail "/mcp/schemas.json missing tools array"
+
+# 8. Uptime history surface (phase2-backlog #30)
+step "GET $APP_BASE_URL/api/health/history"
+HISTORY="$(curl -sS --fail --max-time 10 "$APP_BASE_URL/api/health/history?window=1")"
+echo "$HISTORY" | grep -q '"windowHours"' \
+  || fail "/api/health/history missing windowHours"
+echo "$HISTORY" | grep -q '"snapshots"' \
+  || fail "/api/health/history missing snapshots array"
+
+# 9. Prometheus metrics endpoint (phase2-backlog #17 observability)
+step "GET $APP_BASE_URL/api/metrics"
+METRICS="$(curl -sS --fail --max-time 10 "$APP_BASE_URL/api/metrics")"
+echo "$METRICS" | grep -q 'helpmefindthejob_http_requests_total' \
+  || fail "/api/metrics missing http_requests_total counter"
+# Use -D to capture response headers from a GET (HEAD isn't
+# supported on this endpoint by design — Prometheus scrapers
+# always GET).
+METRICS_CT="$(curl -sS -D - -o /dev/null --max-time 10 "$APP_BASE_URL/api/metrics" | grep -i '^content-type:')"
+echo "$METRICS_CT" | grep -iq 'text/plain' \
+  || fail "/api/metrics not in Prometheus exposition content-type (got: $METRICS_CT)"
+
+# 10. Optional authenticated probe
 if [ -n "$ADMIN_EMAIL" ] && [ -n "$ADMIN_PASSWORD" ]; then
   step "Authenticated bootstrap probe as $ADMIN_EMAIL"
   LOGIN_PAYLOAD="$(printf '{"email":"%s","password":"%s"}' "$ADMIN_EMAIL" "$ADMIN_PASSWORD")"
