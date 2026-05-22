@@ -72,7 +72,38 @@
     <a class="skip-link" href="#mainContent">Skip to main content</a>
 
     <main id="authGate" class="auth-gate" aria-labelledby="authGateHeading" hidden>
-      <div class="auth-card">
+      <div class="auth-layout">
+        <section class="auth-mission" aria-labelledby="missionHeading">
+          <p class="auth-mission-tag" data-i18n="landing.tag">Open-source · Apache 2.0 · EU civic commons</p>
+          <h2 id="missionHeading" class="auth-mission-headline" data-i18n="landing.headline">A calm job tool, for users the labor market makes difficult.</h2>
+          <p class="auth-mission-lead" data-i18n="landing.lead">An MCP-composable copilot for people facing structural friction in the European labor market — migrants on Anerkennungsverfahren, EU Blue Card candidates, Wiedereinstieg returners, career changers, refugees on §24/§4 pathways.</p>
+          <ul class="auth-mission-bullets">
+            <li>
+              <strong data-i18n="landing.bullet1.head">EU AI Act compliant by design.</strong>
+              <span data-i18n="landing.bullet1.body">Article 12 audit log with HMAC chain, Article 20 portable export, transparency notice shipped — ready for 2 August 2026 enforcement.</span>
+            </li>
+            <li>
+              <strong data-i18n="landing.bullet2.head">MCP-composable substrate.</strong>
+              <span data-i18n="landing.bullet2.body">15 tools with JSON-Schema validation, for partner civic agents — housing, healthcare, residency, education.</span>
+            </li>
+            <li>
+              <strong data-i18n="landing.bullet3.head">Friction-class rigor.</strong>
+              <span data-i18n="landing.bullet3.body">Designed around a seven-persona panel — Aïcha · Yusuf · Olga · Mahmoud · Maria · Käthe · Tobias — with documented bias-testing methodology.</span>
+            </li>
+            <li>
+              <strong data-i18n="landing.bullet4.head">The Commons Conservancy stewardship.</strong>
+              <span data-i18n="landing.bullet4.body">Federated deployment, no commercial product, Apache 2.0 + CLA, built for civic institutions.</span>
+            </li>
+          </ul>
+          <nav class="auth-mission-links" aria-label="Project links">
+            <a class="auth-mission-link" href="/help" data-i18n="landing.linkHelp">How it works</a>
+            <a class="auth-mission-link" href="https://github.com/maksodf/helpmefindthejob" rel="noopener">GitHub</a>
+            <a class="auth-mission-link" href="https://helpmefindthejob.com/changelog" data-i18n="landing.linkChangelog">Changelog</a>
+            <a class="auth-mission-link" href="/status" data-i18n="landing.linkStatus">Status</a>
+          </nav>
+          <p class="auth-mission-foot" data-i18n="landing.foot">Alpha — main branch may be unstable. Honest about the tier.</p>
+        </section>
+        <div class="auth-card">
         <div class="auth-brand">
           <span class="brand-mark" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 6 H12 a6 6 0 0 1 0 12 H7 V6 z"/><circle cx="13" cy="12" r="1.4" fill="currentColor"/><path d="M16.5 9.5 L20 6 M17.5 6 L20 6 L20 8.5"/></svg></span>
           <div>
@@ -123,6 +154,7 @@
           <a href="/data-retention" data-i18n="auth.legal.dataRetention">Data retention</a>
           <a href="/impressum" data-i18n="auth.legal.impressum">Impressum</a>
         </p>
+      </div>
       </div>
     </main>
 
