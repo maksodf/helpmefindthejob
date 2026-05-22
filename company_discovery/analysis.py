@@ -990,14 +990,13 @@ def _dispatch_provider_impl(
     # key before the actual dispatch. Operator config:
     #   HELPMEFINDTHEJOB_MANAGED_AI_PROVIDER  e.g. "openai" (default)
     #   HELPMEFINDTHEJOB_MANAGED_AI_KEY       the operator's API key
-    #   (legacy DIRECTJOB_MANAGED_AI_* still accepted with DeprecationWarning
     #   via the env_compat shim)
-    #   DIRECTJOB_MANAGED_AI_MODEL     optional; falls back to a sane default
-    #   DIRECTJOB_MANAGED_AI_BASE_URL  optional; for OpenAI-compatible gateways
+    #   HELPMEFINDTHEJOB_MANAGED_AI_MODEL     optional; falls back to a sane default
+    #   HELPMEFINDTHEJOB_MANAGED_AI_BASE_URL  optional; for OpenAI-compatible gateways
     if provider.provider_id == "managed":
         upstream = (
             (
-                get_env("HELPMEFINDTHEJOB_MANAGED_AI_PROVIDER", "DIRECTJOB_MANAGED_AI_PROVIDER")
+                get_env("HELPMEFINDTHEJOB_MANAGED_AI_PROVIDER")
                 or "openai"
             )
             .strip()
@@ -1012,7 +1011,7 @@ def _dispatch_provider_impl(
                 error="HELPMEFINDTHEJOB_MANAGED_AI_PROVIDER must be one of: openai, anthropic, google_gemini, deepseek, openrouter.",
             )
         if not (
-            get_env("HELPMEFINDTHEJOB_MANAGED_AI_KEY", "DIRECTJOB_MANAGED_AI_KEY") or ""
+            get_env("HELPMEFINDTHEJOB_MANAGED_AI_KEY") or ""
         ).strip():
             return AnalysisExecutionResult(
                 status="configuration_error",
@@ -1025,13 +1024,13 @@ def _dispatch_provider_impl(
             provider_id=upstream,
             invocation_mode="api",
             model=(
-                get_env("HELPMEFINDTHEJOB_MANAGED_AI_MODEL", "DIRECTJOB_MANAGED_AI_MODEL")
+                get_env("HELPMEFINDTHEJOB_MANAGED_AI_MODEL")
                 or provider.model
                 or ""
             ).strip(),
             credential_reference="HELPMEFINDTHEJOB_MANAGED_AI_KEY",
             base_url=(
-                get_env("HELPMEFINDTHEJOB_MANAGED_AI_BASE_URL", "DIRECTJOB_MANAGED_AI_BASE_URL")
+                get_env("HELPMEFINDTHEJOB_MANAGED_AI_BASE_URL")
                 or ""
             ).strip(),
             command="",
@@ -1418,7 +1417,7 @@ def _dispatch_provider_streaming_impl(
     if provider.provider_id == "managed":
         upstream = (
             (
-                get_env("HELPMEFINDTHEJOB_MANAGED_AI_PROVIDER", "DIRECTJOB_MANAGED_AI_PROVIDER")
+                get_env("HELPMEFINDTHEJOB_MANAGED_AI_PROVIDER")
                 or "openai"
             )
             .strip()
@@ -1437,7 +1436,7 @@ def _dispatch_provider_streaming_impl(
             )
             return
         if not (
-            get_env("HELPMEFINDTHEJOB_MANAGED_AI_KEY", "DIRECTJOB_MANAGED_AI_KEY") or ""
+            get_env("HELPMEFINDTHEJOB_MANAGED_AI_KEY") or ""
         ).strip():
             yield (
                 "final",
@@ -1454,13 +1453,13 @@ def _dispatch_provider_streaming_impl(
             provider_id=upstream,
             invocation_mode="api",
             model=(
-                get_env("HELPMEFINDTHEJOB_MANAGED_AI_MODEL", "DIRECTJOB_MANAGED_AI_MODEL")
+                get_env("HELPMEFINDTHEJOB_MANAGED_AI_MODEL")
                 or provider.model
                 or ""
             ).strip(),
             credential_reference="HELPMEFINDTHEJOB_MANAGED_AI_KEY",
             base_url=(
-                get_env("HELPMEFINDTHEJOB_MANAGED_AI_BASE_URL", "DIRECTJOB_MANAGED_AI_BASE_URL")
+                get_env("HELPMEFINDTHEJOB_MANAGED_AI_BASE_URL")
                 or ""
             ).strip(),
             command="",

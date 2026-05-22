@@ -229,8 +229,8 @@ def _clear_vapid_env() -> None:
     for key in (
         "HELPMEFINDTHEJOB_VAPID_PUBLIC_KEY",
         "HELPMEFINDTHEJOB_VAPID_PRIVATE_KEY",
-        "DIRECTJOB_VAPID_PUBLIC_KEY",
-        "DIRECTJOB_VAPID_PRIVATE_KEY",
+        "HELPMEFINDTHEJOB_VAPID_PUBLIC_KEY",
+        "HELPMEFINDTHEJOB_VAPID_PRIVATE_KEY",
     ):
         os.environ.pop(key, None)
 

@@ -22,10 +22,10 @@ already prevents the same ``(user, company)`` from running twice.
 
 Limits come from environment variables with safe defaults:
 
-- ``DIRECTJOB_QUOTA_SCANS_PER_DAY`` (default 50)
-- ``DIRECTJOB_QUOTA_AI_PER_DAY`` (default 50)
-- ``DIRECTJOB_QUOTA_DOMAIN_PER_HOUR`` (default 30)
-- ``DIRECTJOB_QUOTA_ACTIVE_SCANS`` (default 3)
+- ``HELPMEFINDTHEJOB_QUOTA_SCANS_PER_DAY`` (default 50)
+- ``HELPMEFINDTHEJOB_QUOTA_AI_PER_DAY`` (default 50)
+- ``HELPMEFINDTHEJOB_QUOTA_DOMAIN_PER_HOUR`` (default 30)
+- ``HELPMEFINDTHEJOB_QUOTA_ACTIVE_SCANS`` (default 3)
 """
 
 from __future__ import annotations
@@ -56,16 +56,16 @@ def _hour_key(when: datetime | None = None) -> str:
 @dataclass(frozen=True)
 class QuotaLimits:
     scans_per_day: int = int(
-        get_env("HELPMEFINDTHEJOB_QUOTA_SCANS_PER_DAY", "DIRECTJOB_QUOTA_SCANS_PER_DAY", "50")
+        get_env("HELPMEFINDTHEJOB_QUOTA_SCANS_PER_DAY", "50")
     )
     ai_per_day: int = int(
-        get_env("HELPMEFINDTHEJOB_QUOTA_AI_PER_DAY", "DIRECTJOB_QUOTA_AI_PER_DAY", "50")
+        get_env("HELPMEFINDTHEJOB_QUOTA_AI_PER_DAY", "50")
     )
     domain_per_hour: int = int(
-        get_env("HELPMEFINDTHEJOB_QUOTA_DOMAIN_PER_HOUR", "DIRECTJOB_QUOTA_DOMAIN_PER_HOUR", "30")
+        get_env("HELPMEFINDTHEJOB_QUOTA_DOMAIN_PER_HOUR", "30")
     )
     active_scans: int = int(
-        get_env("HELPMEFINDTHEJOB_QUOTA_ACTIVE_SCANS", "DIRECTJOB_QUOTA_ACTIVE_SCANS", "3")
+        get_env("HELPMEFINDTHEJOB_QUOTA_ACTIVE_SCANS", "3")
     )
 
 

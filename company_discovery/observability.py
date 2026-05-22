@@ -51,30 +51,22 @@ from typing import Any
 # ---------------------------------------------------------------------------
 
 
-def _env(key_new: str, key_legacy: str = "") -> str:
-    """Look up env var with the canonical new name first, then the
-    legacy DirectJob prefix as a fallback."""
+def _env(key_new: str) -> str:
+    """Look up env var by canonical name; empty string when unset."""
 
-    value = os.environ.get(key_new, "").strip()
-    if value:
-        return value
-    if key_legacy:
-        return os.environ.get(key_legacy, "").strip()
-    return ""
+    return os.environ.get(key_new, "").strip()
 
 
 def sentry_dsn() -> str:
-    return _env("HELPMEFINDTHEJOB_SENTRY_DSN", "DIRECTJOB_SENTRY_DSN")
+    return _env("HELPMEFINDTHEJOB_SENTRY_DSN")
 
 
 def posthog_key() -> str:
-    return _env("HELPMEFINDTHEJOB_POSTHOG_KEY", "DIRECTJOB_POSTHOG_KEY")
+    return _env("HELPMEFINDTHEJOB_POSTHOG_KEY")
 
 
 def posthog_host() -> str:
-    return _env(
-        "HELPMEFINDTHEJOB_POSTHOG_HOST", "DIRECTJOB_POSTHOG_HOST"
-    ) or "https://eu.posthog.com"
+    return _env("HELPMEFINDTHEJOB_POSTHOG_HOST") or "https://eu.posthog.com"
 
 
 # ---------------------------------------------------------------------------

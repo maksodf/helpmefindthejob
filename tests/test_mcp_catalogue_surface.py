@@ -185,7 +185,7 @@ class HttpCatalogueSurface(unittest.TestCase):
         env["HELPMEFINDTHEJOB_DATA_FILE"] = str(
             Path(cls.tmpdir.name) / "data.json"
         )
-        env["DIRECTJOB_DISABLE_SCHEDULER"] = "1"
+        env["HELPMEFINDTHEJOB_DISABLE_SCHEDULER"] = "1"
         env.pop("HELPMEFINDTHEJOB_DATABASE_URL", None)
         cls.proc = subprocess.Popen(
             [sys.executable, "app.py", "--port", str(cls.port)],

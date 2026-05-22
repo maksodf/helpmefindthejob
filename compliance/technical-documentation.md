@@ -165,7 +165,7 @@ See [`accuracy-and-bias-testing.md`](accuracy-and-bias-testing.md) §"Metrics".
 
 See [`human-oversight-guide.md`](human-oversight-guide.md) for the full guide. Summary:
 
-- Default-off advisor-review mode (config flag `DIRECTJOB_HUMAN_OVERSIGHT_MODE`)
+- Default-off advisor-review mode (config flag `HELPMEFINDTHEJOB_HUMAN_OVERSIGHT_MODE`)
 - When enabled, AI outputs queue for advisor review at `/api/admin/oversight/queue`
 - Kill-switch: any deployer can disable AI features and fall back to deterministic templates
 - No auto-decision paths in the codebase

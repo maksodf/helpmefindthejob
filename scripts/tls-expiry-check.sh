@@ -15,11 +15,11 @@
 
 set -eu
 
-DOMAIN="${DOMAIN:-${DIRECTJOB_DOMAIN:-}}"
+DOMAIN="${DOMAIN:-${HELPMEFINDTHEJOB_DOMAIN:-}}"
 WARN_DAYS="${WARN_DAYS:-14}"
 
 if [ -z "$DOMAIN" ]; then
-  echo "tls: set DOMAIN or DIRECTJOB_DOMAIN" >&2
+  echo "tls: set DOMAIN or HELPMEFINDTHEJOB_DOMAIN" >&2
   exit 1
 fi
 

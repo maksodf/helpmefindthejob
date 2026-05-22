@@ -1367,7 +1367,7 @@ ten plus surfaced one more flake bug during the regression sweep.
 1. User-configured provider (if `directjob_chat_router` invocation
    mode is set on their profile)
 2. Operator-managed fallback gated by
-   `DIRECTJOB_CHAT_AI_ROUTER=true` + `DIRECTJOB_MANAGED_AI_KEY`
+   `HELPMEFINDTHEJOB_CHAT_AI_ROUTER=true` + `HELPMEFINDTHEJOB_MANAGED_AI_KEY`
 3. None → fall through to keyword/help
 
 - 10-minute LRU cache (1024 entries, sha256 of normalized message)
@@ -1572,7 +1572,7 @@ The agent runs end-to-end without the human in the loop and asserts
 
 ```
 [PASS] register_account — as verifier+a4d942@example.com
-[PASS] download_personal_photo — 13516 bytes from https://picsum.photos/seed/directjob/240/240.jpg
+[PASS] download_personal_photo — 13516 bytes from https://picsum.photos/seed/helpmefindthejob/240/240.jpg
 [PASS] upload_photo_to_profile — HTTP 200 sizeBytes=13516
 [PASS] cv_builder_completed — all sections submitted + finish OK
 [PASS] pdf_saved_to_desktop — path=/Users/fouad./Desktop/helpmefindthejob-verification-CV.pdf size=63650B

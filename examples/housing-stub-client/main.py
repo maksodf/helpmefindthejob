@@ -241,7 +241,7 @@ def spawn_server(data_dir: Path) -> subprocess.Popen:
 
     repo_root = Path(__file__).resolve().parent.parent.parent
     env = dict(os.environ)
-    env["COMPANY_DISCOVERY_DATA_DIR"] = str(data_dir)
+    env["HELPMEFINDTHEJOB_DATA_DIR"] = str(data_dir)
     env.setdefault("HELPMEFINDTHEJOB_DISABLE_NETWORK", "1")
     return subprocess.Popen(
         [sys.executable, "mcp_server.py"],

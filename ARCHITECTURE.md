@@ -56,7 +56,7 @@ flowchart TB
     %% Persistence & crypto
     subgraph "Persistence + crypto"
         Repo["SQLite repository<br/><code>company_discovery/sqlite_repository.py</code><br/><em>workspaces, profiles, discovered jobs, scans</em>"]
-        Crypto["Encryption-at-rest<br/><code>company_discovery/crypto_kit.py</code><br/><em>ChaCha20-Poly1305 AEAD, AAD = user_id,<br/>HKDF from DIRECTJOB_SECRET_KEY</em>"]
+        Crypto["Encryption-at-rest<br/><code>company_discovery/crypto_kit.py</code><br/><em>ChaCha20-Poly1305 AEAD, AAD = user_id,<br/>HKDF from HELPMEFINDTHEJOB_SECRET_KEY</em>"]
         Auth["Auth + 2FA<br/><code>company_discovery/auth.py</code><br/><em>users, sessions, TOTP (AEAD-encrypted), invites</em>"]
         AuditLog["Admin audit log<br/><code>data/admin_audit.log</code>"]
         Quotas["Quotas<br/><code>company_discovery/quotas.py</code>"]
@@ -163,10 +163,10 @@ Organised by layer, with the file or module that implements each.
 | Component | Path | Role |
 |---|---|---|
 | **SQLite repository** | `company_discovery/sqlite_repository.py` | Workspaces, profiles, discovered jobs, scans, applications. WAL-mode SQLite (single-file deployment), `PRAGMA foreign_keys=ON`. Encryption applied at the column level for `profile.cv_text`. |
-| **Encryption-at-rest** | `company_discovery/crypto_kit.py` | ChaCha20-Poly1305 (Rust-backed PyCA), 12-byte nonce, 32-byte key. Key resolved from explicit `DIRECTJOB_DATA_KEY` (base64) or derived via HKDF-SHA256 from `DIRECTJOB_SECRET_KEY`. Blob format: `aead:v1:<base64url(nonce ‖ ciphertext ‖ tag)>`. AAD support for binding ciphertexts to a record id, defeating swap-the-blob attacks. |
+| **Encryption-at-rest** | `company_discovery/crypto_kit.py` | ChaCha20-Poly1305 (Rust-backed PyCA), 12-byte nonce, 32-byte key. Key resolved from explicit `HELPMEFINDTHEJOB_DATA_KEY` (base64) or derived via HKDF-SHA256 from `HELPMEFINDTHEJOB_SECRET_KEY`. Blob format: `aead:v1:<base64url(nonce ‖ ciphertext ‖ tag)>`. AAD support for binding ciphertexts to a record id, defeating swap-the-blob attacks. |
 | **Auth + 2FA** | `company_discovery/auth.py` | Users, sessions (cookie-based, 14-day TTL by default), invitations, email-verify, deletion grace, TOTP 2FA. TOTP secret column on the AEAD path (post-2026-05-18 migration); legacy XOR blobs decrypt for read continuity and upgrade in place on first 2FA check. |
 | **Admin audit log** | `data/admin_audit.log` (JSON Lines) | One JSON object per line for every admin action (create user, change role, change active state, reset password). Supports EU AI Act Article 12 record-keeping. |
-| **Quotas** | `company_discovery/quotas.py` | Per-user-per-day scan / AI / concurrency caps; tunable via `DIRECTJOB_QUOTA_*` env vars. |
+| **Quotas** | `company_discovery/quotas.py` | Per-user-per-day scan / AI / concurrency caps; tunable via `HELPMEFINDTHEJOB_QUOTA_*` env vars. |
 
 ### Cross-cutting
 

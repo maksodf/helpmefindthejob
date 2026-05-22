@@ -17,7 +17,7 @@ Design principles:
 
 - **Opt-in**: nothing is recorded unless the deployer sets
   ``HELPMEFINDTHEJOB_COST_METRICS=true`` (or the legacy
-  ``DIRECTJOB_COST_METRICS`` alias). Off by default. Honesty rule:
+  ``HELPMEFINDTHEJOB_COST_METRICS`` alias). Off by default. Honesty rule:
   we don't collect data we haven't told the deployer about.
 - **No PII**: every user identifier is opaque-hashed via the same
   HMAC chain the audit log uses. The hash is salt-keyed so a
@@ -138,7 +138,7 @@ def _env_enabled() -> bool:
     """Two-step env-var lookup (new name preferred, legacy alias
     supported)."""
 
-    for key in ("HELPMEFINDTHEJOB_COST_METRICS", "DIRECTJOB_COST_METRICS"):
+    for key in ("HELPMEFINDTHEJOB_COST_METRICS", "HELPMEFINDTHEJOB_COST_METRICS"):
         value = os.environ.get(key, "").strip().lower()
         if value in {"1", "true", "yes", "on"}:
             return True

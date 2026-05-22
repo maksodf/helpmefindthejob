@@ -13,7 +13,7 @@ grant-sprint planning context).
 This recipe is **host-agnostic**. It does not commit the project to a
 specific hosting provider, registrar, monitoring vendor, or domain
 name. The example values below use placeholders (`<your-domain>`,
-`/srv/directjob-demo`) that the deployer replaces with their own
+`/srv/helpmefindthejob-demo`) that the deployer replaces with their own
 choices.
 
 ---
@@ -33,9 +33,9 @@ posture (b)) is a **parallel public instance** that:
 
 - Runs from the same Git checkout and the same Docker image.
 - Uses the same `scripts/deploy.sh` toolchain.
-- Has its own `.env` with separate `DIRECTJOB_SECRET_KEY`,
-  `DIRECTJOB_AUDIT_SALT`, admin credentials.
-- Uses its own Docker named volume (`directjob_data_demo`) so it
+- Has its own `.env` with separate `HELPMEFINDTHEJOB_SECRET_KEY`,
+  `HELPMEFINDTHEJOB_AUDIT_SALT`, admin credentials.
+- Uses its own Docker named volume (`helpmefindthejob_data_demo`) so it
   cannot read or write the private instance's data.
 - Has its own Caddy site block answering a separate subdomain.
 - Is pre-seeded with the seven-persona panel via
@@ -78,7 +78,6 @@ ${EDITOR:-vi} .env.demo
 #   HELPMEFINDTHEJOB_AUDIT_SALT=<32-byte base64; python3 -c "import secrets, base64; print(base64.b64encode(secrets.token_bytes(32)).decode())">
 #   HELPMEFINDTHEJOB_ADMIN_EMAIL=<your demo admin>
 #   HELPMEFINDTHEJOB_ADMIN_PASSWORD=<your demo admin password>
-# Legacy DIRECTJOB_* / COMPANY_DISCOVERY_* names still work via the
 # env_compat shim with a DeprecationWarning; see "Env-var migration
 # path" below. Prefer the new names in new deployments.
 
@@ -112,27 +111,27 @@ already reachable via SSH:
 
 ```bash
 # Provision the demo's app directory.
-sudo mkdir -p /srv/directjob-demo
-sudo chown "$USER:$USER" /srv/directjob-demo
-cd /srv/directjob-demo
+sudo mkdir -p /srv/helpmefindthejob-demo
+sudo chown "$USER:$USER" /srv/helpmefindthejob-demo
+cd /srv/helpmefindthejob-demo
 git clone https://github.com/maksodf/helpmefindthejob.git .
 
 # Generate the demo's secrets — these must be different from the
 # private instance's secrets.
-python3 -c "import secrets; print('DIRECTJOB_SECRET_KEY=' + secrets.token_urlsafe(32))"
-python3 -c "import secrets, base64; print('DIRECTJOB_AUDIT_SALT=' + base64.b64encode(secrets.token_bytes(32)).decode())"
+python3 -c "import secrets; print('HELPMEFINDTHEJOB_SECRET_KEY=' + secrets.token_urlsafe(32))"
+python3 -c "import secrets, base64; print('HELPMEFINDTHEJOB_AUDIT_SALT=' + base64.b64encode(secrets.token_bytes(32)).decode())"
 
 # Copy the env template and fill in.
 cp deploy/production.env.template .env
 ${EDITOR:-vi} .env
 # Fill in at minimum:
-#   DIRECTJOB_DOMAIN=demo.<your-domain>
-#   DIRECTJOB_PUBLIC_URL=https://demo.<your-domain>
-#   DIRECTJOB_SECRET_KEY=<from above>
-#   DIRECTJOB_AUDIT_SALT=<from above>
-#   DIRECTJOB_ADMIN_EMAIL=<demo-admin@your-domain>
-#   DIRECTJOB_ADMIN_PASSWORD=<long random password>
-#   DIRECTJOB_ALLOW_REGISTRATION=false   # demo is invite-only
+#   HELPMEFINDTHEJOB_DOMAIN=demo.<your-domain>
+#   HELPMEFINDTHEJOB_PUBLIC_URL=https://demo.<your-domain>
+#   HELPMEFINDTHEJOB_SECRET_KEY=<from above>
+#   HELPMEFINDTHEJOB_AUDIT_SALT=<from above>
+#   HELPMEFINDTHEJOB_ADMIN_EMAIL=<demo-admin@your-domain>
+#   HELPMEFINDTHEJOB_ADMIN_PASSWORD=<long random password>
+#   HELPMEFINDTHEJOB_ALLOW_REGISTRATION=false   # demo is invite-only
 
 # Set restrictive permissions on the env file.
 chmod 0600 .env
@@ -153,7 +152,7 @@ TAG=$(git rev-parse --short HEAD) \
 SSH_HOST=<user>@<demo-host> \
 SSH_KEY=~/.ssh/<your-key> \
 PUBLIC_URL=https://demo.<your-domain> \
-APP_DIR=/srv/directjob-demo \
+APP_DIR=/srv/helpmefindthejob-demo \
 SERVICE_NAME=helpmefindthejob \
 COMPOSE_FILE=docker-compose.prod.yml \
 ./scripts/deploy.sh
@@ -174,7 +173,7 @@ After the first deploy, run the persona seed once via SSH:
 
 ```bash
 ssh <user>@<demo-host> \
-  "cd /srv/directjob-demo && \
+  "cd /srv/helpmefindthejob-demo && \
    docker compose exec -T helpmefindthejob \
      python3 scripts/seed-personas.py --password '<demo-password>'"
 ```
@@ -200,7 +199,7 @@ as `healthy` once the start-period elapses.
 ### 5.2 Persona seed verification
 
 ```bash
-docker compose -p directjob-demo exec helpmefindthejob python3 -c "
+docker compose -p helpmefindthejob-demo exec helpmefindthejob python3 -c "
 from app import build_state
 state = build_state()
 users = state.auth_store.list_users()
@@ -239,12 +238,12 @@ sudo ss -ltnp | grep ':80 '
 # Caddy should be listening; if ufw blocks 80, open it.
 
 # 3. Check Caddy logs.
-docker compose -p directjob-demo logs caddy | tail -50
+docker compose -p helpmefindthejob-demo logs caddy | tail -50
 ```
 
 Most issues resolve once DNS propagates. If the recipe must serve
 HTTP-only as a fallback during a short DNS window, set
-`DIRECTJOB_PUBLIC_URL=http://demo.<your-domain>:80` and Caddy will
+`HELPMEFINDTHEJOB_PUBLIC_URL=http://demo.<your-domain>:80` and Caddy will
 serve plain HTTP without attempting cert issuance.
 
 ---
@@ -254,9 +253,9 @@ serve plain HTTP without attempting cert issuance.
 Once-a-day cron, on the host:
 
 ```bash
-cd /srv/directjob-demo && \
-  DIRECTJOB_BACKUP_BACKEND=local \
-  BACKUP_DIR=/var/backups/directjob-demo \
+cd /srv/helpmefindthejob-demo && \
+  HELPMEFINDTHEJOB_BACKUP_BACKEND=local \
+  BACKUP_DIR=/var/backups/helpmefindthejob-demo \
   BACKUP_RETENTION_DAYS=30 \
   ./scripts/backup-production.sh
 ```
@@ -291,14 +290,14 @@ firewall vendor.
 
 ## 9. Log locations
 
-- Application logs: `docker compose -p directjob-demo logs
+- Application logs: `docker compose -p helpmefindthejob-demo logs
   helpmefindthejob`.
-- Caddy access + error logs: `docker compose -p directjob-demo logs
+- Caddy access + error logs: `docker compose -p helpmefindthejob-demo logs
   caddy`.
 - AI Act audit log: inside the container at
-  `${DIRECTJOB_DATA_ROOT}/ai_act_audit.log`, or on the host inside the
-  named volume `directjob_data_demo`. Inspect via
-  `docker compose -p directjob-demo exec helpmefindthejob cat
+  `${HELPMEFINDTHEJOB_DATA_ROOT}/ai_act_audit.log`, or on the host inside the
+  named volume `helpmefindthejob_data_demo`. Inspect via
+  `docker compose -p helpmefindthejob-demo exec helpmefindthejob cat
   /app/data/ai_act_audit.log`.
 - Admin-action log (separate from the AI Act log): same location,
   filename `admin_audit.log`.
@@ -334,7 +333,7 @@ cd <local-working-tree>
 git pull origin main
 TAG=$(git rev-parse --short HEAD) \
 SSH_HOST=<user>@<demo-host> \
-APP_DIR=/srv/directjob-demo \
+APP_DIR=/srv/helpmefindthejob-demo \
 PUBLIC_URL=https://demo.<your-domain> \
 ./scripts/deploy.sh
 ```
@@ -421,9 +420,9 @@ reproducibility).
 
 ```bash
 ssh <user>@<demo-host> \
-  "cd /srv/directjob-demo && \
-   docker compose -p directjob-demo down && \
-   docker volume rm directjob_data_demo"
+  "cd /srv/helpmefindthejob-demo && \
+   docker compose -p helpmefindthejob-demo down && \
+   docker volume rm helpmefindthejob_data_demo"
 ```
 
 Followed by a final backup-export of the volume's contents if the
@@ -432,46 +431,45 @@ retention policy (see `compliance/audit-log-schema.md` §6).
 
 ---
 
-## Env-var migration path
+## Env-var naming
 
-Helpmefindthejob's canonical env-var prefix is `HELPMEFINDTHEJOB_*`.
-Two legacy prefixes still work at runtime, by design:
+Helpmefindthejob's canonical env-var prefix is `HELPMEFINDTHEJOB_*`. The two
+legacy prefixes (`HELPMEFINDTHEJOB_*` from the pre-Week-1 codebase,
+`DIRECTJOB_*` from the pre-Decision-22 codebase) were removed in
+Phase 3 (2026-05-22 per Decision 22 closeout). Operators upgrading from
+a pre-Decision-22 deployment must rename all `DIRECTJOB_*` env vars to
+`HELPMEFINDTHEJOB_*` before the new image boots; the new code does not
+read the legacy prefixes.
 
-| Era | Prefix | Status |
-|---|---|---|
-| Original project (pre-DirectJob-Scout era) | `COMPANY_DISCOVERY_*` | Accepted with `DeprecationWarning` through Phase 2; removed in Phase 3. |
-| DirectJob Scout era (Week 1 through 2026-05-18) | `DIRECTJOB_*` | Accepted with `DeprecationWarning` through Phase 2; removed in Phase 3. |
-| Helpmefindthejob era (Decision 22, 2026-05-19 → ) | `HELPMEFINDTHEJOB_*` | Canonical. |
-
-The shim that implements this lookup lives at
-[`company_discovery/env_compat.py`](https://github.com/maksodf/helpmefindthejob/blob/main/company_discovery/env_compat.py)
-and is the single choke point every env-var read in the codebase
-flows through. Tests in
-[`tests/test_env_compat.py`](https://github.com/maksodf/helpmefindthejob/blob/main/tests/test_env_compat.py) pin its
-behaviour: new prefix is consulted first; legacy prefix falls back
-with a `DeprecationWarning`; the default is returned only when
-neither is set.
+Reads route through
+[`company_discovery/env_compat.py`](https://github.com/maksodf/helpmefindthejob/blob/main/company_discovery/env_compat.py),
+which is now a thin wrapper over `os.environ.get` (no shim, no
+deprecation warnings, no fallback to legacy prefixes).
 
 ### Migrating an existing deployment
 
-Operationally, you can migrate one variable at a time:
+Phase 3 is complete. Operators with a `.env` file that still uses
+`HELPMEFINDTHEJOB_*` or `DIRECTJOB_*` prefixes must rename every
+variable to `HELPMEFINDTHEJOB_*` before the new image boots. The
+new code does not read the legacy prefixes — leaving them in your
+`.env` results in the variable being silently ignored, which can
+manifest as the service refusing to start (missing
+`HELPMEFINDTHEJOB_SECRET_KEY` etc.) or running with default
+values (missing `HELPMEFINDTHEJOB_PUBLIC_URL` etc.).
 
-1. **Day 0** — start the new release with your existing `.env`. The
-   `DeprecationWarning` lines surface in stderr / Docker logs naming
-   each legacy variable.
-2. **Day 1+** — at your convenience, rename each variable in your
-   `.env` from `DIRECTJOB_X` or `COMPANY_DISCOVERY_X` to
-   `HELPMEFINDTHEJOB_X`. There is no need to do them all at once;
-   each variable is independent.
-3. **Verification** — restart the service. The corresponding
-   `DeprecationWarning` for the renamed variable should disappear
-   from logs. Repeat until logs are warning-free.
-4. **Phase 3 cutover** — when the project bumps the major version
-   that removes the legacy prefixes, any variable still using a
-   legacy name will be silently ignored. The migration window is
-   therefore: now → end of Phase 2.
+A one-shot `sed` works:
 
-Hard-cap: if you set both `HELPMEFINDTHEJOB_X` and `DIRECTJOB_X` to
+```bash
+sed -i.bak \
+  -e 's/^DIRECTJOB_/HELPMEFINDTHEJOB_/' \
+  -e 's/^HELPMEFINDTHEJOB_/HELPMEFINDTHEJOB_/' \
+  /opt/helpmefindthejob/.env
+```
+
+Then restart the service and confirm `/api/health` returns
+`status: ok`.
+
+Hard-cap: if you set both `HELPMEFINDTHEJOB_X` and `HELPMEFINDTHEJOB_X` to
 different values, the **new** prefix wins. No warning is emitted in
 that case because the deployer's intent is clear (they have set the
 new name).
@@ -479,10 +477,10 @@ new name).
 The fail-fast audit-log salt rule (
 [`company_discovery/audit_log.py`](https://github.com/maksodf/helpmefindthejob/blob/main/company_discovery/audit_log.py)
 ``_resolve_salt``) sits on top of this shim: in production mode
-(``HELPMEFINDTHEJOB_ENV`` or legacy ``COMPANY_DISCOVERY_ENV`` set to
+(``HELPMEFINDTHEJOB_ENV`` or legacy ``HELPMEFINDTHEJOB_ENV`` set to
 anything other than `development` / `test`), the server refuses to
 start when neither `HELPMEFINDTHEJOB_AUDIT_SALT` nor the legacy
-`DIRECTJOB_AUDIT_SALT` is configured. Development mode falls back to
+`HELPMEFINDTHEJOB_AUDIT_SALT` is configured. Development mode falls back to
 a per-process random salt with an `ERROR`-level stderr warning.
 
 ---
@@ -494,5 +492,5 @@ a per-process random salt with an `ERROR`-level stderr warning.
   Parallel-public-instance posture per Finding A maintainer decision.
 - **2026-05-19**: env-var migration path documented above; `env_compat`
   shim landed in the pre-submission scope-tightening slice (PART 3),
-  closing inventory items #6 + #7 (DIRECTJOB_/COMPANY_DISCOVERY_
+  closing inventory items #6 + #7 (HELPMEFINDTHEJOB_/HELPMEFINDTHEJOB_
   prefix drift).

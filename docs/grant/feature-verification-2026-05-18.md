@@ -32,7 +32,7 @@ The project's claims hold up under verification with a handful of specific gaps 
 |---|---|---|---|
 | G1 | Medium | `crypto_kit.py` docstring + project privacy story | TOTP secret column in `auth.py._encrypt_secret` still uses XOR-with-SHA256-derived-key. The CV column was migrated to ChaCha20-Poly1305; the TOTP column was not, despite the docstring of `crypto_kit.py` explicitly stating both columns should be on the AEAD path. |
 | G2 | Medium | Week 2 task 2.2 plan (MCP server docs) | `mcp_server.py` does **not** validate `tools/call` arguments against the published `inputSchema` before dispatch. Tool methods catch missing args via Python's positional-argument check, which yields a useful error string but is decorative compared to genuine JSON Schema enforcement. |
-| G3 | Low | `mcp_server.py` `serverInfo` | MCP server identifies as `company-discovery` rather than `directjob-scout`. Legacy internal name. |
+| G3 | Low | `mcp_server.py` `serverInfo` | MCP server identifies as `company-discovery` rather than `helpmefindthejob`. Legacy internal name. |
 | G4 | Low | README + CLAUDE.md "locale-aware … yes-no parsing (ja/nein)" | No unified yes/no parser exists. The journey has contextual regex matching for `no/nein/nope` in one specific intent-detection path only. The colloquial German variants `ja`, `jo`, `jep`, `nö` are not specifically recognised anywhere; they would fall through to phase-specific elicitation. |
 | G5 | Low | `journey.is_help_token('help')` | Returns `False`. Only the German `hilfe` triggers True. English-language users typing the bare token `help` won't get the help escape hatch. |
 | G6 | Documentation accuracy | Planning docs / CLAUDE.md citing "~20 test files" | Actual test surface is 73 test files, 884 tests. The planning estimate undersells the project. |
@@ -47,13 +47,13 @@ The project's claims hold up under verification with a handful of specific gaps 
 
 **Claim**: `README.md` quickstart promises a working local instance in ~5 minutes from a clean clone via `docker compose up --build`.
 
-**Verification method**: clean `docker compose build` (no existing images), then `docker compose up -d` with the three required env vars (`DIRECTJOB_SECRET_KEY`, `DIRECTJOB_ADMIN_EMAIL`, `DIRECTJOB_ADMIN_PASSWORD`).
+**Verification method**: clean `docker compose build` (no existing images), then `docker compose up -d` with the three required env vars (`HELPMEFINDTHEJOB_SECRET_KEY`, `HELPMEFINDTHEJOB_ADMIN_EMAIL`, `HELPMEFINDTHEJOB_ADMIN_PASSWORD`).
 
 **Results**:
 
-- Build completed: exit code 0; image `directjob-scout:latest` (240 MB disk, 52.7 MB content).
-- Image name confirms the Task 1.4 Docker-image-name fix: previously the image would have been `nassermcpserver-directjob-scout` (following the local repo directory name); the `name: directjob-scout` + `image: directjob-scout:latest` in the compose files now produces a stable name on any developer's machine.
-- Container `directjob-scout-directjob-scout-1` started cleanly.
+- Build completed: exit code 0; image `helpmefindthejob:latest` (240 MB disk, 52.7 MB content).
+- Image name confirms the Task 1.4 Docker-image-name fix: previously the image would have been `nassermcpserver-helpmefindthejob` (following the local repo directory name); the `name: helpmefindthejob` + `image: helpmefindthejob:latest` in the compose files now produces a stable name on any developer's machine.
+- Container `helpmefindthejob-helpmefindthejob-1` started cleanly.
 - `GET /api/health` → HTTP 200 with body `{"status":"ok","version":"0.79.4","environment":"development","storage":"sqlite","registrationOpen":false,"schedulerActiveJobs":0}`.
 - `GET /` → 200, 90 KB (sign-in page).
 - `GET /impressum` → 200, 4.3 KB.
@@ -143,7 +143,7 @@ The full 12-phase HTTP-driven walk with Aïcha persona inputs (sign-in → uploa
 
 ```
 Model: llama3.1:8b
-Prompt: "You are a job-fit scorer for DirectJob Scout. Reply with a single integer 1-10. Job: Backend engineer Berlin. Profile: 8y Python, Django, AWS. Fit score?"
+Prompt: "You are a job-fit scorer for Helpmefindthejob. Reply with a single integer 1-10. Job: Backend engineer Berlin. Profile: 8y Python, Django, AWS. Fit score?"
 Wall time: 22.3 s
 Response: "9"
 Tokens: prompt_eval=56, eval=2
@@ -166,7 +166,7 @@ Tokens: prompt_eval=56, eval=2
 - AEAD primitive: `cryptography.hazmat.primitives.ciphers.aead.ChaCha20Poly1305` — the modern PyCA wrapper, Rust-backed (`cryptography.hazmat.bindings._rust.openssl.aead` per live introspection).
 - Blob format: `aead:v1:<base64url(nonce ‖ ciphertext ‖ tag)>`. Explicit version prefix supports future-format migration.
 - Nonce: 12 bytes, generated per-encrypt via `secrets.token_bytes(12)` — cryptographically secure.
-- Key: 32 bytes. Explicit `DIRECTJOB_DATA_KEY` (base64) takes priority over the HKDF-SHA256 derivation from `DIRECTJOB_SECRET_KEY` with salt `b"directjob-scout/aead-v1"`, info `b"directjob/data-key"`.
+- Key: 32 bytes. Explicit `HELPMEFINDTHEJOB_DATA_KEY` (base64) takes priority over the HKDF-SHA256 derivation from `HELPMEFINDTHEJOB_SECRET_KEY` with salt `b"helpmefindthejob/aead-v1"`, info `b"helpmefindthejob/data-key"`.
 - AAD support: `aad=` keyword on both `encrypt()` and `decrypt()`. Used to bind ciphertexts to a record id (e.g., `user_id`) for swap-the-blob defense. Confirmed in `sqlite_repository.py:153`: the CV column is encrypted with `aad=user_id`.
 - Decrypt path: minimum-length check (12 + 16-byte tag = 28 bytes); catches `cryptography.InvalidTag` and re-raises as `ValueError("decrypt_failed")` so callers don't depend on the internal exception type.
 
@@ -258,7 +258,7 @@ Recommended fix:
 # Effort: ~10 LOC + 1 dependency.
 ```
 
-- **Gap G3 (low severity)**: `serverInfo.name == "company-discovery"` (the legacy internal name of the project's first module). After the civic-commons rebrand to "DirectJob Scout", the MCP server identity should match. Fix: change the literal string in `mcp_server.py:handle_request`'s `initialize` branch. Effort: 1 line.
+- **Gap G3 (low severity)**: `serverInfo.name == "company-discovery"` (the legacy internal name of the project's first module). After the civic-commons rebrand to "Helpmefindthejob", the MCP server identity should match. Fix: change the literal string in `mcp_server.py:handle_request`'s `initialize` branch. Effort: 1 line.
 
 ---
 
@@ -340,7 +340,7 @@ OK (skipped=2)
 |---|---|---|---|---|---|
 | G1 | Medium | `crypto_kit.py` docstring; project privacy story; future AI Act compliance pack | TOTP secret column in `auth.py._encrypt_secret` uses XOR-with-SHA256-derived-key. The CV column was migrated to ChaCha20-Poly1305; the TOTP column was not. | Replace `_encrypt_secret`/`_decrypt_secret` in `auth.py` with `EncryptionAtRest.from_secret_key(self.secret_key)` and use the user_id as AAD, matching the cv_text pattern. Add a one-shot lazy-migration path so existing TOTP secrets re-encrypt on next 2FA check. | ~30 LOC + tests |
 | G2 | Medium | `mcp_server.py`; Week 2 task 2.2 plan | The MCP server does not validate `tools/call` arguments against the published `inputSchema` before dispatch. JSON Schema is decorative. | Add a `jsonschema.validate()` call in `handle_request` before the `getattr(tools, name)(**arguments)` line. Return a structured error on validation failure. Add `jsonschema` to `requirements.txt`. | ~10 LOC + 1 dep |
-| G3 | Low | `mcp_server.py` `serverInfo.name` | Server identifies as `company-discovery` (legacy internal name) rather than `directjob-scout`. | Edit the literal string in `mcp_server.py:handle_request`'s `initialize` branch. | 1 line |
+| G3 | Low | `mcp_server.py` `serverInfo.name` | Server identifies as `company-discovery` (legacy internal name) rather than `helpmefindthejob`. | Edit the literal string in `mcp_server.py:handle_request`'s `initialize` branch. | 1 line |
 | G4 | Low | README + CLAUDE.md "locale-aware … yes-no parsing (ja/nein)" | No unified yes/no parser; colloquial German variants not specifically classified. | Either implement `parse_yes_no()` covering `ja/nein/jo/jep/nö/nope/yes/no` and wire it into confirmation gates, or soften the README/CLAUDE.md framing. | ~20 LOC (code path) or 1 line (doc path) |
 | G5 | Low | `journey.is_help_token('help')` | Returns `False` for bare English `help`. | Add `help` to `_HELP_TOKENS`. | 1 line + 1 test |
 | G6 | Documentation accuracy | CLAUDE.md "~20 test files"; planning-doc test-maturity framing | Actual surface: 73 test files / 884 tests pass. | Update wording in CLAUDE.md and any relevant planning section. | 1 line |

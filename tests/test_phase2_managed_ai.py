@@ -9,8 +9,7 @@
 
 When a Pro+ user picks ``provider_id="managed"``, ``_dispatch_provider``
 rebinds the config to the operator's upstream provider via four env
-vars (HELPMEFINDTHEJOB_MANAGED_AI_PROVIDER / KEY / MODEL / BASE_URL —
-legacy DIRECTJOB_* still accepted via the env_compat shim) and then
+vars (HELPMEFINDTHEJOB_MANAGED_AI_PROVIDER / KEY / MODEL / BASE_URL — and then
 calls the standard adapter for that upstream. Plan gating is upstream
 of dispatch — handled by ``AppState.assert_ai_mode_allowed``.
 

@@ -46,7 +46,7 @@ Usage
 
 Other flags::
 
-    --data-dir PATH         Override COMPANY_DISCOVERY_DATA_DIR for one run.
+    --data-dir PATH         Override HELPMEFINDTHEJOB_DATA_DIR for one run.
     --email-domain DOMAIN   Override the default demo.helpmefindthejob.com.
     --base-url URL          Reserved for future HTTP-API mode; not used.
     --force-password-reset  Overwrite existing personas' passwords too.
@@ -252,7 +252,7 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--data-dir",
         default=None,
         help=(
-            "Override COMPANY_DISCOVERY_DATA_DIR for this run. "
+            "Override HELPMEFINDTHEJOB_DATA_DIR for this run. "
             "Useful for tests or for running the seed against a "
             "non-default data location."
         ),
@@ -292,7 +292,7 @@ def _build_state(data_dir: str | None) -> Any:
     """
     if data_dir is not None:
         # Write the new-prefix name so app.py's env_compat shim does not
-        # emit a DeprecationWarning. The legacy COMPANY_DISCOVERY_DATA_DIR
+        # emit a DeprecationWarning. The legacy HELPMEFINDTHEJOB_DATA_DIR
         # still works for deployers who set it manually; see
         # docs/deployment-recipe.md migration path.
         os.environ["HELPMEFINDTHEJOB_DATA_DIR"] = data_dir

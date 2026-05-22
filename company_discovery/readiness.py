@@ -66,19 +66,19 @@ class ReadinessReport:
 
 def _redact_email_backend() -> ReadinessSignal:
     backend = (
-        (get_env("HELPMEFINDTHEJOB_EMAIL_BACKEND", "DIRECTJOB_EMAIL_BACKEND") or "console")
+        (get_env("HELPMEFINDTHEJOB_EMAIL_BACKEND") or "console")
         .strip()
         .casefold()
     )
-    public_url = (get_env("HELPMEFINDTHEJOB_PUBLIC_URL", "DIRECTJOB_PUBLIC_URL") or "").strip()
+    public_url = (get_env("HELPMEFINDTHEJOB_PUBLIC_URL") or "").strip()
     if backend == "smtp":
-        host = get_env("HELPMEFINDTHEJOB_SMTP_HOST", "HELPMEFINDTHEJOB_SMTP_HOST", "")
-        port = get_env("HELPMEFINDTHEJOB_SMTP_PORT", "HELPMEFINDTHEJOB_SMTP_PORT", "")
-        username = bool(get_env("HELPMEFINDTHEJOB_SMTP_USERNAME", "DIRECTJOB_SMTP_USERNAME"))
+        host = get_env("HELPMEFINDTHEJOB_SMTP_HOST", "")
+        port = get_env("HELPMEFINDTHEJOB_SMTP_PORT", "")
+        username = bool(get_env("HELPMEFINDTHEJOB_SMTP_USERNAME"))
         password_present = bool(
-            get_env("HELPMEFINDTHEJOB_SMTP_PASSWORD", "HELPMEFINDTHEJOB_SMTP_PASSWORD")
+            get_env("HELPMEFINDTHEJOB_SMTP_PASSWORD")
         )
-        from_address_present = bool(get_env("HELPMEFINDTHEJOB_EMAIL_FROM", "DIRECTJOB_EMAIL_FROM"))
+        from_address_present = bool(get_env("HELPMEFINDTHEJOB_EMAIL_FROM"))
         missing: list[str] = []
         if not host:
             missing.append("HELPMEFINDTHEJOB_SMTP_HOST")
@@ -127,20 +127,20 @@ def _redact_email_backend() -> ReadinessSignal:
 
 
 def _public_url_signal() -> ReadinessSignal:
-    public_url = (get_env("HELPMEFINDTHEJOB_PUBLIC_URL", "DIRECTJOB_PUBLIC_URL") or "").strip()
+    public_url = (get_env("HELPMEFINDTHEJOB_PUBLIC_URL") or "").strip()
     if not public_url:
         return ReadinessSignal(
             id="public_url",
             label="Public URL",
             status="missing",
-            summary="DIRECTJOB_PUBLIC_URL is not set; invitation and reset links use relative paths.",
+            summary="HELPMEFINDTHEJOB_PUBLIC_URL is not set; invitation and reset links use relative paths.",
         )
     if not (public_url.startswith("http://") or public_url.startswith("https://")):
         return ReadinessSignal(
             id="public_url",
             label="Public URL",
             status="partial",
-            summary="DIRECTJOB_PUBLIC_URL is set but does not start with http/https.",
+            summary="HELPMEFINDTHEJOB_PUBLIC_URL is set but does not start with http/https.",
             detail={"value": public_url},
         )
     if public_url.startswith("http://"):
@@ -148,7 +148,7 @@ def _public_url_signal() -> ReadinessSignal:
             id="public_url",
             label="Public URL",
             status="partial",
-            summary="DIRECTJOB_PUBLIC_URL uses http; production should use https.",
+            summary="HELPMEFINDTHEJOB_PUBLIC_URL uses http; production should use https.",
             detail={"value": public_url},
         )
     return ReadinessSignal(
@@ -162,7 +162,7 @@ def _public_url_signal() -> ReadinessSignal:
 
 def _backup_signal(*, data_dir: Path) -> ReadinessSignal:
     backend = (
-        (get_env("HELPMEFINDTHEJOB_BACKUP_BACKEND", "DIRECTJOB_BACKUP_BACKEND") or "local")
+        (get_env("HELPMEFINDTHEJOB_BACKUP_BACKEND") or "local")
         .strip()
         .casefold()
     )
@@ -170,14 +170,14 @@ def _backup_signal(*, data_dir: Path) -> ReadinessSignal:
     retention = (os.environ.get("BACKUP_RETENTION_DAYS") or "30").strip()
     detail = {"backend": backend, "directory": backup_dir, "retentionDays": retention}
     if backend in {"rclone", "s3", "aws"}:
-        target = get_env("HELPMEFINDTHEJOB_BACKUP_REMOTE", "DIRECTJOB_BACKUP_REMOTE", "")
+        target = get_env("HELPMEFINDTHEJOB_BACKUP_REMOTE", "")
         detail["remote"] = target or None
         if not target:
             return ReadinessSignal(
                 id="backups",
                 label="Backups",
                 status="partial",
-                summary=f"Off-host backend selected ({backend}) but DIRECTJOB_BACKUP_REMOTE is empty.",
+                summary=f"Off-host backend selected ({backend}) but HELPMEFINDTHEJOB_BACKUP_REMOTE is empty.",
                 detail=detail,
             )
         return ReadinessSignal(
@@ -199,11 +199,11 @@ def _backup_signal(*, data_dir: Path) -> ReadinessSignal:
 
 
 def _monitoring_signal() -> ReadinessSignal:
-    domain = (get_env("HELPMEFINDTHEJOB_DOMAIN", "DIRECTJOB_DOMAIN") or "").strip()
+    domain = (get_env("HELPMEFINDTHEJOB_DOMAIN") or "").strip()
     monitor_url = (
-        get_env("HELPMEFINDTHEJOB_MONITORING_URL", "DIRECTJOB_MONITORING_URL") or ""
+        get_env("HELPMEFINDTHEJOB_MONITORING_URL") or ""
     ).strip()
-    log_target = (get_env("HELPMEFINDTHEJOB_LOG_TARGET", "DIRECTJOB_LOG_TARGET") or "").strip()
+    log_target = (get_env("HELPMEFINDTHEJOB_LOG_TARGET") or "").strip()
     detail = {
         "monitoringUrl": monitor_url or None,
         "logTarget": log_target or None,
@@ -236,16 +236,16 @@ def _monitoring_signal() -> ReadinessSignal:
 
 def _billing_signal() -> ReadinessSignal:
     backend = (
-        (get_env("HELPMEFINDTHEJOB_BILLING_BACKEND", "DIRECTJOB_BILLING_BACKEND") or "manual")
+        (get_env("HELPMEFINDTHEJOB_BILLING_BACKEND") or "manual")
         .strip()
         .casefold()
     )
     if backend == "stripe":
-        api_key = bool(get_env("HELPMEFINDTHEJOB_STRIPE_API_KEY", "DIRECTJOB_STRIPE_API_KEY"))
+        api_key = bool(get_env("HELPMEFINDTHEJOB_STRIPE_API_KEY"))
         price_team = bool(
-            get_env("HELPMEFINDTHEJOB_STRIPE_PRICE_TEAM", "DIRECTJOB_STRIPE_PRICE_TEAM")
+            get_env("HELPMEFINDTHEJOB_STRIPE_PRICE_TEAM")
         )
-        price_org = bool(get_env("HELPMEFINDTHEJOB_STRIPE_PRICE_ORG", "DIRECTJOB_STRIPE_PRICE_ORG"))
+        price_org = bool(get_env("HELPMEFINDTHEJOB_STRIPE_PRICE_ORG"))
         if api_key and (price_team or price_org):
             return ReadinessSignal(
                 id="billing",
@@ -272,7 +272,7 @@ def _billing_signal() -> ReadinessSignal:
 
 def _legal_signal() -> ReadinessSignal:
     reviewed = (
-        (get_env("HELPMEFINDTHEJOB_LEGAL_REVIEWED", "DIRECTJOB_LEGAL_REVIEWED") or "")
+        (get_env("HELPMEFINDTHEJOB_LEGAL_REVIEWED") or "")
         .strip()
         .casefold()
     )
@@ -281,13 +281,13 @@ def _legal_signal() -> ReadinessSignal:
             id="legal",
             label="Legal review",
             status="ok",
-            summary="Legal pages marked as counsel-reviewed (DIRECTJOB_LEGAL_REVIEWED=true).",
+            summary="Legal pages marked as counsel-reviewed (HELPMEFINDTHEJOB_LEGAL_REVIEWED=true).",
         )
     return ReadinessSignal(
         id="legal",
         label="Legal review",
         status="partial",
-        summary="Legal pages exist but counsel review is not confirmed via DIRECTJOB_LEGAL_REVIEWED.",
+        summary="Legal pages exist but counsel review is not confirmed via HELPMEFINDTHEJOB_LEGAL_REVIEWED.",
     )
 
 
@@ -295,7 +295,6 @@ def _allow_uninitialized_runtime() -> bool:
     return (
         get_env(
             "HELPMEFINDTHEJOB_READINESS_ALLOW_UNINITIALIZED_RUNTIME",
-            "DIRECTJOB_READINESS_ALLOW_UNINITIALIZED_RUNTIME",
         )
         or ""
     ).strip().casefold() in TRUE_VALUES
@@ -328,10 +327,10 @@ def _scheduler_signal(*, scheduler_path: Path | None, active_jobs: int | None) -
 
 def _quota_signal() -> ReadinessSignal:
     keys = (
-        "DIRECTJOB_QUOTA_SCANS_PER_DAY",
-        "DIRECTJOB_QUOTA_AI_PER_DAY",
-        "DIRECTJOB_QUOTA_DOMAIN_PER_HOUR",
-        "DIRECTJOB_QUOTA_ACTIVE_SCANS",
+        "HELPMEFINDTHEJOB_QUOTA_SCANS_PER_DAY",
+        "HELPMEFINDTHEJOB_QUOTA_AI_PER_DAY",
+        "HELPMEFINDTHEJOB_QUOTA_DOMAIN_PER_HOUR",
+        "HELPMEFINDTHEJOB_QUOTA_ACTIVE_SCANS",
     )
     detail = {key: os.environ.get(key) or "default" for key in keys}
     return ReadinessSignal(
@@ -381,13 +380,13 @@ def _deployment_status_signal(*, environment: str) -> ReadinessSignal:
             id="deployment",
             label="Deployment env",
             status="ok",
-            summary="COMPANY_DISCOVERY_ENV=production.",
+            summary="HELPMEFINDTHEJOB_ENV=production.",
         )
     return ReadinessSignal(
         id="deployment",
         label="Deployment env",
         status="partial",
-        summary=f"COMPANY_DISCOVERY_ENV={environment}. Production deployments must set this to 'production'.",
+        summary=f"HELPMEFINDTHEJOB_ENV={environment}. Production deployments must set this to 'production'.",
     )
 
 

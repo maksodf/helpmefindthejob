@@ -67,7 +67,7 @@ site/
 # Cosign signing material. Per the §4.2 signing-key-model
 # decision (long-lived ECDSA P-256 / cosign model b), the
 # private key + its password sidecar live OUTSIDE the repo at
-# ~/.config/directjob-scout/. These ignore patterns are a
+# ~/.config/helpmefindthejob/. These ignore patterns are a
 # defence-in-depth in case anyone runs `cosign generate-key-pair`
 # at the repo root. The public key + signature bundle ARE
 # committed under docs/releases/v0.1.0-cosign.pub +
@@ -79,7 +79,7 @@ cosign.password
 # Source-tarball working copies (`gh release download v0.1.0`).
 # The signed-and-released tarball lives in the GitHub Release; a
 # local copy is regenerable from the tag at any time.
-directjob-scout-*.tar.gz
+helpmefindthejob-*.tar.gz
 
 # axe-core CLI accessibility audit JSON output. Each file is 100–400 KB
 # of axe-core's full rule trace (passes + violations + incomplete +

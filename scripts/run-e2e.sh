@@ -50,8 +50,8 @@ fi
 DATA_DIR="$(mktemp -d)"
 trap 'kill %1 2>/dev/null || true; rm -rf "$DATA_DIR"' EXIT
 
-COMPANY_DISCOVERY_DATA_DIR="$DATA_DIR" \
-  COMPANY_DISCOVERY_ENV=development \
+HELPMEFINDTHEJOB_DATA_DIR="$DATA_DIR" \
+  HELPMEFINDTHEJOB_ENV=development \
   python3 app.py --host 127.0.0.1 --port "$PORT" >"$DATA_DIR/server.log" 2>&1 &
 
 echo "e2e: app booting on http://127.0.0.1:$PORT (data dir: $DATA_DIR)"

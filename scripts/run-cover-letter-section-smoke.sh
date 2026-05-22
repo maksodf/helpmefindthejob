@@ -23,10 +23,10 @@ fi
 DATA_DIR="$(mktemp -d)"
 trap 'kill %1 2>/dev/null || true; rm -rf "$DATA_DIR"' EXIT
 echo "[cover-letter-section-smoke] booting app on http://127.0.0.1:$PORT"
-COMPANY_DISCOVERY_DATA_DIR="$DATA_DIR" \
-  COMPANY_DISCOVERY_ENV=development \
-  DIRECTJOB_ALLOW_REGISTRATION=true \
-  DIRECTJOB_REQUIRE_EMAIL_VERIFICATION=false \
+HELPMEFINDTHEJOB_DATA_DIR="$DATA_DIR" \
+  HELPMEFINDTHEJOB_ENV=development \
+  HELPMEFINDTHEJOB_ALLOW_REGISTRATION=true \
+  HELPMEFINDTHEJOB_REQUIRE_EMAIL_VERIFICATION=false \
   HELPMEFINDTHEJOB_COOKIE_SECURE=false \
   HELPMEFINDTHEJOB_AUDIT_LOG_SALT="section-smoke-salt-32chars-abcd1234" \
   "$PYTHON_BIN" app.py --host 127.0.0.1 --port "$PORT" >"$DATA_DIR/server.log" 2>&1 &

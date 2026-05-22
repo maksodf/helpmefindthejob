@@ -40,7 +40,7 @@ Helpmefindthejob is **standards-anchored on purpose**. Adopters inherit interope
 | Standard | Where | Status |
 |---|---|---|
 | [WCAG 2.2 Level AA](https://www.w3.org/TR/WCAG22/) | Audit + remediation shipped in [`ACCESSIBILITY.md`](ACCESSIBILITY.md) | Shipped — 16 fixes across 3 + 1 audit passes; 0/0/0/0 across 33 audited surfaces (8 app + 5 docs unauth + 8 auth × 2 schemes + 4 dynamic). HAN University manual review remains a post-Commons-Conservancy-admission option. |
-| German Impressum per [§ 5 TMG](https://www.gesetze-im-internet.de/tmg/__5.html) | [`static/impressum.html`](static/impressum.html) | Shipped — references `helpmefindthejob.com` (canonical domain per [Decision 22](docs/grant/04-research-and-decisions.md#decision-22-project-rename--directjob-scout--helpmefindthejob)); maintainer wires the DNS to land the surface. |
+| German Impressum per [§ 5 TMG](https://www.gesetze-im-internet.de/tmg/__5.html) | [`static/impressum.html`](static/impressum.html) | Shipped — references `helpmefindthejob.com` (canonical domain per [Decision 22](docs/grant/04-research-and-decisions.md#decision-22-project-rename--helpmefindthejob--helpmefindthejob)); maintainer wires the DNS to land the surface. |
 | EU AI Act ([Regulation 2024/1689](https://eur-lex.europa.eu/eli/reg/2024/1689/oj)) — high-risk AI obligations under Annex III §4 | Compliance pack at [`compliance/`](compliance/): risk-management plan (Art. 9), data governance (Art. 10), technical documentation aligned with Annex IV (Art. 11), audit logging (Art. 12), transparency notice + deployer operating manual (Art. 13), human-oversight guide + `/api/admin/oversight/queue` (Art. 14), accuracy and bias testing methodology (Art. 15), database registration template (Art. 49), Fundamental Rights Impact Assessment template (Art. 27) | Shipped — 11 documents covering Articles 9–15 + 27 + 49, with audit-log emitter and human-oversight admin endpoint wired into the runtime. |
 
 ## Privacy + security
@@ -48,7 +48,7 @@ Helpmefindthejob is **standards-anchored on purpose**. Adopters inherit interope
 | Standard | Where | Status |
 |---|---|---|
 | [GDPR](https://eur-lex.europa.eu/eli/reg/2016/679/oj) — data-minimisation, user-export, user-deletion paths | Throughout; audit-log for admin actions, encrypted PII at rest, 7-day deletion grace, per-user data isolation | Shipped (process); legal counsel review remains Phase 2 — no independent DPIA published. |
-| [ChaCha20-Poly1305 AEAD](https://www.rfc-editor.org/rfc/rfc8439) | [`company_discovery/crypto_kit.py`](company_discovery/crypto_kit.py) for `profile.cv_text` and `users.totp_secret` columns; AAD = user_id; HKDF-SHA256 ([RFC 5869](https://www.rfc-editor.org/rfc/rfc5869)) for key derivation from `HELPMEFINDTHEJOB_SECRET_KEY` (legacy `DIRECTJOB_SECRET_KEY` accepted with a DeprecationWarning via the `env_compat` shim) | Shipped |
+| [ChaCha20-Poly1305 AEAD](https://www.rfc-editor.org/rfc/rfc8439) | [`company_discovery/crypto_kit.py`](company_discovery/crypto_kit.py) for `profile.cv_text` and `users.totp_secret` columns; AAD = user_id; HKDF-SHA256 ([RFC 5869](https://www.rfc-editor.org/rfc/rfc5869)) for key derivation from `HELPMEFINDTHEJOB_SECRET_KEY` | Shipped |
 | [TOTP / HOTP (RFC 6238 / RFC 4226)](https://www.rfc-editor.org/rfc/rfc6238) 2FA | [`company_discovery/auth.py`](company_discovery/auth.py) `verify_totp`, `_totp_at` | Shipped |
 | [otpauth:// URI scheme](https://github.com/google/google-authenticator/wiki/Key-Uri-Format) for QR-code provisioning | `_format_otpauth_url` in `auth.py` | Shipped |
 

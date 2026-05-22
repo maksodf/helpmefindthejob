@@ -21,9 +21,9 @@
 set -eu
 
 APP_BASE_URL="${APP_BASE_URL:-https://app.helpmefindthejob.com}"
-ADMIN_EMAIL="${ADMIN_EMAIL:-${DIRECTJOB_ADMIN_EMAIL:-}}"
-ADMIN_PASSWORD="${ADMIN_PASSWORD:-${DIRECTJOB_ADMIN_PASSWORD:-}}"
-COOKIE_JAR="$(mktemp -t directjob-smoke.XXXXXX)"
+ADMIN_EMAIL="${ADMIN_EMAIL:-${HELPMEFINDTHEJOB_ADMIN_EMAIL:-}}"
+ADMIN_PASSWORD="${ADMIN_PASSWORD:-${HELPMEFINDTHEJOB_ADMIN_PASSWORD:-}}"
+COOKIE_JAR="$(mktemp -t helpmefindthejob-smoke.XXXXXX)"
 trap 'rm -f "$COOKIE_JAR"' EXIT
 
 if ! command -v curl >/dev/null 2>&1; then

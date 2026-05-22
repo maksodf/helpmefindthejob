@@ -166,7 +166,7 @@ from company_discovery.watchlist_templates import get_template, list_templates
 ROOT = Path(__file__).parent
 STATIC_ROOT = ROOT / "static"
 DATA_ROOT = Path(
-    get_env("HELPMEFINDTHEJOB_DATA_DIR", "COMPANY_DISCOVERY_DATA_DIR", str(ROOT / "data"))
+    get_env("HELPMEFINDTHEJOB_DATA_DIR", str(ROOT / "data"))
 )
 DATA_PATH = DATA_ROOT / "company_discovery.sqlite3"
 AUTH_PATH = DATA_ROOT / "auth.sqlite3"
@@ -179,22 +179,22 @@ SCHEDULER_PATH = DATA_ROOT / "scheduler.sqlite3"
 EMAIL_OUTBOX_PATH = DATA_ROOT / "email_outbox.log"
 PASSWORD_RESET_REQUEST_LIMIT = 5  # per-IP per 10 minutes
 PASSWORD_RESET_REQUEST_WINDOW = 600
-# Per-IP per 10 minutes. Set DIRECTJOB_REGISTER_LIMIT in dev / test
+# Per-IP per 10 minutes. Set HELPMEFINDTHEJOB_REGISTER_LIMIT in dev / test
 # environments to relax the cap (e.g. red-team agents that need to
 # register 7+ throwaway accounts in quick succession). Production
 # stays at the default of 3.
 try:
     REGISTER_REQUEST_LIMIT = int(
-        get_env("HELPMEFINDTHEJOB_REGISTER_LIMIT", "DIRECTJOB_REGISTER_LIMIT") or 3
+        get_env("HELPMEFINDTHEJOB_REGISTER_LIMIT") or 3
     )
 except ValueError:
     REGISTER_REQUEST_LIMIT = 3
 REGISTER_REQUEST_WINDOW = 600
 REQUIRE_EMAIL_VERIFICATION = (
-    get_env("HELPMEFINDTHEJOB_REQUIRE_EMAIL_VERIFICATION", "DIRECTJOB_REQUIRE_EMAIL_VERIFICATION")
+    get_env("HELPMEFINDTHEJOB_REQUIRE_EMAIL_VERIFICATION")
     or ""
 ).strip().casefold() in ("true", "1", "yes")
-APP_PUBLIC_URL = get_env("HELPMEFINDTHEJOB_PUBLIC_URL", "DIRECTJOB_PUBLIC_URL") or ""
+APP_PUBLIC_URL = get_env("HELPMEFINDTHEJOB_PUBLIC_URL") or ""
 
 # phase2-backlog #30: cap the health-snapshot ring buffer.
 # ~5000 entries = ~42h of 30s polling from one source; ~17.5h
@@ -240,8 +240,8 @@ DEFAULT_WATCHLIST_SCHEDULE = {
 }
 APP_VERSION = "0.79.4"
 EXPORT_SCHEMA_VERSION = 1
-SESSION_COOKIE_NAME = "directjob_session"
-APP_ENV = get_env("HELPMEFINDTHEJOB_ENV", "COMPANY_DISCOVERY_ENV", "development").strip().casefold()
+SESSION_COOKIE_NAME = "helpmefindthejob_session"
+APP_ENV = get_env("HELPMEFINDTHEJOB_ENV", "development").strip().casefold()
 # Bool env-var parsing routes through env_compat.get_env_bool, which
 # accepts the permissive truthy set {"true", "1", "yes", "on"}
 # casefolded. Earlier these two vars used a strict `== "true"`
@@ -252,7 +252,6 @@ APP_ENV = get_env("HELPMEFINDTHEJOB_ENV", "COMPANY_DISCOVERY_ENV", "development"
 # the legalReviewed handling below.
 COOKIE_SECURE = get_env_bool(
     "HELPMEFINDTHEJOB_COOKIE_SECURE",
-    "DIRECTJOB_COOKIE_SECURE",
     default=(APP_ENV == "production"),
 )
 # Phase 2 #47 (2026-05-21): HSTS only when the operator has marked
@@ -261,7 +260,6 @@ COOKIE_SECURE = get_env_bool(
 # both say "this deployment is behind TLS".
 HSTS_ENABLED = get_env_bool(
     "HELPMEFINDTHEJOB_HSTS",
-    "DIRECTJOB_HSTS",
     default=(APP_ENV == "production"),
 )
 
@@ -274,14 +272,13 @@ def _hsts_enabled() -> bool:
     return HSTS_ENABLED
 ALLOW_REGISTRATION = get_env_bool(
     "HELPMEFINDTHEJOB_ALLOW_REGISTRATION",
-    "DIRECTJOB_ALLOW_REGISTRATION",
     default=False,
 )
-SECRET_KEY = get_env("HELPMEFINDTHEJOB_SECRET_KEY", "DIRECTJOB_SECRET_KEY") or (
+SECRET_KEY = get_env("HELPMEFINDTHEJOB_SECRET_KEY") or (
     "dev-" + secrets.token_urlsafe(48)
 )
-ADMIN_EMAIL = get_env("HELPMEFINDTHEJOB_ADMIN_EMAIL", "DIRECTJOB_ADMIN_EMAIL")
-ADMIN_PASSWORD = get_env("HELPMEFINDTHEJOB_ADMIN_PASSWORD", "DIRECTJOB_ADMIN_PASSWORD")
+ADMIN_EMAIL = get_env("HELPMEFINDTHEJOB_ADMIN_EMAIL")
+ADMIN_PASSWORD = get_env("HELPMEFINDTHEJOB_ADMIN_PASSWORD")
 
 
 def jsonable(value: Any) -> Any:
@@ -479,14 +476,14 @@ def validate_production_config(auth_store: AuthStore) -> None:
     errors = []
     if len(SECRET_KEY) < 32 or SECRET_KEY.startswith("dev-"):
         errors.append(
-            "DIRECTJOB_SECRET_KEY must be set to a stable random value with at least 32 characters."
+            "HELPMEFINDTHEJOB_SECRET_KEY must be set to a stable random value with at least 32 characters."
         )
     if not auth_store.has_users() and (not ADMIN_EMAIL or not ADMIN_PASSWORD):
         errors.append(
-            "DIRECTJOB_ADMIN_EMAIL and DIRECTJOB_ADMIN_PASSWORD are required for first production startup."
+            "HELPMEFINDTHEJOB_ADMIN_EMAIL and HELPMEFINDTHEJOB_ADMIN_PASSWORD are required for first production startup."
         )
     if not COOKIE_SECURE:
-        errors.append("DIRECTJOB_COOKIE_SECURE must stay true in production behind HTTPS.")
+        errors.append("HELPMEFINDTHEJOB_COOKIE_SECURE must stay true in production behind HTTPS.")
     if errors:
         raise RuntimeError("production_config_error: " + " ".join(errors))
 
@@ -516,7 +513,7 @@ class AppState:
         self.scheduler_path = Path(scheduler_path or (self.data_path.parent / "scheduler.sqlite3"))
         self._audit_lock = Lock()
         # Authenticated encryption for at-rest secrets (cv_text, TOTP).
-        # Falls back to HKDF(SECRET_KEY) when DIRECTJOB_DATA_KEY is unset
+        # Falls back to HKDF(SECRET_KEY) when HELPMEFINDTHEJOB_DATA_KEY is unset
         # — same threat model as the legacy XOR path, with proper AEAD
         # so DB compromise no longer reveals plaintext.
         try:
@@ -541,7 +538,7 @@ class AppState:
         from company_discovery.postgres_repository import is_postgres_url
 
         database_url = get_env(
-            "HELPMEFINDTHEJOB_DATABASE_URL", "DIRECTJOB_DATABASE_URL", ""
+            "HELPMEFINDTHEJOB_DATABASE_URL", ""
         ).strip()
         if database_url and is_postgres_url(database_url):
             from company_discovery.postgres_repository import (
@@ -631,14 +628,14 @@ class AppState:
         self.billing_backend = build_billing_backend(data_dir=self.data_path.parent)
         providers: list = [CuratedSearchProvider()]
         if get_env(
-            "HELPMEFINDTHEJOB_DUCKDUCKGO_DISABLED", "DIRECTJOB_DUCKDUCKGO_DISABLED", ""
+            "HELPMEFINDTHEJOB_DUCKDUCKGO_DISABLED", ""
         ).strip().lower() not in (
             "1",
             "true",
             "yes",
         ):
             providers.append(DuckDuckGoSearchProvider())
-        brave_key = get_env("HELPMEFINDTHEJOB_BRAVE_API_KEY", "DIRECTJOB_BRAVE_API_KEY", "").strip()
+        brave_key = get_env("HELPMEFINDTHEJOB_BRAVE_API_KEY", "").strip()
         if brave_key:
             providers.append(BraveSearchProvider(api_key=brave_key))
         self.discovery_engine = DiscoveryEngine(providers=providers)
@@ -649,7 +646,6 @@ class AppState:
             ttl_seconds=int(
                 get_env(
                     "HELPMEFINDTHEJOB_AGGREGATOR_TTL_SECONDS",
-                    "DIRECTJOB_AGGREGATOR_TTL_SECONDS",
                     "3600",
                 )
                 or "3600"
@@ -1720,24 +1716,24 @@ class AppState:
         """
 
         backup_remote = get_env(
-            "HELPMEFINDTHEJOB_BACKUP_REMOTE", "DIRECTJOB_BACKUP_REMOTE", ""
+            "HELPMEFINDTHEJOB_BACKUP_REMOTE", ""
         ).strip()
         backup_backend = (
-            get_env("HELPMEFINDTHEJOB_BACKUP_BACKEND", "DIRECTJOB_BACKUP_BACKEND", "").strip()
+            get_env("HELPMEFINDTHEJOB_BACKUP_BACKEND", "").strip()
             or "local"
         )
         push_configured = is_push_configured()
         brave_configured = bool(
-            get_env("HELPMEFINDTHEJOB_BRAVE_API_KEY", "DIRECTJOB_BRAVE_API_KEY", "").strip()
+            get_env("HELPMEFINDTHEJOB_BRAVE_API_KEY", "").strip()
         )
         stripe_active = os.environ.get(
-            "DIRECTJOB_BILLING_BACKEND", ""
+            "HELPMEFINDTHEJOB_BILLING_BACKEND", ""
         ).strip() == "stripe" and bool(
-            get_env("HELPMEFINDTHEJOB_STRIPE_API_KEY", "DIRECTJOB_STRIPE_API_KEY", "").strip()
+            get_env("HELPMEFINDTHEJOB_STRIPE_API_KEY", "").strip()
         )
         webhook_configured = bool(
             get_env(
-                "HELPMEFINDTHEJOB_STRIPE_WEBHOOK_SECRET", "DIRECTJOB_STRIPE_WEBHOOK_SECRET", ""
+                "HELPMEFINDTHEJOB_STRIPE_WEBHOOK_SECRET", ""
             ).strip()
         )
         # Subscription / membership counts (cheap; in-memory).
@@ -1746,7 +1742,7 @@ class AppState:
         # Latest backup file mtime (best-effort; backups dir may not exist).
         last_backup = None
         try:
-            backup_dir = Path("/var/backups/directjob")
+            backup_dir = Path("/var/backups/helpmefindthejob")
             archives = sorted(backup_dir.glob("helpmefindthejob-*.tar.gz"))
             if archives:
                 last_backup = datetime.fromtimestamp(
@@ -1765,7 +1761,7 @@ class AppState:
                 "backend": backup_backend
                 if False
                 else (
-                    get_env("HELPMEFINDTHEJOB_BILLING_BACKEND", "DIRECTJOB_BILLING_BACKEND")
+                    get_env("HELPMEFINDTHEJOB_BILLING_BACKEND")
                     or "manual"
                 ),
                 "stripeActive": stripe_active,
@@ -1780,7 +1776,6 @@ class AppState:
             "i18n": _i18n_bootstrap_block(),
             "legalReviewed": get_env_bool(
                 "HELPMEFINDTHEJOB_LEGAL_REVIEWED",
-                "DIRECTJOB_LEGAL_REVIEWED",
                 default=False,
             ),
         }
@@ -3274,7 +3269,7 @@ class AppState:
             else ((job.also_seen_at and next(iter(job.also_seen_at), "")) or "")
         )
         public_url = (
-            get_env("HELPMEFINDTHEJOB_PUBLIC_URL", "DIRECTJOB_PUBLIC_URL")
+            get_env("HELPMEFINDTHEJOB_PUBLIC_URL")
             or "https://app.helpmefindthejob.com"
         )
         result = post_high_fit_notification(
@@ -3910,14 +3905,14 @@ class AppState:
         the operator's managed key — used as fallback when the user is
         in Manual mode. Returns None when no managed key is configured."""
         managed_key = (
-            get_env("HELPMEFINDTHEJOB_MANAGED_AI_KEY", "DIRECTJOB_MANAGED_AI_KEY") or ""
+            get_env("HELPMEFINDTHEJOB_MANAGED_AI_KEY") or ""
         ).strip()
         if not managed_key:
             return None
         # Opt-in flag so the operator decides whether to spend tokens
         # on chat-routing classifications.
         enabled = (
-            (get_env("HELPMEFINDTHEJOB_CHAT_AI_ROUTER", "DIRECTJOB_CHAT_AI_ROUTER") or "")
+            (get_env("HELPMEFINDTHEJOB_CHAT_AI_ROUTER") or "")
             .strip()
             .lower()
         )
@@ -3925,7 +3920,7 @@ class AppState:
             return None
         upstream = (
             (
-                get_env("HELPMEFINDTHEJOB_MANAGED_AI_PROVIDER", "DIRECTJOB_MANAGED_AI_PROVIDER")
+                get_env("HELPMEFINDTHEJOB_MANAGED_AI_PROVIDER")
                 or "openai"
             )
             .strip()
@@ -3937,11 +3932,11 @@ class AppState:
             provider_id=upstream,
             invocation_mode="api",
             model=(
-                get_env("HELPMEFINDTHEJOB_MANAGED_AI_MODEL", "DIRECTJOB_MANAGED_AI_MODEL") or ""
+                get_env("HELPMEFINDTHEJOB_MANAGED_AI_MODEL") or ""
             ).strip(),
             credential_reference="HELPMEFINDTHEJOB_MANAGED_AI_KEY",
             base_url=(
-                get_env("HELPMEFINDTHEJOB_MANAGED_AI_BASE_URL", "DIRECTJOB_MANAGED_AI_BASE_URL")
+                get_env("HELPMEFINDTHEJOB_MANAGED_AI_BASE_URL")
                 or ""
             ).strip(),
             command="",
@@ -3971,7 +3966,7 @@ class AppState:
         Routing waterfall:
           1. In-memory cache hit (same message + recent context).
           2. The user's configured AI provider (if non-Manual + consent OK).
-          3. Operator-managed AI (when ``DIRECTJOB_CHAT_AI_ROUTER=true``
+          3. Operator-managed AI (when ``HELPMEFINDTHEJOB_CHAT_AI_ROUTER=true``
              AND ``HELPMEFINDTHEJOB_MANAGED_AI_KEY`` are set). This is the
              "long-term" path: Manual-mode testers get smart routing
              via the operator's key, no per-user provider config.
@@ -6299,7 +6294,7 @@ class AppState:
         import hmac as _hmac
 
         secret = get_env(
-            "HELPMEFINDTHEJOB_SECRET_KEY", "DIRECTJOB_SECRET_KEY", "dev-secret"
+            "HELPMEFINDTHEJOB_SECRET_KEY", "dev-secret"
         ).encode("utf-8")
         digest = _hmac.new(secret, user_id.encode("utf-8"), _hashlib.sha256).hexdigest()
         return digest[:24]
@@ -6794,12 +6789,11 @@ class Handler(BaseHTTPRequestHandler):
                 # default (see docs/cookie-audit.md).
                 analytics_url = (
                     get_env(
-                        "HELPMEFINDTHEJOB_ANALYTICS_SCRIPT_URL", "DIRECTJOB_ANALYTICS_SCRIPT_URL"
-                    )
+                        "HELPMEFINDTHEJOB_ANALYTICS_SCRIPT_URL")
                     or ""
                 ).strip()
                 analytics_domain = (
-                    get_env("HELPMEFINDTHEJOB_ANALYTICS_DOMAIN", "DIRECTJOB_ANALYTICS_DOMAIN") or ""
+                    get_env("HELPMEFINDTHEJOB_ANALYTICS_DOMAIN") or ""
                 ).strip()
                 self.send_json(
                     {
@@ -6942,7 +6936,7 @@ class Handler(BaseHTTPRequestHandler):
                 from company_discovery.sso_saml import build_sp_metadata
 
                 public_url = (
-                    get_env("HELPMEFINDTHEJOB_PUBLIC_URL", "DIRECTJOB_PUBLIC_URL", "")
+                    get_env("HELPMEFINDTHEJOB_PUBLIC_URL", "")
                     or f"http://{self.headers.get('Host', 'localhost')}"
                 )
                 sp_entity_id = f"{public_url.rstrip('/')}/saml/sp"
@@ -6979,7 +6973,7 @@ class Handler(BaseHTTPRequestHandler):
                     )
                     return
                 public_url = (
-                    get_env("HELPMEFINDTHEJOB_PUBLIC_URL", "DIRECTJOB_PUBLIC_URL", "")
+                    get_env("HELPMEFINDTHEJOB_PUBLIC_URL", "")
                     or f"http://{self.headers.get('Host', 'localhost')}"
                 )
                 sp_entity_id = f"{public_url.rstrip('/')}/saml/sp"
@@ -7082,7 +7076,7 @@ class Handler(BaseHTTPRequestHandler):
                 # trust the Host header here — same trust model as
                 # the rest of the app's URL composition.
                 public_url = (
-                    get_env("HELPMEFINDTHEJOB_PUBLIC_URL", "DIRECTJOB_PUBLIC_URL", "")
+                    get_env("HELPMEFINDTHEJOB_PUBLIC_URL", "")
                     or f"http://{self.headers.get('Host', 'localhost')}"
                 )
                 redirect_uri = f"{public_url.rstrip('/')}/api/auth/sso/oidc/{provider_id}/callback"
@@ -7575,7 +7569,7 @@ class Handler(BaseHTTPRequestHandler):
                     )
                     return
                 public_url = (
-                    get_env("HELPMEFINDTHEJOB_PUBLIC_URL", "DIRECTJOB_PUBLIC_URL")
+                    get_env("HELPMEFINDTHEJOB_PUBLIC_URL")
                     or "https://app.helpmefindthejob.com"
                 )
                 result = post_high_fit_notification(
@@ -7634,7 +7628,7 @@ class Handler(BaseHTTPRequestHandler):
             if parsed.path == "/api/admin/oversight/queue":
                 # AI Act Article 14 minimum-viable human-oversight surface.
                 # Returns recent AI-Act audit-log events for an oversight
-                # person to review. Requires DIRECTJOB_HUMAN_OVERSIGHT_MODE
+                # person to review. Requires HELPMEFINDTHEJOB_HUMAN_OVERSIGHT_MODE
                 # to be set to a truthy value; otherwise returns a 503
                 # explaining the deployer-side configuration step.
                 # See compliance/human-oversight-guide.md.
@@ -7643,7 +7637,6 @@ class Handler(BaseHTTPRequestHandler):
                 mode = (
                     get_env(
                         "HELPMEFINDTHEJOB_HUMAN_OVERSIGHT_MODE",
-                        "DIRECTJOB_HUMAN_OVERSIGHT_MODE",
                         "",
                     )
                     or ""
@@ -7654,7 +7647,7 @@ class Handler(BaseHTTPRequestHandler):
                             "status": "disabled",
                             "mode": mode or "disabled",
                             "detail": (
-                                "Set DIRECTJOB_HUMAN_OVERSIGHT_MODE=enabled to expose the "
+                                "Set HELPMEFINDTHEJOB_HUMAN_OVERSIGHT_MODE=enabled to expose the "
                                 "human-oversight queue. See compliance/human-oversight-guide.md "
                                 "for the four oversight modes and selection guidance."
                             ),
@@ -8122,7 +8115,7 @@ class Handler(BaseHTTPRequestHandler):
                 # Activation steps for the operator:
                 #   1. Wire MX for inbox.helpmefindthejob.com to the inbound
                 #      provider (Resend supports this).
-                #   2. Set DIRECTJOB_INBOUND_EMAIL_SECRET in prod env.
+                #   2. Set HELPMEFINDTHEJOB_INBOUND_EMAIL_SECRET in prod env.
                 #   3. Configure the provider's webhook to POST here.
                 length = int(self.headers.get("Content-Length", "0"))
                 if length <= 0 or length > MAX_JSON_BODY_BYTES:
@@ -8132,16 +8125,16 @@ class Handler(BaseHTTPRequestHandler):
                     return
                 raw = self.rfile.read(length)
                 expected_secret = get_env(
-                    "HELPMEFINDTHEJOB_INBOUND_EMAIL_SECRET", "DIRECTJOB_INBOUND_EMAIL_SECRET", ""
+                    "HELPMEFINDTHEJOB_INBOUND_EMAIL_SECRET", ""
                 ).strip()
                 if not expected_secret:
                     self.send_error_json(
                         HTTPStatus.SERVICE_UNAVAILABLE,
                         "inbound_email_unconfigured",
-                        "Inbound email is not configured. Set DIRECTJOB_INBOUND_EMAIL_SECRET.",
+                        "Inbound email is not configured. Set HELPMEFINDTHEJOB_INBOUND_EMAIL_SECRET.",
                     )
                     return
-                provided_secret = self.headers.get("X-DirectJob-Inbound-Secret", "")
+                provided_secret = self.headers.get("X-Helpmefindthejob-Inbound-Secret", "")
                 # Constant-time comparison to avoid timing attacks.
                 import hmac as _hmac
 
@@ -8249,7 +8242,7 @@ class Handler(BaseHTTPRequestHandler):
                 raw = self.rfile.read(length)
                 signature_header = self.headers.get("Stripe-Signature", "")
                 secret = get_env(
-                    "HELPMEFINDTHEJOB_STRIPE_WEBHOOK_SECRET", "DIRECTJOB_STRIPE_WEBHOOK_SECRET", ""
+                    "HELPMEFINDTHEJOB_STRIPE_WEBHOOK_SECRET", ""
                 ).strip()
                 if not secret:
                     self.send_error_json(
@@ -8290,19 +8283,17 @@ class Handler(BaseHTTPRequestHandler):
                     return
                 price_to_plan = {
                     get_env(
-                        "HELPMEFINDTHEJOB_STRIPE_PRICE_TEAM", "DIRECTJOB_STRIPE_PRICE_TEAM", ""
+                        "HELPMEFINDTHEJOB_STRIPE_PRICE_TEAM", ""
                     ): "team",
                     get_env(
-                        "HELPMEFINDTHEJOB_STRIPE_PRICE_ORG", "DIRECTJOB_STRIPE_PRICE_ORG", ""
+                        "HELPMEFINDTHEJOB_STRIPE_PRICE_ORG", ""
                     ): "org",
                     get_env(
                         "HELPMEFINDTHEJOB_STRIPE_PRICE_PRO_MONTHLY",
-                        "DIRECTJOB_STRIPE_PRICE_PRO_MONTHLY",
                         "",
                     ): "pro_monthly",
                     get_env(
                         "HELPMEFINDTHEJOB_STRIPE_PRICE_PRO_ANNUAL",
-                        "DIRECTJOB_STRIPE_PRICE_PRO_ANNUAL",
                         "",
                     ): "pro_annual",
                 }
@@ -8656,7 +8647,7 @@ class Handler(BaseHTTPRequestHandler):
                     )
                     return
                 public_url = (
-                    get_env("HELPMEFINDTHEJOB_PUBLIC_URL", "DIRECTJOB_PUBLIC_URL", "")
+                    get_env("HELPMEFINDTHEJOB_PUBLIC_URL", "")
                     or f"http://{self.headers.get('Host', 'localhost')}"
                 )
                 sp_entity_id = f"{public_url.rstrip('/')}/saml/sp"
@@ -10196,7 +10187,7 @@ class Handler(BaseHTTPRequestHandler):
                     self.send_error_json(
                         HTTPStatus.SERVICE_UNAVAILABLE,
                         "push_unavailable",
-                        "Push is not configured. Set DIRECTJOB_VAPID_PUBLIC_KEY and DIRECTJOB_VAPID_PRIVATE_KEY.",
+                        "Push is not configured. Set HELPMEFINDTHEJOB_VAPID_PUBLIC_KEY and HELPMEFINDTHEJOB_VAPID_PRIVATE_KEY.",
                     )
                     return
                 subs = STATE.repository.list_push_subscriptions(user_id)
@@ -10423,7 +10414,7 @@ class Handler(BaseHTTPRequestHandler):
                     self.send_error_json(
                         HTTPStatus.BAD_REQUEST,
                         "stripe_disabled",
-                        "Stripe backend not active. Set DIRECTJOB_BILLING_BACKEND=stripe and credentials.",
+                        "Stripe backend not active. Set HELPMEFINDTHEJOB_BILLING_BACKEND=stripe and credentials.",
                     )
                     return
                 plan_id = str(payload.get("planId") or "")
@@ -12214,12 +12205,12 @@ class Handler(BaseHTTPRequestHandler):
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--host", default=get_env("HELPMEFINDTHEJOB_HOST", "COMPANY_DISCOVERY_HOST", "127.0.0.1")
+        "--host", default=get_env("HELPMEFINDTHEJOB_HOST", "127.0.0.1")
     )
     parser.add_argument(
         "--port",
         type=int,
-        default=int(get_env("HELPMEFINDTHEJOB_PORT", "COMPANY_DISCOVERY_PORT", "8765")),
+        default=int(get_env("HELPMEFINDTHEJOB_PORT", "8765")),
     )
     args = parser.parse_args()
     server = ThreadingHTTPServer((args.host, args.port), Handler)

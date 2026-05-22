@@ -113,7 +113,7 @@ def _seed_aicha(data_dir: Path) -> None:
     repository.save_user_profile so the panel persona_id 'aicha' lands
     on the profile (update_profile's whitelist would reject it)."""
     env = os.environ.copy()
-    env["COMPANY_DISCOVERY_DATA_DIR"] = str(data_dir)
+    env["HELPMEFINDTHEJOB_DATA_DIR"] = str(data_dir)
     cmd = [
         sys.executable,
         str(REPO_ROOT / "scripts" / "seed-personas.py"),
@@ -134,15 +134,15 @@ def _seed_aicha(data_dir: Path) -> None:
 
 def _start_app(data_dir: Path, port: int) -> subprocess.Popen:
     env = os.environ.copy()
-    env["COMPANY_DISCOVERY_HOST"] = "127.0.0.1"
-    env["COMPANY_DISCOVERY_PORT"] = str(port)
-    # COMPANY_DISCOVERY_DATA_DIR is the SAME env var seed-personas
+    env["HELPMEFINDTHEJOB_HOST"] = "127.0.0.1"
+    env["HELPMEFINDTHEJOB_PORT"] = str(port)
+    # HELPMEFINDTHEJOB_DATA_DIR is the SAME env var seed-personas
     # respects; setting just this guarantees the seed and the app
     # share the same SQLite files (auth.sqlite3 + company_discovery.
     # sqlite3 + scheduler.sqlite3 + tokens.sqlite3 + quotas.sqlite3,
     # all under this directory). Don't set the per-file *_PATH
     # variables — they're not read by app.py's data path resolution.
-    env["COMPANY_DISCOVERY_DATA_DIR"] = str(data_dir)
+    env["HELPMEFINDTHEJOB_DATA_DIR"] = str(data_dir)
     log_file = open(data_dir / "app.log", "w", encoding="utf-8")
     proc = subprocess.Popen(
         [sys.executable, str(REPO_ROOT / "app.py")],

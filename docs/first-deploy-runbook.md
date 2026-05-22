@@ -88,12 +88,12 @@ docker compose version # v2 plugin
 which caddy            # or check Caddy is in the compose stack
 ```
 
-### 1.2 Pre-existing `directjob-scout` container (phase2 #51)
+### 1.2 Pre-existing `helpmefindthejob` container (phase2 #51)
 
-If a prior `directjob-scout` deployment is running on this host:
+If a prior `helpmefindthejob` deployment is running on this host:
 
 ```bash
-docker compose -p directjob-scout down
+docker compose -p helpmefindthejob down
 # Confirm the helpmefindthejob compose project starts clean.
 ```
 

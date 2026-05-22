@@ -79,14 +79,14 @@ class AppStateRoutesByDatabaseUrl(unittest.TestCase):
         # Clear any inherited test config
         for key in (
             "HELPMEFINDTHEJOB_DATABASE_URL",
-            "DIRECTJOB_DATABASE_URL",
+            "HELPMEFINDTHEJOB_DATABASE_URL",
         ):
             os.environ.pop(key, None)
 
     def tearDown(self):
         for key in (
             "HELPMEFINDTHEJOB_DATABASE_URL",
-            "DIRECTJOB_DATABASE_URL",
+            "HELPMEFINDTHEJOB_DATABASE_URL",
         ):
             if key in self._original_env:
                 os.environ[key] = self._original_env[key]

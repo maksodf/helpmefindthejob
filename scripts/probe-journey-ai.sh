@@ -3,9 +3,9 @@
 #
 # Operator-runnable verification of the journey's AI paths against a
 # REAL LLM. Required env (do NOT commit a real key — pass at shell):
-#   DIRECTJOB_MANAGED_AI_KEY      — Anthropic / OpenAI / etc. key
-#   DIRECTJOB_MANAGED_AI_PROVIDER — anthropic | openai | google_gemini | deepseek | openrouter
-#   DIRECTJOB_MANAGED_AI_MODEL    — (optional) model id; defaults sane per provider
+#   HELPMEFINDTHEJOB_MANAGED_AI_KEY      — Anthropic / OpenAI / etc. key
+#   HELPMEFINDTHEJOB_MANAGED_AI_PROVIDER — anthropic | openai | google_gemini | deepseek | openrouter
+#   HELPMEFINDTHEJOB_MANAGED_AI_MODEL    — (optional) model id; defaults sane per provider
 #
 # Probes:
 #   1. Inspire lateral-roles prompt — JSON list of 3-5 strings
@@ -20,12 +20,12 @@
 
 set -eu
 
-if [ -z "${DIRECTJOB_MANAGED_AI_KEY:-}" ]; then
-  echo "ERROR: DIRECTJOB_MANAGED_AI_KEY must be set in your shell." >&2
+if [ -z "${HELPMEFINDTHEJOB_MANAGED_AI_KEY:-}" ]; then
+  echo "ERROR: HELPMEFINDTHEJOB_MANAGED_AI_KEY must be set in your shell." >&2
   exit 2
 fi
-if [ -z "${DIRECTJOB_MANAGED_AI_PROVIDER:-}" ]; then
-  echo "ERROR: DIRECTJOB_MANAGED_AI_PROVIDER must be set." >&2
+if [ -z "${HELPMEFINDTHEJOB_MANAGED_AI_PROVIDER:-}" ]; then
+  echo "ERROR: HELPMEFINDTHEJOB_MANAGED_AI_PROVIDER must be set." >&2
   exit 2
 fi
 
@@ -33,7 +33,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 PYTHON_BIN="${PYTHON_BIN:-/Users/fouad./miniconda3/bin/python3}"
 
-DIRECTJOB_MANAGED_AI_KEY="$DIRECTJOB_MANAGED_AI_KEY" \
-  DIRECTJOB_MANAGED_AI_PROVIDER="$DIRECTJOB_MANAGED_AI_PROVIDER" \
-  DIRECTJOB_MANAGED_AI_MODEL="${DIRECTJOB_MANAGED_AI_MODEL:-}" \
+HELPMEFINDTHEJOB_MANAGED_AI_KEY="$HELPMEFINDTHEJOB_MANAGED_AI_KEY" \
+  HELPMEFINDTHEJOB_MANAGED_AI_PROVIDER="$HELPMEFINDTHEJOB_MANAGED_AI_PROVIDER" \
+  HELPMEFINDTHEJOB_MANAGED_AI_MODEL="${HELPMEFINDTHEJOB_MANAGED_AI_MODEL:-}" \
   "$PYTHON_BIN" tests/e2e/journey_ai_probe.py

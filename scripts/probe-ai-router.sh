@@ -6,13 +6,13 @@
 # proves the integration works without any synthetic mocks.
 #
 # Required env (do NOT commit a real key — pass at the shell):
-#   DIRECTJOB_MANAGED_AI_KEY      — your Anthropic / OpenAI / etc. key
-#   DIRECTJOB_MANAGED_AI_PROVIDER — anthropic | openai | google_gemini | deepseek | openrouter
-#   DIRECTJOB_MANAGED_AI_MODEL    — (optional) model id; defaults to a
+#   HELPMEFINDTHEJOB_MANAGED_AI_KEY      — your Anthropic / OpenAI / etc. key
+#   HELPMEFINDTHEJOB_MANAGED_AI_PROVIDER — anthropic | openai | google_gemini | deepseek | openrouter
+#   HELPMEFINDTHEJOB_MANAGED_AI_MODEL    — (optional) model id; defaults to a
 #                                    sane choice per provider in the app
 #
 # What it does:
-#   1. Boots a fresh app instance with DIRECTJOB_CHAT_AI_ROUTER=true and
+#   1. Boots a fresh app instance with HELPMEFINDTHEJOB_CHAT_AI_ROUTER=true and
 #      the env vars you provided.
 #   2. Registers a synthetic tester via the admin-bypass path.
 #   3. Sends 5 natural-language probes through /api/chat/message and
@@ -25,13 +25,13 @@
 
 set -eu
 
-if [ -z "${DIRECTJOB_MANAGED_AI_KEY:-}" ]; then
-  echo "ERROR: DIRECTJOB_MANAGED_AI_KEY must be set in your shell." >&2
-  echo "       Example: export DIRECTJOB_MANAGED_AI_KEY=sk-ant-..." >&2
+if [ -z "${HELPMEFINDTHEJOB_MANAGED_AI_KEY:-}" ]; then
+  echo "ERROR: HELPMEFINDTHEJOB_MANAGED_AI_KEY must be set in your shell." >&2
+  echo "       Example: export HELPMEFINDTHEJOB_MANAGED_AI_KEY=sk-ant-..." >&2
   exit 2
 fi
-if [ -z "${DIRECTJOB_MANAGED_AI_PROVIDER:-}" ]; then
-  echo "ERROR: DIRECTJOB_MANAGED_AI_PROVIDER must be set." >&2
+if [ -z "${HELPMEFINDTHEJOB_MANAGED_AI_PROVIDER:-}" ]; then
+  echo "ERROR: HELPMEFINDTHEJOB_MANAGED_AI_PROVIDER must be set." >&2
   echo "       One of: anthropic | openai | google_gemini | deepseek | openrouter" >&2
   exit 2
 fi
@@ -55,15 +55,15 @@ DATA_DIR="$(mktemp -d)"
 trap 'kill %1 2>/dev/null || true; rm -rf "$DATA_DIR"' EXIT
 
 echo "[probe] booting app on http://127.0.0.1:$PORT"
-echo "[probe] provider=${DIRECTJOB_MANAGED_AI_PROVIDER} model=${DIRECTJOB_MANAGED_AI_MODEL:-default}"
-DIRECTJOB_CHAT_AI_ROUTER=true \
-  DIRECTJOB_MANAGED_AI_KEY="$DIRECTJOB_MANAGED_AI_KEY" \
-  DIRECTJOB_MANAGED_AI_PROVIDER="$DIRECTJOB_MANAGED_AI_PROVIDER" \
-  DIRECTJOB_MANAGED_AI_MODEL="${DIRECTJOB_MANAGED_AI_MODEL:-}" \
-  COMPANY_DISCOVERY_DATA_DIR="$DATA_DIR" \
-  COMPANY_DISCOVERY_ENV=development \
-  DIRECTJOB_ALLOW_REGISTRATION=true \
-  DIRECTJOB_REQUIRE_EMAIL_VERIFICATION=false \
+echo "[probe] provider=${HELPMEFINDTHEJOB_MANAGED_AI_PROVIDER} model=${HELPMEFINDTHEJOB_MANAGED_AI_MODEL:-default}"
+HELPMEFINDTHEJOB_CHAT_AI_ROUTER=true \
+  HELPMEFINDTHEJOB_MANAGED_AI_KEY="$HELPMEFINDTHEJOB_MANAGED_AI_KEY" \
+  HELPMEFINDTHEJOB_MANAGED_AI_PROVIDER="$HELPMEFINDTHEJOB_MANAGED_AI_PROVIDER" \
+  HELPMEFINDTHEJOB_MANAGED_AI_MODEL="${HELPMEFINDTHEJOB_MANAGED_AI_MODEL:-}" \
+  HELPMEFINDTHEJOB_DATA_DIR="$DATA_DIR" \
+  HELPMEFINDTHEJOB_ENV=development \
+  HELPMEFINDTHEJOB_ALLOW_REGISTRATION=true \
+  HELPMEFINDTHEJOB_REQUIRE_EMAIL_VERIFICATION=false \
   "$PYTHON_BIN" app.py --host 127.0.0.1 --port "$PORT" >"$DATA_DIR/server.log" 2>&1 &
 
 ready=0

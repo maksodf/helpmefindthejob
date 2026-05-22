@@ -18,7 +18,7 @@ Two backends ship in this module:
 
 The :func:`build_transport` factory chooses the backend based on env:
 
-  - ``DIRECTJOB_EMAIL_BACKEND=smtp`` and SMTP env vars present →
+  - ``HELPMEFINDTHEJOB_EMAIL_BACKEND=smtp`` and SMTP env vars present →
     SmtpTransport.
   - Otherwise → ConsoleTransport (default for dev / pilot).
 """
@@ -130,29 +130,29 @@ def build_transport(
     backend = (
         (
             backend
-            or get_env("HELPMEFINDTHEJOB_EMAIL_BACKEND", "DIRECTJOB_EMAIL_BACKEND")
+            or get_env("HELPMEFINDTHEJOB_EMAIL_BACKEND")
             or "console"
         )
         .strip()
         .casefold()
     )
     if backend == "smtp":
-        host = smtp_host or get_env("HELPMEFINDTHEJOB_SMTP_HOST", "DIRECTJOB_SMTP_HOST", "")
-        port = smtp_port or int(get_env("HELPMEFINDTHEJOB_SMTP_PORT", "DIRECTJOB_SMTP_PORT", "587"))
+        host = smtp_host or get_env("HELPMEFINDTHEJOB_SMTP_HOST", "")
+        port = smtp_port or int(get_env("HELPMEFINDTHEJOB_SMTP_PORT", "587"))
         username = (
             smtp_username
             if smtp_username is not None
-            else get_env("HELPMEFINDTHEJOB_SMTP_USERNAME", "DIRECTJOB_SMTP_USERNAME")
+            else get_env("HELPMEFINDTHEJOB_SMTP_USERNAME")
         )
         password = (
             smtp_password
             if smtp_password is not None
-            else get_env("HELPMEFINDTHEJOB_SMTP_PASSWORD", "DIRECTJOB_SMTP_PASSWORD")
+            else get_env("HELPMEFINDTHEJOB_SMTP_PASSWORD")
         )
         use_tls = (
             smtp_starttls
             if smtp_starttls is not None
-            else get_env("HELPMEFINDTHEJOB_SMTP_STARTTLS", "DIRECTJOB_SMTP_STARTTLS", "true")
+            else get_env("HELPMEFINDTHEJOB_SMTP_STARTTLS", "true")
             .strip()
             .casefold()
             == "true"
@@ -165,6 +165,6 @@ def build_transport(
 
 def email_from_address() -> str:
     return (
-        get_env("HELPMEFINDTHEJOB_EMAIL_FROM", "DIRECTJOB_EMAIL_FROM")
+        get_env("HELPMEFINDTHEJOB_EMAIL_FROM")
         or "helpmefindthejob@localhost"
     )

@@ -74,7 +74,7 @@ Drill verifies the backup is good. Once drill passes, **stop live traffic** (Cad
 | `account_deletion_pending` not running | Cron not installed or container can't write to volume | `crontab -l`; check `data/admin_audit.log` for write errors |
 | Login broken for everyone | Bad migration or env var; secret-key change | Rollback. Always rollback. Don't try to fix login forward. |
 | TLS expiry | Caddy auto-renew failed | `docker logs caddy`; if ACME bounce, check CAA records and DNS |
-| Backup cron silent failure | rclone creds rotated, or B2 bucket renamed | `tail /var/log/directjob-backup.log`; re-test with `--dry-run` |
+| Backup cron silent failure | rclone creds rotated, or B2 bucket renamed | `tail /var/log/helpmefindthejob-backup.log`; re-test with `--dry-run` |
 
 ## Comms templates
 

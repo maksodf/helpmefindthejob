@@ -14,7 +14,7 @@
 #
 # Env knobs:
 #   E2E_PORT             — port to bind (default: random free port)
-#   E2E_PHOTO_URL        — stock photo URL (default: picsum seed=directjob)
+#   E2E_PHOTO_URL        — stock photo URL (default: picsum seed=helpmefindthejob)
 #   E2E_DESKTOP_PDF_PATH — where the PDF lands (default: ~/Desktop/...)
 
 set -eu
@@ -39,10 +39,10 @@ DATA_DIR="$(mktemp -d)"
 trap 'kill %1 2>/dev/null || true; rm -rf "$DATA_DIR"' EXIT
 
 echo "[full-flow] booting app on http://127.0.0.1:$PORT"
-COMPANY_DISCOVERY_DATA_DIR="$DATA_DIR" \
-  COMPANY_DISCOVERY_ENV=development \
-  DIRECTJOB_ALLOW_REGISTRATION=true \
-  DIRECTJOB_REQUIRE_EMAIL_VERIFICATION=false \
+HELPMEFINDTHEJOB_DATA_DIR="$DATA_DIR" \
+  HELPMEFINDTHEJOB_ENV=development \
+  HELPMEFINDTHEJOB_ALLOW_REGISTRATION=true \
+  HELPMEFINDTHEJOB_REQUIRE_EMAIL_VERIFICATION=false \
   "$PYTHON_BIN" app.py --host 127.0.0.1 --port "$PORT" >"$DATA_DIR/server.log" 2>&1 &
 
 ready=0

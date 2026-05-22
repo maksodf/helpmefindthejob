@@ -110,9 +110,9 @@ PROVIDER_OPTIONS: list[AIProviderOption] = [
         invocation_modes=["api"],
         secret_hint="No credential needed — uses the operator's server-side key.",
         notes=(
-            "Server-side dispatch via the operator's DIRECTJOB_MANAGED_AI_KEY. "
+            "Server-side dispatch via the operator's HELPMEFINDTHEJOB_MANAGED_AI_KEY. "
             "Plan-gated (Pro+ only). Operator chooses the upstream provider via "
-            "DIRECTJOB_MANAGED_AI_PROVIDER (openai / anthropic / google_gemini / etc)."
+            "HELPMEFINDTHEJOB_MANAGED_AI_PROVIDER (openai / anthropic / google_gemini / etc)."
         ),
     ),
 ]

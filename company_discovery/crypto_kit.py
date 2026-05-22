@@ -18,13 +18,13 @@ Key material
 
 The encryption key (32 bytes) is resolved in this order:
 
-1. ``DIRECTJOB_DATA_KEY`` — explicit, base64-encoded 32-byte key.
+1. ``HELPMEFINDTHEJOB_DATA_KEY`` — explicit, base64-encoded 32-byte key.
    Operator can rotate this independently of the secret key.
-2. HKDF(``DIRECTJOB_SECRET_KEY``, info=b"directjob/data-key") — zero-
+2. HKDF(``HELPMEFINDTHEJOB_SECRET_KEY``, info=b"helpmefindthejob/data-key") — zero-
    config fallback. Tied to the lifetime of ``SECRET_KEY``: rotating
    the secret key invalidates encrypted data, exactly as the legacy
    XOR path did. Use this in development; configure a dedicated
-   ``DIRECTJOB_DATA_KEY`` before public launch.
+   ``HELPMEFINDTHEJOB_DATA_KEY`` before public launch.
 
 Encrypted blob format
 ---------------------
@@ -78,7 +78,7 @@ def _hkdf_sha256(secret: bytes, *, salt: bytes, info: bytes, length: int) -> byt
 def resolve_data_key(secret_key: str) -> bytes:
     """Return the 32-byte master key, fetching from env or deriving."""
 
-    explicit = get_env("HELPMEFINDTHEJOB_DATA_KEY", "DIRECTJOB_DATA_KEY", "").strip()
+    explicit = get_env("HELPMEFINDTHEJOB_DATA_KEY", "").strip()
     if explicit:
         try:
             decoded = base64.b64decode(explicit)
@@ -92,7 +92,7 @@ def resolve_data_key(secret_key: str) -> bytes:
     return _hkdf_sha256(
         secret_key.encode("utf-8"),
         salt=b"helpmefindthejob/aead-v1",
-        info=b"directjob/data-key",
+        info=b"helpmefindthejob/data-key",
         length=_KEY_BYTES,
     )
 

@@ -34,18 +34,18 @@ This document describes each of those five layers. The user-facing equivalent is
 | Profile (identity-light) | Display name (user-chosen), preferred language, journey-phase state | Local DB | ChaCha20-Poly1305 | No | Until user deletes |
 | CV facts | Profession, years of experience, certifications, ESCO-mapped skills, education | Local DB | ChaCha20-Poly1305 | Yes — minimised slice per AI call | Until user deletes |
 | Job history (user-curated) | Roles applied to, employer, application status, application outcomes | Local DB | ChaCha20-Poly1305 | No | Until user deletes |
-| Discovered jobs (system-curated) | Title, employer, posting URL, source, location, ESCO mapping, fit-score | Local DB | At rest only by storage engine; not field-level | Yes — sent in prompt context for fit-scoring and tailoring | Per `DIRECTJOB_DISCOVERED_JOBS_TTL_DAYS` (default 90 days) |
+| Discovered jobs (system-curated) | Title, employer, posting URL, source, location, ESCO mapping, fit-score | Local DB | At rest only by storage engine; not field-level | Yes — sent in prompt context for fit-scoring and tailoring | Per `HELPMEFINDTHEJOB_DISCOVERED_JOBS_TTL_DAYS` (default 90 days) |
 | Prompts and AI responses | The actual text sent to the AI and received back | Audit log (`ai_act_audit.log`) | At rest only by storage engine; PII fields hashed by default | n/a (this *is* the AI flow) | Default 6 months; configurable per deployer |
 | Audit-log events | Tool invocations, AI invocations, persistence-confirmations | `ai_act_audit.log` (JSONL) | At rest only by storage engine; PII fields hashed by default | No | Default 6 months; configurable |
 | Session / authentication | Login, 2FA TOTP secrets, session tokens | Local DB; TOTP-secret with AEAD wrapping | ChaCha20-Poly1305 (AEAD) for TOTP secrets | No | Per session lifetime / user-managed |
 
-**PII hashing convention**: in the audit log, the `user_opaque_id` is a per-deployment SHA-256 over the user's stable internal ID plus a per-deployment salt (configured via `DIRECTJOB_AUDIT_SALT`). This lets a deployer reconstruct event sequences for a single user (for incident review or Article 86 explanation rights) without persisting the user's natural identifier in the audit log itself.
+**PII hashing convention**: in the audit log, the `user_opaque_id` is a per-deployment SHA-256 over the user's stable internal ID plus a per-deployment salt (configured via `HELPMEFINDTHEJOB_AUDIT_SALT`). This lets a deployer reconstruct event sequences for a single user (for incident review or Article 86 explanation rights) without persisting the user's natural identifier in the audit log itself.
 
 ---
 
 ## 3. Encryption-at-rest
 
-The profile-at-rest crypto is implemented in [`company_discovery/crypto_kit.py`](../company_discovery/crypto_kit.py) using **ChaCha20-Poly1305** (an AEAD cipher) from the `cryptography` library. The deployment-time secret key is configured via `DIRECTJOB_SECRET_KEY` (env var). Profile fields covered by encryption-at-rest:
+The profile-at-rest crypto is implemented in [`company_discovery/crypto_kit.py`](../company_discovery/crypto_kit.py) using **ChaCha20-Poly1305** (an AEAD cipher) from the `cryptography` library. The deployment-time secret key is configured via `HELPMEFINDTHEJOB_SECRET_KEY` (env var). Profile fields covered by encryption-at-rest:
 
 - All free-text CV bullets (`experience.*`, `education.*`, `motivation.*`)
 - The portable civic profile blob (the structured JSON sent in MCP composition)

@@ -197,7 +197,7 @@ class OptInGateHonoured(unittest.TestCase):
     def setUp(self):
         self._original = os.environ.get("HELPMEFINDTHEJOB_COST_METRICS")
         os.environ.pop("HELPMEFINDTHEJOB_COST_METRICS", None)
-        os.environ.pop("DIRECTJOB_COST_METRICS", None)
+        os.environ.pop("HELPMEFINDTHEJOB_COST_METRICS", None)
 
     def tearDown(self):
         if self._original is not None:
@@ -210,10 +210,6 @@ class OptInGateHonoured(unittest.TestCase):
 
     def test_set_to_true_means_enabled(self):
         os.environ["HELPMEFINDTHEJOB_COST_METRICS"] = "true"
-        self.assertTrue(is_collection_enabled())
-
-    def test_legacy_directjob_var_also_works(self):
-        os.environ["DIRECTJOB_COST_METRICS"] = "true"
         self.assertTrue(is_collection_enabled())
 
 

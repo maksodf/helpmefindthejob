@@ -20,7 +20,7 @@ set -eu
 
 BACKUP_FILE="${1:-${BACKUP_FILE:-}}"
 SIDECAR_NAME="${SIDECAR_NAME:-helpmefindthejob-restore-drill}"
-SIDECAR_VOLUME="${SIDECAR_VOLUME:-directjob_data_restore_drill}"
+SIDECAR_VOLUME="${SIDECAR_VOLUME:-helpmefindthejob_data_restore_drill}"
 SIDECAR_PORT="${SIDECAR_PORT:-18765}"
 IMAGE="${IMAGE:-helpmefindthejob}"
 
@@ -63,14 +63,14 @@ docker run --rm \
   alpine sh -c 'cp -a /src/. /dst/'
 
 echo "drill: starting sidecar app on port $SIDECAR_PORT"
-DIRECTJOB_SECRET_KEY="${DIRECTJOB_SECRET_KEY:-restore-drill-secret-key-with-enough-bytes-1234}"
+HELPMEFINDTHEJOB_SECRET_KEY="${HELPMEFINDTHEJOB_SECRET_KEY:-restore-drill-secret-key-with-enough-bytes-1234}"
 docker run -d --name "$SIDECAR_NAME" \
-  -e COMPANY_DISCOVERY_ENV=development \
-  -e COMPANY_DISCOVERY_DATA_DIR=/app/data \
-  -e COMPANY_DISCOVERY_HOST=0.0.0.0 \
-  -e COMPANY_DISCOVERY_PORT=8765 \
-  -e DIRECTJOB_SECRET_KEY="$DIRECTJOB_SECRET_KEY" \
-  -e DIRECTJOB_COOKIE_SECURE=false \
+  -e HELPMEFINDTHEJOB_ENV=development \
+  -e HELPMEFINDTHEJOB_DATA_DIR=/app/data \
+  -e HELPMEFINDTHEJOB_HOST=0.0.0.0 \
+  -e HELPMEFINDTHEJOB_PORT=8765 \
+  -e HELPMEFINDTHEJOB_SECRET_KEY="$HELPMEFINDTHEJOB_SECRET_KEY" \
+  -e HELPMEFINDTHEJOB_COOKIE_SECURE=false \
   -p "$SIDECAR_PORT":8765 \
   -v "$SIDECAR_VOLUME":/app/data \
   "$IMAGE" >/dev/null || {

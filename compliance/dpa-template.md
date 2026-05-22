@@ -193,7 +193,7 @@ Minimum:
 - **Encryption in transit**: TLS 1.2+ on all public endpoints
   (typically Caddy auto-issues Let's Encrypt certs)
 - **Encryption at rest**: AEAD (ChaCha20-Poly1305) for CV text +
-  TOTP secrets via `crypto_kit.py`; `DIRECTJOB_DATA_KEY` env var
+  TOTP secrets via `crypto_kit.py`; `HELPMEFINDTHEJOB_DATA_KEY` env var
   MUST be set to a 32-byte random value (not the default
   HKDF-from-SECRET_KEY fallback)
 - **Authentication**: scrypt password hashing (N=2^15); optional

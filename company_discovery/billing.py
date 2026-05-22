@@ -14,8 +14,8 @@ Two backends ship in this module:
   ``active`` / ``cancelled``. No external network call.
 - ``StripeBillingBackend`` — uses the Stripe REST API directly via
   stdlib ``urllib`` + an injectable HTTP transport for tests. Reads
-  ``DIRECTJOB_STRIPE_API_KEY`` plus ``DIRECTJOB_STRIPE_PRICE_TEAM`` /
-  ``DIRECTJOB_STRIPE_PRICE_ORG``. ``load`` and ``save`` continue to
+  ``HELPMEFINDTHEJOB_STRIPE_API_KEY`` plus ``HELPMEFINDTHEJOB_STRIPE_PRICE_TEAM`` /
+  ``HELPMEFINDTHEJOB_STRIPE_PRICE_ORG``. ``load`` and ``save`` continue to
   read/write the local JSON cache so the admin UI stays usable even
   when the Stripe API is unreachable. The Stripe-only entry point is
   ``create_checkout_session``.
@@ -317,9 +317,9 @@ StripeTransport = Callable[[str, str, dict[str, str]], dict[str, object]]
 
 
 def _default_stripe_transport(method: str, url: str, form: dict[str, str]) -> dict[str, object]:
-    api_key = get_env("HELPMEFINDTHEJOB_STRIPE_API_KEY", "DIRECTJOB_STRIPE_API_KEY", "")
+    api_key = get_env("HELPMEFINDTHEJOB_STRIPE_API_KEY", "")
     if not api_key:
-        raise RuntimeError("billing_backend_unconfigured: set DIRECTJOB_STRIPE_API_KEY")
+        raise RuntimeError("billing_backend_unconfigured: set HELPMEFINDTHEJOB_STRIPE_API_KEY")
     body = urllib.parse.urlencode(form).encode("utf-8")
     request = urllib.request.Request(
         url,
@@ -365,25 +365,24 @@ class StripeBillingBackend:
         transport: StripeTransport | None = None,
     ) -> None:
         self.path = path
-        self.api_key = get_env("HELPMEFINDTHEJOB_STRIPE_API_KEY", "DIRECTJOB_STRIPE_API_KEY", "")
+        self.api_key = get_env("HELPMEFINDTHEJOB_STRIPE_API_KEY", "")
         self.success_url = get_env(
-            "HELPMEFINDTHEJOB_STRIPE_SUCCESS_URL", "DIRECTJOB_STRIPE_SUCCESS_URL", ""
+            "HELPMEFINDTHEJOB_STRIPE_SUCCESS_URL", ""
         )
         self.cancel_url = get_env(
-            "HELPMEFINDTHEJOB_STRIPE_CANCEL_URL", "DIRECTJOB_STRIPE_CANCEL_URL", ""
+            "HELPMEFINDTHEJOB_STRIPE_CANCEL_URL", ""
         )
         self.price_lookup = {
             "team": get_env(
-                "HELPMEFINDTHEJOB_STRIPE_PRICE_TEAM", "DIRECTJOB_STRIPE_PRICE_TEAM", ""
+                "HELPMEFINDTHEJOB_STRIPE_PRICE_TEAM", ""
             ),
-            "org": get_env("HELPMEFINDTHEJOB_STRIPE_PRICE_ORG", "DIRECTJOB_STRIPE_PRICE_ORG", ""),
+            "org": get_env("HELPMEFINDTHEJOB_STRIPE_PRICE_ORG", ""),
             "pro_monthly": get_env(
                 "HELPMEFINDTHEJOB_STRIPE_PRICE_PRO_MONTHLY",
-                "DIRECTJOB_STRIPE_PRICE_PRO_MONTHLY",
                 "",
             ),
             "pro_annual": get_env(
-                "HELPMEFINDTHEJOB_STRIPE_PRICE_PRO_ANNUAL", "DIRECTJOB_STRIPE_PRICE_PRO_ANNUAL", ""
+                "HELPMEFINDTHEJOB_STRIPE_PRICE_PRO_ANNUAL", ""
             ),
         }
         self._transport: StripeTransport = transport or _default_stripe_transport
@@ -413,14 +412,14 @@ class StripeBillingBackend:
     ) -> dict[str, object]:
         if not self.configured:
             raise RuntimeError(
-                "billing_backend_unconfigured: set DIRECTJOB_STRIPE_API_KEY and price IDs"
+                "billing_backend_unconfigured: set HELPMEFINDTHEJOB_STRIPE_API_KEY and price IDs"
             )
         price_id = self.price_lookup.get(plan_id)
         if not price_id:
             raise ValueError("unknown_plan")
         if not self.success_url or not self.cancel_url:
             raise RuntimeError(
-                "billing_backend_unconfigured: set DIRECTJOB_STRIPE_SUCCESS_URL and DIRECTJOB_STRIPE_CANCEL_URL"
+                "billing_backend_unconfigured: set HELPMEFINDTHEJOB_STRIPE_SUCCESS_URL and HELPMEFINDTHEJOB_STRIPE_CANCEL_URL"
             )
         form: dict[str, str] = {
             "mode": "subscription",
@@ -448,7 +447,7 @@ class StripeBillingBackend:
         the canonical answer to the 24h SLA on billing changes."""
 
         if not self.api_key:
-            raise RuntimeError("billing_backend_unconfigured: set DIRECTJOB_STRIPE_API_KEY")
+            raise RuntimeError("billing_backend_unconfigured: set HELPMEFINDTHEJOB_STRIPE_API_KEY")
         if not customer_id:
             raise ValueError("missing_customer_id")
         if not return_url:
@@ -469,7 +468,7 @@ class StripeBillingBackend:
 
 def build_backend(*, data_dir: Path | None = None) -> BillingBackend:
     backend = (
-        (get_env("HELPMEFINDTHEJOB_BILLING_BACKEND", "DIRECTJOB_BILLING_BACKEND") or "manual")
+        (get_env("HELPMEFINDTHEJOB_BILLING_BACKEND") or "manual")
         .strip()
         .casefold()
     )

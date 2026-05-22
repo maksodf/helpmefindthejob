@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright (c) 2026 DirectJob Scout contributors
+# Copyright (c) 2026 Helpmefindthejob contributors
 #
-# DirectJob Scout — Nix flake for reproducible dev + run environments.
+# Helpmefindthejob — Nix flake for reproducible dev + run environments.
 #
 # Why this exists
 # ---------------
@@ -39,7 +39,7 @@
 # for the rationale.
 
 {
-  description = "DirectJob Scout — civic employment commons for the European labour market (Nix flake).";
+  description = "Helpmefindthejob — civic employment commons for the European labour market (Nix flake).";
 
   inputs = {
     # Pin to nixos-25.05 stable (May 2025 release line). Update via
@@ -98,11 +98,11 @@
             touch .venv/.deps_installed
           fi
           set +e
-          echo "[flake] DirectJob Scout dev shell ready. Try: python3 -m unittest discover -s tests"
+          echo "[flake] Helpmefindthejob dev shell ready. Try: python3 -m unittest discover -s tests"
         '';
       in {
         devShells.default = pkgs.mkShell {
-          name = "directjob-scout-dev";
+          name = "helpmefindthejob-dev";
           packages = osTools ++ [ python ];
           inherit shellHook;
         };
@@ -115,7 +115,7 @@
           program =
             let
               script = pkgs.writeShellApplication {
-                name = "directjob-scout";
+                name = "helpmefindthejob";
                 runtimeInputs = osTools ++ [ python ];
                 text = ''
                   set -e
@@ -135,7 +135,7 @@
                 '';
               };
             in
-            "${script}/bin/directjob-scout";
+            "${script}/bin/helpmefindthejob";
         };
       });
 }

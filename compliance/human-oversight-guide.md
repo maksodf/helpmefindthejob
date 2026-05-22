@@ -5,7 +5,7 @@
 
 **Audience**: the **human-oversight person appointed by the deployer** (and the deployer who appoints them).
 **Article**: AI Act Article 14 (human oversight).
-**Pairs with**: the `DIRECTJOB_HUMAN_OVERSIGHT_MODE` configuration flag and the `/api/admin/oversight/queue` admin endpoint.
+**Pairs with**: the `HELPMEFINDTHEJOB_HUMAN_OVERSIGHT_MODE` configuration flag and the `/api/admin/oversight/queue` admin endpoint.
 **Status**: living document. Updated alongside any change to the oversight UI or kill-switch behaviour.
 
 ---
@@ -46,7 +46,7 @@ Helpmefindthejob supports four oversight postures, listed from least to most int
 
 ### Mode A: Passive monitoring (default)
 
-`DIRECTJOB_HUMAN_OVERSIGHT_MODE=disabled`
+`HELPMEFINDTHEJOB_HUMAN_OVERSIGHT_MODE=disabled`
 
 AI outputs reach the user directly. The oversight person monitors via the audit log (sampling, weekly review of patterns, drill-down on user-reported concerns).
 
@@ -54,7 +54,7 @@ AI outputs reach the user directly. The oversight person monitors via the audit 
 
 ### Mode B: Advisor-review queue (active)
 
-`DIRECTJOB_HUMAN_OVERSIGHT_MODE=enabled`
+`HELPMEFINDTHEJOB_HUMAN_OVERSIGHT_MODE=enabled`
 
 AI outputs are appended to a review queue at `/api/admin/oversight/queue` before they reach the user. The oversight person reviews, approves, edits, rejects, or annotates each output. The user sees the approved (possibly edited) output.
 
@@ -68,7 +68,7 @@ The oversight person verifies during commissioning that the per-action gates are
 
 ### Mode D: Kill-switch (system-wide)
 
-`DIRECTJOB_DETERMINISTIC_ONLY=true`
+`HELPMEFINDTHEJOB_DETERMINISTIC_ONLY=true`
 
 Every AI-assisted code path is disabled. The system continues to function with deterministic templates: fit-scoring falls back to structured rule-based scoring; CV-tailoring falls back to the template library; motivation-letter drafting falls back to the persona-aware skeleton; application-outcome analysis falls back to deterministic pattern reports.
 
@@ -86,7 +86,7 @@ Every AI-assisted code path is disabled. The system continues to function with d
 
 ## 3. The advisor-review queue (Mode B detail)
 
-When `DIRECTJOB_HUMAN_OVERSIGHT_MODE=enabled`, the system surfaces a queue of AI outputs awaiting review at `/api/admin/oversight/queue`. The endpoint is admin-gated; only users with `is_admin=True` and a valid session can access it.
+When `HELPMEFINDTHEJOB_HUMAN_OVERSIGHT_MODE=enabled`, the system surfaces a queue of AI outputs awaiting review at `/api/admin/oversight/queue`. The endpoint is admin-gated; only users with `is_admin=True` and a valid session can access it.
 
 ### 3.1 What is queued
 
@@ -110,7 +110,7 @@ Every action is logged as an `override_event` in the audit log (see [`audit-log-
 
 ### 3.3 Time-out behaviour
 
-If the reviewer does not act within `DIRECTJOB_OVERSIGHT_QUEUE_TIMEOUT_SECONDS` (default 3600), the user receives a deterministic fallback for the requested action and is informed that AI suggestions are temporarily delayed. The timed-out item remains in the queue marked `time_out`; the reviewer can still review-after-the-fact for learning purposes.
+If the reviewer does not act within `HELPMEFINDTHEJOB_OVERSIGHT_QUEUE_TIMEOUT_SECONDS` (default 3600), the user receives a deterministic fallback for the requested action and is informed that AI suggestions are temporarily delayed. The timed-out item remains in the queue marked `time_out`; the reviewer can still review-after-the-fact for learning purposes.
 
 This timeout exists to keep the user-facing experience usable in environments where review depth is high but availability fluctuates. Public-authority deployers may shorten the timeout to accept a higher fallback rate in exchange for tighter oversight; commercial-context deployers may lengthen it if their oversight schedule supports it.
 

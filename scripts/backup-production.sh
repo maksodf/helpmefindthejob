@@ -6,7 +6,7 @@
 #
 # Usage:
 #   ./scripts/backup-production.sh
-#   BACKUP_DIR=/var/backups/directjob ./scripts/backup-production.sh
+#   BACKUP_DIR=/var/backups/helpmefindthejob ./scripts/backup-production.sh
 #   COMPOSE_FILE=docker-compose.prod.yml SERVICE_NAME=helpmefindthejob \
 #     ./scripts/backup-production.sh
 #   HELPMEFINDTHEJOB_BACKUP_BACKEND=rclone HELPMEFINDTHEJOB_BACKUP_REMOTE=s3:my-bucket/dj-scout \

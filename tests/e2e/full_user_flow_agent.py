@@ -93,7 +93,7 @@ DESKTOP_PDF_PATH = Path(
 )
 PHOTO_URL = os.environ.get(
     "E2E_PHOTO_URL",
-    "https://picsum.photos/seed/directjob/240/240.jpg",
+    "https://picsum.photos/seed/helpmefindthejob/240/240.jpg",
 )
 RESULTS: list[tuple[str, bool, str]] = []
 
@@ -174,7 +174,7 @@ def download_photo(url: str) -> bytes:
     works end-to-end, not just that a fixture can be uploaded."""
     req = urllib.request.Request(
         url,
-        headers={"User-Agent": "DirectJobScoutVerifier/1.0"},
+        headers={"User-Agent": "HelpmefindthejobVerifier/1.0"},
     )
     with urllib.request.urlopen(req, timeout=30) as resp:
         if resp.status != 200:

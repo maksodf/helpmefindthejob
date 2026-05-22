@@ -311,7 +311,7 @@ class AuthStore:
         # user clicks it, ``email_verified_at`` is stamped. The bootstrap
         # admin path is auto-verified because the operator owns the
         # mailbox already. Operator-side gate
-        # ``DIRECTJOB_REQUIRE_EMAIL_VERIFICATION`` decides whether
+        # ``HELPMEFINDTHEJOB_REQUIRE_EMAIL_VERIFICATION`` decides whether
         # unverified accounts can sign in.
         self._add_column_if_missing("users", "email_verified_at", "TEXT")
         self._add_column_if_missing("users", "email_verification_token_hash", "TEXT")
@@ -506,7 +506,7 @@ class AuthStore:
         # The bootstrap admin owns the mailbox by definition (the env-
         # var values were typed by the operator), so flag the account
         # email-verified directly. Without this the admin can't sign in
-        # when DIRECTJOB_REQUIRE_EMAIL_VERIFICATION=true (the env var
+        # when HELPMEFINDTHEJOB_REQUIRE_EMAIL_VERIFICATION=true (the env var
         # would otherwise lock out the very account it bootstraps).
         self.mark_email_verified(user.id)
         return user
@@ -781,7 +781,7 @@ class AuthStore:
     def _totp_crypto(self) -> EncryptionAtRest:
         """Lazy-init and cache the AEAD helper used for the TOTP-secret
         column. Same key-derivation chain as the CV-text column (HKDF from
-        ``self.secret_key`` unless ``DIRECTJOB_DATA_KEY`` is set), so a
+        ``self.secret_key`` unless ``HELPMEFINDTHEJOB_DATA_KEY`` is set), so a
         single rotation of either env var rotates both columns together.
         """
 

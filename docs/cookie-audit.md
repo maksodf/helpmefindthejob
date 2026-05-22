@@ -9,11 +9,11 @@ The short answer is **no** — but the full analysis is below so the next review
 
 | Mechanism | Name | Purpose | First-party? | Lifetime |
 |---|---|---|---|---|
-| Cookie | `directjob_session` | Session token, signed | Yes | 14 days, HttpOnly, Secure (prod), SameSite=Lax |
+| Cookie | `helpmefindthejob_session` | Session token, signed | Yes | 14 days, HttpOnly, Secure (prod), SameSite=Lax |
 | Cookie | `csrf_token` (header double-submit) | CSRF defense | Yes | Same as session |
-| localStorage | `directjob.locale` | Language preference (en/de) | n/a | Until user clears |
-| localStorage | `directjob.cmdkSeen` | "Have you seen the command palette" hint | n/a | Until user clears |
-| localStorage | `directjob.lastSettingsTab` | Settings tab persistence | n/a | Until user clears |
+| localStorage | `helpmefindthejob.locale` | Language preference (en/de) | n/a | Until user clears |
+| localStorage | `helpmefindthejob.cmdkSeen` | "Have you seen the command palette" hint | n/a | Until user clears |
+| localStorage | `helpmefindthejob.lastSettingsTab` | Settings tab persistence | n/a | Until user clears |
 
 There are **zero third-party cookies, zero analytics, zero ad-network beacons, zero tracker scripts**. The static surface (`index.html`, `privacy.html`, `terms.html`, `data-retention.html`, `impressum.html`) loads CSS from the same origin only.
 
@@ -27,8 +27,8 @@ Both cookies and all three localStorage keys fall squarely within this exception
 
 - **Session cookie**: required to deliver the authenticated experience the user signed in for.
 - **CSRF cookie**: required to protect the user against cross-site forgery.
-- **`directjob.locale`**: the user explicitly switched language; storing that choice is required to honour it.
-- **`directjob.cmdkSeen`**, **`directjob.lastSettingsTab`**: UI preferences set by user action; required to deliver the consistent UX the user requested.
+- **`helpmefindthejob.locale`**: the user explicitly switched language; storing that choice is required to honour it.
+- **`helpmefindthejob.cmdkSeen`**, **`helpmefindthejob.lastSettingsTab`**: UI preferences set by user action; required to deliver the consistent UX the user requested.
 
 No marketing, retargeting, profiling, or fingerprinting storage exists.
 
@@ -45,7 +45,7 @@ If Inter ends up needed for visual fidelity on a later marketing pass, self-host
 
 ## Optional analytics (operator-controlled)
 
-Phase 7 #60 added a `DIRECTJOB_ANALYTICS_SCRIPT_URL` env var. When unset, behaviour is unchanged — no third-party script loads, no cookies, no consent banner needed.
+Phase 7 #60 added a `HELPMEFINDTHEJOB_ANALYTICS_SCRIPT_URL` env var. When unset, behaviour is unchanged — no third-party script loads, no cookies, no consent banner needed.
 
 When set, the static surface fetches `/api/site-config` and injects the configured script tag. Two operating modes:
 

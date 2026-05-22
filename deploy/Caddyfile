@@ -1,8 +1,8 @@
 {
-	email {$DIRECTJOB_ADMIN_EMAIL}
+	email {$HELPMEFINDTHEJOB_ADMIN_EMAIL}
 }
 
-{$DIRECTJOB_DOMAIN} {
+{$HELPMEFINDTHEJOB_DOMAIN} {
 	encode zstd gzip
 	reverse_proxy helpmefindthejob:8765
 	header {

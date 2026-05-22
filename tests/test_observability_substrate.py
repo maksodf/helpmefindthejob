@@ -47,17 +47,17 @@ class EnvGateHonoured(unittest.TestCase):
     def setUp(self):
         self._original = dict(os.environ)
         for key in (
-            "HELPMEFINDTHEJOB_SENTRY_DSN", "DIRECTJOB_SENTRY_DSN",
-            "HELPMEFINDTHEJOB_POSTHOG_KEY", "DIRECTJOB_POSTHOG_KEY",
-            "HELPMEFINDTHEJOB_POSTHOG_HOST", "DIRECTJOB_POSTHOG_HOST",
+            "HELPMEFINDTHEJOB_SENTRY_DSN", "HELPMEFINDTHEJOB_SENTRY_DSN",
+            "HELPMEFINDTHEJOB_POSTHOG_KEY", "HELPMEFINDTHEJOB_POSTHOG_KEY",
+            "HELPMEFINDTHEJOB_POSTHOG_HOST", "HELPMEFINDTHEJOB_POSTHOG_HOST",
         ):
             os.environ.pop(key, None)
 
     def tearDown(self):
         for key in (
-            "HELPMEFINDTHEJOB_SENTRY_DSN", "DIRECTJOB_SENTRY_DSN",
-            "HELPMEFINDTHEJOB_POSTHOG_KEY", "DIRECTJOB_POSTHOG_KEY",
-            "HELPMEFINDTHEJOB_POSTHOG_HOST", "DIRECTJOB_POSTHOG_HOST",
+            "HELPMEFINDTHEJOB_SENTRY_DSN", "HELPMEFINDTHEJOB_SENTRY_DSN",
+            "HELPMEFINDTHEJOB_POSTHOG_KEY", "HELPMEFINDTHEJOB_POSTHOG_KEY",
+            "HELPMEFINDTHEJOB_POSTHOG_HOST", "HELPMEFINDTHEJOB_POSTHOG_HOST",
         ):
             if key in self._original:
                 os.environ[key] = self._original[key]
@@ -92,7 +92,7 @@ class EnvGateHonoured(unittest.TestCase):
         observability.report_error(KeyError("y"))
 
     def test_legacy_env_var_also_works(self):
-        os.environ["DIRECTJOB_SENTRY_DSN"] = "fake://test"
+        os.environ["HELPMEFINDTHEJOB_SENTRY_DSN"] = "fake://test"
         self.assertEqual(observability.sentry_dsn(), "fake://test")
 
 
@@ -300,7 +300,7 @@ class MetricsEndpointLive(unittest.TestCase):
         env["HELPMEFINDTHEJOB_DATA_FILE"] = str(
             Path(cls.tmpdir.name) / "data.json"
         )
-        env["DIRECTJOB_DISABLE_SCHEDULER"] = "1"
+        env["HELPMEFINDTHEJOB_DISABLE_SCHEDULER"] = "1"
         env.pop("HELPMEFINDTHEJOB_DATABASE_URL", None)
         cls.proc = subprocess.Popen(
             [sys.executable, "app.py", "--port", str(cls.port)],

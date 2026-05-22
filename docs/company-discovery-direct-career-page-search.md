@@ -245,8 +245,8 @@ Recommended layers:
 
 - CompanyRepository: CRUD for companies, runs, scans, discovered jobs.
 - CareerPageScanner: robots checks, bounded fetches, JSON-LD extraction, HTML fallback extraction.
-- DirectJobDeduplicator: URL/title/description/ATS dedupe.
-- DirectJobImporter: maps DiscoveredJob into the existing Job entity and triggers normal scoring.
+- HelpmefindthejobDeduplicator: URL/title/description/ATS dedupe.
+- HelpmefindthejobImporter: maps DiscoveredJob into the existing Job entity and triggers normal scoring.
 - CompanySuggestionService: curated taxonomy and configured search-provider integration.
 - MCP tools: thin wrappers over the service layer.
 

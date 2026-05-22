@@ -22,8 +22,8 @@ The Helpmefindthejob audit log is **append-only JSONL** stored at `${DATA_ROOT}/
 
 - **One JSON object per line**, newline-terminated. UTF-8. No leading byte-order mark.
 - **Append-only**: emitters open with `O_APPEND` semantics; rotation is a background job, not in-band.
-- **Rotation**: when the file exceeds `HELPMEFINDTHEJOB_AUDIT_ROTATE_BYTES` (legacy `DIRECTJOB_AUDIT_ROTATE_BYTES`) (default 64 MiB), it is renamed to `ai_act_audit.log.{YYYYMMDD-HHMMSS}` and a new file is opened.
-- **Retention**: files older than `HELPMEFINDTHEJOB_AUDIT_RETENTION_DAYS` (legacy `DIRECTJOB_AUDIT_RETENTION_DAYS`) (default 180) are eligible for deletion by the deployer's retention job. The provider does **not** delete; the deployer holds the retention decision per their jurisdiction.
+- **Rotation**: when the file exceeds `HELPMEFINDTHEJOB_AUDIT_ROTATE_BYTES` (default 64 MiB), it is renamed to `ai_act_audit.log.{YYYYMMDD-HHMMSS}` and a new file is opened.
+- **Retention**: files older than `HELPMEFINDTHEJOB_AUDIT_RETENTION_DAYS` (default 180) are eligible for deletion by the deployer's retention job. The provider does **not** delete; the deployer holds the retention decision per their jurisdiction.
 
 ---
 
@@ -39,7 +39,7 @@ Every event record has these fields:
 | `event_id` | string (UUID v4) | yes | Unique identifier for this event. |
 | `event_type` | string (enum) | yes | One of the event types in §4. |
 | `timestamp` | string (ISO 8601, UTC, microsecond precision) | yes | When the event happened. |
-| `user_opaque_id` | string (64-char hex SHA-256) or `null` | yes | Stable per-user opaque ID, hashed from the user's internal ID + `HELPMEFINDTHEJOB_AUDIT_SALT` (legacy `DIRECTJOB_AUDIT_SALT`). `null` for system-internal events. |
+| `user_opaque_id` | string (64-char hex SHA-256) or `null` | yes | Stable per-user opaque ID, hashed from the user's internal ID + `HELPMEFINDTHEJOB_AUDIT_SALT`. `null` for system-internal events. |
 | `session_opaque_id` | string (64-char hex SHA-256) or `null` | yes | Stable per-session opaque ID. `null` for non-session contexts (e.g. MCP stdio invocations from a sibling agent). |
 | `caller` | string | yes | One of `"web"`, `"mcp"`, `"cli"`, `"system"`. |
 | `journey_phase` | string (enum) | no | The 12-phase journey state machine phase active when the event happened, if applicable. |
@@ -150,9 +150,9 @@ Emitted for system-level events that do not fit the above types (config reload, 
 
 By default, all PII fields (`user_opaque_id`, `session_opaque_id`, `job_opaque_id`, `entity_opaque_id`, `overseer_opaque_id`, `cv_section_opaque_ids`, `override_note_hash`, `prompt_hash`, `response_hash`, `arguments_hash`) are stored as **hashes**, not plaintext.
 
-The hash function is **SHA-256** over the canonical value + the deployment-time `HELPMEFINDTHEJOB_AUDIT_SALT` (legacy `DIRECTJOB_AUDIT_SALT`) (32-byte random secret). The salt is set per deployment. If the salt is rotated, prior hashes are no longer linkable to current ones; this is a deliberate retention-control mechanism the deployer may use to enforce time-bounded linkability.
+The hash function is **SHA-256** over the canonical value + the deployment-time `HELPMEFINDTHEJOB_AUDIT_SALT` (32-byte random secret). The salt is set per deployment. If the salt is rotated, prior hashes are no longer linkable to current ones; this is a deliberate retention-control mechanism the deployer may use to enforce time-bounded linkability.
 
-**Production fail-fast (2026-05-19, pre-submission scope-tightening slice PART 1.1)**: when the application environment is `production`, `staging`, or any non-development value (read from `HELPMEFINDTHEJOB_ENV`, legacy `COMPANY_DISCOVERY_ENV`), the audit-log emitter **refuses to start** if the salt is unset. A `FATAL` message lands on stderr naming both the new and legacy env-var names, and the process exits with code 1. The intent is to make it impossible to ship a production deployment whose audit-log entries cannot be correlated across process restarts — a regression that would silently weaken Article 12 record-keeping. In development / test mode the previous behaviour (per-process random salt with an `ERROR`-level warning) is preserved so the developer's loop stays frictionless. See `tests/test_phase13_audit_log.py::SaltFailFastTests` for the regression coverage.
+**Production fail-fast (2026-05-19, pre-submission scope-tightening slice PART 1.1)**: when the application environment is `production`, `staging`, or any non-development value (read from `HELPMEFINDTHEJOB_ENV`, legacy `HELPMEFINDTHEJOB_ENV`), the audit-log emitter **refuses to start** if the salt is unset. A `FATAL` message lands on stderr naming both the new and legacy env-var names, and the process exits with code 1. The intent is to make it impossible to ship a production deployment whose audit-log entries cannot be correlated across process restarts — a regression that would silently weaken Article 12 record-keeping. In development / test mode the previous behaviour (per-process random salt with an `ERROR`-level warning) is preserved so the developer's loop stays frictionless. See `tests/test_phase13_audit_log.py::SaltFailFastTests` for the regression coverage.
 
 **Plaintext opt-in**: a deployer with a specific legal need (court order, regulatory request) may set `HELPMEFINDTHEJOB_AUDIT_PLAINTEXT_PII=true`. In that mode, certain fields hold plaintext values rather than hashes. Plaintext mode is logged as a `consent_event` with `consent_topic="audit_log_plaintext_pii"` and `consent_state="modified"` on each config reload, so the policy change is itself auditable.
 
@@ -160,7 +160,7 @@ The hash function is **SHA-256** over the canonical value + the deployment-time 
 
 ## 6. Retention
 
-The default retention is 180 days. Deployers configure via `HELPMEFINDTHEJOB_AUDIT_RETENTION_DAYS` (legacy `DIRECTJOB_AUDIT_RETENTION_DAYS`). The minimum recommended retention is **6 months** to satisfy typical post-incident investigation windows under Article 26(6) and to allow for the 6-monthly bias-testing methodology re-run.
+The default retention is 180 days. Deployers configure via `HELPMEFINDTHEJOB_AUDIT_RETENTION_DAYS`. The minimum recommended retention is **6 months** to satisfy typical post-incident investigation windows under Article 26(6) and to allow for the 6-monthly bias-testing methodology re-run.
 
 The deployer's retention job is **not provided** by the project (deployer responsibility). A sample cron script is included in [`../scripts/`](../scripts/) showing how to rotate and prune old log files.
 

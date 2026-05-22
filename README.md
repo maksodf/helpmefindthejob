@@ -54,7 +54,7 @@ maintainer's DNS configuration (CNAME → GH Pages or apex hosting). The
 main branch is intended to stay buildable but may contain unfinished
 work between tags. Honest about instability — see
 [`CONTRIBUTORS-NOTE.md`](CONTRIBUTORS-NOTE.md) for the project's history
-including the 2026-05-19 project rename ([Decision 22](docs/grant/04-research-and-decisions.md#decision-22-project-rename--directjob-scout--helpmefindthejob))
+including the 2026-05-19 project rename ([Decision 22](docs/grant/04-research-and-decisions.md#decision-22-project-rename--helpmefindthejob--helpmefindthejob))
 and the deprecated commercial phase that preceded the civic-commons
 direction.
 
@@ -249,8 +249,8 @@ Compose with Caddy HTTPS:
 
 ```bash
 cp .env.example .env
-# Edit .env: domain, admin email/password, DIRECTJOB_SECRET_KEY,
-# DIRECTJOB_PUBLIC_URL, SMTP credentials, AI provider config.
+# Edit .env: domain, admin email/password, HELPMEFINDTHEJOB_SECRET_KEY,
+# HELPMEFINDTHEJOB_PUBLIC_URL, SMTP credentials, AI provider config.
 docker compose -f docker-compose.prod.yml --env-file .env up -d --build
 ```
 

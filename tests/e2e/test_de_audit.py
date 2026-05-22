@@ -19,7 +19,7 @@ Required environment (script no-ops without all three so CI doesn't run it):
 
 Usage:
   E2E_BASE_URL=... E2E_EMAIL=... E2E_PASSWORD=... \\
-      /private/tmp/directjob-e2e-venv/bin/python tests/e2e/test_de_audit.py
+      /private/tmp/helpmefindthejob-e2e-venv/bin/python tests/e2e/test_de_audit.py
 """
 
 from __future__ import annotations
@@ -82,7 +82,7 @@ def main() -> int:
             async () => {
                 const csrf = (await (await fetch('/api/auth/state')).json()).csrfToken
                   || (await (await fetch('/api/profile')).json()).profile?.csrfToken;
-                const cookieMatch = document.cookie.match(/directjob_session=([^;]+)/);
+                const cookieMatch = document.cookie.match(/helpmefindthejob_session=([^;]+)/);
                 await fetch('/api/profile', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json',

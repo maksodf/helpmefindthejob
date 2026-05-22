@@ -151,10 +151,10 @@ service) **may** optionally engage paid support via:
    maintainer-appointed entity hosts an instance for the
    institution at-cost-plus-margin. Hardware + bandwidth + AI
    provider passthrough + a small operations fee.
-2. **Custom-integration consulting** — wiring DirectJob
-   Scout into the institution's existing case-management
-   stack (SAP HR, Jobs2Web, internal databases). Engagement-
-   scoped, not per-seat.
+2. **Custom-integration consulting** — wiring
+   Helpmefindthejob into the institution's existing case-
+   management stack (SAP HR, Jobs2Web, internal databases).
+   Engagement-scoped, not per-seat.
 3. **Training + onboarding for advisors** — a half-day to
    full-day onboarding for advisor staff at an institution
    that deploys the tool.

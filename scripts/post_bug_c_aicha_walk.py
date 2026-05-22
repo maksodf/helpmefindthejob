@@ -16,7 +16,7 @@ Usage:
     python3 scripts/post_bug_c_aicha_walk.py --base http://127.0.0.1:8765
 
 The script assumes a server is already running with:
-  - DIRECTJOB_ALLOW_REGISTRATION=true (or equivalent)
+  - HELPMEFINDTHEJOB_ALLOW_REGISTRATION=true (or equivalent)
   - Ollama llama3.1:8b reachable at OLLAMA_HOST (env or default
     http://127.0.0.1:11434)
   - Fresh data dir (cold cache so Bug C path is more likely)

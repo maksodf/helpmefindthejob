@@ -5,7 +5,7 @@
 # Replaces the ad-hoc rsync + docker compose sequence that bit us on
 # 2026-05-09 (deploys ran with the dev compose file, which has a bind
 # mount to ./data and a fresh-empty database — silently masking the
-# real production named volume `directjob_data`).
+# real production named volume `helpmefindthejob_data`).
 #
 # What it does, in order:
 #   1. Sanity-check that ``docker-compose.prod.yml`` exists in the cwd.

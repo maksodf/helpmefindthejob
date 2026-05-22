@@ -687,7 +687,7 @@ class BundesagenturProvider:
     `X-API-Key` header — the API treats it as a soft client identifier).
     To stay safe, we ship a default DEV-issued key that anyone can use,
     but operators are encouraged to override via
-    ``DIRECTJOB_BUNDESAGENTUR_API_KEY``.
+    ``HELPMEFINDTHEJOB_BUNDESAGENTUR_API_KEY``.
     """
 
     name: str = "bundesagentur"
@@ -775,7 +775,7 @@ class AdzunaProvider:
     https://developer.adzuna.com — no card, instant). Country code
     selects the data set; the per-call ``country`` defaults to ``de``
     for our DACH-leaning user base but the operator can override via
-    ``DIRECTJOB_ADZUNA_COUNTRY``.
+    ``HELPMEFINDTHEJOB_ADZUNA_COUNTRY``.
 
     Attribution: required on UI surfaces — already in ProviderAttribution.
     """
@@ -891,12 +891,12 @@ def adzuna_from_env(env: dict[str, str] | None = None) -> AdzunaProvider | None:
             return legacy_value
         return ""
 
-    app_id = _pick("HELPMEFINDTHEJOB_ADZUNA_APP_ID", "DIRECTJOB_ADZUNA_APP_ID").strip()
-    app_key = _pick("HELPMEFINDTHEJOB_ADZUNA_APP_KEY", "DIRECTJOB_ADZUNA_APP_KEY").strip()
+    app_id = _pick("HELPMEFINDTHEJOB_ADZUNA_APP_ID", "HELPMEFINDTHEJOB_ADZUNA_APP_ID").strip()
+    app_key = _pick("HELPMEFINDTHEJOB_ADZUNA_APP_KEY", "HELPMEFINDTHEJOB_ADZUNA_APP_KEY").strip()
     if not app_id or not app_key:
         return None
     country = (
-        _pick("HELPMEFINDTHEJOB_ADZUNA_COUNTRY", "DIRECTJOB_ADZUNA_COUNTRY") or "de"
+        _pick("HELPMEFINDTHEJOB_ADZUNA_COUNTRY", "HELPMEFINDTHEJOB_ADZUNA_COUNTRY") or "de"
     ).strip().lower() or "de"
     return AdzunaProvider(app_id=app_id, app_key=app_key, country=country)
 
@@ -910,7 +910,7 @@ def default_no_auth_providers() -> list:
     agency carries a long tail of public-sector + consulting roles.
 
     Adzuna is registered automatically when the operator sets
-    ``DIRECTJOB_ADZUNA_APP_ID`` and ``DIRECTJOB_ADZUNA_APP_KEY``;
+    ``HELPMEFINDTHEJOB_ADZUNA_APP_ID`` and ``HELPMEFINDTHEJOB_ADZUNA_APP_KEY``;
     without them it stays absent (no-op).
     """
 

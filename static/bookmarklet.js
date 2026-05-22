@@ -34,7 +34,7 @@
     "h1",                                     // generic fallback
     "title",
   ]) || document.title || "";
-  var endpoint = window.__DIRECTJOB_CAPTURE_URL__ ||
+  var endpoint = window.__HELPMEFINDTHEJOB_CAPTURE_URL__ ||
     "https://app.helpmefindthejob.com/capture";
   var target = endpoint +
     "?u=" + encodeURIComponent(url) +

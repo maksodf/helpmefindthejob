@@ -227,7 +227,7 @@ class EnvOptIn(unittest.TestCase):
         # Save / restore — the test harness shouldn't have these set
         original = {k: os.environ.pop(k, None) for k in (
             "HELPMEFINDTHEJOB_COST_METRICS",
-            "DIRECTJOB_COST_METRICS",
+            "HELPMEFINDTHEJOB_COST_METRICS",
         )}
         try:
             self.assertFalse(_env_enabled())
@@ -249,11 +249,11 @@ class EnvOptIn(unittest.TestCase):
         import os
 
         os.environ.pop("HELPMEFINDTHEJOB_COST_METRICS", None)
-        os.environ["DIRECTJOB_COST_METRICS"] = "1"
+        os.environ["HELPMEFINDTHEJOB_COST_METRICS"] = "1"
         try:
             self.assertTrue(_env_enabled())
         finally:
-            os.environ.pop("DIRECTJOB_COST_METRICS", None)
+            os.environ.pop("HELPMEFINDTHEJOB_COST_METRICS", None)
 
 
 if __name__ == "__main__":

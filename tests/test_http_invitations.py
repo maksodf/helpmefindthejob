@@ -213,7 +213,7 @@ class HttpInvitesAndResetTests(unittest.TestCase):
             send_csrf=False,
         )
         self.assertEqual(code, 201)
-        self.assertIn("directjob_session=", set_cookie)
+        self.assertIn("helpmefindthejob_session=", set_cookie)
         # Re-using the token must fail
         code, _, _ = _Client(self.base).request(
             f"/api/auth/accept-invite/{token}",

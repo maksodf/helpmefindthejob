@@ -133,14 +133,14 @@ fi
 # B2, Cloudflare R2, AWS S3). Uses awscli inside the container so we
 # don't add a dependency to the host.
 #
-#   DIRECTJOB_BACKUP_S3_BUCKET   target bucket (required to enable)
-#   DIRECTJOB_BACKUP_S3_PREFIX   key prefix, e.g. "helpmefindthejob/"
-#   DIRECTJOB_BACKUP_S3_ENDPOINT --endpoint-url override (optional)
+#   HELPMEFINDTHEJOB_BACKUP_S3_BUCKET   target bucket (required to enable)
+#   HELPMEFINDTHEJOB_BACKUP_S3_PREFIX   key prefix, e.g. "helpmefindthejob/"
+#   HELPMEFINDTHEJOB_BACKUP_S3_ENDPOINT --endpoint-url override (optional)
 #   AWS_ACCESS_KEY_ID            forwarded into the container
 #   AWS_SECRET_ACCESS_KEY        forwarded into the container
 #   AWS_DEFAULT_REGION           e.g. "fra1" for DO Spaces
-if [ -n "${DIRECTJOB_BACKUP_S3_BUCKET:-}" ]; then
-  echo "snapshot: uploading off-host to s3://$DIRECTJOB_BACKUP_S3_BUCKET"
+if [ -n "${HELPMEFINDTHEJOB_BACKUP_S3_BUCKET:-}" ]; then
+  echo "snapshot: uploading off-host to s3://$HELPMEFINDTHEJOB_BACKUP_S3_BUCKET"
   UPLOAD_PROGRAM=$(cat <<'EOF'
 set -eu
 SERVICE_NAME="__SERVICE__"
@@ -160,12 +160,12 @@ done
 EOF
 )
   endpoint_flag=""
-  if [ -n "${DIRECTJOB_BACKUP_S3_ENDPOINT:-}" ]; then
-    endpoint_flag="--endpoint-url $DIRECTJOB_BACKUP_S3_ENDPOINT"
+  if [ -n "${HELPMEFINDTHEJOB_BACKUP_S3_ENDPOINT:-}" ]; then
+    endpoint_flag="--endpoint-url $HELPMEFINDTHEJOB_BACKUP_S3_ENDPOINT"
   fi
-  prefix="${DIRECTJOB_BACKUP_S3_PREFIX:-helpmefindthejob/}"
+  prefix="${HELPMEFINDTHEJOB_BACKUP_S3_PREFIX:-helpmefindthejob/}"
   UPLOAD_PROGRAM="$(printf '%s' "$UPLOAD_PROGRAM" \
-    | sed "s|__SERVICE__|$SERVICE_NAME|g; s|__DATA__|$DATA_DIR|g; s|__TAG__|$TAG|g; s|__BUCKET__|$DIRECTJOB_BACKUP_S3_BUCKET|g; s|__PREFIX__|$prefix|g; s|__ENDPOINT_FLAG__|$endpoint_flag|g")"
+    | sed "s|__SERVICE__|$SERVICE_NAME|g; s|__DATA__|$DATA_DIR|g; s|__TAG__|$TAG|g; s|__BUCKET__|$HELPMEFINDTHEJOB_BACKUP_S3_BUCKET|g; s|__PREFIX__|$prefix|g; s|__ENDPOINT_FLAG__|$endpoint_flag|g")"
   if [ -n "$SSH_HOST" ]; then
     if [ -n "$SSH_KEY" ]; then
       printf '%s\n' "$UPLOAD_PROGRAM" | ssh -i "$SSH_KEY" $SSH_OPTS_BASE "$SSH_HOST" \

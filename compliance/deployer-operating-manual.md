@@ -60,11 +60,11 @@ Before going live, complete each of these in order. None is optional.
 - [ ] Read `transparency-notice.md` and fill in the `[Deployer-managed addendum]` section with your organisation-specific values.
 - [ ] Read `audit-log-schema.md` and decide your retention policy (default 180 days; minimum 6 months recommended).
 - [ ] Choose your AI provider(s). The transparency notice tells users what to expect; the configuration is per `§4 — Configuration` below.
-- [ ] Decide whether to enable human-oversight review mode (`DIRECTJOB_HUMAN_OVERSIGHT_MODE`). See `human-oversight-guide.md`.
+- [ ] Decide whether to enable human-oversight review mode (`HELPMEFINDTHEJOB_HUMAN_OVERSIGHT_MODE`). See `human-oversight-guide.md`.
 - [ ] Appoint the human-oversight person and complete the `human-oversight-guide.md` §"Appointment record" section.
 - [ ] If your organisation is a public authority: complete the FRIA in `fundamental-rights-impact-assessment-template.md` and lodge it per Article 27.
 - [ ] Complete the EU AI database registration template in `eu-database-registration-template.md` and submit before going live (Article 49).
-- [ ] Set the deployment-time secrets: `DIRECTJOB_SECRET_KEY` (32 random bytes), `DIRECTJOB_AUDIT_SALT` (32 random bytes), `DIRECTJOB_PUBLIC_URL`, admin credentials, SMTP for outbound notifications.
+- [ ] Set the deployment-time secrets: `HELPMEFINDTHEJOB_SECRET_KEY` (32 random bytes), `HELPMEFINDTHEJOB_AUDIT_SALT` (32 random bytes), `HELPMEFINDTHEJOB_PUBLIC_URL`, admin credentials, SMTP for outbound notifications.
 - [ ] Run the bias-testing methodology against your chosen AI provider (`accuracy-and-bias-testing.md` §"Pre-deployment re-test").
 - [ ] Verify backup and restore drills against your data infrastructure (`scripts/backup-*` and `scripts/restore-*` are provided).
 - [ ] Brief your advisors and oversight person on the system's capabilities and limitations (`transparency-notice.md` §"Limitations").
@@ -80,14 +80,14 @@ The complete list lives in [`.env.example`](https://github.com/maksodf/helpmefin
 
 | Variable | Default | What it controls |
 |---|---|---|
-| `DIRECTJOB_SECRET_KEY` | (required) | The ChaCha20-Poly1305 AEAD key for profile-at-rest encryption. 32 random bytes, base64-encoded. |
-| `DIRECTJOB_AUDIT_SALT` | (required) | The per-deployment salt for the user_opaque_id hashing in the audit log. 32 random bytes, base64-encoded. |
-| `DIRECTJOB_AUDIT_RETENTION_DAYS` | `180` | Retention window for audit-log files. Deployer-set per jurisdiction. |
-| `DIRECTJOB_AUDIT_ROTATE_BYTES` | `67108864` (64 MiB) | Rotation threshold. |
-| `DIRECTJOB_AUDIT_PLAINTEXT_PII` | `false` | Set to `true` only with documented legal justification. Logs `consent_event` on each config reload to make policy change auditable. |
-| `DIRECTJOB_HUMAN_OVERSIGHT_MODE` | `disabled` | `enabled` activates the advisor-review queue at `/api/admin/oversight/queue`. |
-| `DIRECTJOB_AI_PROVIDER` | `manual` | Which AI provider is the default (`openai` / `anthropic` / `gemini` / `deepseek` / `openrouter` / `ollama` / `manual` / `claude-code` / `none`). Users can override per-request. |
-| `DIRECTJOB_DETERMINISTIC_ONLY` | `false` | Kill-switch. When `true`, disables every AI-assisted code path and falls back to deterministic templates everywhere. |
+| `HELPMEFINDTHEJOB_SECRET_KEY` | (required) | The ChaCha20-Poly1305 AEAD key for profile-at-rest encryption. 32 random bytes, base64-encoded. |
+| `HELPMEFINDTHEJOB_AUDIT_SALT` | (required) | The per-deployment salt for the user_opaque_id hashing in the audit log. 32 random bytes, base64-encoded. |
+| `HELPMEFINDTHEJOB_AUDIT_RETENTION_DAYS` | `180` | Retention window for audit-log files. Deployer-set per jurisdiction. |
+| `HELPMEFINDTHEJOB_AUDIT_ROTATE_BYTES` | `67108864` (64 MiB) | Rotation threshold. |
+| `HELPMEFINDTHEJOB_AUDIT_PLAINTEXT_PII` | `false` | Set to `true` only with documented legal justification. Logs `consent_event` on each config reload to make policy change auditable. |
+| `HELPMEFINDTHEJOB_HUMAN_OVERSIGHT_MODE` | `disabled` | `enabled` activates the advisor-review queue at `/api/admin/oversight/queue`. |
+| `HELPMEFINDTHEJOB_AI_PROVIDER` | `manual` | Which AI provider is the default (`openai` / `anthropic` / `gemini` / `deepseek` / `openrouter` / `ollama` / `manual` / `claude-code` / `none`). Users can override per-request. |
+| `HELPMEFINDTHEJOB_DETERMINISTIC_ONLY` | `false` | Kill-switch. When `true`, disables every AI-assisted code path and falls back to deterministic templates everywhere. |
 
 ### 4.2 Deployment files
 
@@ -110,8 +110,8 @@ EN and DE are shipped. Arabic, Ukrainian, Turkish, and Romanian are on the roadm
 The full guide is at [`human-oversight-guide.md`](https://github.com/maksodf/helpmefindthejob/blob/main/compliance/human-oversight-guide.md). Summary for deployment-time:
 
 1. **Appoint a named oversight person.** This must be someone with the competence to assess fit-scoring outputs, motivation-letter drafts, and CV-tailoring suggestions for accuracy and fairness in your sector. For a Beratungsstelle, this is typically a senior advisor. For a Jobcenter, a Case Manager. For a university career service, the head of career advising. The person's contact appears in the `transparency-notice.md` addendum.
-2. **Decide review mode**: `DIRECTJOB_HUMAN_OVERSIGHT_MODE=disabled` (default, AI outputs reach the user directly) vs `enabled` (AI outputs queue for advisor review at `/api/admin/oversight/queue`). The trade-off is between throughput and oversight depth. Public-authority deployers typically choose `enabled` at first deployment and de-escalate after a documented track record.
-3. **Document the kill-switch policy**: under what conditions the oversight person activates `DIRECTJOB_DETERMINISTIC_ONLY=true`. The policy lives in your operational runbook; the kill-switch action itself is recorded in the audit log.
+2. **Decide review mode**: `HELPMEFINDTHEJOB_HUMAN_OVERSIGHT_MODE=disabled` (default, AI outputs reach the user directly) vs `enabled` (AI outputs queue for advisor review at `/api/admin/oversight/queue`). The trade-off is between throughput and oversight depth. Public-authority deployers typically choose `enabled` at first deployment and de-escalate after a documented track record.
+3. **Document the kill-switch policy**: under what conditions the oversight person activates `HELPMEFINDTHEJOB_DETERMINISTIC_ONLY=true`. The policy lives in your operational runbook; the kill-switch action itself is recorded in the audit log.
 
 ---
 
@@ -191,7 +191,7 @@ Caddy auto-renews certificates. Verify via the `scripts/check-tls-expiry.sh` mon
 
 If you encounter or are informed of an incident involving Helpmefindthejob in your deployment:
 
-1. **Stabilise**: if the incident is ongoing and involves automatic harm (e.g., systematic bias against a documented persona class), activate the kill-switch (`DIRECTJOB_DETERMINISTIC_ONLY=true`) until you have understood and contained the issue.
+1. **Stabilise**: if the incident is ongoing and involves automatic harm (e.g., systematic bias against a documented persona class), activate the kill-switch (`HELPMEFINDTHEJOB_DETERMINISTIC_ONLY=true`) until you have understood and contained the issue.
 2. **Document**: capture the relevant audit-log slice, the user's reported experience, and the system state at the time of incident.
 3. **Notify**:
    - **Internal**: your data-protection officer, your oversight person, your organisation's relevant senior accountable individual.

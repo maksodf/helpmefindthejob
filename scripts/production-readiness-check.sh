@@ -44,13 +44,13 @@ from company_discovery.readiness import build_report
 
 
 # Read the version straight out of app.py to avoid importing it (which
-# would attempt to bind a sqlite file under COMPANY_DISCOVERY_DATA_DIR).
+# would attempt to bind a sqlite file under HELPMEFINDTHEJOB_DATA_DIR).
 app_text = Path("app.py").read_text(encoding="utf-8")
 match = re.search(r'APP_VERSION = "([^"]+)"', app_text)
 app_version = match.group(1) if match else "unknown"
 
-env_name = (os.environ.get("COMPANY_DISCOVERY_ENV") or "development").strip().casefold()
-data_dir_raw = os.environ.get("COMPANY_DISCOVERY_DATA_DIR") or str(Path("./data").resolve())
+env_name = (os.environ.get("HELPMEFINDTHEJOB_ENV") or "development").strip().casefold()
+data_dir_raw = os.environ.get("HELPMEFINDTHEJOB_DATA_DIR") or str(Path("./data").resolve())
 data_dir = Path(data_dir_raw)
 audit_path = data_dir / "admin_audit.log"
 scheduler_path = data_dir / "scheduler.sqlite3"

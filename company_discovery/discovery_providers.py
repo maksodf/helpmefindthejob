@@ -337,7 +337,7 @@ class DuckDuckGoSearchProvider:
         request = Request(
             url,
             headers={
-                "User-Agent": "Mozilla/5.0 (compatible; DirectJobScout/0.14; +https://app.helpmefindthejob.com/about)",
+                "User-Agent": "Mozilla/5.0 (compatible; Helpmefindthejob/0.14; +https://app.helpmefindthejob.com/about)",
                 "Accept": "text/html,application/xhtml+xml",
                 "Accept-Language": "en-US,en;q=0.9",
             },
@@ -429,7 +429,7 @@ class DuckDuckGoSearchProvider:
 class BraveSearchProvider:
     """Brave Search (https://api.search.brave.com) backed company-discovery.
 
-    Activated by setting ``DIRECTJOB_BRAVE_API_KEY`` in the environment.
+    Activated by setting ``HELPMEFINDTHEJOB_BRAVE_API_KEY`` in the environment.
     Uses the Brave Web Search API to find career pages matching the
     user's target roles + location, then filters to direct-employer
     domains (i.e. excludes LinkedIn / Indeed / StepStone, which are
@@ -534,7 +534,7 @@ class BraveSearchProvider:
             headers={
                 "X-Subscription-Token": self.api_key,
                 "Accept": "application/json",
-                "User-Agent": "DirectJobScout/0.10",
+                "User-Agent": "Helpmefindthejob/0.10",
             },
         )
         try:

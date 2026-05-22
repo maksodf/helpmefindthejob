@@ -7,9 +7,9 @@ services:
     ports:
       - "8765:8765"
     environment:
-      COMPANY_DISCOVERY_DATA_DIR: /app/data
-      COMPANY_DISCOVERY_HOST: 0.0.0.0
-      COMPANY_DISCOVERY_PORT: 8765
+      HELPMEFINDTHEJOB_DATA_DIR: /app/data
+      HELPMEFINDTHEJOB_HOST: 0.0.0.0
+      HELPMEFINDTHEJOB_PORT: 8765
     volumes:
       - ./data:/app/data
     restart: unless-stopped

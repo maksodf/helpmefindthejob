@@ -20,7 +20,7 @@ data/ai_provider.json
 data/watchlist_schedule.json
 ```
 
-Set `COMPANY_DISCOVERY_DATA_DIR=/path/to/profile` to use a separate local pilot profile.
+Set `HELPMEFINDTHEJOB_DATA_DIR=/path/to/profile` to use a separate local pilot profile.
 
 For another machine, either copy the project folder and run the command above, or use:
 
@@ -78,7 +78,7 @@ their own password (12+ characters) and signs them in.
 Each tester sees their daily usage in **Settings → Your usage today**:
 scans / AI calls / active scans against the configured limits. Hitting
 a limit returns a friendly toast and a 429 from the API. Admin
-override is via `DIRECTJOB_QUOTA_*` env vars.
+override is via `HELPMEFINDTHEJOB_QUOTA_*` env vars.
 
 ## Supported AI Provider Modes
 
@@ -140,7 +140,7 @@ It exposes the company-discovery tools from `company_discovery/mcp_tools.py` and
 - Company suggestions combine a small curated healthcare employer list with category-level suggestions; this is not a live company database.
 - Browser smoke tests are skipped automatically if the sandbox blocks local port binding; manual server smoke is still available.
 - Stripe billing has a working Checkout backend behind
-  `DIRECTJOB_BILLING_BACKEND=stripe`; the pilot defaults to
+  `HELPMEFINDTHEJOB_BILLING_BACKEND=stripe`; the pilot defaults to
   manual billing.
 - Account deletion is two-step: user requests, admin confirms via
   `Admin → Tester accounts → Delete`. Last admin cannot be deleted.

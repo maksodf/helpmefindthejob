@@ -7,9 +7,9 @@ Required:
 - A domain or subdomain, for example `scout.example.com`.
 - DNS access so the domain can point to your server IP.
 - A VPS/cloud server with Docker and Docker Compose.
-- `DIRECTJOB_SECRET_KEY`: a stable random secret.
-- `DIRECTJOB_ADMIN_EMAIL`: the first admin/tester email.
-- `DIRECTJOB_ADMIN_PASSWORD`: a long random password, 12+ characters.
+- `HELPMEFINDTHEJOB_SECRET_KEY`: a stable random secret.
+- `HELPMEFINDTHEJOB_ADMIN_EMAIL`: the first admin/tester email.
+- `HELPMEFINDTHEJOB_ADMIN_PASSWORD`: a long random password, 12+ characters.
 
 Optional:
 
@@ -26,7 +26,7 @@ python3 -c "import secrets; print(secrets.token_urlsafe(48))"
 
 1. Copy `.env.example` to `.env`.
 2. Fill in required values.
-3. Point DNS `A` record for `DIRECTJOB_DOMAIN` to the server IP.
+3. Point DNS `A` record for `HELPMEFINDTHEJOB_DOMAIN` to the server IP.
 4. On the server, run:
 
 ```bash
@@ -61,7 +61,7 @@ curl https://YOUR_DOMAIN/api/health
 - In-app JSON backups are available in **Settings → Backup &amp; restore**.
 - Server-side data-volume snapshots: run `./scripts/backup-production.sh` on the host. The script uses SQLite's online backup API for WAL-safe snapshots and writes a timestamped tarball to `./backups/`.
 - Admins can create and manage tester accounts in the **Admin → Tester accounts** panel after signing in. All admin user-management actions are written to `data/admin_audit.log` (one JSON object per line).
-- App data is stored in the Docker volume `directjob_data`.
+- App data is stored in the Docker volume `helpmefindthejob_data`.
 - Caddy stores certificates in `caddy_data`.
 - Keep `.env` out of version control.
 - Rotate tester passwords from the admin-only **Admin → Tester accounts** panel.
@@ -89,7 +89,7 @@ SCRATCH=$(mktemp -d)
 tar -xzf backups/helpmefindthejob-YYYYMMDDTHHMMSSZ.tar.gz -C "$SCRATCH"
 # Replace the live volume contents
 docker run --rm \
-  -v directjob_data:/dst \
+  -v helpmefindthejob_data:/dst \
   -v "$SCRATCH/data":/src \
   alpine sh -c 'rm -rf /dst/* && cp -a /src/. /dst/'
 docker compose -f docker-compose.prod.yml start helpmefindthejob
@@ -119,14 +119,14 @@ Add host-level cron entries for daily backup + retention pruning + a
 weekly restore drill against the most recent tarball:
 
 ```cron
-15 3 * * *  cd /opt/helpmefindthejob && DIRECTJOB_BACKUP_BACKEND=rclone DIRECTJOB_BACKUP_REMOTE=$BACKUP_REMOTE ./scripts/backup-production.sh >> backups/backup.log 2>&1
+15 3 * * *  cd /opt/helpmefindthejob && HELPMEFINDTHEJOB_BACKUP_BACKEND=rclone HELPMEFINDTHEJOB_BACKUP_REMOTE=$BACKUP_REMOTE ./scripts/backup-production.sh >> backups/backup.log 2>&1
 20 4 * * *  cd /opt/helpmefindthejob && BACKUP_RETENTION_DAYS=30 ./scripts/backup-retention.sh >> backups/retention.log 2>&1
 30 5 * * 0  cd /opt/helpmefindthejob && ./scripts/restore-drill.sh "$(ls -t backups/helpmefindthejob-*.tar.gz | head -1)" >> backups/restore-drill.log 2>&1
-*/5 * * * * cd /opt/helpmefindthejob && APP_BASE_URL=https://$DIRECTJOB_DOMAIN ./scripts/uptime-check.sh >> backups/uptime.log 2>&1
-0 7 * * *   cd /opt/helpmefindthejob && DOMAIN=$DIRECTJOB_DOMAIN WARN_DAYS=14 ./scripts/tls-expiry-check.sh >> backups/tls.log 2>&1
+*/5 * * * * cd /opt/helpmefindthejob && APP_BASE_URL=https://$HELPMEFINDTHEJOB_DOMAIN ./scripts/uptime-check.sh >> backups/uptime.log 2>&1
+0 7 * * *   cd /opt/helpmefindthejob && DOMAIN=$HELPMEFINDTHEJOB_DOMAIN WARN_DAYS=14 ./scripts/tls-expiry-check.sh >> backups/tls.log 2>&1
 ```
 
-Switch `DIRECTJOB_BACKUP_BACKEND` to `local`, `rclone`, or `s3` based
+Switch `HELPMEFINDTHEJOB_BACKUP_BACKEND` to `local`, `rclone`, or `s3` based
 on what you have available. `local` is fine for the pilot but you
 should move backups off-host before commercial pilot.
 
@@ -152,27 +152,27 @@ Helpmefindthejob uses a provider-neutral email transport. By default the
 makes no network call. To enable SMTP in production:
 
 ```bash
-DIRECTJOB_EMAIL_BACKEND=smtp
-DIRECTJOB_SMTP_HOST=smtp.example.com
-DIRECTJOB_SMTP_PORT=587
-DIRECTJOB_SMTP_USERNAME=apikey-username
-DIRECTJOB_SMTP_PASSWORD=apikey-password
-DIRECTJOB_SMTP_STARTTLS=true
-DIRECTJOB_EMAIL_FROM=no-reply@your-domain.example
-DIRECTJOB_PUBLIC_URL=https://YOUR_DOMAIN
+HELPMEFINDTHEJOB_EMAIL_BACKEND=smtp
+HELPMEFINDTHEJOB_SMTP_HOST=smtp.example.com
+HELPMEFINDTHEJOB_SMTP_PORT=587
+HELPMEFINDTHEJOB_SMTP_USERNAME=apikey-username
+HELPMEFINDTHEJOB_SMTP_PASSWORD=apikey-password
+HELPMEFINDTHEJOB_SMTP_STARTTLS=true
+HELPMEFINDTHEJOB_EMAIL_FROM=no-reply@your-domain.example
+HELPMEFINDTHEJOB_PUBLIC_URL=https://YOUR_DOMAIN
 ```
 
-`DIRECTJOB_PUBLIC_URL` is what we put inside invite and reset emails;
+`HELPMEFINDTHEJOB_PUBLIC_URL` is what we put inside invite and reset emails;
 without it, links default to a relative path that only works when the
 user opens the email in the same browser session as the app.
 
 ## Quotas (env-tunable)
 
 ```bash
-DIRECTJOB_QUOTA_SCANS_PER_DAY=50
-DIRECTJOB_QUOTA_AI_PER_DAY=50
-DIRECTJOB_QUOTA_DOMAIN_PER_HOUR=30
-DIRECTJOB_QUOTA_ACTIVE_SCANS=3
+HELPMEFINDTHEJOB_QUOTA_SCANS_PER_DAY=50
+HELPMEFINDTHEJOB_QUOTA_AI_PER_DAY=50
+HELPMEFINDTHEJOB_QUOTA_DOMAIN_PER_HOUR=30
+HELPMEFINDTHEJOB_QUOTA_ACTIVE_SCANS=3
 ```
 
 Quota state is persisted in `data/quotas.sqlite3`. Counters are per UTC

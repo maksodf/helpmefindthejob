@@ -526,7 +526,7 @@ function showOnly(viewId) {
 
 async function loadSiteConfig() {
   // Best-effort, no-auth. Sole responsibility: inject the optional
-  // analytics script when the operator has set DIRECTJOB_ANALYTICS_*
+  // analytics script when the operator has set HELPMEFINDTHEJOB_ANALYTICS_*
   // env vars. Safe to fail silently — analytics is operator-opt-in.
   try {
     const response = await fetch("/api/site-config", { credentials: "same-origin" });
@@ -632,7 +632,7 @@ async function load() {
   absorbBootstrap(payload);
   render();
   if (payload?.whatsNew) {
-    const seenKey = `directjob.whatsNew.${payload.whatsNew.appVersion}`;
+    const seenKey = `helpmefindthejob.whatsNew.${payload.whatsNew.appVersion}`;
     if (!localStorage.getItem(seenKey)) {
       const tpl = t("whatsNew.toast", "Welcome back — see what shipped while you were away.");
       showToast(tpl, "info", 8000);

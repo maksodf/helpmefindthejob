@@ -95,7 +95,7 @@ def validate_tool_arguments(tool_name: str, arguments: Any) -> dict[str, Any] | 
 
 ROOT = Path(__file__).parent
 DATA_ROOT = Path(
-    get_env("HELPMEFINDTHEJOB_DATA_DIR", "COMPANY_DISCOVERY_DATA_DIR", str(ROOT / "data"))
+    get_env("HELPMEFINDTHEJOB_DATA_DIR", str(ROOT / "data"))
 )
 DATA_PATH = DATA_ROOT / "company_discovery.sqlite3"
 

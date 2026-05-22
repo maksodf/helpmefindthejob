@@ -111,7 +111,7 @@
         </p>
         <p>
           When the operator enables AI intent classification (set via the
-          server-side <code>DIRECTJOB_CHAT_AI_ROUTER=true</code> + a managed
+          server-side <code>HELPMEFINDTHEJOB_CHAT_AI_ROUTER=true</code> + a managed
           AI key), free-form chat messages that don't match a slash-command
           or keyword are sent to the operator-configured upstream provider
           (currently one of: OpenAI, Anthropic, Google Gemini, DeepSeek,
@@ -134,7 +134,7 @@
         <p>
           You can disable AI routing for your account by switching your AI
           provider to <em>Manual</em> in Settings; the operator can disable
-          it globally by unsetting <code>DIRECTJOB_CHAT_AI_ROUTER</code>.
+          it globally by unsetting <code>HELPMEFINDTHEJOB_CHAT_AI_ROUTER</code>.
           Per-user rate limits (currently 20 classifications per minute)
           prevent abuse.
         </p>

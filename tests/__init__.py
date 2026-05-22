@@ -25,7 +25,7 @@ runners filter UserWarning by default.
 Tests that **need** to exercise the missing-salt path
 (``tests.test_phase13_audit_log.SaltFailFastTests``) snapshot, clear,
 and restore both ``HELPMEFINDTHEJOB_AUDIT_SALT`` and the legacy
-``DIRECTJOB_AUDIT_SALT`` in their own ``setUp`` / ``addCleanup`` —
+``HELPMEFINDTHEJOB_AUDIT_SALT`` in their own ``setUp`` / ``addCleanup`` —
 so this default does not interfere with them.
 
 PART A.3 of the 2026-05-19 deep-audit sweep.

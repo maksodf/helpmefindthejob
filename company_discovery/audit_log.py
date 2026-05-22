@@ -365,17 +365,15 @@ def default_emitter() -> AuditLogEmitter:
 
     Environment variables consulted:
 
-    * ``HELPMEFINDTHEJOB_DATA_ROOT`` (legacy ``DIRECTJOB_DATA_ROOT``) —
+    * ``HELPMEFINDTHEJOB_DATA_ROOT`` —
       base directory; the audit log is at ``${DATA_ROOT}/ai_act_audit.log``.
-    * ``HELPMEFINDTHEJOB_AUDIT_SALT`` (legacy ``DIRECTJOB_AUDIT_SALT``) —
+    * ``HELPMEFINDTHEJOB_AUDIT_SALT`` —
       32 random bytes, base64 or raw. In production mode, missing salt
       is fatal (see :func:`_resolve_salt`). In dev mode, a per-process
       random salt is generated and an ERROR-level stderr warning fires.
-    * ``HELPMEFINDTHEJOB_AUDIT_PLAINTEXT_PII`` (legacy
-      ``DIRECTJOB_AUDIT_PLAINTEXT_PII``) — ``true`` to disable hashing.
+    * ``HELPMEFINDTHEJOB_AUDIT_PLAINTEXT_PII`` — ``true`` to disable hashing.
       Default ``false``.
-    * ``HELPMEFINDTHEJOB_AUDIT_ROTATE_BYTES`` (legacy
-      ``DIRECTJOB_AUDIT_ROTATE_BYTES``) — rotation threshold. Default
+    * ``HELPMEFINDTHEJOB_AUDIT_ROTATE_BYTES`` — rotation threshold. Default
       64 MiB.
     """
     global _default_emitter
@@ -384,11 +382,11 @@ def default_emitter() -> AuditLogEmitter:
     with _default_emitter_lock:
         if _default_emitter is not None:
             return _default_emitter
-        data_root = Path(get_env("HELPMEFINDTHEJOB_DATA_ROOT", "DIRECTJOB_DATA_ROOT", "data"))
+        data_root = Path(get_env("HELPMEFINDTHEJOB_DATA_ROOT", "data"))
         log_path = data_root / "ai_act_audit.log"
-        salt = _resolve_salt(get_env("HELPMEFINDTHEJOB_AUDIT_SALT", "DIRECTJOB_AUDIT_SALT", ""))
+        salt = _resolve_salt(get_env("HELPMEFINDTHEJOB_AUDIT_SALT", ""))
         plaintext_pii = get_env(
-            "HELPMEFINDTHEJOB_AUDIT_PLAINTEXT_PII", "DIRECTJOB_AUDIT_PLAINTEXT_PII", "false"
+            "HELPMEFINDTHEJOB_AUDIT_PLAINTEXT_PII", "false"
         ).lower() in {
             "true",
             "1",
@@ -398,7 +396,6 @@ def default_emitter() -> AuditLogEmitter:
         rotate_bytes = int(
             get_env(
                 "HELPMEFINDTHEJOB_AUDIT_ROTATE_BYTES",
-                "DIRECTJOB_AUDIT_ROTATE_BYTES",
                 str(64 * 1024 * 1024),
             )
         )
@@ -437,7 +434,7 @@ def _resolve_app_env() -> str:
 
     Returns the casefolded value; empty string when neither is set.
     """
-    raw = get_env("HELPMEFINDTHEJOB_ENV", "COMPANY_DISCOVERY_ENV", "")
+    raw = get_env("HELPMEFINDTHEJOB_ENV", "")
     return (raw or "").strip().casefold()
 
 
@@ -462,7 +459,7 @@ def _resolve_salt(raw: str) -> bytes:
       production path stays fail-fast.
 
     Tests that need the development-fallback behaviour can rely on
-    the default empty ``HELPMEFINDTHEJOB_ENV`` / ``COMPANY_DISCOVERY_ENV``,
+    the default empty ``HELPMEFINDTHEJOB_ENV`` / ``HELPMEFINDTHEJOB_ENV``,
     which classifies as ``development``.
     """
     if raw:
@@ -477,7 +474,7 @@ def _resolve_salt(raw: str) -> bytes:
     if env not in _DEV_ENV_TOKENS:
         print(  # noqa: T201 - fatal-fast stderr output before sys.exit(1); warnings.warn is not appropriate for a terminal failure
             "[audit_log] FATAL: env=" + env + " requires HELPMEFINDTHEJOB_AUDIT_SALT (or legacy "
-            "DIRECTJOB_AUDIT_SALT) to be set to 32 random bytes "
+            "HELPMEFINDTHEJOB_AUDIT_SALT) to be set to 32 random bytes "
             "(base64). Refusing to start because audit-log integrity "
             "cannot be guaranteed across process restarts without a "
             "stable salt.\n"
@@ -504,9 +501,7 @@ def _resolve_salt(raw: str) -> bytes:
         "per-process salt. Audit-log entries will not be linkable "
         "across process restarts. This fallback is permitted in "
         "development (env=" + (env or "development") + ") only. "
-        "Production deployments MUST set HELPMEFINDTHEJOB_AUDIT_SALT "
-        "(legacy DIRECTJOB_AUDIT_SALT still accepted with a "
-        "DeprecationWarning) to 32 random bytes (base64) for stable "
+        "Production deployments MUST set HELPMEFINDTHEJOB_AUDIT_SALT to 32 random bytes (base64) for stable "
         "hashing.",
         category=UserWarning,
         stacklevel=2,

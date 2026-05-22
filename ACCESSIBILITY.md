@@ -663,8 +663,8 @@ npm install -g @axe-core/cli
 axe --version  # expect 4.11.x or later
 
 # 2. Spin up the app locally on 127.0.0.1:8765.
-COMPANY_DISCOVERY_HOST=127.0.0.1 \
-COMPANY_DISCOVERY_PORT=8765 \
+HELPMEFINDTHEJOB_HOST=127.0.0.1 \
+HELPMEFINDTHEJOB_PORT=8765 \
   python3 app.py &
 
 # 3. Build + serve the docs site locally on 127.0.0.1:8001.
