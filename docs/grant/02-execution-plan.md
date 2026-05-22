@@ -219,9 +219,9 @@ The verification runs in a clean Docker container so the "fresh-clone smoke test
   - Error conventions (RFC 7807 Problem Details — fields `status`, `type`, `title`, `detail`, `instance`, `validationPath`, `violatedRule`)
   - Example client invocations in Python (stdlib) and TypeScript (Node.js)
   - Operational notes (stdio transport, env-var data path, encryption integration, audit-log boundary)
-- [ ] Publish JSON Schema for every tool input/output as separate files in `mcp_server/schemas/` — *deferred to a §2.2 follow-up; canonical schemas already live in `company_discovery/mcp_tools.py:TOOL_SCHEMAS`, and `tools/list` exposes them over the wire. A filesystem mirror under `mcp_server/schemas/<tool-name>.json` is a build-artefact ergonomic addition, not a contract change; folded in once a downstream consumer needs it for external tooling.*
-- [ ] Add an `/mcp/schemas.json` endpoint exposing the full catalogue — *deferred to a §2.2 follow-up; requires an `app.py` route addition. The stdio `tools/list` call is the canonical surface today.*
-- [ ] Add a `/mcp/version` endpoint — *deferred to the same §2.2 follow-up. The version is currently reachable via the `serverInfo.version` field in the `initialize` response.*
+- [x] Publish JSON Schema for every tool input/output as separate files in `mcp_server/schemas/` — *shipped 2026-05-22: 13 per-tool files + `index.json` manifest, generated via `scripts/export_mcp_schemas.py`. Contract test `tests/test_mcp_catalogue_surface.py::PerToolSchemaFiles` guards against drift between the files and `TOOL_SCHEMAS`.*
+- [x] Add an `/mcp/schemas.json` endpoint exposing the full catalogue — *shipped 2026-05-22 with CORS + Cache-Control + HEAD support. Returns the full TOOL_SCHEMAS catalogue plus serverInfo + protocolVersion. By construction matches stdio `tools/list`.*
+- [x] Add a `/mcp/version` endpoint — *shipped 2026-05-22 alongside `/mcp/schemas.json`. Returns the same shape as the stdio `initialize` response. Single-source-of-truth constants (`MCP_PROTOCOL_VERSION`, `MCP_SERVER_NAME`, `MCP_SERVER_VERSION`) drive both surfaces.*
 - [x] Create `STANDARDS.md` at repo root listing every standard cited (Licensing + governance, Protocols + interfaces, Employment + civic-data vocabularies, Accessibility + transparency, Privacy + security, Operational, Internal protocols — with the implementing file path and shipping status per row; verification recipe at the end so a reviewer can deep-check the standards claims in 10 minutes)
 
 ### 2.3 New MCP tools (8 h) — composition expansion
@@ -258,9 +258,9 @@ If the housing-agent friend responded positively (Option B):
 
 If no positive response (Option A fallback):
 
-- [ ] Build the mock `examples/housing-stub-client/` demonstrating the composition pattern end-to-end
+- [x] Build the mock `examples/housing-stub-client/` demonstrating the composition pattern end-to-end — *shipped 2026-05-22: runnable demo at `examples/housing-stub-client/main.py` exercises Mode 1 (sequential handoff via `propose_referral`) and Mode 2 (profile-shared via `get_user_profile_for_consent`) against a real MCP server subprocess. Test suite `tests/test_examples_housing_stub.py` (16 tests) guards the demo against drift + verifies the housing-side filter reads the correct profile field. Total ~3 s runtime; no external services required.*
 - [ ] Record an asciinema or plain-text terminal session showing it working
-- [ ] Document in `examples/README.md` that this is a stub pending real-housing-agent collaboration
+- [x] Document in `examples/README.md` that this is a stub pending real-housing-agent collaboration — *shipped 2026-05-22 in `examples/README.md` + the directory's own `housing-stub-client/README.md`. Both reference Decision 20 and explain the Option A vs Option B branching.*
 
 ### 2.6 MCP integration test in CI (4 h)
 
