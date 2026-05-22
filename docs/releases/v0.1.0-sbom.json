@@ -1955,6 +1955,50 @@
       "version": "4.6.0"
     },
     {
+      "bom-ref": "psycopg==3.2.13",
+      "description": "PostgreSQL adapter for Python; used by company_discovery/postgres_repository.py when HELPMEFINDTHEJOB_DATABASE_URL is set.",
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://www.psycopg.org/"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "acknowledgement": "declared",
+            "id": "LGPL-3.0-or-later"
+          }
+        }
+      ],
+      "name": "psycopg",
+      "purl": "pkg:pypi/psycopg@3.2.13",
+      "type": "library",
+      "version": "3.2.13"
+    },
+    {
+      "bom-ref": "psycopg-binary==3.2.13",
+      "description": "Pre-built binary wheels for psycopg (no system libpq install required); transitive dep of psycopg[binary].",
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://www.psycopg.org/"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "acknowledgement": "declared",
+            "id": "LGPL-3.0-or-later"
+          }
+        }
+      ],
+      "name": "psycopg-binary",
+      "purl": "pkg:pypi/psycopg-binary@3.2.13",
+      "type": "library",
+      "version": "3.2.13"
+    },
+    {
       "bom-ref": "py-serializable==2.1.0",
       "description": "Library for serializing and deserializing Python Objects to and from JSON and XML.",
       "externalReferences": [

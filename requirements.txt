@@ -44,3 +44,14 @@ PyJWT[crypto]>=2.8.0,<3.0.0
 # over python3-saml because python3-saml depends on xmlsec1 + libxml2
 # C libraries, complicating reproducible builds + Nix packaging.
 signxml>=4.0.0,<5.0.0
+# psycopg backs the optional PostgreSQL repository in
+# company_discovery/postgres_repository.py (13-plan item 11/13).
+# OPTIONAL: when HELPMEFINDTHEJOB_DATABASE_URL is unset (default),
+# the project runs on SQLite and psycopg is unused. Institutional
+# deployers with existing Postgres infra set DATABASE_URL to a
+# postgresql:// connection string and the primary repository
+# routes there. psycopg 3 (vs the older psycopg2) supports
+# async-ready cursors + native JSONB handling. The [binary]
+# extra ships a self-contained wheel — no system libpq install
+# needed.
+psycopg[binary]>=3.1,<4.0

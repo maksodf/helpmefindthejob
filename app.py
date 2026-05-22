@@ -495,10 +495,33 @@ class AppState:
             # back to plain storage — production deploys must have
             # the dep available; this is a tests-only safety net.
             self.encryption_at_rest = None
-        self.repository = SqliteCompanyDiscoveryRepository(
-            self.data_path,
-            crypto=self.encryption_at_rest,
-        )
+        # 13-plan item 11/13: optional Postgres backend.
+        # When HELPMEFINDTHEJOB_DATABASE_URL is set to a
+        # postgresql:// URL, we route the primary repository to
+        # PostgresCompanyDiscoveryRepository. Otherwise we use the
+        # existing SQLite path. AuthStore + scheduler + audit-log
+        # remain on their own SQLite databases for now (see
+        # postgres_repository.py docstring for the Phase 1.5
+        # roadmap that migrates them).
+        from company_discovery.postgres_repository import is_postgres_url
+
+        database_url = get_env(
+            "HELPMEFINDTHEJOB_DATABASE_URL", "DIRECTJOB_DATABASE_URL", ""
+        ).strip()
+        if database_url and is_postgres_url(database_url):
+            from company_discovery.postgres_repository import (
+                PostgresCompanyDiscoveryRepository,
+            )
+
+            self.repository = PostgresCompanyDiscoveryRepository(
+                database_url,
+                crypto=self.encryption_at_rest,
+            )
+        else:
+            self.repository = SqliteCompanyDiscoveryRepository(
+                self.data_path,
+                crypto=self.encryption_at_rest,
+            )
         self.auth_store = AuthStore(self.auth_path, SECRET_KEY)
         self.auth_store.bootstrap_admin_from_env(ADMIN_EMAIL, ADMIN_PASSWORD)
         validate_production_config(self.auth_store)
