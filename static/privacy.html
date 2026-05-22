@@ -141,24 +141,192 @@
       </section>
 
       <section>
-        <h2>Your rights</h2>
+        <h2>EU AI Act compliance</h2>
         <p>
-          You can export all your data from <strong>Settings → Backup &amp; restore → Export backup</strong>.
-          You can delete your companies, discovered jobs, and imported jobs from the app.
-          To request full account deletion, ask the workspace admin.
+          The EU AI Act (Regulation 2024/1689) becomes enforceable on
+          <strong>2 August 2026</strong>. Helpmefindthejob is built to comply
+          from day one because we believe transparency about algorithmic
+          systems is the only acceptable default for a civic-commons tool.
+          The relevant articles for users:
+        </p>
+        <ul>
+          <li>
+            <strong>Article 12 — Logging / audit trail.</strong> Every
+            interaction with the AI features (intent classification, fit
+            scoring, CV tailoring, cover-letter drafting, decision briefs)
+            is recorded in a tamper-evident audit log. The log uses an
+            <strong>HMAC chain</strong> (each entry signs the previous
+            entry's hash with a per-deployment secret salt), so any
+            after-the-fact modification breaks the chain and is detectable
+            by re-verification. The log schema is documented at
+            <a href="https://github.com/maksodf/helpmefindthejob/blob/main/compliance/audit-log-schema.md">compliance/audit-log-schema.md</a>.
+            On request, you can receive your own audit-log entries as part
+            of your portable export (see Article 20 below).
+          </li>
+          <li>
+            <strong>Article 13 — Transparency to users.</strong> Every AI
+            output in the app is labelled as AI-generated. When a job's fit
+            score is computed by an LLM, the brief explicitly says so and
+            names the model + provider used. When the chat assistant
+            classifies your intent, the audit log captures the classifier
+            decision so you can challenge it. We do not pass off AI output
+            as human judgement.
+          </li>
+          <li>
+            <strong>Article 14 — Human oversight.</strong> Every action
+            suggested by an AI passes through a deterministic confirmation
+            gate before any database write. You see the parsed parameters
+            and approve them; the AI can never write on your behalf without
+            your explicit confirmation. Documented in
+            <a href="https://github.com/maksodf/helpmefindthejob/blob/main/compliance/human-oversight-guide.md">compliance/human-oversight-guide.md</a>.
+          </li>
+          <li>
+            <strong>Article 20 — Right to portable export.</strong> You can
+            export <em>all</em> your data, including AI-call history, audit
+            log entries about you, and your profile, as a single
+            machine-readable archive via
+            <strong>Settings → Backup &amp; restore → Export backup</strong>
+            (or programmatically via the API). The format is documented;
+            you can re-import into another Helpmefindthejob instance or
+            process with off-the-shelf tools.
+          </li>
+          <li>
+            <strong>Article 26 — Deployer obligations.</strong> The operator
+            of this Helpmefindthejob instance is the deployer under the AI
+            Act. The deployer is identified on <a href="/impressum">Impressum</a>
+            and is responsible for ensuring the AI features are used in
+            accordance with the Act. Operator obligations are documented at
+            <a href="https://github.com/maksodf/helpmefindthejob/blob/main/compliance/deployer-operating-manual.md">compliance/deployer-operating-manual.md</a>.
+          </li>
+          <li>
+            <strong>Article 50 — Transparency for AI-generated content.</strong>
+            When the app generates application materials (cover letters,
+            CV tailoring), the output is clearly marked as AI-generated in
+            the UI and in the exported document metadata. You retain
+            editorial control before sending anything to an employer.
+          </li>
+        </ul>
+        <p class="muted small">
+          Full technical documentation:
+          <a href="https://github.com/maksodf/helpmefindthejob/tree/main/compliance">compliance/</a>
+          in the source repository. Includes audit-log schema, human-
+          oversight workflow, fundamental-rights impact assessment (FRIA),
+          and the bias-testing methodology used to validate the AI
+          components against the seven-persona panel.
+        </p>
+      </section>
+
+      <section>
+        <h2>Your rights (GDPR Articles 15–22)</h2>
+        <p>
+          You have the following rights regarding your personal data under
+          the EU General Data Protection Regulation (Regulation 2016/679,
+          "GDPR"). To exercise any of them, contact the operator
+          (see <a href="/impressum">Impressum</a>):
+        </p>
+        <ul>
+          <li>
+            <strong>Article 15 — Right of access.</strong> You may ask for
+            confirmation of whether we process your personal data, and if
+            so, request a copy. Use
+            <strong>Settings → Backup &amp; restore → Export backup</strong>
+            for an immediate machine-readable export, or ask the operator
+            for a structured copy by email.
+          </li>
+          <li>
+            <strong>Article 16 — Right to rectification.</strong> You may
+            update inaccurate personal data at any time via the in-app
+            profile settings, or ask the operator to correct anything you
+            cannot edit yourself.
+          </li>
+          <li>
+            <strong>Article 17 — Right to erasure ("right to be forgotten").</strong>
+            You may request deletion of your account and all linked
+            personal data. The operator processes erasure requests within
+            30 days. Note that audit-log entries about completed actions
+            may be retained in pseudonymised form for the
+            legally-required period (currently 180 days) for AI Act
+            Article 12 compliance.
+          </li>
+          <li>
+            <strong>Article 18 — Right to restriction of processing.</strong>
+            You may request that we hold your data without further
+            processing while a dispute (e.g. accuracy challenge) is
+            resolved.
+          </li>
+          <li>
+            <strong>Article 19 — Notification of rectification or erasure.</strong>
+            If we have shared your data with anyone (which the
+            self-hosted, no-third-party-analytics design makes rare in
+            practice), we will notify them of any correction or erasure.
+          </li>
+          <li>
+            <strong>Article 20 — Right to data portability.</strong> Same
+            export endpoint as Article 15, machine-readable, suitable for
+            import into another service. See also the AI Act Article 20
+            note above (AI-call history is included).
+          </li>
+          <li>
+            <strong>Article 21 — Right to object.</strong> You may object
+            to processing based on legitimate interests, including any
+            profiling (we do no behavioural profiling, but the right is
+            yours regardless).
+          </li>
+          <li>
+            <strong>Article 22 — Right not to be subject to automated
+            decision-making.</strong> No fully-automated decisions with
+            legal or similarly significant effects are made by
+            Helpmefindthejob. AI features produce suggestions; humans
+            (you) make the decisions. See Article 14 above.
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Data Protection Officer (DPO)</h2>
+        <p>
+          Helpmefindthejob's current operator is a small-scale civic
+          deployment that does <strong>not</strong> meet the GDPR Article 37
+          threshold for a mandatory Data Protection Officer (no
+          systematic large-scale monitoring; no large-scale processing of
+          special-category data; not a public authority). Privacy
+          questions go to the operator on <a href="/impressum">Impressum</a>.
+          If the deployment grows to a scale that requires a DPO, this
+          section will be updated and the DPO contact published here.
+        </p>
+      </section>
+
+      <section>
+        <h2>Supervisory Authority</h2>
+        <p>
+          The competent supervisory authority for the operator (Berlin,
+          Germany) is the
+          <strong>Berliner Beauftragte für Datenschutz und Informationsfreiheit</strong>
+          (BlnBDI), Friedrichstraße 219, 10969 Berlin, telephone +49 30 13889-0,
+          <a href="https://www.datenschutz-berlin.de">datenschutz-berlin.de</a>.
+          You have the right under GDPR Article 77 to lodge a complaint
+          with the BlnBDI (or any other EU supervisory authority of your
+          choice) if you believe your data has been processed unlawfully.
         </p>
       </section>
 
       <section>
         <h2>Data retention</h2>
         <p>
-          See <a href="/data-retention">Data retention</a> for current default windows.
+          See <a href="/data-retention">Data retention</a> for current
+          default windows per data category.
         </p>
       </section>
 
       <section>
         <h2>Contact</h2>
-        <p>For privacy questions, contact your workspace admin.</p>
+        <p>
+          For privacy questions, write to the operator at the email
+          address on <a href="/impressum">Impressum</a>. For incidents
+          (suspected data breach, security vulnerability), see the
+          security disclosure at
+          <a href="https://github.com/maksodf/helpmefindthejob/security/policy">github.com/maksodf/helpmefindthejob/security/policy</a>.
+        </p>
       </section>
 
       <p class="legal-footer">
