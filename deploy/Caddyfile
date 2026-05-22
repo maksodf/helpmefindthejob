@@ -2,10 +2,18 @@
 	email {$HELPMEFINDTHEJOB_ADMIN_EMAIL}
 }
 
-{$HELPMEFINDTHEJOB_DOMAIN} {
+# Canonical: apex + demo subdomain serve the same app instance.
+# Caddy auto-issues a Let's Encrypt cert per hostname via HTTP-01
+# (DNS must resolve to this host for issuance to succeed).
+demo.helpmefindthejob.org, helpmefindthejob.org {
 	encode zstd gzip
 	reverse_proxy helpmefindthejob:8765
 	header {
 		Strict-Transport-Security "max-age=31536000; includeSubDomains"
 	}
+}
+
+# www.helpmefindthejob.org → canonical apex redirect (301).
+www.helpmefindthejob.org {
+	redir https://helpmefindthejob.org{uri} permanent
 }
