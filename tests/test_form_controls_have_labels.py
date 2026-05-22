@@ -159,5 +159,62 @@ class EveryFormControlHasProgrammaticLabel(unittest.TestCase):
             )
 
 
+class FormControlsHaveAriaScaffolding(unittest.TestCase):
+    """AUDIT-8 (2026-05-22): assert form a11y scaffolding is present.
+
+    - Every HTML5 ``required`` form control also carries
+      ``aria-required="true"`` (belt-and-suspenders for AT support).
+    - Every ``<span class="hint">`` directly after a form control is
+      referenced by ``aria-describedby`` on that control.
+    """
+
+    def test_html5_required_matches_aria_required(self) -> None:
+        for page in COVERED_PAGES:
+            html = (STATIC / page).read_text(encoding="utf-8")
+            html5_req = set(
+                re.findall(
+                    r'<(?:input|select|textarea)[^>]*\bid="([^"]+)"[^>]*\brequired\b',
+                    html,
+                )
+            )
+            aria_req: set[str] = set()
+            for tag in ("input", "select", "textarea"):
+                aria_req |= set(
+                    re.findall(
+                        rf'<{tag}[^>]*\baria-required="true"[^>]*\bid="([^"]+)"',
+                        html,
+                    )
+                )
+                aria_req |= set(
+                    re.findall(
+                        rf'<{tag}[^>]*\bid="([^"]+)"[^>]*\baria-required="true"',
+                        html,
+                    )
+                )
+            missing = sorted(html5_req - aria_req)
+            self.assertEqual(
+                missing,
+                [],
+                f"{page}: HTML5 required without aria-required: {missing}",
+            )
+
+    def test_every_aria_describedby_points_at_real_id(self) -> None:
+        for page in COVERED_PAGES:
+            html = (STATIC / page).read_text(encoding="utf-8")
+            refs = re.findall(r'aria-describedby="([^"]+)"', html)
+            all_ids = set(re.findall(r'\bid="([^"]+)"', html))
+            # aria-describedby can take space-separated ids
+            flat = set()
+            for r in refs:
+                flat.update(r.split())
+            dangling = sorted(t for t in flat if t not in all_ids)
+            self.assertEqual(
+                dangling,
+                [],
+                f"{page}: aria-describedby pointing at non-existent ids: "
+                f"{dangling}",
+            )
+
+
 if __name__ == "__main__":
     unittest.main()

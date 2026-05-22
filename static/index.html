@@ -114,11 +114,11 @@
         <form id="loginForm" class="auth-form" novalidate>
           <label class="field" for="loginEmail">
             <span data-i18n="auth.email">Email</span>
-            <input id="loginEmail" type="email" autocomplete="email" required />
+            <input id="loginEmail" type="email" autocomplete="email" required aria-required="true" />
           </label>
           <label class="field" for="loginPassword">
             <span data-i18n="auth.password">Password</span>
-            <input id="loginPassword" type="password" autocomplete="current-password" required />
+            <input id="loginPassword" type="password" autocomplete="current-password" required aria-required="true" />
           </label>
           <button class="btn btn-primary" type="submit" data-i18n="auth.signIn">Sign in</button>
         </form>
@@ -132,8 +132,8 @@
           </label>
           <label class="field" for="registerPassword">
             <span data-i18n="auth.password">Password</span>
-            <input id="registerPassword" type="password" autocomplete="new-password" minlength="12" />
-            <span class="hint">12 characters or more.</span>
+            <input id="registerPassword" type="password" autocomplete="new-password" minlength="12" aria-describedby="registerPassword-hint" />
+            <span class="hint" id="registerPassword-hint">12 characters or more.</span>
           </label>
           <div id="registerConsent" class="auth-consent" hidden>
             <label class="auth-consent-row" for="registerTos">
@@ -164,7 +164,7 @@
       <form id="forgotPasswordForm" novalidate>
         <label class="field" for="forgotEmail">
           <span data-i18n="auth.email">Email</span>
-          <input id="forgotEmail" type="email" autocomplete="email" required />
+          <input id="forgotEmail" type="email" autocomplete="email" required aria-required="true" />
         </label>
         <div class="action-group">
           <button class="btn btn-primary" type="submit" data-i18n="auth.forgotSubmit">Send reset link</button>
@@ -180,8 +180,8 @@
       <form id="resetPasswordForm" novalidate hidden>
         <label class="field" for="resetPasswordValue">
           <span data-i18n="auth.resetNew">New password</span>
-          <input id="resetPasswordValue" type="password" autocomplete="new-password" minlength="12" required />
-          <span class="hint">12 characters or more.</span>
+          <input id="resetPasswordValue" type="password" autocomplete="new-password" minlength="12" required aria-describedby="resetPasswordValue-hint" aria-required="true" />
+          <span class="hint" id="resetPasswordValue-hint">12 characters or more.</span>
         </label>
         <div class="action-group">
           <button class="btn btn-primary" type="submit" data-i18n="auth.resetSubmit">Set password</button>
@@ -197,8 +197,8 @@
       <form id="acceptInviteForm" novalidate hidden>
         <label class="field" for="acceptInvitePassword">
           <span data-i18n="auth.acceptChoosePassword">Choose a password</span>
-          <input id="acceptInvitePassword" type="password" autocomplete="new-password" minlength="12" required />
-          <span class="hint">12 characters or more.</span>
+          <input id="acceptInvitePassword" type="password" autocomplete="new-password" minlength="12" required aria-describedby="acceptInvitePassword-hint" aria-required="true" />
+          <span class="hint" id="acceptInvitePassword-hint">12 characters or more.</span>
         </label>
         <div class="action-group">
           <button class="btn btn-primary" type="submit" data-i18n="auth.activate">Activate account</button>
@@ -564,7 +564,7 @@
             <form id="companyForm" class="form-grid" novalidate>
               <label class="field" for="in-name">
                 <span data-i18n="companies.add.name">Name</span>
-                <input required id="in-name" name="name" autocomplete="organization" placeholder="Charité" />
+                <input required id="in-name" name="name" autocomplete="organization" placeholder="Charité" aria-required="true" />
               </label>
               <label class="field" for="in-website-url">
                 <span data-i18n="companies.add.website">Website</span>
@@ -1111,8 +1111,8 @@
             <div id="aiByokPane" class="ai-byok-pane" hidden>
               <label class="field" for="aiByokKey">
                 <span data-i18n="settings.ai.byok.label">API key</span>
-                <input id="aiByokKey" type="password" autocomplete="off" data-i18n-placeholder="settings.ai.byok.placeholder" placeholder="sk-… (OpenAI), sk-ant-… (Anthropic), AIza… (Google)" />
-                <span class="hint" id="aiByokHint" data-i18n="settings.ai.byok.hint">We detect the provider from the key's prefix. Keys are passed straight through and never logged.</span>
+                <input id="aiByokKey" type="password" autocomplete="off" data-i18n-placeholder="settings.ai.byok.placeholder" placeholder="sk-… (OpenAI), sk-ant-… (Anthropic), AIza… (Google)" aria-describedby="aiByokKey-hint" />
+                <span class="hint" id="aiByokKey-hint" id="aiByokHint" data-i18n="settings.ai.byok.hint">We detect the provider from the key's prefix. Keys are passed straight through and never logged.</span>
               </label>
               <button id="aiByokSaveBtn" class="btn btn-primary" type="button" data-i18n="settings.ai.byok.save">Save key</button>
             </div>
@@ -1161,11 +1161,11 @@
             <form id="changePasswordForm" class="account-grid" novalidate>
               <label class="field" for="currentPassword">
                 <span data-i18n="settings.account.current">Current password</span>
-                <input id="currentPassword" type="password" autocomplete="current-password" required />
+                <input id="currentPassword" type="password" autocomplete="current-password" required aria-required="true" />
               </label>
               <label class="field" for="newPassword">
                 <span data-i18n="settings.account.new">New password</span>
-                <input id="newPassword" type="password" autocomplete="new-password" minlength="12" required data-i18n-placeholder="settings.account.minLength" placeholder="12 characters or more" />
+                <input id="newPassword" type="password" autocomplete="new-password" minlength="12" required data-i18n-placeholder="settings.account.minLength" placeholder="12 characters or more" aria-required="true" />
               </label>
               <button class="btn btn-primary" type="submit" data-i18n="settings.account.change">Change password</button>
             </form>
@@ -1264,11 +1264,11 @@
             <form id="supportForm" class="support-grid" novalidate>
               <label class="field" for="supportSubject">
                 <span>Subject</span>
-                <input id="supportSubject" required />
+                <input id="supportSubject" required aria-required="true" />
               </label>
               <label class="field wide" for="supportBody">
                 <span>Body</span>
-                <textarea id="supportBody" rows="4" required></textarea>
+                <textarea id="supportBody" rows="4" required aria-required="true"></textarea>
               </label>
               <label class="field" for="supportContactEmail">
                 <span>Reply email (optional)</span>
@@ -1413,11 +1413,11 @@
             <form id="adminCreateUserForm" class="admin-create-grid" novalidate>
               <label class="field" for="newUserEmail">
                 <span data-i18n="admin.testers.email">Email</span>
-                <input id="newUserEmail" type="email" autocomplete="off" required />
+                <input id="newUserEmail" type="email" autocomplete="off" required aria-required="true" />
               </label>
               <label class="field" for="newUserPassword">
                 <span data-i18n="admin.testers.password">Initial password</span>
-                <input id="newUserPassword" type="password" autocomplete="new-password" minlength="12" required placeholder="12 characters or more" />
+                <input id="newUserPassword" type="password" autocomplete="new-password" minlength="12" required placeholder="12 characters or more" aria-required="true" />
               </label>
               <label class="field" for="newUserRole">
                 <span data-i18n="admin.testers.role">Role</span>
@@ -1441,7 +1441,7 @@
             <form id="adminInviteForm" class="admin-create-grid" novalidate>
               <label class="field" for="inviteEmail">
                 <span data-i18n="admin.testers.email">Email</span>
-                <input id="inviteEmail" type="email" autocomplete="off" required />
+                <input id="inviteEmail" type="email" autocomplete="off" required aria-required="true" />
               </label>
               <label class="field" for="inviteRole">
                 <span data-i18n="admin.testers.role">Role</span>
