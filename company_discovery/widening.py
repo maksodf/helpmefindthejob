@@ -186,6 +186,25 @@ WIDENING_LABEL: dict[str, str] = {
     TRY_LATERALS: "Tried lateral roles",
 }
 
+
+def widening_label(affordance: str, locale: str | None = "en") -> str:
+    """Locale-aware accessor for a widening affordance's user-facing
+    label. Closes phase2-backlog #75 for this surface: the
+    English defaults remain in ``WIDENING_LABEL`` (used as the
+    fallback when a translation is missing); DE / future-locale
+    strings live in ``static/i18n/<locale>.json`` under the
+    ``backend.widening.<affordance>`` key.
+
+    Existing call sites that don't yet pass a locale receive the
+    English label (no behaviour change for un-migrated callers).
+    """
+
+    from company_discovery.i18n_bundle import translate
+
+    key = f"backend.widening.{affordance}"
+    default = WIDENING_LABEL.get(affordance, affordance)
+    return translate(key, locale=locale, default=default)
+
 # Affordance order for unconstrained personas (Yusuf / Maria /
 # Käthe / Tobias). Neutral: widen first, then seniority, then
 # laterals.
@@ -795,8 +814,10 @@ def parse_affordance_choice(
     if not msg or not msg.strip():
         return None
     raw = msg.strip().lstrip("#").strip()
-    # Number-pick
-    if raw.isdigit():
+    # Number-pick. Restrict to ASCII digits — ``str.isdigit()``
+    # returns True for Unicode digits like '²' which ``int()``
+    # rejects. Same fix applied in journey.py:_advance_review_empty.
+    if raw.isascii() and raw.isdigit():
         idx = int(raw) - 1
         if 0 <= idx < len(offered):
             return offered[idx]

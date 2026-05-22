@@ -5734,42 +5734,62 @@ function chatAppendBubble(role, text, opts = {}) {
 // the server right now. That's still a large UX win over a frozen
 // label per the operator's "perceived latency != total latency"
 // doctrine.
-const TYPING_LABELS = {
+// phase2-backlog #75: typing labels go through the i18n bundle so
+// DE users see Denke nach… etc. Each entry's `text` is computed
+// via t() at render time (not at module-load) so locale switches
+// take effect without page reload. The `default` fallback text on
+// each line is the EN string — keeps the JS file readable even
+// when the bundle hasn't loaded yet.
+const TYPING_LABELS_SCHEDULE = {
   search: [
-    {after: 0, text: "Querying job boards across the EU…"},
-    {after: 3000, text: "Comparing and deduplicating results across providers…"},
-    {after: 8000, text: "Ranking by relevance and scoring fit…"},
-    {after: 18000, text: "Still going — slower providers can take a while…"},
+    {after: 0, key: "backend.typing.search.0", fallback: "Querying job boards across the EU…"},
+    {after: 3000, key: "backend.typing.search.1", fallback: "Comparing and deduplicating results across providers…"},
+    {after: 8000, key: "backend.typing.search.2", fallback: "Ranking by relevance and scoring fit…"},
+    {after: 18000, key: "backend.typing.search.3", fallback: "Still going — slower providers can take a while…"},
   ],
   tailor: [
-    {after: 0, text: "Reading your CV…"},
-    {after: 4000, text: "Mapping CV bullets against the JD requirements…"},
-    {after: 12000, text: "Drafting the tailored version (local AI runs slower than cloud)…"},
-    {after: 30000, text: "Still going — Ollama can take 30-90 s depending on model and CPU…"},
-    {after: 60000, text: "Heads up: very large CVs + local AI can take over a minute…"},
+    {after: 0, key: "backend.typing.tailor.0", fallback: "Reading your CV…"},
+    {after: 4000, key: "backend.typing.tailor.1", fallback: "Mapping CV bullets against the JD requirements…"},
+    {after: 12000, key: "backend.typing.tailor.2", fallback: "Drafting the tailored version (local AI runs slower than cloud)…"},
+    {after: 30000, key: "backend.typing.tailor.3", fallback: "Still going — Ollama can take 30-90 s depending on model and CPU…"},
+    {after: 60000, key: "backend.typing.tailor.4", fallback: "Heads up: very large CVs + local AI can take over a minute…"},
   ],
   letter: [
-    {after: 0, text: "Reading your CV plus the job description…"},
-    {after: 4000, text: "Drafting the letter body…"},
-    {after: 12000, text: "Adding source citations (Quellen) so you can verify every claim…"},
-    {after: 30000, text: "Still going — local AI takes longer; cloud AI is faster…"},
-    {after: 60000, text: "Heads up: large CVs + Ollama can take over a minute…"},
+    {after: 0, key: "backend.typing.letter.0", fallback: "Reading your CV plus the job description…"},
+    {after: 4000, key: "backend.typing.letter.1", fallback: "Drafting the letter body…"},
+    {after: 12000, key: "backend.typing.letter.2", fallback: "Adding source citations (Quellen) so you can verify every claim…"},
+    {after: 30000, key: "backend.typing.letter.3", fallback: "Still going — local AI takes longer; cloud AI is faster…"},
+    {after: 60000, key: "backend.typing.letter.4", fallback: "Heads up: large CVs + Ollama can take over a minute…"},
   ],
   consult: [
-    {after: 0, text: "Analyzing your CV against the JD…"},
-    {after: 5000, text: "Surfacing improvement suggestions, never inventing facts…"},
-    {after: 15000, text: "Still going — thorough analysis takes 30-90 s with local AI…"},
-    {after: 45000, text: "Heads up: large CVs + local AI can run beyond a minute…"},
+    {after: 0, key: "backend.typing.consult.0", fallback: "Analyzing your CV against the JD…"},
+    {after: 5000, key: "backend.typing.consult.1", fallback: "Surfacing improvement suggestions, never inventing facts…"},
+    {after: 15000, key: "backend.typing.consult.2", fallback: "Still going — thorough analysis takes 30-90 s with local AI…"},
+    {after: 45000, key: "backend.typing.consult.3", fallback: "Heads up: large CVs + local AI can run beyond a minute…"},
   ],
   inspire: [
-    {after: 0, text: "Thinking about lateral roles your background unlocks…"},
-    {after: 5000, text: "Drafting suggestions grounded in your actual experience…"},
-    {after: 12000, text: "Almost there — finishing the suggestion list…"},
+    {after: 0, key: "backend.typing.inspire.0", fallback: "Thinking about lateral roles your background unlocks…"},
+    {after: 5000, key: "backend.typing.inspire.1", fallback: "Drafting suggestions grounded in your actual experience…"},
+    {after: 12000, key: "backend.typing.inspire.2", fallback: "Almost there — finishing the suggestion list…"},
   ],
   default: [
-    {after: 0, text: "Thinking…"},
+    {after: 0, key: "backend.typing.default", fallback: "Thinking…"},
   ],
 };
+
+// Compute the resolved labels each time they're requested. Using a
+// getter wrapper keeps existing call sites (TYPING_LABELS[category])
+// working unchanged while routing every text through t().
+const TYPING_LABELS = new Proxy(TYPING_LABELS_SCHEDULE, {
+  get(target, prop) {
+    const schedule = target[prop];
+    if (!Array.isArray(schedule)) return schedule;
+    return schedule.map(entry => ({
+      after: entry.after,
+      text: t(entry.key, entry.fallback),
+    }));
+  },
+});
 
 function typingCategoryFor(message, lastJourneyPhase) {
   // PART 9 Loop 29: factored out from typingLabelFor so the

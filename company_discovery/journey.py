@@ -2424,7 +2424,13 @@ def _advance_review_empty(
     stripped = msg.strip().lstrip("#").strip()
     auto_relax_entry = False
     start_fresh = False
-    if stripped.isdigit():
+    # ``str.isdigit()`` returns True for Unicode digit characters
+    # like '²' (superscript two), but ``int()`` only accepts the
+    # ASCII subset 0-9 and raises ValueError otherwise. Restrict
+    # to the ASCII subset so a malicious or accidental Unicode
+    # digit can't crash the journey state machine. Found by the
+    # phase2-backlog #43 Hypothesis property test (#75 sweep).
+    if stripped.isascii() and stripped.isdigit():
         n = int(stripped)
         if auto_relax_idx and n == auto_relax_idx:
             auto_relax_entry = True

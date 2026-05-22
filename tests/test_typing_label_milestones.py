@@ -34,13 +34,22 @@ APP_JS = Path(__file__).resolve().parent.parent / "static" / "app.js"
 
 
 def _extract_typing_labels() -> dict[str, list[dict[str, object]]]:
-    """Pull the TYPING_LABELS literal out of static/app.js and return
-    the parsed value. Uses a regex anchor + brace-balance walk so the
-    parser stays robust against unrelated edits elsewhere in the file."""
+    """Pull the TYPING_LABELS_SCHEDULE literal out of static/app.js
+    and return the parsed value. Uses a regex anchor + brace-balance
+    walk so the parser stays robust against unrelated edits elsewhere
+    in the file.
+
+    The schedule was renamed from ``TYPING_LABELS`` to
+    ``TYPING_LABELS_SCHEDULE`` in phase2-backlog #75 wiring (the
+    runtime ``TYPING_LABELS`` is now a Proxy that resolves keys via
+    the i18n bundle). The new entry shape carries ``key`` +
+    ``fallback`` instead of ``text``; this extractor normalises
+    ``fallback`` back to ``text`` so the downstream assertions
+    don't need to change."""
 
     text = APP_JS.read_text(encoding="utf-8")
-    anchor = re.search(r"const TYPING_LABELS\s*=\s*\{", text)
-    assert anchor is not None, "TYPING_LABELS literal not found in app.js"
+    anchor = re.search(r"const TYPING_LABELS_SCHEDULE\s*=\s*\{", text)
+    assert anchor is not None, "TYPING_LABELS_SCHEDULE literal not found in app.js"
     start = anchor.end() - 1  # the opening "{"
     depth = 0
     end = None
@@ -67,7 +76,18 @@ def _extract_typing_labels() -> dict[str, list[dict[str, object]]]:
     )
     # Strip trailing commas before } or ] (legal JS, illegal JSON).
     json_text = re.sub(r",(\s*[\]}])", r"\1", json_text)
-    return json.loads(json_text)
+    parsed = json.loads(json_text)
+    # Normalise the new entry shape: rename `fallback` → `text` so
+    # downstream assertions can stay shape-agnostic. The substantive
+    # contract (first stage after=0, monotonic, ≥2 stages for long-
+    # ops) is independent of which key holds the EN string.
+    for category, stages in parsed.items():
+        if not isinstance(stages, list):
+            continue
+        for stage in stages:
+            if isinstance(stage, dict) and "fallback" in stage and "text" not in stage:
+                stage["text"] = stage["fallback"]
+    return parsed
 
 
 class TypingLabelMilestoneContract(unittest.TestCase):
