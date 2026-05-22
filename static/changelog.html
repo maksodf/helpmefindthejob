@@ -41,9 +41,28 @@
       <header>
         <a href="/" class="legal-back">← Back to Helpmefindthejob</a>
         <h1>Changelog</h1>
-        <p class="muted">What we actually shipped, week by week. App version 0.73.0.</p>
+        <p class="muted">What we actually shipped, week by week. App version 0.79.4.</p>
         <p class="muted small">Regenerated from git history. Run <code>./scripts/generate-changelog.sh</code> after each release.</p>
       </header>
+
+      <section>
+        <h2>0.79 — pre-NLnet submission slice · 2026-05-22 / 23</h2>
+        <p class="muted small">Six rapid minor releases (0.74 → 0.79.4) landed across two weeks while preparing the project for the NLnet NGI Zero Commons Fund application. Highlights below; full per-commit detail in <code>CHANGELOG.md</code> at the repo root.</p>
+        <ul>
+          <li><strong>Project rename</strong>: DirectJob Scout → Helpmefindthejob (per Decision 22). All 271 affected files swept; cryptographic identity-of-record (v0.1.0 cosign signature) preserved.</li>
+          <li><strong>TLD pivot</strong>: canonical domain moved from <code>helpmefindthejob.com</code> → <code>helpmefindthejob.org</code> (Decision 22 amendment). Driver: DNSSEC at the <code>.com</code> blocked the cutover within the NLnet window; <code>.org</code> also better signals civic-commons positioning.</li>
+          <li><strong>EU AI Act compliance scaffolding</strong>: Privacy page substantiates Articles 12 (HMAC-chain audit log), 13 (transparency), 14 (human oversight), 20 (portable export), 26 (deployer obligations), 50 (AI-generated content marking).</li>
+          <li><strong>GDPR Articles 15–22 enumerated</strong> with concrete user-action paths; DPO statement (none required at current scale per Article 37); supervisory authority named (BlnBDI Berlin) with Article 77 complaint right.</li>
+          <li><strong>Bilingual legal pages</strong> (DE+EN) for privacy, terms, data-retention, impressum. Server-side language resolver (<code>?lang=</code> &gt; cookie &gt; Accept-Language &gt; default). Language switcher on every legal page.</li>
+          <li><strong>WCAG-AA form accessibility</strong>: every input/select/textarea now has a programmatic label (95/95 via <code>&lt;label for=&gt;</code> or <code>aria-label</code>). Every HTML5 <code>required</code> control also has <code>aria-required="true"</code>; every hint span wired via <code>aria-describedby</code>.</li>
+          <li><strong>CSP enforcement actually works</strong>: 12 inline <code>style="..."</code> attributes lifted to CSS classes; status-page inline <code>&lt;script&gt;</code> extracted to <code>/status.js</code>. Production CSP was previously silently blocking these.</li>
+          <li><strong>Icon coverage</strong>: multi-resolution <code>/favicon.ico</code> (4 frames), <code>/apple-touch-icon.png</code> (180×180), <code>/icons/og-card.png</code> (1200×630) — all linked from every public page.</li>
+          <li><strong>SEO</strong>: sitemap + robots + JSON-LD URLs now all use the apex (was leaking the <code>demo.</code> subdomain). robots no longer Allow-lists 404'd <code>/jobs/</code> + <code>/share/</code> paths. <code>/mcp/</code> public catalogue explicitly Allow'd.</li>
+          <li><strong>Impressum</strong>: filled with real operator legal data (was shipping with <code>[OPERATOR FILL: …]</code> placeholders — a §5 TMG liability).</li>
+          <li><strong>Operational hardening</strong>: daily backup cron with B2 off-site rclone push (7-day local rotation), external UptimeRobot monitor, health-history bounded ring buffer, Prometheus <code>/api/metrics</code> endpoint.</li>
+          <li><strong>Test suite</strong>: 2906 → 2931 (+25 root-cause regression guards). Every audit fix carries a test that would catch the regression.</li>
+        </ul>
+      </section>
 
       <section>
         <h2>0.73 — UI polish &amp; locale-switch hardening · 2026-05-10</h2>
