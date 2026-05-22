@@ -138,6 +138,45 @@ class AppStateRoutesByDatabaseUrl(unittest.TestCase):
         self.assertIn("is_postgres_url(database_url)", src)
 
 
+class HealthEndpointReportsActualStorage(unittest.TestCase):
+    """Regression: /api/health previously hardcoded "storage":"sqlite"
+    even when the operator routed the repository to Postgres via
+    DATABASE_URL. Fixed by `_storage_kind()` which inspects the live
+    repository class. This test guards the fix at the source level
+    (the runtime path was already proven during the original PG
+    rollout by booting the server + curling /api/health)."""
+
+    def test_health_payload_uses_storage_kind_helper(self):
+        src = Path(
+            "/Users/fouad./Desktop/NasserMCPserver/app.py"
+        ).read_text(encoding="utf-8")
+        # No hardcoded "sqlite" in the health payload anymore
+        self.assertNotIn('"storage": "sqlite"', src)
+        # Health payload calls the helper instead
+        self.assertIn('"storage": self._storage_kind()', src)
+        # Helper exists, dispatches on class name
+        self.assertIn("def _storage_kind(self) -> str:", src)
+        self.assertIn('return "postgres"', src)
+        self.assertIn('return "sqlite"', src)
+
+    def test_storage_kind_helper_returns_sqlite_for_sqlite_repo(self):
+        from app import AppState
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            state = AppState(
+                root / "company.sqlite3",
+                root / "auth.sqlite3",
+                root / "ai.json",
+                root / "schedule.json",
+                start_scheduler=False,
+            )
+            try:
+                self.assertEqual(state._storage_kind(), "sqlite")
+            finally:
+                state.auth_store.close()
+                state.repository.close()
+
+
 class RequirementsContract(unittest.TestCase):
     """psycopg must appear in requirements.txt + SBOM."""
 

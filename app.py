@@ -1490,7 +1490,7 @@ class AppState:
             "status": "ok",
             "version": APP_VERSION,
             "environment": APP_ENV,
-            "storage": "sqlite",
+            "storage": self._storage_kind(),
             "registrationOpen": self.registration_open(),
             "schedulerActiveJobs": scheduler_due,
         }
@@ -1506,6 +1506,28 @@ class AppState:
         if detailed:
             payload["subsystems"] = self._health_subsystems()
         return payload
+
+    def _storage_kind(self) -> str:
+        """Reports the actual primary-repository backend in use.
+
+        Honest health surface: previously hardcoded "sqlite" even when
+        the operator had set ``HELPMEFINDTHEJOB_DATABASE_URL`` to a
+        postgresql:// connection string. Now inspects the live
+        repository class.
+
+        Returns:
+        - ``"postgres"`` — primary repository routed to PG
+          (auth/scheduler may still be SQLite during Phase 1)
+        - ``"sqlite"`` — primary repository on SQLite (default)
+        - ``"in-memory"`` — diagnostic fallback (tests / dry-run)
+        """
+
+        cls_name = type(self.repository).__name__
+        if cls_name.startswith("Postgres"):
+            return "postgres"
+        if cls_name.startswith("Sqlite"):
+            return "sqlite"
+        return "in-memory"
 
     def _health_subsystems(self) -> dict[str, Any]:
         """Subsystem signals for ops monitoring.
