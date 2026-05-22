@@ -195,6 +195,31 @@ REQUIRE_EMAIL_VERIFICATION = (
     or ""
 ).strip().casefold() in ("true", "1", "yes")
 APP_PUBLIC_URL = get_env("HELPMEFINDTHEJOB_PUBLIC_URL", "DIRECTJOB_PUBLIC_URL") or ""
+
+
+def _xss_safe_jsonld(payload: Any, json_module) -> str:
+    """Serialise ``payload`` as JSON suitable for embedding inside a
+    ``<script type="application/ld+json">`` block.
+
+    json.dumps produces valid JSON, but a user-controlled
+    ``</script>`` substring in any string value would terminate the
+    surrounding script tag and create an XSS vector. The OWASP /
+    Google structured-data guidance is to escape ``<``, ``>``, and
+    ``&`` as their unicode escape forms so the JSON remains valid
+    AND the host tag cannot be terminated by content.
+
+    Defense-in-depth: the only current caller is the operator-edited
+    seo-pages.json registry, which is trusted today. But this
+    guarantee should hold even if untrusted data flows into JSON-LD
+    in a future feature.
+    """
+
+    text = json_module.dumps(payload, ensure_ascii=False, separators=(",", ":"))
+    return (
+        text.replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
+    )
+
+
 LOCAL_USER_ID = "local-user"
 MAX_JSON_BODY_BYTES = 5_000_000
 DEFAULT_WATCHLIST_SCHEDULE = {
@@ -7007,6 +7032,26 @@ class Handler(BaseHTTPRequestHandler):
                     return
                 self._send_share_job_page(imported)
                 return
+            if parsed.path == "/sitemap.xml":
+                # Dynamic sitemap. Previously a static file in static/
+                # that referenced the legacy `khalo.org` domain
+                # (Week 1 sanitization residue) and listed hardcoded
+                # SEO landing pages. Now enumerated from the actual
+                # live registry: static legal/help pages always
+                # present + the operator-edited seo-pages.json. Uses
+                # APP_PUBLIC_URL when set, otherwise falls back to
+                # the request Host so dev installs work without
+                # configuration. Includes xhtml:link hreflang
+                # alternates because the site ships EN + DE.
+                self._send_dynamic_sitemap()
+                return
+            if parsed.path == "/robots.txt":
+                # Dynamic robots.txt — same reason as the sitemap:
+                # base URL must come from configuration / request
+                # not a frozen static file, and the Sitemap: line
+                # must point to the live host.
+                self._send_dynamic_robots()
+                return
             if parsed.path.startswith("/jobs/"):
                 slug = parsed.path[len("/jobs/") :].strip("/").split("/", 1)[0]
                 if not slug or not all(c.isalnum() or c == "-" for c in slug) or len(slug) > 80:
@@ -11077,6 +11122,161 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(encoded)
 
+    def _resolved_public_base(self) -> str:
+        """Returns the canonical base URL (no trailing slash).
+
+        Configuration order:
+        1. ``HELPMEFINDTHEJOB_PUBLIC_URL`` env var (production)
+        2. ``Host`` header on the current request with scheme
+           guessed from ``X-Forwarded-Proto`` / fallback to https
+           (dev installs behind a reverse proxy)
+        3. ``http://<host_header>`` (plain dev)
+
+        Used by /sitemap.xml + /robots.txt so the URLs in those
+        files are always correct for the deployment without
+        requiring operator configuration on every install.
+        """
+
+        if APP_PUBLIC_URL:
+            return APP_PUBLIC_URL.rstrip("/")
+        host = self.headers.get("Host", "").strip()
+        if not host:
+            return ""
+        forwarded_proto = (
+            self.headers.get("X-Forwarded-Proto", "").strip().lower()
+        )
+        scheme = forwarded_proto if forwarded_proto in {"http", "https"} else "http"
+        return f"{scheme}://{host}"
+
+    def _send_dynamic_sitemap(self) -> None:
+        """Server-rendered XML sitemap.
+
+        Sources of truth:
+        - The fixed legal/help/changelog/status pages that always
+          exist as static HTML in ``static/``.
+        - The operator-edited ``seo-pages.json`` for /jobs/<slug>
+          landing pages.
+
+        Includes ``xhtml:link rel="alternate" hreflang="..."`` for
+        every page because the SPA ships EN + DE. Google + Bing use
+        these alternates for region/language targeting.
+
+        Cache-Control: 1 hour. Long enough that crawlers don't
+        re-fetch every minute; short enough that the operator's
+        seo-pages.json edits propagate without a deploy.
+        """
+
+        from xml.sax.saxutils import escape as _xml_escape
+
+        base = self._resolved_public_base()
+
+        # Page registry: (path, change_freq, priority).
+        # Locale alternates are added below for every entry —
+        # the page itself is locale-neutral at the URL level
+        # (the SPA picks language from the user's browser /
+        # /api/i18n/* endpoints). We declare both alternates so
+        # crawlers know the same URL serves both languages.
+        fixed_pages = [
+            ("/", "weekly", "1.0"),
+            ("/help", "weekly", "0.7"),
+            ("/changelog", "weekly", "0.5"),
+            ("/status", "daily", "0.4"),
+            ("/privacy", "monthly", "0.5"),
+            ("/terms", "monthly", "0.5"),
+            ("/data-retention", "monthly", "0.5"),
+            ("/impressum", "yearly", "0.3"),
+        ]
+        seo_pages = STATE.list_seo_pages()
+
+        urlset_lines = [
+            '<?xml version="1.0" encoding="UTF-8"?>',
+            '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"',
+            '        xmlns:xhtml="http://www.w3.org/1999/xhtml">',
+        ]
+        for path, freq, priority in fixed_pages:
+            url = base + path if base else path
+            urlset_lines.extend(
+                [
+                    "  <url>",
+                    f"    <loc>{_xml_escape(url)}</loc>",
+                    f'    <xhtml:link rel="alternate" hreflang="en" href="{_xml_escape(url)}"/>',
+                    f'    <xhtml:link rel="alternate" hreflang="de" href="{_xml_escape(url)}"/>',
+                    f'    <xhtml:link rel="alternate" hreflang="x-default" href="{_xml_escape(url)}"/>',
+                    f"    <changefreq>{freq}</changefreq>",
+                    f"    <priority>{priority}</priority>",
+                    "  </url>",
+                ]
+            )
+        for page in seo_pages:
+            url = (base if base else "") + f"/jobs/{page['slug']}"
+            urlset_lines.extend(
+                [
+                    "  <url>",
+                    f"    <loc>{_xml_escape(url)}</loc>",
+                    f'    <xhtml:link rel="alternate" hreflang="en" href="{_xml_escape(url)}"/>',
+                    f'    <xhtml:link rel="alternate" hreflang="de" href="{_xml_escape(url)}"/>',
+                    f'    <xhtml:link rel="alternate" hreflang="x-default" href="{_xml_escape(url)}"/>',
+                    "    <changefreq>weekly</changefreq>",
+                    "    <priority>0.7</priority>",
+                    "  </url>",
+                ]
+            )
+        urlset_lines.append("</urlset>")
+        body = "\n".join(urlset_lines) + "\n"
+        encoded = body.encode("utf-8")
+        self.send_response(HTTPStatus.OK)
+        self.send_header("Content-Type", "application/xml; charset=utf-8")
+        self.send_header("Content-Length", str(len(encoded)))
+        self.send_header("Cache-Control", "public, max-age=3600")
+        self.end_headers()
+        self.wfile.write(encoded)
+
+    def _send_dynamic_robots(self) -> None:
+        """Server-rendered robots.txt.
+
+        Lives next to the dynamic sitemap so the ``Sitemap:`` URL
+        always points at the correct host for the deployment.
+        """
+
+        base = self._resolved_public_base()
+        sitemap_url = (base + "/sitemap.xml") if base else "/sitemap.xml"
+        lines = [
+            "# Helpmefindthejob — robots.txt",
+            "# Public marketing surfaces are crawlable.",
+            "# The app, admin, and APIs are not.",
+            "",
+            "User-agent: *",
+            "Allow: /",
+            "Allow: /privacy",
+            "Allow: /terms",
+            "Allow: /data-retention",
+            "Allow: /impressum",
+            "Allow: /changelog",
+            "Allow: /help",
+            "Allow: /jobs/",
+            "Allow: /status",
+            "Allow: /share/",
+            "",
+            "# Block app, admin, and API surfaces from indexing.",
+            "Disallow: /api/",
+            "Disallow: /accept-invite/",
+            "Disallow: /reset-password/",
+            "Disallow: /forgot-password",
+            "Disallow: /admin",
+            "Disallow: /r/",
+            "",
+            f"Sitemap: {sitemap_url}",
+            "",
+        ]
+        body = "\n".join(lines)
+        encoded = body.encode("utf-8")
+        self.send_response(HTTPStatus.OK)
+        self.send_header("Content-Type", "text/plain; charset=utf-8")
+        self.send_header("Content-Length", str(len(encoded)))
+        self.send_header("Cache-Control", "public, max-age=3600")
+        self.end_headers()
+        self.wfile.write(encoded)
+
     def _send_seo_page_not_found(self) -> None:
         body = (
             "<!doctype html>\n"
@@ -11109,6 +11309,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def _send_seo_page(self, page: dict[str, Any]) -> None:
         from html import escape as _escape
+        import json as _json
 
         title = page["title"] or f"{page['role']} jobs in {page['city']}"
         intro = page["intro"] or (
@@ -11118,6 +11319,61 @@ class Handler(BaseHTTPRequestHandler):
         canonical = STATE.public_url_for(f"/jobs/{page['slug']}")
         signup_url = STATE.public_url_for("/")
         og_description = intro[:280]
+        # JSON-LD structured data — JobPosting is too narrow (we don't
+        # list actual jobs on these pages, they're search-funnel
+        # landings). WebPage + Organization gives crawlers the
+        # context they need without misrepresenting content.
+        # BreadcrumbList helps search results show a hierarchy.
+        json_ld = {
+            "@context": "https://schema.org",
+            "@graph": [
+                {
+                    "@type": "WebPage",
+                    "@id": canonical,
+                    "url": canonical,
+                    "name": title,
+                    "description": og_description,
+                    "inLanguage": ["en", "de"],
+                    "isPartOf": {
+                        "@type": "WebSite",
+                        "name": "Helpmefindthejob",
+                        "url": STATE.public_url_for("/"),
+                    },
+                },
+                {
+                    "@type": "Organization",
+                    "name": "Helpmefindthejob",
+                    "url": STATE.public_url_for("/"),
+                    "description": (
+                        "Open-source EU-wide civic employment commons — "
+                        "MCP-composable tools for navigating the European labor market."
+                    ),
+                },
+                {
+                    "@type": "BreadcrumbList",
+                    "itemListElement": [
+                        {
+                            "@type": "ListItem",
+                            "position": 1,
+                            "name": "Home",
+                            "item": STATE.public_url_for("/"),
+                        },
+                        {
+                            "@type": "ListItem",
+                            "position": 2,
+                            "name": "Jobs",
+                            "item": STATE.public_url_for("/jobs/"),
+                        },
+                        {
+                            "@type": "ListItem",
+                            "position": 3,
+                            "name": title,
+                            "item": canonical,
+                        },
+                    ],
+                },
+            ],
+        }
         body = (
             "<!doctype html>\n"
             '<html lang="en">\n'
@@ -11128,10 +11384,29 @@ class Handler(BaseHTTPRequestHandler):
             f"  <title>{_escape(title)} — Helpmefindthejob</title>\n"
             f'  <meta name="description" content="{_escape(og_description)}" />\n'
             f'  <link rel="canonical" href="{_escape(canonical)}" />\n'
+            f'  <link rel="alternate" hreflang="en" href="{_escape(canonical)}" />\n'
+            f'  <link rel="alternate" hreflang="de" href="{_escape(canonical)}" />\n'
+            f'  <link rel="alternate" hreflang="x-default" href="{_escape(canonical)}" />\n'
             '  <meta property="og:type" content="article" />\n'
             f'  <meta property="og:title" content="{_escape(title)}" />\n'
             f'  <meta property="og:description" content="{_escape(og_description)}" />\n'
             f'  <meta property="og:url" content="{_escape(canonical)}" />\n'
+            '  <meta property="og:site_name" content="Helpmefindthejob" />\n'
+            '  <meta property="og:locale" content="en_US" />\n'
+            '  <meta property="og:locale:alternate" content="de_DE" />\n'
+            '  <meta name="twitter:card" content="summary" />\n'
+            f'  <meta name="twitter:title" content="{_escape(title)}" />\n'
+            f'  <meta name="twitter:description" content="{_escape(og_description)}" />\n'
+            '  <script type="application/ld+json">'
+            # Safe-for-HTML JSON: json.dumps handles JSON escaping
+            # but a user-controlled "</script>" in title/intro would
+            # otherwise break out of this script tag (XSS vector).
+            # Per OWASP / Google structured-data guidance, escape <
+            # > & as unicode so the JSON remains valid AND the host
+            # tag cannot be terminated by content. Operator-edited
+            # seo-pages.json is trusted today, but defense-in-depth.
+            + _xss_safe_jsonld(json_ld, _json)
+            + "</script>\n"
             '  <link rel="stylesheet" href="/styles.css" />\n'
             "</head>\n"
             '<body class="legal-body">\n'
