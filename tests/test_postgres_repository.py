@@ -146,16 +146,24 @@ class HealthEndpointReportsActualStorage(unittest.TestCase):
     (the runtime path was already proven during the original PG
     rollout by booting the server + curling /api/health)."""
 
-    def test_health_payload_uses_storage_kind_helper(self):
+    def test_health_payload_no_longer_exposes_storage_kind(self):
+        """AUDIT-42 (2026-05-22): the storage backend (sqlite vs
+        postgres) was previously exposed in the public /api/health
+        response, a minor info leak. Now the helper exists for
+        authenticated admin/system-info use but the public payload
+        omits it. This test pins both invariants:
+        - No hardcoded "sqlite" in the public health payload.
+        - _storage_kind() helper still exists (admins need it).
+        """
+
         src = Path(
             "/Users/fouad./Desktop/NasserMCPserver/app.py"
         ).read_text(encoding="utf-8")
-        # No hardcoded "sqlite" in the health payload anymore
         self.assertNotIn('"storage": "sqlite"', src)
-        # Health payload calls the helper instead
-        self.assertIn('"storage": self._storage_kind()', src)
-        # Helper exists, dispatches on class name
-        self.assertIn("def _storage_kind(self) -> str:", src)
+        self.assertNotIn('"storage": self._storage_kind()', src,
+                         "AUDIT-42: storage no longer in public health")
+        self.assertIn("def _storage_kind(self) -> str:", src,
+                      "_storage_kind helper still needed for admin endpoints")
         self.assertIn('return "postgres"', src)
         self.assertIn('return "sqlite"', src)
 
