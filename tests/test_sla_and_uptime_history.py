@@ -343,24 +343,34 @@ class RingBufferBoundedness(unittest.TestCase):
 
 
 class StatusPageReadsHistory(unittest.TestCase):
+    """HTML structure in status.html; JS behavior in status.js
+    (extracted 2026-05-22 per AUDIT-2 to comply with CSP
+    script-src self)."""
+
     def setUp(self):
-        self.src = (REPO_ROOT / "static" / "status.html").read_text(
+        self.html = (REPO_ROOT / "static" / "status.html").read_text(
+            encoding="utf-8"
+        )
+        self.js = (REPO_ROOT / "static" / "status.js").read_text(
             encoding="utf-8"
         )
 
     def test_uptime_cards_present(self):
-        self.assertIn('id="uptime24h"', self.src)
-        self.assertIn('id="uptime7d"', self.src)
+        self.assertIn('id="uptime24h"', self.html)
+        self.assertIn('id="uptime7d"', self.html)
+
+    def test_status_js_loaded_externally(self):
+        self.assertIn('<script src="/status.js"', self.html)
 
     def test_history_endpoint_referenced(self):
-        self.assertIn("/api/health/history?window=24", self.src)
-        self.assertIn("/api/health/history?window=168", self.src)
+        self.assertIn("/api/health/history?window=24", self.js)
+        self.assertIn("/api/health/history?window=168", self.js)
 
     def test_uptime_formatter_handles_no_data(self):
         """The 'no data yet' fallback prevents the page from
         showing a misleading 0% on a fresh deploy."""
 
-        self.assertIn("no data yet", self.src)
+        self.assertIn("no data yet", self.js)
 
 
 if __name__ == "__main__":
