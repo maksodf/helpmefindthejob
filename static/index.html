@@ -112,11 +112,11 @@
           </div>
         </div>
         <form id="loginForm" class="auth-form" novalidate>
-          <label class="field">
+          <label class="field" for="loginEmail">
             <span data-i18n="auth.email">Email</span>
             <input id="loginEmail" type="email" autocomplete="email" required />
           </label>
-          <label class="field">
+          <label class="field" for="loginPassword">
             <span data-i18n="auth.password">Password</span>
             <input id="loginPassword" type="password" autocomplete="current-password" required />
           </label>
@@ -126,21 +126,21 @@
         <form id="registerForm" class="auth-form" novalidate hidden>
           <h2 id="registerHeading" data-i18n="auth.createFirstHeading">Create the first account</h2>
           <p id="registerLead" class="muted" data-i18n="auth.createFirstLead">This screen only appears on a new install.</p>
-          <label class="field">
+          <label class="field" for="registerEmail">
             <span data-i18n="auth.email">Email</span>
             <input id="registerEmail" type="email" autocomplete="email" />
           </label>
-          <label class="field">
+          <label class="field" for="registerPassword">
             <span data-i18n="auth.password">Password</span>
             <input id="registerPassword" type="password" autocomplete="new-password" minlength="12" />
             <span class="hint">12 characters or more.</span>
           </label>
           <div id="registerConsent" class="auth-consent" hidden>
-            <label class="auth-consent-row">
+            <label class="auth-consent-row" for="registerTos">
               <input id="registerTos" type="checkbox" />
               <span><span data-i18n="auth.consent.tos">I have read and accept the Terms.</span> <a href="/terms" target="_blank" rel="noopener">↗</a></span>
             </label>
-            <label class="auth-consent-row">
+            <label class="auth-consent-row" for="registerPrivacy">
               <input id="registerPrivacy" type="checkbox" />
               <span><span data-i18n="auth.consent.privacy">I have read and accept the Privacy policy.</span> <a href="/privacy" target="_blank" rel="noopener">↗</a></span>
             </label>
@@ -162,7 +162,7 @@
       <h1 id="forgotPasswordTitle" data-i18n="auth.forgotHeading">Forgot your password?</h1>
       <p data-i18n="auth.forgotLead">Enter the email associated with your account. If a matching account exists, we'll send a reset link that expires in one hour.</p>
       <form id="forgotPasswordForm" novalidate>
-        <label class="field">
+        <label class="field" for="forgotEmail">
           <span data-i18n="auth.email">Email</span>
           <input id="forgotEmail" type="email" autocomplete="email" required />
         </label>
@@ -178,7 +178,7 @@
       <h1 id="resetPasswordTitle" data-i18n="auth.resetHeading">Set a new password</h1>
       <p id="resetPasswordTarget" class="auth-meta" data-i18n="auth.resetVerifying">Verifying reset link…</p>
       <form id="resetPasswordForm" novalidate hidden>
-        <label class="field">
+        <label class="field" for="resetPasswordValue">
           <span data-i18n="auth.resetNew">New password</span>
           <input id="resetPasswordValue" type="password" autocomplete="new-password" minlength="12" required />
           <span class="hint">12 characters or more.</span>
@@ -195,7 +195,7 @@
       <h1 id="acceptInviteTitle" data-i18n="auth.acceptHeading">Accept your invitation</h1>
       <p id="acceptInviteTarget" class="auth-meta" data-i18n="auth.acceptVerifying">Verifying invitation…</p>
       <form id="acceptInviteForm" novalidate hidden>
-        <label class="field">
+        <label class="field" for="acceptInvitePassword">
           <span data-i18n="auth.acceptChoosePassword">Choose a password</span>
           <input id="acceptInvitePassword" type="password" autocomplete="new-password" minlength="12" required />
           <span class="hint">12 characters or more.</span>
@@ -402,15 +402,15 @@
               </div>
             </div>
             <form id="findJobsForm" class="find-jobs-form">
-              <label class="field find-jobs-query">
+              <label class="field find-jobs-query" for="findJobsQuery">
                 <span data-i18n="findJobs.query">What roles do you want?</span>
                 <input id="findJobsQuery" type="text" placeholder="e.g. healthcare policy consulting, junior data engineer" />
               </label>
-              <label class="field find-jobs-location">
+              <label class="field find-jobs-location" for="findJobsLocation">
                 <span data-i18n="findJobs.location">Location</span>
                 <input id="findJobsLocation" type="text" placeholder="Berlin / remote / global" />
               </label>
-              <label class="field find-jobs-limit">
+              <label class="field find-jobs-limit" for="findJobsLimit">
                 <span data-i18n="findJobs.limit">Per provider</span>
                 <input id="findJobsLimit" type="number" min="5" max="50" value="15" />
               </label>
@@ -453,11 +453,11 @@
               <span class="collapsible-chevron" aria-hidden="true">▾</span>
             </summary>
             <div class="schedule-row">
-              <label class="check-row">
+              <label class="check-row" for="scheduleEnabled">
                 <input id="scheduleEnabled" type="checkbox" />
                 <span data-i18n="dashboard.schedule.runAuto">Run automatic scans</span>
               </label>
-              <label class="field inline">
+              <label class="field inline" for="scheduleInterval">
                 <span data-i18n="dashboard.schedule.every">Every (minutes)</span>
                 <input id="scheduleInterval" type="number" min="15" max="10080" step="15" value="360" />
               </label>
@@ -485,7 +485,7 @@
                 <h2 data-i18n="companies.watchlist.heading">Companies to watch</h2>
                 <button id="newCompanyBtn" class="btn btn-primary btn-small" type="button" data-i18n="companies.watchlist.add">+ Add</button>
               </div>
-              <input id="companyFilter" class="filter-input" type="search" placeholder="Filter watchlist" />
+              <input id="companyFilter" class="filter-input" type="search" placeholder="Filter watchlist" aria-label="Filter watchlist" />
               <div id="companyList" class="company-list"></div>
             </section>
 
@@ -507,23 +507,23 @@
               </div>
 
               <form id="detailForm" class="detail-form" hidden>
-                <label class="field">
+                <label class="field" for="detailWebsite">
                   <span data-i18n="companies.detail.website">Website</span>
                   <input id="detailWebsite" type="url" autocomplete="url" />
                 </label>
-                <label class="field">
+                <label class="field" for="detailCareer">
                   <span data-i18n="companies.detail.career">Career page</span>
                   <input id="detailCareer" type="url" />
                 </label>
-                <label class="field">
+                <label class="field" for="detailSector">
                   <span data-i18n="companies.detail.sector">Sector</span>
                   <input id="detailSector" list="sectorList" />
                 </label>
-                <label class="check-row">
+                <label class="check-row" for="detailWatch">
                   <input id="detailWatch" type="checkbox" />
                   <span data-i18n="companies.detail.watch">Keep watching this company</span>
                 </label>
-                <label class="field wide">
+                <label class="field wide" for="detailNotes">
                   <span data-i18n="companies.detail.notes">Notes</span>
                   <textarea id="detailNotes" rows="2"></textarea>
                 </label>
@@ -539,11 +539,11 @@
                 <summary data-i18n="companies.manualHtml.summary">Paste jobs manually</summary>
                 <p class="muted" data-i18n="companies.manualHtml.lead">Use this when a career page can't be checked safely or needs login. Copy the page's HTML or job links and paste below.</p>
                 <div class="manual-grid">
-                  <label class="field">
+                  <label class="field" for="manualPageUrl">
                     <span data-i18n="companies.manualHtml.url">Page URL</span>
                     <input id="manualPageUrl" type="url" placeholder="https://company.example/jobs" />
                   </label>
-                  <label class="field">
+                  <label class="field" for="manualHtml">
                     <span data-i18n="companies.manualHtml.html">HTML snippet</span>
                     <textarea id="manualHtml" rows="6" placeholder="&lt;html&gt;...&lt;/html&gt;"></textarea>
                   </label>
@@ -562,21 +562,21 @@
               <span class="collapsible-chevron" aria-hidden="true">▾</span>
             </summary>
             <form id="companyForm" class="form-grid" novalidate>
-              <label class="field">
+              <label class="field" for="in-name">
                 <span data-i18n="companies.add.name">Name</span>
-                <input required name="name" autocomplete="organization" placeholder="Charité" />
+                <input required id="in-name" name="name" autocomplete="organization" placeholder="Charité" />
               </label>
-              <label class="field">
+              <label class="field" for="in-website-url">
                 <span data-i18n="companies.add.website">Website</span>
-                <input required name="websiteUrl" type="url" placeholder="https://example.org" />
+                <input required id="in-website-url" name="websiteUrl" type="url" placeholder="https://example.org" />
               </label>
-              <label class="field">
+              <label class="field" for="in-career-page-url">
                 <span data-i18n="companies.add.career">Career page (optional)</span>
-                <input name="careerPageUrl" type="url" placeholder="https://example.org/karriere" />
+                <input id="in-career-page-url" name="careerPageUrl" type="url" placeholder="https://example.org/karriere" />
               </label>
-              <label class="field">
+              <label class="field" for="in-sector">
                 <span>Sector</span>
-                <select name="sector">
+                <select id="in-sector"  name="sector">
                   <option value="">Uncategorized</option>
                   <option>Hospital / clinic group</option>
                   <option>University hospital</option>
@@ -592,12 +592,12 @@
                   <option>Healthcare consulting</option>
                 </select>
               </label>
-              <label class="field wide">
+              <label class="field wide" for="in-notes">
                 <span data-i18n="companies.add.notes">Notes</span>
-                <input name="notes" placeholder="Why this company is worth watching" />
+                <input id="in-notes"  name="notes" placeholder="Why this company is worth watching" />
               </label>
-              <label class="check-row">
-                <input name="watchEnabled" type="checkbox" checked />
+              <label class="check-row" for="in-watch-enabled">
+                <input id="in-watch-enabled"  name="watchEnabled" type="checkbox" checked />
                 <span data-i18n="companies.add.watch">Watch for new roles</span>
               </label>
               <button class="btn btn-primary" type="submit" data-i18n="companies.add.submit">Add company</button>
@@ -647,15 +647,15 @@
               <button id="suggestBtn" class="btn btn-small" type="button" data-i18n="companies.suggestions.refresh">Refresh suggestions</button>
             </div>
             <div class="suggest-inputs">
-              <label class="field">
+              <label class="field" for="targetRoles">
                 <span data-i18n="companies.suggestions.targetRoles">Target roles</span>
                 <input id="targetRoles" value="Digital Health Project Management, Market Access, Public Health" />
               </label>
-              <label class="field">
+              <label class="field" for="targetIndustry">
                 <span data-i18n="companies.suggestions.industry">Industry</span>
                 <input id="targetIndustry" value="Healthcare" />
               </label>
-              <label class="field">
+              <label class="field" for="targetLocation">
                 <span data-i18n="companies.suggestions.location">Location</span>
                 <input id="targetLocation" value="Berlin / remote" />
               </label>
@@ -677,14 +677,14 @@
             </div>
             <p class="muted" data-i18n="queue.lead">Review before importing. Each role links back to the company's own career page.</p>
             <div class="queue-toolbar">
-              <label class="field inline">
+              <label class="field inline" for="queueSortSelect">
                 <span data-i18n="queue.toolbar.sortBy">Sort by</span>
                 <select id="queueSortSelect">
                   <option value="discovered" data-i18n="queue.toolbar.sort.discovered">Newest first</option>
                   <option value="fit" data-i18n="queue.toolbar.sort.fit">Auto-fit score</option>
                 </select>
               </label>
-              <label class="field inline">
+              <label class="field inline" for="autoFitLimit">
                 <span data-i18n="queue.toolbar.batch">Batch size</span>
                 <input id="autoFitLimit" type="number" min="1" max="25" value="10" />
               </label>
@@ -714,11 +714,11 @@
                 <button id="runAnalysisBriefBtn" class="btn btn-primary" type="button" data-i18n="brief.analyze">Analyze fit</button>
               </div>
             </div>
-            <label class="field">
+            <label class="field" for="providerRuntimeKey">
               <span data-i18n="brief.runtimeKey">Session API key (optional, not saved)</span>
               <input id="providerRuntimeKey" type="password" autocomplete="off" placeholder="Used only for one Run AI request" />
             </label>
-            <textarea id="briefPrompt" class="brief-textarea" rows="14" readonly placeholder="Import a job, then click Brief on the role to see a provider-neutral brief here."></textarea>
+            <textarea id="briefPrompt" class="brief-textarea" rows="14" readonly placeholder="Import a job, then click Brief on the role to see a provider-neutral brief here." aria-label="AI brief output"></textarea>
             <p class="muted small" data-i18n="brief.handoffNote">The brief is sent only when you click Analyze fit. Manual handoff always works.</p>
           </section>
 
@@ -737,11 +737,11 @@
               </div>
             </div>
             <form id="applicationForm" class="application-grid" novalidate hidden>
-              <label class="field">
+              <label class="field" for="applicationStatus">
                 <span data-i18n="applications.status">Status</span>
                 <select id="applicationStatus"></select>
               </label>
-              <label class="field">
+              <label class="field" for="applicationInterviewStage">
                 <span data-i18n="applications.interviewStage">Interview stage</span>
                 <select id="applicationInterviewStage">
                   <option value="">—</option>
@@ -754,26 +754,26 @@
                   <option value="offer">Offer</option>
                 </select>
               </label>
-              <label class="field">
+              <label class="field" for="applicationNextAction">
                 <span data-i18n="applications.nextAction">Next action</span>
                 <input id="applicationNextAction" placeholder="e.g. follow up Friday" />
               </label>
-              <label class="field">
+              <label class="field" for="applicationReminderAt">
                 <span data-i18n="applications.reminder">Reminder</span>
                 <input id="applicationReminderAt" type="datetime-local" />
               </label>
-              <label class="field application-replied-field">
+              <label class="field application-replied-field" for="applicationReplied">
                 <span data-i18n="applications.replied">Got a reply?</span>
                 <span class="application-replied-row">
                   <input id="applicationReplied" type="checkbox" />
                   <span class="muted small" id="applicationRepliedAt" data-i18n="applications.repliedHint">Tick when the company first wrote back. Drives reply-rate analytics.</span>
                 </span>
               </label>
-              <label class="field wide">
+              <label class="field wide" for="applicationNotes">
                 <span data-i18n="applications.notes">Notes</span>
                 <textarea id="applicationNotes" rows="3"></textarea>
               </label>
-              <label class="field wide">
+              <label class="field wide" for="applicationCoverLetter">
                 <span data-i18n="applications.coverLetterDraft">Cover letter draft</span>
                 <div class="cover-letter-toolbar">
                   <button id="prepareCoverLetterBtn" class="btn" type="button" title="Show the cover-letter prompt for manual handoff" data-i18n="applications.coverLetter.prompt">Cover-letter prompt</button>
@@ -821,11 +821,11 @@
               </label>
               <details class="application-extras field wide">
                 <summary data-i18n="applications.extras.summary">More — checklist, history note</summary>
-                <label class="field">
+                <label class="field" for="applicationHistoryNote">
                   <span data-i18n="applications.historyNote">Add history note (optional)</span>
                   <input id="applicationHistoryNote" placeholder="e.g. Recruiter emailed; phone screen Thursday" />
                 </label>
-                <label class="field">
+                <label class="field" for="applicationChecklist">
                   <span data-i18n="applications.documentsChecklist">Documents checklist</span>
                   <textarea id="applicationChecklist" rows="3" placeholder="One item per line; prefix with [x] for done"></textarea>
                 </label>
@@ -837,7 +837,7 @@
             <div id="sharePanel" class="share-panel" hidden>
               <h3 data-i18n="applications.share.title">Public share link</h3>
               <p class="muted small" data-i18n="applications.share.lead">Lets you share this job's preview page (with a sign-up CTA on it) outside Helpmefindthejob. Toggle off any time to disable the URL.</p>
-              <label class="share-toggle">
+              <label class="share-toggle" for="shareEnabledToggle">
                 <input id="shareEnabledToggle" type="checkbox" />
                 <span data-i18n="applications.share.toggle">Public preview enabled</span>
               </label>
@@ -868,7 +868,7 @@
                 <p class="muted" data-i18n="settings.locale.lead">Choose the language for the interface.</p>
               </div>
             </div>
-            <label class="field">
+            <label class="field" for="localeSelect">
               <span data-i18n="settings.locale.label">Language</span>
               <select id="localeSelect">
                 <option value="en" data-i18n="settings.locale.en">English</option>
@@ -932,7 +932,7 @@
                 <p class="muted" data-i18n="settings.theme.lead">Switch between dark and light mode.</p>
               </div>
             </div>
-            <label class="field">
+            <label class="field" for="themeSelect">
               <span data-i18n="settings.theme.heading">Theme</span>
               <select id="themeSelect">
                 <option value="dark" data-i18n="settings.theme.dark">Dark</option>
@@ -951,47 +951,47 @@
               <button id="saveProfileBtn" class="btn btn-primary" type="button">Save profile</button>
             </div>
             <form id="profileForm" class="provider-grid">
-              <label class="field">
+              <label class="field" for="profilePersona">
                 <span>Persona</span>
                 <input id="profilePersona" list="personaDatalist" data-i18n-placeholder="settings.persona.searchPlaceholder" placeholder="Type to search personas…" autocomplete="off" />
                 <datalist id="personaDatalist"></datalist>
               </label>
-              <label class="field">
+              <label class="field" for="profileIndustry">
                 <span>Industry preference</span>
                 <input id="profileIndustry" placeholder="e.g. Healthcare, B2B SaaS, Fintech" />
               </label>
-              <label class="field wide">
+              <label class="field wide" for="profileTargetRoles">
                 <span>Target roles (comma-separated)</span>
                 <input id="profileTargetRoles" placeholder="e.g. project management, digital health" />
               </label>
-              <label class="field">
+              <label class="field" for="profileLocation">
                 <span>Preferred location</span>
                 <input id="profileLocation" placeholder="e.g. Berlin, remote" />
               </label>
-              <label class="field">
+              <label class="field" for="profileSeniority">
                 <span>Seniority target</span>
                 <input id="profileSeniority" placeholder="e.g. junior, senior, early-career" />
               </label>
-              <label class="field">
+              <label class="field" for="profileYearsExperience">
                 <span>Years of experience</span>
                 <input id="profileYearsExperience" type="number" min="0" max="60" />
               </label>
-              <label class="field">
+              <label class="field" for="profileLanguages">
                 <span>Languages (comma-separated)</span>
                 <input id="profileLanguages" placeholder="e.g. German (C1), English (C2)" />
               </label>
               <div id="personaSuggestionHost" class="form-row-full"></div>
-              <label class="field form-row-full">
+              <label class="field form-row-full" for="cvUploadInput">
                 <span>Resume / CV</span>
                 <div class="cv-upload-toolbar">
                   <input id="cvUploadInput" type="file" accept=".docx,.txt,.pdf" hidden />
                   <button id="cvUploadBtn" class="btn" type="button">Upload .docx / .pdf / .txt</button>
                   <span id="cvUploadStatus" class="muted small"></span>
                 </div>
-                <textarea id="profileCvText" rows="10" placeholder="Upload a .docx or .txt CV, or paste plain text. PDF upload is not supported yet."></textarea>
+                <textarea id="profileCvText" rows="10" placeholder="Upload a .docx or .txt CV, or paste plain text. PDF upload is not supported yet." aria-label="CV text (paste or upload)"></textarea>
                 <span id="profileCvHint" class="hint">No CV pasted yet. The AI Brief still works without it but is less personalised.</span>
               </label>
-              <label class="field form-row-full">
+              <label class="field form-row-full" for="profileNotes">
                 <span>Notes for the AI (optional)</span>
                 <input id="profileNotes" placeholder="Anything else the AI should know — e.g. visa status, certifications" />
               </label>
@@ -1013,7 +1013,7 @@
               </div>
             </div>
             <div class="provider-grid">
-              <label class="field">
+              <label class="field" for="frictionClassCurrent">
                 <span data-i18n="settings.frictionClass.current">Current classification</span>
                 <input id="frictionClassCurrent" type="text" readonly aria-readonly="true" placeholder="—" />
               </label>
@@ -1042,11 +1042,11 @@
               <button id="slackTestBtn" class="btn" type="button" data-i18n="settings.notify.test">Send test</button>
             </div>
             <form id="notifyForm" class="provider-grid">
-              <label class="field wide">
+              <label class="field wide" for="slackWebhookUrl">
                 <span data-i18n="settings.notify.webhook">Slack incoming-webhook URL</span>
                 <input id="slackWebhookUrl" type="url" placeholder="https://hooks.slack.com/services/…" autocomplete="off" />
               </label>
-              <label class="field">
+              <label class="field" for="slackFitThreshold">
                 <span data-i18n="settings.notify.threshold">Fit threshold (0–100)</span>
                 <input id="slackFitThreshold" type="number" min="0" max="100" step="1" />
               </label>
@@ -1109,7 +1109,7 @@
               </button>
             </div>
             <div id="aiByokPane" class="ai-byok-pane" hidden>
-              <label class="field">
+              <label class="field" for="aiByokKey">
                 <span data-i18n="settings.ai.byok.label">API key</span>
                 <input id="aiByokKey" type="password" autocomplete="off" data-i18n-placeholder="settings.ai.byok.placeholder" placeholder="sk-… (OpenAI), sk-ant-… (Anthropic), AIza… (Google)" />
                 <span class="hint" id="aiByokHint" data-i18n="settings.ai.byok.hint">We detect the provider from the key's prefix. Keys are passed straight through and never logged.</span>
@@ -1119,31 +1119,31 @@
             <details class="ai-advanced">
               <summary data-i18n="settings.ai.advanced">Advanced (CLI, custom endpoints, env-var refs)</summary>
               <form id="providerForm" class="provider-grid">
-                <label class="field">
+                <label class="field" for="providerId">
                   <span>Provider</span>
                   <select id="providerId"></select>
                 </label>
-                <label class="field">
+                <label class="field" for="invocationMode">
                   <span>Mode</span>
                   <select id="invocationMode"></select>
                 </label>
-                <label class="field">
+                <label class="field" for="providerModel">
                   <span>Model</span>
                   <input id="providerModel" placeholder="model name" />
                 </label>
-                <label class="field">
+                <label class="field" for="credentialReference">
                   <span>Credential reference (env var name)</span>
                   <input id="credentialReference" placeholder="OPENAI_API_KEY (no raw secrets)" />
                 </label>
-                <label class="field">
+                <label class="field" for="providerBaseUrl">
                   <span>Base URL</span>
                   <input id="providerBaseUrl" placeholder="optional" />
                 </label>
-                <label class="field">
+                <label class="field" for="providerCommand">
                   <span>CLI command</span>
                   <input id="providerCommand" placeholder="optional" />
                 </label>
-                <label class="field wide">
+                <label class="field wide" for="providerNotes">
                   <span>Notes</span>
                   <input id="providerNotes" />
                 </label>
@@ -1159,11 +1159,11 @@
               <p class="muted" data-i18n="settings.account.lead">Changing your password signs you out on every device.</p>
             </div>
             <form id="changePasswordForm" class="account-grid" novalidate>
-              <label class="field">
+              <label class="field" for="currentPassword">
                 <span data-i18n="settings.account.current">Current password</span>
                 <input id="currentPassword" type="password" autocomplete="current-password" required />
               </label>
-              <label class="field">
+              <label class="field" for="newPassword">
                 <span data-i18n="settings.account.new">New password</span>
                 <input id="newPassword" type="password" autocomplete="new-password" minlength="12" required data-i18n-placeholder="settings.account.minLength" placeholder="12 characters or more" />
               </label>
@@ -1199,7 +1199,7 @@
               <button id="exportDataBtn" class="btn" type="button" data-i18n="settings.backup.export">Export backup</button>
               <button id="importDataBtn" class="btn" type="button" data-i18n="settings.backup.import">Import backup</button>
               <button id="healthBtn" class="btn btn-ghost" type="button" data-i18n="settings.backup.health">Run health check</button>
-              <input id="importFile" type="file" accept="application/json,.json" hidden />
+              <input id="importFile" type="file" accept="application/json,.json" hidden aria-label="Import backup file" />
             </div>
             <pre id="opsResult" class="code-block" hidden></pre>
           </section>
@@ -1225,7 +1225,7 @@
               <h2>Privacy</h2>
               <p class="muted">Product analytics is opt-in and never leaves your server.</p>
             </div>
-            <label class="check-row">
+            <label class="check-row" for="analyticsToggle">
               <input id="analyticsToggle" type="checkbox" checked />
               <span>Allow product analytics on this device</span>
             </label>
@@ -1234,7 +1234,7 @@
               <summary>Request account deletion</summary>
               <p class="muted">Sends a deletion request to the workspace admin. Your data is removed when the admin confirms via the Admin panel.</p>
               <form id="deletionForm" novalidate>
-                <label class="field">
+                <label class="field" for="deletionReason">
                   <span>Reason (optional)</span>
                   <textarea id="deletionReason" rows="3"></textarea>
                 </label>
@@ -1262,15 +1262,15 @@
               <p class="muted">Submit a ticket. Admins see it in the Admin → Support panel.</p>
             </div>
             <form id="supportForm" class="support-grid" novalidate>
-              <label class="field">
+              <label class="field" for="supportSubject">
                 <span>Subject</span>
                 <input id="supportSubject" required />
               </label>
-              <label class="field wide">
+              <label class="field wide" for="supportBody">
                 <span>Body</span>
                 <textarea id="supportBody" rows="4" required></textarea>
               </label>
-              <label class="field">
+              <label class="field" for="supportContactEmail">
                 <span>Reply email (optional)</span>
                 <input id="supportContactEmail" type="email" autocomplete="email" />
               </label>
@@ -1347,7 +1347,7 @@
                 <div id="cvBuilderPhotoPanel" class="cv-photo-row">
                   <img id="cvBuilderPhotoPreview" alt="Profile photo" class="cv-photo-preview" />
                   <div>
-                    <input id="cvBuilderPhotoInput" type="file" accept="image/png,image/jpeg,image/webp" hidden />
+                    <input id="cvBuilderPhotoInput" type="file" accept="image/png,image/jpeg,image/webp" hidden aria-label="Upload profile photo" />
                     <button id="cvBuilderPhotoBtn" class="btn" type="button">Upload photo</button>
                     <button id="cvBuilderPhotoRemove" class="btn btn-ghost cv-photo-remove" type="button">Remove</button>
                     <p id="cvBuilderPhotoStatus" class="muted small"></p>
@@ -1411,15 +1411,15 @@
               <button id="refreshUsersBtn" class="btn btn-ghost" type="button" data-i18n="admin.refresh">Refresh</button>
             </div>
             <form id="adminCreateUserForm" class="admin-create-grid" novalidate>
-              <label class="field">
+              <label class="field" for="newUserEmail">
                 <span data-i18n="admin.testers.email">Email</span>
                 <input id="newUserEmail" type="email" autocomplete="off" required />
               </label>
-              <label class="field">
+              <label class="field" for="newUserPassword">
                 <span data-i18n="admin.testers.password">Initial password</span>
                 <input id="newUserPassword" type="password" autocomplete="new-password" minlength="12" required placeholder="12 characters or more" />
               </label>
-              <label class="field">
+              <label class="field" for="newUserRole">
                 <span data-i18n="admin.testers.role">Role</span>
                 <select id="newUserRole">
                   <option value="member" data-i18n="admin.testers.member">Tester</option>
@@ -1439,11 +1439,11 @@
               </div>
             </div>
             <form id="adminInviteForm" class="admin-create-grid" novalidate>
-              <label class="field">
+              <label class="field" for="inviteEmail">
                 <span data-i18n="admin.testers.email">Email</span>
                 <input id="inviteEmail" type="email" autocomplete="off" required />
               </label>
-              <label class="field">
+              <label class="field" for="inviteRole">
                 <span data-i18n="admin.testers.role">Role</span>
                 <select id="inviteRole">
                   <option value="member" data-i18n="admin.testers.member">Tester</option>
@@ -1476,7 +1476,7 @@
               <button id="refreshEmailStatusBtn" class="btn btn-ghost" type="button" data-i18n="admin.refresh">Refresh</button>
             </div>
             <form id="testEmailForm" class="admin-create-grid" novalidate>
-              <label class="field">
+              <label class="field" for="testEmailTarget">
                 <span data-i18n="admin.email.testTarget">Send test email to</span>
                 <input id="testEmailTarget" type="email" placeholder="ops@example.com" />
               </label>
@@ -1499,11 +1499,11 @@
               <p class="muted" data-i18n="admin.subscription.lead">Set the active plan, seat count, and status. Stripe wiring is BLOCKED until credentials.</p>
             </div>
             <form id="adminBillingForm" class="admin-create-grid" novalidate>
-              <label class="field">
+              <label class="field" for="adminBillingPlan">
                 <span data-i18n="admin.subscription.plan">Plan</span>
                 <select id="adminBillingPlan"></select>
               </label>
-              <label class="field">
+              <label class="field" for="adminBillingStatus">
                 <span data-i18n="admin.subscription.status">Status</span>
                 <select id="adminBillingStatus">
                   <option value="active" data-i18n="admin.subscription.statusActive">Active</option>
@@ -1512,7 +1512,7 @@
                   <option value="cancelled" data-i18n="admin.subscription.statusCancelled">Cancelled</option>
                 </select>
               </label>
-              <label class="field">
+              <label class="field" for="adminBillingSeats">
                 <span data-i18n="admin.subscription.seats">Seats</span>
                 <input id="adminBillingSeats" type="number" min="1" max="500" value="5" />
               </label>
@@ -1564,7 +1564,7 @@
       <div class="cmdk">
         <div class="cmdk-input-row">
           <svg class="cmdk-icon" viewBox="0 0 20 20" aria-hidden="true"><circle cx="9" cy="9" r="6" fill="none" stroke="currentColor" stroke-width="2"/><path d="M14 14l4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-          <input id="cmdkInput" type="text" data-i18n-placeholder="cmdk.placeholder" placeholder="Search jobs, companies, settings…" autocomplete="off" spellcheck="false" />
+          <input id="cmdkInput" type="text" data-i18n-placeholder="cmdk.placeholder" placeholder="Search jobs, companies, settings…" autocomplete="off" spellcheck="false" aria-label="Search jobs, companies, settings" />
           <kbd class="cmdk-kbd" id="cmdkKbdHint">Esc</kbd>
         </div>
         <ul id="cmdkResults" class="cmdk-results" role="listbox" aria-label="Command palette results"></ul>
@@ -1587,11 +1587,11 @@
             <h3 data-i18n="wizard.step1.title">1. Add your CV</h3>
             <p class="muted" data-i18n="wizard.step1.lead">Optional — paste plain text or upload a file. We'll auto-suggest the best persona.</p>
             <div class="cv-upload-toolbar">
-              <input id="wizardCvFile" type="file" accept=".docx,.txt,.pdf" hidden />
+              <input id="wizardCvFile" type="file" accept=".docx,.txt,.pdf" hidden aria-label="Upload CV file" />
               <button id="wizardCvUploadBtn" class="btn" type="button" data-i18n="wizard.step1.upload">Upload .docx / .pdf / .txt</button>
               <span id="wizardCvStatus" class="muted small"></span>
             </div>
-            <textarea id="wizardCvText" rows="6" data-i18n-placeholder="wizard.step1.placeholder" placeholder="…or paste your CV here"></textarea>
+            <textarea id="wizardCvText" rows="6" data-i18n-placeholder="wizard.step1.placeholder" placeholder="…or paste your CV here" aria-label="CV text (paste or upload)"></textarea>
             <div class="wizard-actions">
               <button id="wizardSkipCv" class="btn btn-ghost" type="button" data-i18n="wizard.skip">Skip</button>
               <button id="wizardCvNext" class="btn btn-primary" type="button" data-i18n="wizard.next">Next</button>
@@ -1600,7 +1600,7 @@
           <li id="wizardStep2" class="wizard-step">
             <h3 data-i18n="wizard.step2.title">2. Confirm your persona</h3>
             <p class="muted" id="wizardPersonaHint" data-i18n="wizard.step2.lead">Pick what best describes the role you want. We pre-selected the closest match.</p>
-            <select id="wizardPersona"></select>
+            <select id="wizardPersona" aria-label="Persona selector"></select>
             <div class="wizard-actions">
               <button id="wizardBackPersona" class="btn btn-ghost" type="button" data-i18n="wizard.back">Back</button>
               <button id="wizardPersonaNext" class="btn btn-primary" type="button" data-i18n="wizard.next">Next</button>
@@ -1609,11 +1609,11 @@
           <li id="wizardStep3" class="wizard-step">
             <h3 data-i18n="wizard.step3.title">3. Tell us what you're looking for</h3>
             <p class="muted" data-i18n="wizard.step3.lead">A role keyword + a city. We watch the major aggregators daily and email you matches.</p>
-            <label class="field">
+            <label class="field" for="wizardRole">
               <span data-i18n="wizard.step3.role">Role keyword</span>
               <input id="wizardRole" placeholder="e.g. data analyst" />
             </label>
-            <label class="field">
+            <label class="field" for="wizardLocation">
               <span data-i18n="wizard.step3.location">City / region</span>
               <input id="wizardLocation" placeholder="e.g. Berlin" />
             </label>
