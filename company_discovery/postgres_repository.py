@@ -69,6 +69,7 @@ from .models import (
     DiscoveredJob,
     ImportedJob,
     PushSubscription,
+    Referral,
     SavedSearch,
     SupportTicket,
     UserProfile,
@@ -152,6 +153,8 @@ class PostgresCompanyDiscoveryRepository(InMemoryCompanyDiscoveryRepository):
         "user_profiles",
         "workspace_memberships",
         "push_subscriptions",
+        # phase2-backlog #11 (2026-05-22): full referral lifecycle.
+        "referrals",
     )
 
     def _create_schema(self) -> None:
@@ -362,6 +365,31 @@ class PostgresCompanyDiscoveryRepository(InMemoryCompanyDiscoveryRepository):
             )
             return result
 
+    # ------------------------------------------------------------------
+    # phase2-backlog #11 (2026-05-22): referral lifecycle on Postgres
+    # ------------------------------------------------------------------
+
+    @retry_on_lock()
+    def save_referral(self, referral: Referral) -> Referral:
+        with self._lock:
+            result = super().save_referral(referral)
+            self._upsert(
+                "referrals", referral.id, referral.user_id, None, asdict(referral)
+            )
+            return result
+
+    @retry_on_lock()
+    def delete_referral(self, referral_id: str) -> None:
+        with self._lock:
+            super().delete_referral(referral_id)
+            cur = self._connection.cursor()
+            cur.execute(
+                "DELETE FROM referrals WHERE id = %s",
+                (referral_id,),
+            )
+            self._connection.commit()
+            cur.close()
+
     @retry_on_lock()
     def save_user_profile(self, profile: UserProfile) -> UserProfile:
         with self._lock:
@@ -473,6 +501,8 @@ class PostgresCompanyDiscoveryRepository(InMemoryCompanyDiscoveryRepository):
                 ("user_profiles", UserProfile),
                 ("workspace_memberships", WorkspaceMembership),
                 ("push_subscriptions", PushSubscription),
+                # phase2-backlog #11 (2026-05-22): referrals
+                ("referrals", Referral),
             ):
                 cur.execute(f"SELECT payload FROM {table}")
                 rows = cur.fetchall()
@@ -547,6 +577,10 @@ class PostgresCompanyDiscoveryRepository(InMemoryCompanyDiscoveryRepository):
             UserProfile: super().save_user_profile,
             WorkspaceMembership: super().save_workspace_membership,
             PushSubscription: super().save_push_subscription,
+            # phase2-backlog #11 (2026-05-22): rehydrate referrals
+            # without re-persisting to DB (super() is the in-memory
+            # base class — writes only to the dict, not to PG).
+            Referral: super().save_referral,
         }
         method = dispatcher.get(factory)
         if method is not None:

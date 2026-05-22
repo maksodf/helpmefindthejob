@@ -19,6 +19,7 @@ from .models import (
     DiscoveredJob,
     ImportedJob,
     PushSubscription,
+    Referral,
     SavedSearch,
     SupportTicket,
     UserProfile,
@@ -45,6 +46,8 @@ class InMemoryCompanyDiscoveryRepository:
         self.user_profiles: dict[str, UserProfile] = {}  # keyed by user_id
         self.workspace_memberships: dict[str, WorkspaceMembership] = {}  # keyed by membership.id
         self.push_subscriptions: dict[str, PushSubscription] = {}  # keyed by subscription.id
+        # Phase 2 #11 (2026-05-22): referral lifecycle persistence.
+        self.referrals: dict[str, Referral] = {}  # keyed by referral.id
 
     def save_company(self, company: Company) -> Company:
         company.updated_at = now_utc()
@@ -203,6 +206,35 @@ class InMemoryCompanyDiscoveryRepository:
     def save_support_ticket(self, ticket: SupportTicket) -> SupportTicket:
         self.support_tickets[ticket.id] = ticket
         return ticket
+
+    # ------------------------------------------------------------------
+    # Phase 2 #11 (2026-05-22): referral lifecycle persistence
+    # ------------------------------------------------------------------
+
+    def save_referral(self, referral: Referral) -> Referral:
+        referral.updated_at = now_utc()
+        self.referrals[referral.id] = referral
+        return referral
+
+    def get_referral(self, referral_id: str) -> Referral | None:
+        return self.referrals.get(referral_id)
+
+    def list_referrals(
+        self,
+        user_id: str | None = None,
+        *,
+        status: str | None = None,
+    ) -> list[Referral]:
+        items = list(self.referrals.values())
+        if user_id:
+            items = [r for r in items if r.user_id == user_id]
+        if status:
+            items = [r for r in items if r.status == status]
+        items.sort(key=lambda r: r.created_at, reverse=True)
+        return items
+
+    def delete_referral(self, referral_id: str) -> None:
+        self.referrals.pop(referral_id, None)
 
     def list_support_tickets(self, user_id: str | None = None) -> list[SupportTicket]:
         tickets = list(self.support_tickets.values())

@@ -212,6 +212,56 @@ class SupportTicket:
     created_at: datetime = field(default_factory=now_utc)
 
 
+# Phase 2 #11 (2026-05-22): full referral lifecycle persistence.
+# The MCP `propose_referral` tool previously returned a stub
+# object with no persistence — the calling agent had to track
+# state itself. This dataclass + repo wiring give the user a
+# durable view of referrals issued FOR them so they can come
+# back later, see outstanding items, mark which ones they acted
+# on, and provide outcome data for the cost-saving doctrine.
+#
+# Status state machine:
+#   proposed → accepted   (user said yes; handoff is now active)
+#   proposed → declined   (user said no; record + drop)
+#   accepted → followed_up (user actually visited the target agent)
+#   * → expired           (no action within retention window; lifecycle close)
+REFERRAL_STATUSES = (
+    "proposed",
+    "accepted",
+    "declined",
+    "followed_up",
+    "expired",
+)
+
+
+@dataclass
+class Referral:
+    """One civic-agent referral, persisted per-user.
+
+    Mirrors the in-tool shape from `propose_referral` (HL7 FHIR
+    ServiceRequest subset) but adds the lifecycle status field so
+    the user can see + update each referral over time. The
+    ``supporting_info`` blob is opaque — the issuing agent puts
+    whatever JSON-serialisable structured context it wants there
+    (e.g., the originating user message that triggered the
+    referral).
+    """
+
+    user_id: str
+    target_agent: str
+    reason_code: str
+    source_agent: str = "helpmefindthejob"
+    intent: str = "proposed"  # FHIR ServiceRequest.intent
+    priority: str = "routine"  # FHIR ServiceRequest.priority
+    supporting_info: dict[str, Any] = field(default_factory=dict)
+    status: str = "proposed"  # one of REFERRAL_STATUSES
+    user_consent_required: bool = True
+    outcome_note: str = ""  # user-supplied free text on followup/decline
+    id: str = field(default_factory=lambda: new_id("ref"))
+    created_at: datetime = field(default_factory=now_utc)
+    updated_at: datetime = field(default_factory=now_utc)
+
+
 # Phase 2 #56 (2026-05-21): default fallback set of locales the
 # app guarantees support for. Real runtime support is broader —
 # :func:`available_locales` discovers any ``<code>.json`` bundle

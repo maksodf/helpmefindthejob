@@ -155,7 +155,10 @@ class MCPIntegrationE2E(unittest.TestCase):
         self.client.call("initialize", {})
         response = self.client.call("tools/list", {})
         tools = response["result"]["tools"]
-        self.assertEqual(len(tools), 13, msg="catalogue v0.2.0 has 13 tools")
+        # phase2-backlog #11 (2026-05-22) brought catalogue to 15 by
+        # adding list_referrals + update_referral_status for the
+        # full referral lifecycle.
+        self.assertEqual(len(tools), 15, msg="catalogue has 15 tools after #11")
         names = {tool["name"] for tool in tools}
         # Sanity: all 8 baseline + all 5 §2.3 tools are present.
         for required in (

@@ -377,6 +377,57 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
             "required": ["userId", "jobId", "outcomeType"],
         },
     },
+    # phase2-backlog #11 (2026-05-22): referral lifecycle.
+    # propose_referral now persists; list + update tools below
+    # let users + agents drive the lifecycle to completion.
+    {
+        "name": "list_referrals",
+        "description": "List referrals issued for a user. Optional status filter (proposed / accepted / declined / followed_up / expired) for the loosen-affordance flow + cost-saving doctrine outcome aggregation. Returns most-recent first.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "userId": {"type": "string"},
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "proposed",
+                        "accepted",
+                        "declined",
+                        "followed_up",
+                        "expired",
+                    ],
+                },
+                "limit": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 200,
+                },
+            },
+            "required": ["userId"],
+        },
+    },
+    {
+        "name": "update_referral_status",
+        "description": "Update an existing referral's lifecycle status. Allowed transitions: proposed→accepted, proposed→declined, accepted→followed_up, *→expired. Optional outcome_note free-text the user supplies. Returns the updated referral.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "userId": {"type": "string"},
+                "referralId": {"type": "string"},
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "accepted",
+                        "declined",
+                        "followed_up",
+                        "expired",
+                    ],
+                },
+                "outcomeNote": {"type": "string"},
+            },
+            "required": ["userId", "referralId", "status"],
+        },
+    },
 ]
 
 
@@ -503,15 +554,64 @@ class CompanyDiscoveryMCPTools:
         reason: str,
         context: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
-        """Emit a structured referral object the receiving agent can consume.
+        """Emit + persist a structured referral object.
 
-        No persistence: the calling agent is responsible for surfacing the
-        referral to the user and handing over on consent. The shape mirrors
-        a small subset of HL7 FHIR ServiceRequest (referral.intent / .priority /
-        .reasonCode / .supportingInfo) so the surface stays familiar to civic-
-        services integrators.
+        phase2-backlog #11 (2026-05-22): now persists into the
+        repository's referrals table so the user can come back and
+        see + act on outstanding referrals. The returned shape
+        still mirrors HL7 FHIR ServiceRequest for civic-services
+        integrator familiarity; the persisted record adds a
+        lifecycle ``status`` field (proposed → accepted / declined
+        → followed_up / expired). The full lifecycle is exercised
+        via ``list_referrals`` + ``update_referral_status``.
+
+        Falls back to the legacy stub shape (no persistence) if
+        the service doesn't expose a repository — keeps the tool
+        usable in any agent harness that constructs the service
+        without a backing store.
         """
 
+        from company_discovery.models import Referral
+
+        referral_model: Referral | None = None
+        # Try to persist via the repository when available
+        try:
+            repo = self.service.repository  # type: ignore[attr-defined]
+        except AttributeError:
+            repo = None
+        if repo is not None:
+            try:
+                referral_model = Referral(
+                    user_id=userId,
+                    target_agent=targetAgent,
+                    reason_code=reason,
+                    supporting_info=dict(context or {}),
+                )
+                repo.save_referral(referral_model)
+            except Exception:  # noqa: BLE001 - degrade to stub if persistence fails
+                referral_model = None
+
+        if referral_model is not None:
+            return {
+                "status": "ok",
+                "referral": {
+                    "referralId": referral_model.id,
+                    "schemaVersion": "0.1.0",
+                    "issuedAt": referral_model.created_at.isoformat(),
+                    "sourceAgent": referral_model.source_agent,
+                    "targetAgent": referral_model.target_agent,
+                    "userId": referral_model.user_id,
+                    "intent": referral_model.intent,
+                    "priority": referral_model.priority,
+                    "reasonCode": referral_model.reason_code,
+                    "supportingInfo": referral_model.supporting_info,
+                    "userConsentRequired": referral_model.user_consent_required,
+                    "status": referral_model.status,
+                },
+            }
+
+        # Legacy stub path: no repo wired — keep the structured
+        # response shape so existing callers don't break.
         return {
             "status": "ok",
             "referral": {
@@ -714,6 +814,144 @@ class CompanyDiscoveryMCPTools:
         except Exception:  # noqa: BLE001 - best-effort
             pass
         return {"status": "ok", "event": event}
+
+    # ------------------------------------------------------------------
+    # phase2-backlog #11 (2026-05-22): referral lifecycle
+    # ------------------------------------------------------------------
+
+    def list_referrals(
+        self,
+        userId: str,
+        status: str | None = None,
+        limit: int = 50,
+    ) -> dict[str, Any]:
+        """Return the user's referrals, optionally filtered by
+        status, most-recent first."""
+
+        try:
+            repo = self.service.repository  # type: ignore[attr-defined]
+        except AttributeError:
+            return {
+                "status": "unavailable",
+                "error": "no repository configured",
+                "referrals": [],
+            }
+        from company_discovery.models import REFERRAL_STATUSES
+
+        if status is not None and status not in REFERRAL_STATUSES:
+            return {
+                "status": "invalid_arguments",
+                "error": f"status must be one of {list(REFERRAL_STATUSES)}",
+                "referrals": [],
+            }
+        if limit < 1 or limit > 200:
+            limit = 50
+        items = repo.list_referrals(user_id=userId, status=status)[:limit]
+        return {
+            "status": "ok",
+            "referrals": [
+                {
+                    "referralId": r.id,
+                    "userId": r.user_id,
+                    "sourceAgent": r.source_agent,
+                    "targetAgent": r.target_agent,
+                    "intent": r.intent,
+                    "priority": r.priority,
+                    "reasonCode": r.reason_code,
+                    "supportingInfo": r.supporting_info,
+                    "status": r.status,
+                    "userConsentRequired": r.user_consent_required,
+                    "outcomeNote": r.outcome_note,
+                    "issuedAt": r.created_at.isoformat(),
+                    "updatedAt": r.updated_at.isoformat(),
+                }
+                for r in items
+            ],
+        }
+
+    def update_referral_status(
+        self,
+        userId: str,
+        referralId: str,
+        status: str,
+        outcomeNote: str | None = None,
+    ) -> dict[str, Any]:
+        """Advance a referral's lifecycle status with validation.
+
+        Allowed transitions (enforced here):
+        - proposed → accepted
+        - proposed → declined
+        - accepted → followed_up
+        - any → expired
+
+        Cross-user attack defense: the caller's ``userId`` must
+        match the referral's stored ``user_id`` — a malicious
+        caller can't update someone else's referral.
+        """
+
+        from company_discovery.models import REFERRAL_STATUSES
+
+        # Allowed transitions per source status
+        allowed_transitions = {
+            "proposed": {"accepted", "declined", "expired"},
+            "accepted": {"followed_up", "declined", "expired"},
+            "declined": {"expired"},
+            "followed_up": {"expired"},
+            "expired": set(),
+        }
+
+        if status not in REFERRAL_STATUSES:
+            return {
+                "status": "invalid_arguments",
+                "error": f"status must be one of {list(REFERRAL_STATUSES)}",
+            }
+        try:
+            repo = self.service.repository  # type: ignore[attr-defined]
+        except AttributeError:
+            return {"status": "unavailable", "error": "no repository configured"}
+
+        referral = repo.get_referral(referralId)
+        if referral is None:
+            return {"status": "not_found", "error": "no such referral"}
+
+        # Cross-tenant defense: only the referral's owner can update
+        if referral.user_id != userId:
+            return {"status": "not_found", "error": "no such referral"}
+
+        # Transition validation
+        if status not in allowed_transitions.get(referral.status, set()):
+            return {
+                "status": "invalid_transition",
+                "error": (
+                    f"cannot transition from {referral.status!r} to "
+                    f"{status!r}"
+                ),
+                "currentStatus": referral.status,
+            }
+
+        # Apply
+        referral.status = status
+        # intent mirror — keeps the FHIR-aligned outward shape
+        # consistent (intent goes proposed → directive when
+        # accepted, completed when followed_up)
+        if status == "accepted":
+            referral.intent = "directive"
+        elif status == "followed_up":
+            referral.intent = "completed"
+        if outcomeNote:
+            referral.outcome_note = outcomeNote[:1000]
+        repo.save_referral(referral)
+        return {
+            "status": "ok",
+            "referral": {
+                "referralId": referral.id,
+                "userId": referral.user_id,
+                "status": referral.status,
+                "intent": referral.intent,
+                "outcomeNote": referral.outcome_note,
+                "updatedAt": referral.updated_at.isoformat(),
+            },
+        }
 
 
 # ---------------------------------------------------------------------------

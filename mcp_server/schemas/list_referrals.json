@@ -1,0 +1,30 @@
+{
+  "name": "list_referrals",
+  "description": "List referrals issued for a user. Optional status filter (proposed / accepted / declined / followed_up / expired) for the loosen-affordance flow + cost-saving doctrine outcome aggregation. Returns most-recent first.",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "userId": {
+        "type": "string"
+      },
+      "status": {
+        "type": "string",
+        "enum": [
+          "proposed",
+          "accepted",
+          "declined",
+          "followed_up",
+          "expired"
+        ]
+      },
+      "limit": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 200
+      }
+    },
+    "required": [
+      "userId"
+    ]
+  }
+}

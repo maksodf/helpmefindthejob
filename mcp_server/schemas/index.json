@@ -4,7 +4,7 @@
     "name": "helpmefindthejob",
     "version": "0.1.0"
   },
-  "toolCount": 13,
+  "toolCount": 15,
   "tools": [
     "suggest_relevant_companies",
     "add_company_to_watchlist",
@@ -18,6 +18,8 @@
     "propose_referral",
     "query_esco_skill",
     "export_eures_compatible",
-    "record_user_outcome"
+    "record_user_outcome",
+    "list_referrals",
+    "update_referral_status"
   ]
 }

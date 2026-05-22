@@ -97,6 +97,18 @@ the 65 inventory items. The 53 remaining items are catalogued below.
 |---|---|---|---|
 | 14 | Cosign keyless via GitHub Actions OIDC (cosign model a). Removes the `--insecure-ignore-tlog` flag and the long-lived private key. Planned for v0.2.0+. | 1 d | 2026 Q4 |
 
+## Referral network completion (#11, 2026-05-22 close)
+
+#11 was on the original "no referral network beyond a stub MCP tool" gap. **CLOSED 2026-05-22**:
+
+- **Model**: new `Referral` dataclass at `company_discovery/models.py` mirrors HL7 FHIR ServiceRequest (sourceAgent / targetAgent / intent / priority / reasonCode / supportingInfo / userConsentRequired) + adds a 5-state lifecycle (`proposed → accepted / declined → followed_up → expired`). `REFERRAL_STATUSES` catalogue constant pinned.
+- **Persistence**: InMemory + Postgres repos both gain `save_referral` / `get_referral` / `list_referrals` / `delete_referral`. Postgres path adds `referrals` to `_TABLES` (12 tables now) + `Referral` to the `_load` + `_rehydrate` dispatcher (panic-round caught: dispatcher silently dropped Referral instances on rehydration → process restart lost visibility).
+- **MCP tool extension**: `propose_referral` now actually persists (with graceful stub fallback when no repo wired). Two new tools: `list_referrals(userId, status?, limit?)` returns most-recent-first; `update_referral_status(userId, referralId, status, outcomeNote?)` enforces the lifecycle state machine + cross-tenant defense (a user can only update their OWN referrals; non-owner gets `not_found` not `forbidden` — never confirm existence). FHIR-aligned intent updates in lockstep (proposed→directive on accept, →completed on follow-up). Catalogue grows v0.2.0 → 15 tools.
+- **REST surface**: `GET /api/referrals` (with optional `?status=...`) lists; `PATCH /api/referrals/<id>` advances lifecycle. Auth-gated + cross-tenant isolated via the MCP-tool layer.
+- **Per-tool schema files**: `mcp_server/schemas/list_referrals.json` + `mcp_server/schemas/update_referral_status.json` + `index.json` manifest updated to 15-tool count via the export script.
+- **Tests (+35)** at `tests/test_referral_lifecycle.py`: model defaults + status catalogue × 2; repository roundtrip (save/get/list/filter/delete) × 5; propose persistence (returns persisted ID, supports context, no-repo fallback) × 5; list with filters × 5; full lifecycle state machine including allowed + rejected transitions × 9; cross-tenant isolation × 1; MCP catalogue extension × 4; live-Postgres roundtrip × 3 (persistence, rehydration on reopen, delete). Pre-existing test_phase11_mcp_tools_v2 catalogue count + ref- prefix assertions updated (now ref_ underscore-convention per `new_id`).
+- **Real bug caught + fixed at root**: PG `_rehydrate` dispatcher had no entry for Referral — process restart would drop in-memory referrals while DB rows persisted. Caught by live-PG `test_referral_rehydrates_on_reopen` test. Fixed by adding Referral entry to the dispatcher with a panic-round comment so future agents don't regress.
+
 ## Observability substrate (#17, 2026-05-22 close)
 
 #17 was on the original "no observability stack wired in" gap. **CLOSED 2026-05-22**:

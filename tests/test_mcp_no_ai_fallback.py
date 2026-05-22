@@ -88,10 +88,12 @@ class TemplatedFallbackForEveryTool(unittest.TestCase):
         self.company_id = company_payload["company"]["id"]
 
     def test_schema_catalogue_has_expected_tool_count(self) -> None:
-        # Drift guard: any time the v0.2.0 catalogue size changes, this
+        # Drift guard: any time the catalogue size changes, this
         # test fails so the operator must explicitly update the
         # fallback verification coverage below.
-        self.assertEqual(len(TOOL_SCHEMAS), 13, "v0.2.0 catalogue size")
+        # phase2-backlog #11 (2026-05-22) added list_referrals +
+        # update_referral_status, bringing the catalogue to 15.
+        self.assertEqual(len(TOOL_SCHEMAS), 15, "catalogue size after #11")
 
     def test_suggest_relevant_companies_no_ai(self) -> None:
         out = self.tools.suggest_relevant_companies(
@@ -249,6 +251,22 @@ class TemplatedFallbackForEveryTool(unittest.TestCase):
             note="Recruiter reached out",
         )
         self.assertEqual(out["status"], "ok")
+
+    def test_list_referrals_no_ai(self) -> None:
+        # phase2-backlog #11: empty-state path returns [] cleanly
+        out = self.tools.list_referrals(userId="u-no-ai")
+        self.assertEqual(out["status"], "ok")
+        self.assertIsInstance(out["referrals"], list)
+
+    def test_update_referral_status_no_ai(self) -> None:
+        # phase2-backlog #11: not_found path returns gracefully
+        # rather than crashing when the referral doesn't exist
+        out = self.tools.update_referral_status(
+            userId="u-no-ai",
+            referralId="ref-does-not-exist",
+            status="accepted",
+        )
+        self.assertEqual(out["status"], "not_found")
 
     def test_every_tool_response_has_status_field(self) -> None:
         """Contract: every tool response is a dict with a 'status'

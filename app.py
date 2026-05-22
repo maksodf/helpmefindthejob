@@ -7688,6 +7688,33 @@ class Handler(BaseHTTPRequestHandler):
             if parsed.path == "/api/saved-searches":
                 self.send_json({"savedSearches": STATE._saved_searches_with_alerts(user_id)})
                 return
+            if parsed.path == "/api/referrals":
+                # phase2-backlog #11: user-facing referrals view.
+                # Surfaces lifecycle for referrals issued FOR this
+                # user so they can accept / decline / mark followed-
+                # up. Auth-gated (already in the auth-gated section).
+                from urllib.parse import parse_qs
+
+                qs = parse_qs(parsed.query or "")
+                status_filter = (qs.get("status", [""])[0] or "").strip() or None
+                # MCP-tool layer carries the validation + shape
+                from company_discovery.mcp_tools import (
+                    CompanyDiscoveryMCPTools,
+                )
+
+                tools = CompanyDiscoveryMCPTools(STATE.service)
+                payload = tools.list_referrals(
+                    userId=user_id, status=status_filter
+                )
+                if payload.get("status") == "invalid_arguments":
+                    self.send_error_json(
+                        HTTPStatus.BAD_REQUEST,
+                        "invalid_arguments",
+                        payload.get("error", "invalid status filter"),
+                    )
+                    return
+                self.send_json(payload)
+                return
             if parsed.path == "/api/billing":
                 self.send_json(
                     {"subscription": STATE.get_subscription().to_dict(), "plans": plans_payload()}
@@ -11231,6 +11258,54 @@ class Handler(BaseHTTPRequestHandler):
                 payload = to_snake_case_payload(self.read_json_body())
                 company = STATE.service.update_company(data_user_id, parts[2], **payload)
                 self.send_json({"company": company, "bootstrap": STATE.bootstrap(user_id)})
+                return
+            if len(parts) == 3 and parts[:2] == ["api", "referrals"]:
+                # phase2-backlog #11: PATCH /api/referrals/<id>
+                # advances the lifecycle. Body: {status, outcomeNote?}.
+                # Cross-tenant defense lives in the MCP-tool layer
+                # (update_referral_status checks user_id match).
+                payload = self.read_json_body()
+                from company_discovery.mcp_tools import (
+                    CompanyDiscoveryMCPTools,
+                )
+
+                tools = CompanyDiscoveryMCPTools(STATE.service)
+                result = tools.update_referral_status(
+                    userId=user_id,
+                    referralId=parts[2],
+                    status=str(payload.get("status", "")),
+                    outcomeNote=payload.get("outcomeNote"),
+                )
+                rstatus = result.get("status")
+                if rstatus == "not_found":
+                    self.send_error_json(
+                        HTTPStatus.NOT_FOUND,
+                        "not_found",
+                        result.get("error", "no such referral"),
+                    )
+                    return
+                if rstatus == "invalid_arguments":
+                    self.send_error_json(
+                        HTTPStatus.BAD_REQUEST,
+                        "invalid_arguments",
+                        result.get("error", "invalid status"),
+                    )
+                    return
+                if rstatus == "invalid_transition":
+                    self.send_json(
+                        {
+                            "error": {
+                                "code": "invalid_transition",
+                                "message": result.get(
+                                    "error", "invalid lifecycle transition"
+                                ),
+                                "currentStatus": result.get("currentStatus"),
+                            }
+                        },
+                        HTTPStatus.CONFLICT,
+                    )
+                    return
+                self.send_json(result)
                 return
             self.send_error_json(HTTPStatus.NOT_FOUND, "not_found", "Unknown endpoint")
         except sqlite3.Error as error:

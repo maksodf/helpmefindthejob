@@ -66,7 +66,9 @@ class HousingStubDemoRuns(unittest.TestCase):
         self.assertIn("helpmefindthejob", self.stdout)
 
     def test_tools_list_returned_expected_catalogue(self):
-        self.assertIn("server advertises 13 tools", self.stdout)
+        # phase2-backlog #11 (2026-05-22) added list_referrals +
+        # update_referral_status, bringing the catalogue to 15.
+        self.assertIn("server advertises 15 tools", self.stdout)
         for tool in (
             "propose_referral",
             "get_user_profile_for_consent",

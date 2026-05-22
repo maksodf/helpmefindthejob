@@ -73,8 +73,10 @@ class CatalogueRegistrationTests(unittest.TestCase):
         for tool_name in self.NEW_TOOLS:
             self.assertIn(tool_name, names, msg=tool_name)
 
-    def test_catalogue_count_now_thirteen(self) -> None:
-        self.assertEqual(len(TOOL_SCHEMAS), 13)
+    def test_catalogue_count_now_fifteen(self) -> None:
+        # phase2-backlog #11 (2026-05-22) added list_referrals +
+        # update_referral_status, bringing catalogue to 15.
+        self.assertEqual(len(TOOL_SCHEMAS), 15)
 
     def test_every_new_tool_has_callable_method(self) -> None:
         tools, _ = _new_tools_for_test()
@@ -204,7 +206,12 @@ class ProposeReferralTests(unittest.TestCase):
         self.assertEqual(ref["userConsentRequired"], True)
         self.assertEqual(ref["intent"], "proposed")
         self.assertEqual(ref["priority"], "routine")
-        self.assertTrue(ref["referralId"].startswith("ref-"))
+        # phase2-backlog #11 (2026-05-22): persisted IDs use the
+        # ``new_id`` underscore convention (``ref_<uuid>``). Legacy
+        # stub path (when no repo wired) previously used ``ref-``.
+        self.assertTrue(
+            ref["referralId"].startswith("ref_") or ref["referralId"].startswith("ref-")
+        )
 
     def test_unique_referral_ids(self) -> None:
         first = self.tools.propose_referral(userId="u-1", targetAgent="x", reason="r")["referral"][
