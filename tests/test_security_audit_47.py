@@ -188,7 +188,7 @@ class SecurityHeadersResponse(unittest.TestCase):
         header_dict = dict(captured)
         self.assertEqual(header_dict.get("X-Content-Type-Options"), "nosniff")
         self.assertEqual(header_dict.get("X-Frame-Options"), "DENY")
-        self.assertEqual(header_dict.get("Referrer-Policy"), "same-origin")
+        self.assertEqual(header_dict.get("Referrer-Policy"), "strict-origin-when-cross-origin")
         self.assertEqual(
             header_dict.get("Cross-Origin-Opener-Policy"), "same-origin"
         )
