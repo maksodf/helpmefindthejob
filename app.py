@@ -6491,16 +6491,12 @@ class Handler(BaseHTTPRequestHandler):
         # OWASP 2024.
         self.send_header("Cross-Origin-Opener-Policy", "same-origin")
         self.send_header("Cross-Origin-Resource-Policy", "same-origin")
-        # HSTS — only sent when the operator has explicitly marked
-        # this deployment as HTTPS-only. Sending HSTS over plain HTTP
-        # is a no-op (browsers ignore it on non-secure transport),
-        # but the explicit env gate documents intent and keeps the
-        # local dev experience clean.
-        if _hsts_enabled():
-            self.send_header(
-                "Strict-Transport-Security",
-                "max-age=63072000; includeSubDomains",
-            )
+        # HSTS is emitted by Caddy at the edge (deploy/Caddyfile);
+        # the Python app no longer sends it to avoid the duplicate-
+        # header bug caught by AUDIT-14 (2026-05-22). Operator gate
+        # HELPMEFINDTHEJOB_HSTS is retained for documentation but
+        # no longer wired here — Caddy always emits HSTS when serving
+        # HTTPS, and Caddy is the only HTTPS terminator in prod.
         self.send_header(
             "Content-Security-Policy",
             "default-src 'self'; "

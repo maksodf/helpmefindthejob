@@ -9,7 +9,9 @@ demo.helpmefindthejob.org, helpmefindthejob.org {
 	encode zstd gzip
 	reverse_proxy helpmefindthejob:8765
 	header {
-		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+		-Server
+		Server "Helpmefindthejob"
 	}
 }
 
