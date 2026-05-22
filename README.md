@@ -1,16 +1,16 @@
 # Helpmefindthejob
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
-[![tests](https://github.com/maksodf/helpmefindthejob/actions/workflows/test.yml/badge.svg?branch=claude/project-analysis-bpHCo)](https://github.com/maksodf/helpmefindthejob/actions/workflows/test.yml)
-[![quality](https://github.com/maksodf/helpmefindthejob/actions/workflows/quality.yml/badge.svg?branch=claude/project-analysis-bpHCo)](https://github.com/maksodf/helpmefindthejob/actions/workflows/quality.yml)
-[![MCP integration](https://github.com/maksodf/helpmefindthejob/actions/workflows/mcp-integration.yml/badge.svg?branch=claude/project-analysis-bpHCo)](https://github.com/maksodf/helpmefindthejob/actions/workflows/mcp-integration.yml)
-[![Fresh-clone install](https://github.com/maksodf/helpmefindthejob/actions/workflows/fresh-clone-install.yml/badge.svg?branch=claude/project-analysis-bpHCo)](https://github.com/maksodf/helpmefindthejob/actions/workflows/fresh-clone-install.yml)
+[![tests](https://github.com/maksodf/helpmefindthejob/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/maksodf/helpmefindthejob/actions/workflows/test.yml)
+[![quality](https://github.com/maksodf/helpmefindthejob/actions/workflows/quality.yml/badge.svg?branch=main)](https://github.com/maksodf/helpmefindthejob/actions/workflows/quality.yml)
+[![MCP integration](https://github.com/maksodf/helpmefindthejob/actions/workflows/mcp-integration.yml/badge.svg?branch=main)](https://github.com/maksodf/helpmefindthejob/actions/workflows/mcp-integration.yml)
+[![Fresh-clone install](https://github.com/maksodf/helpmefindthejob/actions/workflows/fresh-clone-install.yml/badge.svg?branch=main)](https://github.com/maksodf/helpmefindthejob/actions/workflows/fresh-clone-install.yml)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/maksodf/helpmefindthejob/badge)](https://securityscorecards.dev/viewer/?uri=github.com/maksodf/helpmefindthejob)
 [![codecov](https://codecov.io/gh/maksodf/helpmefindthejob/branch/claude%2Fproject-analysis-bpHCo/graph/badge.svg)](https://codecov.io/gh/maksodf/helpmefindthejob)
 [![Release](https://img.shields.io/badge/release-pre--v0.1.0-lightgrey.svg)](#)
 [![Languages](https://img.shields.io/badge/languages-EN%20%2B%20DE-informational.svg)](static/i18n/)
 [![MCP](https://img.shields.io/badge/MCP-2024--11--05-blueviolet.svg)](https://modelcontextprotocol.io)
-[![Docs](https://github.com/maksodf/helpmefindthejob/actions/workflows/docs-publish.yml/badge.svg?branch=claude/project-analysis-bpHCo)](https://maksodf.github.io/helpmefindthejob/)
+[![Docs](https://github.com/maksodf/helpmefindthejob/actions/workflows/docs-publish.yml/badge.svg?branch=main)](https://maksodf.github.io/helpmefindthejob/)
 
 > Aïcha is a Tunisian-trained registered nurse working through §16d
 > Anerkennung in Berlin — clinically capable, German at B1 climbing
