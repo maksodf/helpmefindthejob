@@ -106,6 +106,14 @@
             <div class="label">Response time</div>
             <div id="appLatency" class="value">—</div>
           </div>
+          <div class="status-card">
+            <div class="label">Uptime (24h)</div>
+            <div id="uptime24h" class="value">—</div>
+          </div>
+          <div class="status-card">
+            <div class="label">Uptime (7d)</div>
+            <div id="uptime7d" class="value">—</div>
+          </div>
         </div>
       </section>
 
@@ -141,11 +149,33 @@
       const appVersion = document.getElementById("appVersion");
       const appStorage = document.getElementById("appStorage");
       const appLatency = document.getElementById("appLatency");
+      const uptime24h = document.getElementById("uptime24h");
+      const uptime7d = document.getElementById("uptime7d");
 
       function setOverall(state, text) {
         overall.classList.remove("ok", "warn", "bad");
         overall.classList.add(state);
         overall.textContent = text;
+      }
+
+      function formatUptime(payload) {
+        if (!payload || payload.uptimePercent == null) {
+          return payload && payload.snapshotCount === 0 ? "no data yet" : "—";
+        }
+        return `${payload.uptimePercent.toFixed(2)}%`;
+      }
+
+      async function loadUptimeHistory() {
+        try {
+          const [r24, r7d] = await Promise.all([
+            fetch("/api/health/history?window=24", { cache: "no-store" }),
+            fetch("/api/health/history?window=168", { cache: "no-store" }),
+          ]);
+          if (r24.ok) uptime24h.textContent = formatUptime(await r24.json());
+          if (r7d.ok) uptime7d.textContent = formatUptime(await r7d.json());
+        } catch (_) {
+          // best-effort — leave dashes
+        }
       }
 
       async function tick() {
@@ -177,6 +207,8 @@
           appStatus.textContent = "unreachable";
           appLatency.textContent = `${latency} ms (timeout/error)`;
         }
+        // Refresh uptime tallies alongside the live check
+        loadUptimeHistory();
       }
 
       tick();

@@ -196,6 +196,16 @@ REQUIRE_EMAIL_VERIFICATION = (
 ).strip().casefold() in ("true", "1", "yes")
 APP_PUBLIC_URL = get_env("HELPMEFINDTHEJOB_PUBLIC_URL", "DIRECTJOB_PUBLIC_URL") or ""
 
+# phase2-backlog #30: cap the health-snapshot ring buffer.
+# ~5000 entries = ~42h of 30s polling from one source; ~17.5h
+# from 4 concurrent sources (typical: status page tab + uptime
+# monitor + 2 ops dashboards). Empirically the /status page
+# needs at most last-7d (= 20160 snapshots at 30s polling, but
+# we down-sample to 5000 for the UI which is plenty for
+# rolling-uptime arithmetic). Adjust if a deployer reports the
+# window is too short.
+MAX_HEALTH_SNAPSHOTS = 5000
+
 
 def _xss_safe_jsonld(payload: Any, json_module) -> str:
     """Serialise ``payload`` as JSON suitable for embedding inside a
@@ -567,6 +577,15 @@ class AppState:
         # filesystem creation.
         self._cost_metrics_log = None
         self._cost_metrics_log_lock = Lock()
+        # phase2-backlog #30: bounded in-memory ring buffer for
+        # /api/health snapshots — backs the rolling-uptime view
+        # at /api/health/history + the /status page. Bounded to
+        # MAX_HEALTH_SNAPSHOTS so unbounded /status polling can't
+        # consume RAM. Resets on process restart by design —
+        # durable uptime evidence comes from external monitors
+        # per the SLA template.
+        self._health_snapshots: list[dict[str, Any]] = []
+        self._health_snapshots_lock = Lock()
         self._active_lock = Lock()
         self._active_company_scans: set[tuple[str, str]] = set()
         self._login_lock = Lock()
@@ -1569,6 +1588,106 @@ class AppState:
         if detailed:
             payload["subsystems"] = self._health_subsystems()
         return payload
+
+    def record_health_snapshot(self, payload: dict[str, Any]) -> None:
+        """phase2-backlog #30: append a health snapshot to the
+        in-memory ring buffer the /api/health/history surface
+        reads from.
+
+        Design choice: a bounded RAM ring buffer (NOT the
+        analytics_events DB table). Status-page polling every 30s
+        from open browser tabs + external uptime monitors would
+        otherwise generate ~2880 events/day per source — fast
+        unbounded growth of a table that's never garbage-
+        collected. The ring buffer caps memory at MAX_HEALTH_
+        SNAPSHOTS entries (~5000 = ~42h of 30s polling from one
+        source; ~17.5h from 4 sources). Older entries fall off
+        the back automatically.
+
+        Best-effort: never raises into the caller (the /api/health
+        endpoint must stay up even if the buffer append fails).
+        Records the minimum needed to reconstruct uptime — status
+        + storage kind + scheduler-active count. No PII; no
+        secrets.
+        """
+
+        from datetime import datetime, timezone
+
+        try:
+            snapshot = {
+                "at": datetime.now(timezone.utc).isoformat(),
+                "status": payload.get("status", "unknown"),
+                "storage": payload.get("storage", "unknown"),
+                "schedulerActiveJobs": int(payload.get("schedulerActiveJobs", 0)),
+            }
+            with self._health_snapshots_lock:
+                self._health_snapshots.append(snapshot)
+                # Bounded ring buffer
+                if len(self._health_snapshots) > MAX_HEALTH_SNAPSHOTS:
+                    # Drop the oldest 10% in one pass so the cap
+                    # check isn't hot-looped on every append
+                    drop = MAX_HEALTH_SNAPSHOTS // 10
+                    self._health_snapshots = self._health_snapshots[drop:]
+        except Exception:  # noqa: BLE001 - telemetry must never break /api/health
+            pass
+
+    def health_history(self, *, window_hours: int = 24) -> dict[str, Any]:
+        """phase2-backlog #30: rolling-uptime history surface.
+
+        Returns a JSON payload with:
+
+        - ``windowHours``: the requested window
+        - ``snapshots``: list of recent health snapshots (each is
+          ``{at, status, storage, schedulerActiveJobs}``)
+        - ``uptimePercent``: rolling uptime % over the window
+        - ``snapshotCount``: number of snapshots in the window
+        - ``okCount``: number of snapshots with status == "ok"
+
+        Empty window (no snapshots yet) returns ``uptimePercent =
+        None`` so the UI can show "no data yet" rather than a
+        misleading 0%.
+
+        Backed by the in-memory ring buffer (NOT the DB) — see
+        ``record_health_snapshot`` for the design rationale. A
+        process restart resets the history; deployers needing
+        durable uptime evidence subscribe to an external monitor
+        per the SLA template § 2.
+        """
+
+        from datetime import datetime, timedelta, timezone
+
+        cutoff = datetime.now(timezone.utc) - timedelta(hours=window_hours)
+        snapshots: list[dict[str, Any]] = []
+        try:
+            with self._health_snapshots_lock:
+                buffer_copy = list(self._health_snapshots)
+            for snap in buffer_copy:
+                # Snapshot 'at' is ISO 8601 — parse for comparison
+                try:
+                    at = datetime.fromisoformat(snap["at"])
+                except (ValueError, KeyError, TypeError):
+                    continue
+                if at.tzinfo is None:
+                    at = at.replace(tzinfo=timezone.utc)
+                if at < cutoff:
+                    continue
+                snapshots.append(snap)
+        except Exception:  # noqa: BLE001 - degrade gracefully
+            pass
+        snapshots.sort(key=lambda s: s["at"])
+        # Cap returned snapshots to keep payload small for the SPA
+        if len(snapshots) > 500:
+            snapshots = snapshots[-500:]
+        ok_count = sum(1 for s in snapshots if s["status"] == "ok")
+        total = len(snapshots)
+        uptime_pct = round(100.0 * ok_count / total, 3) if total > 0 else None
+        return {
+            "windowHours": window_hours,
+            "snapshotCount": total,
+            "okCount": ok_count,
+            "uptimePercent": uptime_pct,
+            "snapshots": snapshots,
+        }
 
     def _storage_kind(self) -> str:
         """Reports the actual primary-repository backend in use.
@@ -6601,9 +6720,33 @@ class Handler(BaseHTTPRequestHandler):
 
                 qs = parse_qs(parsed.query or "")
                 detailed = (qs.get("detailed", ["0"])[0] or "0").lower() in ("1", "true", "yes")
-                self.send_json(
-                    STATE.health(session.user.id if session else None, detailed=detailed)
-                )
+                payload = STATE.health(session.user.id if session else None, detailed=detailed)
+                # phase2-backlog #30: record every public health
+                # check into the analytics-events stream so the
+                # uptime-history endpoint + the /status page can
+                # compute rolling uptime. Best-effort — never
+                # raises into the response path.
+                try:
+                    STATE.record_health_snapshot(payload)
+                except Exception:  # noqa: BLE001 - telemetry must never break the health endpoint
+                    pass
+                self.send_json(payload)
+                return
+            if parsed.path == "/api/health/history":
+                # phase2-backlog #30: uptime-aware status surface.
+                # Returns the last N health snapshots from the
+                # analytics-events store + a rolling uptime
+                # summary. Public, no-auth — same posture as
+                # /api/health itself.
+                from urllib.parse import parse_qs
+
+                qs = parse_qs(parsed.query or "")
+                try:
+                    window = int(qs.get("window", ["24"])[0])
+                except (ValueError, TypeError):
+                    window = 24
+                window = max(1, min(window, 720))  # clamp to 1h–30d
+                self.send_json(STATE.health_history(window_hours=window))
                 return
             if parsed.path == "/api/site-config":
                 # Public, no-auth endpoint that surfaces the operator-set

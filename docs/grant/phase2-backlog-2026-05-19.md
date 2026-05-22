@@ -97,6 +97,15 @@ the 65 inventory items. The 53 remaining items are catalogued below.
 |---|---|---|---|
 | 14 | Cosign keyless via GitHub Actions OIDC (cosign model a). Removes the `--insecure-ignore-tlog` flag and the long-lived private key. Planned for v0.2.0+. | 1 d | 2026 Q4 |
 
+## SLA + status-page surface (#30, 2026-05-22 close)
+
+#30 was originally on the operator-side "no SLA template / status page" gap. **CLOSED 2026-05-22**:
+
+- **SLA template** at [`docs/SLA-template.md`](../SLA-template.md) — procurement-ready 3-tier uptime template (Community 99.0% / Standard 99.5% / Institutional 99.9%), performance targets (p50/p95/p99 per endpoint class), incident-severity matrix (P0/P1/P2/P3 with first-response + resolution targets), GDPR Art. 28 processor/controller roles, RPO 24h / RTO 8h, maintenance-window policy, reporting cadence, SLA-credits appendix, force-majeure carve-outs, incident-contact registry.
+- **Uptime-aware status page**: new `/api/health/history` endpoint reads from a **bounded in-memory ring buffer** (`MAX_HEALTH_SNAPSHOTS = 5000`); every public `/api/health` hit appends a snapshot. The /status page renders 24h + 7d rolling-uptime % alongside the live check. **Panic-round root-cause fix**: original design wrote to `analytics_events` on every hit — unbounded growth with status-page polling — refactored to bounded RAM-only ring buffer before commit. Durable evidence comes from external monitors per SLA § 2.
+- **Real-bug catches at root during the slice**: (a) `event.at` field name (analytics events use `created_at`) — except-Exception swallowed the AttributeError silently, yielded 0 snapshots; (b) unbounded-growth design flaw caught in panic round 4.
+- **Tests (+30)** at `tests/test_sla_and_uptime_history.py`: SLA template content × 12 (template marker, uptime tiers, performance targets, severity matrix, Art. 28 roles, RPO/RTO, maintenance window, force majeure, credits, contact registry, DPA cross-link); source-level wiring × 5 (helper methods, route registration, window clamp); live end-to-end × 7 (history shape, hit-accrues-snapshot, uptime computation, window clamping low+high+invalid, snapshot shape); ring-buffer boundedness × 3 (cap enforced, constant present, in-memory not DB); status-page wiring × 3 (cards, history endpoint URLs, no-data-yet fallback).
+
 ## Other items the inventory surfaced
 
 | # | Item | Effort | Target |
