@@ -430,15 +430,23 @@ These are not yet decided. Listed so a future agent or planning session can prio
 
 ### Open R1: Verify the next NLnet Commons Fund deadline that aligns with the 4-week window
 
-- Call 13 deadline was 1 June 2026; call 14 estimated 1 August 2026 from cadence
-- Maintainer said "4 weeks from 2026-05-17" implies a submission target around mid-June, which falls *after* the 1 June 2026 deadline of call 13
-- **Action**: verify call 14 deadline by visiting NLnet directly when planning execution. If it is later than mid-June, the schedule has more buffer. If it is mid-June exactly, the plan compresses by 2 weeks.
+**Status as of 2026-05-22**: ANSWERED via live WebFetch against `nlnet.nl/news/` + the call-announcement page `nlnet.nl/news/2026/20260401-call.html`.
+
+- **Next NGI0 Commons Fund deadline = 1 June 2026, noon CEST** (verified verbatim from the call page: "Deadline for submission: June 1st 2026 (noon CEST)").
+- Call number not stated on the page itself but corresponds to call 13 per the prior internal records.
+- Next-call (call 14, estimated ~1 August 2026 per typical 8-week cadence) — not yet announced on the news index as of 2026-05-22; the announcement convention is one call deadline at a time.
+- **Schedule impact**: maintainer's original target "4 weeks from 2026-05-17" lands at 2026-06-14, which is **13 days after** the 1 June deadline. Two paths forward:
+  1. **Compress to submit by 1 June** (call 13) — 10 days from today (2026-05-22). Pre-submission checklist + maintainer review must complete before noon CEST 2026-06-01.
+  2. **Wait for call 14** (~1 August 2026 estimated; unconfirmed). Adds ~60 days of buffer but risks losing the now-current submission window.
+- Both paths are operator decisions; this question is now answered as far as the verification goes.
 
 ### Open R2: Are there NGI0-funded employment/migration/civic-jobs projects already?
 
-- Initial search did not surface any
-- Important for positioning: if there are, we differentiate; if there are not, we explain the gap
-- **Action**: dedicated half-day research pass through the NGI0 funded-projects index when execution starts
+**Status as of 2026-05-22**: ANSWERED via live WebFetch against `nlnet.nl/project/`.
+
+- **Result**: NO NGI0-funded projects exist in the employment / jobs / migration / migrants / refugees / civic-employment / labor-market space. Verified by scanning the funded-projects index (focus areas: Internet infrastructure / security / privacy / encryption / open hardware / communication protocols / educational tools / data systems — none cover labor-market access).
+- **Positioning impact**: Helpmefindthejob occupies a clear differentiation position. The application narrative can confidently state there is no NGI0-funded precedent in this domain, which is a positive signal: the project doesn't risk "already-funded" rejection AND the gap is explicit evidence of the underserved space the project addresses.
+- Should be reflected in the §10 ("Project comparison") field of the application draft. Recommended language: "We are not aware of NGI0-funded projects targeting employment-market access for migrants or civic employment infrastructure as of 2026-05-22 (verified against the NLnet funded-projects index). The closest adjacencies are general civic-tech and privacy-tech projects — see §10 of `application-draft-2026-05-19.md` for the specific comparisons."
 
 ### Open R3: NLnet application form exact questions
 
