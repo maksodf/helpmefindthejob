@@ -1,0 +1,24 @@
+{
+  "name": "Helpmefindthejob",
+  "short_name": "Helpmefindthejob",
+  "description": "EU-weites zivilgesellschaftliches Beschäftigungs-Commons — Navigation der HR- und Bürokratie-Hürden für Personen mit strukturellen Schwierigkeiten am Arbeitsmarkt. Erste Referenz-Bereitstellung in Deutschland.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#7c5cff",
+  "background_color": "#0e0f15",
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": [
+    "productivity",
+    "business"
+  ],
+  "lang": "de"
+}

@@ -6707,6 +6707,14 @@ class Handler(BaseHTTPRequestHandler):
                 )
                 self.send_text(html, content_type="text/html")
                 return
+            if parsed.path == "/api/version":
+                # AUDIT-48 (2026-05-22): /api/version was auth-gated by virtue of
+                # being an unknown /api/* path (the auth wrapper rejected it).
+                # /api/health already exposes version unauth; symmetry says
+                # /api/version should too. Returns minimal {version, environment}
+                # for partner integrators (MCP marketplaces, NLnet review checks).
+                self.send_json({"version": APP_VERSION, "environment": APP_ENV})
+                return
             if parsed.path == "/api/health":
                 session = self.current_session()
                 from urllib.parse import parse_qs
@@ -8064,6 +8072,9 @@ class Handler(BaseHTTPRequestHandler):
     def do_HEAD(self) -> None:
         try:
             parsed = urlparse(self.path)
+            if parsed.path == "/api/version":
+                self.send_json({"version": APP_VERSION, "environment": APP_ENV}, include_body=False)
+                return
             if parsed.path == "/api/health":
                 self.send_json(STATE.health(None), include_body=False)
                 return
@@ -12145,6 +12156,14 @@ class Handler(BaseHTTPRequestHandler):
 
     def serve_static(self, request_path: str, include_body: bool = True) -> None:
         spa_routes = {"/accept-invite", "/reset-password", "/forgot-password"}
+        # AUDIT-39 (2026-05-22): localized manifest. DE users get the
+        # German manifest with translated description; EN/other gets
+        # the default. PWA install card on Android then shows the
+        # right-language description.
+        if request_path == "/manifest.webmanifest":
+            lang = self._resolve_user_language()
+            if lang == "de":
+                request_path = "/manifest.webmanifest.de"
         if request_path in self._BILINGUAL_LEGAL_PAGES:
             lang = self._resolve_user_language()
             path = self._bilingual_legal_path(request_path, lang)
