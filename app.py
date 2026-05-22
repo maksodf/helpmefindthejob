@@ -6481,7 +6481,7 @@ class Handler(BaseHTTPRequestHandler):
     def end_headers(self) -> None:
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("X-Frame-Options", "DENY")
-        self.send_header("Referrer-Policy", "same-origin")
+        self.send_header("Referrer-Policy", "strict-origin-when-cross-origin")
         self.send_header("Permissions-Policy", "geolocation=(), microphone=(), camera=()")
         # Phase 2 #47 (2026-05-21): cross-origin isolation headers.
         # COOP same-origin prevents window.opener attacks where a
