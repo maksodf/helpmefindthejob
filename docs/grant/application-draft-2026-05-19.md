@@ -708,3 +708,32 @@ no claim asserts a number the maintainer cannot trace.
 
 If anything drifts further at submission time, update both this
 draft and `12-application-package.md` in the same commit.
+
+---
+
+### Re-verification pass 3 — 2026-05-22
+
+Closes phase2-backlog item #59 ("Application-draft numerical claims —
+3 of 4 reworded because primary sources didn't yield specific
+numbers. At submission time, re-attempt primary-source citation or
+keep the reword.").
+
+Re-attempted primary-source verification for each of the 3 reworded
+claims via 8 distinct WebFetch routes:
+
+| Claim | Routes tried (2026-05-22) | Outcome |
+|---|---|---|
+| Healthcare unfilled positions in DE | (1) Destatis hospital/old-age-care vacancies table (404); (2) BA `statistik.arbeitsagentur.de` Fachkräftebedarf overview — landing page only, no headline figure; (3) BA `famr-engpass-d-0-pdf.pdf` direct PDF (404); (4) OECD Economic Surveys Germany 2025 source page (403 paywall). | **Reword retained.** No single primary-source URL surfaces a headline figure reachable via WebFetch. Body keeps "tens of thousands" + OECD citation as documented anchor. |
+| Migrationsberatungsstellen (MBE) count | (1) BAMF 2024-10 press release path (404); (2) BAMF `Migrationsberatung` topic page — navigation only, no aggregate number; (3) BAMF `ProjekttraegerMBE` topic page (404); (4) BAMF-NAvI directory landing — navigation only, no aggregate count visible without per-entry directory crawl. | **Reword retained.** Operational architecture phrasing (six Wohlfahrtsverbände + BAMF coordination + BAMF-NAvI directory) stays as the institutional-readiness anchor. |
+| Optionskommunen current count | (1) BMAS `Grundsicherung/Optionskommunen` topic page (404); (2) BMAS `Buergergeld/Zugelassene-Kommunale-Traeger` page (404); (3) BMAS `Optionskommunen` PDF list (404); (4) BMAS Sozial-Statistiken glossary `Optionskommunen` page (404). BMAS site has clearly restructured since the prior audit. | **Reword retained.** §6a SGB II cap + Art. 91e GG citations remain the structural anchor; the application body's cap-vs-current-count phrasing stands. |
+
+**Verdict**: re-attempt complete; reword retained for all 3 claims.
+The audit trail (8 fetch attempts across canonical pages + PDFs +
+corroborators) is sufficient to demonstrate the maintainer cannot
+reach a precise headline figure in <1 hour — the original
+reword-with-citation approach remains the honest discipline.
+
+This closes the conditional follow-up in item #59. Future drift
+checks should happen at the moment of submission (re-attempting
+the same fetches in case any of these authorities restore their
+canonical paths) rather than during ongoing development.
