@@ -29,11 +29,41 @@
       "@context": "https://schema.org",
       "@graph": [
         {
-          "@type": "Organization",
+          "@type": ["Organization", "NGO"],
           "@id": "https://helpmefindthejob.org/#organization",
           "name": "Helpmefindthejob",
+          "legalName": "Helpmefindthejob (open-source civic-commons project)",
           "url": "https://helpmefindthejob.org/",
           "description": "Open-source EU-wide civic employment commons — MCP-composable tools that put specialist HR and bureaucratic-navigation knowledge into the hands of anyone facing structural friction in the European labor market.",
+          "nonprofitStatus": "Nonprofit501c3",
+          "foundingDate": "2026",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "Herbert-Tschäpe-Straße 22",
+            "postalCode": "10369",
+            "addressLocality": "Berlin",
+            "addressCountry": "DE"
+          },
+          "contactPoint": [
+            {
+              "@type": "ContactPoint",
+              "contactType": "support",
+              "email": "support@helpmefindthejob.org",
+              "url": "https://helpmefindthejob.org/impressum",
+              "availableLanguage": ["en", "de"]
+            },
+            {
+              "@type": "ContactPoint",
+              "contactType": "security",
+              "url": "https://github.com/maksodf/helpmefindthejob/security/policy",
+              "availableLanguage": ["en"]
+            }
+          ],
+          "parentOrganization": {
+            "@type": "Organization",
+            "name": "The Commons Conservancy",
+            "url": "https://commonsconservancy.org/"
+          },
           "sameAs": [
             "https://github.com/maksodf/helpmefindthejob"
           ]
@@ -58,7 +88,7 @@
             "priceCurrency": "EUR"
           },
           "license": "https://www.apache.org/licenses/LICENSE-2.0",
-          "softwareVersion": "0.x (alpha)",
+          "softwareVersion": "0.79.4 (alpha)",
           "inLanguage": ["en", "de"]
         }
       ]
