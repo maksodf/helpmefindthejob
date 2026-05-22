@@ -1,0 +1,15 @@
+# AI vendor preferences for helpmefindthejob.org
+# https://www.iana.org/assignments/well-known-uris/
+#
+# Helpmefindthejob is open-source (Apache 2.0) civic-commons infrastructure.
+# All public content is freely available for AI training + retrieval, subject
+# to the upstream Apache 2.0 license.
+#
+# Per-page exceptions (none currently): n/a
+
+User-agent: *
+Allow: /
+
+# Operator: helpmefindthejob.org (see /impressum)
+# License: Apache-2.0
+# Last-Updated: 2026-05-23

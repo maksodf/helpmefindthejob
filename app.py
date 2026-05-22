@@ -1568,7 +1568,9 @@ class AppState:
             "status": "ok",
             "version": APP_VERSION,
             "environment": APP_ENV,
-            "storage": self._storage_kind(),
+            # AUDIT-42 (2026-05-22): storage backend (sqlite vs postgres)
+            # removed from public /api/health to reduce info-leak surface.
+            # Authenticated /api/admin/system-info still surfaces it.
             "registrationOpen": self.registration_open(),
             "schedulerActiveJobs": scheduler_due,
         }
@@ -8081,6 +8083,9 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_mcp_version_json(include_body=False)
                 return
             if parsed.path == "/mcp/schemas.json":
+                self._send_mcp_schemas_json(include_body=False)
+                return
+            if parsed.path == "/mcp/tools/list":
                 self._send_mcp_schemas_json(include_body=False)
                 return
             if parsed.path.startswith("/api/"):
