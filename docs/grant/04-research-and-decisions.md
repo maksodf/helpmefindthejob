@@ -409,7 +409,7 @@ The project is renamed from **DirectJob Scout** to **Helpmefindthejob** (single-
 
 - All forward-going documentation, source code, configuration, public-tree placeholders, and external URLs renamed.
 - MCP server `serverInfo.name` flipped from `"directjob-scout"` → `"helpmefindthejob"`; the corresponding integration-test assertion updated in lockstep.
-- Public-tree placeholder convention (`directjob-scout.example` per Decision 12) is **superseded** by the real `helpmefindthejob.com` domain — see Open R8 reopen below.
+- Public-tree placeholder convention (`directjob-scout.example` per Decision 12) is **superseded** by the real `helpmefindthejob.com` domain — see Open R8 reopen below for the full **two-step domain transition** (`khalo.org` → `directjob-scout.example` placeholder → `helpmefindthejob.com`).
 - GitHub repository to be renamed by the maintainer via Settings → Rename (handled GitHub-side; auto-redirects from the old URL are preserved by GitHub for migration continuity).
 
 **What this does NOT change**:
@@ -482,6 +482,16 @@ These are not yet decided. Listed so a future agent or planning session can prio
 
 - **Status as of 2026-05-18**: **ANSWERED 2026-05-18 — placeholder convention retained.** The maintainer's answer: keep the existing `app.directjob-scout.example` placeholder convention in the public tree; revisit when ready. No public-tree changes needed.
 - **Status as of 2026-05-19**: **REOPENED AND UPDATED 2026-05-19 — placeholder convention SUPERSEDED by real domain `helpmefindthejob.com`.** Per [Decision 22](#decision-22-project-rename--directjob-scout--helpmefindthejob), the maintainer acquired `helpmefindthejob.com` as the canonical project domain. The Decision-12 placeholder convention (`directjob-scout.example`) was protective when no real domain existed; with `helpmefindthejob.com` now owned, the real domain replaces the placeholder in the public tree. Specifically: `app.directjob-scout.example` → `app.helpmefindthejob.com`; `demo.directjob-scout.example` → `demo.helpmefindthejob.com`; canonical `support@directjob-scout.example` → `support@helpmefindthejob.com`. Documentation site URL transitions from `maksodf.github.io/directjob-scout/` → `helpmefindthejob.com/` (GH Pages CNAME or apex hosting per maintainer DNS configuration). GitHub repository rename (`maksodf/directjob-scout` → `maksodf/helpmefindthejob`) handled GitHub-side via Settings → Rename; auto-redirects preserved.
+
+- **Full domain-transition timeline (added 2026-05-22 per phase2-backlog #35)**: the project's public-tree domain went through **three states**, not two:
+
+  | Phase | Public-tree domain | Bound by | Notes |
+  |---|---|---|---|
+  | Pre-sanitisation (until 2026-05-18) | `khalo.org` | Legacy commercial framing | Real domain owned during the commercial-product era. Surfaced across documentation, deploy configs, marketing copy. |
+  | Sanitisation (2026-05-18 Week 1 task 1.4) | `directjob-scout.example` | [Decision 12](#decision-12-repository-sanitisation--apply-the-week-1-decision-and-document-the-historical-residue) | Protective placeholder; no real domain owned at this point. `.example` TLD per RFC 2606 ensures no accidental real-world routing. |
+  | Real-domain acquisition (2026-05-19) | `helpmefindthejob.com` | [Decision 22](#decision-22-project-rename--directjob-scout--helpmefindthejob) | Maintainer acquired the domain. Replaces the placeholder in the public tree. |
+
+  Why this matters for reviewers: anyone reading the git history will see the `khalo.org` → `directjob-scout.example` rename land in Week 1 (sanitisation), then `directjob-scout.example` → `helpmefindthejob.com` in Week 2 (rename + acquisition). Without the timeline above, the two-step transition reads as redundant churn rather than two distinct decisions made for distinct reasons (history-preserving sanitisation vs. real-domain rebrand).
 - **Action**: closed (as of 2026-05-19 reopen + update). Maintainer's remaining DNS-config work is independent of the public-tree text changes and tracked outside this decision log.
 
 ### Open R9: ESCO mapping data — extract from authoritative source
