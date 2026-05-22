@@ -55,3 +55,14 @@ signxml>=4.0.0,<5.0.0
 # extra ships a self-contained wheel — no system libpq install
 # needed.
 psycopg[binary]>=3.1,<4.0
+# hypothesis backs the property-based test suite in
+# tests/test_*_property.py (closes phase2-backlog item #43).
+# Test-time dependency only — not imported by any runtime module.
+# Property-based testing complements example-based tests by
+# generating thousands of inputs to surface edge cases the
+# author didn't think of. The locale parser, slash-command
+# router, and journey state machine are tested for invariants
+# (never raises, always returns a valid value, state transitions
+# always land in a known phase). Pure-Python, MIT-licensed,
+# zero native deps; minimal install footprint.
+hypothesis>=6.100,<7.0

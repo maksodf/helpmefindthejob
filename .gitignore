@@ -107,3 +107,4 @@ docs/compliance/
 # commons project. Add new internal-only docs under private/ rather
 # than under docs/.
 private/
+.hypothesis/

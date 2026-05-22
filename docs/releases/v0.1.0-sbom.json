@@ -3210,6 +3210,31 @@
       "purl": "pkg:pypi/webcolors@25.10.0",
       "type": "library",
       "version": "25.10.0"
+    },
+    {
+      "bom-ref": "hypothesis==6.141.1",
+      "description": "Property-based testing library (test-only). Closes phase2-backlog #43.",
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://hypothesis.readthedocs.io/"
+        },
+        {
+          "type": "vcs",
+          "url": "https://github.com/HypothesisWorks/hypothesis"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MPL-2.0"
+          }
+        }
+      ],
+      "name": "hypothesis",
+      "purl": "pkg:pypi/hypothesis@6.141.1",
+      "type": "library",
+      "version": "6.141.1"
     }
   ],
   "dependencies": [
