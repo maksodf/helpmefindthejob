@@ -6732,6 +6732,43 @@ class Handler(BaseHTTPRequestHandler):
                     pass
                 self.send_json(payload)
                 return
+            if parsed.path == "/api/metrics":
+                # phase2-backlog #17: Prometheus-style scrape
+                # endpoint. Public-no-auth — same posture as
+                # /api/health. Operators wiring Grafana / Prom
+                # scrape this every N seconds; no secrets in
+                # the payload (counts + gauges + histograms only).
+                from company_discovery.observability import (
+                    prometheus_text,
+                    set_gauge,
+                )
+
+                # Refresh the always-up gauges right before scrape
+                try:
+                    set_gauge(
+                        "helpmefindthejob_scheduler_active_jobs",
+                        float(
+                            sum(
+                                1
+                                for record in STATE.scheduler.all()
+                                if record.enabled
+                            )
+                        ),
+                        help_text="Active scheduled scan jobs (deployer-managed).",
+                    )
+                except Exception:  # noqa: BLE001 - never break scrape
+                    pass
+
+                body = prometheus_text().encode("utf-8")
+                self.send_response(HTTPStatus.OK)
+                self.send_header(
+                    "Content-Type", "text/plain; version=0.0.4; charset=utf-8"
+                )
+                self.send_header("Content-Length", str(len(body)))
+                self.send_header("Cache-Control", "no-store")
+                self.end_headers()
+                self.wfile.write(body)
+                return
             if parsed.path == "/api/health/history":
                 # phase2-backlog #30: uptime-aware status surface.
                 # Returns the last N health snapshots from the
@@ -12001,6 +12038,67 @@ class Handler(BaseHTTPRequestHandler):
 
     def log_message(self, format: str, *args: Any) -> None:  # noqa: A002 - signature inherited from BaseHTTPRequestHandler; rename would break the override
         return
+
+    def log_request(self, code: int | str = "-", size: int | str = "-") -> None:
+        """Override the default access-log emit to ALSO record
+        Prometheus-style metrics. ``log_request`` is called by
+        ``send_response`` for every response, so this is the
+        chokepoint that captures every HTTP exchange exactly once.
+
+        phase2-backlog #17 — operator-side ops maturity. The
+        metrics are exposed at /api/metrics in Prometheus
+        exposition format for Grafana / Prometheus scraping.
+        """
+
+        try:
+            from company_discovery.observability import inc, observe
+
+            # Bucket path to keep label cardinality bounded — we
+            # do NOT label by full URL (would explode cardinality
+            # under /jobs/<slug> + /api/companies/<id> patterns).
+            # Use the method + status-class instead; deployers
+            # who need per-path drill-down can add app-level
+            # instrumentation around specific routes.
+            method = (self.command or "UNKNOWN")[:8]
+            try:
+                status_code = int(code)
+            except (ValueError, TypeError):
+                status_code = 0
+            status_class = f"{status_code // 100}xx" if status_code else "unknown"
+
+            inc(
+                "helpmefindthejob_http_requests_total",
+                labels={"method": method, "status_class": status_class},
+                help_text="Total HTTP requests by method + status class.",
+            )
+
+            # Request duration. log_request is called as part of
+            # send_response; the elapsed time since the request
+            # started is on self for HTTP/1.1 connections via
+            # self.request_start_time if we set it. We set it in
+            # do_GET / do_POST / etc.
+            start = getattr(self, "_request_start_time", None)
+            if start is not None:
+                elapsed = time.monotonic() - start
+                observe(
+                    "helpmefindthejob_http_request_duration_seconds",
+                    elapsed,
+                    labels={"method": method},
+                    help_text="HTTP request handler duration by method.",
+                )
+        except Exception:  # noqa: BLE001 - metrics must never break a response
+            pass
+
+    def handle_one_request(self) -> None:
+        """Hook into request-arrival timing so log_request can
+        observe duration. Standard ``handle_one_request`` is the
+        right point — runs once per request before the do_* method
+        dispatches."""
+
+        import time
+
+        self._request_start_time = time.monotonic()
+        return super().handle_one_request()
 
 
 def main() -> None:

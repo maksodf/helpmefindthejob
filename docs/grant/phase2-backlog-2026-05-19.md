@@ -97,6 +97,16 @@ the 65 inventory items. The 53 remaining items are catalogued below.
 |---|---|---|---|
 | 14 | Cosign keyless via GitHub Actions OIDC (cosign model a). Removes the `--insecure-ignore-tlog` flag and the long-lived private key. Planned for v0.2.0+. | 1 d | 2026 Q4 |
 
+## Observability substrate (#17, 2026-05-22 close)
+
+#17 was on the original "no observability stack wired in" gap. **CLOSED 2026-05-22**:
+
+- **Substrate**: `company_discovery/observability.py` — three opt-in backends gated by env vars. `report_error(exc, context)` dispatches to Sentry when `HELPMEFINDTHEJOB_SENTRY_DSN` is set + `sentry-sdk` is installed. `emit_event(name, properties, distinct_id)` dispatches to PostHog when `HELPMEFINDTHEJOB_POSTHOG_KEY` is set (EU host default for GDPR-by-default; no SDK dep — uses stdlib urllib with 1.0s timeout). In-memory metrics via `inc()`, `set_gauge()`, `observe()` always-on; rendered in Prometheus exposition format at `/api/metrics`.
+- **Auto-instrumentation**: `Handler.log_request` override records `helpmefindthejob_http_requests_total{method, status_class}` (cardinality-bounded — status grouped to 2xx/3xx/4xx/5xx, no per-path labels) + `helpmefindthejob_http_request_duration_seconds{method}` histogram with 13 buckets (5ms → 60s, covering AI-call upper bound) on every HTTP exchange. `Handler.handle_one_request` override starts the timer. `helpmefindthejob_scheduler_active_jobs` gauge refreshed on every /api/metrics scrape.
+- **PII discipline**: every Sentry context + PostHog property passes through `_sanitise_for_telemetry` which case-insensitively redacts a curated PII-key set (email / cv_text / token / password / phone / name / address / passport / etc.) and truncates strings > 1000 chars with a `<...truncated>` suffix. Recursive walk handles nested dicts + lists.
+- **Operator runbook**: `docs/observability-runbook.md` — quick-reference table, per-backend wiring (env vars + pip extras + scrape configs), built-in metrics catalogue, sample Grafana queries, cardinality discipline, cost framing ($0-15/month typical for an NGO deployment).
+- **Tests (+31)** at `tests/test_observability_substrate.py`: env-gate honoured × 7 (returns False without env, host defaults to EU, legacy env var works, never raises); PII sanitiser × 8 (email/cv_text/token redacted, safe keys pass through, nested dicts walked, lists walked, long strings truncated, case-insensitive); counter / gauge / histogram metric kinds × 7 (creation, accumulation, overwrite semantics, bucket math); kind-mismatch raises ValueError; label escaping × 3 (quotes/backslashes/newlines); live /api/metrics × 5 (Prometheus content-type, HTTP counter present, duration histogram, scheduler gauge, no-store cache).
+
 ## SLA + status-page surface (#30, 2026-05-22 close)
 
 #30 was originally on the operator-side "no SLA template / status page" gap. **CLOSED 2026-05-22**:
