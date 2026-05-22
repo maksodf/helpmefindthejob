@@ -46,6 +46,15 @@ class TaxonomyExpansionTests(unittest.TestCase):
         "barista",
         "cafe_worker",
         "pflegehelfer",
+        # Phase 2 #68 (2026-05-22): panel-persona coverage buckets.
+        # Added for Aïcha + Käthe (krankenpfleger),
+        # Maria (altenpfleger), Yusuf (mechanical_engineer),
+        # Mahmoud (anlagenmechaniker_shk). See
+        # tests/test_taxonomy_persona_coverage.py for the contract.
+        "krankenpfleger",
+        "altenpfleger",
+        "mechanical_engineer",
+        "anlagenmechaniker_shk",
         "waiter",
     }
 

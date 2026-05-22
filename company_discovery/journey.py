@@ -2051,6 +2051,44 @@ def _suggest_lateral_roles(
             "Pflegekraft",
         ],
         "waiter": ["Bartender", "Hospitality Crew", "Restaurant Host", "Banquet Server"],
+        # Phase 2 #68 (2026-05-22): lateral roles for the 4 new
+        # panel-coverage buckets. Suggestions chosen to stay
+        # within the same regulatory pathway (Anerkennungsverfahren
+        # / Handwerksordnung) so a user widening from their
+        # primary role doesn't accidentally land in a friction-
+        # incompatible adjacent profession.
+        "krankenpfleger": [
+            "Altenpflegerin",
+            "Pflegefachfrau",
+            "Pflegefachmann",
+            "Praxisanleiter:in",
+            "Pflegedienstleitung",
+            "Gemeindeschwester",
+        ],
+        "altenpfleger": [
+            "Krankenschwester",
+            "Pflegefachkraft Altenpflege",
+            "Betreuungskraft Senioren",
+            "Hauswirtschaftspflege",
+            "Stationsleitung Altenpflege",
+            "Ambulante Pflege",
+        ],
+        "mechanical_engineer": [
+            "Qualitätsingenieur",
+            "Konstrukteur",
+            "Produktionsingenieur",
+            "Projektingenieur Maschinenbau",
+            "Verfahrensingenieur",
+            "Automotive Test Engineer",
+        ],
+        "anlagenmechaniker_shk": [
+            "Heizungsbauer",
+            "Sanitärinstallateur",
+            "Klimatechniker",
+            "Kältetechniker",
+            "Industriemechaniker",
+            "Lüftungsbauer",
+        ],
     }
     by_bucket = fallback_map.get(bucket_key)
     if by_bucket:

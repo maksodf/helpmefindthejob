@@ -175,6 +175,26 @@ TAXONOMY: dict[str, TaxonomyBucket] = {
             "fullstack developer",
             "full stack",
             "fullstack",
+            "react engineer",
+            "react developer",
+            "vue engineer",
+            "vue developer",
+            "angular engineer",
+            "angular developer",
+            "node engineer",
+            "node developer",
+            "python developer",
+            "python engineer",
+            "java developer",
+            "java engineer",
+            "go developer",
+            "golang developer",
+            "civic-tech engineer",
+            "civic tech engineer",
+            "civic tech developer",
+            "civic-tech developer",
+            "public sector developer",
+            "public sector engineer",
             "platform engineer",
             "infrastructure engineer",
             "devops engineer",
@@ -394,6 +414,174 @@ TAXONOMY: dict[str, TaxonomyBucket] = {
             "clinical project manager",
             "digital health",
             "health tech",
+        ),
+    ),
+    # Phase 2 #68 (2026-05-22): panel-persona coverage.
+    # The seven-persona panel (Aïcha / Yusuf / Olga / Mahmoud /
+    # Maria / Käthe / Tobias) is the project's canonical narrative
+    # anchor. PART 6 walks surfaced that several panel-canonical
+    # roles weren't matching any bucket — persona-based
+    # categorisation / filtering / ranking silently degraded for
+    # them. These four buckets cover the verified gaps. Naming +
+    # synonyms grounded in 2026 German labour-market terminology
+    # (Pflegeberufegesetz 2020 / Anerkennungsverfahren §16d AufenthG
+    # / Handwerksordnung Anlagenmechaniker SHK qualification).
+    "krankenpfleger": TaxonomyBucket(
+        # Aïcha (§16d Anerkennungsweg) + Käthe (Wiedereinstieg).
+        # Krankenpfleger is the modern formal term; Krankenschwester
+        # is the older / colloquial term that's still widely used in
+        # JD postings and on hospital intake. Pflegefachfrau /
+        # Pflegefachmann are the post-2020 unified qualifications
+        # under the Pflegeberufegesetz; many employers still use the
+        # legacy "Krankenpfleger" title for the same role.
+        label_en="Registered nurse",
+        label_de="Krankenpfleger/in",
+        synonyms=(
+            "krankenpfleger",
+            "krankenpflegerin",
+            "krankenpfleger/in",
+            "krankenschwester",
+            "krankenschwestern",
+            "gesundheits- und krankenpfleger",
+            "gesundheits- und krankenpflegerin",
+            "gesundheits- und krankenpfleger/in",
+            "pflegefachfrau",
+            "pflegefachmann",
+            "pflegefachkraft",
+            "pflegefachkräfte",
+            "pflegefachperson",
+            "examinierte krankenpflege",
+            "examinierte pflegekraft",
+            "registered nurse",
+            "rn",  # common JD shorthand
+            "staff nurse",
+            "ward nurse",
+            "clinical nurse",
+            "hospital nurse",
+            "fachkrankenpfleger",
+            "fachkrankenpflegerin",
+            "intensivpflege",
+            "intensive care nurse",
+            # Wiedereinstieg-context synonyms (Käthe persona — German
+            # citizen returning to nursing after a career break).
+            "wiedereinstiegspflege",
+            "wiedereinstieg pflege",
+            "wiedereinstieg krankenpflege",
+            "returning nurse",
+            "nurse returning to practice",
+        ),
+    ),
+    "altenpfleger": TaxonomyBucket(
+        # Maria (Maltese-EU, working-age geriatric care). Altenpfleger
+        # is the legacy qualification; under the 2020 Pflegeberufegesetz
+        # it merged into the unified Pflegefachfrau/-mann role, but the
+        # Altenpflege specialization remains semantically distinct in
+        # the JD market.
+        #
+        # Note: "altenpflegehelfer" / "altenpflegehelferin" intentionally
+        # stay in the pflegehelfer bucket (lower qualification tier).
+        # Existing test_job_type_filter.py:test_longest_synonym_wins
+        # pins that contract; modifying it would cascade through
+        # PART 6 walk fixtures.
+        label_en="Geriatric nurse / elder care",
+        label_de="Altenpfleger/in",
+        synonyms=(
+            "altenpfleger",
+            "altenpflegerin",
+            "altenpfleger/in",
+            "altenpflegekräfte",
+            "altenpflegekraft",
+            "geriatric nurse",
+            "geriatric care worker",
+            "geriatric care",
+            "elder care",
+            "elderly care",
+            "elderly care nurse",
+            "elderly care worker",
+            "senior care",
+            "senior care worker",
+            "betreuungskraft senioren",
+            "fachkraft altenpflege",
+            "pflegefachkraft altenpflege",
+            "home care",
+            "home-care worker",
+            "ambulante pflege",
+            "stationäre altenpflege",
+        ),
+    ),
+    "mechanical_engineer": TaxonomyBucket(
+        # Yusuf (EU Blue Card, automotive supplier industry — Stuttgart
+        # / Baden-Württemberg context).
+        label_en="Mechanical engineer",
+        label_de="Maschinenbauingenieur/in",
+        synonyms=(
+            "mechanical engineer",
+            "mechanical engineering",
+            "maschinenbauingenieur",
+            "maschinenbauingenieurin",
+            "maschinenbauingenieur/in",
+            "diplom-ingenieur maschinenbau",
+            "ingenieur maschinenbau",
+            "automotive engineer",
+            "automotive supplier engineer",
+            "automotive supplier",
+            "automotive systems engineer",
+            "automotive design engineer",
+            "powertrain engineer",
+            "chassis engineer",
+            "vehicle engineer",
+            "fahrzeugingenieur",
+            "konstrukteur",
+            "konstrukteurin",
+            "design engineer mechanical",
+            "qualitätsingenieur",
+            "quality engineer mechanical",
+            "production engineer",
+            "produktionsingenieur",
+            "produktionsingenieurin",
+            "process engineer",
+            "prozessingenieur",
+            "prozessingenieurin",
+            "test engineer",
+            "validation engineer",
+        ),
+    ),
+    "anlagenmechaniker_shk": TaxonomyBucket(
+        # Mahmoud (§4 AsylG, working-age, Handwerk pathway).
+        # Anlagenmechaniker für Sanitär-, Heizungs- und Klimatechnik
+        # (SHK) is one of the recognised Engpass trades in Germany
+        # (BA Engpassanalyse 2024/2025) — high demand, strong
+        # Anerkennungsverfahren pathway for non-EU candidates.
+        label_en="Plumbing / heating / HVAC technician",
+        label_de="Anlagenmechaniker SHK",
+        synonyms=(
+            "anlagenmechaniker shk",
+            "anlagenmechaniker:in shk",
+            "anlagenmechaniker für sanitär",
+            "anlagenmechaniker für sanitär, heizung und klimatechnik",
+            "anlagenmechaniker sanitär heizung klima",
+            "anlagenmechaniker/in shk",
+            "shk-anlagenmechaniker",
+            "shk anlagenmechaniker",
+            "sanitärinstallateur",
+            "sanitaerinstallateur",
+            "heizungsbauer",
+            "heizungstechniker",
+            "heizungs- und sanitärinstallateur",
+            "gas- und wasserinstallateur",
+            "plumber",
+            "plumbing technician",
+            "heating engineer",
+            "heating technician",
+            "hvac technician",
+            "hvac engineer",
+            "hvac installer",
+            "kälteanlagenbauer",
+            "lüftungsbauer",
+            "auszubildender shk",
+            "ausbildung shk",
+            "ausbildung anlagenmechaniker",
+            "shk-azubi",
         ),
     ),
 }
