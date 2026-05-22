@@ -97,6 +97,17 @@ the 65 inventory items. The 53 remaining items are catalogued below.
 |---|---|---|---|
 | 14 | Cosign keyless via GitHub Actions OIDC (cosign model a). Removes the `--insecure-ignore-tlog` flag and the long-lived private key. Planned for v0.2.0+. | 1 d | 2026 Q4 |
 
+## CV parsing — sectional structure (#3, 2026-05-22 close)
+
+#3 was on the "no CV parsing" gap. **CLOSED 2026-05-22**: audit found PDF + DOCX + TXT extraction ALREADY shipped at `company_discovery/cv_extract.py` + the `/api/profile/cv-upload` endpoint + the SPA wiring. The remaining gap was **sectional structure** — the raw text didn't yet flow into a discrete sections view for the SPA editor / downstream tools.
+
+- **New module `company_discovery/cv_section_parser.py`**: deterministic regex-based section detector. 8 named sections (summary / experience / education / skills / languages / certifications / projects + preamble for pre-header content). Header pattern catalogue covers EN + DE variants per section (Berufserfahrung / Work Experience / Employment History / Career History; Kompetenzen / Skills & Tools / Core Competencies; Sprachen / Languages / Language Skills; Zertifikate / Certifications / Licenses & Certifications; etc.) — DACH market reality is mixed-language CVs (German headers + English body or vice versa); the parser handles both in the same document.
+- **Cross-language mixed-CV handling tested**: Aïcha-pattern realistic CV (Tunisian nurse with §16d Anerkennung context, mix of French / Arabic / German content under German section headers) parses cleanly into all expected sections.
+- **API wiring**: (a) `/api/profile/cv-upload` response payload extended with `parsedCv: {sections, detectedHeaders}` — clients can show the structured editor immediately after upload; (b) new GET `/api/profile/cv/structured` endpoint for re-fetching the parsed view on demand (auth-gated, cross-tenant safe — user_id is the session user). Best-effort parser failures don't break the upload happy path.
+- **Robustness**: empty / None / whitespace-only input returns silent empty ParsedCv (no crash); CVs without any recognised header land entirely in `preamble` (never lose content); long lines (60+ chars containing header keywords like "Languages I have worked with...") are NOT misclassified as headers; case-insensitive header match; trailing colon / period tolerated.
+- **LinkedIn auto-import remains operator-blocked**: requires LinkedIn Developer Program OAuth credentials. Documented in the slice closeout as the one #3 sub-gap that can't close without operator action.
+- **Tests (+38)** at `tests/test_cv_section_parser.py`: English-header recognition × 7 (with per-section sub-tests for variants), German-header recognition × 8, mixed-language CV × 2, preamble + structure preservation × 3, robustness edge cases × 8 (empty/None/whitespace, no-headers fallback, long-line guard, trailing colon, trailing period, case-insensitive), full realistic CV smoke × 4 (all expected sections detected, preamble carries contact, experience-block count, JSON serialisability), app.py wiring × 2 (cv-upload returns parsedCv, structured endpoint registered), drift guards × 4 (ALL_SECTIONS catalogue size, ParsedCv dataclass, get() returns empty for missing, is_empty() predicate).
+
 ## Docs site quality polish (#37, 2026-05-22 close)
 
 #37 was on the "no docs site at Stripe/Vercel quality" gap. **CLOSED 2026-05-22**:

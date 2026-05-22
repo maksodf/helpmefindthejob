@@ -7688,6 +7688,28 @@ class Handler(BaseHTTPRequestHandler):
             if parsed.path == "/api/saved-searches":
                 self.send_json({"savedSearches": STATE._saved_searches_with_alerts(user_id)})
                 return
+            if parsed.path == "/api/profile/cv/structured":
+                # phase2-backlog #3 (2026-05-22): the user's CV
+                # text parsed into structured sections (summary /
+                # experience / education / skills / languages /
+                # certifications / projects). Powers the per-
+                # section editor + downstream features (per-
+                # section keyword extraction, persona auto-routing,
+                # tailored-CV generation). Auth-gated; cross-tenant
+                # safe (user_id is the session user).
+                profile = STATE.profile_for(user_id)
+                from company_discovery.cv_section_parser import (
+                    parse_sections,
+                )
+
+                cv_text = profile.cv_text or ""
+                self.send_json(
+                    {
+                        "cvLength": len(cv_text),
+                        "parsedCv": parse_sections(cv_text).to_dict(),
+                    }
+                )
+                return
             if parsed.path == "/api/referrals":
                 # phase2-backlog #11: user-facing referrals view.
                 # Surfaces lifecycle for referrals issued FOR this
@@ -9284,12 +9306,25 @@ class Handler(BaseHTTPRequestHandler):
                     }
                     for pid, score in ranked
                 ]
+                # phase2-backlog #3: include the sectional parse so
+                # the SPA can offer the structured editor in addition
+                # to the raw textarea. Best-effort — parser failures
+                # don't break the upload happy path.
+                try:
+                    from company_discovery.cv_section_parser import (
+                        parse_sections,
+                    )
+
+                    parsed = parse_sections(text).to_dict()
+                except Exception:  # noqa: BLE001 - parser failure shouldn't break the upload
+                    parsed = {"sections": {}, "detectedHeaders": {}}
                 self.send_json(
                     {
                         "profile": STATE._profile_payload(profile),
                         "bootstrap": STATE.bootstrap(user_id),
                         "extractedChars": len(text),
                         "personaSuggestions": personaSuggestions,
+                        "parsedCv": parsed,
                     }
                 )
                 return
