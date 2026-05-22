@@ -105,6 +105,12 @@ class CostCapContext:
     repository: object  # SqliteCompanyDiscoveryRepository — duck-typed to avoid circular import
     cap_eur: float
     locale: str = "en"
+    # Cost-saving metrics log (opt-in, populated by AppState.cost_cap_context_for).
+    # Duck-typed to avoid circular import. When set, the dispatch chokepoint
+    # emits an ``ai_byo_savings`` event after every successful BYO-AI
+    # dispatch. None = no emit (system-internal calls / tests that
+    # bypass AppState).
+    cost_metrics_log: object | None = None
 
     def with_locale(self, locale: str) -> "CostCapContext":
         from dataclasses import replace

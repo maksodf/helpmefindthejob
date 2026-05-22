@@ -872,6 +872,38 @@ def _dispatch_provider(
                 )
             except Exception:  # noqa: BLE001 - Case E best-effort
                 pass
+            # Cost-saving metrics — phase2 #69 wiring follow-up.
+            # When the user runs on a BYO provider (their own
+            # API key, their own quota), the deployer carries
+            # zero AI cost — that's the "ai_byo_savings"
+            # mechanism. Only BYO modes count; server-side
+            # invocation (manual / local / claude_code) does not
+            # save the deployer anything. Best-effort; never
+            # raises into the caller.
+            metrics_log = getattr(cap_context, "cost_metrics_log", None)
+            if metrics_log is not None:
+                try:
+                    from company_discovery.cost_saving_metrics import (
+                        MECHANISM_AI_BYO_SAVINGS,
+                    )
+
+                    byo_modes = {
+                        "openai", "google_gemini", "anthropic",
+                        "deepseek", "openrouter", "ollama",
+                    }
+                    if provider.invocation_mode in byo_modes:
+                        metrics_log.record(
+                            MECHANISM_AI_BYO_SAVINGS,
+                            user_id=cap_context.user_id,
+                            value=1.0,
+                            unit="invocations",
+                            metadata={
+                                "provider_id": provider.provider_id,
+                                "purpose": purpose,
+                            },
+                        )
+                except Exception:  # noqa: BLE001 - best-effort
+                    pass
         # Post-call Trust Receipt emission (Invariant 2). The receipt
         # is emitted only on completed dispatches with output —
         # there's nothing to attest to on a failed call. Case E
@@ -1313,6 +1345,33 @@ def _dispatch_provider_streaming(
                 )
             except Exception:  # noqa: BLE001 - Case E best-effort
                 pass
+            # Same ai_byo_savings emit as the non-streaming
+            # chokepoint — see _dispatch_provider for rationale.
+            metrics_log = getattr(cap_context, "cost_metrics_log", None)
+            if metrics_log is not None:
+                try:
+                    from company_discovery.cost_saving_metrics import (
+                        MECHANISM_AI_BYO_SAVINGS,
+                    )
+
+                    byo_modes = {
+                        "openai", "google_gemini", "anthropic",
+                        "deepseek", "openrouter", "ollama",
+                    }
+                    if provider.invocation_mode in byo_modes:
+                        metrics_log.record(
+                            MECHANISM_AI_BYO_SAVINGS,
+                            user_id=cap_context.user_id,
+                            value=1.0,
+                            unit="invocations",
+                            metadata={
+                                "provider_id": provider.provider_id,
+                                "purpose": purpose,
+                                "streaming": True,
+                            },
+                        )
+                except Exception:  # noqa: BLE001 - best-effort
+                    pass
         # Trust Receipt emission for streaming dispatches — same
         # contract as the single-shot path. Only fires on a
         # completed stream with non-empty output.

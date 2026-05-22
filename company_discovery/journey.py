@@ -320,6 +320,19 @@ class AdvanceResult:
     analytics_events: list[tuple[str, dict[str, Any]]] = field(
         default_factory=list,
     )
+    # Cost-saving-metrics signal: when set, this represents one of
+    # the 8 cost-saving mechanism events the chat-router should
+    # emit (via STATE.record_cost_saving_event) after applying
+    # other side-effects. The four currently emitted from this
+    # surface: ``shorter_journey`` (any natural completion),
+    # ``self_serve_anerkennung`` (anerkennung-path completion),
+    # ``faster_recognition`` (anerkennung-path completion with
+    # duration baseline beat). Each tuple is (mechanism, value,
+    # unit, metadata). Give-up / cancel paths leave this empty so
+    # cancellations don't pollute the cost-saving signal.
+    cost_saving_events: list[tuple[str, float, str, dict[str, Any]]] = field(
+        default_factory=list,
+    )
 
 
 # Maximum journey-input message length. Cap so a malicious or pasted
@@ -888,6 +901,9 @@ def advance(
             )
         if "save" in lc or "mark" in lc or "interested" in lc:
             journey.phase = PHASE_DONE
+            # Natural completion via the "save / mark / interested"
+            # decision — the user completed the journey successfully.
+            # Emit shorter_journey for the cost-saving doctrine.
             return AdvanceResult(
                 reply=(
                     "Saved your interest in this role. Type `find a job` "
@@ -895,6 +911,14 @@ def advance(
                 ),
                 journey=journey,
                 done=True,
+                cost_saving_events=[
+                    (
+                        "shorter_journey",
+                        1.0,
+                        "natural_completions",
+                        {"completion_path": "drill_save"},
+                    ),
+                ],
             )
         return AdvanceResult(
             reply=(
@@ -909,10 +933,66 @@ def advance(
         lc = msg.lower().strip()
         if "save" in lc or "done" in lc or "thanks" in lc:
             journey.phase = PHASE_DONE
+            # Natural completion at the letter/CV-consult terminus —
+            # the user completed the full motivation-letter or
+            # CV-coaching flow. Emit shorter_journey + (if the
+            # picked job was an anerkennung-path role) the
+            # specialized self_serve_anerkennung +
+            # faster_recognition events.
+            _cse: list[tuple[str, float, str, dict[str, Any]]] = [
+                (
+                    "shorter_journey",
+                    1.0,
+                    "natural_completions",
+                    {"completion_path": "letter_or_consult_save"},
+                ),
+            ]
+            # Heuristic anerkennung-path detection: if the picked
+            # job's title or company hints at the recognition path
+            # (Pflegekraft / Anerkennung / Pflegehelfer family),
+            # record the recognition mechanism too. The substrate
+            # accepts metadata; downstream confidence-class
+            # aggregation can refine the heuristic later.
+            picked_title = ""
+            picked_company = ""
+            try:
+                picked_id = journey.picked_job_id or ""
+                if picked_id and picked_id in journey.search_jobs_by_id:
+                    picked = journey.search_jobs_by_id[picked_id]
+                    picked_title = (picked.get("title") or "").lower()
+                    picked_company = (picked.get("company_name") or "").lower()
+            except Exception:  # noqa: BLE001 - best-effort
+                pass
+            anerkennung_markers = (
+                "pflege",
+                "anerkennung",
+                "krankenpflege",
+                "altenpflege",
+                "krankenhaus",
+                "klinik",
+            )
+            if any(m in picked_title for m in anerkennung_markers) or any(
+                m in picked_company for m in anerkennung_markers
+            ):
+                _cse.extend([
+                    (
+                        "self_serve_anerkennung",
+                        1.0,
+                        "self_serve_completions",
+                        {"picked_title": picked_title[:80]},
+                    ),
+                    (
+                        "faster_recognition",
+                        1.0,
+                        "recognition_completions",
+                        {"picked_title": picked_title[:80]},
+                    ),
+                ])
             return AdvanceResult(
                 reply=("Saved. Type `find a job` to start another search."),
                 journey=journey,
                 done=True,
+                cost_saving_events=_cse,
             )
         if "consult" in lc and journey.phase == PHASE_LETTER:
             journey.phase = PHASE_CV_CONSULT

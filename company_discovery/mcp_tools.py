@@ -656,6 +656,63 @@ class CompanyDiscoveryMCPTools:
         outcomes_path.parent.mkdir(parents=True, exist_ok=True)
         with outcomes_path.open("a", encoding="utf-8") as handle:
             handle.write(json.dumps(event, ensure_ascii=False) + "\n")
+        # Cost-saving metrics wiring (phase2-backlog #69 follow-up).
+        # An "applied" outcome is the user actually shipping a job
+        # application — the primary unit of higher_apply_rate. The
+        # event also informs fewer_wrong_fit_apps when the note
+        # carries a fit_score field >= 75 (high-fit application).
+        # Opt-in via HELPMEFINDTHEJOB_COST_METRICS env var; off by
+        # default per honesty-doctrine. Best-effort: never raises.
+        try:
+            from company_discovery.cost_saving_metrics import (
+                CostSavingMetricsLog,
+                MECHANISM_HIGHER_APPLY_RATE,
+                MECHANISM_FEWER_WRONG_FIT_APPS,
+                is_collection_enabled,
+            )
+
+            if outcomeType == "applied" and is_collection_enabled():
+                from company_discovery import audit_log as _audit_log_mod
+
+                metrics_path = outcomes_path.parent / "cost_saving_metrics.jsonl"
+                cs_log = CostSavingMetricsLog(
+                    metrics_path,
+                    salt=_audit_log_mod.default_emitter().salt,
+                    enabled=True,
+                )
+                cs_log.record(
+                    MECHANISM_HIGHER_APPLY_RATE,
+                    user_id=userId,
+                    value=1.0,
+                    unit="applications",
+                    metadata={"job_id": jobId},
+                )
+                # If the caller passed fit_score in the note as
+                # JSON (some HTTP handlers do this so the funnel
+                # can be correlated against the discovered_jobs.
+                # confidence_score), parse + emit the second
+                # mechanism.
+                fit_score = None
+                if note:
+                    try:
+                        as_json = json.loads(note)
+                        if isinstance(as_json, dict):
+                            fit_score = float(as_json.get("fit_score") or 0.0)
+                    except (ValueError, TypeError):
+                        fit_score = None
+                if fit_score is not None and fit_score >= 75:
+                    cs_log.record(
+                        MECHANISM_FEWER_WRONG_FIT_APPS,
+                        user_id=userId,
+                        value=1.0,
+                        unit="high_fit_applications",
+                        metadata={
+                            "job_id": jobId,
+                            "fit_score": fit_score,
+                        },
+                    )
+        except Exception:  # noqa: BLE001 - best-effort
+            pass
         return {"status": "ok", "event": event}
 
 

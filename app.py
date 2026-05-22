@@ -555,6 +555,18 @@ class AppState:
             HTTPFetcher(),
             ScanConfig(max_pages_per_scan=5, request_delay_seconds=0.25),
         )
+        # Cost-saving metrics log — opt-in via HELPMEFINDTHEJOB_
+        # COST_METRICS env var. Held as a singleton on AppState so
+        # the 6 wired emit sites (journey done, anerkennung
+        # complete, BYO-AI dispatch, apply outcome, JobIndex
+        # reuse, language coverage) share one file handle + lock.
+        # When the env gate is off, `enabled` is False on the log
+        # and every `record()` returns False without writing —
+        # zero overhead on the hot path. Initialised lazily so
+        # tests that don't exercise this surface don't trigger
+        # filesystem creation.
+        self._cost_metrics_log = None
+        self._cost_metrics_log_lock = Lock()
         self._active_lock = Lock()
         self._active_company_scans: set[tuple[str, str]] = set()
         self._login_lock = Lock()
@@ -1117,7 +1129,32 @@ class AppState:
             raw_locale = str(payload.get("locale") or "en").strip().lower()
             if raw_locale not in available_locales():
                 raise ValueError("unsupported_locale")
+            previous_locale = existing.locale
             existing.locale = raw_locale
+            # Cost-saving metrics — language_coverage mechanism.
+            # Emits once per user-per-locale-switch: when the user
+            # selects a non-EN locale they're proving the multilingual
+            # surface is reaching the audience the cost-saving
+            # doctrine relies on. EN-default users don't fire (we
+            # already cover EN at zero marginal cost).
+            if raw_locale != "en" and raw_locale != previous_locale:
+                try:
+                    from company_discovery.cost_saving_metrics import (
+                        MECHANISM_LANGUAGE_COVERAGE,
+                    )
+
+                    self.record_cost_saving_event(
+                        MECHANISM_LANGUAGE_COVERAGE,
+                        user_id=user_id,
+                        value=1.0,
+                        unit="locale_switches",
+                        metadata={
+                            "locale": raw_locale,
+                            "previous_locale": previous_locale or "en",
+                        },
+                    )
+                except Exception:  # noqa: BLE001 - best-effort
+                    pass
         if "theme" in payload:
             from company_discovery.models import SUPPORTED_THEMES
 
@@ -1310,6 +1347,7 @@ class AppState:
             repository=self.repository,
             cap_eur=float(profile.monthly_spend_cap_eur or 0.0),
             locale=(profile.locale or "en"),
+            cost_metrics_log=self.cost_metrics_log(),
         )
 
     def receipt_emitter_for(self, user_id: str):
@@ -2916,6 +2954,69 @@ class AppState:
         if APP_PUBLIC_URL:
             return APP_PUBLIC_URL.rstrip("/") + path
         return path
+
+    def cost_metrics_log(self):
+        """Lazy singleton accessor for the cost-saving metrics log.
+
+        Closes phase2-backlog item #69 wiring follow-up: the
+        substrate shipped 2026-05-21 (opt-in, no-PII, append-only
+        JSONL); this method is the single point the six emit
+        sites use to access it. When
+        ``HELPMEFINDTHEJOB_COST_METRICS`` is unset the returned
+        log has ``enabled=False`` and every record() returns
+        False — zero hot-path cost.
+
+        Returns the same instance across calls (one file handle,
+        one lock, one append-only sink).
+        """
+
+        if self._cost_metrics_log is not None:
+            return self._cost_metrics_log
+        with self._cost_metrics_log_lock:
+            if self._cost_metrics_log is not None:
+                return self._cost_metrics_log
+            from company_discovery.cost_saving_metrics import (
+                CostSavingMetricsLog,
+                is_collection_enabled,
+            )
+            from company_discovery import audit_log as _audit_log_mod
+
+            metrics_path = self.data_path.parent / "cost_saving_metrics.jsonl"
+            self._cost_metrics_log = CostSavingMetricsLog(
+                metrics_path,
+                salt=_audit_log_mod.default_emitter().salt,
+                enabled=is_collection_enabled(),
+            )
+        return self._cost_metrics_log
+
+    def record_cost_saving_event(
+        self,
+        mechanism: str,
+        *,
+        user_id: str,
+        value: float,
+        unit: str,
+        metadata: dict[str, Any] | None = None,
+    ) -> bool:
+        """Best-effort emit. Never raises into a caller — the wired
+        sites are on hot paths (journey transitions, AI dispatch,
+        outcome recording) where a metrics failure must not break
+        the user-facing operation.
+
+        Returns True if the event was written, False if the
+        collector is disabled or any error swallowed.
+        """
+
+        try:
+            return self.cost_metrics_log().record(
+                mechanism,
+                user_id=user_id,
+                value=value,
+                unit=unit,
+                metadata=metadata or {},
+            )
+        except Exception:  # noqa: BLE001 - best-effort, defensive
+            return False
 
     def send_invitation(self, *, actor: AuthUser, email: str, role: str) -> dict[str, Any]:
         normalized = email.strip().casefold()
@@ -4827,6 +4928,25 @@ class AppState:
             try:
                 self.log_analytics(user_id, event_name, event_payload)
             except Exception:  # noqa: BLE001 - telemetry must never break chat
+                pass
+        # Cost-saving metrics — phase2 #69 wiring follow-up.
+        # The journey natural-completion sites emit one or more
+        # mechanism events when the user successfully completes
+        # (vs. cancels / gives up). Surface them through the
+        # same record_cost_saving_event helper so the opt-in
+        # gate + per-user hashing + JSONL sink stays consistent.
+        for cse_mechanism, cse_value, cse_unit, cse_metadata in (
+            getattr(result, "cost_saving_events", None) or []
+        ):
+            try:
+                self.record_cost_saving_event(
+                    cse_mechanism,
+                    user_id=user_id,
+                    value=cse_value,
+                    unit=cse_unit,
+                    metadata=cse_metadata,
+                )
+            except Exception:  # noqa: BLE001 - best-effort
                 pass
         if result.persist:
             self._journey_save(user_id, result.journey)

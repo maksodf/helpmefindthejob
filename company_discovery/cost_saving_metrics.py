@@ -145,6 +145,15 @@ def _env_enabled() -> bool:
     return False
 
 
+# Public alias used by the wiring sites (mcp_tools.py,
+# diagnostic_engine.py, app.py). Underscore-prefixed names are
+# convention-internal; the same predicate exposed at module level
+# without the leading underscore is the canonical opt-in check
+# external code should use.
+def is_collection_enabled() -> bool:
+    return _env_enabled()
+
+
 def _hash_user_id(user_id: str, salt: bytes) -> str:
     """Opaque HMAC-SHA256 of the user id. Matches the audit-log
     pattern in :mod:`company_discovery.audit_log`. Returns a

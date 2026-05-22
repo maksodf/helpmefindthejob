@@ -277,6 +277,52 @@ class DiagnosticEngine:
                     seniority_class=seniority or None,
                 )
                 if index_count > 0:
+                    # Cost-saving metrics — persistent_index_reuse.
+                    # The persistent JobIndex returned a non-zero
+                    # count, which means we avoided a fresh
+                    # aggregator fan-out (network + provider time
+                    # + per-provider quota). Best-effort emit;
+                    # never raises into the caller. Opt-in gated
+                    # by HELPMEFINDTHEJOB_COST_METRICS env var.
+                    try:
+                        from company_discovery.cost_saving_metrics import (
+                            CostSavingMetricsLog,
+                            MECHANISM_PERSISTENT_INDEX_REUSE,
+                            is_collection_enabled,
+                        )
+
+                        if is_collection_enabled():
+                            from company_discovery import audit_log as _audit_log_mod
+                            from pathlib import Path as _Path
+
+                            # The JobIndex carries its own sqlite
+                            # path; the metrics JSONL lives next
+                            # to it under cost_saving_metrics.jsonl.
+                            metrics_path = (
+                                _Path(getattr(self.index, "path", "."))
+                                .parent
+                                / "cost_saving_metrics.jsonl"
+                            )
+                            cs_log = CostSavingMetricsLog(
+                                metrics_path,
+                                salt=_audit_log_mod.default_emitter().salt,
+                                enabled=True,
+                            )
+                            cs_log.record(
+                                MECHANISM_PERSISTENT_INDEX_REUSE,
+                                # No per-user attribution at the
+                                # diagnostic-engine level; use a
+                                # stable session-less marker.
+                                user_id="diagnostic_engine",
+                                value=float(index_count),
+                                unit="cached_facet_results",
+                                metadata={
+                                    "role_bucket": bucket or "",
+                                    "location": location or "",
+                                },
+                            )
+                    except Exception:  # noqa: BLE001 - best-effort
+                        pass
                     return int(index_count)
             except Exception:  # noqa: BLE001 - index is optional; degrade to cache on any failure
                 pass
