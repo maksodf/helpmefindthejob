@@ -6537,6 +6537,122 @@ class Handler(BaseHTTPRequestHandler):
             # SSO/OIDC routes (13-plan item 12/13; gap #21).
             # Unauthenticated — these establish a session for a
             # federated user who doesn't have one yet.
+            # ---- SAML SP routes (13-plan item 12/13 SAML half) ----
+            # Mirror of OIDC. Same JIT path
+            # (AuthStore.find_or_create_sso_user) so a deployer
+            # running either protocol gets the same user surface.
+            if parsed.path == "/api/auth/sso/saml/idps":
+                from company_discovery.sso_saml import load_idps_from_env
+
+                idps = load_idps_from_env()
+                # NEVER expose cert_pem in full to the frontend; it's
+                # operator-managed config (mid-sensitive). A fingerprint
+                # is enough for the frontend.
+                import hashlib as _hashlib
+
+                public = [
+                    {
+                        "idpId": i.idp_id,
+                        "entityId": i.entity_id,
+                        "ssoUrl": i.sso_url,
+                        "emailDomain": i.email_domain or None,
+                        "loginUrl": f"/api/auth/sso/saml/{i.idp_id}/login",
+                        "certFingerprintSha256": _hashlib.sha256(
+                            i.cert_pem.encode("utf-8")
+                        ).hexdigest()[:16],
+                    }
+                    for i in idps
+                ]
+                self.send_json({"idps": public})
+                return
+            saml_metadata_match = re.match(
+                r"^/api/auth/sso/saml/sp/metadata$", parsed.path
+            )
+            if saml_metadata_match:
+                from company_discovery.sso_saml import build_sp_metadata
+
+                public_url = (
+                    get_env("HELPMEFINDTHEJOB_PUBLIC_URL", "DIRECTJOB_PUBLIC_URL", "")
+                    or f"http://{self.headers.get('Host', 'localhost')}"
+                )
+                sp_entity_id = f"{public_url.rstrip('/')}/saml/sp"
+                acs_url = f"{public_url.rstrip('/')}/api/auth/sso/saml/acs"
+                metadata = build_sp_metadata(
+                    sp_entity_id=sp_entity_id,
+                    acs_url=acs_url,
+                )
+                self.send_response(HTTPStatus.OK)
+                self.send_header(
+                    "Content-Type", "application/samlmetadata+xml; charset=utf-8"
+                )
+                self.send_header("Content-Length", str(len(metadata)))
+                self.end_headers()
+                self.wfile.write(metadata)
+                return
+            saml_login_match = re.match(
+                r"^/api/auth/sso/saml/([^/]+)/login$", parsed.path
+            )
+            if saml_login_match:
+                from company_discovery.sso_saml import (
+                    build_authn_request,
+                    load_idps_from_env,
+                )
+
+                idp_id = saml_login_match.group(1)
+                idps = load_idps_from_env()
+                idp = next((i for i in idps if i.idp_id == idp_id), None)
+                if idp is None:
+                    self.send_error_json(
+                        HTTPStatus.NOT_FOUND,
+                        "unknown_saml_idp",
+                        f"IdP '{idp_id}' is not configured.",
+                    )
+                    return
+                public_url = (
+                    get_env("HELPMEFINDTHEJOB_PUBLIC_URL", "DIRECTJOB_PUBLIC_URL", "")
+                    or f"http://{self.headers.get('Host', 'localhost')}"
+                )
+                sp_entity_id = f"{public_url.rstrip('/')}/saml/sp"
+                acs_url = f"{public_url.rstrip('/')}/api/auth/sso/saml/acs"
+                redirect_url, request_id = build_authn_request(
+                    idp,
+                    sp_entity_id=sp_entity_id,
+                    acs_url=acs_url,
+                )
+                # Stash request_id + idp_id in a signed cookie so
+                # the ACS can verify InResponseTo + look up the IdP
+                # config. We reuse the OIDC cookie helper since
+                # the JSON shape happens to fit.
+                from company_discovery.sso_oidc import (
+                    AuthRequest,
+                    sign_auth_request,
+                )
+
+                state_blob = AuthRequest(
+                    provider_id=idp_id,
+                    state=request_id,
+                    nonce="",  # SAML doesn't use nonce
+                    code_verifier="",
+                    redirect_uri=acs_url,
+                )
+                cookie_value = sign_auth_request(
+                    state_blob, secret_key=SECRET_KEY
+                )
+                self.send_response(HTTPStatus.SEE_OTHER)
+                self.send_header("Location", redirect_url)
+                cookie_parts = [
+                    f"saml_auth_state={cookie_value}",
+                    "Path=/",
+                    "Max-Age=600",
+                    "HttpOnly",
+                    "SameSite=Lax",
+                ]
+                if COOKIE_SECURE:
+                    cookie_parts.append("Secure")
+                self.send_header("Set-Cookie", "; ".join(cookie_parts))
+                self.end_headers()
+                return
+
             if parsed.path == "/api/auth/sso/oidc/providers":
                 from company_discovery.sso_oidc import load_providers_from_env
 
@@ -7983,6 +8099,156 @@ class Handler(BaseHTTPRequestHandler):
                     HTTPStatus.CREATED,
                     headers={"Set-Cookie": session_cookie_header(session.token, max_age)},
                 )
+                return
+
+            # SAML Assertion Consumer Service (ACS) — HTTP-POST
+            # binding from the IdP. UNAUTHENTICATED: it's the auth-
+            # establishment endpoint, so it must run BEFORE the
+            # require_auth gate below. SAML carries its own
+            # protection via:
+            #   - signed cookie (HMAC-tamper-evident) carrying the
+            #     AuthnRequest id we sent
+            #   - XML signature on the assertion (verified against
+            #     the IdP cert in env config)
+            #   - audience + destination + InResponseTo + expiry
+            #     checks in parse_and_validate_response
+            if parsed.path == "/api/auth/sso/saml/acs":
+                from company_discovery.sso_saml import (
+                    SamlError,
+                    SamlResponseError,
+                    load_idps_from_env,
+                    parse_and_validate_response,
+                )
+                from company_discovery.sso_oidc import (
+                    OidcStateMismatchError,
+                    verify_auth_request,
+                )
+                from urllib.parse import parse_qs as _pq_acs
+
+                content_length = int(self.headers.get("Content-Length", "0") or "0")
+                if content_length <= 0 or content_length > MAX_JSON_BODY_BYTES:
+                    self.send_error_json(
+                        HTTPStatus.BAD_REQUEST,
+                        "bad_saml_body",
+                        "ACS body required + must fit MAX_JSON_BODY_BYTES",
+                    )
+                    return
+                form_raw = self.rfile.read(content_length).decode("utf-8")
+                form = _pq_acs(form_raw)
+                saml_response_b64 = (form.get("SAMLResponse", [""])[0] or "").strip()
+                if not saml_response_b64:
+                    self.send_error_json(
+                        HTTPStatus.BAD_REQUEST,
+                        "missing_saml_response",
+                        "The ACS endpoint requires a SAMLResponse form field.",
+                    )
+                    return
+                # Verify the signed cookie carrying our AuthnRequest id
+                cookie_header = self.headers.get("Cookie", "")
+                stored_cookie = ""
+                for pair in cookie_header.split(";"):
+                    pair = pair.strip()
+                    if pair.startswith("saml_auth_state="):
+                        stored_cookie = pair[len("saml_auth_state=") :]
+                        break
+                if not stored_cookie:
+                    self.send_error_json(
+                        HTTPStatus.BAD_REQUEST,
+                        "missing_saml_auth_state_cookie",
+                        "The browser didn't carry the saml_auth_state cookie. Restart the login.",
+                    )
+                    return
+                try:
+                    auth_state = verify_auth_request(
+                        stored_cookie, secret_key=SECRET_KEY
+                    )
+                except OidcStateMismatchError as err:
+                    self.send_error_json(
+                        HTTPStatus.BAD_REQUEST,
+                        "saml_auth_state_invalid",
+                        str(err),
+                    )
+                    return
+                idps = load_idps_from_env()
+                idp = next(
+                    (i for i in idps if i.idp_id == auth_state.provider_id), None
+                )
+                if idp is None:
+                    self.send_error_json(
+                        HTTPStatus.NOT_FOUND,
+                        "unknown_saml_idp",
+                        f"IdP '{auth_state.provider_id}' is not configured.",
+                    )
+                    return
+                public_url = (
+                    get_env("HELPMEFINDTHEJOB_PUBLIC_URL", "DIRECTJOB_PUBLIC_URL", "")
+                    or f"http://{self.headers.get('Host', 'localhost')}"
+                )
+                sp_entity_id = f"{public_url.rstrip('/')}/saml/sp"
+                acs_url = f"{public_url.rstrip('/')}/api/auth/sso/saml/acs"
+                try:
+                    claims = parse_and_validate_response(
+                        saml_response_b64,
+                        idp=idp,
+                        sp_entity_id=sp_entity_id,
+                        acs_url=acs_url,
+                        expected_request_id=auth_state.state,
+                    )
+                except SamlResponseError as err:
+                    self.send_error_json(
+                        HTTPStatus.BAD_REQUEST,
+                        "saml_response_invalid",
+                        str(err)[:300],
+                    )
+                    return
+                except SamlError as err:
+                    self.send_error_json(
+                        HTTPStatus.BAD_GATEWAY,
+                        "saml_error",
+                        str(err)[:200],
+                    )
+                    return
+                try:
+                    sso_user = STATE.auth_store.find_or_create_sso_user(
+                        provider_id=auth_state.provider_id,
+                        subject=claims.subject,
+                        email=claims.email,
+                        provider_kind="saml",
+                        attributes=claims.attributes,
+                    )
+                except ValueError as err:
+                    self.send_error_json(
+                        HTTPStatus.BAD_REQUEST,
+                        "jit_provision_failed",
+                        str(err)[:200],
+                    )
+                    return
+                new_session = STATE.auth_store.create_session(sso_user)
+                STATE.log_analytics(
+                    sso_user.id,
+                    "sso_login",
+                    {
+                        "providerId": auth_state.provider_id,
+                        "providerKind": "saml",
+                        "issuer": idp.entity_id,
+                    },
+                )
+                self.send_response(HTTPStatus.SEE_OTHER)
+                self.send_header("Location", "/")
+                self.send_header(
+                    "Set-Cookie",
+                    session_cookie_header(
+                        new_session.token,
+                        max_age=int(
+                            STATE.auth_store.session_ttl.total_seconds()
+                        ),
+                    ),
+                )
+                self.send_header(
+                    "Set-Cookie",
+                    "saml_auth_state=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax",
+                )
+                self.end_headers()
                 return
 
             if parsed.path.startswith("/api/"):

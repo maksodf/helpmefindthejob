@@ -34,3 +34,13 @@ jsonschema==4.25.1
 # dependency (no new transitive surface). Active maintenance + audited
 # security history; the Python community's de-facto JWT layer.
 PyJWT[crypto]>=2.8.0,<3.0.0
+# signxml backs the SAML 2.0 SP layer in company_discovery/sso_saml.py
+# (13-plan item 12/13). SAML's XML Signature spec requires
+# canonicalisation (XML-C14N) which is notoriously fragile —
+# implementing it from scratch is the most common security failure
+# point in DIY SAML implementations. signxml is pure-Python (depends
+# on lxml + the cryptography we already have), actively maintained,
+# and built specifically for SAML / XML DSig use cases. Choosing it
+# over python3-saml because python3-saml depends on xmlsec1 + libxml2
+# C libraries, complicating reproducible builds + Nix packaging.
+signxml>=4.0.0,<5.0.0

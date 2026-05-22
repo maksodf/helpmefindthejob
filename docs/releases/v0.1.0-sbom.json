@@ -2690,6 +2690,28 @@
       "version": "0.15.13"
     },
     {
+      "bom-ref": "signxml==4.4.0",
+      "description": "XML Signature & XML Encryption library used by company_discovery/sso_saml.py for SAML 2.0 response signature verification.",
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://github.com/XML-Security/signxml"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "acknowledgement": "declared",
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "name": "signxml",
+      "purl": "pkg:pypi/signxml@4.4.0",
+      "type": "library",
+      "version": "4.4.0"
+    },
+    {
       "bom-ref": "six==1.17.0",
       "description": "Python 2 and 3 compatibility utilities",
       "externalReferences": [
