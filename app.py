@@ -12101,9 +12101,51 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(encoded)
 
+
+    # AUDIT-6: legal pages have bilingual variants. /impressum is DE-canonical
+    # (§5 TMG legal requirement); the other three are EN-canonical with .de
+    # courtesy translations. Language resolution: ?lang= > lang cookie >
+    # Accept-Language > 'en' default.
+    _BILINGUAL_LEGAL_PAGES = ("/privacy", "/terms", "/data-retention", "/impressum")
+
+    def _resolve_user_language(self) -> str:
+        """Pick 'de' or 'en' for legal-page rendering (AUDIT-6)."""
+        from urllib.parse import urlparse as _urlparse, parse_qs as _parse_qs
+        qs = _urlparse(self.path).query
+        if qs:
+            params = _parse_qs(qs)
+            lang = (params.get("lang", [""])[0] or "").strip().lower()
+            if lang in {"de", "en"}:
+                return lang
+        cookie_header = self.headers.get("Cookie", "") or ""
+        for part in cookie_header.split(";"):
+            if "=" not in part:
+                continue
+            k, v = part.strip().split("=", 1)
+            if k == "lang":
+                normalized = v.strip().lower()
+                if normalized in {"de", "en"}:
+                    return normalized
+        accept = (self.headers.get("Accept-Language", "") or "").lower()
+        first = accept.split(",")[0].split(";")[0].strip()
+        if first.startswith("de"):
+            return "de"
+        if first.startswith("en"):
+            return "en"
+        return "en"
+
+    def _bilingual_legal_path(self, request_path: str, lang: str) -> str:
+        """Map (/privacy, 'de') -> '/privacy.de'. AUDIT-6 helper."""
+        if request_path == "/impressum":
+            return "/impressum.en" if lang == "en" else "/impressum"
+        return request_path + ".de" if lang == "de" else request_path
+
     def serve_static(self, request_path: str, include_body: bool = True) -> None:
         spa_routes = {"/accept-invite", "/reset-password", "/forgot-password"}
-        if request_path in {"", "/"}:
+        if request_path in self._BILINGUAL_LEGAL_PAGES:
+            lang = self._resolve_user_language()
+            path = self._bilingual_legal_path(request_path, lang)
+        elif request_path in {"", "/"}:
             path = "/index.html"
         elif request_path in spa_routes:
             path = "/index.html"

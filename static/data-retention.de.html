@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="index,follow" />
+    <title>Datenaufbewahrung — Helpmefindthejob</title>
+    <meta name="description" content="Aufbewahrungsfristen für Helpmefindthejob — welche Daten wir speichern, wie lange und wie sie gelöscht werden können. Transparenz als Verpflichtung gemäß KI-Verordnung (KI-VO) und DSGVO." />
+    <link rel="canonical" href="https://helpmefindthejob.org/data-retention" />
+    <link rel="alternate" hreflang="en" href="https://helpmefindthejob.org/data-retention" />
+    <link rel="alternate" hreflang="de" href="https://helpmefindthejob.org/data-retention" />
+    <link rel="alternate" hreflang="x-default" href="https://helpmefindthejob.org/data-retention" />
+    <meta property="og:type" content="article" />
+    <meta property="og:title" content="Datenaufbewahrung — Helpmefindthejob" />
+    <meta property="og:description" content="Welche Daten wir speichern, wie lange und wie sie gelöscht werden können. Verpflichtungen gemäß DSGVO und KI-Verordnung (KI-VO)." />
+    <meta property="og:url" content="https://helpmefindthejob.org/data-retention" />
+    <meta property="og:site_name" content="Helpmefindthejob" />
+    <meta property="og:locale" content="de_DE" />
+    <meta property="og:locale:alternate" content="en_US" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Datenaufbewahrung — Helpmefindthejob" />
+    <meta name="twitter:description" content="Welche Daten wir speichern, wie lange und wie sie gelöscht werden können. Verpflichtungen gemäß DSGVO und KI-Verordnung (KI-VO)." />
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      "url": "https://helpmefindthejob.org/data-retention",
+      "name": "Datenaufbewahrung — Helpmefindthejob",
+      "description": "Aufbewahrungsfristen für Helpmefindthejob.",
+      "inLanguage": ["de", "en"],
+      "isPartOf": { "@type": "WebSite", "name": "Helpmefindthejob", "url": "https://helpmefindthejob.org/" }
+    }
+    </script>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body class="legal-body">
+    <main class="legal-page">
+      <header>
+        <a href="/" class="legal-back">← Zurück zu Helpmefindthejob</a>
+        <p class="language-switcher" aria-label="Sprache wählen / Choose language">
+          <a href="?lang=de" lang="de" hreflang="de" aria-current="true">Deutsch</a>
+          <span aria-hidden="true"> · </span>
+          <a href="?lang=en" lang="en" hreflang="en">English</a>
+        </p>
+        <h1>Datenaufbewahrung</h1>
+        <p class="muted">Version 1.0 · Zuletzt aktualisiert am 09.05.2026. Anwendungsversion 0.4.0.</p>
+        <p class="muted small">Nachstehend die Voreinstellungen; der Workspace-Administrator kann diese Fristen verkürzen. Sachlich-ehrliche Produktinformation, keine Rechtsberatung. Vor einem kommerziellen Vertrieb ist eine anwaltliche Prüfung erforderlich.</p>
+      </header>
+
+      <section>
+        <h2>Voreingestellte Aufbewahrungsfristen</h2>
+        <table class="retention-table">
+          <thead>
+            <tr>
+              <th>Daten</th>
+              <th>Aufbewahrung</th>
+              <th>Speicherort</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Nutzerkonto, Passwort-Hash</td>
+              <td>Bis zur Löschung des Kontos durch den Workspace-Administrator</td>
+              <td>auth.sqlite3</td>
+            </tr>
+            <tr>
+              <td>Sitzungen</td>
+              <td>14 Tage oder bis zur Abmeldung, Passwortänderung bzw. Deaktivierung</td>
+              <td>auth.sqlite3</td>
+            </tr>
+            <tr>
+              <td>Unternehmen, gefundene Stellen, Scan-Verlauf</td>
+              <td>Bis der Nutzer das Unternehmen löscht oder die Daten exportiert und entfernt</td>
+              <td>company_discovery.sqlite3</td>
+            </tr>
+            <tr>
+              <td>Importierte Stellen, KI-Briefings</td>
+              <td>Bis zur Löschung durch den Nutzer oder bis das zugehörige Unternehmen entfernt wird</td>
+              <td>company_discovery.sqlite3</td>
+            </tr>
+            <tr>
+              <td>Einladungs- und Passwort-Reset-Token</td>
+              <td>48 Stunden (Einladungen) bzw. 1 Stunde (Resets); einmalig verwendbar</td>
+              <td>tokens.sqlite3</td>
+            </tr>
+            <tr>
+              <td>Nutzungszähler pro Nutzer</td>
+              <td>Tagesweise Datensätze; Einträge älter als 90 Tage werden vom Betreiber gelöscht</td>
+              <td>quotas.sqlite3</td>
+            </tr>
+            <tr>
+              <td>Administrations-Audit-Log</td>
+              <td>Nur anhängend; Rotation durch den Betreiber (siehe Deployment-Dokumentation)</td>
+              <td>data/admin_audit.log</td>
+            </tr>
+            <tr>
+              <td>E-Mail-Postausgang (nur Entwicklung)</td>
+              <td>Nur anhängend; Rotation durch den Betreiber</td>
+              <td>data/email_outbox.log</td>
+            </tr>
+            <tr>
+              <td>Sicherungskopien</td>
+              <td>Betreiberseitig festgelegte Aufbewahrung (Standard im ausgelieferten Skript: 30 Tage lokal)</td>
+              <td>./backups</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section>
+        <h2>Was niemals gespeichert wird</h2>
+        <ul>
+          <li>API-Schlüssel von KI-Anbietern im Klartext.</li>
+          <li>Sitzungsbezogene API-Schlüssel, die in die Oberfläche eingegeben werden; sie werden einmalig übermittelt und anschließend verworfen.</li>
+          <li>Seiten beschränkter Plattformen (LinkedIn, XING, StepStone, Indeed) — diese werden bereits beim Abruf blockiert.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Löschungsersuchen</h2>
+        <p>
+          Sie können die Löschung Ihres Kontos unter <strong>Einstellungen → Datenschutz → Löschung beantragen</strong> beantragen;
+          ein Administrator bestätigt das Ersuchen und führt <strong>Administration → Testkonten → Löschen</strong> aus.
+          Die kaskadierte Löschung entfernt Unternehmen, Scans, gefundene und importierte Stellen, gespeicherte Suchen,
+          Support-Tickets, Analyse-Ereignisse, Voreinstellungen für KI-Anbieter sowie aktive Sitzungen. Sicherungskopien
+          werden gemäß der konfigurierten Aufbewahrungsfrist gelöscht.
+        </p>
+        <p>
+          Vor der Löschung kann ein Administrator Ihre Daten archivieren, indem er
+          <code>GET /api/admin/users/&lt;id&gt;/export</code> aufruft. Die Antwort folgt demselben JSON-Schema wie
+          <strong>Einstellungen → Sicherung &amp; Wiederherstellung → Sicherung exportieren</strong>, beschränkt auf das
+          jeweilige Zielkonto. Die Aktion wird im Administrations-Audit-Log als <code>export_user_data</code> protokolliert.
+        </p>
+      </section>
+
+      <p class="legal-footer">
+        <a href="/privacy">Datenschutz</a>
+        <a href="/terms">Nutzungsbedingungen</a>
+        <a href="/data-retention">Datenaufbewahrung</a>
+        <a href="/impressum">Impressum</a>
+      </p>
+    </main>
+  </body>
+</html>
