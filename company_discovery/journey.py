@@ -426,7 +426,127 @@ _CANCEL_TOKENS = (
     "stop please",
 )
 _HELP_TOKENS = ("/help", "/?", "help", "help me", "what can you do", "hilfe", "hilf mir")
+# Phase 2 #70 (2026-05-22): expanded help-seeking detection so the
+# journey can route "?" / "huh" / "what" / etc. to phase-tailored
+# help text instead of the generic re-ask. Single-character "?"
+# is the most common help-seeking signal in chat UIs; "huh" /
+# "wat" / "was" cover colloquial confusion. The tokens here are
+# IN ADDITION to _HELP_TOKENS — both predicates fire is_help_token().
+_EXTENDED_HELP_TOKENS = (
+    "?",
+    "??",
+    "?!",
+    "??!",
+    "huh",
+    "huh?",
+    "what",
+    "what?",
+    "wat",
+    "was",
+    "was?",
+    "wie",
+    "wie?",
+    "i don't understand",
+    "i dont understand",
+    "ich verstehe nicht",
+    "verstehe nicht",
+    "explain",
+    "explain please",
+    "erkläre",
+    "erklaere",
+    "erklär",
+    "erklaer",
+    "what does that mean",
+    "was bedeutet das",
+)
 _BACK_TOKENS = ("/back", "back", "go back", "previous", "zurück", "zurueck")
+
+
+# Phase 2 #70: per-phase + per-sub-step help text. The journey
+# advances the user through 12 phases (greet → discover → cv_check
+# → inspire → preferences → search → review → drill → tailor →
+# letter → cv_consult → done) plus a discover sub-state machine
+# (ask_role → ask_location → ask_years → ask_languages → ask_cv).
+# Each entry is the tailored explanation surfaced when the user
+# signals help-seeking. After the help text the original prompt is
+# re-shown so the conversation continues in place.
+PHASE_HELP_TEXT: dict[str, str] = {
+    PHASE_DISCOVER: (
+        "I'm collecting a few basics so I can search effectively. "
+        "Just answer each question as it comes — natural language "
+        "works fine (e.g. 'frontend developer' / 'Berlin' / "
+        "'3 years' / 'English, German B2')."
+    ),
+    PHASE_CV_CHECK: (
+        "I can use your CV to score job-fit and tailor applications. "
+        "Either paste the text in, upload a PDF, or type 'skip' to "
+        "continue without one. Your CV stays encrypted at rest and "
+        "is never shared without your explicit consent."
+    ),
+    PHASE_INSPIRE: (
+        "Before searching, I can suggest a few lateral / adjacent "
+        "roles that match your background but you might not have "
+        "considered (e.g. for a frontend developer: design-systems "
+        "engineer, UX engineer, DX-tooling roles). Type 'yes' to "
+        "see suggestions or 'no' / 'skip' to go straight to search."
+    ),
+    PHASE_PREFS: (
+        "Preferences are optional filters. Examples:\n"
+        "  - 'remote' if you'd only consider remote roles\n"
+        "  - 'min 50k' if you have a salary floor\n"
+        "  - 'no agencies' to skip recruitment-agency listings\n"
+        "  - 'none' or 'skip' to move on without any filters"
+    ),
+    PHASE_REVIEW: (
+        "I've grouped the search results by category. Type the "
+        "number of a category (e.g. '1') to drill into its jobs, "
+        "'retry' to widen the search, or 'give up' to end."
+    ),
+    PHASE_DRILL: (
+        "Type the number of the job you want to focus on (e.g. '2'). "
+        "You'll then be offered options to tailor your CV, draft a "
+        "motivation letter, or save the role to your queue."
+    ),
+    PHASE_TAILOR: (
+        "I can produce a tailored version of your CV against this "
+        "specific job. Type 'tailor' to start, 'letter' to write a "
+        "motivation letter, 'consult' for improvement suggestions, "
+        "or 'save' to mark the role and move on."
+    ),
+    PHASE_LETTER: (
+        "I'll draft a motivation letter using your CV and the job "
+        "description. Every claim is cited so you can verify it. "
+        "Type 'save' / 'done' when you're finished reviewing."
+    ),
+    PHASE_CV_CONSULT: (
+        "I'll analyse your CV against this job's requirements and "
+        "suggest specific improvements — nothing invented. Type "
+        "'save' / 'done' when you're finished."
+    ),
+}
+
+
+# Per-discover-sub-step help text. The discover phase has its own
+# state machine; help-seeking at each sub-step needs a more focused
+# explanation than the generic discover-phase help.
+DISCOVER_SUB_HELP_TEXT: dict[str, str] = {
+    DISCOVER_ASK_ROLE: (
+        "What kind of role are you looking for? Natural language works — "
+        "examples: 'frontend developer', 'data engineer', "
+        "'project manager healthcare', 'Pflegekraft'. The qualifier "
+        "('Senior', 'Junior', 'returning to') stays in your search."
+    ),
+    DISCOVER_ASK_LOCATION: (
+        "Where do you want to work? Examples: 'Berlin' / 'remote' / "
+        "'anywhere in Germany' / 'EU' / 'München'. Both German and "
+        "English spellings are accepted."
+    ),
+    DISCOVER_ASK_YEARS: (
+        "Roughly how many years of relevant experience do you have? "
+        "A number works ('5' / '0' / '12') or a phrase ('about 3', "
+        "'just graduated', 'over 10')."
+    ),
+}
 
 
 def is_cancel_token(msg: str) -> bool:
@@ -555,6 +675,57 @@ def _should_defer_start_fresh_to_substate(
 def is_help_token(msg: str) -> bool:
     lc = (msg or "").strip().casefold()
     return lc in _HELP_TOKENS
+
+
+def is_help_seeking(msg: str) -> bool:
+    """Phase 2 #70 — broader help-seeking detection. Returns True for
+    the original ``_HELP_TOKENS`` set PLUS colloquial confusion markers
+    like ``?`` / ``huh`` / ``what`` (EN) / ``was`` / ``wie`` (DE).
+    Used by the phase-aware help router to emit tailored explanations
+    instead of a generic re-ask.
+
+    The longer ``_HELP_TOKENS`` (legacy) remains a strict subset —
+    callers wanting only the slash-command-or-explicit "help" word
+    still use ``is_help_token``."""
+
+    lc = (msg or "").strip().casefold()
+    return lc in _HELP_TOKENS or lc in _EXTENDED_HELP_TOKENS
+
+
+_GENERIC_HELP_TEXT = (
+    "You're in the middle of a guided job search. Type:\n"
+    "  - **cancel** to stop the journey\n"
+    "  - **back** to redo the last question (where supported)\n"
+    "  - Or just answer the question I asked above."
+)
+
+# Universal cancel-tail appended to every phase-specific help reply.
+# UX invariant: a user typing "?" must always learn they can back
+# out via "cancel". Phase-specific help focuses on the immediate
+# question; this tail keeps the escape hatch surfaced.
+_HELP_CANCEL_TAIL = "\n\n(Type **cancel** any time to stop the journey.)"
+
+
+def help_text_for(journey: "UserJourney") -> str:
+    """Return phase-tailored help text for the current journey
+    position. Falls back to the generic "you're mid-journey" text
+    only when no phase / sub-step entry exists.
+
+    Discover phase has its own sub-state machine; help-seeking
+    during discover routes to the most-specific entry (sub-step >
+    phase > generic).
+
+    Every reply ends with the cancel-tail so the user can always
+    back out — UX invariant.
+    """
+
+    if journey.phase == PHASE_DISCOVER:
+        sub = DISCOVER_SUB_HELP_TEXT.get(journey.discover_step)
+        if sub:
+            return sub + _HELP_CANCEL_TAIL
+        return PHASE_HELP_TEXT.get(PHASE_DISCOVER, _GENERIC_HELP_TEXT) + _HELP_CANCEL_TAIL
+    base = PHASE_HELP_TEXT.get(journey.phase, _GENERIC_HELP_TEXT)
+    return base + _HELP_CANCEL_TAIL
 
 
 def is_back_token(msg: str) -> bool:
@@ -815,14 +986,16 @@ def advance(
             journey=journey,
             done=True,
         )
-    if is_help_token(msg) and journey.phase != PHASE_GREET:
+    # Phase 2 #70: help-seeking goes through the phase-aware
+    # router. ``is_help_seeking`` covers /help / help / ? / huh /
+    # what / hilfe / was / etc. — the most common chat-UI
+    # confusion signals. ``help_text_for`` returns the most-
+    # specific entry available (discover sub-step > phase >
+    # generic). Greet phase still has its own bespoke menu so we
+    # skip the router there.
+    if is_help_seeking(msg) and journey.phase != PHASE_GREET:
         return AdvanceResult(
-            reply=(
-                "You're in the middle of a guided job search. Type:\n"
-                "  - **cancel** to stop the journey\n"
-                "  - **back** to redo the last question (where supported)\n"
-                "  - Or just answer the question I asked above."
-            ),
+            reply=help_text_for(journey),
             journey=journey,
             persist=False,
         )
