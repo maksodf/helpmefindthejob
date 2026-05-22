@@ -1,0 +1,15 @@
+{
+  "name": "deduplicate_discovered_jobs",
+  "description": "Report likely duplicates among discovered direct-company jobs.",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "userId": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "userId"
+    ]
+  }
+}

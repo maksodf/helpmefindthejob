@@ -1,0 +1,35 @@
+{
+  "name": "add_company_to_watchlist",
+  "description": "Create a company watchlist entry without scanning external pages.",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "userId": {
+        "type": "string"
+      },
+      "name": {
+        "type": "string"
+      },
+      "websiteUrl": {
+        "type": "string"
+      },
+      "careerPageUrl": {
+        "type": "string"
+      },
+      "sector": {
+        "type": "string"
+      },
+      "notes": {
+        "type": "string"
+      },
+      "watchEnabled": {
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "userId",
+      "name",
+      "websiteUrl"
+    ]
+  }
+}

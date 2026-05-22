@@ -1,0 +1,19 @@
+{
+  "name": "export_eures_compatible",
+  "description": "Export a stored discovered job in EURES-compatible schema fields. Enables cross-deployment interoperability with the European Employment Services portal and any agent that reads EURES-shaped postings.",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "userId": {
+        "type": "string"
+      },
+      "discoveredJobId": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "userId",
+      "discoveredJobId"
+    ]
+  }
+}

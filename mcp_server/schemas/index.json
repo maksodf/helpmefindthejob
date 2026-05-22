@@ -1,0 +1,23 @@
+{
+  "protocolVersion": "2024-11-05",
+  "serverInfo": {
+    "name": "helpmefindthejob",
+    "version": "0.1.0"
+  },
+  "toolCount": 13,
+  "tools": [
+    "suggest_relevant_companies",
+    "add_company_to_watchlist",
+    "find_company_career_page",
+    "scan_company_career_page",
+    "extract_direct_jobs_from_company_site",
+    "import_discovered_job",
+    "deduplicate_discovered_jobs",
+    "get_company_watchlist_summary",
+    "get_user_profile_for_consent",
+    "propose_referral",
+    "query_esco_skill",
+    "export_eures_compatible",
+    "record_user_outcome"
+  ]
+}

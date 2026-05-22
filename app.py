@@ -7032,6 +7032,24 @@ class Handler(BaseHTTPRequestHandler):
                     return
                 self._send_share_job_page(imported)
                 return
+            if parsed.path == "/mcp/version":
+                # External MCP server identity — JSON Schema-ready
+                # catalogue surface for downstream consumers (CI
+                # contract checks, IDE inspector tools, third-party
+                # MCP clients that want to verify protocol version
+                # without first opening a stdio session). Single
+                # source of truth is mcp_server.MCP_* constants;
+                # the stdio initialize response uses the same values.
+                self._send_mcp_version_json()
+                return
+            if parsed.path == "/mcp/schemas.json":
+                # Full TOOL_SCHEMAS catalogue exposed over HTTP so
+                # external consumers can fetch the inputSchema /
+                # description for every tool without speaking
+                # JSON-RPC. Matches what `tools/list` returns over
+                # stdio, by construction.
+                self._send_mcp_schemas_json()
+                return
             if parsed.path == "/sitemap.xml":
                 # Dynamic sitemap. Previously a static file in static/
                 # that referenced the legacy `khalo.org` domain
@@ -7708,6 +7726,24 @@ class Handler(BaseHTTPRequestHandler):
             parsed = urlparse(self.path)
             if parsed.path == "/api/health":
                 self.send_json(STATE.health(None), include_body=False)
+                return
+            # Dynamic crawler / catalogue surfaces must also respond
+            # to HEAD — Google + Bing probe sitemaps via HEAD, and
+            # MCP marketplace registries / IDE tooling probe the
+            # catalogue endpoints the same way. Without these
+            # branches HEAD requests fall through to serve_static
+            # which 404s on dynamic routes.
+            if parsed.path == "/sitemap.xml":
+                self._send_dynamic_sitemap(include_body=False)
+                return
+            if parsed.path == "/robots.txt":
+                self._send_dynamic_robots(include_body=False)
+                return
+            if parsed.path == "/mcp/version":
+                self._send_mcp_version_json(include_body=False)
+                return
+            if parsed.path == "/mcp/schemas.json":
+                self._send_mcp_schemas_json(include_body=False)
                 return
             if parsed.path.startswith("/api/"):
                 self.send_error_json(
@@ -11122,6 +11158,83 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(encoded)
 
+    def _send_mcp_version_json(self, include_body: bool = True) -> None:
+        """Returns the MCP server identity over HTTP.
+
+        Shape mirrors the stdio ``initialize`` response so external
+        tooling can validate protocol compatibility without opening
+        a JSON-RPC session. Cache-Control 5 min — version changes
+        only on deploy.
+
+        ``include_body=False`` is the HEAD-request path: same
+        headers, no body. Important for MCP marketplace registries
+        and IDE tooling that probe endpoint availability via HEAD.
+        """
+
+        from mcp_server import (
+            MCP_PROTOCOL_VERSION,
+            MCP_SERVER_NAME,
+            MCP_SERVER_VERSION,
+        )
+
+        payload = {
+            "protocolVersion": MCP_PROTOCOL_VERSION,
+            "serverInfo": {
+                "name": MCP_SERVER_NAME,
+                "version": MCP_SERVER_VERSION,
+            },
+            "capabilities": {"tools": {}},
+        }
+        body = json.dumps(payload, separators=(",", ":")).encode("utf-8")
+        self.send_response(HTTPStatus.OK)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Cache-Control", "public, max-age=300")
+        # CORS for cross-origin clients (IDE inspectors, web-based
+        # MCP debuggers). Catalogue-only data; no secrets.
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.end_headers()
+        if include_body:
+            self.wfile.write(body)
+
+    def _send_mcp_schemas_json(self, include_body: bool = True) -> None:
+        """Returns the full tool catalogue.
+
+        Shape: ``{"tools": [<TOOL_SCHEMAS entries>],
+        "serverInfo": {...}, "protocolVersion": "..."}``.
+
+        Single source of truth is ``company_discovery.mcp_tools``
+        TOOL_SCHEMAS — same import path the stdio server uses. The
+        HTTP endpoint exists for external clients that need the
+        catalogue without speaking JSON-RPC (CI contract checks,
+        IDE tooling, MCP marketplace registries).
+        """
+
+        from company_discovery.mcp_tools import TOOL_SCHEMAS
+        from mcp_server import (
+            MCP_PROTOCOL_VERSION,
+            MCP_SERVER_NAME,
+            MCP_SERVER_VERSION,
+        )
+
+        payload = {
+            "protocolVersion": MCP_PROTOCOL_VERSION,
+            "serverInfo": {
+                "name": MCP_SERVER_NAME,
+                "version": MCP_SERVER_VERSION,
+            },
+            "tools": list(TOOL_SCHEMAS),
+        }
+        body = json.dumps(payload, separators=(",", ":")).encode("utf-8")
+        self.send_response(HTTPStatus.OK)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Cache-Control", "public, max-age=300")
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.end_headers()
+        if include_body:
+            self.wfile.write(body)
+
     def _resolved_public_base(self) -> str:
         """Returns the canonical base URL (no trailing slash).
 
@@ -11148,7 +11261,7 @@ class Handler(BaseHTTPRequestHandler):
         scheme = forwarded_proto if forwarded_proto in {"http", "https"} else "http"
         return f"{scheme}://{host}"
 
-    def _send_dynamic_sitemap(self) -> None:
+    def _send_dynamic_sitemap(self, include_body: bool = True) -> None:
         """Server-rendered XML sitemap.
 
         Sources of truth:
@@ -11229,9 +11342,10 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(encoded)))
         self.send_header("Cache-Control", "public, max-age=3600")
         self.end_headers()
-        self.wfile.write(encoded)
+        if include_body:
+            self.wfile.write(encoded)
 
-    def _send_dynamic_robots(self) -> None:
+    def _send_dynamic_robots(self, include_body: bool = True) -> None:
         """Server-rendered robots.txt.
 
         Lives next to the dynamic sitemap so the ``Sitemap:`` URL
@@ -11275,7 +11389,8 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(encoded)))
         self.send_header("Cache-Control", "public, max-age=3600")
         self.end_headers()
-        self.wfile.write(encoded)
+        if include_body:
+            self.wfile.write(encoded)
 
     def _send_seo_page_not_found(self) -> None:
         body = (

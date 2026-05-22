@@ -1,0 +1,19 @@
+{
+  "name": "import_discovered_job",
+  "description": "Import a reviewed discovered job into the normal job pipeline.",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "userId": {
+        "type": "string"
+      },
+      "discoveredJobId": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "userId",
+      "discoveredJobId"
+    ]
+  }
+}

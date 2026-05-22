@@ -1,0 +1,26 @@
+{
+  "name": "propose_referral",
+  "description": "Emit a structured referral to another open civic agent. The calling agent constructs a referral the user can act on; the user retains the choice to follow up or decline. Composition pattern 1 (sequential handoff) per 09-mcp-composition.md.",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "userId": {
+        "type": "string"
+      },
+      "targetAgent": {
+        "type": "string"
+      },
+      "reason": {
+        "type": "string"
+      },
+      "context": {
+        "type": "object"
+      }
+    },
+    "required": [
+      "userId",
+      "targetAgent",
+      "reason"
+    ]
+  }
+}

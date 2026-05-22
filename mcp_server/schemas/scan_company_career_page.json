@@ -1,0 +1,22 @@
+{
+  "name": "scan_company_career_page",
+  "description": "Scan one known public career page with robots.txt and max-page guards.",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "userId": {
+        "type": "string"
+      },
+      "companyId": {
+        "type": "string"
+      },
+      "careerPageUrl": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "userId",
+      "companyId"
+    ]
+  }
+}

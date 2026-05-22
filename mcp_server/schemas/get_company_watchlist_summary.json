@@ -1,0 +1,15 @@
+{
+  "name": "get_company_watchlist_summary",
+  "description": "Return dashboard metrics for company watchlist and direct-company discoveries.",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "userId": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "userId"
+    ]
+  }
+}

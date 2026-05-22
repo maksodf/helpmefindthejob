@@ -24,6 +24,14 @@ from company_discovery.mcp_tools import TOOL_SCHEMAS, CompanyDiscoveryMCPTools
 from company_discovery.service import CompanyDiscoveryService, ScanConfig
 from company_discovery.sqlite_repository import SqliteCompanyDiscoveryRepository
 
+# MCP protocol + server identity. Exposed as module-level constants
+# so the HTTP catalogue endpoints in app.py (/mcp/version,
+# /mcp/schemas.json) can report exactly the values the stdio
+# JSON-RPC initialize response advertises — single source of truth.
+MCP_PROTOCOL_VERSION = "2024-11-05"
+MCP_SERVER_NAME = "helpmefindthejob"
+MCP_SERVER_VERSION = "0.1.0"
+
 _TOOL_INDEX: dict[str, dict[str, Any]] = {tool["name"]: tool for tool in TOOL_SCHEMAS}
 
 
@@ -150,8 +158,11 @@ def handle_request(
         return rpc_response(
             message_id,
             {
-                "protocolVersion": "2024-11-05",
-                "serverInfo": {"name": "helpmefindthejob", "version": "0.1.0"},
+                "protocolVersion": MCP_PROTOCOL_VERSION,
+                "serverInfo": {
+                    "name": MCP_SERVER_NAME,
+                    "version": MCP_SERVER_VERSION,
+                },
                 "capabilities": {"tools": {}},
             },
         )

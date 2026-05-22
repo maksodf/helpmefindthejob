@@ -1,0 +1,38 @@
+{
+  "name": "record_user_outcome",
+  "description": "Persist an outcome event for a job (applied / replied / interviewing / offer / rejected / withdrawn). Append-only JSON Lines to data/user_outcomes.jsonl. The cost-saving doctrine uses these events as the primary measurement substrate for partner-pilot evidence (08-cost-saving-doctrine.md §1, §2, §8).",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "userId": {
+        "type": "string"
+      },
+      "jobId": {
+        "type": "string"
+      },
+      "outcomeType": {
+        "type": "string",
+        "enum": [
+          "applied",
+          "replied",
+          "interviewing",
+          "offer",
+          "rejected",
+          "withdrawn"
+        ]
+      },
+      "occurredAt": {
+        "type": "string",
+        "description": "ISO-8601 timestamp. Omit to use server-side now()."
+      },
+      "note": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "userId",
+      "jobId",
+      "outcomeType"
+    ]
+  }
+}

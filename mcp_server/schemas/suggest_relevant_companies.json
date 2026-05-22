@@ -1,0 +1,25 @@
+{
+  "name": "suggest_relevant_companies",
+  "description": "Suggest curated healthcare-management companies and fallback categories from role, industry, and location preferences.",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "targetRoles": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "industry": {
+        "type": "string"
+      },
+      "location": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "targetRoles",
+      "industry"
+    ]
+  }
+}
