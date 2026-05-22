@@ -28,6 +28,7 @@ Origin: phase2-backlog AUDIT-1; root-cause fix per the operator's
 
 from __future__ import annotations
 
+import re
 import unittest
 from pathlib import Path
 
@@ -56,13 +57,16 @@ class StaticHtmlHasNoPlaceholderResidue(unittest.TestCase):
     """
 
     def test_no_forbidden_literals_in_any_static_html(self) -> None:
+        # Strip <code>...</code> and <pre>...</pre> content first —
+        # literal text inside those (e.g. changelog entries documenting
+        # the past OPERATOR FILL bug) is documentation, not residue.
+        code_re = re.compile(r"<code[^>]*>.*?</code>|<pre[^>]*>.*?</pre>", re.DOTALL)
         offenders: list[tuple[str, str, int]] = []
         for html_path in sorted(STATIC_DIR.rglob("*.html")):
-            text = html_path.read_text(encoding="utf-8")
+            raw = html_path.read_text(encoding="utf-8")
+            text = code_re.sub("", raw)
             for needle in FORBIDDEN_LITERALS:
                 if needle in text:
-                    # Find first occurrence's line number for human-readable
-                    # diagnostics.
                     idx = text.index(needle)
                     line_no = text.count("\n", 0, idx) + 1
                     offenders.append(

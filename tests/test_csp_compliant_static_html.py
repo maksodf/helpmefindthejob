@@ -67,16 +67,22 @@ class NoInlineStyleAttributesInStaticHtml(unittest.TestCase):
     """
 
     def test_no_inline_style_attribute_in_any_static_html(self) -> None:
+        # Strip <code>...</code> and <pre>...</pre> content first — literal
+        # text inside those (e.g. changelog entries documenting a past
+        # `style="..."` bug) is documentation, not a real attribute.
+        code_re = re.compile(r"<code[^>]*>.*?</code>|<pre[^>]*>.*?</pre>", re.DOTALL)
+        # Only flag style= when it appears as an actual tag attribute
+        # (after a tag name and before the tag-close `>`).
+        attr_re = re.compile(r"<[a-zA-Z][^<>]*\bstyle=\"")
         offenders: list[tuple[str, int, str]] = []
         for path in sorted(STATIC_DIR.rglob("*.html")):
             rel = str(path.relative_to(REPO_ROOT))
             if rel in INLINE_ALLOWLIST:
                 continue
-            for lineno, line in enumerate(
-                path.read_text(encoding="utf-8").splitlines(),
-                start=1,
-            ):
-                if 'style="' in line:
+            raw = path.read_text(encoding="utf-8")
+            sanitized = code_re.sub("", raw)
+            for lineno, line in enumerate(sanitized.splitlines(), start=1):
+                if attr_re.search(line):
                     offenders.append((rel, lineno, line.strip()[:160]))
         if offenders:
             details = "\n".join(
