@@ -4048,3 +4048,4 @@ html[dir="rtl"] .funnel-stage { align-items: flex-end; }
   max-height: 480px;
   overflow: auto;
 }
+.help-toc-nav { margin-bottom: 24px; }
