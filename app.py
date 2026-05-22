@@ -11768,9 +11768,11 @@ class Handler(BaseHTTPRequestHandler):
             "Allow: /impressum",
             "Allow: /changelog",
             "Allow: /help",
-            "Allow: /jobs/",
             "Allow: /status",
-            "Allow: /share/",
+            # /mcp/* (version + schemas.json) is the public MCP catalogue
+            # — Allow it so evaluators + MCP marketplace registries can
+            # discover the tools.
+            "Allow: /mcp/",
             "",
             "# Block app, admin, and API surfaces from indexing.",
             "Disallow: /api/",
