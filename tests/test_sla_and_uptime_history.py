@@ -102,7 +102,11 @@ class SLATemplateContent(unittest.TestCase):
         self.assertIn("Incident-contact registry", self.src)
 
     def test_carries_dpa_cross_link(self):
-        self.assertIn("DPA-template.md", self.src)
+        # Updated 2026-05-22 (phase2-backlog #37 docs polish):
+        # DPA template lives at compliance/dpa-template.md, not
+        # docs/DPA-template.md. The mkdocs strict build caught the
+        # broken link.
+        self.assertIn("dpa-template.md", self.src)
 
 
 # ---------------------------------------------------------------------------

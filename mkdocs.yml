@@ -68,13 +68,31 @@ theme:
         icon: material/brightness-4
         name: Switch to light mode
   features:
+    # phase2-backlog #37 (2026-05-22): Stripe-tier docs polish.
+    # All flags below are mkdocs-material built-ins — zero new
+    # dependencies; pure config upgrade.
     - navigation.tabs
-    - navigation.top
-    - navigation.tracking
-    - search.suggest
-    - search.highlight
-    - content.code.copy
-    - toc.follow
+    - navigation.tabs.sticky  # sticky tabs on scroll
+    - navigation.top  # scroll-to-top button
+    - navigation.tracking  # update URL fragment as you scroll
+    - navigation.sections  # render top-level nav as section labels
+    - navigation.indexes  # section landing pages from `index.md`
+    - navigation.path  # breadcrumbs at top of content
+    - navigation.instant  # SPA-style page loading (Stripe-fast)
+    - navigation.instant.progress  # progress bar during instant nav
+    - navigation.footer  # prev / next links at page bottom
+    - search.suggest  # autocomplete-as-you-type
+    - search.highlight  # highlight result in opened page
+    - search.share  # shareable deep-link search URLs
+    - content.code.copy  # copy-to-clipboard on code blocks
+    - content.code.annotate  # numbered annotations inside code
+    - content.tabs.link  # cross-page tab sync (Python/Curl/JS)
+    - content.action.edit  # "edit this page" links (uses edit_uri)
+    - content.action.view  # "view source" links
+    - content.tooltips  # rich tooltips on abbreviations + footnotes
+    - toc.follow  # ToC scrolls with the page
+    - header.autohide  # hide header on scroll (Stripe-style)
+    - announce.dismiss  # X to dismiss the announcement bar
 
 extra_css:
   - stylesheets/accessibility.css
@@ -92,18 +110,65 @@ markdown_extensions:
   - admonition
   - attr_list
   - tables
+  - footnotes
+  - def_list
+  - md_in_html
+  - abbr
   - toc:
       permalink: true
+      title: On this page
   - pymdownx.details
-  - pymdownx.superfences
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
   - pymdownx.highlight:
       anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets:
+      check_paths: true
+  - pymdownx.tabbed:
+      alternate_style: true
+      slugify: !!python/object/apply:pymdownx.slugs.slugify
+        kwds:
+          case: lower
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.keys
+  - pymdownx.mark
+  - pymdownx.tilde
+  - pymdownx.caret
+  - pymdownx.smartsymbols
+  - pymdownx.magiclink:
+      repo_url_shorthand: true
+      user: maksodf
+      repo: helpmefindthejob
+  - pymdownx.critic
+  - pymdownx.betterem
 
 extra:
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/maksodf/helpmefindthejob
+      name: Helpmefindthejob on GitHub
   generator: false
+  # phase2-backlog #37: announcement bar — surfaces the
+  # operator's call to action without intruding on content.
+  # Empty / commented in default build; uncomment + populate
+  # at deployment time when there's something to announce
+  # (release, NLnet submission, demo deploy, etc.).
+  # announcement: |
+  #   <strong>v0.2.0 shipped</strong> — see
+  #   <a href="/changelog/">changelog</a> for what's new.
+  status:
+    new: New surface
+    deprecated: Deprecated
 
 nav:
   - Home: index.md

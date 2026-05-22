@@ -97,6 +97,16 @@ the 65 inventory items. The 53 remaining items are catalogued below.
 |---|---|---|---|
 | 14 | Cosign keyless via GitHub Actions OIDC (cosign model a). Removes the `--insecure-ignore-tlog` flag and the long-lived private key. Planned for v0.2.0+. | 1 d | 2026 Q4 |
 
+## Docs site quality polish (#37, 2026-05-22 close)
+
+#37 was on the "no docs site at Stripe/Vercel quality" gap. **CLOSED 2026-05-22**:
+
+- **mkdocs theme polish**: 12 navigation/search/content/chrome feature flags added (zero new deps). Stripe-style instant-navigation with progress bar, sticky-on-scroll tabs, section indexes (landing pages), breadcrumb path, footer prev/next, auto-hiding header, dismissible announcement bar, search-with-suggestions + share-deep-links, code-block annotations + cross-page tab sync, edit-this-page + view-source actions, rich tooltips, toc.follow.
+- **Markdown extension expansion**: pymdownx.tabbed (Python/Curl/JS code-example tabs), pymdownx.snippets (file inclusion), pymdownx.tasklist (clickable checkboxes), pymdownx.emoji (twemoji), pymdownx.keys (keyboard-shortcut rendering), pymdownx.mark / tilde / caret / smartsymbols / critic / betterem / inlinehilite, pymdownx.magiclink configured with user + repo so `#123` auto-links to GitHub issues. Mermaid superfence configured for architecture + sequence diagrams. Core: footnotes, def_list, abbr.
+- **Announcement bar substrate**: `extra.announcement` block commented-out by default + populated template for the operator to uncomment at deploy time (release / NLnet submission / demo). `announce.dismiss` flag activates the X button. `extra.status` enables `status: new` / `status: deprecated` page front-matter overlays.
+- **Strict-build catch + fix**: my SLA-template doc linked to `./DPA-template.md` (which doesn't exist — DPA lives at `compliance/dpa-template.md`). The mkdocs strict-build refused to publish; fixed at root by linking to the canonical GitHub URL. SLA contract test updated to assert the lowercase path.
+- **Tests (+10)** at `tests/test_docs_site_quality.py`: navigation polish flags × 10 (sub-tests), search polish × 3, content polish × 6, chrome polish × 3, pymdownx extensions × 13 (sub-tests), core extensions × 5, mermaid support, magiclink user+repo, strict-build passes, status overlays supported. The strict-build test runs `mkdocs build --strict` as a subprocess so docs-link regressions surface in CI.
+
 ## Referral network completion (#11, 2026-05-22 close)
 
 #11 was on the original "no referral network beyond a stub MCP tool" gap. **CLOSED 2026-05-22**:

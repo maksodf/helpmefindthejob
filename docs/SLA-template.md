@@ -130,7 +130,8 @@ concrete remediation actions with owners + dates.
 
 A separate DPA per GDPR Art. 28 governs the data-processing
 relationship. Template DPA at
-[`docs/DPA-template.md`](./DPA-template.md). The DPA covers:
+[`compliance/dpa-template.md`](https://github.com/maksodf/helpmefindthejob/blob/main/compliance/dpa-template.md).
+The DPA covers:
 
 - Categories of personal data processed (identity / CV / outcomes
   / chat content)
