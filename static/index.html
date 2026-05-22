@@ -122,7 +122,7 @@
           </label>
           <button class="btn btn-primary" type="submit" data-i18n="auth.signIn">Sign in</button>
         </form>
-        <button id="showForgotPasswordBtn" type="button" class="btn btn-ghost" style="margin-top: 8px;" data-i18n="auth.forgotLink">Forgot password?</button>
+        <button id="showForgotPasswordBtn" type="button" class="btn btn-ghost mt-8" data-i18n="auth.forgotLink">Forgot password?</button>
         <form id="registerForm" class="auth-form" novalidate hidden>
           <h2 id="registerHeading" data-i18n="auth.createFirstHeading">Create the first account</h2>
           <p id="registerLead" class="muted" data-i18n="auth.createFirstLead">This screen only appears on a new install.</p>
@@ -1321,11 +1321,11 @@
               </div>
             </div>
             <div id="chatTranscript" class="chat-transcript" role="log" aria-live="polite" aria-atomic="false"></div>
-            <form id="chatForm" style="display:flex;gap:8px;margin-top:12px;" aria-label="Send a chat message">
+            <form id="chatForm" class="chat-form-row" aria-label="Send a chat message">
               <input id="chatInput" class="chat-input" type="text" autocomplete="off" placeholder="Type a message or a /slash-command…" aria-label="Chat message" />
               <button id="chatSendBtn" class="btn btn-primary" type="submit">Send</button>
             </form>
-            <p id="chatPendingHint" class="muted small" role="status" aria-live="polite" style="margin-top:6px;"></p>
+            <p id="chatPendingHint" class="muted small mt-6" role="status" aria-live="polite"></p>
           </section>
         </section>
 
@@ -1341,21 +1341,21 @@
                 <button id="cvBuilderStartBtn" class="btn btn-primary" type="button">Start over</button>
               </div>
             </div>
-            <div class="cv-builder-layout" style="display:grid;grid-template-columns:240px 1fr;gap:24px;">
-              <nav id="cvBuilderSidebar" class="cv-builder-sidebar" aria-label="CV builder sections" style="display:flex;flex-direction:column;gap:6px;"></nav>
+            <div class="cv-builder-layout cv-layout-grid">
+              <nav id="cvBuilderSidebar" class="cv-builder-sidebar cv-sidebar-list" aria-label="CV builder sections"></nav>
               <div class="cv-builder-main">
-                <div id="cvBuilderPhotoPanel" style="margin-bottom:16px;display:flex;gap:12px;align-items:center;">
-                  <img id="cvBuilderPhotoPreview" alt="Profile photo" style="width:96px;height:96px;border-radius:8px;object-fit:cover;background:#1c1c24;display:none;" />
+                <div id="cvBuilderPhotoPanel" class="cv-photo-row">
+                  <img id="cvBuilderPhotoPreview" alt="Profile photo" class="cv-photo-preview" />
                   <div>
                     <input id="cvBuilderPhotoInput" type="file" accept="image/png,image/jpeg,image/webp" hidden />
                     <button id="cvBuilderPhotoBtn" class="btn" type="button">Upload photo</button>
-                    <button id="cvBuilderPhotoRemove" class="btn btn-ghost" type="button" style="display:none;">Remove</button>
+                    <button id="cvBuilderPhotoRemove" class="btn btn-ghost cv-photo-remove" type="button">Remove</button>
                     <p id="cvBuilderPhotoStatus" class="muted small"></p>
                   </div>
                 </div>
                 <div id="cvBuilderSectionHost"></div>
                 <p id="cvBuilderMessage" class="muted small" role="status" aria-live="polite"></p>
-                <div class="action-group" id="cvBuilderActions" style="margin-top:16px;display:flex;gap:8px;">
+                <div class="action-group cv-builder-actions-row" id="cvBuilderActions">
                   <button id="cvBuilderSaveBtn" class="btn btn-primary" type="button">Save & continue</button>
                   <button id="cvBuilderAddAnotherBtn" class="btn" type="button" hidden>Add another</button>
                   <button id="cvBuilderSkipBtn" class="btn btn-ghost" type="button" hidden>Skip this section</button>
@@ -1363,9 +1363,9 @@
                   <button id="cvBuilderDownloadPdfBtn" class="btn" type="button">Download as PDF</button>
                   <button id="cvBuilderPreviewBtn" class="btn btn-ghost" type="button">Preview print view</button>
                 </div>
-                <details style="margin-top:24px;">
+                <details class="cv-details-spaced">
                   <summary>Preview the assembled CV (live)</summary>
-                  <pre id="cvBuilderPreview" style="white-space:pre-wrap;font-family:monospace;background:#1c1c24;padding:12px;border-radius:8px;max-height:480px;overflow:auto;"></pre>
+                  <pre id="cvBuilderPreview" class="cv-preview-pre"></pre>
                 </details>
               </div>
             </div>

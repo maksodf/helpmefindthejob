@@ -4016,3 +4016,35 @@ html[dir="rtl"] table td[data-numeric="true"] {
   margin: 0;
 }
 html[dir="rtl"] .funnel-stage { align-items: flex-end; }
+
+/* AUDIT-3 (2026-05-22): Inline style="..." attributes lifted from
+ * static/index.html so they comply with the production CSP
+ * `style-src 'self'`. The corresponding 11 inline-style attributes
+ * have been replaced with class="..." references to these classes.
+ */
+.mt-6 { margin-top: 6px; }
+.mt-8 { margin-top: 8px; }
+.chat-form-row { display: flex; gap: 8px; margin-top: 12px; }
+.cv-layout-grid { display: grid; grid-template-columns: 240px 1fr; gap: 24px; }
+.cv-sidebar-list { display: flex; flex-direction: column; gap: 6px; }
+.cv-photo-row { margin-bottom: 16px; display: flex; gap: 12px; align-items: center; }
+.cv-photo-preview {
+  width: 96px;
+  height: 96px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: #1c1c24;
+  display: none;
+}
+.cv-photo-remove { display: none; }
+.cv-builder-actions-row { margin-top: 16px; display: flex; gap: 8px; }
+.cv-details-spaced { margin-top: 24px; }
+.cv-preview-pre {
+  white-space: pre-wrap;
+  font-family: monospace;
+  background: #1c1c24;
+  padding: 12px;
+  border-radius: 8px;
+  max-height: 480px;
+  overflow: auto;
+}
