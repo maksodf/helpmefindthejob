@@ -1253,7 +1253,7 @@ def friction_keywords_for(persona_id: str | None) -> list[str]:
     return []
 
 
-def demo_email(slug: str, email_domain: str = "demo.helpmefindthejob.com") -> str:
+def demo_email(slug: str, email_domain: str = "demo.helpmefindthejob.org") -> str:
     """Canonical demo email for a persona.
 
     The default domain follows the public-tree placeholder convention

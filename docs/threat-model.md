@@ -12,7 +12,7 @@ migrations) and an end-to-end demo-walk canary. See §8 for the
 sprint addendum and §9 for the cross-invariant tamper guards.
 
 The model targets the production hosted deployment at
-`https://app.helpmefindthejob.com`, with admin-managed tester accounts and
+`https://app.helpmefindthejob.org`, with admin-managed tester accounts and
 provider-neutral AI handoff.
 
 ## 1. Assets and trust boundaries

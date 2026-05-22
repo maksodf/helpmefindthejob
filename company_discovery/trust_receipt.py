@@ -164,7 +164,7 @@ def build_trust_receipt(
     prompt_text: str,
     response_text: str,
     salt: bytes,
-    issuer_did: str = "did:web:helpmefindthejob.com",
+    issuer_did: str = "did:web:helpmefindthejob.org",
     audit_log_sequence_no: int | None = None,
     audit_log_chain_hmac: str | None = None,
     metadata: dict[str, Any] | None = None,
@@ -307,7 +307,7 @@ independently you need:
 
 Then either:
 
-- Use the CLI tool at <https://helpmefindthejob.com/tools/verify-receipt>
+- Use the CLI tool at <https://helpmefindthejob.org/tools/verify-receipt>
 - OR run the open-source verifier:
   `python -m company_discovery.verify_receipt_cli <this-file.json>`
 

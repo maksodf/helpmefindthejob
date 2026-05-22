@@ -13,7 +13,7 @@ and asserts that key German strings render in the visible DOM. Catches
 straggler English text that leaked past Items 1 + 17.
 
 Required environment (script no-ops without all three so CI doesn't run it):
-  E2E_BASE_URL    e.g. https://app.helpmefindthejob.com
+  E2E_BASE_URL    e.g. https://app.helpmefindthejob.org
   E2E_EMAIL       admin email
   E2E_PASSWORD    admin password
 

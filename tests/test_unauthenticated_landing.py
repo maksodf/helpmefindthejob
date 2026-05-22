@@ -4,7 +4,7 @@
 
 Before this slice, ``static/index.html`` opened with a bare
 "Sign in to continue" auth gate — meaning an NLnet reviewer or
-first-time visitor landing on `helpmefindthejob.com` saw a gate,
+first-time visitor landing on `helpmefindthejob.org` saw a gate,
 not the project mission. The unauthenticated landing block sits
 above the auth-card inside `#authGate` so it's visible exactly
 when the user is NOT signed in, and disappears the moment they
@@ -86,7 +86,7 @@ class LandingBlockPresentInIndex(unittest.TestCase):
         self.assertIn('href="/help"', self.src)
         self.assertIn("github.com/maksodf/helpmefindthejob", self.src)
         self.assertIn('href="/status"', self.src)
-        self.assertIn('href="https://helpmefindthejob.com/changelog"', self.src)
+        self.assertIn('href="https://helpmefindthejob.org/changelog"', self.src)
 
     def test_alpha_honesty_disclaimer(self):
         """The "alpha — main branch may be unstable" line keeps the

@@ -4,7 +4,7 @@ Solo-operator-friendly. Use this until you hit ≥50 paying users — then gradu
 
 ## Inbox
 
-`support@helpmefindthejob.com` is the canonical mailbox. In-app `/api/support` tickets land in `data/admin_audit.log` with `kind=support_ticket`, plus an email to `support@helpmefindthejob.com`.
+`support@helpmefindthejob.org` is the canonical mailbox. In-app `/api/support` tickets land in `data/admin_audit.log` with `kind=support_ticket`, plus an email to `support@helpmefindthejob.org`.
 
 Account-deletion request emails land at the same address; treat as P1 (legal SLA pressure).
 
@@ -97,4 +97,4 @@ Replace this with a real help-desk tool (Plain.com, Front, Help Scout, or OSS Ch
 - A regulator pings you (DSGVO request that needs documented chain-of-custody)
 - A paid plan promises an SLA tighter than 24h
 
-Until then, this 1-page runbook + a clean `support@helpmefindthejob.com` inbox is enough.
+Until then, this 1-page runbook + a clean `support@helpmefindthejob.org` inbox is enough.

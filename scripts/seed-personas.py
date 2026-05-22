@@ -47,7 +47,7 @@ Usage
 Other flags::
 
     --data-dir PATH         Override HELPMEFINDTHEJOB_DATA_DIR for one run.
-    --email-domain DOMAIN   Override the default demo.helpmefindthejob.com.
+    --email-domain DOMAIN   Override the default demo.helpmefindthejob.org.
     --base-url URL          Reserved for future HTTP-API mode; not used.
     --force-password-reset  Overwrite existing personas' passwords too.
     --dry-run               Print what would be created; don't write anything.
@@ -240,7 +240,7 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument(
         "--email-domain",
-        default="demo.helpmefindthejob.com",
+        default="demo.helpmefindthejob.org",
         help=(
             "Email domain for the seven persona accounts. Default is "
             "the public-tree placeholder convention (Decision 12); "

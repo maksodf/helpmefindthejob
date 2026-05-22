@@ -91,10 +91,10 @@ class OpenApiSpecValidity(unittest.TestCase):
     def test_servers_optional_unless_provided(self):
         # Without base_url, no servers entry
         self.assertNotIn("servers", self.spec)
-        spec_with_server = build_openapi_spec(base_url="https://app.helpmefindthejob.com")
+        spec_with_server = build_openapi_spec(base_url="https://app.helpmefindthejob.org")
         self.assertEqual(
             spec_with_server["servers"],
-            [{"url": "https://app.helpmefindthejob.com"}],
+            [{"url": "https://app.helpmefindthejob.org"}],
         )
 
     def test_spec_is_json_serializable(self):

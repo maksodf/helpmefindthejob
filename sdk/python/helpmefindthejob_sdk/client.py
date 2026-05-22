@@ -49,7 +49,7 @@ class Client:
     ----------
     base_url:
         Origin of the running deployment, e.g.
-        ``https://app.helpmefindthejob.com``. No trailing slash.
+        ``https://app.helpmefindthejob.org``. No trailing slash.
     session_cookie:
         Value of the ``session`` cookie issued by
         ``POST /api/auth/login``. Required for every call —

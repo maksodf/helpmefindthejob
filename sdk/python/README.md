@@ -24,7 +24,7 @@ tar -czf helpmefindthejob_sdk.tar.gz -C sdk/python helpmefindthejob_sdk/
 from helpmefindthejob_sdk import Client
 
 client = Client(
-    base_url="https://app.helpmefindthejob.com",
+    base_url="https://app.helpmefindthejob.org",
     session_cookie="<value-from-/api/auth/login>",
     csrf_token="<value-from-/api/auth/login>",
 )

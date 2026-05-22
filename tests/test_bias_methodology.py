@@ -156,7 +156,7 @@ def _build_fit_score_prompt(persona: PersonaFixture, scenario: BiasScenario) -> 
     )
     job = DiscoveredJob(
         user_id=profile.user_id,
-        source_url=f"https://demo.helpmefindthejob.com/bias-test/{scenario.label}",
+        source_url=f"https://demo.helpmefindthejob.org/bias-test/{scenario.label}",
         title=scenario.job_title,
         location=scenario.job_location,
         raw_description=scenario.job_description,
@@ -244,7 +244,7 @@ def _build_imported_job(persona: PersonaFixture, scenario: CvTailoringScenario) 
         user_id=f"bias-test-{persona.slug}",
         company_id=f"bias-test-company-{scenario.label}",
         discovered_job_id=f"bias-test-discovered-{scenario.label}",
-        source_url=f"https://demo.helpmefindthejob.com/bias-test/{scenario.label}",
+        source_url=f"https://demo.helpmefindthejob.org/bias-test/{scenario.label}",
         title=scenario.job_title,
         company_name=f"Synthetic employer ({scenario.label})",
         location=scenario.job_location,

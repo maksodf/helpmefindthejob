@@ -20,7 +20,7 @@ fi
 : "${TAG:?TAG is required (e.g. TAG=0.46.0)}"
 : "${SSH_HOST:=root@161.35.76.8}"
 : "${SSH_KEY:=$HOME/.ssh/helpmefindthejob}"
-: "${PUBLIC_URL:=https://app.helpmefindthejob.com}"
+: "${PUBLIC_URL:=https://app.helpmefindthejob.org}"
 
 export TAG SSH_HOST SSH_KEY PUBLIC_URL
 

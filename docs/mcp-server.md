@@ -209,10 +209,10 @@ proc.stdin.end();
 
 ```bash
 # Schema catalogue (planned)
-curl -s https://demo.helpmefindthejob.com/mcp/schemas.json | jq '.tools | length'
+curl -s https://demo.helpmefindthejob.org/mcp/schemas.json | jq '.tools | length'
 
 # Catalogue version (planned)
-curl -s https://demo.helpmefindthejob.com/mcp/version | jq '.catalogueVersion'
+curl -s https://demo.helpmefindthejob.org/mcp/version | jq '.catalogueVersion'
 ```
 
 ## Audit logging
@@ -246,7 +246,7 @@ A deployer can dispatch on `status` for programmatic handling and surface `detai
 
 ## Where the schemas live
 
-`TOOL_SCHEMAS` in [`company_discovery/mcp_tools.py`](https://github.com/maksodf/helpmefindthejob/blob/main/company_discovery/mcp_tools.py) is the canonical source. The schemas are JSON Schema Draft 7 documents. The [`/mcp/schemas.json`](https://demo.helpmefindthejob.com/mcp/schemas.json) HTTP endpoint exposing the full catalogue and [`/mcp/version`](https://demo.helpmefindthejob.com/mcp/version) reporting the catalogue version land in a §2.2 follow-up; until then, fetch the schemas via the stdio `tools/list` call.
+`TOOL_SCHEMAS` in [`company_discovery/mcp_tools.py`](https://github.com/maksodf/helpmefindthejob/blob/main/company_discovery/mcp_tools.py) is the canonical source. The schemas are JSON Schema Draft 7 documents. The [`/mcp/schemas.json`](https://demo.helpmefindthejob.org/mcp/schemas.json) HTTP endpoint exposing the full catalogue and [`/mcp/version`](https://demo.helpmefindthejob.org/mcp/version) reporting the catalogue version land in a §2.2 follow-up; until then, fetch the schemas via the stdio `tools/list` call.
 
 A planned ergonomic addition is to split the schemas into individual files under `mcp_server/schemas/<tool-name>.json` so external tooling (linting, code generation) can read them without spawning the Python process. This is on the §2.2 follow-up list; the canonical definitions stay in `mcp_tools.py` and the filesystem export becomes a build artefact.
 

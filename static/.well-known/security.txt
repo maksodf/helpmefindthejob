@@ -5,17 +5,17 @@
 # market. Programme of The Commons Conservancy. Apache 2.0 + CLA.
 #
 # Per Decision 22 (2026-05-19), the canonical project domain is
-# helpmefindthejob.com (acquired by the maintainer; supersedes the
+# helpmefindthejob.org (acquired by the maintainer; supersedes the
 # pre-rename Decision-12 placeholder convention per the Open R8 reopen
 # in docs/grant/04-research-and-decisions.md). Reports sent to the
 # GitHub Security tab via the Policy URL below are the canonical
-# channel today; the security@helpmefindthejob.com mailbox lands
+# channel today; the security@helpmefindthejob.org mailbox lands
 # when the maintainer wires the MX record.
 
-Contact: mailto:security@helpmefindthejob.com
+Contact: mailto:security@helpmefindthejob.org
 Contact: https://github.com/maksodf/helpmefindthejob/security/advisories/new
 Expires: 2027-05-19T05:03:45Z
 Preferred-Languages: en, de
-Canonical: https://helpmefindthejob.com/.well-known/security.txt
+Canonical: https://helpmefindthejob.org/.well-known/security.txt
 Acknowledgments: https://github.com/maksodf/helpmefindthejob/security
 Policy: https://github.com/maksodf/helpmefindthejob/blob/main/SECURITY.md

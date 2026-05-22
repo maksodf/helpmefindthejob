@@ -20,7 +20,7 @@
 #
 # Usage (from this repo on the operator's laptop):
 #   TAG=0.7.0 SSH_HOST=root@161.35.76.8 SSH_KEY=~/.ssh/helpmefindthejob \
-#     PUBLIC_URL=https://app.helpmefindthejob.com ./scripts/deploy.sh
+#     PUBLIC_URL=https://app.helpmefindthejob.org ./scripts/deploy.sh
 #
 # Required environment:
 #   TAG          version tag, e.g. "0.7.0"
@@ -37,7 +37,7 @@ set -eu
 TAG="${TAG:?TAG is required (e.g. TAG=0.7.0)}"
 SSH_HOST="${SSH_HOST:?SSH_HOST is required (e.g. SSH_HOST=root@161.35.76.8)}"
 SSH_KEY="${SSH_KEY:-}"
-PUBLIC_URL="${PUBLIC_URL:-https://app.helpmefindthejob.com}"
+PUBLIC_URL="${PUBLIC_URL:-https://app.helpmefindthejob.org}"
 COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.prod.yml}"
 SERVICE_NAME="${SERVICE_NAME:-helpmefindthejob}"
 APP_DIR="${APP_DIR:-/opt/helpmefindthejob}"

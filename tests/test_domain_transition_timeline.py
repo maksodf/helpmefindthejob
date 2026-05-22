@@ -5,7 +5,7 @@
 
 The project's public-tree domain went through three states:
 ``khalo.org`` (legacy commercial) → ``directjob-scout.example``
-(Decision-12 placeholder) → ``helpmefindthejob.com`` (Decision-22
+(Decision-12 placeholder) → ``helpmefindthejob.org`` (Decision-22
 real acquisition). The Decision-22 narrative previously skipped
 the two-step transition, making the git-history "rename then
 rename again" pattern look like redundant churn instead of two
@@ -52,7 +52,7 @@ class DomainTransitionTimelinePresent(unittest.TestCase):
 
         self.assertIn("khalo.org", section)
         self.assertIn("directjob-scout.example", section)
-        self.assertIn("helpmefindthejob.com", section)
+        self.assertIn("helpmefindthejob.org", section)
 
     def test_timeline_references_both_decisions(self):
         """The narrative must cite both Decision 12 (sanitisation
@@ -93,7 +93,7 @@ class DomainTransitionTimelinePresent(unittest.TestCase):
         # And references all 3 states
         self.assertIn("khalo.org", section)
         self.assertIn("directjob-scout.example", section)
-        self.assertIn("helpmefindthejob.com", section)
+        self.assertIn("helpmefindthejob.org", section)
 
     def test_timeline_clarifies_rfc_2606_basis(self):
         """The .example TLD choice in Decision 12 is grounded in

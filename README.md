@@ -49,7 +49,7 @@ strategic context.
 **Status**: v0.1.0 — first stable pre-publication tag shipped 2026-05-18
 ([`docs/releases/v0.1.0.md`](docs/releases/v0.1.0.md), cosign-signed
 + CycloneDX SBOM). Public demo deployment at
-[`helpmefindthejob.com`](https://helpmefindthejob.com/) is pending the
+[`helpmefindthejob.org`](https://helpmefindthejob.org/) is pending the
 maintainer's DNS configuration (CNAME → GH Pages or apex hosting). The
 main branch is intended to stay buildable but may contain unfinished
 work between tags. Honest about instability — see
@@ -328,9 +328,9 @@ sustainability model) at [`docs/grant/03-post-grant.md`](docs/grant/03-post-gran
 - [`TRADEMARK.md`](TRADEMARK.md) — name and mark usage.
 - [`CONTRIBUTORS-NOTE.md`](CONTRIBUTORS-NOTE.md) — honest project history.
 - **Documentation site**: published via mkdocs-material to GitHub Pages
-  (transitions to [`helpmefindthejob.com`](https://helpmefindthejob.com/)
+  (transitions to [`helpmefindthejob.org`](https://helpmefindthejob.org/)
   when the maintainer wires the CNAME).
-- **Public demo**: lands at `demo.helpmefindthejob.com` with the
+- **Public demo**: lands at `demo.helpmefindthejob.org` with the
   seven-persona panel pre-seeded — pending maintainer DNS.
 
 ## Why this exists

@@ -47,7 +47,7 @@ def _make_unsigned_vc(
     return {
         "@context": [
             "https://www.w3.org/ns/credentials/v2",
-            "https://helpmefindthejob.com/vc/anerkennung/v1",
+            "https://helpmefindthejob.org/vc/anerkennung/v1",
         ],
         "id": "urn:uuid:test-vc-1",
         "type": ["VerifiableCredential", "AnerkennungCredential"],

@@ -8,7 +8,7 @@
 #
 # Usage:
 #   ./scripts/uptime-check.sh
-#   APP_BASE_URL=https://app.helpmefindthejob.com TIMEOUT=10 ./scripts/uptime-check.sh
+#   APP_BASE_URL=https://app.helpmefindthejob.org TIMEOUT=10 ./scripts/uptime-check.sh
 #
 # Env:
 #   APP_BASE_URL  defaults to http://127.0.0.1:8765

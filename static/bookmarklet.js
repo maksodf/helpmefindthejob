@@ -3,13 +3,13 @@
  * The Settings page minifies this into a single-line `javascript:` URL the
  * user drags to their bookmark bar. When they click it on Indeed / LinkedIn /
  * StepStone / Xing (or any job page), it opens
- * https://app.helpmefindthejob.com/capture?u=…&t=… in a new tab. The capture page is
+ * https://app.helpmefindthejob.org/capture?u=…&t=… in a new tab. The capture page is
  * served by app.py's /capture route, requires the user's existing Helpmefindthejob
  * session, persists the URL+title as a DiscoveredJob, then redirects back to
  * /queue.
  *
  * NOTE: this file is committed for readability + tests. The runtime payload
- * is generated server-side (so we can stamp the user's helpmefindthejob.com host onto
+ * is generated server-side (so we can stamp the user's helpmefindthejob.org host onto
  * the URL without hardcoding it here).
  */
 (function () {
@@ -35,7 +35,7 @@
     "title",
   ]) || document.title || "";
   var endpoint = window.__HELPMEFINDTHEJOB_CAPTURE_URL__ ||
-    "https://app.helpmefindthejob.com/capture";
+    "https://app.helpmefindthejob.org/capture";
   var target = endpoint +
     "?u=" + encodeURIComponent(url) +
     "&t=" + encodeURIComponent(title.slice(0, 200));

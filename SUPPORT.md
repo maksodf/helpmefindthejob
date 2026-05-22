@@ -20,7 +20,7 @@ Helpmefindthejob is an early-stage open civic-employment commons project. Respon
 - **Direct maintainer contact**: see [AUTHORS.md](AUTHORS.md).
 - **Documentation site**: the project documentation site is published
   via mkdocs-material to GitHub Pages and transitions to
-  [`helpmefindthejob.com`](https://helpmefindthejob.com/) when the
+  [`helpmefindthejob.org`](https://helpmefindthejob.org/) when the
   maintainer wires the DNS. The repository's `README.md`,
   [`ARCHITECTURE.md`](ARCHITECTURE.md), and the `docs/` folder remain
   the canonical sources.

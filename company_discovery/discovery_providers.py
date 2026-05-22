@@ -337,7 +337,7 @@ class DuckDuckGoSearchProvider:
         request = Request(
             url,
             headers={
-                "User-Agent": "Mozilla/5.0 (compatible; Helpmefindthejob/0.14; +https://app.helpmefindthejob.com/about)",
+                "User-Agent": "Mozilla/5.0 (compatible; Helpmefindthejob/0.14; +https://app.helpmefindthejob.org/about)",
                 "Accept": "text/html,application/xhtml+xml",
                 "Accept-Language": "en-US,en;q=0.9",
             },

@@ -12,7 +12,7 @@ Quickstart::
     from helpmefindthejob_sdk import Client
 
     client = Client(
-        base_url="https://app.helpmefindthejob.com",
+        base_url="https://app.helpmefindthejob.org",
         session_cookie="<session-value>",
     )
 

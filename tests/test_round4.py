@@ -320,7 +320,7 @@ class ChatRouterCvTailoringWiringTests(unittest.TestCase):
             user_id=user.id,
             company_id="c-wiring",
             discovered_job_id="dj-wiring",
-            source_url="https://demo.helpmefindthejob.com/job/wiring",
+            source_url="https://demo.helpmefindthejob.org/job/wiring",
             title="Pflegefachkraft",
             company_name="Test Clinic",
             location="Berlin",

@@ -536,7 +536,7 @@ def build_sp_metadata(
         f"<Organization>"
         f"<OrganizationName xml:lang=\"en\">{sp_name}</OrganizationName>"
         f"<OrganizationDisplayName xml:lang=\"en\">{sp_name}</OrganizationDisplayName>"
-        f"<OrganizationURL xml:lang=\"en\">https://helpmefindthejob.com</OrganizationURL>"
+        f"<OrganizationURL xml:lang=\"en\">https://helpmefindthejob.org</OrganizationURL>"
         f"</Organization>"
         f"</EntityDescriptor>"
     )

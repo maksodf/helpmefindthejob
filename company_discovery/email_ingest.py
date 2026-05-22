@@ -8,7 +8,7 @@
 """Email-forward ingest — parse inbound platform alert emails into jobs.
 
 When a user forwards a LinkedIn / Indeed / StepStone alert email to
-their personal Helpmefindthejob inbox (e.g. ``u-{token}@inbox.helpmefindthejob.com``),
+their personal Helpmefindthejob inbox (e.g. ``u-{token}@inbox.helpmefindthejob.org``),
 the inbound webhook (Resend, Postmark, Mailgun — any of them works)
 POSTs the parsed message to ``/api/inbound/email`` on this server. The
 handler resolves the user via the per-user token, runs the parser

@@ -4,7 +4,7 @@
 # First-deploy runbook
 
 Single-page operator checklist for taking Helpmefindthejob live at
-`helpmefindthejob.com`. Sequenced for a fast, safe initial cutover
+`helpmefindthejob.org`. Sequenced for a fast, safe initial cutover
 before the NLnet submission window closes (1 June 2026, noon CEST).
 
 This runbook stitches together the existing pieces — it does NOT
@@ -33,8 +33,8 @@ Two reasonable choices:
 
 | Option | URL | Best for |
 |---|---|---|
-| **A. Subdomain first** (recommended) | `demo.helpmefindthejob.com` | Lower-risk shakedown; apex stays parked for landing-page work later |
-| **B. Apex direct** | `helpmefindthejob.com` | Maximum NLnet-narrative impact; submission can link directly |
+| **A. Subdomain first** (recommended) | `demo.helpmefindthejob.org` | Lower-risk shakedown; apex stays parked for landing-page work later |
+| **B. Apex direct** | `helpmefindthejob.org` | Maximum NLnet-narrative impact; submission can link directly |
 
 Tradeoff: A gives you a recoverable testbed; B gives you the
 reviewer click-through but a misconfigured TLS cert sends real
@@ -51,8 +51,8 @@ You'll need real values for these (template at
 - `HELPMEFINDTHEJOB_AUDIT_SALT` — 32 random bytes base64 (`openssl rand -base64 32`)
 - `HELPMEFINDTHEJOB_SECRET_KEY` — session signing (`openssl rand -hex 32`)
 - `HELPMEFINDTHEJOB_ENV=production`
-- `HELPMEFINDTHEJOB_DOMAIN=helpmefindthejob.com` (or `demo.helpmefindthejob.com`)
-- `HELPMEFINDTHEJOB_PUBLIC_URL=https://helpmefindthejob.com`
+- `HELPMEFINDTHEJOB_DOMAIN=helpmefindthejob.org` (or `demo.helpmefindthejob.org`)
+- `HELPMEFINDTHEJOB_PUBLIC_URL=https://helpmefindthejob.org`
 - `HELPMEFINDTHEJOB_ADMIN_EMAIL` + `HELPMEFINDTHEJOB_ADMIN_PASSWORD` for bootstrap
 - `HELPMEFINDTHEJOB_COOKIE_SECURE=1`
 - `HELPMEFINDTHEJOB_HSTS=1`
@@ -149,13 +149,13 @@ If `storage` is `sqlite` and you intended `postgres`, the
 In your DNS provider:
 
 ```
-demo.helpmefindthejob.com  A     <server-ipv4>
-demo.helpmefindthejob.com  AAAA  <server-ipv6>   # if dual-stack
+demo.helpmefindthejob.org  A     <server-ipv4>
+demo.helpmefindthejob.org  AAAA  <server-ipv6>   # if dual-stack
 ```
 
 (Or `@` for apex — see Phase 0.2.)
 
-Wait for DNS propagation (`dig demo.helpmefindthejob.com` returns
+Wait for DNS propagation (`dig demo.helpmefindthejob.org` returns
 the right IP). Typically 1-5 minutes.
 
 ### 3.2 Caddy auto-TLS
@@ -179,7 +179,7 @@ to validate, then switch back to production.
 
 ```bash
 ./scripts/production-smoke.sh
-APP_BASE_URL=https://demo.helpmefindthejob.com ./scripts/production-smoke.sh
+APP_BASE_URL=https://demo.helpmefindthejob.org ./scripts/production-smoke.sh
 ```
 
 The script now covers **10 surface checks**:
@@ -203,7 +203,7 @@ All must pass before declaring the deploy live.
 
 Things the smoke can't cover:
 
-1. **Browser load**: open `https://demo.helpmefindthejob.com/` in
+1. **Browser load**: open `https://demo.helpmefindthejob.org/` in
    an incognito window. See the landing mission block + sign-in
    form. No console errors. TLS cert is valid (green padlock).
 2. **Sign-up flow**: register a test account. Email arrives (if
@@ -239,7 +239,7 @@ to the configured `HELPMEFINDTHEJOB_BACKUP_REMOTE` location.
 Subscribe a free-tier uptime monitor to:
 
 ```
-https://demo.helpmefindthejob.com/api/health
+https://demo.helpmefindthejob.org/api/health
 ```
 
 Recommended: UptimeRobot or Better Uptime. Check every 5 minutes.
@@ -264,9 +264,9 @@ already firing. Confirm by:
 
 After 24-48 hours of clean smoke on the subdomain:
 
-1. Update DNS for the apex `helpmefindthejob.com` to the same IP.
+1. Update DNS for the apex `helpmefindthejob.org` to the same IP.
 2. Caddy auto-issues the apex cert.
-3. Re-run `APP_BASE_URL=https://helpmefindthejob.com ./scripts/production-smoke.sh`.
+3. Re-run `APP_BASE_URL=https://helpmefindthejob.org ./scripts/production-smoke.sh`.
 4. Update `HELPMEFINDTHEJOB_PUBLIC_URL` to the apex if changed.
 
 ---

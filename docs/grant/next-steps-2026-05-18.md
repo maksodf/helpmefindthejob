@@ -16,7 +16,7 @@
 
 | Field | Value |
 |---|---|
-| **Deliverable** | A one-line maintainer answer to `04-research-and-decisions.md` Open R8 (updated 2026-05-18): "public tree continues to use `app.helpmefindthejob.com` placeholders (Decision 12 default)" **OR** "name the real subdomain in the public tree (reversing the Week 1 task 1.4 sanitisation for the demo URL only)." Once answered, a small public-tree edit follows if the maintainer chose option B. |
+| **Deliverable** | A one-line maintainer answer to `04-research-and-decisions.md` Open R8 (updated 2026-05-18): "public tree continues to use `app.helpmefindthejob.org` placeholders (Decision 12 default)" **OR** "name the real subdomain in the public tree (reversing the Week 1 task 1.4 sanitisation for the demo URL only)." Once answered, a small public-tree edit follows if the maintainer chose option B. |
 | **Planning anchor** | `04-research-and-decisions.md` Open R8 (now re-scoped). `docs/grant/02-execution-plan.md` §3.4 references this open question as a §3.4 prerequisite. Decision 12. |
 | **Prerequisites** | A single one-line decision from the maintainer. **Not in place today.** |
 | **Estimate** | Maintainer time: ~30 seconds. Agent time (option B follow-through, if chosen): ~10 minutes for a small commit updating README + `12-application-package.md` + any application-package draft references. |

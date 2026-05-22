@@ -70,8 +70,8 @@ For task ordering and dependencies, the weeks are roughly sequential but not str
 
 ### 1.4 Sanitise internal residue (4 h) — MAJOR FIX
 
-- [x] Replace all `khalo.org` occurrences (verified count: 17 in `app.py`; ~70 across the public tree including static HTML, scripts, .env.example, docker-compose.prod.yml, and tests) with `helpmefindthejob.com` placeholders or environment-variable-driven configuration. Planning-doc estimate of "~29 in app.py" was inaccurate; the fresh-scan count is reported in the Commit D message.
-- [x] Replace `support@khalo.org` with `support@helpmefindthejob.com`
+- [x] Replace all `khalo.org` occurrences (verified count: 17 in `app.py`; ~70 across the public tree including static HTML, scripts, .env.example, docker-compose.prod.yml, and tests) with `helpmefindthejob.org` placeholders or environment-variable-driven configuration. Planning-doc estimate of "~29 in app.py" was inaccurate; the fresh-scan count is reported in the Commit D message.
+- [x] Replace `support@khalo.org` with `support@helpmefindthejob.org`
 - [x] Add `CONTRIBUTORS-NOTE.md` honestly explaining that early commits may reference internal tester names and legacy framing — do not retroactively rewrite history (preserves commit integrity per Decision 12)
 - [x] Delete `keepbuildingtill100%tracker.MD` from repo root (per Decision 14 in `04-research-and-decisions.md`)
 - [x] Sanitise `.env.example` — analytics domain placeholders updated; no real keys present
@@ -358,11 +358,11 @@ Per `10-ai-act-compliance.md`. Create the `/compliance/` directory and ship:
 
 Re-anchored scope:
 
-- [ ] Stand up the parallel public instance per the posture above. The same `scripts/deploy.sh` toolchain serves it; the demo URL is the maintainer's call (Open R8 ANSWERED 2026-05-18 — placeholder convention `app.helpmefindthejob.com` remains the public-tree convention; the live demo URL stays in `private/`).
+- [ ] Stand up the parallel public instance per the posture above. The same `scripts/deploy.sh` toolchain serves it; the demo URL is the maintainer's call (Open R8 ANSWERED 2026-05-18 — placeholder convention `app.helpmefindthejob.org` remains the public-tree convention; the live demo URL stays in `private/`).
 - [ ] Pre-seed the **parallel public instance** with the **seven-persona** panel (Aïcha, Yusuf, Olga, Mahmoud, Maria, Käthe, Tobias) per Decision 21. The seeding script itself is generic — runs against any Helpmefindthejob instance, not infrastructure-specific. The fixtures are designed to share with the R12 bias-testing methodology — same persona-source-of-truth at `docs/grant/07-personas.md`, same fixture shape. *(Agent-doable autonomously once Step 2 of `next-steps-2026-05-18.md` lands.)*
 - [ ] Document the generic deployment recipe in `docs/deployment-recipe.md` (extends the existing `docs/production-deployment.md` with the persona-seed step + the parallel-public-instance framing). **Not** Hetzner-specific; works against any Docker Compose + Caddy host the maintainer chooses.
 - [ ] Verify `/api/health` returns green on the parallel public instance via the existing `scripts/production-smoke.sh`. Already implemented; the §3.4 task is to *run* it post-seed, not to *build* it.
-- [ ] Update README and `12-application-package.md` to reference the parallel public instance's URL once it is live. Until then, the public-tree placeholder remains `app.helpmefindthejob.com` per the existing sanitisation convention.
+- [ ] Update README and `12-application-package.md` to reference the parallel public instance's URL once it is live. Until then, the public-tree placeholder remains `app.helpmefindthejob.org` per the existing sanitisation convention.
 
 ### 3.5 Documentation site (3 h)
 

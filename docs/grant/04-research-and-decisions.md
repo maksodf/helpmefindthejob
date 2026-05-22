@@ -422,6 +422,24 @@ The project is renamed from **DirectJob Scout** to **Helpmefindthejob** (single-
 
 **Reversibility**: hard. Public-name change affects every artefact going forward. Reverting would require another forward-going rename of comparable scope. The git-history-of-pre-rename + the `v0.1.0` cryptographic identity-of-record remain intact under either direction.
 
+**Amendment 2026-05-22 (TLD pivot: `.com` → `.org`)**: the canonical domain is updated from `helpmefindthejob.com` to **`helpmefindthejob.org`**. Two drivers:
+
+1. **DNSSEC at United Domains blocked the `.com` switch within the NLnet deadline window.** `helpmefindthejob.com` had DNSSEC active at the registrar; United Domains refuses to change nameservers while DNSSEC is on, and operator-side DNSSEC deactivation propagation is bounded by registrar policy ("up to 24 hours"), with no hard guarantee of completion before the 2026-06-01 noon CEST submission. `helpmefindthejob.org` (also owned by the maintainer) had DNSSEC already off — the pivot to `.org` unblocked the deploy with no DNS-propagation gamble.
+2. **`.org` actively signals the project's civic-commons positioning** in a way `.com` does not. Major commons projects (Wikipedia, Mozilla, Apache, Linux Foundation, The Commons Conservancy itself at `commonsconservancy.org`) live on `.org` for this reason. For an open-source EU-wide civic employment commons applying to NLnet NGI Zero Commons Fund, `.org` is the right TLD signal; NLnet reviewers parse `.com` as commercial intent. The pivot is therefore not merely pragmatic; it is brand-aligned.
+
+What this amendment changes (forward-going only, per Decision 12):
+
+- Every current-state code, config, doc, and public-tree reference to `helpmefindthejob.com` is updated to `helpmefindthejob.org`. The sweep covered 188 matches across 62 files and was committed on 2026-05-22.
+- Decision-22 historical text above retains `helpmefindthejob.com` as the canonical-at-time-of-decision identity-of-record (per Decision 12). This amendment block is the forward-going correction.
+- `helpmefindthejob.com` remains owned by the maintainer; once DNSSEC is deactivated and the registrar window clears, the `.com` can be configured as a secondary domain pointing at the same origin (Caddy SNI handles both). This is not currently scheduled.
+
+What this does NOT change:
+
+- Project name / brand: still **Helpmefindthejob** (single-word, capital H).
+- Git history, pre-amendment commits, CHANGELOG entries that mention `helpmefindthejob.com`.
+- `v0.1.0` cryptographic artefacts.
+- Dated audit reports (`docs/grant/cleanup-audit-*.md`, `docs/grant/bias-testing-*.md`, etc.) that mention `helpmefindthejob.com` at their dated state.
+
 ---
 
 ## Part C — Open research questions
@@ -490,6 +508,7 @@ These are not yet decided. Listed so a future agent or planning session can prio
   | Pre-sanitisation (until 2026-05-18) | `khalo.org` | Legacy commercial framing | Real domain owned during the commercial-product era. Surfaced across documentation, deploy configs, marketing copy. |
   | Sanitisation (2026-05-18 Week 1 task 1.4) | `directjob-scout.example` | [Decision 12](#decision-12-repository-sanitisation--apply-the-week-1-decision-and-document-the-historical-residue) | Protective placeholder; no real domain owned at this point. `.example` TLD per RFC 2606 ensures no accidental real-world routing. |
   | Real-domain acquisition (2026-05-19) | `helpmefindthejob.com` | [Decision 22](#decision-22-project-rename--directjob-scout--helpmefindthejob) | Maintainer acquired the domain. Replaces the placeholder in the public tree. |
+  | TLD pivot (2026-05-22) | `helpmefindthejob.org` | [Decision 22 amendment 2026-05-22](#decision-22-project-rename--directjob-scout--helpmefindthejob) | Canonical TLD changed from `.com` → `.org`. Two drivers: (1) DNSSEC at the `.com` was active at United Domains, blocking the nameserver switch within the NLnet deadline window; the `.org` (also owned) had DNSSEC off and unblocked the deploy; (2) `.org` actively signals civic-commons positioning (Wikipedia, Mozilla, Apache, Commons Conservancy itself all `.org`) which `.com` does not. The maintainer still owns `helpmefindthejob.com`; it remains available for a later secondary-domain configuration once DNSSEC clears. |
 
   Why this matters for reviewers: anyone reading the git history will see the `khalo.org` → `directjob-scout.example` rename land in Week 1 (sanitisation), then `directjob-scout.example` → `helpmefindthejob.com` in Week 2 (rename + acquisition). Without the timeline above, the two-step transition reads as redundant churn rather than two distinct decisions made for distinct reasons (history-preserving sanitisation vs. real-domain rebrand).
 - **Action**: closed (as of 2026-05-19 reopen + update). Maintainer's remaining DNS-config work is independent of the public-tree text changes and tracked outside this decision log.

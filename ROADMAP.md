@@ -48,9 +48,9 @@ We plan to:
 
 - Complete the Week 3 grant-sprint items. Status as of 2026-05-19:
   - Public demo deployment (§3.4): pending maintainer DNS for
-    [`demo.helpmefindthejob.com`](https://demo.helpmefindthejob.com/).
+    [`demo.helpmefindthejob.org`](https://demo.helpmefindthejob.org/).
   - Documentation site (§3.5): **shipped** via mkdocs-material to
-    GitHub Pages; transitions to [`helpmefindthejob.com`](https://helpmefindthejob.com/)
+    GitHub Pages; transitions to [`helpmefindthejob.org`](https://helpmefindthejob.org/)
     when DNS is wired.
   - Accessibility audit + [`ACCESSIBILITY.md`](ACCESSIBILITY.md) (§3.6):
     **shipped** (16 fixes across 3 + 1 audit passes; 0/0/0/0 across 33

@@ -230,7 +230,7 @@ class PreRenameResidueGuard(unittest.TestCase):
     """Drift guard: user-facing static surfaces MUST NOT carry the
     pre-rename `DirectJob` brand. The project was renamed
     Helpmefindthejob in commit fd2a474 + Decision 22 made
-    helpmefindthejob.com canonical.
+    helpmefindthejob.org canonical.
 
     Comment-only references to the legacy prefix (e.g., the SW's
     LEGACY_CACHE_PREFIX block that documents the cleanup) are

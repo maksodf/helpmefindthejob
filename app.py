@@ -1988,9 +1988,9 @@ class AppState:
             (
                 "Senior Backend Engineer",
                 "Acme Health (Demo)",
-                "https://demo.helpmefindthejob.com/acme-health",
+                "https://demo.helpmefindthejob.org/acme-health",
                 "Berlin",
-                "https://demo.helpmefindthejob.com/jobs/senior-backend",
+                "https://demo.helpmefindthejob.org/jobs/senior-backend",
                 0.92,
                 0.88,
                 "High overlap on Python + healthcare-management keywords; remote-friendly.",
@@ -1998,9 +1998,9 @@ class AppState:
             (
                 "Frontend Engineer",
                 "Sample SaaS (Demo)",
-                "https://demo.helpmefindthejob.com/sample-saas",
+                "https://demo.helpmefindthejob.org/sample-saas",
                 "Remote — DACH",
-                "https://demo.helpmefindthejob.com/jobs/frontend",
+                "https://demo.helpmefindthejob.org/jobs/frontend",
                 0.85,
                 0.82,
                 "Demo lead — TypeScript + design-system fit. Remote.",
@@ -2008,9 +2008,9 @@ class AppState:
             (
                 "DevOps Engineer",
                 "Demo Insurance (Demo)",
-                "https://demo.helpmefindthejob.com/demo-insurance",
+                "https://demo.helpmefindthejob.org/demo-insurance",
                 "München",
-                "https://demo.helpmefindthejob.com/jobs/devops",
+                "https://demo.helpmefindthejob.org/jobs/devops",
                 0.78,
                 0.75,
                 "Demo lead — Kubernetes / Terraform / SRE focus. Hybrid.",
@@ -2018,9 +2018,9 @@ class AppState:
             (
                 "Data Engineer",
                 "Mock Analytics (Demo)",
-                "https://demo.helpmefindthejob.com/mock-analytics",
+                "https://demo.helpmefindthejob.org/mock-analytics",
                 "Hamburg",
-                "https://demo.helpmefindthejob.com/jobs/data",
+                "https://demo.helpmefindthejob.org/jobs/data",
                 0.88,
                 0.84,
                 "Demo lead — dbt + Snowflake + CDC; bilingual EN/DE team.",
@@ -2028,9 +2028,9 @@ class AppState:
             (
                 "Product Manager",
                 "Test Tech (Demo)",
-                "https://demo.helpmefindthejob.com/test-tech",
+                "https://demo.helpmefindthejob.org/test-tech",
                 "Berlin",
-                "https://demo.helpmefindthejob.com/jobs/product",
+                "https://demo.helpmefindthejob.org/jobs/product",
                 0.74,
                 0.71,
                 "Demo lead — early-stage SaaS; PM-of-one with engineering background.",
@@ -3270,7 +3270,7 @@ class AppState:
         )
         public_url = (
             get_env("HELPMEFINDTHEJOB_PUBLIC_URL")
-            or "https://app.helpmefindthejob.com"
+            or "https://app.helpmefindthejob.org"
         )
         result = post_high_fit_notification(
             webhook_url=url,
@@ -6282,7 +6282,7 @@ class AppState:
 
     def inbound_token_for_user(self, user_id: str) -> str:
         """Stable per-user token used as the local-part of inbound email
-        addresses (e.g. ``u-{token}@inbox.helpmefindthejob.com``).
+        addresses (e.g. ``u-{token}@inbox.helpmefindthejob.org``).
 
         Derived as HMAC-SHA256 over the user-id + the server secret so it
         survives restarts and can be re-derived if a user loses their
@@ -7570,7 +7570,7 @@ class Handler(BaseHTTPRequestHandler):
                     return
                 public_url = (
                     get_env("HELPMEFINDTHEJOB_PUBLIC_URL")
-                    or "https://app.helpmefindthejob.com"
+                    or "https://app.helpmefindthejob.org"
                 )
                 result = post_high_fit_notification(
                     webhook_url=url,
@@ -8113,7 +8113,7 @@ class Handler(BaseHTTPRequestHandler):
                 # token route the message to the right account.
                 #
                 # Activation steps for the operator:
-                #   1. Wire MX for inbox.helpmefindthejob.com to the inbound
+                #   1. Wire MX for inbox.helpmefindthejob.org to the inbound
                 #      provider (Resend supports this).
                 #   2. Set HELPMEFINDTHEJOB_INBOUND_EMAIL_SECRET in prod env.
                 #   3. Configure the provider's webhook to POST here.
@@ -11809,7 +11809,7 @@ class Handler(BaseHTTPRequestHandler):
             '    <a href="/" class="legal-back">← Helpmefindthejob</a>\n'
             "    <h1>Job alert not found</h1>\n"
             "    <p>This job-alert page does not exist. Head to "
-            '<a href="/">helpmefindthejob.com</a> to set up your own saved search — we watch the '
+            '<a href="/">helpmefindthejob.org</a> to set up your own saved search — we watch the '
             "company pages + the major aggregators daily.</p>\n"
             "  </main>\n"
             "</body>\n"
@@ -11986,7 +11986,7 @@ class Handler(BaseHTTPRequestHandler):
             '    <a href="/" class="legal-back">← Helpmefindthejob</a>\n'
             "    <h1>Job not available</h1>\n"
             "    <p>This job's share link has been disabled by its owner, or the link is wrong. "
-            'If you arrived here by mistake, head to <a href="/">helpmefindthejob.com</a>.</p>\n'
+            'If you arrived here by mistake, head to <a href="/">helpmefindthejob.org</a>.</p>\n'
             "  </main>\n"
             "</body>\n"
             "</html>\n"
@@ -12088,7 +12088,7 @@ class Handler(BaseHTTPRequestHandler):
             '    <a href="/" class="legal-back">← Back to Helpmefindthejob</a>\n'
             f'    <h1 style="color: {accent}">{_escape(title)}</h1>\n'
             f"    <p>{_escape(message)}</p>\n"
-            '    <p class="muted small">If something is wrong, contact <a href="mailto:support@helpmefindthejob.com">support@helpmefindthejob.com</a>.</p>\n'
+            '    <p class="muted small">If something is wrong, contact <a href="mailto:support@helpmefindthejob.org">support@helpmefindthejob.org</a>.</p>\n'
             "  </main>\n"
             "</body>\n"
             "</html>\n"

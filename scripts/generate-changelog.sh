@@ -37,8 +37,8 @@ write_header() {
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="robots" content="index,follow" />
     <title>Changelog — Helpmefindthejob</title>
-    <meta name="description" content="What we shipped on Helpmefindthejob (helpmefindthejob.com). Real cadence, no marketing spin." />
-    <link rel="canonical" href="https://helpmefindthejob.com/changelog" />
+    <meta name="description" content="What we shipped on Helpmefindthejob (helpmefindthejob.org). Real cadence, no marketing spin." />
+    <link rel="canonical" href="https://helpmefindthejob.org/changelog" />
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body class="legal-body">

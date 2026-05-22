@@ -266,7 +266,7 @@ class SeedPersonasTests(unittest.TestCase):
             )
 
     def test_default_email_domain_is_canonical(self) -> None:
-        """Default email domain is the canonical helpmefindthejob.com
+        """Default email domain is the canonical helpmefindthejob.org
         demo subdomain per Decision 22 (project rename + real-domain
         acquisition supersedes the Decision-12 .example placeholder
         convention; see Open R8 reopen in
@@ -276,9 +276,9 @@ class SeedPersonasTests(unittest.TestCase):
         source = _SCRIPT_PATH.read_text(encoding="utf-8")
         self.assertRegex(
             source,
-            r'default="demo\.helpmefindthejob\.com"',
+            r'default="demo\.helpmefindthejob\.org"',
             "seed-personas.py default --email-domain must be the canonical "
-            "demo.helpmefindthejob.com subdomain (Decision 22); the prior "
+            "demo.helpmefindthejob.org subdomain (Decision 22); the prior "
             "Decision-12 .example placeholder convention is superseded.",
         )
 

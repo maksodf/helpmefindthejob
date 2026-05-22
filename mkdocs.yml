@@ -14,7 +14,7 @@ site_name: Helpmefindthejob
 site_description: >-
   Open-source EU-wide civic employment commons — MCP-composable copilot
   for users facing structural labor-market friction in Europe.
-site_url: https://helpmefindthejob.com/
+site_url: https://helpmefindthejob.org/
 repo_url: https://github.com/maksodf/helpmefindthejob
 repo_name: maksodf/helpmefindthejob
 edit_uri: edit/main/docs/

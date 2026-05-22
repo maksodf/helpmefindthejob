@@ -108,15 +108,15 @@ class SiteConfigEndpointTests(unittest.TestCase):
 
     def test_set_returns_values(self) -> None:
         env_extra = {
-            "HELPMEFINDTHEJOB_ANALYTICS_SCRIPT_URL": "https://analytics.helpmefindthejob.com/js/script.js",
-            "HELPMEFINDTHEJOB_ANALYTICS_DOMAIN": "helpmefindthejob.com",
+            "HELPMEFINDTHEJOB_ANALYTICS_SCRIPT_URL": "https://analytics.helpmefindthejob.org/js/script.js",
+            "HELPMEFINDTHEJOB_ANALYTICS_DOMAIN": "helpmefindthejob.org",
         }
         _, base = self._spawn(env_extra)
         cfg = self._get_site_config(base)
         self.assertEqual(
-            cfg["analytics"]["scriptUrl"], "https://analytics.helpmefindthejob.com/js/script.js"
+            cfg["analytics"]["scriptUrl"], "https://analytics.helpmefindthejob.org/js/script.js"
         )
-        self.assertEqual(cfg["analytics"]["domain"], "helpmefindthejob.com")
+        self.assertEqual(cfg["analytics"]["domain"], "helpmefindthejob.org")
 
 
 if __name__ == "__main__":

@@ -65,7 +65,7 @@ class SlackNotifyTests(unittest.TestCase):
                 fit_score=0.82,
                 fit_reason="Strong overlap on Python + Postgres.",
                 job_url="https://acme/jobs/1",
-                public_url="https://app.helpmefindthejob.com",
+                public_url="https://app.helpmefindthejob.org",
             )
         self.assertEqual(res["status"], "ok")
         self.assertIn("Senior Data Engineer", captured["body"].decode())

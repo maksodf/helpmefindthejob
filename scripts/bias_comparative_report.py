@@ -376,7 +376,7 @@ def _build_fit_prompt(persona: PersonaFixture, scenario: BiasScenario) -> str:
     )
     job = DiscoveredJob(
         user_id=profile.user_id,
-        source_url=f"https://demo.helpmefindthejob.com/bias-comparative/{scenario.label}",
+        source_url=f"https://demo.helpmefindthejob.org/bias-comparative/{scenario.label}",
         title=scenario.job_title,
         location=scenario.job_location,
         raw_description=scenario.job_description,

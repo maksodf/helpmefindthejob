@@ -94,7 +94,7 @@ def _generate_walk(persona, scenario, ai_caller) -> dict:
             "title": scenario.job_title,
             "company": company_name,
             "location": scenario.job_location,
-            "url": "https://demo.helpmefindthejob.com/walk",
+            "url": "https://demo.helpmefindthejob.org/walk",
             "description": scenario.job_description,
         },
         cv_text=persona.cv_summary,

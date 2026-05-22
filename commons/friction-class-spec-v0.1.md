@@ -150,7 +150,7 @@ structured object with the following minimum fields:
   "confidence": 0.92,
   "signalsConsidered": ["residency_status", "qualification_field"],
   "classifiedAt": "2026-05-21T13:42:00Z",
-  "issuingAgent": "did:web:helpmefindthejob.com",
+  "issuingAgent": "did:web:helpmefindthejob.org",
   "userConsentReceivedAt": "2026-05-21T13:40:00Z"
 }
 ```
@@ -208,10 +208,10 @@ Credential of type `FrictionClassCredential`:
 {
   "@context": [
     "https://www.w3.org/ns/credentials/v2",
-    "https://helpmefindthejob.com/vc/friction-class/v1"
+    "https://helpmefindthejob.org/vc/friction-class/v1"
   ],
   "type": ["VerifiableCredential", "FrictionClassCredential"],
-  "issuer": "did:web:helpmefindthejob.com",
+  "issuer": "did:web:helpmefindthejob.org",
   "validFrom": "2026-05-21T13:42:00Z",
   "credentialSubject": {
     "id": "did:web:user.example.com:opaque-hash",

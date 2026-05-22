@@ -20,7 +20,7 @@ When team grows past 1 human, split these. Until then: one phone, one runbook.
 
 ## First five minutes — triage
 
-1. **Confirm the report.** Hit `https://app.helpmefindthejob.com/api/health`. If 200, go look at what the user was actually doing. If 5xx or timeout, treat as SEV-1 and continue.
+1. **Confirm the report.** Hit `https://app.helpmefindthejob.org/api/health`. If 200, go look at what the user was actually doing. If 5xx or timeout, treat as SEV-1 and continue.
 2. **Check Better Stack.** Open the source `helpmefindthejob-prod`. Recent error spikes? Container restart loops? OOM lines?
 3. **SSH and get container state.**
    ```sh

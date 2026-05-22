@@ -6,7 +6,7 @@
 # a copy of the License at http://www.apache.org/licenses/LICENSE-2.0.
 
 """Red-team runner — invoke via:
-E2E_BASE_URL=https://app.helpmefindthejob.com python -m tests.e2e.red_team
+E2E_BASE_URL=https://app.helpmefindthejob.org python -m tests.e2e.red_team
 """
 
 from __future__ import annotations

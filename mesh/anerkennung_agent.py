@@ -50,7 +50,7 @@ from mesh.common import (
 
 AGENT_NAME = "anerkennung-agent"
 AGENT_VERSION = "0.1.0"
-AGENT_DID = "did:web:anerkennung-agent.helpmefindthejob.com"
+AGENT_DID = "did:web:anerkennung-agent.helpmefindthejob.org"
 
 
 # Three demo recognition pathways. Each maps a (country_of_origin,
@@ -180,14 +180,14 @@ def _build_unsigned_credential(
     return {
         "@context": [
             "https://www.w3.org/ns/credentials/v2",
-            "https://helpmefindthejob.com/vc/anerkennung/v1",
+            "https://helpmefindthejob.org/vc/anerkennung/v1",
         ],
         "id": f"urn:uuid:{uuid.uuid4()}",
         "type": ["VerifiableCredential", "AnerkennungCredential"],
         "issuer": AGENT_DID,
         "validFrom": now_iso(),
         "credentialSubject": {
-            "id": f"did:web:user.helpmefindthejob.com:{_short_hash(user_id)}",
+            "id": f"did:web:user.helpmefindthejob.org:{_short_hash(user_id)}",
             "anerkennungPathway": decision["pathway"],
             "decision": decision["decision"],
             "issuingAuthority": decision["issuingAuthority"],

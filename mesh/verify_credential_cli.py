@@ -20,7 +20,7 @@ Use cases:
 Usage::
 
     python -m mesh.verify_credential_cli credential.json \\
-        --issuer-did did:web:anerkennung-agent.helpmefindthejob.com \\
+        --issuer-did did:web:anerkennung-agent.helpmefindthejob.org \\
         --issuer-public-key z6Mkhaxz...
 
 If ``--issuer-public-key`` is omitted, the verifier looks for a

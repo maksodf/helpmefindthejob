@@ -80,7 +80,7 @@ OUT_DIR = REPO_ROOT / "audit-results" / "auth-surfaces"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
 DEMO_PASSWORD = os.environ.get("AUDIT_PASSWORD", "audit-test-12345678")
-EMAIL = "aicha@demo.helpmefindthejob.com"
+EMAIL = "aicha@demo.helpmefindthejob.org"
 
 
 def _err(msg: str) -> None:

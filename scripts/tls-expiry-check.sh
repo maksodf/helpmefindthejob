@@ -6,8 +6,8 @@
 # Uses only OpenSSL; no provider lock-in.
 #
 # Usage:
-#   DOMAIN=app.helpmefindthejob.com ./scripts/tls-expiry-check.sh
-#   DOMAIN=app.helpmefindthejob.com WARN_DAYS=21 ./scripts/tls-expiry-check.sh
+#   DOMAIN=app.helpmefindthejob.org ./scripts/tls-expiry-check.sh
+#   DOMAIN=app.helpmefindthejob.org WARN_DAYS=21 ./scripts/tls-expiry-check.sh
 #
 # Exit codes:
 #   0  cert valid for more than WARN_DAYS days
