@@ -4390,6 +4390,73 @@ html[dir="rtl"] .funnel-stage { align-items: flex-end; }
   border: 1px solid var(--border);
   border-radius: 8px;
 }
+/* UX-C1 (2026-05-23): inline email-format error under the field.
+ * Tinted red; only shown on blur with an invalid value. */
+.field-inline-error {
+  display: block;
+  margin-top: 4px;
+  font-size: var(--text-xs, 12px);
+  color: var(--danger);
+}
+input[aria-invalid="true"] {
+  border-color: var(--danger);
+}
+
+/* UX-C3/C5 (2026-05-23): password input wrapper holds the input,
+ * the caps-lock badge, and the visibility toggle. The wrap sits
+ * INSIDE the .field label so the existing label-click → focus
+ * still works. */
+.password-input-wrap {
+  position: relative;
+  display: block;
+}
+.password-input-wrap > input {
+  width: 100%;
+  padding-right: 40px;  /* leave room for the toggle button */
+}
+.password-toggle {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+}
+.password-toggle:hover,
+.password-toggle:focus-visible {
+  color: var(--text);
+  background: var(--surface-2);
+}
+.password-toggle svg { width: 18px; height: 18px; }
+.password-toggle .icon-eye-off { display: none; }
+.password-input-wrap.is-visible .password-toggle .icon-eye { display: none; }
+.password-input-wrap.is-visible .password-toggle .icon-eye-off { display: inline-block; }
+.caps-lock-badge {
+  position: absolute;
+  right: 44px;
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border-radius: 999px;
+  background: var(--warn-weak);
+  color: var(--warn);
+  border: 1px solid var(--warn);
+  pointer-events: none;
+}
+
 /* UX-K1 (2026-05-23): the DE-only "API reference is English"
  * note on /api/docs only appears when html[lang="de"] (set by the
  * SSR translator). EN visitors don't see it. */

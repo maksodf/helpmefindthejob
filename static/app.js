@@ -7039,6 +7039,138 @@ init().catch((error) => {
   showToast(error.message, "error");
 });
 
+// UX-C1/C3/C5 (2026-05-23): progressive enhancement on auth form
+// inputs. Runs after init() bootstraps so the DOM is settled.
+//   * C1: inline email-format validation on blur (red border +
+//     small helper text under the field).
+//   * C3: caps-lock indicator on password fields — small badge
+//     appears when capsLock is on so users don't fight a wrong
+//     password silently.
+//   * C5: password visibility toggle (eye icon). Click flips
+//     type=password ↔ type=text; aria-pressed reflects state.
+function _svgEl(name, attrs) {
+  const NS = "http://www.w3.org/2000/svg";
+  const el = document.createElementNS(NS, name);
+  for (const [k, v] of Object.entries(attrs || {})) el.setAttribute(k, v);
+  return el;
+}
+function _buildEyeIcons(toggle) {
+  // Open eye — visible when password hidden.
+  const eye = _svgEl("svg", {
+    "class": "icon-eye", "viewBox": "0 0 24 24",
+    "aria-hidden": "true", "focusable": "false",
+  });
+  const eyePath = _svgEl("path", {
+    "d": "M12 5C7 5 2.7 8.1 1 12c1.7 3.9 6 7 11 7s9.3-3.1 11-7C21.3 8.1 17 5 12 5zm0 11.5a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9z",
+    "fill": "none", "stroke": "currentColor", "stroke-width": "1.8",
+  });
+  const eyePupil = _svgEl("circle", {
+    "cx": "12", "cy": "12", "r": "2", "fill": "currentColor",
+  });
+  eye.appendChild(eyePath);
+  eye.appendChild(eyePupil);
+  toggle.appendChild(eye);
+  // Eye with slash — visible when password shown.
+  const off = _svgEl("svg", {
+    "class": "icon-eye-off", "viewBox": "0 0 24 24",
+    "aria-hidden": "true", "focusable": "false",
+  });
+  const offPath = _svgEl("path", {
+    "d": "M3 3l18 18 M10.5 10.6a2.1 2.1 0 0 0 2.9 2.9 M9 6.1A11 11 0 0 1 12 5c5 0 9.3 3.1 11 7-.6 1.4-1.6 2.7-2.8 3.7 M6.5 8.2C3.9 9.5 2 11.7 1 12c1.7 3.9 6 7 11 7 1.7 0 3.4-.4 4.9-1.1",
+    "fill": "none", "stroke": "currentColor", "stroke-width": "1.8",
+    "stroke-linecap": "round",
+  });
+  off.appendChild(offPath);
+  toggle.appendChild(off);
+}
+function enhanceAuthInputs() {
+  // C1: email blur-validation. Browsers do this on submit; users
+  // want feedback sooner.
+  const EMAIL_RX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  for (const input of document.querySelectorAll('input[type="email"]')) {
+    if (input.dataset.djEnhanced === "1") continue;
+    input.dataset.djEnhanced = "1";
+    const errEl = document.createElement("span");
+    errEl.className = "field-inline-error";
+    errEl.hidden = true;
+    errEl.setAttribute("aria-live", "polite");
+    input.insertAdjacentElement("afterend", errEl);
+    const validate = () => {
+      const value = (input.value || "").trim();
+      if (!value) { errEl.hidden = true; input.removeAttribute("aria-invalid"); return; }
+      if (EMAIL_RX.test(value)) {
+        errEl.hidden = true;
+        input.removeAttribute("aria-invalid");
+      } else {
+        errEl.textContent = t("auth.emailInvalid", "Please enter a valid email address.");
+        errEl.hidden = false;
+        input.setAttribute("aria-invalid", "true");
+      }
+    };
+    input.addEventListener("blur", validate);
+    input.addEventListener("input", () => {
+      if (!errEl.hidden) validate();
+    });
+  }
+
+  // C3 + C5: decorate password inputs with caps-lock badge +
+  // visibility toggle. Wrap the input in a relative container so
+  // the absolute-positioned button + badge can anchor to it.
+  for (const input of document.querySelectorAll('input[type="password"]')) {
+    if (input.dataset.djEnhanced === "1") continue;
+    input.dataset.djEnhanced = "1";
+
+    const wrap = document.createElement("span");
+    wrap.className = "password-input-wrap";
+    input.parentElement?.insertBefore(wrap, input);
+    wrap.appendChild(input);
+
+    // C3: caps-lock badge.
+    const caps = document.createElement("span");
+    caps.className = "caps-lock-badge";
+    caps.textContent = t("auth.capsLockOn", "Caps Lock");
+    caps.hidden = true;
+    caps.setAttribute("aria-live", "polite");
+    wrap.appendChild(caps);
+    const checkCaps = (event) => {
+      if (typeof event.getModifierState === "function") {
+        caps.hidden = !event.getModifierState("CapsLock");
+      }
+    };
+    input.addEventListener("keydown", checkCaps);
+    input.addEventListener("keyup", checkCaps);
+    input.addEventListener("blur", () => { caps.hidden = true; });
+
+    // C5: visibility toggle.
+    const toggle = document.createElement("button");
+    toggle.type = "button";
+    toggle.className = "password-toggle";
+    toggle.setAttribute("aria-pressed", "false");
+    toggle.setAttribute("aria-label", t("auth.passwordShow", "Show password"));
+    _buildEyeIcons(toggle);
+    toggle.addEventListener("click", () => {
+      const shown = input.type === "text";
+      input.type = shown ? "password" : "text";
+      const nowVisible = !shown;
+      toggle.setAttribute("aria-pressed", nowVisible ? "true" : "false");
+      toggle.setAttribute(
+        "aria-label",
+        nowVisible
+          ? t("auth.passwordHide", "Hide password")
+          : t("auth.passwordShow", "Show password"),
+      );
+      wrap.classList.toggle("is-visible", nowVisible);
+    });
+    wrap.appendChild(toggle);
+  }
+}
+// Run after DOMContentLoaded so all auth-card inputs exist.
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", enhanceAuthInputs);
+} else {
+  enhanceAuthInputs();
+}
+
 // PWA — register service worker + handle install prompt.
 //
 // Auto-reload when a new SW activates so the user picks up new HTML /
