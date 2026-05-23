@@ -105,7 +105,11 @@
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="icon" type="image/svg+xml" href="/icons/icon.svg" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <link rel="stylesheet" href="/styles.css" />
+    <!-- AUDIT-17 (2026-05-23): minified production bundles via esbuild
+         (scripts/build-static.sh). app.js → app.min.js ~33% smaller,
+         styles.css → styles.min.css ~28% smaller. Sources stay
+         human-readable for dev; tests grep the source path. -->
+    <link rel="stylesheet" href="/styles.min.css" />
   </head>
   <body>
     <!-- axe + Lighthouse fix (2026-05-23 browser audit): single
@@ -1790,6 +1794,8 @@
       </div>
     </template>
 
-    <script src="/app.js" defer></script>
+    <!-- AUDIT-17: serve the minified bundle; source at /app.js stays
+         for dev debugging and source-grep tests. -->
+    <script src="/app.min.js" defer></script>
   </body>
 </html>

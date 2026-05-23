@@ -142,8 +142,8 @@ class ServiceWorkerContract(unittest.TestCase):
         for path in (
             '"/"',
             '"/index.html"',
-            '"/app.js"',
-            '"/styles.css"',
+            '"/app.min.js"',
+            '"/styles.min.css"',
             '"/manifest.webmanifest"',
             '"/i18n/en.json"',
             '"/i18n/de.json"',

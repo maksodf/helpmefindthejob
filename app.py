@@ -502,6 +502,94 @@ SITE_FOOTER_HTML_DE = _build_site_footer("de")
 SITE_FOOTER_HTML = SITE_FOOTER_HTML_EN
 
 
+def _load_locale_bundle(lang: str) -> dict[str, str]:
+    """AUDIT-13: load a static/i18n/<lang>.json bundle once per
+    process. Cached in module-level dict so per-request lookups are
+    cheap. Returns {} if the file is missing or malformed — the
+    HTML fallbacks (which are EN strings, enforced by
+    test_html_inline_fallback_matches_en_json) keep the page
+    rendering correctly."""
+    cached = _LOCALE_BUNDLE_CACHE.get(lang)
+    if cached is not None:
+        return cached
+    path = STATIC_ROOT / "i18n" / f"{lang}.json"
+    try:
+        with path.open(encoding="utf-8") as fh:
+            data = json.load(fh)
+            # Only strings — drop nested objects / non-string values.
+            bundle = {k: v for k, v in data.items() if isinstance(v, str)}
+    except (OSError, ValueError):
+        bundle = {}
+    _LOCALE_BUNDLE_CACHE[lang] = bundle
+    return bundle
+
+
+_LOCALE_BUNDLE_CACHE: dict[str, dict[str, str]] = {}
+
+
+_SSR_I18N_RX = re.compile(
+    r'(<([a-z0-9]+)([^>]*?)data-i18n="([^"]+)"([^>]*?)>)([^<]*?)(</\2>)',
+    re.IGNORECASE,
+)
+
+
+def _ssr_translate_html(content: bytes, lang: str) -> bytes:
+    """AUDIT-13 (2026-05-23): server-side i18n substitution for the
+    SPA shell. Pre-fix, the SPA's first paint was always English —
+    the data-i18n fallbacks ARE the EN strings (locked by the
+    inline-fallback parity test), and the JS-side translator only
+    swaps them after page load. Search engines indexing the first
+    paint always saw English regardless of Accept-Language, which
+    blocked DE SEO entirely.
+
+    Post-fix: for ``lang='de'`` (or any non-EN locale with a
+    bundle), every ``<tag ... data-i18n="key" ...>fallback</tag>``
+    element gets its text content swapped to the bundle value
+    before the response goes out. Googlebot indexing the DE first
+    paint now sees DE content. The JS-side translator on the
+    client is unchanged — it re-applies the same substitution after
+    SPA boot, which is a no-op for already-translated text.
+
+    Also rewrites ``<html lang="en">`` to ``<html lang="<lang>">``
+    so the document-level locale matches.
+
+    Only translates simple ``<tag>text</tag>`` patterns; mixed-
+    content elements (text + nested markup with their OWN
+    data-i18n) are not touched here — the inner data-i18n
+    elements get translated by their own match. This is the
+    convention every existing data-i18n usage in index.html
+    follows."""
+    if lang == "en":
+        return content
+    bundle = _load_locale_bundle(lang)
+    if not bundle:
+        return content
+    text = content.decode("utf-8")
+
+    def _repl(match: re.Match) -> str:
+        opener, _tag, _pre, key, _post, _fallback, closer = match.groups()
+        translated = bundle.get(key)
+        if translated is None:
+            return match.group(0)
+        # HTML-escape the translation. The data-i18n bundle values
+        # are plain text (no markup expected); escaping & < > makes
+        # this safe against any future bundle entry that happens to
+        # contain those characters.
+        escaped = (
+            translated.replace("&", "&amp;")
+                      .replace("<", "&lt;")
+                      .replace(">", "&gt;")
+        )
+        return f"{opener}{escaped}{closer}"
+
+    text = _SSR_I18N_RX.sub(_repl, text)
+    # Document-level lang attribute. Match either lang="en" or
+    # lang='en'; preserve attribute order.
+    text = re.sub(r'(<html\s+[^>]*?lang=)"en"', r'\1"' + lang + '"', text, count=1)
+    text = re.sub(r"(<html\s+[^>]*?lang=)'en'", r"\1'" + lang + "'", text, count=1)
+    return text.encode("utf-8")
+
+
 def _inject_html_footer(content: bytes, lang: str = "en") -> bytes:
     """AUDIT-34 + GAP-1+2: insert the site-wide footer before
     ``</body>`` if the HTML response doesn't already have one.
@@ -12914,6 +13002,15 @@ class Handler(BaseHTTPRequestHandler):
         is_html = candidate.suffix.lower() == ".html"
         if is_html:
             footer_lang = self._resolve_user_language()
+            # AUDIT-13 (2026-05-23): SSR i18n. Translate every
+            # data-i18n text content to the locale's bundle value
+            # BEFORE the footer injection — that way the footer
+            # (which has its own per-language pre-built variants)
+            # isn't re-translated by the SSR pass. Substitution is
+            # safe / no-op for already-translated content because
+            # the regex matches fallback-style elements and the
+            # bundle keys are content-specific.
+            content = _ssr_translate_html(content, footer_lang)
             content = _inject_html_footer(content, footer_lang)
             # 2026-05-23: signal end_headers() to extend the Vary
             # header with Accept-Language + Cookie (HTML responses

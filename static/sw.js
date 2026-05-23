@@ -12,11 +12,13 @@
  * by default. We still cache the shell so the app loads under flaky
  * connectivity and offline reads work.
  */
-// Bumped to v0.21.0 by the 2026-05-23 session: index.html (AUDIT-40
-// template wrap), app.js (AUDIT-40 materialisation IIFE), styles.css
-// (AUDIT-34 footer CSS), plus three new files we want cached. Old
-// users on v0.20.0 would otherwise keep the stale pre-AUDIT-40 shell.
-const CACHE_VERSION = "v0.21.0";
+// Bumped to v0.22.0 by the 2026-05-23 second pass: AUDIT-13 (SSR
+// i18n changes the served HTML body), AUDIT-17 (minified bundles
+// app.min.js + styles.min.css replace app.js / styles.css for the
+// production references), AUDIT-32 + 33 (landing copy + persona
+// cards). Old users on v0.21.0 would otherwise keep the stale
+// pre-rewrite shell + chase the wrong asset paths.
+const CACHE_VERSION = "v0.22.0";
 // Cache name prefix bumped from `directjob-shell-` → `helpmefindthejob-shell-`
 // during the rename pass. The activate handler below explicitly cleans
 // up BOTH prefixes so users who installed the PWA pre-rename don't
@@ -27,8 +29,12 @@ const SHELL_CACHE = `${CACHE_PREFIX}${CACHE_VERSION}`;
 const SHELL_PATHS = [
   "/",
   "/index.html",
-  "/app.js",
-  "/styles.css",
+  // AUDIT-17 (2026-05-23): production references the minified
+  // bundles. The unminified sources stay on disk for dev + source-
+  // grep tests but the SW only needs to cache what's actually
+  // requested by the live HTML.
+  "/app.min.js",
+  "/styles.min.css",
   "/manifest.webmanifest",
   "/icons/icon.svg",
   "/i18n/en.json",
