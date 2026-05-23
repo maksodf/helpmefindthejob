@@ -965,6 +965,7 @@ def _build_site_header(lang: str) -> bytes:
         en_current = ""
         de_current = ' aria-current="true"'
         brand_label = "Helpmefindthejob &mdash; Startseite"
+        theme_label = "Theme wechseln"
     else:
         nav = [
             ("/help", "Help"),
@@ -976,6 +977,7 @@ def _build_site_header(lang: str) -> bytes:
         en_current = ' aria-current="true"'
         de_current = ""
         brand_label = "Helpmefindthejob &mdash; home"
+        theme_label = "Toggle theme"
 
     nav_items = "".join(
         f'<a class="site-header-nav-link" href="{href}">{label}</a>'
@@ -993,6 +995,15 @@ def _build_site_header(lang: str) -> bytes:
     <nav class="site-header-nav" aria-label="Primary">
       {nav_items}
     </nav>
+    <button id="siteHeaderThemeToggle" class="site-header-theme-toggle" type="button" aria-label="{theme_label}" title="{theme_label}">
+      <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M21 12.5A9 9 0 1 1 11.5 3a7 7 0 0 0 9.5 9.5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/>
+        <path d="M12 3v2 M12 19v2 M3 12h2 M19 12h2 M5.6 5.6l1.4 1.4 M17 17l1.4 1.4 M5.6 18.4l1.4-1.4 M17 7l1.4-1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+      </svg>
+    </button>
     <p class="site-header-langswitch" aria-label="{lang_label}">
       <a href="?lang=en" lang="en" hreflang="en"{en_current}>EN</a>
       <span aria-hidden="true"> &middot; </span>
@@ -1000,11 +1011,40 @@ def _build_site_header(lang: str) -> bytes:
     </p>
   </div>
 </header>
+<script src="/theme-toggle.js" defer></script>
 '''.encode("utf-8")
 
 
 SITE_HEADER_HTML_EN = _build_site_header("en")
 SITE_HEADER_HTML_DE = _build_site_header("de")
+
+
+def _inject_html_theme_attr(content: bytes, theme: str) -> bytes:
+    """UX-F1 (2026-05-23): set ``<html data-theme="light|dark">`` on
+    the SSR response when the user has an explicit theme choice
+    (via the ``theme`` cookie or ``?theme=`` param). Skipping the
+    attribute lets the CSS ``@media (prefers-color-scheme: light)``
+    block resolve client-side, which is the right default behaviour
+    for users with no explicit preference.
+
+    Idempotent: if a ``data-theme`` attribute already exists on the
+    ``<html>`` tag, leave it alone (the SPA's applyTheme() may have
+    its own opinion).
+    """
+
+    if theme not in {"light", "dark"}:
+        return content
+    # Replace <html lang="..."> with <html lang="..." data-theme="...">
+    # Only if the <html> tag doesn't already carry data-theme.
+    pattern = re.compile(rb'<html\s+([^>]*?)>')
+    m = pattern.search(content)
+    if not m:
+        return content
+    existing_attrs = m.group(1)
+    if b"data-theme=" in existing_attrs:
+        return content
+    new_open = b'<html ' + existing_attrs + b' data-theme="' + theme.encode("ascii") + b'">'
+    return content[:m.start()] + new_open + content[m.end():]
 
 
 def _inject_html_header(content: bytes, lang: str = "en") -> bytes:
@@ -7564,6 +7604,11 @@ class Handler(BaseHTTPRequestHandler):
         encoded = html_body.encode("utf-8")
         # UX-G1 (2026-05-23): the 404 page is a public surface; give
         # it the same global chrome as every other content page.
+        # UX-F1: also inject the data-theme attribute if the user has
+        # an explicit choice via cookie/query.
+        theme = self._resolve_user_theme()
+        if theme in {"light", "dark"}:
+            encoded = _inject_html_theme_attr(encoded, theme)
         encoded = _inject_html_header(encoded, lang)
         encoded = _inject_html_footer(encoded, lang)
         # Signal end_headers() to add Accept-Language + Cookie axes
@@ -13367,6 +13412,37 @@ class Handler(BaseHTTPRequestHandler):
             return "en"
         return "en"
 
+    def _resolve_user_theme(self) -> str:
+        """UX-F1 (2026-05-23): pick 'light' or 'dark' for SSR
+        ``data-theme`` injection on ``<html>``.
+
+        Resolution order:
+        1. ``?theme=light|dark`` query param (explicit override)
+        2. ``theme`` cookie (sticky choice persisted by theme-toggle.js)
+        3. Empty string — let the CSS ``@media (prefers-color-scheme:
+           light)`` block resolve client-side. Dark is the default for
+           users with no OS preference signal.
+        """
+
+        from urllib.parse import urlparse as _urlparse, parse_qs as _parse_qs
+
+        qs = _urlparse(self.path).query
+        if qs:
+            params = _parse_qs(qs)
+            theme = (params.get("theme", [""])[0] or "").strip().lower()
+            if theme in {"light", "dark"}:
+                return theme
+        cookie_header = self.headers.get("Cookie", "") or ""
+        for part in cookie_header.split(";"):
+            if "=" not in part:
+                continue
+            k, v = part.strip().split("=", 1)
+            if k.strip() == "theme":
+                normalized = v.strip().lower()
+                if normalized in {"light", "dark"}:
+                    return normalized
+        return ""
+
     def _lang_from_query(self) -> str | None:
         """2026-05-23: return the ?lang=<x> value if present in the
         current request URL, else None. Used by serve_static to
@@ -13456,6 +13532,13 @@ class Handler(BaseHTTPRequestHandler):
         is_html = candidate.suffix.lower() == ".html"
         if is_html:
             footer_lang = self._resolve_user_language()
+            # UX-F1 (2026-05-23): inject `data-theme="light|dark"`
+            # on <html> when the user has an explicit choice
+            # (cookie or ?theme=). No attribute = let
+            # @media (prefers-color-scheme: light) decide.
+            theme = self._resolve_user_theme()
+            if theme in {"light", "dark"}:
+                content = _inject_html_theme_attr(content, theme)
             # AUDIT-13 (2026-05-23): SSR i18n. Translate every
             # data-i18n text content to the locale's bundle value
             # BEFORE the footer injection — that way the footer

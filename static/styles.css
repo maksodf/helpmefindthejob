@@ -1,5 +1,11 @@
 :root {
-  color-scheme: dark;
+  /* 2026-05-23 (UX-F1): color-scheme advertises both themes to
+   * the browser so native form controls / scrollbars adapt. The
+   * explicit data-theme attribute below pins the active palette;
+   * if no attribute is set, the @media (prefers-color-scheme:
+   * light) block further down auto-promotes the light palette
+   * for users whose OS prefers light. */
+  color-scheme: light dark;
   /* R18 palette — mint + lavender on deep slate. Warmer-cheerful
      than the prior violet-only scheme; calm-bright for long
      sessions. Light mode below carries the same vibe lighter. */
@@ -104,8 +110,50 @@
                  0 6px 22px rgba(13, 148, 136, 0.20);
 }
 
-/* "System" theme is resolved client-side: app.js maps system → light/dark
-   based on `prefers-color-scheme` and sets data-theme accordingly. */
+/* UX-F1 (2026-05-23): auto-apply the light palette when the
+ * user's OS reports prefers-color-scheme: light AND they haven't
+ * explicitly chosen dark via the theme toggle. Mirrors the
+ * [data-theme="light"] block above verbatim. Selector excludes
+ * [data-theme="dark"] so explicit dark always wins. */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    color-scheme: light;
+    --bg: #f8faf9;
+    --surface: #ffffff;
+    --surface-2: #f1f4f3;
+    --surface-3: #e7edec;
+    --border: #d9e0de;
+    --border-strong: #b5c0bd;
+    --text: #14201d;
+    --text-muted: #4a5853;
+    --text-soft: #5a6863;
+    --accent: #0a766b;
+    --accent-hover: #0d8a7e;
+    --accent-weak: rgba(10, 118, 107, 0.10);
+    --accent-text: #0a766b;
+    --accent-on: #ffffff;
+    --accent-2: #7c5cff;
+    --accent-2-weak: rgba(124, 92, 255, 0.10);
+    --accent-2-text: #6a48ea;
+    --success: #15803d;
+    --success-weak: rgba(21, 128, 61, 0.10);
+    --warn: #c2410c;
+    --warn-weak: rgba(194, 65, 12, 0.10);
+    --danger: #b91c1c;
+    --danger-weak: rgba(185, 28, 28, 0.10);
+    --focus-ring: rgba(13, 148, 136, 0.30);
+    --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05);
+    --shadow-md: 0 6px 18px rgba(15, 23, 42, 0.09), 0 1px 3px rgba(15, 23, 42, 0.05);
+    --shadow-lg: 0 14px 42px rgba(15, 23, 42, 0.14);
+    --shadow-glow: 0 0 0 1px rgba(13, 148, 136, 0.22),
+                   0 6px 22px rgba(13, 148, 136, 0.20);
+  }
+}
+
+/* The SPA's applyTheme() in app.js resolves "system" client-side
+ * by reading prefers-color-scheme and setting data-theme to
+ * "light" or "dark" directly. The media query above handles the
+ * no-data-theme case for public pages that don't load app.js. */
 
 /* Find me jobs — query + location + how-many + submit on one row */
 .find-jobs-form {
@@ -2730,11 +2778,49 @@ details[open] .collapsible-chevron { transform: rotate(180deg); }
   position: sticky;
   top: 0;
   z-index: 50;
-  background: rgba(14, 15, 21, 0.85);
+  /* UX-F1 (2026-05-23): use the design token for background so
+   * the header flips palette with the rest of the page. The
+   * 0.85 alpha + backdrop-filter create the frosted look on
+   * both themes. */
+  background: color-mix(in srgb, var(--bg) 85%, transparent);
   backdrop-filter: saturate(180%) blur(12px);
   -webkit-backdrop-filter: saturate(180%) blur(12px);
   border-bottom: 1px solid var(--border);
   color: var(--text);
+}
+.site-header-theme-toggle {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  border-radius: 999px;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+.site-header-theme-toggle:hover,
+.site-header-theme-toggle:focus-visible {
+  color: var(--text);
+  border-color: var(--border-strong);
+  background: var(--surface-2);
+}
+.site-header-theme-toggle svg {
+  width: 16px;
+  height: 16px;
+}
+/* Show the sun icon when light theme is active, moon when dark.
+ * Both icons live in the DOM; CSS toggles visibility. */
+.site-header-theme-toggle .icon-sun { display: none; }
+.site-header-theme-toggle .icon-moon { display: block; }
+:root[data-theme="light"] .site-header-theme-toggle .icon-sun { display: block; }
+:root[data-theme="light"] .site-header-theme-toggle .icon-moon { display: none; }
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) .site-header-theme-toggle .icon-sun { display: block; }
+  :root:not([data-theme="dark"]) .site-header-theme-toggle .icon-moon { display: none; }
 }
 .site-header-inner {
   max-width: 1180px;
@@ -4360,10 +4446,13 @@ html[dir="rtl"] .funnel-stage { align-items: flex-end; }
   background: rgba(255, 255, 255, 0.06);
   cursor: help;
 }
-.uptime-cell--empty { background: rgba(255, 255, 255, 0.06); }
-.uptime-cell--ok    { background: #34c97a; }
-.uptime-cell--warn  { background: #f0c244; }
-.uptime-cell--bad   { background: #ef5a5a; }
+/* UX-F1 (2026-05-23): use design tokens so the empty cells stay
+ * visible in light mode too. Pre-fix the rgba(255,255,255,0.06)
+ * empty cells vanished against the white surface. */
+.uptime-cell--empty { background: var(--surface-3); border: 1px solid var(--border); }
+.uptime-cell--ok    { background: #16a34a; }
+.uptime-cell--warn  { background: #d97706; }
+.uptime-cell--bad   { background: #dc2626; }
 .uptime-bar-axis {
   display: flex;
   justify-content: space-between;

@@ -18,7 +18,7 @@
 // production references), AUDIT-32 + 33 (landing copy + persona
 // cards). Old users on v0.21.0 would otherwise keep the stale
 // pre-rewrite shell + chase the wrong asset paths.
-const CACHE_VERSION = "v0.22.0";
+const CACHE_VERSION = "v0.23.0";
 // Cache name prefix bumped from `directjob-shell-` → `helpmefindthejob-shell-`
 // during the rename pass. The activate handler below explicitly cleans
 // up BOTH prefixes so users who installed the PWA pre-rename don't
@@ -50,6 +50,9 @@ const SHELL_PATHS = [
   "/forgot-password.html",
   "/forgot-password.de.html",
   "/forgot-password.js",
+  // UX-F1 (2026-05-23): theme toggle for public content pages
+  // (loaded by every page that has the global site header).
+  "/theme-toggle.js",
 ];
 
 self.addEventListener("install", (event) => {

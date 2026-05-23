@@ -46,7 +46,11 @@ ROOT = Path(__file__).resolve().parents[1]
 # headroom" — tightens drift on accidentally-bloated pages.
 _SIZE_BUDGETS = {
     "/": 130_000,            # SPA shell, ~109 KB today
-    "/forgot-password": 8_000,
+    # UX-G1 (2026-05-23): the global site header added ~3 KB of
+    # markup to every public page; was 8 KB before. Bumped to 12 KB
+    # to keep headroom for future header refinements without
+    # tightening to the byte.
+    "/forgot-password": 12_000,
     "/privacy": 25_000,
     "/terms": 12_000,
     "/impressum": 12_000,
