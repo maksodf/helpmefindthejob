@@ -43,6 +43,18 @@ const VIEW_TITLES = {
   // 2026-05-23 (UX-R1): the 'assistant' VIEW_TITLES entry was
   // removed along with view-assistant. The persistent dock has
   // no title bar — chat is always-on, not a destination.
+  // 2026-05-23 (UX-R17 doctrine): searchResults is the model for
+  // chat-driven canvas views. It has NO sidebar entry — the user
+  // reaches it ONLY by typing "find a job" in the chat dock, which
+  // triggers navigateTo: 'searchResults' on the chat reply. This
+  // keeps the chat dock as the canonical action surface while
+  // letting the canvas render rich result UIs.
+  //
+  // Future chat-triggered canvas views should follow the same
+  // shape: register here in VIEW_TITLES, render a <section
+  // id="view-X"> in index.html, DO NOT add a sidebar nav-item.
+  // Never re-introduce a dual-surface like the deleted
+  // view-assistant (UX-R1).
   searchResults: { title: "Search results", subtitle: "Live aggregator hits for your last search, grouped by role family." },
 };
 

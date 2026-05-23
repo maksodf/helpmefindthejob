@@ -58,6 +58,22 @@ including the 2026-05-19 project rename ([Decision 22](docs/grant/04-research-an
 and the deprecated commercial phase that preceded the civic-commons
 direction.
 
+## Brand wordmark
+
+The canonical name is **Helpmefindthejob** — one word, sentence-cased
+(initial H, the rest lowercase). Apply this everywhere a label is
+rendered: H1 headings, the wordmark span in the global header, OG
+card titles, citation strings.
+
+* Do NOT use CamelCase ("HelpMeFindTheJob") or all-lowercase
+  ("helpmefindthejob") except in identifiers where they're needed
+  (the canonical domain `helpmefindthejob.org`, GitHub repo path
+  `github.com/maksodf/helpmefindthejob`).
+* In German contexts the wordmark stays English — it's a proper
+  noun, not a translatable term.
+* For URL-only references prefer the bare domain
+  `helpmefindthejob.org` without a protocol prefix.
+
 ## What it does
 
 Helpmefindthejob combines three discovery rails behind a single chat
