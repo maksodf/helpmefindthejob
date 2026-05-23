@@ -375,6 +375,35 @@ class SiteFooterBilingualAndLangSwitcher(unittest.TestCase):
         self.assertIn(b'hreflang="en"', body)
         self.assertIn(b'hreflang="de"', body)
 
+    def test_html_responses_carry_vary_accept_language_and_cookie(self) -> None:
+        """Post-GAP-1+2: HTML responses depend on Accept-Language (footer
+        + legal-page variant) and on Cookie (the lang cookie). Without
+        Vary, a CDN/proxy would serve the wrong-language footer to a
+        mismatched visitor — the EN visitor whose cached response was
+        populated by a DE visitor would see Kontakt instead of Contact."""
+        conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=2)
+        conn.request("GET", "/")
+        resp = conn.getresponse()
+        vary = resp.getheader("Vary") or ""
+        resp.read()
+        conn.close()
+        self.assertIn("Accept-Language", vary,
+                      "GAP-1+2 followup: HTML responses must Vary: Accept-Language")
+        self.assertIn("Cookie", vary,
+                      "GAP-1+2 followup: HTML responses must Vary: Cookie")
+
+    def test_non_html_responses_do_not_set_vary(self) -> None:
+        """JS / CSS / manifest don't change by language — no Vary needed.
+        Setting it would just hurt cacheability."""
+        conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=2)
+        conn.request("GET", "/forgot-password.js")
+        resp = conn.getresponse()
+        vary = resp.getheader("Vary") or ""
+        resp.read()
+        conn.close()
+        self.assertEqual(vary, "",
+                         f"Vary should be unset on JS responses, got {vary!r}")
+
     def test_lang_switcher_marks_current_language_with_aria_current(self) -> None:
         # EN page: the English link is aria-current="true"
         _status, body_en = self._get("/", accept_language="en")

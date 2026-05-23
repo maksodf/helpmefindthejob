@@ -12659,7 +12659,8 @@ class Handler(BaseHTTPRequestHandler):
         # Accept-Language > 'en') so the DE footer ships to DE
         # visitors and the language switcher inside the footer is
         # consistent with the surrounding page's localisation.
-        if candidate.suffix.lower() == ".html":
+        is_html = candidate.suffix.lower() == ".html"
+        if is_html:
             footer_lang = self._resolve_user_language()
             content = _inject_html_footer(content, footer_lang)
         self.send_response(HTTPStatus.OK)
@@ -12668,6 +12669,15 @@ class Handler(BaseHTTPRequestHandler):
             guessed = "application/manifest+json"
         self.send_header("Content-Type", guessed or "application/octet-stream")
         self.send_header("Content-Length", str(len(content)))
+        if is_html:
+            # Post-GAP-1+2 hardening (2026-05-23): HTML responses now
+            # vary by Accept-Language (footer language + legal-page
+            # variant routing) and by Cookie (the lang cookie that
+            # _resolve_user_language() checks). Without Vary, a
+            # caching proxy in front of the app would serve the
+            # wrong-language footer to mismatched visitors. Set it
+            # only on HTML — JS/CSS/manifest responses don't vary.
+            self.send_header("Vary", "Accept-Language, Cookie")
         self.end_headers()
         if include_body:
             self.wfile.write(content)
