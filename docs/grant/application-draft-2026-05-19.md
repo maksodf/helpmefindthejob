@@ -665,7 +665,7 @@ NLnet reviewers can audit each claim against the source.
 | **1020 tests / 4 skipped (Python 3.9) and 1029 tests / 12 skipped (Python 3.12)** | `python3 -m unittest discover -s tests` output | **VERIFIED** — runtime evidence in commit `f8393dd` closeout + `02-execution-plan.md` §3.8 entry. |
 | **6 workflows fully SHA-pinned; `grep -nE "uses:.*@v[0-9]" .github/workflows/*.yml` returns 0 lines** | commits `546f952` + `5be9f47` | **VERIFIED** — closing grep documented in `02-execution-plan.md` §3.2 entry. |
 | **Seven-persona panel: Aïcha, Yusuf, Olga, Mahmoud, Maria, Käthe, Tobias** | [`docs/grant/07-personas.md`](07-personas.md) + Decision 21 | **VERIFIED** — the panel is the project's canonical source-of-truth; Decision 21 dated 2026-05-18. |
-| **MCP catalogue v0.2.0, 13 tools** | [`docs/mcp-server.md`](mcp-server.md) | **VERIFIED** — the catalogue + per-tool input schemas committed; CI smoke test exercises the surface. |
+| **MCP catalogue v0.2.0, 13 tools** | [`docs/mcp-server.md`](../mcp-server.md) | **VERIFIED** — the catalogue + per-tool input schemas committed; CI smoke test exercises the surface. |
 
 **Pre-submission discipline (slice-end state, post 2026-05-19 re-verify pass 2)**:
 

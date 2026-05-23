@@ -83,4 +83,4 @@ For a NLnet reviewer or institutional adopter doing a 10-minute deep-check of th
 - **AEAD encryption**: read [`company_discovery/crypto_kit.py`](company_discovery/crypto_kit.py) (142 lines) and [`tests/test_phase9_totp_aead_migration.py`](tests/test_phase9_totp_aead_migration.py) for the round-trip / tamper / AAD-mismatch / nonce-uniqueness assertions.
 - **AI Act compliance**: open `compliance/` (lands Week 2 §2.8).
 - **i18n parity**: run `python3 -m unittest tests.test_round5_i18n` — the parity check is part of the 925-test suite.
-- **Full test suite**: `python3 -m unittest discover tests` runs in ~18 s on a bare host (verified 2026-05-18; full results in [`docs/grant/feature-verification-2026-05-18.md`](docs/grant/feature-verification-2026-05-18.md) §8).
+- **Full test suite**: `python3 -m unittest discover tests` runs in ~18 s on a bare host (verified 2026-05-18; the dated feature-verification report was removed in the 2026-05-23 docs cleanup).

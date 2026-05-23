@@ -23,7 +23,7 @@ between the `v0.1.0` tag (commit `0cdf13e`) and the pre-submission
 scope-tightening slice. Cuts into a future v0.2.0 once the maintainer
 green-lights the application + closes the maintainer-side actions
 listed under "Maintainer follow-ups" in
-[`docs/grant/quality-dashboard-2026-05-19.md`](docs/grant/quality-dashboard-2026-05-19.md).
+`docs/grant/quality-dashboard-2026-05-19.md` (archived in 2026-05-23 docs cleanup).
 
 ### Added
 
@@ -48,13 +48,13 @@ listed under "Maintainer follow-ups" in
   `tests/test_phase13_audit_log.py::SaltFailFastTests`. Documented
   in [`compliance/audit-log-schema.md`](compliance/audit-log-schema.md).
 - **Quality dashboard** at
-  [`docs/grant/quality-dashboard-2026-05-19.md`](docs/grant/quality-dashboard-2026-05-19.md)
+  `docs/grant/quality-dashboard-2026-05-19.md` (archived in 2026-05-23 docs cleanup)
   capturing every PART 1–7 probe result from the pre-submission
   comprehensive QA pass (1020 / 1029 tests across Python 3.9 + 3.12,
   axe-core + axe-playwright accessibility coverage, cosign verify,
   fresh-clone Docker, ESCO/EURES surface counts).
 - **Phase 2 backlog index** at
-  [`docs/grant/phase2-backlog-2026-05-19.md`](docs/grant/phase2-backlog-2026-05-19.md)
+  `docs/grant/phase2-backlog-2026-05-19.md` (archived in 2026-05-23 docs cleanup)
   enumerating ~53 inventory items tracked for post-grant cycles
   (2026 Q3 / Q4 / 2027 Q1).
 - **mkdocs-material documentation site** (§3.5) with deploy workflow
@@ -92,10 +92,12 @@ listed under "Maintainer follow-ups" in
   external-reader recruit message at
   [`docs/grant/external-reader-recruit-message-2026-05-19.md`](docs/grant/external-reader-recruit-message-2026-05-19.md).
 - **Bias-testing dated reports** —
-  [`bias-testing-2026-05-18.md`](docs/grant/bias-testing-2026-05-18.md),
-  [`bias-testing-2026-05-18-broadened.md`](docs/grant/bias-testing-2026-05-18-broadened.md),
-  [`bias-testing-2026-05-18-polish.md`](docs/grant/bias-testing-2026-05-18-polish.md),
-  [`bias-testing-2026-05-19.md`](docs/grant/bias-testing-2026-05-19.md).
+  `bias-testing-2026-05-18.md`,
+  `bias-testing-2026-05-18-broadened.md`,
+  `bias-testing-2026-05-18-polish.md`,
+  `bias-testing-2026-05-19.md` (all four archived in 2026-05-23 docs cleanup;
+  the consolidated comparative report lives at
+  `docs/grant/bias-comparative-report-2026-05-21.md`).
 - **`friction_keywords_for(persona_id)`** helper in
   `company_discovery/persona_fixtures.py`, wired into the production
   chat-router CV-tailoring path at `app.py:3411` + `app.py:7702`

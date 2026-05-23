@@ -163,7 +163,7 @@ The shortest honest answer the maintainer would give a journalist:
 - PART 5 anschreiben quality walks at
   `docs/grant/anschreiben-quality-walks-2026-05-20/` — empirical
   Ollama-on-this-project's-prompts evidence
-- PART 8 closure at [`part-8-closure-2026-05-21.md`](part-8-closure-2026-05-21.md) —
+- PART 8 closure — `part-8-closure-2026-05-21.md` (historical artefact, removed in 2026-05-23 docs cleanup; substantive findings are summarised inline in this matrix) —
   citation discipline applies to every provider equally; class-E
   grounding tests don't care which model is behind the call
 

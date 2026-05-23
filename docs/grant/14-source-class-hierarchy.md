@@ -123,7 +123,7 @@ for them.
 - User-facing transparency notice — `compliance/transparency-notice.md`
 - Cost-saving evidence substrate (outcome events) — `mcp_tools.py:record_user_outcome`
 - PART 5 prompt-template review (closure) — `docs/grant/anschreiben-quality-walks-2026-05-20/`
-- PART 7 MCP composability closure — [`part-7-closure-2026-05-21.md`](part-7-closure-2026-05-21.md)
+- PART 7 MCP composability closure — `part-7-closure-2026-05-21.md` (historical artefact, removed in 2026-05-23 docs cleanup; substantive output lives in `09-mcp-composition.md` and `STANDARDS.md`)
 
 ---
 
