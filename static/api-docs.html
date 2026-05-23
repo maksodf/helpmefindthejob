@@ -48,6 +48,14 @@
         <a href="/" class="legal-back">&larr; Back to Helpmefindthejob</a>
         <h1>API Reference</h1>
         <p class="muted">OpenAPI 3.1 specification for the public REST surface. Same-origin spec at <a href="/api/openapi.json"><code>/api/openapi.json</code></a> — no third-party JS, no CDN fetches.</p>
+        <!-- UX-K1 (2026-05-23): /api/docs is English-only — the
+             technical reference content (endpoint paths, parameter
+             names, JSON Schema field names) doesn't translate. The
+             global header still offers EN/DE for site-wide consistency;
+             when DE is selected the note below appears via the
+             html[lang="de"] CSS selector (SSR translator sets the
+             lang attribute on <html>). -->
+        <p class="api-docs-de-note muted small" lang="de">Die API-Referenz ist auf Englisch — technische Inhalte sind sprachneutral.</p>
       </header>
 
       <section>

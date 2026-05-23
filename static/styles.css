@@ -4373,12 +4373,77 @@ html[dir="rtl"] .funnel-stage { align-items: flex-end; }
   color: var(--text-soft, #a0a6b6);
   margin: 0 0 4px;
 }
+/* UX-A6 (2026-05-23): tone-down the static About / Auth / Versioning
+ * h2 sections so the live Endpoints h2 + h3 tag groups read as the
+ * primary hierarchy. Static h2s become smaller + uppercase muted. */
+.legal-page > section > h2 {
+  font-size: var(--text-lg, 16px);
+}
+.legal-page > section > h2#apiSpecLoading,
+.legal-page > section h2 {
+  /* base h2 for /api/docs — only loosely smaller than h1 */
+}
 .api-operation {
   margin: 14px 0;
   padding: 14px;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
   border-radius: 8px;
+}
+/* UX-K1 (2026-05-23): the DE-only "API reference is English"
+ * note on /api/docs only appears when html[lang="de"] (set by the
+ * SSR translator). EN visitors don't see it. */
+.api-docs-de-note { display: none; }
+html[lang="de"] .api-docs-de-note { display: block; }
+
+/* UX-K3 (2026-05-23): tag-anchor # marker styled like changelog
+ * permalinks — subtle by default, accent-coloured on hover. */
+.api-tag-anchor {
+  text-decoration: none;
+  opacity: 0;
+  color: var(--accent-text);
+  margin-right: 2px;
+  transition: opacity 0.15s ease;
+}
+.api-tag-heading:hover .api-tag-anchor,
+.api-tag-anchor:focus-visible {
+  opacity: 1;
+}
+.api-tag-anchor:focus-visible {
+  outline: 2px solid var(--accent-text);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+/* UX-D1: api-docs loading skeleton. Three placeholder cards that
+ * shimmer until the spec lands. */
+.api-loading-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.api-skeleton-card {
+  padding: 14px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.api-skeleton-line {
+  height: 12px;
+  border-radius: 4px;
+  margin: 6px 0;
+  background: linear-gradient(90deg, var(--surface-3), var(--surface-2), var(--surface-3));
+  background-size: 200% 100%;
+  animation: api-skeleton-shimmer 1.4s ease-in-out infinite;
+}
+.api-skeleton-line-head { height: 16px; width: 30%; }
+.api-skeleton-line-body { width: 100%; }
+.api-skeleton-line-body.short { width: 60%; }
+@keyframes api-skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .api-skeleton-line { animation: none; }
 }
 .api-operation-header {
   display: flex;
@@ -4418,7 +4483,12 @@ html[dir="rtl"] .funnel-stage { align-items: flex-end; }
   color: var(--text, #e8eaee);
 }
 .api-example {
-  background: rgba(0, 0, 0, 0.25);
+  /* UX-F1: use token so the code block surface flips in light mode
+   * (was always-black before). UX-A7: keep overflow-x as fallback
+   * but the white-space switch below means most JSON snippets wrap
+   * cleanly without scrollbars on narrow viewports. */
+  background: var(--surface-3);
+  border: 1px solid var(--border);
   padding: 10px 12px;
   border-radius: 6px;
   overflow-x: auto;
@@ -4427,7 +4497,11 @@ html[dir="rtl"] .funnel-stage { align-items: flex-end; }
 }
 .api-example code {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  white-space: pre;
+  /* UX-A7 (2026-05-23): pre-wrap + break-word lets JSON request
+   * bodies break at whitespace on narrow mobile viewports instead
+   * of forcing a horizontal scroll inside the code block. */
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 .api-responses {
   list-style: none;
