@@ -2971,6 +2971,34 @@ details[open] .collapsible-chevron { transform: rotate(180deg); }
   margin-bottom: 0;
 }
 
+/* UX-G5 (2026-05-23): visible breadcrumb that replaces the per-
+ * page "← Back to Helpmefindthejob" link. Pairs with the existing
+ * BreadcrumbList JSON-LD on every legal page. Small, muted, and
+ * positioned above the H1. */
+.legal-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+  font-size: var(--text-sm, 13px);
+  color: var(--text-muted);
+}
+.legal-breadcrumb a {
+  color: var(--accent-text);
+  text-decoration: none;
+}
+.legal-breadcrumb a:hover,
+.legal-breadcrumb a:focus-visible {
+  text-decoration: underline;
+}
+.legal-breadcrumb-sep {
+  color: var(--text-muted);
+}
+.legal-breadcrumb [aria-current="page"] {
+  color: var(--text);
+  font-weight: 500;
+}
+
 .legal-back {
   display: inline-block;
   margin-bottom: 16px;
