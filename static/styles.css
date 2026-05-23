@@ -4317,6 +4317,16 @@ html[dir="rtl"] .funnel-stage { align-items: flex-end; }
   gap: 12px;
   margin: 16px 0;
 }
+/* UX-E1 (2026-05-23): on narrow mobile (≤480px) force 2 cards
+ * per row so the 6 status cards take 3 rows instead of 6.
+ * Previous behaviour stacked them all 1-per-row, making the page
+ * very tall on a phone. */
+@media (max-width: 480px) {
+  .status-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .status-card .value { font-size: 17px; }
+}
 .status-card {
   padding: 14px 16px;
   background: var(--surface, rgba(255, 255, 255, 0.02));
@@ -4661,6 +4671,20 @@ html[lang="de"] .api-docs-de-note { display: block; }
   grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
   gap: 12px;
 }
+/* UX-E6 (2026-05-23): on narrow mobile (≤480px) the persona
+ * grid stacks 7 identical-shape cards one per row — monotonous
+ * and long. Force a 2-col mosaic so the persona panel scans
+ * faster and the rhythm matches the rest of the mobile layout. */
+@media (max-width: 480px) {
+  .persona-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  .persona-card {
+    padding: 10px;
+  }
+  .persona-card .persona-name { font-size: 13px; }
+}
 /* UX-J1 (2026-05-23): persona cards are PRESENTATIONAL only — no
  * onclick handler, no link. Use design-token background/border so
  * they stay visible in both themes; do NOT add a hover-transform
@@ -4742,6 +4766,21 @@ html[lang="de"] .api-docs-de-note { display: block; }
   gap: 28px;
   max-width: 1100px;
   margin: 0 auto;
+}
+/* UX-E4 (2026-05-23): on narrow mobile (≤480px) the footer was
+ * stacking 4 columns vertically, eating ~half the viewport height.
+ * Use a 2-col grid for Contact + Legal + Project so the footer
+ * fits in a more reasonable vertical budget. The branding column
+ * (.site-footer-col:first-child) spans the full width as a
+ * compact intro. */
+@media (max-width: 480px) {
+  .site-footer-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 18px;
+  }
+  .site-footer-col:first-child {
+    grid-column: span 2;
+  }
 }
 
 /* axe + Lighthouse fix (2026-05-23 browser audit): footer section
