@@ -210,8 +210,12 @@ class SsrLiveResponse(unittest.TestCase):
         text = body.decode("utf-8")
         # DE for Aïcha card: contains "Krankenschwester"
         self.assertIn("Krankenschwester", text)
-        # Cohort tag in DE: "Akute Migranten-Kohorte"
-        self.assertIn("Akute Migranten-Kohorte", text)
+        # 2026-05-23 (UX-B3): the internal-jargon cohort labels
+        # ("Akute Migranten-Kohorte" / "Erweiterte Friktions-Klasse")
+        # were replaced with user-facing labels. The migrant five now
+        # carry "Neueinwander:in · <sector>"; verify the DE bundle
+        # value reaches the live SSR render.
+        self.assertIn("Neueinwander:in", text)
 
 
 if __name__ == "__main__":
