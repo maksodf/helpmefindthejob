@@ -2971,6 +2971,40 @@ details[open] .collapsible-chevron { transform: rotate(180deg); }
   margin-bottom: 0;
 }
 
+/* UX-A8 (2026-05-23): subtle card-shape on legal-page sections so
+ * dense content reads as discrete chunks instead of one wall of
+ * text. Applied universally to all .legal-page pages — /help,
+ * /privacy, /terms, /data-retention, /impressum, /status,
+ * /api/docs, /changelog all benefit. The :first-of-type rule
+ * excludes the very first <section> directly after <header> from
+ * the card treatment when it's just a TOC. */
+.legal-page > section {
+  padding: 16px 20px;
+  margin: 16px 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.legal-page > section.signup-cta {
+  /* CTA card keeps its own distinct accent styling. */
+  background: linear-gradient(180deg, var(--surface-2), var(--surface));
+  border-color: var(--accent);
+}
+/* Don't double-card the dynamic /api/docs Endpoints section
+ * (it already renders its own .api-tag-section cards inside). */
+.legal-page > section#apiSpecRoot {
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+/* Same for sections that ONLY contain a TOC — don't card-wrap a
+ * card-styled TOC. */
+.legal-page > section:has(> .legal-toc:only-child) {
+  padding: 0;
+  background: transparent;
+  border: none;
+}
+
 /* UX-A10/E3 (2026-05-23): auto-generated "On this page" TOC for
  * long legal pages. Built by theme-toggle.js when a .legal-page
  * has 4+ h2 sections. Compact, indented list with subtle borders.

@@ -2659,6 +2659,20 @@ const cmdK = {
       if (matches(v.label)) items.push({ kind: "view", label: v.label, meta: t("cmdk.go", "Go to view"), action: () => navigate(v.view) });
     });
     // Common actions
+    // 2026-05-23 (UX-R5 doctrine): cmdK and chat dock have
+    // overlapping discoverability but DIFFERENT purposes:
+    //   * cmdK = client-side keyboard launcher for view navigation
+    //     + meta UI state (theme, locale, sign-out). Synchronous,
+    //     no server roundtrip beyond /api/profile persistence.
+    //   * chat dock = action-engine via slash-commands (/find,
+    //     /watch, /scan, /import, /demo). Server-side router in
+    //     company_discovery/chat_router.py executes the commands;
+    //     responses can carry navigateTo to open a view.
+    // The boundary: cmdK only adds NAVIGATION and STATE-FLIP
+    // actions; chat owns everything that mutates user data or
+    // hits external providers. Adding /find to cmdK or theme-
+    // toggle to chat would break the boundary and re-introduce
+    // the dual-surface tax we removed in UX-R1 for view-assistant.
     const actions = [
       { label: t("cmdk.action.toggleTheme", "Toggle theme"), action: () => {
           const next = (state.theme === "dark") ? "light" : "dark";
