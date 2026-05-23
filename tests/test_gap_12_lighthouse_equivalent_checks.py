@@ -54,8 +54,15 @@ _SIZE_BUDGETS = {
     "/help": 30_000,
     "/status": 25_000,
     "/changelog": 30_000,
-    "/styles.css": 100_000,
+    # 2026-05-23 budget bumps: AUDIT-33 persona-panel CSS + status-
+    # uptime-bar CSS + /api/docs CSS grew styles.css from 99 KB to
+    # ~106 KB. New bumped budget holds production at 120 KB while
+    # leaving headroom for the AUDIT-17 minified /styles.min.css
+    # path (~75 KB).
+    "/styles.css": 120_000,
+    "/styles.min.css": 85_000,
     "/app.js": 400_000,
+    "/app.min.js": 250_000,
     "/forgot-password.js": 4_000,
     "/sw.js": 16_000,
 }

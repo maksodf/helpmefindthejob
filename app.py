@@ -502,6 +502,239 @@ SITE_FOOTER_HTML_DE = _build_site_footer("de")
 SITE_FOOTER_HTML = SITE_FOOTER_HTML_EN
 
 
+def _build_openapi_spec() -> dict[str, Any]:
+    """2026-05-23: hand-curated OpenAPI 3.1 spec for the public
+    API surface. Served at /api/openapi.json so NLnet evaluators,
+    federated deployers, and integrators can introspect the API
+    without reading code. /api/docs renders this with a small
+    custom docs page (no third-party JS bundle).
+
+    Coverage: every unauthenticated endpoint plus the
+    auth-bootstrap endpoints (register / login / logout / forgot-
+    password / status). Admin-only and per-user data endpoints
+    are excluded — federated deployers should consult the source
+    for those (they vary per deployment policy)."""
+    return {
+        "openapi": "3.1.0",
+        "info": {
+            "title": "Helpmefindthejob — Public API",
+            "version": APP_VERSION,
+            "description": (
+                "Public REST surface of Helpmefindthejob, an EU-wide "
+                "civic employment commons. Apache 2.0. The deeper "
+                "MCP-protocol surface (15 tools) is documented at "
+                "/mcp/schemas.json; this OpenAPI doc covers the "
+                "REST endpoints."
+            ),
+            "contact": {
+                "name": "Helpmefindthejob maintainers",
+                "url": "https://helpmefindthejob.org/impressum",
+                "email": "support@helpmefindthejob.org",
+            },
+            "license": {
+                "name": "Apache-2.0",
+                "url": "https://www.apache.org/licenses/LICENSE-2.0",
+            },
+        },
+        "servers": [
+            {"url": "https://helpmefindthejob.org", "description": "Production"},
+        ],
+        "tags": [
+            {"name": "health", "description": "Liveness, version, history"},
+            {"name": "auth", "description": "Bootstrap, login, password reset"},
+            {"name": "site", "description": "Public site configuration + transparency"},
+            {"name": "csp", "description": "Browser-initiated CSP violation reports"},
+            {"name": "mcp", "description": "MCP-protocol introspection"},
+        ],
+        "paths": {
+            "/api/health": {
+                "get": {
+                    "tags": ["health"],
+                    "summary": "Liveness check",
+                    "description": "Returns {status, version, environment, storage, ...}. No auth.",
+                    "responses": {
+                        "200": {
+                            "description": "Application is healthy",
+                            "content": {"application/json": {"example": {
+                                "status": "ok", "version": APP_VERSION,
+                                "environment": "production",
+                                "registrationOpen": False,
+                                "schedulerActiveJobs": 0,
+                            }}},
+                        },
+                    },
+                },
+            },
+            "/api/version": {
+                "get": {
+                    "tags": ["health"],
+                    "summary": "App version + build SHA",
+                    "responses": {
+                        "200": {
+                            "description": "Version info",
+                            "content": {"application/json": {"example": {
+                                "version": APP_VERSION,
+                                "environment": "production",
+                                "buildSha": BUILD_SHA,
+                            }}},
+                        },
+                    },
+                },
+            },
+            "/api/health/history": {
+                "get": {
+                    "tags": ["health"],
+                    "summary": "Rolling uptime history",
+                    "parameters": [{
+                        "name": "window", "in": "query",
+                        "description": "Window in hours (1–720). Defaults to 24.",
+                        "schema": {"type": "integer", "minimum": 1, "maximum": 720},
+                    }],
+                    "responses": {
+                        "200": {
+                            "description": "{windowHours, snapshotCount, okCount, uptimePercent, snapshots[]}",
+                            "content": {"application/json": {"example": {
+                                "windowHours": 24, "snapshotCount": 48,
+                                "okCount": 48, "uptimePercent": 100.0,
+                                "snapshots": [],
+                            }}},
+                        },
+                    },
+                },
+            },
+            "/api/site-config": {
+                "get": {
+                    "tags": ["site"],
+                    "summary": "Public site configuration",
+                    "description": "Surface the operator-set site-wide config the SPA needs at boot (currently: optional analytics script URL).",
+                    "responses": {"200": {"description": "Site config payload"}},
+                },
+            },
+            "/transparency": {
+                "get": {
+                    "tags": ["site"],
+                    "summary": "Public transparency dashboard (HTML)",
+                    "description": "EU AI Act Article 50 transparency surface. Auditor + journalist + user audience.",
+                    "responses": {"200": {"description": "HTML transparency page"}},
+                },
+            },
+            "/api/auth/status": {
+                "get": {
+                    "tags": ["auth"],
+                    "summary": "Current session state",
+                    "description": "Returns {authenticated, user, registrationOpen, hasUsers}. Rate-limited to 60/min/IP.",
+                    "responses": {
+                        "200": {"description": "Session state payload"},
+                        "429": {"description": "Rate-limited"},
+                    },
+                },
+            },
+            "/api/auth/register": {
+                "post": {
+                    "tags": ["auth"],
+                    "summary": "Bootstrap or public registration",
+                    "description": "Creates the first user (admin) on a fresh install. After bootstrap, this returns 403 unless the operator has opened public registration.",
+                    "requestBody": {
+                        "required": True,
+                        "content": {"application/json": {"example": {
+                            "email": "user@example.com",
+                            "password": "very-strong-password-1234",
+                        }}},
+                    },
+                    "responses": {
+                        "201": {"description": "User created + session issued"},
+                        "403": {"description": "Public registration closed"},
+                    },
+                },
+            },
+            "/api/auth/login": {
+                "post": {
+                    "tags": ["auth"],
+                    "summary": "Login with email + password",
+                    "requestBody": {
+                        "required": True,
+                        "content": {"application/json": {"example": {
+                            "email": "user@example.com",
+                            "password": "very-strong-password-1234",
+                        }}},
+                    },
+                    "responses": {
+                        "200": {"description": "Session issued"},
+                        "401": {"description": "Invalid credentials"},
+                        "429": {"description": "Rate-limited"},
+                    },
+                },
+            },
+            "/api/auth/logout": {
+                "post": {
+                    "tags": ["auth"],
+                    "summary": "Log out the current session",
+                    "responses": {"200": {"description": "Session destroyed"}},
+                },
+            },
+            "/api/auth/forgot-password": {
+                "post": {
+                    "tags": ["auth"],
+                    "summary": "Request a password-reset link",
+                    "description": "Always responds 202 — never leaks whether the email exists. Rate-limited per IP.",
+                    "requestBody": {
+                        "required": True,
+                        "content": {"application/json": {"example": {
+                            "email": "user@example.com",
+                        }}},
+                    },
+                    "responses": {"202": {"description": "Reset email queued if account exists"}},
+                },
+            },
+            "/csp-report": {
+                "post": {
+                    "tags": ["csp"],
+                    "summary": "CSP violation report collector",
+                    "description": "Accepts application/csp-report (legacy) and application/reports+json (Reporting API). Always returns 204. Rate-limited to 50/min/IP, 16 KB body cap.",
+                    "responses": {
+                        "204": {"description": "Report acknowledged"},
+                        "429": {"description": "Rate-limited"},
+                        "413": {"description": "Body too large"},
+                    },
+                },
+            },
+            "/mcp/version": {
+                "get": {
+                    "tags": ["mcp"],
+                    "summary": "MCP catalogue version",
+                    "responses": {"200": {"description": "{name, version} for the MCP surface"}},
+                },
+            },
+            "/mcp/schemas.json": {
+                "get": {
+                    "tags": ["mcp"],
+                    "summary": "MCP tool catalogue with JSON Schema inputs",
+                    "description": "Lists every tool the MCP server exposes, with JSON-Schema Draft 7 input definitions. Used by Claude Desktop and any other MCP client.",
+                    "responses": {"200": {"description": "Tool catalogue"}},
+                },
+            },
+            "/mcp/tools/list": {
+                "get": {
+                    "tags": ["mcp"],
+                    "summary": "HTTP alias for the MCP tools/list call",
+                    "description": "Same payload as /mcp/schemas.json under a more conventional name.",
+                    "responses": {"200": {"description": "Tool catalogue"}},
+                },
+            },
+        },
+    }
+
+
+_OPENAPI_SPEC_JSON: bytes | None = None
+
+
+def _get_openapi_spec_json() -> bytes:
+    global _OPENAPI_SPEC_JSON
+    if _OPENAPI_SPEC_JSON is None:
+        _OPENAPI_SPEC_JSON = json.dumps(_build_openapi_spec(), indent=2).encode("utf-8")
+    return _OPENAPI_SPEC_JSON
+
+
 def _load_locale_bundle(lang: str) -> dict[str, str]:
     """AUDIT-13: load a static/i18n/<lang>.json bundle once per
     process. Cached in module-level dict so per-request lookups are
@@ -7364,6 +7597,26 @@ class Handler(BaseHTTPRequestHandler):
                 # buildSha to operators for incident-correlation).
                 self.send_json({"version": APP_VERSION, "environment": APP_ENV, "buildSha": BUILD_SHA})
                 return
+            if parsed.path == "/api/docs":
+                # 2026-05-23: alias to the static api-docs.html page,
+                # which fetches /api/openapi.json and renders inline.
+                self.serve_static("/api-docs.html")
+                return
+            if parsed.path == "/api/openapi.json":
+                # 2026-05-23: public OpenAPI 3.1 spec for the REST
+                # surface. Hand-curated covering health / version /
+                # uptime-history / site-config / transparency /
+                # auth-bootstrap / forgot-password / CSP / MCP
+                # introspection. Admin-only endpoints excluded —
+                # federated deployers consult source for those.
+                body = _get_openapi_spec_json()
+                self.send_response(HTTPStatus.OK)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Content-Length", str(len(body)))
+                self.send_header("Cache-Control", "public, max-age=300")
+                self.end_headers()
+                self.wfile.write(body)
+                return
             if parsed.path == "/api/health":
                 session = self.current_session()
                 from urllib.parse import parse_qs
@@ -12544,6 +12797,12 @@ class Handler(BaseHTTPRequestHandler):
             # — Allow it so evaluators + MCP marketplace registries can
             # discover the tools.
             "Allow: /mcp/",
+            # 2026-05-23: /api/docs is the human-readable OpenAPI 3.1
+            # reference for the public REST surface; /api/openapi.json
+            # is the spec itself. Both safe to index — NLnet evaluators
+            # and federated integrators reach them via search.
+            "Allow: /api/docs",
+            "Allow: /api/openapi.json",
             "",
             "# Block app, admin, and API surfaces from indexing.",
             "Disallow: /api/",

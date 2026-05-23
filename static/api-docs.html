@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="index,follow" />
+    <title>API Reference &mdash; Helpmefindthejob</title>
+    <meta name="description" content="OpenAPI 3.1 reference for the Helpmefindthejob public REST surface. Fetched from /api/openapi.json — same-origin, no third-party JS." />
+    <link rel="canonical" href="https://helpmefindthejob.org/api/docs" />
+    <link rel="alternate" hreflang="en" href="https://helpmefindthejob.org/api/docs" />
+    <link rel="alternate" hreflang="x-default" href="https://helpmefindthejob.org/api/docs" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="API Reference &mdash; Helpmefindthejob" />
+    <meta property="og:description" content="OpenAPI 3.1 reference for the Helpmefindthejob public REST surface." />
+    <meta property="og:url" content="https://helpmefindthejob.org/api/docs" />
+    <meta property="og:site_name" content="Helpmefindthejob" />
+    <meta property="og:locale" content="en_GB" />
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "TechArticle",
+      "headline": "API Reference",
+      "url": "https://helpmefindthejob.org/api/docs",
+      "publisher": { "@id": "https://helpmefindthejob.org/#organization" },
+      "isPartOf": { "@id": "https://helpmefindthejob.org/#website" },
+      "inLanguage": "en"
+    }
+    </script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {"@type": "ListItem", "position": 1, "name": "Home", "item": "https://helpmefindthejob.org/"},
+        {"@type": "ListItem", "position": 2, "name": "API reference", "item": "https://helpmefindthejob.org/api/docs"}
+      ]
+    }
+    </script>
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/svg+xml" href="/icons/icon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="stylesheet" href="/styles.min.css" />
+  </head>
+  <body class="legal-body">
+    <a class="skip-link" href="#mainContent">Skip to main content</a>
+    <main id="mainContent" class="legal-page">
+      <header>
+        <a href="/" class="legal-back">&larr; Back to Helpmefindthejob</a>
+        <h1>API Reference</h1>
+        <p class="muted">OpenAPI 3.1 specification for the public REST surface. Same-origin spec at <a href="/api/openapi.json"><code>/api/openapi.json</code></a> — no third-party JS, no CDN fetches.</p>
+      </header>
+
+      <section>
+        <h2>About this reference</h2>
+        <p>This page renders the OpenAPI 3.1 spec at <a href="/api/openapi.json"><code>/api/openapi.json</code></a> as a navigable HTML reference. The spec covers every <strong>unauthenticated</strong> endpoint plus the auth-bootstrap flow. Admin-scoped and per-user data endpoints are excluded — federated deployers consult the source for those (they vary per deployment policy).</p>
+        <p class="muted small">The deeper MCP-protocol surface (15 tools, JSON-Schema validated) lives at <a href="/mcp/schemas.json"><code>/mcp/schemas.json</code></a> and is documented in <a href="https://github.com/maksodf/helpmefindthejob/blob/main/docs/mcp-server.md" rel="external noopener">docs/mcp-server.md</a>.</p>
+      </section>
+
+      <section id="apiSpecRoot">
+        <h2>Endpoints</h2>
+        <p id="apiSpecLoading" class="muted">Loading spec from <code>/api/openapi.json</code>&hellip;</p>
+        <div id="apiSpecBody" hidden>
+          <!-- Hydrated by /api-docs.js — each tag becomes an h3
+               section, each path becomes an h4 with a request-method
+               badge + description + example block. -->
+        </div>
+        <p id="apiSpecError" class="muted small" hidden>Failed to load the spec. The raw JSON is still available at <a href="/api/openapi.json"><code>/api/openapi.json</code></a>.</p>
+      </section>
+
+      <section>
+        <h2>Authentication</h2>
+        <p>Endpoints under <code>/api/admin/*</code> and the per-user data endpoints (under <code>/api/companies</code>, <code>/api/discovered-jobs</code>, etc., not shown here) require a session cookie and a CSRF token (<code>X-CSRF-Token</code> header on every mutating request). Get the session by calling <code>POST /api/auth/login</code>; the response carries the CSRF token in the <code>user.csrfToken</code> field.</p>
+        <p>Public endpoints (everything in this reference) are unauthenticated.</p>
+      </section>
+
+      <section>
+        <h2>Versioning</h2>
+        <p>The API version matches the application version (<code>/api/version</code>). Breaking changes get a major-version bump and are listed in the <a href="/changelog">changelog</a>. Phase-1 (NLnet grant window) commits to stability of the surface documented above.</p>
+      </section>
+    </main>
+    <script src="/api-docs.js" defer></script>
+  </body>
+</html>

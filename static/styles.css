@@ -4079,6 +4079,130 @@ html[dir="rtl"] .funnel-stage { align-items: flex-end; }
   background: rgba(124, 92, 255, 0.12);
 }
 
+/* ---------- /api/docs reference page (2026-05-23) ---------- */
+.api-tag-section {
+  margin: 24px 0 12px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+.api-tag-heading {
+  font-size: var(--text-md, 14px);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-soft, #a0a6b6);
+  margin: 0 0 4px;
+}
+.api-operation {
+  margin: 14px 0;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+}
+.api-operation-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.api-operation-summary {
+  margin: 4px 0 8px;
+  font-size: var(--text-md, 14px);
+}
+.method-badge {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: 4px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: #0a1e1c;
+}
+.method-get    { background: #34c97a; }
+.method-post   { background: #4a8af4; color: #fff; }
+.method-put    { background: #f0c244; }
+.method-patch  { background: #c4b5fd; }
+.method-delete { background: #ef5a5a; color: #fff; }
+.method-head, .method-options { background: rgba(255, 255, 255, 0.18); color: var(--text); }
+.api-path {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  color: var(--text, #e8eaee);
+}
+.api-example {
+  background: rgba(0, 0, 0, 0.25);
+  padding: 10px 12px;
+  border-radius: 6px;
+  overflow-x: auto;
+  font-size: 12px;
+  margin: 6px 0;
+}
+.api-example code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  white-space: pre;
+}
+.api-responses {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 0;
+}
+.api-responses li {
+  margin: 3px 0;
+  font-size: var(--text-sm, 13px);
+}
+.api-response-code {
+  display: inline-block;
+  min-width: 36px;
+  text-align: center;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 600;
+}
+.api-response-2xx { background: rgba(52, 201, 122, 0.2); color: #34c97a; }
+.api-response-3xx { background: rgba(196, 181, 253, 0.18); color: #c4b5fd; }
+.api-response-4xx { background: rgba(240, 194, 68, 0.18); color: #f0c244; }
+.api-response-5xx { background: rgba(239, 90, 90, 0.18); color: #ef5a5a; }
+
+/* ---------- Status-page uptime bar + latency trend (2026-05-23) ----------
+ * 24 hourly cells, one per hour of the last day, coloured green /
+ * amber / red based on per-hour ok%. Plus a Unicode-block sparkline
+ * for the latency trend. */
+.uptime-bar {
+  display: grid;
+  grid-template-columns: repeat(24, 1fr);
+  gap: 2px;
+  margin: 8px 0 4px;
+}
+.uptime-cell {
+  display: block;
+  height: 30px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.06);
+  cursor: help;
+}
+.uptime-cell--empty { background: rgba(255, 255, 255, 0.06); }
+.uptime-cell--ok    { background: #34c97a; }
+.uptime-cell--warn  { background: #f0c244; }
+.uptime-cell--bad   { background: #ef5a5a; }
+.uptime-bar-axis {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--text-xs, 12px);
+  color: var(--text-muted, #9ea4b5);
+  margin-bottom: 18px;
+}
+.latency-trend {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 22px;
+  letter-spacing: 1px;
+  margin: 6px 0 4px;
+  color: var(--text, #e8eaee);
+  line-height: 1;
+}
+
 /* ---------- AUDIT-33: persona-panel cards on landing ----------
  * Renders the seven-persona friction panel as a responsive grid of
  * cards on the landing's auth-gate. The most-acute migrant cohort

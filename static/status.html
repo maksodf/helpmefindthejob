@@ -127,7 +127,37 @@
             <div class="label">Uptime (7d)</div>
             <div id="uptime7d" class="value">—</div>
           </div>
+          <div class="status-card">
+            <div class="label">Uptime (30d)</div>
+            <div id="uptime30d" class="value">—</div>
+          </div>
         </div>
+      </section>
+
+      <!-- 2026-05-23: 24-hour visual uptime bar. One cell per
+           hour, coloured green / amber / red based on the %-ok of
+           the snapshots that fall into that hour bucket. Empty
+           cells are grey (no data — process restart truncated the
+           in-memory ring buffer). -->
+      <section>
+        <h2>24-hour history</h2>
+        <p class="muted small">One cell per hour. Hover for the per-hour snapshot count + uptime.</p>
+        <div id="uptimeBar" class="uptime-bar" role="img" aria-label="24-hour uptime history">
+          <!-- 24 spans hydrated by status.js -->
+        </div>
+        <div class="uptime-bar-axis">
+          <span>24h ago</span>
+          <span>now</span>
+        </div>
+      </section>
+
+      <!-- Latency trend — last 20 latency readings, simple text
+           sparkline; serves as a quick visual cue that response
+           time hasn't blown up. -->
+      <section>
+        <h2>Response-time trend (last 20 checks)</h2>
+        <p id="latencyTrend" class="latency-trend" aria-label="Recent latency readings">—</p>
+        <p id="latencyStats" class="muted small">—</p>
       </section>
 
       <section>
