@@ -66,8 +66,8 @@ def _register_via_ui(page, email: str) -> None:
         pass
     # Open the assistant view + wait for chat input
     page.locator(".nav-item[data-view='assistant']").click()
-    page.locator("#view-assistant:not([hidden])").wait_for(timeout=5000)
-    page.locator("#chatInput").wait_for(state="visible", timeout=5000)
+    page.locator("#chatDock:not([hidden])").wait_for(timeout=5000)
+    page.locator("#dockChatInput").wait_for(state="visible", timeout=5000)
 
 
 def _send_chat_with_delay(page, message: str, delay_ms: int = 2500) -> str:
@@ -86,15 +86,15 @@ def _send_chat_with_delay(page, message: str, delay_ms: int = 2500) -> str:
         route.continue_()
 
     # Wait for chat input to be ready for new input
-    page.locator("#chatInput").wait_for(state="visible", timeout=2000)
+    page.locator("#dockChatInput").wait_for(state="visible", timeout=2000)
     # Snapshot how many narration bubbles exist BEFORE we send, so
     # we know the new one when it appears.
     existing_count = page.locator(".chat-bubble-narration").count()
 
     page.route("**/api/chat/message", _slow_handler)
     try:
-        page.locator("#chatInput").fill(message)
-        page.locator("#chatInput").press("Enter")
+        page.locator("#dockChatInput").fill(message)
+        page.locator("#dockChatInput").press("Enter")
         # Poll for a NEW narration bubble (count() > existing) with a
         # short timeout. If it appears, read its text immediately.
         deadline = time.time() + 2.0

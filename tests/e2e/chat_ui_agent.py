@@ -80,12 +80,12 @@ def main() -> int:
 
             # 1. Navigate to Assistant view
             page.locator(".nav-item[data-view='assistant']").click()
-            page.locator("#view-assistant:not([hidden])").wait_for(timeout=5000)
+            page.locator("#chatDock:not([hidden])").wait_for(timeout=5000)
             report("nav_to_assistant_view", True)
 
             # 2. Greeting bubble should appear automatically.
             page.wait_for_timeout(400)
-            greeting = page.locator("#chatTranscript .chat-bubble").first
+            greeting = page.locator("#dockChatTranscript .chat-bubble").first
             greeting_visible = greeting.is_visible(timeout=2000)
             report(
                 "greeting_bubble_renders",
@@ -95,26 +95,26 @@ def main() -> int:
 
             # 3. Click "Show commands" button — should send /help and
             # render two new bubbles (user + assistant reply).
-            page.locator("#chatHelpBtn").click()
+            page.locator("#dockChatHelpBtn").click()
             page.wait_for_timeout(600)
-            bubble_count = page.locator("#chatTranscript .chat-bubble").count()
+            bubble_count = page.locator("#dockChatTranscript .chat-bubble").count()
             report(
                 "help_button_renders_bubbles",
                 bubble_count >= 3,
                 f"transcript has {bubble_count} bubbles after /help",
             )
             # The latest assistant bubble must include known command names.
-            transcript_text = page.locator("#chatTranscript").inner_text()
+            transcript_text = page.locator("#dockChatTranscript").inner_text()
             has_help = (
                 "Add a company" in transcript_text and "Create a saved search" in transcript_text
             )
             report("help_lists_commands", has_help)
 
             # 4. Type a slash command via the input + Enter.
-            page.locator("#chatInput").fill("/add-company UI-Corp https://ui-corp.example")
-            page.locator("#chatInput").press("Enter")
+            page.locator("#dockChatInput").fill("/add-company UI-Corp https://ui-corp.example")
+            page.locator("#dockChatInput").press("Enter")
             page.wait_for_timeout(700)
-            transcript_text = page.locator("#chatTranscript").inner_text()
+            transcript_text = page.locator("#dockChatTranscript").inner_text()
             asks_optional = "Career page URL" in transcript_text
             report(
                 "slash_pre_fills_required",
@@ -124,12 +124,12 @@ def main() -> int:
             )
 
             # 5. Skip optional with a space → confirmation prompt.
-            page.locator("#chatInput").fill(" ")
-            page.locator("#chatInput").press("Enter")
+            page.locator("#dockChatInput").fill(" ")
+            page.locator("#dockChatInput").press("Enter")
             page.wait_for_timeout(1500)
             # Use textContent (not inner_text) — bubbles are appended
             # as plain text nodes, no HTML semantics to render.
-            tc = page.evaluate("() => document.querySelector('#chatTranscript')?.textContent || ''")
+            tc = page.evaluate("() => document.querySelector('#dockChatTranscript')?.textContent || ''")
             asks_confirm = ("UI-Corp" in tc) and ("Confirm" in tc)
             report(
                 "confirmation_prompt_renders",
@@ -139,10 +139,10 @@ def main() -> int:
             )
 
             # 6. Confirm with "yes"
-            page.locator("#chatInput").fill("yes")
-            page.locator("#chatInput").press("Enter")
+            page.locator("#dockChatInput").fill("yes")
+            page.locator("#dockChatInput").press("Enter")
             page.wait_for_timeout(900)
-            transcript_text = page.locator("#chatTranscript").inner_text()
+            transcript_text = page.locator("#dockChatTranscript").inner_text()
             executed = "watchlist" in transcript_text and "UI-Corp" in transcript_text
             report(
                 "confirmation_executes_command",
@@ -151,9 +151,9 @@ def main() -> int:
             )
 
             # 7. Reset button clears the transcript.
-            page.locator("#chatResetBtn").click()
+            page.locator("#dockChatResetBtn").click()
             page.wait_for_timeout(500)
-            after_reset = page.locator("#chatTranscript .chat-bubble").count()
+            after_reset = page.locator("#dockChatTranscript .chat-bubble").count()
             # After reset we render an assistant bubble saying "Chat reset.";
             # so 1 bubble is expected.
             report(
@@ -163,10 +163,10 @@ def main() -> int:
             )
 
             # 8. Keyboard-driven flow — natural-language intent.
-            page.locator("#chatInput").fill("I want to add a company")
-            page.locator("#chatInput").press("Enter")
+            page.locator("#dockChatInput").fill("I want to add a company")
+            page.locator("#dockChatInput").press("Enter")
             page.wait_for_timeout(600)
-            transcript_text = page.locator("#chatTranscript").inner_text()
+            transcript_text = page.locator("#dockChatTranscript").inner_text()
             asks_name = "company name" in transcript_text.lower()
             report(
                 "keyword_router_via_ui",
@@ -179,7 +179,7 @@ def main() -> int:
             # pending command is treated as a fill for the awaiting slot.
             # So this is intentionally NOT tested as a slash mid-flow — it'd
             # fail validation. Skip and verify the input remains usable.)
-            input_enabled = page.locator("#chatInput").is_enabled()
+            input_enabled = page.locator("#dockChatInput").is_enabled()
             report("input_stays_enabled", input_enabled)
 
             # Screenshot for the record.

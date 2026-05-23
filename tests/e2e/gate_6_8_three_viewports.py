@@ -91,7 +91,7 @@ def _register_via_ui(page, email: str) -> None:
         pass
     # Open chat
     page.locator(".nav-item[data-view='assistant']").click()
-    page.locator("#view-assistant:not([hidden])").wait_for(timeout=5000)
+    page.locator("#chatDock:not([hidden])").wait_for(timeout=5000)
 
 
 def _test_viewport(browser, viewport: dict) -> None:
@@ -118,7 +118,7 @@ def _test_viewport(browser, viewport: dict) -> None:
 
         # Invariant 2: chat input visible + within viewport
         try:
-            input_box = page.locator("#chatInput").bounding_box(timeout=3000)
+            input_box = page.locator("#dockChatInput").bounding_box(timeout=3000)
         except Exception:  # noqa: BLE001
             input_box = None
         ok = input_box is not None and input_box["width"] <= w + 2
@@ -132,9 +132,9 @@ def _test_viewport(browser, viewport: dict) -> None:
         # The chat send button may be the submit button OR an Enter-
         # press; check the visible send-related control.
         send_candidates = [
-            "#chatForm button[type='submit']",
+            "#dockChatForm button[type='submit']",
             "#chatSendButton",
-            "#chatForm button",
+            "#dockChatForm button",
         ]
         send_box = None
         for selector in send_candidates:
@@ -191,7 +191,7 @@ def _test_viewport(browser, viewport: dict) -> None:
         # pushing the input off-screen).
         transcript_overflow = page.evaluate(
             "() => { "
-            "  const el = document.querySelector('#chatTranscript');"
+            "  const el = document.querySelector('#dockChatTranscript');"
             "  if (!el) return null;"
             "  const style = window.getComputedStyle(el);"
             "  return {overflowY: style.overflowY, height: el.clientHeight};"

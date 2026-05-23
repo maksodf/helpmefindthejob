@@ -40,7 +40,9 @@ const VIEW_TITLES = {
   settings: { title: "Settings", subtitle: "AI provider, account security, backup, and scan history." },
   admin: { title: "Admin", subtitle: "Tester accounts. Visible to admins only." },
   cvBuilder: { title: "CV Builder", subtitle: "Walk through guided sections. The AI formats — it does not invent." },
-  assistant: { title: "Assistant", subtitle: "One chat for every action. Slash-commands, keyword routing, and confirmation before every write." },
+  // 2026-05-23 (UX-R1): the 'assistant' VIEW_TITLES entry was
+  // removed along with view-assistant. The persistent dock has
+  // no title bar — chat is always-on, not a destination.
   searchResults: { title: "Search results", subtitle: "Live aggregator hits for your last search, grouped by role family." },
 };
 
@@ -5433,7 +5435,7 @@ function renderSearchResults() {
     const hint = $("#searchResultsHint");
     if (hint) hint.addEventListener("click", (e) => {
       e.preventDefault();
-      const input = $("#dockChatInput") || $("#chatInput");
+      const input = $("#dockChatInput");
       if (input) { input.focus(); input.value = "find a job"; }
     });
     setText("#searchResultsHeading", "Search results");
@@ -5668,11 +5670,10 @@ function chatRenderInline(text) {
 }
 
 function chatAppendBubble(role, text, opts = {}) {
-  // R18: write to BOTH chat surfaces — the view-assistant transcript
-  // AND the persistent dock — so the user sees the same conversation
-  // regardless of which input they used.
-  const hosts = [$("#chatTranscript"), $("#dockChatTranscript")]
-    .filter(Boolean);
+  // 2026-05-23 (UX-R1): view-assistant is gone; the persistent dock
+  // is the single chat surface. Earlier this wrote to both — that
+  // doubled the DOM, the event handlers, and the i18n surface.
+  const hosts = [$("#dockChatTranscript")].filter(Boolean);
   if (!hosts.length) return null;
   const bubbles = [];
   for (const host of hosts) {
@@ -6606,12 +6607,12 @@ async function chatSend(message) {
       }
     }
     if (payload.awaiting) {
-      setText("#chatPendingHint", `Awaiting: ${payload.awaiting}`);
+      setText("#dockChatPendingHint", `Awaiting: ${payload.awaiting}`);
     } else if (payload.awaitingConfirmation) {
-      setText("#chatPendingHint",
+      setText("#dockChatPendingHint",
               "Reply yes / no to confirm.");
     } else if (payload.executed) {
-      setText("#chatPendingHint", `Last executed: ${payload.executed}`);
+      setText("#dockChatPendingHint", `Last executed: ${payload.executed}`);
       // Search-results + navigation are rendered above (shared with
       // journey-driven path). Just refresh bootstrap so unrelated
       // UI cards reflect any DB write the executed command made.
@@ -6621,7 +6622,7 @@ async function chatSend(message) {
         render();
       } catch (_) { /* non-fatal */ }
     } else {
-      setText("#chatPendingHint", "");
+      setText("#dockChatPendingHint", "");
     }
   } catch (err) {
     chatAppendBubble("assistant", `Error: ${err.message}`);
@@ -6646,11 +6647,8 @@ function chatResetHandler() {
       chatAppendBubble("assistant", `Error: ${err.message}`);
       return;
     }
-    for (const sel of ["#chatTranscript", "#dockChatTranscript"]) {
-      const host = $(sel);
-      if (host) host.innerHTML = "";
-    }
-    setText("#chatPendingHint", "");
+    const dockHost = $("#dockChatTranscript");
+    if (dockHost) dockHost.replaceChildren();
     setText("#dockChatPendingHint", "");
     chatAppendBubble("assistant",
                        "Chat reset. Type a message or /help to begin.");
@@ -6673,44 +6671,28 @@ function dismissWizardForDockInteraction() {
   }
 }
 
-$("#chatForm")?.addEventListener("submit", chatFormHandler("#chatInput"));
+// 2026-05-23 (UX-R1): the dock is the only chat surface. The
+// previous duplicate listeners for #chatForm/#chatHelpBtn/#chatResetBtn
+// were deleted along with the view-assistant DOM they targeted.
 $("#dockChatForm")?.addEventListener("submit", (event) => {
   dismissWizardForDockInteraction();
   return chatFormHandler("#dockChatInput")(event);
 });
 $("#dockChatInput")?.addEventListener("focus",
                                          dismissWizardForDockInteraction);
-
-$("#chatHelpBtn")?.addEventListener("click", () => chatSend("/help"));
 $("#dockChatHelpBtn")?.addEventListener("click", () => chatSend("/help"));
-
-$("#chatResetBtn")?.addEventListener("click", chatResetHandler());
 $("#dockChatResetBtn")?.addEventListener("click", chatResetHandler());
 
-// On first chat-view focus OR first appearance of the dock, seed
-// a welcome bubble if the transcript is empty.
+// 2026-05-23 (UX-R1): seed a welcome bubble the first time the
+// dock transcript is empty. The old nav-item[data-view='assistant']
+// click listener was deleted along with the redundant view.
 function seedChatWelcomeOnce() {
   const dock = $("#dockChatTranscript");
   if (dock && dock.childElementCount === 0) {
     chatAppendBubble("assistant",
                        "Hi — tell me what you want to do, or type **find a job** to start.");
-    return;
-  }
-  const host = $("#chatTranscript");
-  if (host && host.childElementCount === 0) {
-    chatAppendBubble("assistant",
-                       "Hi — tell me what you want to do, or type **find a job** to start.");
   }
 }
-document.addEventListener("click", (event) => {
-  const target = event.target.closest(".nav-item[data-view='assistant']");
-  if (!target) return;
-  setTimeout(() => {
-    seedChatWelcomeOnce();
-    const input = $("#chatInput") || $("#dockChatInput");
-    if (input) input.focus();
-  }, 60);
-});
 
 $("#cvBuilderDownloadPdfBtn")?.addEventListener("click", () => {
   // Open the print page in a new tab with autoprint=1 — the browser's

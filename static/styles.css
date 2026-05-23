@@ -3738,28 +3738,10 @@ details[open] .collapsible-chevron { transform: rotate(180deg); }
    while the transcript stayed dark, yielding ~1:1 contrast (axe-core
    light-mode audit 2026-05-19). Theming via CSS variables fixes it
    in both modes. */
-.chat-transcript {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 14px;
-  background: var(--surface);
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  min-height: 280px;
-  max-height: 520px;
-  overflow-y: auto;
-  font-size: 14px;
-}
-.chat-input {
-  flex: 1;
-  padding: 10px 12px;
-  background: var(--surface);
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-}
+/* 2026-05-23 (UX-R1): .chat-transcript + .chat-input ruled the
+ * deleted #view-assistant DOM. The dock has its own .chat-dock-
+ * transcript and .chat-dock-form styles further down; nothing
+ * else in the codebase uses these class names. */
 .chat-bubble code {
   background: rgba(255,255,255,0.06);
   padding: 1px 5px;
@@ -3782,20 +3764,11 @@ details[open] .collapsible-chevron { transform: rotate(180deg); }
   opacity: 0.7;
   font-style: italic;
 }
-/* Loop 18 (2026-05-21): Gate 6.8 touch-target spec. Send button +
- * chat input must be >= 44x44px per Apple HIG + Material Design
- * tap-target guidance (avoids fat-finger misses on mobile + tablet).
- * Applied unconditionally (not media-scoped) because larger tap
- * targets are good UX on every screen — Fitts's law applies even
- * on desktop. Pre-fix the send button rendered at 38px tall on
- * all 3 Gate 6.8 viewports (320 / 375 / 768); now 44px+. */
-#chatForm .btn,
-#chatForm button[type="submit"] {
-  min-height: 44px;
-}
-#chatInput {
-  min-height: 44px;
-}
+/* 2026-05-23 (UX-R1): the Loop-18 touch-target rules above used
+ * to target #chatForm / #chatInput on the now-deleted view-
+ * assistant. The dock's send button + input get their min-height
+ * from `.chat-dock-form .btn` and `.chat-dock-form input` rules
+ * further down (search the file for "chat-dock-form"). */
 .chat-bubble-typing .dot-1,
 .chat-bubble-typing .dot-2,
 .chat-bubble-typing .dot-3 {
@@ -4024,7 +3997,9 @@ html[dir="rtl"] .funnel-stage { align-items: flex-end; }
  */
 .mt-6 { margin-top: 6px; }
 .mt-8 { margin-top: 8px; }
-.chat-form-row { display: flex; gap: 8px; margin-top: 12px; }
+/* 2026-05-23 (UX-R1): .chat-form-row was the view-assistant
+ * form layout; deleted with the view. The dock uses
+ * .chat-dock-form instead. */
 .cv-layout-grid { display: grid; grid-template-columns: 240px 1fr; gap: 24px; }
 .cv-sidebar-list { display: flex; flex-direction: column; gap: 6px; }
 .cv-photo-row { margin-bottom: 16px; display: flex; gap: 12px; align-items: center; }

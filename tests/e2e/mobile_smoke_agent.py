@@ -113,10 +113,10 @@ def main() -> int:
 
             # Assistant view — chat surface fits
             page.locator(".nav-item[data-view='assistant']").click()
-            page.locator("#view-assistant:not([hidden])").wait_for()
+            page.locator("#chatDock:not([hidden])").wait_for()
             page.wait_for_timeout(300)
-            chat_box = page.locator("#chatTranscript").bounding_box()
-            input_box = page.locator("#chatInput").bounding_box()
+            chat_box = page.locator("#dockChatTranscript").bounding_box()
+            input_box = page.locator("#dockChatInput").bounding_box()
             report(
                 "chat_transcript_within_viewport",
                 chat_box and chat_box["width"] <= VIEWPORT["width"],
@@ -129,11 +129,11 @@ def main() -> int:
             )
 
             # Send a message via the input; assert the typing bubble appears.
-            page.locator("#chatInput").fill("/help")
-            page.locator("#chatInput").press("Enter")
+            page.locator("#dockChatInput").fill("/help")
+            page.locator("#dockChatInput").press("Enter")
             page.wait_for_timeout(800)
             transcript_text = page.evaluate(
-                "() => document.querySelector('#chatTranscript')?.textContent || ''"
+                "() => document.querySelector('#dockChatTranscript')?.textContent || ''"
             )
             report(
                 "chat_help_renders_on_mobile",

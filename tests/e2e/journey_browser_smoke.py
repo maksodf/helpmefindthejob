@@ -74,20 +74,20 @@ def _register_via_ui(page, email: str) -> None:
 
 
 def _send_chat(page, text: str) -> None:
-    page.locator("#chatInput").fill(text)
-    page.locator("#chatInput").press("Enter")
+    page.locator("#dockChatInput").fill(text)
+    page.locator("#dockChatInput").press("Enter")
     # Brief settle for the round-trip + bubble append.
     page.wait_for_timeout(700)
 
 
 def _transcript_text(page) -> str:
-    return page.evaluate("() => document.querySelector('#chatTranscript')?.textContent || ''")
+    return page.evaluate("() => document.querySelector('#dockChatTranscript')?.textContent || ''")
 
 
 def _drive_full_journey(page) -> None:
     """Maria's full path through the chat UI."""
     page.locator(".nav-item[data-view='assistant']").click()
-    page.locator("#view-assistant:not([hidden])").wait_for(timeout=5000)
+    page.locator("#chatDock:not([hidden])").wait_for(timeout=5000)
     _send_chat(page, "Ich suche einen Job als Pflegehelfer")
     _send_chat(page, "Pflegehelfer")
     _send_chat(page, "Berlin")
@@ -103,11 +103,11 @@ def _drive_full_journey(page) -> None:
     # Sending "skip" triggers a live aggregator search — multi-second
     # round-trip. Wait for the typing-indicator bubble to disappear
     # (class is "chat-bubble-typing", single hyphen). Cap at 30s.
-    page.locator("#chatInput").fill("skip")
-    page.locator("#chatInput").press("Enter")
+    page.locator("#dockChatInput").fill("skip")
+    page.locator("#dockChatInput").press("Enter")
     try:
         page.wait_for_function(
-            "() => !document.querySelector('#chatTranscript .chat-bubble-typing')",
+            "() => !document.querySelector('#dockChatTranscript .chat-bubble-typing')",
             timeout=30000,
         )
     except Exception:  # noqa: BLE001 — best effort; still assert below
@@ -173,7 +173,7 @@ def main() -> int:
                 "results summary OR empty-fallback OR aggregator-error message",
             )
 
-            bubble_count = page.locator("#chatTranscript .chat-bubble").count()
+            bubble_count = page.locator("#dockChatTranscript .chat-bubble").count()
             report(
                 "chat_bubble_count_reasonable",
                 bubble_count >= 12,
@@ -198,7 +198,7 @@ def main() -> int:
             email2 = f"jbrow-c+{secrets.token_hex(3)}@example.com"
             _register_via_ui(page, email2)
             page.locator(".nav-item[data-view='assistant']").click()
-            page.locator("#view-assistant:not([hidden])").wait_for()
+            page.locator("#chatDock:not([hidden])").wait_for()
             _send_chat(page, "I want to find a job")
             _send_chat(page, "cancel")
             tc2 = _transcript_text(page)
@@ -272,11 +272,11 @@ def main() -> int:
                 timeout=25000,
             )
             mpage.locator(".nav-item[data-view='assistant']").click()
-            mpage.locator("#view-assistant:not([hidden])").wait_for()
+            mpage.locator("#chatDock:not([hidden])").wait_for()
             mpage.wait_for_timeout(300)
 
-            box_input = mpage.locator("#chatInput").bounding_box()
-            box_transcript = mpage.locator("#chatTranscript").bounding_box()
+            box_input = mpage.locator("#dockChatInput").bounding_box()
+            box_transcript = mpage.locator("#dockChatTranscript").bounding_box()
             report(
                 "mobile_chat_input_within_viewport",
                 bool(box_input) and box_input["width"] <= 390,
@@ -292,7 +292,7 @@ def main() -> int:
 
             _send_chat(mpage, "I want to find a job")
             mpage.wait_for_timeout(300)
-            bubbles = mpage.locator("#chatTranscript .chat-bubble").all()
+            bubbles = mpage.locator("#dockChatTranscript .chat-bubble").all()
             overflow = False
             for b in bubbles:
                 bb = b.bounding_box()
