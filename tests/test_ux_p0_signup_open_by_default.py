@@ -210,5 +210,40 @@ class PublicSignupOpenByDefault(unittest.TestCase):
         )
 
 
+class ComposeFileDoesNotOverrideCodeDefault(unittest.TestCase):
+    """2026-05-23 P0 follow-up: the original P0 fix flipped the code
+    default to True but missed the docker-compose.prod.yml line:
+
+        HELPMEFINDTHEJOB_ALLOW_REGISTRATION: ${HELPMEFINDTHEJOB_ALLOW_REGISTRATION:-false}
+
+    The compose-file default (``:-false``) overrode the code
+    default when no .env value was set, leaving production with
+    sign-up silently closed even after the deploy. Locking the
+    compose-file default to ``:-true`` matches the code default;
+    operators who want closed-pilot deployments still set the
+    .env value explicitly.
+    """
+
+    def test_compose_prod_default_is_true(self) -> None:
+        compose = (ROOT / "docker-compose.prod.yml").read_text(encoding="utf-8")
+        import re as _re
+        rx = _re.compile(
+            r"HELPMEFINDTHEJOB_ALLOW_REGISTRATION:\s*"
+            r"\$\{HELPMEFINDTHEJOB_ALLOW_REGISTRATION:-(\w+)\}",
+        )
+        m = rx.search(compose)
+        self.assertIsNotNone(
+            m,
+            "Compose file is missing the HELPMEFINDTHEJOB_ALLOW_REGISTRATION "
+            "env line entirely — the container won't pick up the env var.",
+        )
+        self.assertEqual(
+            m.group(1), "true",
+            "UX-P0 follow-up regression: compose-file default is "
+            f"{m.group(1)!r} but must be 'true' to match the code "
+            "default in app.py. Pre-fix prod silently closed sign-up.",
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

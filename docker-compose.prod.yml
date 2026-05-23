@@ -18,7 +18,13 @@ services:
       HELPMEFINDTHEJOB_ADMIN_EMAIL: ${HELPMEFINDTHEJOB_ADMIN_EMAIL:?set HELPMEFINDTHEJOB_ADMIN_EMAIL}
       HELPMEFINDTHEJOB_ADMIN_PASSWORD: ${HELPMEFINDTHEJOB_ADMIN_PASSWORD:?set HELPMEFINDTHEJOB_ADMIN_PASSWORD}
       HELPMEFINDTHEJOB_COOKIE_SECURE: "true"
-      HELPMEFINDTHEJOB_ALLOW_REGISTRATION: ${HELPMEFINDTHEJOB_ALLOW_REGISTRATION:-false}
+      # 2026-05-23 (UX-P0 follow-up): default flipped to `true` to
+      # match the code-level default (app.py:865). The civic-commons
+      # mission requires open public sign-up; operators who want a
+      # closed-pilot deployment set HELPMEFINDTHEJOB_ALLOW_REGISTRATION=false
+      # explicitly in .env. Pre-fix this compose default overrode
+      # the code default, silently leaving prod with sign-up closed.
+      HELPMEFINDTHEJOB_ALLOW_REGISTRATION: ${HELPMEFINDTHEJOB_ALLOW_REGISTRATION:-true}
       HELPMEFINDTHEJOB_PUBLIC_URL: ${HELPMEFINDTHEJOB_PUBLIC_URL:-}
       HELPMEFINDTHEJOB_EMAIL_BACKEND: ${HELPMEFINDTHEJOB_EMAIL_BACKEND:-console}
       HELPMEFINDTHEJOB_SMTP_HOST: ${HELPMEFINDTHEJOB_SMTP_HOST:-}
