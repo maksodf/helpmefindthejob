@@ -2718,6 +2718,25 @@ details[open] .collapsible-chevron { transform: rotate(180deg); }
   line-height: 1.55;
 }
 
+/* 2026-05-23 (UX-A9): changelog permalink anchors. The # marker
+ * is subtle by default and gets accent-coloured on hover/focus. */
+.changelog-anchor {
+  text-decoration: none;
+  opacity: 0;
+  margin-right: 4px;
+  color: var(--accent-text);
+  transition: opacity 0.15s ease;
+}
+.legal-page h2:hover .changelog-anchor,
+.changelog-anchor:focus-visible {
+  opacity: 1;
+}
+.changelog-anchor:focus-visible {
+  outline: 2px solid var(--accent-text);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
 /* 2026-05-23 (UX-A5): branded 404 suggestion list — drop default
  * bullets and inherit the legal-back link styling so the page
  * matches the rhythm of the rest of the legal-page family. */

@@ -443,10 +443,14 @@ def _build_site_footer(lang: str) -> bytes:
     <section class="site-footer-col" aria-labelledby="siteFooterLegal">
       <h2 id="siteFooterLegal" class="site-footer-heading">Rechtliches</h2>
       <ul>
-        <li><a href="/impressum">Impressum</a></li>
+        <!-- 2026-05-23 (UX-G4): canonical legal-link ordering is
+             Datenschutz → Nutzungsbedingungen → Aufbewahrungsfristen
+             → Impressum. Matches the .legal-footer rows on every
+             static DE page; user-rights first, masthead last. -->
         <li><a href="/privacy">Datenschutz</a></li>
         <li><a href="/terms">Nutzungsbedingungen</a></li>
         <li><a href="/data-retention">Aufbewahrungsfristen</a></li>
+        <li><a href="/impressum">Impressum</a></li>
       </ul>
     </section>
     <section class="site-footer-col" aria-labelledby="siteFooterProject">
@@ -454,7 +458,7 @@ def _build_site_footer(lang: str) -> bytes:
       <p class="site-footer-badges">
         <a class="site-footer-badge" href="https://github.com/maksodf/helpmefindthejob/blob/main/LICENSE" rel="license noopener">Apache 2.0</a>
         <a class="site-footer-badge" href="https://commonsconservancy.org" rel="external noopener">Commons Conservancy</a>
-        <a class="site-footer-badge" href="https://github.com/maksodf/helpmefindthejob" rel="external noopener">Quellcode</a>
+        <a class="site-footer-badge site-footer-badge--external" href="https://github.com/maksodf/helpmefindthejob" rel="external noopener">Quellcode &nearr;</a>
       </p>
       <p class="site-footer-version muted small">
         <a href="/changelog">v{APP_VERSION}</a> &middot; Build {_build_sha_html()}
@@ -485,10 +489,14 @@ def _build_site_footer(lang: str) -> bytes:
     <section class="site-footer-col" aria-labelledby="siteFooterLegal">
       <h2 id="siteFooterLegal" class="site-footer-heading">Legal</h2>
       <ul>
-        <li><a href="/impressum">Impressum</a></li>
+        <!-- 2026-05-23 (UX-G4): canonical legal-link ordering is
+             Privacy → Terms → Data retention → Impressum. Matches
+             the .legal-footer rows on every static page; user-rights
+             first, vendor-pointing last. -->
         <li><a href="/privacy">Privacy</a></li>
         <li><a href="/terms">Terms</a></li>
         <li><a href="/data-retention">Data retention</a></li>
+        <li><a href="/impressum">Impressum</a></li>
       </ul>
     </section>
     <section class="site-footer-col" aria-labelledby="siteFooterProject">
@@ -496,7 +504,7 @@ def _build_site_footer(lang: str) -> bytes:
       <p class="site-footer-badges">
         <a class="site-footer-badge" href="https://github.com/maksodf/helpmefindthejob/blob/main/LICENSE" rel="license noopener">Apache 2.0</a>
         <a class="site-footer-badge" href="https://commonsconservancy.org" rel="external noopener">Commons Conservancy</a>
-        <a class="site-footer-badge" href="https://github.com/maksodf/helpmefindthejob" rel="external noopener">Source</a>
+        <a class="site-footer-badge site-footer-badge--external" href="https://github.com/maksodf/helpmefindthejob" rel="external noopener">Source &nearr;</a>
       </p>
       <p class="site-footer-version muted small">
         <a href="/changelog">v{APP_VERSION}</a> &middot; build {_build_sha_html()}
