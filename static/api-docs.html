@@ -56,17 +56,6 @@
         <p class="muted small">The deeper MCP-protocol surface (15 tools, JSON-Schema validated) lives at <a href="/mcp/schemas.json"><code>/mcp/schemas.json</code></a> and is documented in <a href="https://github.com/maksodf/helpmefindthejob/blob/main/docs/mcp-server.md" rel="external noopener">docs/mcp-server.md</a>.</p>
       </section>
 
-      <section id="apiSpecRoot">
-        <h2>Endpoints</h2>
-        <p id="apiSpecLoading" class="muted">Loading spec from <code>/api/openapi.json</code>&hellip;</p>
-        <div id="apiSpecBody" hidden>
-          <!-- Hydrated by /api-docs.js — each tag becomes an h3
-               section, each path becomes an h4 with a request-method
-               badge + description + example block. -->
-        </div>
-        <p id="apiSpecError" class="muted small" hidden>Failed to load the spec. The raw JSON is still available at <a href="/api/openapi.json"><code>/api/openapi.json</code></a>.</p>
-      </section>
-
       <section>
         <h2>Authentication</h2>
         <p>Endpoints under <code>/api/admin/*</code> and the per-user data endpoints (under <code>/api/companies</code>, <code>/api/discovered-jobs</code>, etc., not shown here) require a session cookie and a CSRF token (<code>X-CSRF-Token</code> header on every mutating request). Get the session by calling <code>POST /api/auth/login</code>; the response carries the CSRF token in the <code>user.csrfToken</code> field.</p>
@@ -76,6 +65,21 @@
       <section>
         <h2>Versioning</h2>
         <p>The API version matches the application version (<code>/api/version</code>). Breaking changes get a major-version bump and are listed in the <a href="/changelog">changelog</a>. Phase-1 (NLnet grant window) commits to stability of the surface documented above.</p>
+      </section>
+
+      <!-- 2026-05-23 CLS fix: dynamic Endpoints content is rendered LAST
+           so when /api-docs.js fetches /api/openapi.json and hydrates
+           the spec, no static content below it shifts. The static
+           sections above (About / Auth / Versioning) stay put. -->
+      <section id="apiSpecRoot">
+        <h2>Endpoints</h2>
+        <p id="apiSpecLoading" class="muted">Loading spec from <code>/api/openapi.json</code>&hellip;</p>
+        <div id="apiSpecBody" hidden>
+          <!-- Hydrated by /api-docs.js — each tag becomes an h3
+               section, each path becomes an h4 with a request-method
+               badge + description + example block. -->
+        </div>
+        <p id="apiSpecError" class="muted small" hidden>Failed to load the spec. The raw JSON is still available at <a href="/api/openapi.json"><code>/api/openapi.json</code></a>.</p>
       </section>
     </main>
     <script src="/api-docs.js" defer></script>

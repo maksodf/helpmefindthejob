@@ -4079,7 +4079,60 @@ html[dir="rtl"] .funnel-stage { align-items: flex-end; }
   background: rgba(124, 92, 255, 0.12);
 }
 
+/* ---------- /status page status-grid (2026-05-23 CSP-extraction)
+ * Previously inlined in status.html's <style> block; CSP
+ * 'style-src 'self'' blocked it. Moved here so the page renders
+ * correctly under the strict policy. */
+.status-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+.status-card {
+  padding: 14px 16px;
+  background: var(--surface, rgba(255, 255, 255, 0.02));
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.06));
+  border-radius: 10px;
+}
+.status-card .label {
+  font-size: var(--text-xs, 12px);
+  color: var(--text-muted, #9ea4b5);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.status-card .value {
+  margin-top: 4px;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: var(--text-xs, 12px);
+}
+.status-pill.ok { background: rgba(82, 203, 122, 0.18); color: #66d68a; }
+.status-pill.warn { background: rgba(245, 158, 11, 0.18); color: #f59e0b; }
+.status-pill.bad { background: rgba(249, 115, 115, 0.18); color: #f97373; }
+.status-pill::before {
+  content: "";
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
 /* ---------- /api/docs reference page (2026-05-23) ---------- */
+/* CLS fix (2026-05-23 post-Lighthouse audit): #apiSpecBody is
+ * empty on first paint and gets hydrated by /api-docs.js after a
+ * fetch round-trip; reserving min-height keeps the page from
+ * shifting layout when the spec arrives. */
+#apiSpecBody {
+  min-height: 600px;
+}
 .api-tag-section {
   margin: 24px 0 12px;
   padding-top: 14px;
@@ -4119,11 +4172,17 @@ html[dir="rtl"] .funnel-stage { align-items: flex-end; }
   letter-spacing: 0.05em;
   color: #0a1e1c;
 }
-.method-get    { background: #34c97a; }
-.method-post   { background: #4a8af4; color: #fff; }
-.method-put    { background: #f0c244; }
-.method-patch  { background: #c4b5fd; }
-.method-delete { background: #ef5a5a; color: #fff; }
+/* axe + Lighthouse fix (2026-05-23 post-AUDIT-17 audit): badge
+ * background colors hardened for WCAG AA contrast against white
+ * text. Previous values (#4a8af4 POST, #ef5a5a DELETE) failed
+ * the 4.5:1 ratio for normal text. New values:
+ *   POST    #2563eb (blue-600)  with white  → ~4.9:1 ✓
+ *   DELETE  #b91c1c (red-700)   with white  → ~5.9:1 ✓ */
+.method-get    { background: #34c97a; color: #0a1e1c; }
+.method-post   { background: #2563eb; color: #ffffff; }
+.method-put    { background: #f0c244; color: #1a1402; }
+.method-patch  { background: #c4b5fd; color: #1a0e3d; }
+.method-delete { background: #b91c1c; color: #ffffff; }
 .method-head, .method-options { background: rgba(255, 255, 255, 0.18); color: var(--text); }
 .api-path {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;

@@ -45,49 +45,10 @@
     <link rel="icon" type="image/svg+xml" href="/icons/icon.svg" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="stylesheet" href="/styles.min.css" />
-    <style>
-      .status-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-        gap: 12px;
-        margin: 16px 0;
-      }
-      .status-card {
-        padding: 14px 16px;
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 10px;
-      }
-      .status-card .label {
-        font-size: var(--text-xs);
-        color: var(--text-muted);
-        text-transform: uppercase;
-        letter-spacing: 0.04em;
-      }
-      .status-card .value {
-        margin-top: 4px;
-        font-size: 20px;
-        font-weight: 600;
-        letter-spacing: -0.01em;
-      }
-      .status-pill {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        padding: 4px 12px;
-        border-radius: 999px;
-        font-size: var(--text-xs);
-      }
-      .status-pill.ok { background: rgba(82, 203, 122, 0.18); color: #66d68a; }
-      .status-pill.warn { background: rgba(245, 158, 11, 0.18); color: #f59e0b; }
-      .status-pill.bad { background: rgba(249, 115, 115, 0.18); color: #f97373; }
-      .status-pill::before {
-        content: "";
-        width: 8px; height: 8px;
-        border-radius: 50%;
-        background: currentColor;
-      }
-    </style>
+    <!-- 2026-05-23: previously had an inline <style> block here.
+         The strict CSP (style-src 'self') was blocking it; the
+         rules moved into styles.css under "/status page status-
+         grid". The page now renders correctly under the policy. -->
   </head>
   <body class="legal-body">
     <main class="legal-page">
