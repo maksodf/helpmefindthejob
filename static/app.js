@@ -5136,9 +5136,10 @@ $("#saveDetailBtn").addEventListener("click", saveDetail);
 $("#deleteCompanyBtn").addEventListener("click", deleteCompany);
 $("#findCareerBtn").addEventListener("click", findCareerPage);
 $("#scanBtn").addEventListener("click", scanCompany);
-$("#quickScanWatchlistBtn").addEventListener("click", scanWatchlist);
+// 2026-05-23 (UX-R3): #quickScanWatchlistBtn / #quickSeedDemoBtn
+// listeners deleted along with the buttons. Equivalent verbs
+// available via the chat dock (/scan, /demo).
 $("#saveScheduleBtn").addEventListener("click", saveSchedule);
-$("#quickSeedDemoBtn").addEventListener("click", seedDemo);
 $("#extractHtmlBtn").addEventListener("click", extractManualHtml);
 $("#suggestBtn").addEventListener("click", (event) => {
   // Sits inside <summary> of a collapsible — stop the toggle.
@@ -5224,7 +5225,8 @@ $("#frictionClassClearBtn")?.addEventListener("click", async () => {
     if (statusEl) statusEl.textContent = `Error: ${err.message}`;
   }
 });
-$("#findJobsForm")?.addEventListener("submit", findJobs);
+// 2026-05-23 (UX-R2): #findJobsForm listener deleted along with
+// the form. The chat /find slash-command is the canonical path.
 
 // ----------------- CV Builder -----------------
 //
@@ -6897,10 +6899,9 @@ $("#newCompanyBtn").addEventListener("click", () => {
 $("#emptyAddCompanyBtn").addEventListener("click", () => {
   document.querySelector("#companyForm input[name='name']")?.focus();
 });
-$("#quickAddCompanyBtn").addEventListener("click", () => {
-  navigate("companies");
-  document.querySelector("#companyForm input[name='name']")?.focus();
-});
+// 2026-05-23 (UX-R3): #quickAddCompanyBtn listener deleted along
+// with the button. The chat /watch <company> verb is the canonical
+// add-company path; the Companies view also accepts a manual form.
 $("#briefOpenSettings")?.addEventListener("click", () => navigate("settings"));
 $("#runAnalysisBriefBtn").addEventListener("click", () => {
   if (state.selectedImportedJobId) runAnalysis(state.selectedImportedJobId);

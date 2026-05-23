@@ -468,13 +468,12 @@
 
         <!-- Dashboard / Today -->
         <section id="view-dashboard" class="view" data-view="dashboard">
-          <aside class="chat-first-banner" role="note" aria-label="Tip">
-            <span class="chat-first-emoji" aria-hidden="true">✨</span>
-            <div class="chat-first-text">
-              <strong data-i18n="dashboard.chatFirst.heading">Just chat.</strong>
-              <span class="muted" data-i18n="dashboard.chatFirst.body">Type what you want in the Assistant on the left — "find a job", "add Charité", "show my watchlist". I'll handle the clicks.</span>
-            </div>
-          </aside>
+          <!-- 2026-05-23 (UX-R4): chat-first-banner removed. It only
+               needed to exist because the dashboard offered parallel
+               non-chat paths (find-jobs form, quick-add buttons) for
+               actions already handled by the chat dock. With R2 and
+               R3 also closed, the dock IS the primary input surface;
+               no explanatory banner needed. -->
           <article class="hero-card">
             <div class="hero-primary">
               <span class="hero-label" data-i18n="dashboard.hero.label">New roles waiting for you</span>
@@ -533,44 +532,23 @@
             <p id="funnelVelocity" class="muted small"></p>
           </section>
 
-          <section class="card find-jobs" aria-label="Find me jobs">
-            <div class="card-heading">
-              <div>
-                <h2 data-i18n="findJobs.heading">Find me jobs</h2>
-                <p class="muted" data-i18n="findJobs.lead">Tell us what you want. We search Arbeitnow, Remotive, We Work Remotely, The Muse, and Hacker News “Who is hiring?” at once and show one ranked queue.</p>
-              </div>
-            </div>
-            <form id="findJobsForm" class="find-jobs-form">
-              <label class="field find-jobs-query" for="findJobsQuery">
-                <span data-i18n="findJobs.query">What roles do you want?</span>
-                <input id="findJobsQuery" type="text" placeholder="e.g. healthcare policy consulting, junior data engineer" />
-              </label>
-              <label class="field find-jobs-location" for="findJobsLocation">
-                <span data-i18n="findJobs.location">Location</span>
-                <input id="findJobsLocation" type="text" placeholder="Berlin / remote / global" />
-              </label>
-              <label class="field find-jobs-limit" for="findJobsLimit">
-                <span data-i18n="findJobs.limit">Per provider</span>
-                <input id="findJobsLimit" type="number" min="5" max="50" value="15" />
-              </label>
-              <button id="findJobsSubmit" class="btn btn-primary find-jobs-submit" type="submit" data-i18n="findJobs.submit">Search now</button>
-            </form>
-            <p id="findJobsStatus" class="muted small" role="status" aria-live="polite"></p>
-            <div id="findJobsResults" class="find-jobs-results"></div>
-            <p id="findJobsAttributions" class="muted small attribution-row"></p>
-          </section>
+          <!-- 2026-05-23 (UX-R2): the dashboard "Find me jobs"
+               form was a parallel implementation of the chat /find
+               slash-command. Two complete UX paths for the same
+               backend call doubled the maintenance + i18n surface.
+               Find a job by typing "find a job" or "/find <query>"
+               in the chat dock instead. -->
 
-          <section class="card next-step" aria-label="What to do next">
-            <div class="card-heading">
-              <h2 data-i18n="dashboard.nextStep.heading">Next step</h2>
-            </div>
-            <p id="nextStepText" class="next-step-text">Add a company to start watching.</p>
-            <div class="card-actions">
-              <button id="quickAddCompanyBtn" class="btn btn-primary" type="button" data-i18n="dashboard.nextStep.add">Add a company</button>
-              <button id="quickSeedDemoBtn" class="btn" type="button" data-i18n="dashboard.nextStep.demo">Try a demo company</button>
-              <button id="quickScanWatchlistBtn" class="btn" type="button" data-i18n="dashboard.nextStep.scan">Check for new roles</button>
-            </div>
-          </section>
+          <!-- 2026-05-23 (UX-R3): the "Next step" card with three
+               quick-action buttons (#quickAddCompanyBtn /
+               #quickSeedDemoBtn / #quickScanWatchlistBtn) replicated
+               the chat verbs /watch, /demo, /scan. Removed to keep
+               the chat dock as the single canonical action surface.
+               Onboarding guidance lives in the collapsible
+               #onboardingCard below; the chat-first design + the
+               onboarding checklist together cover the same
+               first-run-discovery goal. -->
+
 
           <details class="card collapsible" id="onboardingCard">
             <summary class="collapsible-summary">
