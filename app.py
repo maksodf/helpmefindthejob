@@ -765,6 +765,18 @@ _SSR_I18N_RX = re.compile(
     re.IGNORECASE,
 )
 
+# UX-B9 (2026-05-23): translate ATTRIBUTE values too, not just
+# text content. The JS-side translator already handles these via
+# data-i18n-placeholder / data-i18n-aria-label / data-i18n-title
+# but only after hydration — on first paint (and for any crawler
+# that doesn't run JS) the English fallback would still leak.
+#
+# Pattern: an HTML element carrying both ``foo="english fallback"``
+# and ``data-i18n-foo="bundle.key"`` swaps the foo attribute value
+# to the bundle's translation. We do this per attribute (placeholder
+# / aria-label / title) so order-of-attributes doesn't matter.
+_SSR_I18N_ATTR_KINDS = ("placeholder", "aria-label", "title")
+
 
 def _ssr_translate_html(content: bytes, lang: str) -> bytes:
     """AUDIT-13 (2026-05-23): server-side i18n substitution for the
@@ -816,6 +828,68 @@ def _ssr_translate_html(content: bytes, lang: str) -> bytes:
         return f"{opener}{escaped}{closer}"
 
     text = _SSR_I18N_RX.sub(_repl, text)
+
+    # UX-B9: attribute-value translation pass. For each attribute
+    # we support (placeholder / aria-label / title), find tags that
+    # declare both the live attribute AND a data-i18n-<attr> hint;
+    # replace the live attribute's value with the bundle entry.
+    # Same HTML-escape rule as above.
+    def _attr_repl_factory(attr_name: str):
+        # Match an element opener that contains BOTH the live
+        # attribute AND its data-i18n-<attr> hint. We rebuild the
+        # opener with the new attribute value.
+        rx = re.compile(
+            r'(<[a-z0-9]+\b)'                                           # tag start (group 1)
+            r'([^>]*?)'                                                 # attrs before (group 2)
+            rf'({re.escape(attr_name)}=")([^"]*)(")'                    # live attr (groups 3/4/5)
+            r'([^>]*?)'                                                 # attrs between (group 6)
+            rf'(data-i18n-{re.escape(attr_name)}=")([^"]+)(")'          # i18n hint (groups 7/8/9)
+            r'([^>]*?)'                                                 # attrs after (group 10)
+            r'(/?>)',                                                   # tag close (group 11)
+            re.IGNORECASE,
+        )
+
+        # Also support the i18n hint appearing BEFORE the live
+        # attribute (HTML allows any attribute order).
+        rx_swapped = re.compile(
+            r'(<[a-z0-9]+\b)'
+            r'([^>]*?)'
+            rf'(data-i18n-{re.escape(attr_name)}=")([^"]+)(")'
+            r'([^>]*?)'
+            rf'({re.escape(attr_name)}=")([^"]*)(")'
+            r'([^>]*?)'
+            r'(/?>)',
+            re.IGNORECASE,
+        )
+
+        def _do(match: re.Match, attr_value_group: int, key_group: int) -> str:
+            groups = list(match.groups())
+            key = groups[key_group - 1]
+            translated = bundle.get(key)
+            if translated is None:
+                return match.group(0)
+            escaped = (
+                translated.replace("&", "&amp;")
+                          .replace("<", "&lt;")
+                          .replace(">", "&gt;")
+                          .replace('"', "&quot;")
+            )
+            groups[attr_value_group - 1] = escaped
+            return "".join(groups)
+
+        def _repl_normal(m: re.Match) -> str:
+            return _do(m, attr_value_group=4, key_group=8)
+
+        def _repl_swapped(m: re.Match) -> str:
+            return _do(m, attr_value_group=8, key_group=4)
+
+        return rx, _repl_normal, rx_swapped, _repl_swapped
+
+    for attr_name in _SSR_I18N_ATTR_KINDS:
+        rx_n, repl_n, rx_s, repl_s = _attr_repl_factory(attr_name)
+        text = rx_n.sub(repl_n, text)
+        text = rx_s.sub(repl_s, text)
+
     # Document-level lang attribute. Match either lang="en" or
     # lang='en'; preserve attribute order.
     text = re.sub(r'(<html\s+[^>]*?lang=)"en"', r'\1"' + lang + '"', text, count=1)

@@ -411,12 +411,17 @@
         <div id="dockChatTranscript" class="chat-dock-transcript"
               role="log" aria-live="polite" aria-atomic="false"></div>
         <form id="dockChatForm" class="chat-dock-form"
+              data-i18n-aria-label="dock.chat.form"
               aria-label="Quick chat (docked)">
           <input id="dockChatInput" type="text" autocomplete="off"
+                 data-i18n-placeholder="dock.chat.placeholder"
                  placeholder="Type what you want to do…"
+                 data-i18n-aria-label="dock.chat.input"
                  aria-label="Chat message" />
           <button id="dockChatSendBtn" class="btn btn-primary"
-                  type="submit" aria-label="Send">
+                  type="submit"
+                  data-i18n-aria-label="dock.chat.send"
+                  aria-label="Send">
             <svg viewBox="0 0 20 20" aria-hidden="true">
               <path d="M3 10l14-7-7 14-2-5z" fill="currentColor"/>
             </svg>
@@ -429,8 +434,8 @@
       <main id="mainContent" class="main" tabindex="-1">
         <header class="topbar">
           <div class="topbar-title">
-            <h2 id="viewTitle">Today</h2>
-            <p id="viewSubtitle" class="muted">Your watched companies, recent runs, and what to do next.</p>
+            <h2 id="viewTitle" data-i18n="view.dashboard.title">Today</h2>
+            <p id="viewSubtitle" class="muted" data-i18n="view.dashboard.subtitle">Your watched companies, recent runs, and what to do next.</p>
           </div>
           <div class="topbar-meta">
             <button id="cmdkLauncher" class="cmdk-launcher" type="button" aria-label="Open command palette">
