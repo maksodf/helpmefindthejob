@@ -65,8 +65,9 @@ class AutocompleteContract(unittest.TestCase):
         ("inviteEmail", "off"),
         # Admin "send test email to X"
         ("testEmailTarget", "off"),
-        # Brief-view inline "session API key"
-        ("providerRuntimeKey", "off"),
+        # 2026-05-23 (UX-R7): #providerRuntimeKey was deleted — the
+        # brief view no longer asks users to enter API keys inline.
+        # Persistent BYO-AI config lives in Settings → Security & AI.
         # BYO-AI persistent key in settings
         ("aiByokKey", "off"),
         # Slack webhook URL

@@ -828,18 +828,23 @@
                 <p class="muted" data-i18n="brief.briefLead">Pick an imported job to prepare a provider-neutral brief.</p>
               </div>
               <div class="action-group">
+                <!-- 2026-05-23 (UX-R6): the ↗ ChatGPT and ↗ Claude
+                     buttons were deleted. Once BYO-AI provider is
+                     configured in Settings, "Analyze fit" runs it;
+                     before configuration, "Copy" gives the user the
+                     prompt to paste anywhere they like.
+
+                     UX-R7: the inline #providerRuntimeKey "Session
+                     API key" field was deleted. Migrants and
+                     friction-class users shouldn't be managing API
+                     keys at all; persistent BYO-AI config lives in
+                     Settings → Security & AI where it belongs. -->
                 <button id="copyBriefBtn" class="btn" type="button" data-i18n="brief.copy">Copy</button>
-                <button id="openInChatGPTBtn" class="btn" type="button" title="Copy the prompt and open ChatGPT in a new tab">↗ ChatGPT</button>
-                <button id="openInClaudeBtn" class="btn" type="button" title="Copy the prompt and open Claude in a new tab">↗ Claude</button>
                 <button id="runAnalysisBriefBtn" class="btn btn-primary" type="button" data-i18n="brief.analyze">Analyze fit</button>
               </div>
             </div>
-            <label class="field" for="providerRuntimeKey">
-              <span data-i18n="brief.runtimeKey">Session API key (optional, not saved)</span>
-              <input id="providerRuntimeKey" type="password" autocomplete="off" placeholder="Used only for one Run AI request" />
-            </label>
             <textarea id="briefPrompt" class="brief-textarea" rows="14" readonly placeholder="Import a job, then click Brief on the role to see a provider-neutral brief here." aria-label="AI brief output"></textarea>
-            <p class="muted small" data-i18n="brief.handoffNote">The brief is sent only when you click Analyze fit. Manual handoff always works.</p>
+            <p class="muted small" data-i18n="brief.handoffNote">The brief is sent only when you click Analyze fit. Copy gives you the prompt to paste anywhere.</p>
           </section>
 
           <section class="card" aria-label="Imported jobs">

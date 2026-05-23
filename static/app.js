@@ -1911,7 +1911,8 @@ function renderBrief() {
 function syncBriefActionsEnabled() {
   const text = ($("#briefPrompt")?.value || "").trim();
   const has = text.length > 0;
-  for (const id of ["copyBriefBtn", "openInChatGPTBtn", "openInClaudeBtn"]) {
+  // 2026-05-23 (UX-R6): #openInChatGPTBtn / #openInClaudeBtn deleted.
+  for (const id of ["copyBriefBtn"]) {
     const btn = document.getElementById(id);
     if (!btn) continue;
     btn.disabled = !has;
@@ -1931,7 +1932,8 @@ function syncBriefActionsEnabled() {
   if (!ta) return;
   ta.addEventListener("input", syncBriefActionsEnabled);
   // Stash original tooltips so we can restore after a disabled cycle.
-  for (const id of ["copyBriefBtn", "openInChatGPTBtn", "openInClaudeBtn"]) {
+  // 2026-05-23 (UX-R6): #openInChatGPTBtn / #openInClaudeBtn deleted.
+  for (const id of ["copyBriefBtn"]) {
     const btn = document.getElementById(id);
     if (btn) btn.dataset.originalTitle = btn.title || "";
   }
@@ -6925,17 +6927,11 @@ $("#copyBriefBtn").addEventListener("click", async () => {
   if (ok) showToast(t("brief.copied", "Brief copied to clipboard."), "success");
 });
 
-// Manual-mode handoff: copy the prompt + open the LLM's web UI in a new tab.
-// We can't programmatically prefill the LLM's textarea from a 3rd-party origin
-// (CSP / cross-origin restrictions), but copy-then-open removes 80% of the friction.
-$("#openInChatGPTBtn")?.addEventListener("click", async () => {
-  const ok = await copyBriefThen(() => window.open("https://chat.openai.com/", "_blank", "noopener,noreferrer"));
-  if (ok) showToast(t("brief.openHandoff", "Copied. Paste it into the LLM tab."), "success");
-});
-$("#openInClaudeBtn")?.addEventListener("click", async () => {
-  const ok = await copyBriefThen(() => window.open("https://claude.ai/new", "_blank", "noopener,noreferrer"));
-  if (ok) showToast(t("brief.openHandoff", "Copied. Paste it into the LLM tab."), "success");
-});
+// 2026-05-23 (UX-R6): the manual-mode "↗ ChatGPT" / "↗ Claude"
+// handoff buttons were deleted. Once BYO-AI is configured in
+// Settings, "Analyze fit" runs the provider directly; before
+// configuration, "Copy" gives the user the prompt to paste
+// anywhere they like. Three doors for one task became two.
 $("#companyFilter").addEventListener("input", (event) => {
   state.companyFilter = event.target.value;
   renderCompanies();
