@@ -229,8 +229,8 @@
         </form>
         <button id="showForgotPasswordBtn" type="button" class="btn btn-ghost mt-8" data-i18n="auth.forgotLink">Forgot password?</button>
         <form id="registerForm" class="auth-form" novalidate hidden>
-          <h2 id="registerHeading" data-i18n="auth.createFirstHeading">Create the first account</h2>
-          <p id="registerLead" class="muted" data-i18n="auth.createFirstLead">This screen only appears on a new install.</p>
+          <h2 id="registerHeading" data-i18n="auth.createPublicHeading">Create your account</h2>
+          <p id="registerLead" class="muted" data-i18n="auth.createPublicLead">Free to start. No tracker, no recruiter feed.</p>
           <label class="field" for="registerEmail">
             <span data-i18n="auth.email">Email</span>
             <input id="registerEmail" type="email" autocomplete="email" />
@@ -358,10 +358,6 @@
             <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v12H3z M14 8a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v9h-4z M5 7h2v2H5z M5 11h2v2H5z M9 7h2v2H9z M9 11h2v2H9z" fill="currentColor"/></svg>
             <span data-i18n="nav.companies">Companies</span>
             <span class="nav-pill" id="navCompanyCount">0</span>
-          </button>
-          <button class="nav-item" type="button" data-view="assistant">
-            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 4h14a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H7l-4 3V5a1 1 0 0 1 1-1zM7 9h1m3 0h1m3 0h1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
-            <span>Assistant</span>
           </button>
           <button class="nav-item" type="button" data-view="cvBuilder">
             <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 2h7l3 3v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1zm6 1.5V6h2.5L11 3.5zM7 10h6M7 13h6M7 7h3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
@@ -1427,26 +1423,11 @@
         </section>
 
         <!-- Assistant chat -->
-        <section id="view-assistant" class="view" data-view="assistant" hidden>
-          <section class="card" aria-label="AI Assistant chat">
-            <div class="card-heading">
-              <div>
-                <h2>Assistant</h2>
-                <p class="muted">Tell me what you want to do — e.g., "watch Charité, career page karriere.charite.de" or "/find Senior Backend Berlin". I'll ask for any missing details, confirm with you, then run the command.</p>
-              </div>
-              <div class="action-group">
-                <button id="chatHelpBtn" class="btn btn-ghost" type="button">Show commands</button>
-                <button id="chatResetBtn" class="btn btn-ghost" type="button">Reset chat</button>
-              </div>
-            </div>
-            <div id="chatTranscript" class="chat-transcript" role="log" aria-live="polite" aria-atomic="false"></div>
-            <form id="chatForm" class="chat-form-row" aria-label="Send a chat message">
-              <input id="chatInput" class="chat-input" type="text" autocomplete="off" placeholder="Type a message or a /slash-command…" aria-label="Chat message" />
-              <button id="chatSendBtn" class="btn btn-primary" type="submit">Send</button>
-            </form>
-            <p id="chatPendingHint" class="muted small mt-6" role="status" aria-live="polite"></p>
-          </section>
-        </section>
+        <!-- 2026-05-23 (UX-R1/R14/R15): the dedicated view-assistant
+             section was deleted. The persistent #chatDock is the
+             canonical chat surface — there is no second copy. See
+             test_ux_r1_chat_dock_canonical.py for the regression
+             guard. -->
 
         <!-- CV Builder -->
         <section id="view-cvBuilder" class="view" data-view="cvBuilder" hidden>

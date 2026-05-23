@@ -862,9 +862,16 @@ def _hsts_enabled() -> bool:
     """
 
     return HSTS_ENABLED
+# 2026-05-23 — public sign-up is open by default. The civic-commons
+# mission is to serve anyone facing structural friction in the EU
+# labour market; gating sign-up behind operator action turned the
+# "Sign up — it's free" CTAs on /help and /changelog into dead ends
+# (the SPA hid #registerForm whenever the DB had ≥1 user). Operators
+# who need a closed deployment (e.g. invite-only pilot) still set
+# HELPMEFINDTHEJOB_ALLOW_REGISTRATION=0 explicitly.
 ALLOW_REGISTRATION = get_env_bool(
     "HELPMEFINDTHEJOB_ALLOW_REGISTRATION",
-    default=False,
+    default=True,
 )
 SECRET_KEY = get_env("HELPMEFINDTHEJOB_SECRET_KEY") or (
     "dev-" + secrets.token_urlsafe(48)
