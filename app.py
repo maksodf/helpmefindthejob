@@ -302,6 +302,26 @@ def _resolve_build_sha() -> str:
 BUILD_SHA = _resolve_build_sha()
 
 
+def _build_sha_html() -> str:
+    """UX-H3 (2026-05-23): footer build-SHA renderer. If we have a
+    real 12-char hex SHA, link to the GitHub commit page; if not
+    (the "dev" placeholder path), render as plain <code>. Keeps the
+    footer engineering-credibility-friendly without breaking the
+    no-link case during local dev.
+    """
+
+    sha = BUILD_SHA
+    # 12 hex chars = real SHA from git rev-parse / docker env; anything
+    # else (eg. "dev") is the development fallback that has no remote
+    # commit to link to.
+    if len(sha) == 12 and all(c in "0123456789abcdef" for c in sha):
+        return (
+            f'<a href="https://github.com/maksodf/helpmefindthejob/commit/{sha}"'
+            f' rel="external noopener"><code>{sha}</code></a>'
+        )
+    return f"<code>{sha}</code>"
+
+
 _LOG_CTRL_CHARS = {ord(c): " " for c in "\n\r\t\x00\x0b\x0c"}
 
 
@@ -437,7 +457,7 @@ def _build_site_footer(lang: str) -> bytes:
         <a class="site-footer-badge" href="https://github.com/maksodf/helpmefindthejob" rel="external noopener">Quellcode</a>
       </p>
       <p class="site-footer-version muted small">
-        <a href="/changelog">v{APP_VERSION}</a> &middot; Build <code>{BUILD_SHA}</code>
+        <a href="/changelog">v{APP_VERSION}</a> &middot; Build {_build_sha_html()}
       </p>
     </section>
   </div>
@@ -479,7 +499,7 @@ def _build_site_footer(lang: str) -> bytes:
         <a class="site-footer-badge" href="https://github.com/maksodf/helpmefindthejob" rel="external noopener">Source</a>
       </p>
       <p class="site-footer-version muted small">
-        <a href="/changelog">v{APP_VERSION}</a> &middot; build <code>{BUILD_SHA}</code>
+        <a href="/changelog">v{APP_VERSION}</a> &middot; build {_build_sha_html()}
       </p>
     </section>
   </div>
@@ -7417,7 +7437,10 @@ class Handler(BaseHTTPRequestHandler):
                 ("/status", "Status page"),
                 ("/impressum", "Impressum"),
             ]
-        items = "".join(f'<li><a href="{href}">{label}</a></li>' for href, label in links)
+        items = "".join(
+            f'<li><a class="legal-back" href="{href}">{label}</a></li>'
+            for href, label in links
+        )
         html_body = (
             "<!doctype html>"
             f'<html lang="{lang}">'
@@ -7438,7 +7461,7 @@ class Handler(BaseHTTPRequestHandler):
             "</header>"
             "<section>"
             f"<p>{lead}</p>"
-            f"<ul>{items}</ul>"
+            f'<ul class="four-oh-four-suggestions">{items}</ul>'
             "</section>"
             "</main>"
             "</body>"

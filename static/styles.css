@@ -2718,6 +2718,23 @@ details[open] .collapsible-chevron { transform: rotate(180deg); }
   line-height: 1.55;
 }
 
+/* 2026-05-23 (UX-A5): branded 404 suggestion list — drop default
+ * bullets and inherit the legal-back link styling so the page
+ * matches the rhythm of the rest of the legal-page family. */
+.four-oh-four-suggestions {
+  list-style: none;
+  padding-left: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.four-oh-four-suggestions li {
+  padding: 4px 0;
+}
+.four-oh-four-suggestions .legal-back {
+  margin-bottom: 0;
+}
+
 .legal-back {
   display: inline-block;
   margin-bottom: 16px;
