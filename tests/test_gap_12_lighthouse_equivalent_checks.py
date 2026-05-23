@@ -63,8 +63,12 @@ _SIZE_BUDGETS = {
     # ~106 KB. New bumped budget holds production at 120 KB while
     # leaving headroom for the AUDIT-17 minified /styles.min.css
     # path (~75 KB).
-    "/styles.css": 120_000,
-    "/styles.min.css": 85_000,
+    # 2026-05-23 UX wave (F1 light theme + G1 global header + A10
+    # auto-TOC + breadcrumbs + form-UX + api-docs polish + persona-
+    # panel mobile mosaic + status mobile grid). styles.css grew
+    # from ~105 KB to ~125 KB; bump budget to 140 KB with headroom.
+    "/styles.css": 140_000,
+    "/styles.min.css": 100_000,
     "/app.js": 400_000,
     "/app.min.js": 250_000,
     "/forgot-password.js": 4_000,

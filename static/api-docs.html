@@ -81,6 +81,10 @@
            sections above (About / Auth / Versioning) stay put. -->
       <section id="apiSpecRoot">
         <h2>Endpoints</h2>
+        <!-- UX-E2 (2026-05-23): jump-nav populated by api-docs.js
+             with one link per tag group (HEALTH / AUTH / SITE / CSP
+             / MCP / …) when the spec lands. Hidden until populated. -->
+        <nav id="apiTagJumpNav" class="api-tag-jump-nav" aria-label="Jump to endpoint group" hidden></nav>
         <p id="apiSpecLoading" class="muted">Loading spec from <code>/api/openapi.json</code>&hellip;</p>
         <div id="apiSpecBody" hidden>
           <!-- Hydrated by /api-docs.js — each tag becomes an h3

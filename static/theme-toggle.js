@@ -74,6 +74,64 @@
     setTheme(next);
   });
 
+  // UX-A10/E3 (2026-05-23): auto-generate an in-page TOC for long
+  // legal pages (privacy / terms / data-retention / impressum).
+  // Triggered when the page has 4+ h2 sections inside .legal-page,
+  // so short pages don't get a useless 1-item nav.
+  (function buildLegalToc() {
+    var page = document.querySelector(".legal-page");
+    if (!page) return;
+    var sections = page.querySelectorAll(":scope > section > h2");
+    if (sections.length < 4) return;
+    // Skip if a TOC is already present (manual on /help, /changelog).
+    if (page.querySelector(".legal-toc")) return;
+    if (page.querySelector('nav[aria-label="On this page"]')) return;
+
+    function slugify(text) {
+      return (text || "")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "")
+        .slice(0, 60);
+    }
+
+    var nav = document.createElement("nav");
+    nav.className = "legal-toc";
+    nav.setAttribute("aria-label", "On this page");
+    var ol = document.createElement("ol");
+
+    var seen = {};
+    for (var i = 0; i < sections.length; i += 1) {
+      var h2 = sections[i];
+      var parent = h2.parentElement;
+      if (!parent) continue;
+      var label = (h2.textContent || "").trim();
+      if (!label) continue;
+      var base = slugify(label) || ("section-" + (i + 1));
+      var id = base;
+      var n = 2;
+      while (seen[id]) { id = base + "-" + n; n += 1; }
+      seen[id] = true;
+      if (!parent.id) parent.id = id;
+      var li = document.createElement("li");
+      var a = document.createElement("a");
+      a.href = "#" + parent.id;
+      a.textContent = label;
+      li.appendChild(a);
+      ol.appendChild(li);
+    }
+    nav.appendChild(ol);
+
+    // Insert the TOC right after the <header> if present, else as
+    // the first child of .legal-page.
+    var header = page.querySelector(":scope > header");
+    if (header) {
+      header.insertAdjacentElement("afterend", nav);
+    } else {
+      page.insertAdjacentElement("afterbegin", nav);
+    }
+  })();
+
   // If the user toggles their OS theme AND has no explicit choice,
   // follow the system. Once they've clicked the button, their choice
   // is sticky (the cookie wins).

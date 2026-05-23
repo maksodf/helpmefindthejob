@@ -15,6 +15,7 @@
 const ROOT = document.getElementById("apiSpecBody");
 const LOADING = document.getElementById("apiSpecLoading");
 const ERROR_EL = document.getElementById("apiSpecError");
+const JUMP_NAV = document.getElementById("apiTagJumpNav");
 
 function tag(name, props = {}, ...children) {
   const el = document.createElement(name);
@@ -180,6 +181,24 @@ async function render() {
     const grouped = groupByTag(spec.paths || {});
     const tagDescriptions = new Map();
     for (const t of (spec.tags || [])) tagDescriptions.set(t.name, t.description);
+
+    // UX-E2: populate the jump-nav with one link per tag group.
+    if (JUMP_NAV) {
+      JUMP_NAV.replaceChildren();
+      const label = document.createElement("span");
+      label.className = "api-tag-jump-label";
+      label.textContent = "Jump to:";
+      JUMP_NAV.appendChild(label);
+      for (const tagName of grouped.keys()) {
+        const tagId = `tag-${tagName.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+        const a = document.createElement("a");
+        a.href = `#${tagId}`;
+        a.className = "api-tag-jump-link";
+        a.textContent = tagName;
+        JUMP_NAV.appendChild(a);
+      }
+      JUMP_NAV.hidden = false;
+    }
 
     for (const [tagName, ops] of grouped) {
       // UX-K3: stable anchor id per tag group so external docs can

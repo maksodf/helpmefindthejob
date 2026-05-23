@@ -2971,6 +2971,52 @@ details[open] .collapsible-chevron { transform: rotate(180deg); }
   margin-bottom: 0;
 }
 
+/* UX-A10/E3 (2026-05-23): auto-generated "On this page" TOC for
+ * long legal pages. Built by theme-toggle.js when a .legal-page
+ * has 4+ h2 sections. Compact, indented list with subtle borders.
+ * Sticky-ish: stays at top of the page but doesn't pin while
+ * scrolling (full sticky would crowd narrow viewports). */
+.legal-toc {
+  margin: 0 0 24px;
+  padding: 14px 18px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: var(--text-sm, 13px);
+}
+.legal-toc::before {
+  content: "On this page";
+  display: block;
+  font-size: var(--text-xs, 12px);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+html[lang="de"] .legal-toc::before {
+  content: "Auf dieser Seite";
+}
+.legal-toc ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 4px 16px;
+}
+.legal-toc li { margin: 0; }
+.legal-toc a {
+  color: var(--accent-text);
+  text-decoration: none;
+  display: block;
+  padding: 2px 0;
+}
+.legal-toc a:hover,
+.legal-toc a:focus-visible {
+  text-decoration: underline;
+}
+
 /* UX-G5 (2026-05-23): visible breadcrumb that replaces the per-
  * page "← Back to Helpmefindthejob" link. Pairs with the existing
  * BreadcrumbList JSON-LD on every legal page. Small, muted, and
@@ -4519,6 +4565,38 @@ html[lang="de"] .api-docs-de-note { display: block; }
   outline-offset: 2px;
   border-radius: 2px;
 }
+/* UX-E2 (2026-05-23): jump-nav for tag groups inside the
+ * Endpoints section. Populated dynamically by api-docs.js once
+ * the spec lands. Flex wrap on narrow viewports. */
+.api-tag-jump-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 16px;
+  padding: 10px 14px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: var(--text-sm, 13px);
+}
+.api-tag-jump-label {
+  color: var(--text-muted);
+  margin-right: 4px;
+}
+.api-tag-jump-link {
+  color: var(--accent-text);
+  text-decoration: none;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+}
+.api-tag-jump-link:hover,
+.api-tag-jump-link:focus-visible {
+  background: var(--accent-weak);
+  border-color: var(--accent);
+}
+
 /* UX-D1: api-docs loading skeleton. Three placeholder cards that
  * shimmer until the spec lands. */
 .api-loading-skeleton {
