@@ -12109,14 +12109,17 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(encoded)
 
 
-    # AUDIT-6: legal pages have bilingual variants. /impressum is DE-canonical
-    # (§5 TMG legal requirement); the other three are EN-canonical with .de
-    # courtesy translations. Language resolution: ?lang= > lang cookie >
-    # Accept-Language > 'en' default.
-    _BILINGUAL_LEGAL_PAGES = ("/privacy", "/terms", "/data-retention", "/impressum")
+    # AUDIT-6 + AUDIT-26: bilingual SSR pages (DE/EN). The four
+    # legal pages plus the standalone /forgot-password page that
+    # AUDIT-26 extracted from the SPA shell. /impressum is DE-
+    # canonical (§5 TMG legal requirement); the others are EN-
+    # canonical with .de courtesy translations. Language
+    # resolution: ?lang= > lang cookie > Accept-Language > 'en'
+    # default.
+    _BILINGUAL_PAGES = ("/privacy", "/terms", "/data-retention", "/impressum", "/forgot-password")
 
     def _resolve_user_language(self) -> str:
-        """Pick 'de' or 'en' for legal-page rendering (AUDIT-6)."""
+        """Pick 'de' or 'en' for bilingual SSR rendering (AUDIT-6 / AUDIT-26)."""
         from urllib.parse import urlparse as _urlparse, parse_qs as _parse_qs
         qs = _urlparse(self.path).query
         if qs:
@@ -12141,14 +12144,17 @@ class Handler(BaseHTTPRequestHandler):
             return "en"
         return "en"
 
-    def _bilingual_legal_path(self, request_path: str, lang: str) -> str:
-        """Map (/privacy, 'de') -> '/privacy.de'. AUDIT-6 helper."""
+    def _bilingual_page_path(self, request_path: str, lang: str) -> str:
+        """Map (/privacy, 'de') -> '/privacy.de'. AUDIT-6 / AUDIT-26 helper."""
         if request_path == "/impressum":
             return "/impressum.en" if lang == "en" else "/impressum"
         return request_path + ".de" if lang == "de" else request_path
 
     def serve_static(self, request_path: str, include_body: bool = True) -> None:
-        spa_routes = {"/accept-invite", "/reset-password", "/forgot-password"}
+        # AUDIT-26: /forgot-password is no longer an SPA route; it has a
+        # dedicated ~8 KB bilingual page (see _BILINGUAL_PAGES). Only the
+        # token-bound auth-aux flows still fall through to the SPA shell.
+        spa_routes = {"/accept-invite", "/reset-password"}
         # AUDIT-39 (2026-05-22): localized manifest. DE users get the
         # German manifest with translated description; EN/other gets
         # the default. PWA install card on Android then shows the
@@ -12157,9 +12163,9 @@ class Handler(BaseHTTPRequestHandler):
             lang = self._resolve_user_language()
             if lang == "de":
                 request_path = "/manifest.webmanifest.de"
-        if request_path in self._BILINGUAL_LEGAL_PAGES:
+        if request_path in self._BILINGUAL_PAGES:
             lang = self._resolve_user_language()
-            path = self._bilingual_legal_path(request_path, lang)
+            path = self._bilingual_page_path(request_path, lang)
         elif request_path in {"", "/"}:
             path = "/index.html"
         elif request_path in spa_routes:

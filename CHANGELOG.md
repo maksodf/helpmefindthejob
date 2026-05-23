@@ -232,6 +232,36 @@ audit. Items below are commit-mapped to the working branch
   variables: `_ENV`, `_DATA_DIR`, `_HOST`, `_PORT`) — same migration
   schedule.
 
+### Changed
+
+- **`/forgot-password` is now a dedicated 3.4 KB bilingual page,
+  not the 103 KB SPA shell (AUDIT-26)** — cold-loading
+  `/forgot-password` (from an email link, bookmark, or post-
+  timeout redirect) used to render the entire SPA chrome
+  (`static/index.html`, ~103 KB) just to show a single email
+  field. The dedicated page (`static/forgot-password.html` EN,
+  `static/forgot-password.de.html` DE, sharing
+  `static/forgot-password.js`) posts to the same
+  `/api/auth/forgot-password` endpoint, lives at 3.4 KB / 3.7 KB
+  respectively, and is CSP-compliant (no inline scripts). The
+  in-SPA "Forgot password?" flow is unchanged — the SPA's
+  client-side router still shows `forgotPasswordView` when a
+  signed-out user is already in the app. Language resolution
+  honours `?lang=`, the `lang` cookie, and `Accept-Language`
+  (same rule as the legal pages, AUDIT-6). Robots: `noindex,
+  nofollow` (the route was already in `Disallow: /forgot-password`).
+  Helper rename: `Handler._BILINGUAL_LEGAL_PAGES` →
+  `_BILINGUAL_PAGES` and `_bilingual_legal_path` →
+  `_bilingual_page_path` (the constant now covers one non-legal
+  page; existing test
+  `tests/test_legal_pages_bilingual.py` updated to the new
+  helper name). Regression guard in
+  `tests/test_audit_26_forgot_password_minimal.py` (+13):
+  size cap, SPA-marker negative checks, bilingual routing
+  via `?lang=` / `Accept-Language`, JS-file reachability, and
+  an invariant probe that `/reset-password` + `/accept-invite`
+  still serve the SPA shell (AUDIT-27 covers extracting those).
+
 ### Removed
 
 - **Referral-tracking cookie on `/r/<code>` (AUDIT-22)** — the

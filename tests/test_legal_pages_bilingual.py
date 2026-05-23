@@ -15,7 +15,7 @@ This test enforces:
   disk (privacy.html + privacy.de.html; impressum.html + impressum.en.html).
 * Every legal HTML file (EN or DE) contains a `language-switcher`
   block so users can find the other language.
-* The Handler's `_resolve_user_language` + `_bilingual_legal_path`
+* The Handler's `_resolve_user_language` + `_bilingual_page_path`
   helpers exist (server-side routing for ?lang= / cookie /
   Accept-Language).
 """
@@ -109,29 +109,29 @@ class HandlerHasBilingualRoutingHelpers(unittest.TestCase):
             "Handler missing _resolve_user_language (AUDIT-6 SSR helper)",
         )
         self.assertTrue(
-            hasattr(Handler, "_bilingual_legal_path"),
-            "Handler missing _bilingual_legal_path (AUDIT-6 SSR helper)",
+            hasattr(Handler, "_bilingual_page_path"),
+            "Handler missing _bilingual_page_path (AUDIT-6 SSR helper)",
         )
 
-    def test_bilingual_legal_path_maps_correctly(self) -> None:
+    def test_bilingual_page_path_maps_correctly(self) -> None:
         from app import Handler
 
         # /impressum is DE-canonical
         self.assertEqual(
-            Handler._bilingual_legal_path(None, "/impressum", "en"),
+            Handler._bilingual_page_path(None, "/impressum", "en"),
             "/impressum.en",
         )
         self.assertEqual(
-            Handler._bilingual_legal_path(None, "/impressum", "de"),
+            Handler._bilingual_page_path(None, "/impressum", "de"),
             "/impressum",
         )
         # Other legal pages are EN-canonical with .de courtesy
         self.assertEqual(
-            Handler._bilingual_legal_path(None, "/privacy", "de"),
+            Handler._bilingual_page_path(None, "/privacy", "de"),
             "/privacy.de",
         )
         self.assertEqual(
-            Handler._bilingual_legal_path(None, "/privacy", "en"),
+            Handler._bilingual_page_path(None, "/privacy", "en"),
             "/privacy",
         )
 
