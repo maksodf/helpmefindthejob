@@ -121,8 +121,8 @@
       <div class="auth-layout">
         <section class="auth-mission" aria-labelledby="missionHeading">
           <p class="auth-mission-tag" data-i18n="landing.tag">Open-source · Apache 2.0 · EU civic commons</p>
-          <h1 id="missionHeading" class="auth-mission-headline" data-i18n="landing.headline">A calm job tool, for users the labor market makes difficult.</h1>
-          <p class="auth-mission-lead" data-i18n="landing.lead">An MCP-composable copilot for people facing structural friction in the European labor market — migrants on Anerkennungsverfahren, EU Blue Card candidates, Wiedereinstieg returners, career changers, refugees on §24/§4 pathways.</p>
+          <h1 id="missionHeading" class="auth-mission-headline" data-i18n="landing.headline">The job search the labor market wasn&rsquo;t built for.</h1>
+          <p class="auth-mission-lead" data-i18n="landing.lead">Helpmefindthejob captures the specialist HR and bureaucratic knowledge usually locked behind paid consultants &mdash; and puts it, free and open, in every job-seeker&rsquo;s browser. Built for the friction the labor market ignores.</p>
           <ul class="auth-mission-bullets">
             <li>
               <strong data-i18n="landing.bullet1.head">EU AI Act compliant by design.</strong>
@@ -141,6 +141,61 @@
               <span data-i18n="landing.bullet4.body">Federated deployment, no commercial product, Apache 2.0 + CLA, built for civic institutions.</span>
             </li>
           </ul>
+
+          <!-- AUDIT-33 (2026-05-23): persona-panel cards. Surfaces the
+               7-persona friction panel as visual cards rather than an
+               inline comma-separated list inside bullet 3. Each card
+               carries an avatar (initial), the persona's name + role,
+               the friction shape they carry, and the cohort tag
+               (most-acute migrant vs wider friction-class per Decision 21). -->
+          <section class="persona-panel" aria-labelledby="personaPanelHeading">
+            <h2 id="personaPanelHeading" class="persona-panel-heading" data-i18n="landing.personas.heading">Built for these seven friction cases</h2>
+            <div class="persona-grid">
+              <article class="persona-card persona-card--acute">
+                <span class="persona-avatar" aria-hidden="true">A</span>
+                <h3 class="persona-name">A&iuml;cha</h3>
+                <p class="persona-friction" data-i18n="landing.personas.aicha">Tunisian-trained nurse, §16d Anerkennung in flight, B1&rarr;B2 German.</p>
+                <p class="persona-status muted small" data-i18n="landing.personas.aicha.cohort">Most-acute migrant cohort · Healthcare</p>
+              </article>
+              <article class="persona-card persona-card--acute">
+                <span class="persona-avatar" aria-hidden="true">Y</span>
+                <h3 class="persona-name">Yusuf</h3>
+                <p class="persona-friction" data-i18n="landing.personas.yusuf">Syrian mechanical engineer, §16d, needs Anerkennungs-friendly employer.</p>
+                <p class="persona-status muted small" data-i18n="landing.personas.yusuf.cohort">Most-acute migrant cohort · Engineering</p>
+              </article>
+              <article class="persona-card persona-card--acute">
+                <span class="persona-avatar" aria-hidden="true">O</span>
+                <h3 class="persona-name">Olga</h3>
+                <p class="persona-friction" data-i18n="landing.personas.olga">Ukrainian §24-status, prior office work, working toward German language gate.</p>
+                <p class="persona-status muted small" data-i18n="landing.personas.olga.cohort">Most-acute migrant cohort · Office / admin</p>
+              </article>
+              <article class="persona-card persona-card--acute">
+                <span class="persona-avatar" aria-hidden="true">M</span>
+                <h3 class="persona-name">Mahmoud</h3>
+                <p class="persona-friction" data-i18n="landing.personas.mahmoud">Syrian §4 subsidiary, IT-support pivot, technical English fluent.</p>
+                <p class="persona-status muted small" data-i18n="landing.personas.mahmoud.cohort">Most-acute migrant cohort · IT support</p>
+              </article>
+              <article class="persona-card persona-card--acute">
+                <span class="persona-avatar" aria-hidden="true">M</span>
+                <h3 class="persona-name">Maria</h3>
+                <p class="persona-friction" data-i18n="landing.personas.maria">Spanish architect on EU Blue Card, downshifted to drafter to enter the market.</p>
+                <p class="persona-status muted small" data-i18n="landing.personas.maria.cohort">Most-acute migrant cohort · EU Blue Card</p>
+              </article>
+              <article class="persona-card persona-card--wider">
+                <span class="persona-avatar" aria-hidden="true">K</span>
+                <h3 class="persona-name">K&auml;the</h3>
+                <p class="persona-friction" data-i18n="landing.personas.kaethe">German nurse returning after 12 years out for childcare. Wiedereinstieg.</p>
+                <p class="persona-status muted small" data-i18n="landing.personas.kaethe.cohort">Wider friction-class · Re-entry</p>
+              </article>
+              <article class="persona-card persona-card--wider">
+                <span class="persona-avatar" aria-hidden="true">T</span>
+                <h3 class="persona-name">Tobias</h3>
+                <p class="persona-friction" data-i18n="landing.personas.tobias">German, long-term unemployed, needs evidence-of-ROI framing for hiring managers.</p>
+                <p class="persona-status muted small" data-i18n="landing.personas.tobias.cohort">Wider friction-class · Long-term unemployed</p>
+              </article>
+            </div>
+            <p class="persona-panel-foot muted small" data-i18n="landing.personas.foot">Friction-driven, not demographic-driven (per Decision 21). The migrant five anchor narrative; the wider two demonstrate the friction-class claim architecturally.</p>
+          </section>
           <nav class="auth-mission-links" aria-label="Project links">
             <a class="auth-mission-link" href="/help" data-i18n="landing.linkHelp">How it works</a>
             <a class="auth-mission-link" href="https://github.com/maksodf/helpmefindthejob" rel="noopener">GitHub</a>
