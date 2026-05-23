@@ -179,6 +179,43 @@ class PublicSignupOpenByDefault(unittest.TestCase):
             f"hasUsers should be true after a registration; got: {payload!r}",
         )
 
+    def test_register_consent_block_visible_by_default(self) -> None:
+        """UX-P0 follow-up 2 (2026-05-23): the DSGVO consent
+        checkboxes must be in the page on first paint, BEFORE the
+        JS hydrates auth state. Pre-fix the HTML had
+        ``<div id="registerConsent" … hidden>`` and relied on the
+        JS to unhide it once /api/auth/status returned with
+        ``hasUsers: true``. Any race / cache / blocked JS left the
+        user submitting the form with no visible consent boxes →
+        server rejected with "must accept terms" and the user had
+        no actionable affordance to fix it.
+
+        New default: visible. JS hides it only for the bootstrap
+        path (first install, no users yet).
+        """
+
+        status, _h, body = self._get("/")
+        self.assertEqual(status, 200)
+        text = body.decode("utf-8")
+        self.assertIn('id="registerConsent"', text,
+                      "consent block missing from SPA shell")
+        # The element exists. Now confirm it does NOT carry the
+        # `hidden` attribute by default. We probe the exact opening
+        # tag so we don't false-positive on a `hidden` later in the
+        # markup.
+        import re as _re
+        rx = _re.compile(
+            r'<div\s+[^>]*id="registerConsent"[^>]*>',
+        )
+        m = rx.search(text)
+        self.assertIsNotNone(m, "registerConsent div opening tag not found")
+        self.assertNotIn(
+            " hidden", m.group(0),
+            "UX-P0 follow-up regression: <div id='registerConsent'> "
+            "is back to default-hidden. JS hydration delays / cache /"
+            " blocked JS leave the user unable to register.",
+        )
+
     def test_register_form_default_copy_matches_public_signup_branch(self) -> None:
         """The static HTML defaults must reflect the common case —
         public signup — not the bootstrap (first-user-only) case.

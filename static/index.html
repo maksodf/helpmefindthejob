@@ -260,7 +260,17 @@
             <input id="registerPassword" type="password" autocomplete="new-password" minlength="12" aria-describedby="registerPassword-hint" />
             <span class="hint" id="registerPassword-hint">12 characters or more.</span>
           </label>
-          <div id="registerConsent" class="auth-consent" hidden>
+          <!-- 2026-05-23 (UX-P0 follow-up): consent block defaults
+               VISIBLE so users see the checkboxes immediately even
+               before the JS auth-status hydrates. The server-side
+               /api/auth/register handler ALWAYS requires consent
+               for public sign-up; a brief consent-less window in
+               which the user could submit would surface a
+               confusing "must accept terms" error with no
+               actionable checkboxes. JS hides this block only for
+               the bootstrap path (no users yet) — see
+               app.js renderAuth() where isPublicSignup is computed. -->
+          <div id="registerConsent" class="auth-consent">
             <label class="auth-consent-row" for="registerTos">
               <input id="registerTos" type="checkbox" />
               <span><span data-i18n="auth.consent.tos">I have read and accept the Terms.</span> <a href="/terms" target="_blank" rel="noopener">↗</a></span>
