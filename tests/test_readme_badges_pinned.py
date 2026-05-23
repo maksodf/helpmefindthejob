@@ -79,6 +79,14 @@ class ReadmeBadgeBranchPins(unittest.TestCase):
             "branch=claude/project-analysis",
             "tree/claude/project-analysis",
             "blob/claude/project-analysis",
+            # 2026-05-24: codecov badge URL form is
+            # `/branch/<name>/graph/badge.svg` — slash-separated,
+            # with URL-encoded slashes when the branch contains them.
+            # Catch both raw and URL-encoded variants of a feature-
+            # branch reference so a future regression cannot reintroduce
+            # the working-branch path that shipped pre-PlanTowardPerfection.
+            "branch/claude/",
+            "branch/claude%2F",
         ]
         for pat in forbidden_patterns:
             with self.subTest(pattern=pat):

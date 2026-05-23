@@ -6,11 +6,17 @@
 [![MCP integration](https://github.com/maksodf/helpmefindthejob/actions/workflows/mcp-integration.yml/badge.svg?branch=main)](https://github.com/maksodf/helpmefindthejob/actions/workflows/mcp-integration.yml)
 [![Fresh-clone install](https://github.com/maksodf/helpmefindthejob/actions/workflows/fresh-clone-install.yml/badge.svg?branch=main)](https://github.com/maksodf/helpmefindthejob/actions/workflows/fresh-clone-install.yml)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/maksodf/helpmefindthejob/badge)](https://securityscorecards.dev/viewer/?uri=github.com/maksodf/helpmefindthejob)
-[![codecov](https://codecov.io/gh/maksodf/helpmefindthejob/branch/claude%2Fproject-analysis-bpHCo/graph/badge.svg)](https://codecov.io/gh/maksodf/helpmefindthejob)
-[![Release](https://img.shields.io/badge/release-pre--v0.1.0-lightgrey.svg)](#)
+[![codecov](https://codecov.io/gh/maksodf/helpmefindthejob/branch/main/graph/badge.svg)](https://codecov.io/gh/maksodf/helpmefindthejob)
+[![Release](https://img.shields.io/badge/release-v0.1.0-blue.svg)](https://github.com/maksodf/helpmefindthejob/releases)
 [![Languages](https://img.shields.io/badge/languages-EN%20%2B%20DE-informational.svg)](static/i18n/)
 [![MCP](https://img.shields.io/badge/MCP-2024--11--05-blueviolet.svg)](https://modelcontextprotocol.io)
 [![Docs](https://github.com/maksodf/helpmefindthejob/actions/workflows/docs-publish.yml/badge.svg?branch=main)](https://maksodf.github.io/helpmefindthejob/)
+
+![Helpmefindthejob landing — civic-commons headline, four standards-anchored value props, persona panel, EN/DE language switcher in footer](docs/screenshots/hero-landing.png)
+
+<sub>Site footer (EN/DE language switcher, Commons Conservancy attribution, license, security.txt, version):</sub>
+
+![Site footer with English/Deutsch language switcher, contact and legal links, Apache 2.0 + Commons Conservancy badges, and the v0.80.0 version stamp](docs/screenshots/footer-language-switcher.png)
 
 > Aïcha is a Tunisian-trained registered nurse working through §16d
 > Anerkennung in Berlin — clinically capable, German at B1 climbing
