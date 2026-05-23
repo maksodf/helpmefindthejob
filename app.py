@@ -24,7 +24,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from threading import Lock, Thread
 from typing import Any, ClassVar
-from urllib.parse import unquote, urlparse
+from urllib.parse import quote, unquote, urlparse
 
 from company_discovery.aggregator_providers import default_no_auth_providers
 from company_discovery.aggregators import (
@@ -7400,6 +7400,41 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_header("Location", "/?ref=" + code)
                 self.end_headers()
                 return
+            # AUDIT-27: path-token form of the auth-aux SPA routes
+            # (/reset-password/<token>, /accept-invite/<token>) used
+            # to 404 because the SPA only consumes the ?token=<token>
+            # query form. We redirect path-token URLs to the canonical
+            # query form so externally-generated or hand-edited links
+            # still land on the reset/invite flow. Empty token
+            # (/reset-password/ with a trailing slash) redirects to
+            # the canonical bare path so the SPA shell loads normally.
+            # Token shape is whitelisted to the secrets.token_urlsafe
+            # alphabet (URL-safe base64, no padding) with length in
+            # [8, 256]; anything else 404s rather than bouncing
+            # arbitrary garbage paths through the redirect.
+            for _token_prefix in ("/reset-password/", "/accept-invite/"):
+                if parsed.path.startswith(_token_prefix):
+                    _raw_token = parsed.path[len(_token_prefix):].strip("/").split("/", 1)[0]
+                    _canonical = _token_prefix.rstrip("/")
+                    if not _raw_token:
+                        self.send_response(HTTPStatus.SEE_OTHER)
+                        self.send_header("Location", _canonical)
+                        self.end_headers()
+                        return
+                    if not re.fullmatch(r"[A-Za-z0-9_\-]{8,256}", _raw_token):
+                        self.send_error_json(
+                            HTTPStatus.NOT_FOUND,
+                            "not_found",
+                            "Invalid token in URL path. Use the link from your email.",
+                        )
+                        return
+                    self.send_response(HTTPStatus.SEE_OTHER)
+                    self.send_header(
+                        "Location",
+                        f"{_canonical}?token={quote(_raw_token, safe='')}",
+                    )
+                    self.end_headers()
+                    return
             if parsed.path == "/account/verify-email":
                 from urllib.parse import parse_qs as _parse_qs
 
@@ -12154,7 +12189,11 @@ class Handler(BaseHTTPRequestHandler):
         # AUDIT-26: /forgot-password is no longer an SPA route; it has a
         # dedicated ~8 KB bilingual page (see _BILINGUAL_PAGES). Only the
         # token-bound auth-aux flows still fall through to the SPA shell.
-        spa_routes = {"/accept-invite", "/reset-password"}
+        # AUDIT-27: /admin joins the SPA-shell list so a freshly-loaded
+        # /admin lands on the admin view (init() in static/app.js wires
+        # the path → state.view = "admin" branch; the existing isAdmin()
+        # guard sends non-admin users to /jobs).
+        spa_routes = {"/accept-invite", "/reset-password", "/admin"}
         # AUDIT-39 (2026-05-22): localized manifest. DE users get the
         # German manifest with translated description; EN/other gets
         # the default. PWA install card on Android then shows the

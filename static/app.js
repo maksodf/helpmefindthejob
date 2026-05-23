@@ -567,6 +567,13 @@ async function init() {
     showOnly("forgotPasswordView");
     return;
   }
+  if (path === "/admin") {
+    // AUDIT-27: a freshly-loaded /admin URL should land on the
+    // admin view. The existing navigate("admin") in renderAuth's
+    // post-auth path picks up state.view; isAdmin() inside
+    // navigate() then redirects non-admin users to /jobs.
+    state.view = "admin";
+  }
   try {
     const payload = await api("/api/auth/status");
     state.auth = {

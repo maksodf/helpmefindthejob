@@ -234,6 +234,38 @@ audit. Items below are commit-mapped to the working branch
 
 ### Changed
 
+- **`/admin`, `/reset-password/<token>`, `/accept-invite/<token>`
+  no longer 404 (AUDIT-27)** — all three were dead URLs:
+  * `/admin` had no path-to-view dispatch even though the SPA
+    knows an "admin" view internally; bookmark or external link
+    to `/admin` returned 404 instead of loading the admin
+    surface. Now serves the SPA shell, and `static/app.js`
+    `init()` sets `state.view = "admin"` for that path so a
+    freshly-loaded `/admin` lands on the admin view (existing
+    `isAdmin()` guard still redirects non-admin users to
+    `/jobs`).
+  * `/reset-password/<token>` and `/accept-invite/<token>` 404'd
+    because the SPA only consumes the `?token=<token>` query
+    form (the only form server-side email generation emits).
+    Anyone hand-editing, generating, or being fed a path-token
+    URL hit a dead end on what is one of the most-critical
+    paths in the product. Both now return 303 to the canonical
+    `?token=<token>` query form. Token shape is whitelisted to
+    the `secrets.token_urlsafe` alphabet (`[A-Za-z0-9_-]`,
+    length `[8, 256]`); anything else (length out of range,
+    URL-encoded special chars, base64 padding) returns 404
+    rather than bouncing arbitrary garbage paths through the
+    redirect. Trailing-slash-only paths (`/reset-password/`)
+    redirect to the canonical bare path.
+  Regression guard in
+  `tests/test_audit_27_spa_token_routes.py` (+11 tests): live
+  probes for `/admin` SPA-shell rendering, valid 8-char and
+  43-char token redirects, malformed-token 404s (subTest matrix
+  across seven bad shapes), empty-token canonical redirect,
+  invariant probe that the canonical `?token=` form still
+  serves the SPA shell, and a source check that
+  `static/app.js` carries the `/admin` branch.
+
 - **`/forgot-password` is now a dedicated 3.4 KB bilingual page,
   not the 103 KB SPA shell (AUDIT-26)** — cold-loading
   `/forgot-password` (from an email link, bookmark, or post-
