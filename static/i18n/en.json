@@ -589,7 +589,6 @@
   "view.queue.title": "Discovered jobs",
   "view.searchResults.empty": "No active search.",
   "view.searchResults.hint": "Type \"find a job\" in chat to start.",
-  "view.searchResults.rerun": "Re-run search",
   "view.searchResults.subtitle": "Live aggregator hits for your last search, grouped by role family.",
   "view.searchResults.title": "Search results",
   "view.settings.subtitle": "AI provider, account security, backup, and scan history.",

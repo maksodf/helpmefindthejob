@@ -70,21 +70,33 @@ function renderUptimeBar(payload) {
     buckets[idx].total += 1;
     if (snap.status === "ok") buckets[idx].ok += 1;
   }
+  // 2026-05-23 (UX-J2): the cells were role="img" with one generic
+  // aria-label, so screen readers couldn't get per-hour data. Now
+  // each cell carries its own aria-label and the bar is a list.
+  uptimeBar.setAttribute("role", "list");
+  uptimeBar.setAttribute(
+    "aria-label",
+    `24-hour uptime history, ${buckets.filter((b) => b.total > 0).length} of 24 hours with data`,
+  );
   for (let i = 0; i < 24; i += 1) {
     const b = buckets[i];
     const cell = document.createElement("span");
     cell.className = "uptime-cell";
+    cell.setAttribute("role", "listitem");
     const hourLabel = `${23 - i}h ago`;
+    let label;
     if (b.total === 0) {
       cell.classList.add("uptime-cell--empty");
-      cell.title = `${hourLabel}: no data`;
+      label = `${hourLabel}: no data`;
     } else {
       const pct = (100 * b.ok) / b.total;
       if (pct >= 99) cell.classList.add("uptime-cell--ok");
       else if (pct >= 80) cell.classList.add("uptime-cell--warn");
       else cell.classList.add("uptime-cell--bad");
-      cell.title = `${hourLabel}: ${pct.toFixed(0)}% (${b.ok}/${b.total} checks ok)`;
+      label = `${hourLabel}: ${pct.toFixed(0)}% uptime, ${b.ok} of ${b.total} checks ok`;
     }
+    cell.title = label;
+    cell.setAttribute("aria-label", label);
     uptimeBar.appendChild(cell);
   }
 }

@@ -589,7 +589,6 @@
   "view.queue.title": "Gefundene Stellen",
   "view.searchResults.empty": "Keine aktive Suche.",
   "view.searchResults.hint": "Tippe \"Job finden\" im Chat, um zu starten.",
-  "view.searchResults.rerun": "Suche erneut starten",
   "view.searchResults.subtitle": "Aggregator-Treffer deiner letzten Suche, gruppiert nach Rollenfamilie.",
   "view.searchResults.title": "Suchergebnisse",
   "view.settings.subtitle": "KI-Anbieter, Kontosicherheit, Backup und Scan-Verlauf.",

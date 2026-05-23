@@ -121,6 +121,25 @@
          renderAuth() hides it for authed users via showOnly()). -->
     <a class="skip-link" href="#authGate">Skip to main content</a>
 
+    <!-- UX-H1 (2026-05-23): no-JS fallback. If the user's browser
+         has scripting disabled (corporate proxy, ad-blocker false
+         positive, slow network failing to load /app.min.js), the
+         sign-in form won't function — show a clear explanation
+         with safe links to public content (legal, /help, etc.)
+         that work without JS. -->
+    <noscript>
+      <div class="noscript-banner" role="alert">
+        <strong>JavaScript is required to use the app.</strong>
+        Sign-in, search, and the bookmarklet all need JavaScript enabled.
+        These pages work without it:
+        <a href="/help">Help</a> ·
+        <a href="/privacy">Privacy</a> ·
+        <a href="/terms">Terms</a> ·
+        <a href="/impressum">Impressum</a> ·
+        <a href="/status">Status</a>.
+      </div>
+    </noscript>
+
     <main id="authGate" class="auth-gate" aria-labelledby="authGateHeading" tabindex="-1">
       <div class="auth-layout">
         <section class="auth-mission" aria-labelledby="missionHeading">
@@ -1498,8 +1517,10 @@
                 </p>
               </div>
               <div class="action-group">
-                <button id="searchResultsRerunBtn" class="btn btn-ghost"
-                        type="button" hidden data-i18n="view.searchResults.rerun">Re-run search</button>
+                <!-- 2026-05-23 (UX-R19): #searchResultsRerunBtn deleted.
+                     The button had no JS click handler — dead control.
+                     Re-run search is available via chat /find anyway. -->
+
               </div>
             </div>
             <div id="searchResultsBody" class="search-results-body">
