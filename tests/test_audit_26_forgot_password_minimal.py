@@ -104,15 +104,24 @@ class ForgotPasswordStaticFilesPresent(unittest.TestCase):
                 marker, src,
                 f"AUDIT-26: EN page should not carry SPA-shell marker {marker!r}",
             )
-        # CSP says script-src 'self' — no inline <script> blocks allowed.
-        # External <script src="..."> is fine.
+        # CSP says script-src 'self' — no inline executable <script>
+        # blocks allowed. External <script src="..."> is fine. Data
+        # blocks like <script type="application/ld+json"> are JSON
+        # (not JavaScript) and CSP does not block them per the spec
+        # (browsers don't execute non-JS script types).
         for line in src.splitlines():
             stripped = line.strip()
-            if stripped.startswith("<script") and "src=" not in stripped:
-                self.fail(
-                    f"AUDIT-26: inline <script> block found in EN page: {stripped!r}. "
-                    "CSP forbids inline scripts; use external src= instead."
-                )
+            if not stripped.startswith("<script"):
+                continue
+            if "src=" in stripped:
+                continue
+            if 'type="application/ld+json"' in stripped or 'type="application/json"' in stripped:
+                continue
+            self.fail(
+                f"AUDIT-26: inline executable <script> block found in EN page: "
+                f"{stripped!r}. CSP forbids inline scripts; use external "
+                "src= instead. (JSON-LD data blocks are exempt.)"
+            )
 
     def test_de_page_has_required_markers_and_german_strings(self) -> None:
         src = (STATIC / "forgot-password.de.html").read_text(encoding="utf-8")

@@ -403,17 +403,25 @@ class SiteFooterBilingualAndLangSwitcher(unittest.TestCase):
         self.assertIn("Cookie", vary,
                       "GAP-1+2 followup: HTML responses must Vary: Cookie")
 
-    def test_non_html_responses_do_not_set_vary(self) -> None:
-        """JS / CSS / manifest don't change by language — no Vary needed.
-        Setting it would just hurt cacheability."""
+    def test_non_html_responses_vary_only_by_origin(self) -> None:
+        """JS / CSS / manifest don't change by language, but post-
+        2026-05-23 they DO Vary: Origin so CDN CORS caching stays
+        correct. Assertion: Vary contains 'Origin' but NOT
+        'Accept-Language' (which is HTML-only)."""
         conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=2)
         conn.request("GET", "/forgot-password.js")
         resp = conn.getresponse()
         vary = resp.getheader("Vary") or ""
         resp.read()
         conn.close()
-        self.assertEqual(vary, "",
-                         f"Vary should be unset on JS responses, got {vary!r}")
+        self.assertIn(
+            "Origin", vary,
+            f"JS responses must Vary: Origin for CORS caching, got {vary!r}",
+        )
+        self.assertNotIn(
+            "Accept-Language", vary,
+            f"JS doesn't vary by language; should not be in Vary, got {vary!r}",
+        )
 
     def test_lang_switcher_marks_current_language_with_aria_current(self) -> None:
         # EN page: the English link is aria-current="true"

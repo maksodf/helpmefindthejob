@@ -6867,6 +6867,29 @@ class Handler(BaseHTTPRequestHandler):
             '{"group":"csp-endpoint","max_age":10886400,'
             '"endpoints":[{"url":"/csp-report"}]}',
         )
+        # 2026-05-23: Vary in a single consolidated header. Handlers
+        # set self._vary_axes BEFORE calling send_response() to add
+        # axes beyond the default "Origin"; end_headers() then emits
+        # one Vary header listing every axis. Two-header Vary works
+        # per RFC 9110 but trips dict-style header readers (most
+        # http.client / urllib code) that collapse duplicates.
+        vary_axes = getattr(self, "_vary_axes", None) or ["Origin"]
+        if "Origin" not in vary_axes:
+            vary_axes = list(vary_axes) + ["Origin"]
+        self.send_header("Vary", ", ".join(vary_axes))
+        # 2026-05-23: Cross-Origin-Embedder-Policy. We already set
+        # COOP + CORP (process isolation + same-origin embedding).
+        # Adding COEP: require-corp moves the page into cross-origin-
+        # isolated mode, which is the precondition for SharedArrayBuffer
+        # / high-resolution timers / detailed performance.now(). All
+        # of the app's assets are same-origin (CSP script-src 'self',
+        # img-src 'self' data:, etc.) so require-corp won't break
+        # anything in the current build. If a future change introduces
+        # a cross-origin embed (fonts.googleapis.com is a stylesheet,
+        # which is gated by CSP not COEP), the embed will need a
+        # ``crossorigin`` attribute and the served resource must
+        # carry CORP / CORS headers.
+        self.send_header("Cross-Origin-Embedder-Policy", "require-corp")
         super().end_headers()
 
     def current_session(self) -> AuthSession | None:
@@ -7027,11 +7050,13 @@ class Handler(BaseHTTPRequestHandler):
         )
         encoded = html_body.encode("utf-8")
         encoded = _inject_html_footer(encoded, lang)
+        # Signal end_headers() to add Accept-Language + Cookie axes
+        # beyond the default Origin.
+        self._vary_axes = ["Accept-Language", "Cookie"]
         self.send_response(HTTPStatus.NOT_FOUND)
         self.send_header("Content-Type", "text/html; charset=utf-8")
         self.send_header("Content-Length", str(len(encoded)))
         self.send_header("Cache-Control", "no-store")
-        self.send_header("Vary", "Accept-Language, Cookie")
         self.end_headers()
         self.wfile.write(encoded)
 
@@ -7929,6 +7954,22 @@ class Handler(BaseHTTPRequestHandler):
                     self._send_seo_page_not_found()
                     return
                 self._send_seo_page(page)
+                return
+            if parsed.path == "/clear-lang":
+                # 2026-05-23: lets the user reset the persistent lang
+                # cookie set by ?lang=X. Clicking from any page that
+                # shows the lang switcher redirects here, which
+                # expires the cookie and bounces back to /. After
+                # this, the resolver falls back to Accept-Language
+                # again.
+                self.send_response(HTTPStatus.SEE_OTHER)
+                self.send_header("Location", "/")
+                self.send_header(
+                    "Set-Cookie",
+                    "lang=; Path=/; Max-Age=0; SameSite=Lax",
+                )
+                self.send_header("Cache-Control", "no-store")
+                self.end_headers()
                 return
             if parsed.path.startswith("/r/"):
                 # Referral landing (#46). Redirect the visitor to
@@ -12874,6 +12915,11 @@ class Handler(BaseHTTPRequestHandler):
         if is_html:
             footer_lang = self._resolve_user_language()
             content = _inject_html_footer(content, footer_lang)
+            # 2026-05-23: signal end_headers() to extend the Vary
+            # header with Accept-Language + Cookie (HTML responses
+            # depend on both axes via the footer / legal-page
+            # routing). end_headers() always adds Origin on top.
+            self._vary_axes = ["Accept-Language", "Cookie"]
         self.send_response(HTTPStatus.OK)
         guessed = mimetypes.guess_type(candidate.name)[0]
         if guessed is None and candidate.suffix.lower() == ".webmanifest":
@@ -12904,14 +12950,6 @@ class Handler(BaseHTTPRequestHandler):
         elif suffix == ".webmanifest":
             self.send_header("Cache-Control", "public, max-age=300")
         if is_html:
-            # Post-GAP-1+2 hardening (2026-05-23): HTML responses now
-            # vary by Accept-Language (footer language + legal-page
-            # variant routing) and by Cookie (the lang cookie that
-            # _resolve_user_language() checks). Without Vary, a
-            # caching proxy in front of the app would serve the
-            # wrong-language footer to mismatched visitors. Set it
-            # only on HTML — JS/CSS/manifest responses don't vary.
-            self.send_header("Vary", "Accept-Language, Cookie")
             # 2026-05-23 lang cookie persistence: if the visitor
             # explicitly asked for a language via ?lang=X, set a
             # 1-year cookie so the choice survives navigation. The

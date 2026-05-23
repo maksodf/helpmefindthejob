@@ -1,0 +1,55 @@
+/* TEAM */
+
+  Maintainers: Fouad Maksoud, Naser Hussein
+  Location: Berlin, Germany
+  Contact: support@helpmefindthejob.org
+  Security: security@helpmefindthejob.org (RFC 9116 — see /.well-known/security.txt)
+  Source: https://github.com/maksodf/helpmefindthejob
+  License: Apache-2.0
+  Contributor License: see /cla
+  Trademark: see /TRADEMARK.md
+
+/* INSTITUTIONAL HOME */
+
+  Programme of: The Commons Conservancy
+  URL: https://commonsconservancy.org/
+
+/* MISSION */
+
+  Open-source EU-wide civic employment commons. An MCP-composable
+  copilot for users facing structural friction in the European
+  labour market — migrants on Anerkennungsverfahren, EU Blue Card
+  candidates, Wiedereinstieg returners, career changers, refugees
+  on §24 / §4 pathways. Friction-driven, not demographic-driven.
+
+  Persona panel (7): Aïcha · Yusuf · Olga · Mahmoud · Maria ·
+  Käthe · Tobias. See /docs/grant/07-personas.md (in repo).
+
+/* COMPLIANCE STANCE */
+
+  EU AI Act: compliance pack shipped (Articles 12, 15, 20, 50)
+    — see /compliance in the repo.
+  GDPR / DSGVO: bilingual privacy + retention pages at /privacy
+    and /data-retention.
+  TTDSG §25 / ePrivacy 5(3): no consent-required tracking cookies.
+  RFC 9116: security.txt at /.well-known/security.txt.
+
+/* SITE */
+
+  Standards: HTML5, CSS3, JSON-LD (schema.org), Apache 2.0
+  Components: Python 3.11+ stdlib, SQLite, the MCP protocol,
+    OpenSearch-EURES + ESCO integration scaffolding
+  No client-side trackers, no third-party analytics by default.
+  Server-side aggregate analytics opt-in by the deploying operator.
+
+/* THANK YOU */
+
+  NLnet Foundation for the NGI Zero Commons Fund grant ecosystem
+  that this project applies under. The maintainers of Python,
+  SQLite, ESCO, EURES, the MCP protocol, every open-source
+  dependency in requirements.txt, and every translator who lent
+  their native tongue to a locale bundle.
+
+  And the seven personas — every name on the panel is a real
+  friction case carried in good faith. We owe them the bar we
+  build to.

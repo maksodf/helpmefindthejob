@@ -5,7 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="robots" content="index,follow,max-image-preview:large" />
     <meta name="color-scheme" content="dark" />
-    <meta name="theme-color" content="#7c5cff" />
+    <!-- 2026-05-23: separate theme-color values for light / dark so
+         the browser chrome (Safari toolbar / Android system bar)
+         matches the active theme. The single-value form above was
+         dark-only because the app is dark by default; the explicit
+         media-queried pair keeps the chrome correct when the user
+         switches to light mode in OS settings. -->
+    <meta name="theme-color" content="#7c5cff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0e0f15" media="(prefers-color-scheme: dark)" />
     <meta name="description" content="Helpmefindthejob — a calm job tool. Watch direct career pages, dedupe across aggregators, and triage your queue without the LinkedIn feed." />
     <link rel="canonical" href="https://helpmefindthejob.org/" />
     <link rel="alternate" hreflang="en" href="https://helpmefindthejob.org/" />
