@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="robots" content="index,follow" />
     <title>Status — Helpmefindthejob</title>
-    <meta name="description" content="Live status of Helpmefindthejob. Polled directly from the running app. No third-party uptime vendor." />
+    <meta name="description" content="Live status of Helpmefindthejob — uptime, response time, and recent history." />
     <link rel="canonical" href="https://helpmefindthejob.org/status" />
     <link rel="alternate" hreflang="en" href="https://helpmefindthejob.org/status" />
     <link rel="alternate" hreflang="de" href="https://helpmefindthejob.org/status" />
@@ -55,7 +55,7 @@
       <header>
         <a href="/" class="legal-back">← Back to Helpmefindthejob</a>
         <h1>Status</h1>
-        <p class="muted">Polled directly from the running app every 30 seconds. No third-party uptime vendor.</p>
+        <p class="muted">Live status of the service. Refreshes every 30 seconds.</p>
       </header>
 
       <section>
@@ -72,10 +72,13 @@
             <div class="label">Version</div>
             <div id="appVersion" class="value">—</div>
           </div>
-          <div class="status-card">
-            <div class="label">Storage</div>
-            <div id="appStorage" class="value">—</div>
-          </div>
+          <!-- 2026-05-23 (UX-A2): the Storage card was deleted —
+               AUDIT-42 (2026-05-22) intentionally stripped
+               `storage` from public /api/health to reduce info-
+               leak surface, so the card always showed an em-dash
+               placeholder. Storage backend info is still surfaced
+               on the authenticated /api/admin/system-info admin
+               endpoint where it belongs. -->
           <div class="status-card">
             <div class="label">Response time</div>
             <div id="appLatency" class="value">—</div>
@@ -117,22 +120,16 @@
            time hasn't blown up. -->
       <section>
         <h2>Response-time trend (last 20 checks)</h2>
-        <p id="latencyTrend" class="latency-trend" aria-label="Recent latency readings">—</p>
-        <p id="latencyStats" class="muted small">—</p>
+        <p id="latencyTrend" class="latency-trend" aria-label="Recent latency readings">Not enough data yet — check back in a minute.</p>
+        <p id="latencyStats" class="muted small">Once we have a handful of readings, the min / p50 / p95 / max show here.</p>
       </section>
 
       <section>
         <h2>How this page works</h2>
         <p>
-          This page calls <code>/api/health</code> on the same origin every 30 seconds (and once on load). It
-          renders the response inline. If the call fails — network error, 5xx response, or timeout — the overall
-          pill goes red. There is no external monitor; the page reflects exactly what an end-user would see when
-          they hit the app right now.
-        </p>
-        <p class="muted small">
-          For external uptime tracking (page-level monitoring even when the whole droplet is down), a Better
-          Uptime / UptimeRobot monitor pointed at the same <code>/api/health</code> endpoint complements this
-          self-hosted view. See <code>docs/operator-launch-runbook.md</code> § 50.
+          This page checks the service every 30 seconds (and once on load). If a check fails — network error,
+          server error, or timeout — the overall pill goes red. There is no external monitor; you see exactly
+          what someone hitting the app right now would see.
         </p>
       </section>
 

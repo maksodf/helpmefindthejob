@@ -25,7 +25,10 @@ const overall = document.getElementById("overallPill");
 const lastChecked = document.getElementById("lastChecked");
 const appStatus = document.getElementById("appStatus");
 const appVersion = document.getElementById("appVersion");
-const appStorage = document.getElementById("appStorage");
+// 2026-05-23 (UX-A2): Storage card deleted; AUDIT-42 stripped
+// `storage` from public /api/health, so the field never arrived
+// and the card showed an em-dash placeholder. Backend info lives
+// on /api/admin/system-info now.
 const appLatency = document.getElementById("appLatency");
 const uptime24h = document.getElementById("uptime24h");
 const uptime7d = document.getElementById("uptime7d");
@@ -89,8 +92,10 @@ function renderUptimeBar(payload) {
 function renderLatencyTrend() {
   if (!latencyTrend) return;
   if (latencyBuffer.length === 0) {
-    latencyTrend.textContent = "—";
-    if (latencyStats) latencyStats.textContent = "—";
+    // 2026-05-23 (UX-A3): keep the SSR-rendered empty-state copy
+    // ("Not enough data yet — check back in a minute.") instead
+    // of overwriting it with a bare em-dash. The em-dash looked
+    // like the feature was broken.
     return;
   }
   // Simple Unicode block sparkline — 8 levels
@@ -152,7 +157,7 @@ async function tick() {
     setOverall("ok", "Operational");
     if (appStatus) appStatus.textContent = payload.status;
     if (appVersion) appVersion.textContent = payload.version || "—";
-    if (appStorage) appStorage.textContent = payload.storage || "—";
+    // appStorage deleted — see top-of-file comment.
     if (appLatency) appLatency.textContent = `${latency} ms`;
     // Only push successful checks into the latency trend; failures
     // would skew the line with timeout-bounded values.
