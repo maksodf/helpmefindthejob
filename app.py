@@ -936,6 +936,92 @@ def _inject_html_footer(content: bytes, lang: str = "en") -> bytes:
         return content
     footer = SITE_FOOTER_HTML_DE if lang == "de" else SITE_FOOTER_HTML_EN
     return content.replace(b"</body>", footer + b"  </body>", 1)
+
+
+def _build_site_header(lang: str) -> bytes:
+    """UX-G1 (2026-05-23): the global site header.
+
+    Pre-fix, every public page had only a per-page "← Back to
+    Helpmefindthejob" link as the way back, and the language
+    switcher lived footer-only — users high on a page never saw it.
+    The global header gives every public surface the same brand
+    chrome (logo + wordmark linking home), a primary nav
+    (Help / Status / API / Changelog), and the language switcher
+    surfaced where it can be reached without scrolling.
+
+    NOT injected on the SPA shell (`/`, `/admin`, etc.) because the
+    SPA has its own in-app topbar with cmdK and view-title that
+    serves a different audience (signed-in users).
+    """
+
+    if lang == "de":
+        nav = [
+            ("/help", "Hilfe"),
+            ("/status", "Status"),
+            ("/api/docs", "API"),
+            ("/changelog", "Änderungen"),
+        ]
+        lang_label = "Sprache wählen"
+        en_current = ""
+        de_current = ' aria-current="true"'
+        brand_label = "Helpmefindthejob &mdash; Startseite"
+    else:
+        nav = [
+            ("/help", "Help"),
+            ("/status", "Status"),
+            ("/api/docs", "API"),
+            ("/changelog", "Changelog"),
+        ]
+        lang_label = "Choose language"
+        en_current = ' aria-current="true"'
+        de_current = ""
+        brand_label = "Helpmefindthejob &mdash; home"
+
+    nav_items = "".join(
+        f'<a class="site-header-nav-link" href="{href}">{label}</a>'
+        for href, label in nav
+    )
+    return f'''<header class="site-header" role="banner" aria-label="Site header">
+  <div class="site-header-inner">
+    <a class="site-header-brand" href="/" aria-label="{brand_label}">
+      <svg class="site-header-logo" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <circle cx="12" cy="12" r="11" fill="none" stroke="currentColor" stroke-width="2"/>
+        <path d="M7 12 L11 16 L17 8" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span class="site-header-wordmark">Helpmefindthejob</span>
+    </a>
+    <nav class="site-header-nav" aria-label="Primary">
+      {nav_items}
+    </nav>
+    <p class="site-header-langswitch" aria-label="{lang_label}">
+      <a href="?lang=en" lang="en" hreflang="en"{en_current}>EN</a>
+      <span aria-hidden="true"> &middot; </span>
+      <a href="?lang=de" lang="de" hreflang="de"{de_current}>DE</a>
+    </p>
+  </div>
+</header>
+'''.encode("utf-8")
+
+
+SITE_HEADER_HTML_EN = _build_site_header("en")
+SITE_HEADER_HTML_DE = _build_site_header("de")
+
+
+def _inject_html_header(content: bytes, lang: str = "en") -> bytes:
+    """UX-G1: insert the site-wide header immediately after the
+    opening ``<body…>`` tag if the page doesn't already carry one.
+    Idempotent: skips if the page already has
+    ``class="site-header"``. The ``lang`` parameter picks the
+    pre-built EN or DE variant; unknown values fall back to EN.
+    """
+    if b'class="site-header"' in content:
+        return content
+    match = re.search(rb"<body[^>]*>", content)
+    if not match:
+        return content
+    header = SITE_HEADER_HTML_DE if lang == "de" else SITE_HEADER_HTML_EN
+    insert_at = match.end()
+    return content[:insert_at] + b"\n    " + header + content[insert_at:]
 # Bool env-var parsing routes through env_compat.get_env_bool, which
 # accepts the permissive truthy set {"true", "1", "yes", "on"}
 # casefolded. Earlier these two vars used a strict `== "true"`
@@ -7476,6 +7562,9 @@ class Handler(BaseHTTPRequestHandler):
             "</html>"
         )
         encoded = html_body.encode("utf-8")
+        # UX-G1 (2026-05-23): the 404 page is a public surface; give
+        # it the same global chrome as every other content page.
+        encoded = _inject_html_header(encoded, lang)
         encoded = _inject_html_footer(encoded, lang)
         # Signal end_headers() to add Accept-Language + Cookie axes
         # beyond the default Origin.
@@ -13376,6 +13465,14 @@ class Handler(BaseHTTPRequestHandler):
             # the regex matches fallback-style elements and the
             # bundle keys are content-specific.
             content = _ssr_translate_html(content, footer_lang)
+            # UX-G1 (2026-05-23): inject the global site header on
+            # every public static page EXCEPT the SPA shell. The SPA
+            # (resolved to index.html for /, /admin, /accept-invite/*,
+            # /reset-password/*) has its own in-app .topbar with cmdK
+            # + view-title that targets signed-in users; adding a
+            # second header above it would clutter the canvas.
+            if candidate.name != "index.html":
+                content = _inject_html_header(content, footer_lang)
             content = _inject_html_footer(content, footer_lang)
             # 2026-05-23: signal end_headers() to extend the Vary
             # header with Accept-Language + Cookie (HTML responses
