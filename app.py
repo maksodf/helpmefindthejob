@@ -256,7 +256,7 @@ DEFAULT_WATCHLIST_SCHEDULE = {
     "lastRunAt": None,
     "lastRunStatus": "disabled",
 }
-APP_VERSION = "0.79.4"
+APP_VERSION = "0.80.0"
 EXPORT_SCHEMA_VERSION = 1
 SESSION_COOKIE_NAME = "helpmefindthejob_session"
 APP_ENV = get_env("HELPMEFINDTHEJOB_ENV", "development").strip().casefold()
@@ -6379,16 +6379,21 @@ class AppState:
                 ),
             }
         self.log_analytics(user_id, "chat_cmd", {"name": "download_cv", "cvChars": len(cv_text)})
+        # 2026-05-13 (0.79.5 hotfix): NO navigateTo here. The print
+        # page lives at a raw HTTP route (/api/cv/print), not a SPA
+        # view — sending `navigateTo: cvPrint` would tell the client
+        # to switch to a view-id that doesn't exist. The markdown
+        # link in the reply is the action; openUrl is a fallback the
+        # client can open via window.open if popups aren't blocked.
         return {
             "ok": True,
             "message": (
-                "Your CV is ready to print. **Click here to "
-                "open the print view:** "
-                "[Download CV as PDF](/api/cv/print?autoprint=1)\n\n"
-                "Your browser's print dialog will open — pick "
-                "*Save as PDF* and you're set."
+                "Your CV is ready. Click the link below — your "
+                "browser will open the print dialog, pick "
+                "*Save as PDF* and you're set.\n\n"
+                "[Download CV as PDF](/api/cv/print?autoprint=1)"
             ),
-            "navigateTo": "cvPrint",
+            "openUrl": "/api/cv/print?autoprint=1",
         }
 
     def chat_handler_delete_account(self, user_id: str, args: dict) -> dict:
@@ -10849,7 +10854,7 @@ class Handler(BaseHTTPRequestHandler):
                             "result": result,
                             "session": session.to_dict(),
                         }
-                        for key in ("navigateTo", "totalJobs", "jobs", "jobType", "categories"):
+                        for key in ("navigateTo", "totalJobs", "jobs", "jobType", "categories", "openUrl"):
                             if key in result:
                                 payload_out[key] = result[key]
                         self.send_json(payload_out)
@@ -10902,8 +10907,19 @@ class Handler(BaseHTTPRequestHandler):
                         }
                     )
                     return
-                if in_journey and (
-                    session.pending is None or not session.pending.awaiting_confirmation
+                # 2026-05-13 (0.79.5 hotfix): slash commands ALWAYS
+                # go through the chat-router, even mid-journey.
+                # Without this, typing /download-cv during PHASE_INSPIRE
+                # was interpreted as a comma-list answer to "should I
+                # add lateral roles?" — totally wrong. Slash-prefix
+                # → fall through to the normal slash routing below.
+                if (
+                    in_journey
+                    and not user_message.startswith("/")
+                    and (
+                        session.pending is None
+                        or not session.pending.awaiting_confirmation
+                    )
                 ):
                     # Route the message through the journey state
                     # machine. Skip when a pending command is awaiting
@@ -11186,6 +11202,8 @@ class Handler(BaseHTTPRequestHandler):
                         "suggestions",
                         "jobs",
                         "jobType",
+                        "openUrl",
+                        "categories",
                     ):
                         if key in result:
                             payload_out[key] = result[key]

@@ -1258,16 +1258,49 @@ def _advance_discover(journey: UserJourney, msg: str) -> AdvanceResult:
         if not msg:
             return AdvanceResult(
                 reply='Where? (city, country, or "anywhere")',
-                journey=journey,
                 persist=False,
+                journey=journey,
             )
-        journey.location = msg
-        journey.location_canonical = normalize_location(msg) or ""
-        profile_updates["location"] = msg
-        profile_updates["job_type_location_filter"] = msg
+        # R79.5: typo-suggest for likely city misspellings ("berli"
+        # → "Berlin"). When we find a close match AND the user has
+        # not yet been asked about this typo, propose the correction
+        # and let them confirm. The state machine stores "awaiting
+        # typo confirmation" on a synthetic step.
+        suggestion = _suggest_city_correction(msg)
+        if suggestion and not journey.location_canonical.startswith("typo:"):
+            # Mark we offered a fix so we don't loop if the user
+            # types the original again.
+            journey.location_canonical = f"typo:{msg.casefold()}"
+            return AdvanceResult(
+                reply=(
+                    f"Did you mean **{suggestion}**? Reply "
+                    f"**yes** to use {suggestion}, or type the "
+                    f"correct location (e.g., \"Munich\")."
+                ),
+                journey=journey,
+            )
+        # Either no typo suspicion, or user already saw the suggestion
+        # and answered. Handle "yes" → accept the suggestion.
+        if journey.location_canonical.startswith("typo:"):
+            original = journey.location_canonical[len("typo:"):]
+            if msg.casefold() in {"yes", "y", "ja", "ok", "sure"}:
+                resolved = _suggest_city_correction(original) or original
+                journey.location = resolved
+                journey.location_canonical = (
+                    normalize_location(resolved) or ""
+                )
+            else:
+                # User typed a different location — accept it as-is.
+                journey.location = msg
+                journey.location_canonical = normalize_location(msg) or ""
+        else:
+            journey.location = msg
+            journey.location_canonical = normalize_location(msg) or ""
+        profile_updates["location"] = journey.location
+        profile_updates["job_type_location_filter"] = journey.location
         journey.discover_step = DISCOVER_ASK_YEARS
         reply = (
-            f"Noted: **{msg}**.\n\n"
+            f"Noted: **{journey.location}**.\n\n"
             "**3. How many years' experience do you have in this kind "
             'of role?** (a number is fine — e.g., "3" or "about 7")'
         )
@@ -1390,6 +1423,93 @@ def _normalise_language(text: str) -> str:
     if len(cleaned) > 30:
         return ""
     return cleaned[0].upper() + cleaned[1:] if cleaned else ""
+
+
+_KNOWN_CITIES_FOR_TYPO = (
+    # The big DACH ones first; substring + Levenshtein-1 detection
+    # against this list catches "berli"→"Berlin", "münche"→"München",
+    # "hambrug"→"Hamburg", etc.
+    "Berlin", "München", "Munich", "Hamburg", "Köln", "Cologne",
+    "Frankfurt", "Stuttgart", "Düsseldorf", "Dortmund", "Essen",
+    "Leipzig", "Dresden", "Hannover", "Hanover", "Nürnberg",
+    "Nuremberg", "Bremen", "Bonn", "Münster", "Karlsruhe",
+    "Mannheim", "Augsburg", "Wiesbaden", "Kiel", "Freiburg",
+    "Wien", "Vienna", "Zürich", "Zurich", "Basel", "Geneva",
+    "Genf", "London", "Paris", "Amsterdam", "Madrid", "Barcelona",
+    "Rome", "Milan", "Prague", "Warsaw", "Lisbon",
+)
+
+
+def _edit_distance_le(a: str, b: str, max_dist: int) -> bool:
+    """True iff Levenshtein distance(a,b) ≤ max_dist. Early-exit
+    when the running cost exceeds max_dist so this stays O(N) for
+    near-equal strings. We need Levenshtein-1 to catch single-char
+    typos like "berli"→"berlin", "münche"→"münchen"."""
+    if abs(len(a) - len(b)) > max_dist:
+        return False
+    if a == b:
+        return True
+    # Tiny strings — just brute-force.
+    prev_row = list(range(len(b) + 1))
+    for i, ca in enumerate(a, 1):
+        cur_row = [i]
+        for j, cb in enumerate(b, 1):
+            cost = 0 if ca == cb else 1
+            cur_row.append(min(
+                cur_row[-1] + 1,        # insertion
+                prev_row[j] + 1,        # deletion
+                prev_row[j - 1] + cost, # substitution
+            ))
+        if min(cur_row) > max_dist:
+            return False
+        prev_row = cur_row
+    return prev_row[-1] <= max_dist
+
+
+def _transliterate_de(text: str) -> str:
+    """Replace German umlauts with their ASCII equivalents so the
+    Levenshtein check works for users who type "muenche" instead
+    of "münche" (or vice versa). Case-preserving."""
+    return (
+        text
+        .replace("ü", "ue").replace("Ü", "Ue")
+        .replace("ö", "oe").replace("Ö", "Oe")
+        .replace("ä", "ae").replace("Ä", "Ae")
+        .replace("ß", "ss")
+    )
+
+
+def _suggest_city_correction(text: str) -> str | None:
+    """If ``text`` is a likely typo of a known city, return the
+    canonical city name. None when no close match.
+
+    Rules:
+    - Skip if text is already a known city (exact case-insensitive)
+    - Skip if text is shorter than 4 chars (too easy to false-positive)
+    - Skip if text contains a comma / multi-word (probably a real
+      location like "Berlin, Germany")
+    - Otherwise: Levenshtein distance ≤ 1 to any known city.
+      Compared on transliterated forms (ü→ue etc.) so users who type
+      "muenche" still get a "München" suggestion.
+    """
+    if not text:
+        return None
+    cleaned = text.strip()
+    if "," in cleaned or " " in cleaned:
+        return None
+    if len(cleaned) < 4:
+        return None
+    lc = _transliterate_de(cleaned.casefold())
+    # Already an exact known city — no suggestion needed.
+    if any(_transliterate_de(city.casefold()) == lc
+            for city in _KNOWN_CITIES_FOR_TYPO):
+        return None
+    # Levenshtein-1 match against the canonical list (on ASCII-fold).
+    for city in _KNOWN_CITIES_FOR_TYPO:
+        city_fold = _transliterate_de(city.casefold())
+        if _edit_distance_le(lc, city_fold, 1):
+            return city
+    return None
 
 
 def _parse_years(text: str) -> int | None:
@@ -2040,6 +2160,9 @@ def _suggest_lateral_roles(
 
     # Templated fallback by bucket — uses the taxonomy's neighbouring
     # buckets so the user gets a sensible alternative even with no AI.
+    # R79.5: extended to cover all 15 buckets. Tech / marketing /
+    # finance / etc. users used to fall through to the generic
+    # "Senior X / Lead X / Assistant X" — useless.
     fallback_map = {
         "bartender": ["Barista", "Restaurant Server", "Bar Manager", "Event Bartender"],
         "barista": ["Bartender", "Café Manager", "Coffee Shop Assistant", "Event Crew"],
@@ -2051,12 +2174,11 @@ def _suggest_lateral_roles(
             "Pflegekraft",
         ],
         "waiter": ["Bartender", "Hospitality Crew", "Restaurant Host", "Banquet Server"],
-        # Phase 2 #68 (2026-05-22): lateral roles for the 4 new
-        # panel-coverage buckets. Suggestions chosen to stay
-        # within the same regulatory pathway (Anerkennungsverfahren
-        # / Handwerksordnung) so a user widening from their
-        # primary role doesn't accidentally land in a friction-
-        # incompatible adjacent profession.
+        # Phase 2 #68 (2026-05-22): lateral roles for the 4 panel-
+        # coverage buckets. Suggestions chosen to stay within the
+        # same regulatory pathway (Anerkennungsverfahren /
+        # Handwerksordnung) so a user widening from their primary
+        # role doesn't land in a friction-incompatible profession.
         "krankenpfleger": [
             "Altenpflegerin",
             "Pflegefachfrau",
@@ -2088,6 +2210,80 @@ def _suggest_lateral_roles(
             "Kältetechniker",
             "Industriemechaniker",
             "Lüftungsbauer",
+        ],
+        # 2026-05-13 (0.79.5 hotfix): tech / data / product /
+        # design / marketing / sales / finance / consulting /
+        # customer_success / healthcare_management buckets — pre-
+        # hotfix these hit the "Senior X / Lead X / Assistant X"
+        # generic. Curated EN + DE lateral roles per bucket.
+        "software_engineer": [
+            "Senior Software Engineer",
+            "Backend Engineer",
+            "Platform Engineer",
+            "DevOps Engineer",
+            "Tech Lead",
+        ],
+        "data_engineer": [
+            "Data Engineer",
+            "Senior Data Analyst",
+            "Analytics Engineer",
+            "ML Engineer",
+            "BI Developer",
+        ],
+        "product_manager": [
+            "Senior Product Manager",
+            "Product Owner",
+            "Group Product Manager",
+            "Technical Product Manager",
+            "Principal Product Manager",
+        ],
+        "designer": [
+            "Senior UX Designer",
+            "Product Designer",
+            "UI Designer",
+            "Visual Designer",
+            "Design Lead",
+        ],
+        "marketing": [
+            "Growth Marketing Manager",
+            "Content Strategist",
+            "Brand Manager",
+            "SEO Specialist",
+            "Performance Marketer",
+        ],
+        "sales": [
+            "Account Executive",
+            "Sales Manager",
+            "Business Development Manager",
+            "SDR / BDR",
+            "Customer Success Manager",
+        ],
+        "finance": [
+            "Senior Financial Analyst",
+            "Controller",
+            "FP&A Manager",
+            "Tax Manager",
+            "Internal Auditor",
+        ],
+        "consulting": [
+            "Senior Consultant",
+            "Strategy Consultant",
+            "Management Consultant",
+            "Associate Consultant",
+            "Principal Consultant",
+        ],
+        "customer_success": [
+            "Senior Customer Success Manager",
+            "Support Engineer",
+            "Client Onboarding Specialist",
+            "Technical Account Manager",
+        ],
+        "healthcare_management": [
+            "Clinical Project Manager",
+            "Healthcare PM",
+            "Pflegedienstleitung",
+            "Klinikmanager:in",
+            "Digital Health Manager",
         ],
     }
     by_bucket = fallback_map.get(bucket_key)

@@ -6636,6 +6636,14 @@ async function chatSend(message) {
         navigate("searchResults");
       }
     }
+    // R79.5: separate `openUrl` field — opens a raw HTTP route in a
+    // new tab. Used by download_cv to surface /api/cv/print without
+    // trying to register a non-existent SPA view-id.
+    const openUrl = payload.result?.openUrl || payload.openUrl;
+    if (openUrl) {
+      try { window.open(openUrl, "_blank", "noopener"); }
+      catch (_) { /* popup blocker — the markdown link in reply still works */ }
+    }
     if (payload.awaiting) {
       setText("#dockChatPendingHint", `Awaiting: ${payload.awaiting}`);
     } else if (payload.awaitingConfirmation) {
