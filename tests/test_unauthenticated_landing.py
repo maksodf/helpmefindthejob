@@ -135,15 +135,29 @@ class I18nLandingKeysParity(unittest.TestCase):
 
     def test_blue_card_term_kept_verbatim(self):
         """Per docs/translating.md German-bureaucratic-conventions
-        preservation rule, 'Blue Card' stays as a literal English
-        term in DE translations. test_phase0_i18n_parity.py
-        enforces this globally; this is a focused check on the
-        landing-lead string."""
+        preservation rule, 'Blue Card' stays verbatim in DE
+        translations. After the AUDIT-32 + 33 landing rewrite
+        (2026-05-23) the term moved from landing.lead into
+        landing.personas.maria (the EU Blue Card persona card);
+        the preservation rule applies wherever the term lives."""
 
-        self.assertIn("Blue Card", self.de.get("landing.lead", ""))
+        carrier_keys = ("landing.lead", "landing.personas.maria")
+        appears = any("Blue Card" in self.de.get(k, "") for k in carrier_keys)
+        self.assertTrue(
+            appears,
+            f"'Blue Card' must appear verbatim in one of {carrier_keys}",
+        )
 
     def test_wiedereinstieg_term_kept_verbatim(self):
-        self.assertIn("Wiedereinstieg", self.de.get("landing.lead", ""))
+        """Same preservation rule for 'Wiedereinstieg'. Post-
+        AUDIT-32/33 it lives in landing.personas.kaethe (the
+        re-entry persona)."""
+        carrier_keys = ("landing.lead", "landing.personas.kaethe")
+        appears = any("Wiedereinstieg" in self.de.get(k, "") for k in carrier_keys)
+        self.assertTrue(
+            appears,
+            f"'Wiedereinstieg' must appear verbatim in one of {carrier_keys}",
+        )
 
 
 class CssStylesPresent(unittest.TestCase):
