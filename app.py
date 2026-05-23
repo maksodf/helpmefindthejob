@@ -7382,29 +7382,22 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_seo_page(page)
                 return
             if parsed.path.startswith("/r/"):
-                # Referral landing (#46). Stash the code in a Set-Cookie
-                # so the registration form can read it via /api/site-config
-                # equivalent (we expose it on /api/auth/status). Then
-                # redirect the visitor to the home page so they can sign
-                # up. Code is sanitised to URL-safe characters only —
-                # anything else falls through to the static handler 404.
+                # Referral landing (#46). Redirect the visitor to
+                # /?ref=<code>; the SPA picks the code up from the
+                # query parameter and forwards it via the
+                # ``referrerCode`` JSON body field on
+                # /api/auth/register. No server-side cookie is set
+                # — referral-tracking cookies require explicit user
+                # consent under TTDSG §25 / ePrivacy Directive 5(3)
+                # (AUDIT-22). Code is sanitised to URL-safe
+                # characters only; anything else falls through to
+                # the static handler 404.
                 code = parsed.path[len("/r/") :].strip("/").split("/", 1)[0]
                 if not code or not all(c.isalnum() or c in "-_" for c in code) or len(code) > 32:
                     self.send_error_json(HTTPStatus.NOT_FOUND, "not_found", "Unknown referral code")
                     return
                 self.send_response(HTTPStatus.SEE_OTHER)
                 self.send_header("Location", "/?ref=" + code)
-                # Short-lived cookie so the SPA can pick it up on the
-                # registration form and forward it to /api/auth/register.
-                # Referral cookie: HttpOnly so JS can't read it; SameSite=Lax
-                # so it survives the SEE_OTHER redirect back to /register?ref=…
-                # The SPA reads the ?ref= query param, not the cookie. Cookie
-                # is server-side context only (forwarded to /api/auth/register
-                # via the Cookie header on the next same-origin POST).
-                self.send_header(
-                    "Set-Cookie",
-                    f"helpmefindthejob_ref={code}; Max-Age=2592000; Path=/; HttpOnly; SameSite=Lax",
-                )
                 self.end_headers()
                 return
             if parsed.path == "/account/verify-email":

@@ -234,7 +234,21 @@ audit. Items below are commit-mapped to the working branch
 
 ### Removed
 
-- (intentionally empty for this block)
+- **Referral-tracking cookie on `/r/<code>` (AUDIT-22)** — the
+  `/r/<code>` landing redirect no longer emits a `Set-Cookie`
+  header for the historical referral cookie. The cookie was
+  consent-required tracking under German TTDSG §25 / ePrivacy
+  Directive Article 5(3) and was set before any consent banner
+  could run. It was also functionally redundant: the SPA reads
+  the referral code from the `?ref=<code>` query parameter that
+  the 303 redirect places in the URL and forwards it via the
+  `referrerCode` JSON body field on `/api/auth/register`; the
+  server never read the cookie back. Regression guard in
+  `tests/test_audit_22_referral_cookie.py` (+2) — a source-grep
+  tripwire that fails if the cookie name reappears in `app.py`,
+  plus an end-to-end probe that boots the real handler and
+  asserts the `/r/<code>` response is a 303 to `/?ref=<code>`
+  with zero `Set-Cookie` headers carrying the cookie name.
 
 ### Fixed
 

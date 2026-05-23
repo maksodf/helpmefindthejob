@@ -8,8 +8,10 @@
 """Referral program (Phase 4 tracker item #46).
 
 Each user gets a short URL-safe ``referral_code`` minted lazily on
-first read. ``/r/<code>`` sets a cookie + redirects home; the
-registration form forwards the code via ``referrerCode`` and
+first read. ``/r/<code>`` redirects to ``/?ref=<code>`` (no cookie —
+referral-tracking cookies require explicit consent under TTDSG §25;
+see AUDIT-22). The registration form picks the code up from the
+query parameter and forwards it via ``referrerCode``, and
 ``record_referral`` validates it. Self-referrals, inactive referrers,
 and unknown codes are silent no-ops so a bad URL never blocks
 sign-up. ``count_referrals`` underpins the dashboard counter.
