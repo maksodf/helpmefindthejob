@@ -234,6 +234,39 @@ audit. Items below are commit-mapped to the working branch
 
 ### Added
 
+- **Marketing-vs-app HTML split via `<template>` wrap (AUDIT-40)**
+  — `static/index.html` was a single 1700-line file that mixed
+  the public auth-gate marketing surface with ~1300 lines of
+  internal-app chrome (sidebar nav, command palette, dashboard
+  cards, jobs queue, brief composer, settings panes, admin tabs).
+  Search engines index hidden text, so branded queries for
+  "Helpmefindthejob" returned SERP snippets containing internal
+  jargon ("Discovered jobs", "Watchlist", admin labels) instead
+  of marketing copy. The appShell `<div id="appShell">` is now
+  wrapped in an inert `<template id="appShellTemplate">`. Per
+  the HTML spec, template content is parsed but NOT rendered or
+  visited by accessibility / search-engine extraction — it's
+  off-screen storage that script later activates.
+  `static/app.js` materialises the template into the live DOM
+  via an IIFE that runs at module-load (defer'd script, fires
+  after DOM parse but before existing event-binding executes), so
+  all ~163 existing `$("#x").addEventListener()` calls keep
+  finding their targets and authenticated users see no visual
+  difference. Crawlers indexing the first paint now see only the
+  auth-gate + auth-aux sections in the live DOM. Regression guard
+  in `tests/test_audit_40_marketing_app_split.py` (+9):
+  source-level invariants (template element exists, `<div
+  id="appShell">` inside it, template closes before
+  `confirmDialog`, every `data-view=` marker sits inside the
+  template wrapper, IIFE in app.js precedes the first
+  `.addEventListener(` call) plus live end-to-end probes (real
+  `/` response carries the template, auth-gate markers
+  `id="authGate"` / `id="loginForm"` / `id="registerForm"` /
+  `missionHeading` are all OUTSIDE the template wrapper, served
+  `/app.js` contains the IIFE, and the existing `/forgot-password`
+  / `/privacy` / `/api/health` / `/api/version` routes still
+  serve correctly).
+
 - **Per-page meta-description regression guard (AUDIT-47)** —
   prior audit cycles authored distinct `<meta name="description">`
   strings per public page. Without a guard the next templating

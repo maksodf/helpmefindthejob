@@ -1,5 +1,24 @@
 "use strict";
 
+// AUDIT-40: materialise the appShell template into the live DOM
+// before any other code runs. The marketing-vs-app split lives at
+// the source-HTML layer (the appShell is wrapped in a
+// <template id="appShellTemplate"> in index.html so search engines
+// indexing the first paint never see ~1300 lines of internal-app
+// strings). This IIFE clones the template content into the live
+// DOM immediately so all the existing $("#x").addEventListener
+// calls further down keep working — the SPA's existing show/hide
+// logic on #appShell is untouched. Defer'd <script> guarantees the
+// DOM is already parsed when this runs, so the template element
+// is guaranteed present. If the template is absent (test fixture,
+// admin-extracted page, etc.) this is a silent no-op.
+(function _materialiseAppShellTemplate() {
+  const tpl = document.getElementById("appShellTemplate");
+  if (!tpl || !tpl.parentNode) return;
+  const fragment = tpl.content.cloneNode(true);
+  tpl.parentNode.insertBefore(fragment, tpl);
+})();
+
 const $ = (selector) => document.querySelector(selector);
 
 // Null-safe textContent setter. Use whenever an element might be

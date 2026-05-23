@@ -240,7 +240,21 @@
       <p id="acceptInviteMessage" class="auth-meta" role="status" aria-live="polite"></p>
     </section>
 
-    <div id="appShell" class="shell" hidden>
+    <!-- AUDIT-40: appShell is wrapped in an inert <template> so the
+         marketing-vs-app split lands at the source-HTML layer.
+         Search engines indexing the first paint see only the auth
+         gate + auth-aux sections in the live DOM; the internal-app
+         chrome (sidebar nav, command palette, dashboard cards, queue
+         tables, settings panes, admin tabs — ~1300 lines of strings
+         that polluted SERP snippets with internal jargon) stays
+         inside the template, which is explicitly inert per the HTML
+         spec. static/app.js materialises the template into the live
+         DOM at module-load (defer'd script, runs after parse but
+         before existing event-binding executes) so all existing
+         $("#x").addEventListener() calls keep finding their
+         targets. Authenticated users see no visual difference;
+         crawlers see a clean marketing surface. -->
+    <template id="appShellTemplate"><div id="appShell" class="shell" hidden>
       <aside class="sidebar" aria-label="Primary navigation">
         <div class="sidebar-header">
           <span class="brand-mark" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 6 H12 a6 6 0 0 1 0 12 H7 V6 z"/><circle cx="13" cy="12" r="1.4" fill="currentColor"/><path d="M16.5 9.5 L20 6 M17.5 6 L20 6 L20 8.5"/></svg></span>
@@ -1563,7 +1577,7 @@
           </section>
         </section>
       </main>
-    </div>
+    </div></template>
 
     <div id="confirmDialog" class="dialog-backdrop" role="dialog" aria-modal="true" aria-labelledby="confirmTitle" hidden>
       <div class="dialog">
