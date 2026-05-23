@@ -7141,6 +7141,55 @@ function enhanceAuthInputs() {
     input.addEventListener("keyup", checkCaps);
     input.addEventListener("blur", () => { caps.hidden = true; });
 
+    // C2: password strength meter — only on new-password inputs
+    // (register / reset / accept-invite). Doesn't apply to login
+    // since the user already has whatever password they have.
+    if (input.getAttribute("autocomplete") === "new-password") {
+      const meter = document.createElement("div");
+      meter.className = "password-strength";
+      meter.hidden = true;
+      const bar = document.createElement("div");
+      bar.className = "password-strength-bar";
+      const fill = document.createElement("div");
+      fill.className = "password-strength-fill";
+      bar.appendChild(fill);
+      meter.appendChild(bar);
+      const label = document.createElement("span");
+      label.className = "password-strength-label";
+      label.setAttribute("aria-live", "polite");
+      meter.appendChild(label);
+      // Insert AFTER the wrap so the meter spans the field width.
+      wrap.insertAdjacentElement("afterend", meter);
+
+      const score = (pw) => {
+        // Simple zxcvbn-style heuristic — length + character classes.
+        if (!pw) return 0;
+        let s = 0;
+        if (pw.length >= 12) s += 2;
+        else if (pw.length >= 8) s += 1;
+        if (/[a-z]/.test(pw) && /[A-Z]/.test(pw)) s += 1;
+        if (/[0-9]/.test(pw)) s += 1;
+        if (/[^A-Za-z0-9]/.test(pw)) s += 1;
+        if (pw.length >= 16) s += 1;
+        return Math.min(s, 4);
+      };
+      const labels = {
+        en: ["Too short", "Weak", "Fair", "Good", "Strong"],
+        de: ["Zu kurz", "Schwach", "Mittel", "Gut", "Stark"],
+      };
+      const updateMeter = () => {
+        const pw = input.value || "";
+        if (!pw) { meter.hidden = true; return; }
+        meter.hidden = false;
+        const s = score(pw);
+        fill.dataset.score = String(s);
+        fill.style.width = ((s / 4) * 100) + "%";
+        const lang = document.documentElement.lang === "de" ? "de" : "en";
+        label.textContent = labels[lang][s];
+      };
+      input.addEventListener("input", updateMeter);
+    }
+
     // C5: visibility toggle.
     const toggle = document.createElement("button");
     toggle.type = "button";

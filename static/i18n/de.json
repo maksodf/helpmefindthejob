@@ -101,6 +101,7 @@
   "auth.resetNew": "Neues Passwort",
   "auth.resetSubmit": "Passwort setzen",
   "auth.resetVerifying": "Reset-Link wird geprüft…",
+  "auth.sessionLifetime": "Sitzungen laufen nach 30 Tagen Inaktivität ab. Über Einstellungen → Sicherheit kannst du sofort abmelden.",
   "auth.signIn": "Anmelden",
   "auth.signInLead": "Bitte anmelden, um fortzufahren.",
   "auth.totp.cancelled": "Anmeldung abgebrochen.",

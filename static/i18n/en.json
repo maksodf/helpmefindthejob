@@ -101,6 +101,7 @@
   "auth.resetNew": "New password",
   "auth.resetSubmit": "Set password",
   "auth.resetVerifying": "Verifying reset link…",
+  "auth.sessionLifetime": "Sessions last 30 days of inactivity. Sign out from Settings → Security ends them immediately.",
   "auth.signIn": "Sign in",
   "auth.signInLead": "Sign in to continue.",
   "auth.totp.cancelled": "Sign-in cancelled.",

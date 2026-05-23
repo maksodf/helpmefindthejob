@@ -4524,6 +4524,40 @@ input[aria-invalid="true"] {
 .password-toggle .icon-eye-off { display: none; }
 .password-input-wrap.is-visible .password-toggle .icon-eye { display: none; }
 .password-input-wrap.is-visible .password-toggle .icon-eye-off { display: inline-block; }
+/* UX-C2 (2026-05-23): password strength meter — only renders on
+ * new-password inputs (register / reset / accept-invite). Bar
+ * fills 0-100% based on the score; color tracks strength tier.
+ * Hidden until the user starts typing. */
+.password-strength {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  font-size: var(--text-xs, 12px);
+}
+.password-strength-bar {
+  flex: 1;
+  height: 4px;
+  background: var(--surface-3);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.password-strength-fill {
+  height: 100%;
+  width: 0;
+  background: var(--danger);
+  transition: width 0.2s ease, background 0.2s ease;
+}
+.password-strength-fill[data-score="1"] { background: var(--danger); }
+.password-strength-fill[data-score="2"] { background: var(--warn); }
+.password-strength-fill[data-score="3"] { background: var(--accent); }
+.password-strength-fill[data-score="4"] { background: var(--success); }
+.password-strength-label {
+  color: var(--text-muted);
+  min-width: 70px;
+  text-align: right;
+}
+
 .caps-lock-badge {
   position: absolute;
   right: 44px;
