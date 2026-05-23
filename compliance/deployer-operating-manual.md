@@ -69,6 +69,7 @@ Before going live, complete each of these in order. None is optional.
 - [ ] Verify backup and restore drills against your data infrastructure (`scripts/backup-*` and `scripts/restore-*` are provided).
 - [ ] Brief your advisors and oversight person on the system's capabilities and limitations (`transparency-notice.md` §"Limitations").
 - [ ] Decide which user populations you serve and tailor the chat-router's persona-friendly greetings accordingly (see §4.3 below).
+- [ ] Document your **Article 22 right-to-human-review procedure** (see §8.1 below) — who receives escalation requests, the response-time SLA, the artefact retention policy, and how the verdict is communicated back to the user.
 
 ---
 
@@ -161,6 +162,41 @@ Users have the GDPR rights enumerated in `transparency-notice.md` §"Your rights
 
 A request log lives separately from the audit log (it is itself a record of the request, not the technical event); your data-protection officer typically owns this log.
 
+### 8.1 Article 22 / Article 86 right to human review of an AI decision
+
+GDPR Article 22 gives every user the right not to be subject to a decision based solely on automated processing that produces legal effects or similarly significantly affects them. AI Act Article 86 strengthens that right for high-risk AI systems: any user **affected by an output** of a high-risk system can request a structured explanation, and where the output is a decision (or feeds one) they can request human review.
+
+In Helpmefindthejob's context, the AI-assisted outputs that can rise to "significant effect" are:
+
+- Fit scores that influence which jobs the user applies to.
+- CV-tailoring suggestions and motivation-letter drafts that go to a real employer.
+- Auto-classification of journey state (e.g., flagging a role as "out of scope") that hides options from the user.
+- Auto-generated rejection-of-fit narratives that the user might internalise as discouraging.
+
+The user-facing notice at [`transparency-notice.md` §"Right to an explanation (Article 86 and GDPR Article 22)"](transparency-notice.md) tells users this right exists and how to invoke it. **You as deployer own the procedure that handles the request.** This subsection is the operational requirement.
+
+**Mandatory procedure** — document it locally, exercise it on a quarterly drill, log every real invocation:
+
+1. **Receiver**: name the oversight person (or a queue / shared mailbox they monitor) who receives escalation requests. The contact appears in your `transparency-notice.md` `[Deployer-managed addendum]`. For Beratungsstellen this is typically a senior advisor; for Jobcentern a Case Manager; for university career services the head of career advising. The receiver must be **a human, not a chatbot or automated triage tool** — Article 22 explicitly bars automation from being the gatekeeper of its own appeal.
+
+2. **Intake artefact**: when the request arrives, capture (a) the AI output being challenged (copy/paste plus the audit-log entry ID — see `audit-log-schema.md` §3 for the ID format), (b) the user's stated reason for challenging it, (c) the user's preferred outcome. The audit-log entry ID is the load-bearing reference because it lets the reviewer pull the exact prompt, model, version, and provider that produced the output — none of which are stored on the user-facing surface.
+
+3. **Review SLA**: respond substantively within **1 calendar month** of receipt (GDPR Article 12(3)). Acknowledgement of receipt within **3 working days** is the operational target — the user should never wonder whether the request was lost. Where the request is complex you may extend by a further 2 months under GDPR Article 12(3), but you must explain the extension reason to the user within the original 1-month window.
+
+4. **Review depth**: the reviewer is **not** required to re-do the AI's work from scratch. The standard is whether the AI output is **defensible in context** — does the prompt match what the user requested, did the model have the right inputs, are the criteria the AI used appropriate for this user's situation. Where the output is defensible, the reviewer confirms it with a written explanation. Where it is not, the reviewer issues a corrected output, marked clearly as human-issued.
+
+5. **Communicate the verdict**: the response to the user must include (a) whether the AI output stands, is corrected, or is overturned; (b) the reasoning in plain language at the level of the user's stated reason for challenging; (c) the corrected output if applicable; (d) the user's onward rights (right to lodge a complaint with the supervisory authority — see §"Right to lodge a complaint" in `transparency-notice.md`).
+
+6. **Retention**: keep the intake artefact, the reviewer's notes, the verdict, and any corrected output for **the longer of**: (a) your audit-log retention window (§6.2 above; default 180 days), (b) your jurisdiction's data-protection-request retention requirement (typically 3 years for the request log under GDPR accountability obligations), (c) any pending investigation or supervisory authority engagement period. The retention is separate from the audit log because the request itself is a record-of-request, not an AI-output event.
+
+7. **Log the review action itself**: invoke `/api/admin/oversight/review` (or your equivalent operational endpoint) so the **fact that a human review took place** is itself an audit-log entry. The entry records reviewer identity (opaque ID), referenced audit-log entry ID, verdict, and timestamp — never the AI output verbatim, which would defeat the encrypted-at-rest pseudonymisation discipline. This closes the Article 26(6) automatic-log obligation around the review event.
+
+8. **Aggregate review**: at least quarterly, the oversight person produces a short anonymised summary of the requests received, the verdicts, and any patterns. Patterns that recur (e.g., "fit-score for nursing roles consistently challenged by §16d applicants and consistently corrected") feed your next bias-testing run (§9.2) and may merit a `incident-ai-act`-tagged issue to the upstream project.
+
+**Article 22 vs Article 14 vs Article 26**: these obligations layer rather than duplicate. Article 14 (provider obligation) requires the system be **designed for** human oversight — the project ships `HELPMEFINDTHEJOB_HUMAN_OVERSIGHT_MODE`, the `/api/admin/oversight/queue`, and per-output explanation surfaces to satisfy this. Article 26 (deployer obligation) requires you to **exercise** that oversight in practice. Article 22 (user right) creates the **per-request appeal** that this subsection covers. The full chain works only if all three are wired.
+
+**Common drift to avoid**: do not configure the chat router to auto-respond to "show me a human" requests with a templated "your request has been logged" message and no human action. Do not allow Article 22 requests to be triaged by AI to decide whether they merit human review. Do not let the response SLA slip silently — the standard is response, not acknowledgement. Document the procedure even if you have never received a request — the absence of requests is not proof the right is honoured.
+
 ---
 
 ## 9. Operational tasks
@@ -231,3 +267,4 @@ If something in your context is not covered here, raise an issue on the project 
 ## 13. Append log
 
 - **2026-05-18**: initial deployer operating manual drafted as part of Week 2 task 2.8 of the NLnet NGI Zero Commons Fund grant sprint.
+- **2026-05-24** (PlanTowardPerfection box 1.4.1): finalised with §8.1 "Article 22 / Article 86 right to human review of an AI decision" — an 8-step operational procedure (receiver, intake artefact, SLA, review depth, verdict communication, retention, log-the-review-action, aggregate review) plus the layering note distinguishing Article 14 (provider) / Article 26 (deployer) / Article 22 (user right). Pre-deployment checklist updated with the corresponding documentation item. Closes the gap that prior versions covered Article 26 obligations table at §2 + provider-side human-oversight at §5, but never spelt out the operational procedure for handling the per-user appeal — leaving deployers to invent the workflow at first request.

@@ -552,6 +552,41 @@ class SaltFailFastTests(unittest.TestCase):
         salt = audit_log._resolve_salt(salt_b64)
         self.assertEqual(salt, b"x" * 32)
 
+    def test_production_env_with_configured_salt_emits_no_warning(self) -> None:
+        # PlanTowardPerfection box 1.4.2 verification: when env is
+        # production AND HELPMEFINDTHEJOB_AUDIT_SALT is set, the
+        # `[audit_log] HELPMEFINDTHEJOB_AUDIT_SALT not set; generated
+        # a per-process salt` UserWarning must NOT be emitted. Prior
+        # observation #22084 noted the warning appearing on every
+        # start — that was the dev-fallback path firing because the
+        # salt was unset. Once the salt is wired in prod (via the
+        # docker-compose `${HELPMEFINDTHEJOB_AUDIT_SALT:?...}` guard
+        # plus `.env` on the droplet), the warning is logically
+        # unreachable: the dev-fallback branch only runs when the
+        # decoded-salt path returned empty AND env is in
+        # _DEV_ENV_TOKENS. This test pins that invariant so a future
+        # refactor of `_resolve_salt` cannot quietly reintroduce the
+        # warning on production startup.
+        import warnings as _warnings
+
+        os.environ["HELPMEFINDTHEJOB_ENV"] = "production"
+        salt_b64 = base64.b64encode(b"y" * 32).decode("ascii")
+        with _warnings.catch_warnings(record=True) as caught:
+            _warnings.simplefilter("always")
+            salt = audit_log._resolve_salt(salt_b64)
+        self.assertEqual(salt, b"y" * 32)
+        salt_warnings = [
+            w for w in caught
+            if "HELPMEFINDTHEJOB_AUDIT_SALT" in str(w.message)
+        ]
+        self.assertEqual(
+            salt_warnings,
+            [],
+            f"expected zero salt-related warnings on production "
+            f"startup with salt configured; got "
+            f"{[str(w.message) for w in salt_warnings]}",
+        )
+
     def test_test_env_classified_as_dev(self) -> None:
         # `env=test` is part of `_DEV_ENV_TOKENS` so we get the dev
         # fallback (random salt + UserWarning), not the fatal exit.
