@@ -232,6 +232,41 @@ audit. Items below are commit-mapped to the working branch
   variables: `_ENV`, `_DATA_DIR`, `_HOST`, `_PORT`) — same migration
   schedule.
 
+### Added
+
+- **Site-wide footer (AUDIT-34)** — `Handler.serve_static` now
+  injects a single source-of-truth footer (`app.SITE_FOOTER_HTML`)
+  into every HTML response that doesn't already carry one.
+  Visitors landing on the landing page, any legal page,
+  `/forgot-password`, `/help`, `/status`, or `/changelog` now see
+  a consistent footer carrying: contact email
+  (`support@helpmefindthejob.org`), security email
+  (`security@helpmefindthejob.org`) with an RFC-9116
+  `security.txt` pointer, the four legal-page nav links, an
+  Apache 2.0 licence badge → LICENSE, a Commons Conservancy
+  parent-org badge → commonsconservancy.org, a source-code badge
+  → the GitHub repo, plus the app version (linked to
+  `/changelog`) and the resolved build SHA. Build SHA resolves
+  at process startup from (1) the `HELPMEFINDTHEJOB_BUILD_SHA`
+  env var (Docker entrypoint), (2) `.git/HEAD` → ref →
+  `packed-refs` lookup (development workflow), or (3) the
+  literal `"dev"` (no git, no env). `/api/version` also exposes
+  the resolved value via the new `buildSha` field so API
+  integrators can correlate to the live deploy. CSS for the
+  footer lives in `static/styles.css` under the
+  `/* AUDIT-34 */` heading and uses the existing `--text` /
+  `--text-muted` / `--text-soft` design tokens for theme
+  parity. Regression guard in
+  `tests/test_audit_34_site_footer.py` (+16): constant
+  integrity (required markers, version + SHA presence),
+  injection idempotency (re-injecting on a page that already
+  has the footer must not duplicate), no-op behaviour when
+  `</body>` is absent, env-var override on the SHA resolver,
+  live probes against `/privacy`, `/impressum`,
+  `/forgot-password`, `/`, and a negative invariant that the
+  footer must NOT leak into `/api/version` JSON or
+  `/forgot-password.js` source.
+
 ### Changed
 
 - **`/admin`, `/reset-password/<token>`, `/accept-invite/<token>`

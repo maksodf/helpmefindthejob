@@ -242,6 +242,101 @@ APP_VERSION = "0.79.4"
 EXPORT_SCHEMA_VERSION = 1
 SESSION_COOKIE_NAME = "helpmefindthejob_session"
 APP_ENV = get_env("HELPMEFINDTHEJOB_ENV", "development").strip().casefold()
+
+
+def _resolve_build_sha() -> str:
+    """Resolve a 12-char build SHA for footer / /api/version display.
+
+    Resolution order:
+      1. HELPMEFINDTHEJOB_BUILD_SHA env var (Docker entrypoint sets this)
+      2. .git/HEAD → ref → packed-refs lookup (dev workflow)
+      3. 'dev' fallback (no git, no env)
+
+    Failures are swallowed because /api/version + the public footer
+    must never break a request just because git metadata is missing.
+    """
+    explicit = os.environ.get("HELPMEFINDTHEJOB_BUILD_SHA", "").strip()
+    if explicit:
+        return explicit[:12]
+    git_head = Path(__file__).resolve().parent / ".git" / "HEAD"
+    try:
+        if not git_head.exists():
+            return "dev"
+        head_content = git_head.read_text(encoding="utf-8").strip()
+        if not head_content.startswith("ref: "):
+            return head_content[:12] or "dev"
+        ref_target = head_content[5:].strip()
+        ref_path = git_head.parent / ref_target
+        if ref_path.exists():
+            return (ref_path.read_text(encoding="utf-8").strip() or "dev")[:12]
+        # packed-refs fallback (after `git gc` / `git pack-refs`)
+        packed = git_head.parent / "packed-refs"
+        if packed.exists():
+            for line in packed.read_text(encoding="utf-8").splitlines():
+                stripped = line.strip()
+                if stripped and not stripped.startswith("#") and stripped.endswith(" " + ref_target):
+                    return stripped.split(" ", 1)[0][:12]
+    except (OSError, ValueError):
+        pass
+    return "dev"
+
+
+BUILD_SHA = _resolve_build_sha()
+
+
+# AUDIT-34: site-wide footer. Injected server-side into any HTML
+# response by ``Handler.serve_static`` so we don't have to thread a
+# duplicated <footer> block through 14 static pages. Source of truth
+# is here. Carries: contact email, security email + RFC-9116 pointer,
+# legal page nav, Apache 2.0 license badge, Commons Conservancy
+# parent-org badge, app version, build SHA.
+SITE_FOOTER_HTML = f'''<footer class="site-footer" role="contentinfo" aria-label="Site footer">
+  <div class="site-footer-grid">
+    <section class="site-footer-col site-footer-about">
+      <p class="site-footer-tagline"><strong>Helpmefindthejob</strong> &mdash; open-source EU civic employment commons.</p>
+      <p class="muted small">A Programme of <a href="https://commonsconservancy.org" rel="external noopener">The Commons Conservancy</a>. Apache 2.0 + CLA.</p>
+    </section>
+    <section class="site-footer-col" aria-labelledby="siteFooterContact">
+      <h3 id="siteFooterContact">Contact</h3>
+      <ul>
+        <li><a href="mailto:support@helpmefindthejob.org">support@helpmefindthejob.org</a></li>
+        <li><a href="mailto:security@helpmefindthejob.org">security@helpmefindthejob.org</a><br><span class="muted small"><a href="/.well-known/security.txt">security.txt</a> (RFC 9116)</span></li>
+      </ul>
+    </section>
+    <section class="site-footer-col" aria-labelledby="siteFooterLegal">
+      <h3 id="siteFooterLegal">Legal</h3>
+      <ul>
+        <li><a href="/impressum">Impressum</a></li>
+        <li><a href="/privacy">Privacy</a></li>
+        <li><a href="/terms">Terms</a></li>
+        <li><a href="/data-retention">Data retention</a></li>
+      </ul>
+    </section>
+    <section class="site-footer-col" aria-labelledby="siteFooterProject">
+      <h3 id="siteFooterProject">Project</h3>
+      <p class="site-footer-badges">
+        <a class="site-footer-badge" href="https://github.com/maksodf/helpmefindthejob/blob/main/LICENSE" rel="license noopener">Apache 2.0</a>
+        <a class="site-footer-badge" href="https://commonsconservancy.org" rel="external noopener">Commons Conservancy</a>
+        <a class="site-footer-badge" href="https://github.com/maksodf/helpmefindthejob" rel="external noopener">Source</a>
+      </p>
+      <p class="site-footer-version muted small">
+        <a href="/changelog">v{APP_VERSION}</a> &middot; build <code>{BUILD_SHA}</code>
+      </p>
+    </section>
+  </div>
+</footer>
+'''.encode("utf-8")
+
+
+def _inject_html_footer(content: bytes) -> bytes:
+    """AUDIT-34: insert the site-wide footer before ``</body>`` if the
+    HTML response doesn't already have one. Idempotent: skips if the
+    page already carries ``class="site-footer"`` (defensive — no page
+    currently inlines it, but future hand-authored pages might).
+    """
+    if b'class="site-footer"' in content or b"</body>" not in content:
+        return content
+    return content.replace(b"</body>", SITE_FOOTER_HTML + b"  </body>", 1)
 # Bool env-var parsing routes through env_compat.get_env_bool, which
 # accepts the permissive truthy set {"true", "1", "yes", "on"}
 # casefolded. Earlier these two vars used a strict `== "true"`
@@ -6711,9 +6806,11 @@ class Handler(BaseHTTPRequestHandler):
                 # AUDIT-48 (2026-05-22): /api/version was auth-gated by virtue of
                 # being an unknown /api/* path (the auth wrapper rejected it).
                 # /api/health already exposes version unauth; symmetry says
-                # /api/version should too. Returns minimal {version, environment}
-                # for partner integrators (MCP marketplaces, NLnet review checks).
-                self.send_json({"version": APP_VERSION, "environment": APP_ENV})
+                # /api/version should too. Returns minimal {version, environment,
+                # buildSha} for partner integrators (MCP marketplaces, NLnet
+                # review checks) and the site footer (AUDIT-34 surfaces
+                # buildSha to operators for incident-correlation).
+                self.send_json({"version": APP_VERSION, "environment": APP_ENV, "buildSha": BUILD_SHA})
                 return
             if parsed.path == "/api/health":
                 session = self.current_session()
@@ -8101,7 +8198,7 @@ class Handler(BaseHTTPRequestHandler):
         try:
             parsed = urlparse(self.path)
             if parsed.path == "/api/version":
-                self.send_json({"version": APP_VERSION, "environment": APP_ENV}, include_body=False)
+                self.send_json({"version": APP_VERSION, "environment": APP_ENV, "buildSha": BUILD_SHA}, include_body=False)
                 return
             if parsed.path == "/api/health":
                 self.send_json(STATE.health(None), include_body=False)
@@ -12229,6 +12326,12 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_error_json(HTTPStatus.NOT_FOUND, "not_found", "File not found")
                 return
         content = candidate.read_bytes()
+        # AUDIT-34: inject the site-wide footer into HTML responses.
+        # Single source of truth in SITE_FOOTER_HTML; serve_static is
+        # the choke point for every static page (SPA shell + legal +
+        # auth-aux + help/status/changelog) so this catches them all.
+        if candidate.suffix.lower() == ".html":
+            content = _inject_html_footer(content)
         self.send_response(HTTPStatus.OK)
         guessed = mimetypes.guess_type(candidate.name)[0]
         if guessed is None and candidate.suffix.lower() == ".webmanifest":

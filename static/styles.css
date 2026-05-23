@@ -4074,3 +4074,104 @@ html[dir="rtl"] .funnel-stage { align-items: flex-end; }
   font-weight: 600;
   background: rgba(124, 92, 255, 0.12);
 }
+
+/* ---------- AUDIT-34: site-wide footer ----------
+ * Injected server-side by Handler.serve_static into any HTML response.
+ * Carries the project's contact/security/legal/badge surface so
+ * visitors landing on any page have a consistent entry point to the
+ * commons, the licence, the security disclosure channel, and the
+ * legal pack.
+ */
+.site-footer {
+  margin-top: 64px;
+  padding: 36px 24px 28px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(0, 0, 0, 0.18);
+  color: var(--text-muted, #9ea4b5);
+  font-size: var(--text-sm, 13px);
+  line-height: 1.55;
+}
+
+.site-footer-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 28px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.site-footer-col h3 {
+  font-size: var(--text-xs, 12px);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-soft, #a0a6b6);
+  margin: 0 0 10px 0;
+}
+
+.site-footer-col ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.site-footer-col li {
+  margin-bottom: 6px;
+}
+
+.site-footer a {
+  color: var(--text, #e8eaee);
+  text-decoration: none;
+}
+
+.site-footer a:hover,
+.site-footer a:focus-visible {
+  text-decoration: underline;
+}
+
+.site-footer-tagline {
+  margin: 0 0 6px;
+  font-size: var(--text-md, 14px);
+  color: var(--text, #e8eaee);
+}
+
+.site-footer-tagline strong {
+  color: var(--text, #e8eaee);
+}
+
+.site-footer-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+}
+
+.site-footer-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  font-size: var(--text-xs, 12px);
+  font-weight: 500;
+  color: var(--text, #e8eaee) !important;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.site-footer-badge:hover,
+.site-footer-badge:focus-visible {
+  background: rgba(255, 255, 255, 0.08);
+  text-decoration: none !important;
+}
+
+.site-footer-version {
+  margin-top: 12px;
+  margin-bottom: 0;
+}
+
+.site-footer-version code {
+  font-size: 11px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  padding: 1px 6px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 4px;
+}
