@@ -189,6 +189,14 @@ PASSWORD_RESET_REQUEST_WINDOW = 600
 CSP_REPORT_LIMIT = 50
 CSP_REPORT_WINDOW = 60
 CSP_REPORT_MAX_BYTES = 16 * 1024  # bytes — Reporting API bursts can be larger but truncate them anyway
+# 2026-05-23: /api/auth/status is polled by the SPA (typically once
+# per minute, possibly more on tab focus). Pre-fix the endpoint was
+# unprotected — an attacker could use it to enumerate session
+# validity, run a DDoS, or build a polling timer bomb. 60/min/IP is
+# generous for legitimate single-tab polling, and 2-3x that under
+# multi-tab use; well below where a real user would notice.
+STATUS_REQUEST_LIMIT = 60
+STATUS_REQUEST_WINDOW = 60
 # Per-IP per 10 minutes. Set HELPMEFINDTHEJOB_REGISTER_LIMIT in dev / test
 # environments to relax the cap (e.g. red-team agents that need to
 # register 7+ throwaway accounts in quick succession). Production
@@ -871,6 +879,10 @@ class AppState:
         # password-reset rate limiter.
         self._csp_report_lock = Lock()
         self._csp_requests: dict[str, list[float]] = {}
+        # 2026-05-23 extension: per-IP rate-limit for /api/auth/status
+        # polling. Same pattern.
+        self._status_request_lock = Lock()
+        self._status_requests: dict[str, list[float]] = {}
         self._demo_seed_lock = Lock()
         self.ai_providers = self._load_ai_providers()
         self.token_store = TokenStore(self.token_path, SECRET_KEY)
@@ -3307,6 +3319,28 @@ class AppState:
                 return False
             attempts.append(now)
             self._csp_requests[client_id] = attempts
+            return True
+
+    def claim_status_slot(self, client_id: str) -> bool:
+        """2026-05-23: per-IP rate limit for /api/auth/status. Same
+        check-and-claim shape as the other slot methods. 60 polls
+        per minute is generous for legitimate SPA polling (typical
+        usage: ~1/minute on the home tab, occasional bursts on tab-
+        focus events) and tight enough to defang trivial polling
+        enumeration attacks."""
+
+        now = time.time()
+        with self._status_request_lock:
+            attempts = [
+                t
+                for t in self._status_requests.get(client_id, [])
+                if now - t < STATUS_REQUEST_WINDOW
+            ]
+            if len(attempts) >= STATUS_REQUEST_LIMIT:
+                self._status_requests[client_id] = attempts
+                return False
+            attempts.append(now)
+            self._status_requests[client_id] = attempts
             return True
 
     def claim_register_slot(self, client_id: str) -> bool:
@@ -6774,7 +6808,20 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("X-Frame-Options", "DENY")
         self.send_header("Referrer-Policy", "strict-origin-when-cross-origin")
-        self.send_header("Permissions-Policy", "geolocation=(), microphone=(), camera=()")
+        # 2026-05-23 extension: opt out of Federated Learning of Cohorts
+        # (interest-cohort) and its Topics-API successor (browsing-topics).
+        # A civic-commons project explicitly does NOT want browsers
+        # profiling our visitors for ad targeting. Also lock down
+        # fullscreen (self-only), accelerometer, gyroscope, magnetometer,
+        # USB, serial, and other capabilities the app never legitimately
+        # needs — defence in depth against any future XSS slip.
+        self.send_header(
+            "Permissions-Policy",
+            "geolocation=(), microphone=(), camera=(), "
+            "interest-cohort=(), browsing-topics=(), "
+            "fullscreen=(self), accelerometer=(), gyroscope=(), "
+            "magnetometer=(), usb=(), serial=(), midi=(), payment=()"
+        )
         # Phase 2 #47 (2026-05-21): cross-origin isolation headers.
         # COOP same-origin prevents window.opener attacks where a
         # cross-origin pop-up can manipulate the opener. CORP
@@ -6909,6 +6956,123 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Cache-Control", "no-store")
         self.end_headers()
         self.wfile.write(encoded)
+
+    def _send_html_404(self) -> None:
+        """AUDIT-24 (2026-05-23): branded bilingual 404 HTML page.
+        Pre-fix, visitors who mistyped a URL got the default Python
+        BaseHTTPRequestHandler error page (white background, plain
+        text "Error 404 — Not Found") OR a JSON ``{"error":...}``
+        body from send_error_json. Neither is acceptable on a
+        public-facing civic-commons project. Post-fix: same look-and-
+        feel as the legal pages, bilingual via Accept-Language /
+        ?lang=, with helpful links to /, /help, /status, /impressum
+        and the site-wide footer + language switcher. Cache-Control:
+        no-store so 404s never cache, Vary: Accept-Language, Cookie
+        so a CDN doesn't serve the wrong language."""
+        lang = self._resolve_user_language()
+        if lang == "de":
+            title = "Seite nicht gefunden &mdash; Helpmefindthejob"
+            heading = "Diese Seite gibt es nicht"
+            lead = (
+                "Die von Ihnen aufgerufene Adresse existiert nicht (mehr). "
+                "Vielleicht hilft eine dieser Seiten weiter:"
+            )
+            back_label = "&larr; Zur&uuml;ck zur Startseite"
+            links = [
+                ("/", "Startseite"),
+                ("/help", "Hilfe"),
+                ("/status", "Statusseite"),
+                ("/impressum", "Impressum"),
+            ]
+        else:
+            title = "Page not found &mdash; Helpmefindthejob"
+            heading = "This page doesn&rsquo;t exist"
+            lead = (
+                "The URL you visited doesn&rsquo;t exist (any more). One of "
+                "these might help:"
+            )
+            back_label = "&larr; Back to the home page"
+            links = [
+                ("/", "Home"),
+                ("/help", "Help"),
+                ("/status", "Status page"),
+                ("/impressum", "Impressum"),
+            ]
+        items = "".join(f'<li><a href="{href}">{label}</a></li>' for href, label in links)
+        html_body = (
+            "<!doctype html>"
+            f'<html lang="{lang}">'
+            "<head>"
+            '<meta charset="utf-8">'
+            '<meta name="viewport" content="width=device-width, initial-scale=1">'
+            '<meta name="robots" content="noindex,nofollow">'
+            f"<title>{title}</title>"
+            '<link rel="icon" href="/favicon.ico" sizes="any">'
+            '<link rel="stylesheet" href="/styles.css">'
+            "</head>"
+            '<body class="legal-body">'
+            '<a class="skip-link" href="#mainContent">Skip to main content</a>'
+            '<main id="mainContent" class="legal-page" tabindex="-1">'
+            "<header>"
+            f'<a href="/" class="legal-back">{back_label}</a>'
+            f"<h1>{heading}</h1>"
+            "</header>"
+            "<section>"
+            f"<p>{lead}</p>"
+            f"<ul>{items}</ul>"
+            "</section>"
+            "</main>"
+            "</body>"
+            "</html>"
+        )
+        encoded = html_body.encode("utf-8")
+        encoded = _inject_html_footer(encoded, lang)
+        self.send_response(HTTPStatus.NOT_FOUND)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(encoded)))
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("Vary", "Accept-Language, Cookie")
+        self.end_headers()
+        self.wfile.write(encoded)
+
+    def do_OPTIONS(self) -> None:
+        """AUDIT-23 (2026-05-23): CORS preflight handler.
+
+        Pre-fix: ``BaseHTTPRequestHandler`` returned ``501 Not
+        Implemented`` for any OPTIONS request, breaking any cross-
+        origin POST that triggers a preflight (browser fetch with
+        a custom header like ``X-CSRF-Token`` or
+        ``Content-Type: application/json``).
+
+        Post-fix: 204 No Content with explicit CORS headers. The
+        ``Access-Control-Allow-Origin`` value is echoed back ONLY for
+        origins on the allow-list — same-origin (`helpmefindthejob.org`
+        and `www.`), or localhost / 127.0.0.1 for dev. Any other
+        origin gets a bare 204 with no CORS headers, which the
+        browser treats as a preflight rejection.
+        """
+        origin = self.headers.get("Origin", "")
+        allowed = (
+            origin == "https://helpmefindthejob.org"
+            or origin == "https://www.helpmefindthejob.org"
+            or origin.startswith("http://127.0.0.1:")
+            or origin.startswith("http://localhost:")
+        )
+        self.send_response(HTTPStatus.NO_CONTENT)
+        if allowed:
+            self.send_header("Access-Control-Allow-Origin", origin)
+            self.send_header("Access-Control-Allow-Credentials", "true")
+            self.send_header(
+                "Access-Control-Allow-Methods", "GET, POST, HEAD, OPTIONS"
+            )
+            self.send_header(
+                "Access-Control-Allow-Headers",
+                "Content-Type, X-CSRF-Token, Accept-Language",
+            )
+            self.send_header("Access-Control-Max-Age", "86400")
+            self.send_header("Vary", "Origin")
+        self.send_header("Content-Length", "0")
+        self.end_headers()
 
     def do_GET(self) -> None:
         try:
@@ -7645,6 +7809,19 @@ class Handler(BaseHTTPRequestHandler):
                 self.end_headers()
                 return
             if parsed.path == "/api/auth/status":
+                # 2026-05-23: rate-limit per IP. The SPA polls this
+                # endpoint; an unbounded poller (or a hostile probe)
+                # would otherwise drown logs and enable session-
+                # validity enumeration. 60/min/IP is plenty for
+                # legitimate use.
+                _status_client_id = self.client_address[0] if self.client_address else "unknown"
+                if not STATE.claim_status_slot(_status_client_id):
+                    self.send_error_json(
+                        HTTPStatus.TOO_MANY_REQUESTS,
+                        "rate_limited",
+                        "Too many status checks. Try again in a minute.",
+                    )
+                    return
                 session = self.current_session()
                 # ``hasUsers`` lets the frontend decide whether the
                 # registration form is the first-account-bootstrap (no
@@ -8467,7 +8644,14 @@ class Handler(BaseHTTPRequestHandler):
             # visitors still see the SPA shell (so they can sign in and
             # land on the admin view via the AUDIT-27 state.view wiring
             # if they happen to be admins).
-            if parsed.path == "/admin":
+            # GAP-3 + 2026-05-23 extension: cover /admin AND any /admin/*
+            # subpath. Pre-extension, /admin/users (and other subpaths) fell
+            # through to serve_static and returned a plain 404 for non-admin
+            # users — accidentally leaking that /admin is a real route while
+            # only the literal /admin path got the branded 403. Now any
+            # /admin or /admin/<anything> with a non-admin session gets the
+            # bilingual "Admin access required" page.
+            if parsed.path == "/admin" or parsed.path.startswith("/admin/"):
                 _admin_session = self.current_session()
                 if _admin_session is not None and not _admin_session.user.is_admin:
                     self._send_admin_forbidden_page()
@@ -12600,6 +12784,22 @@ class Handler(BaseHTTPRequestHandler):
             return "en"
         return "en"
 
+    def _lang_from_query(self) -> str | None:
+        """2026-05-23: return the ?lang=<x> value if present in the
+        current request URL, else None. Used by serve_static to
+        decide whether to set a persistent ``lang`` cookie — only
+        when the visitor explicitly asked via the URL, not when the
+        resolver fell back to Accept-Language."""
+        from urllib.parse import urlparse as _urlparse, parse_qs as _parse_qs
+        qs = _urlparse(self.path).query
+        if not qs:
+            return None
+        params = _parse_qs(qs)
+        lang = (params.get("lang", [""])[0] or "").strip().lower()
+        if lang in {"de", "en"}:
+            return lang
+        return None
+
     def _bilingual_page_path(self, request_path: str, lang: str) -> str:
         """Map (/privacy, 'de') -> '/privacy.de'. AUDIT-6 / AUDIT-26 helper."""
         if request_path == "/impressum":
@@ -12647,7 +12847,18 @@ class Handler(BaseHTTPRequestHandler):
             ):
                 candidate = html_candidate
             else:
-                self.send_error_json(HTTPStatus.NOT_FOUND, "not_found", "File not found")
+                # AUDIT-24 (2026-05-23): branded HTML 404 for static
+                # paths that nothing else matched. API endpoints don't
+                # come through serve_static; they still send_error_json
+                # JSON 404s for machine consumers.
+                if include_body:
+                    self._send_html_404()
+                else:
+                    # HEAD request — headers only, same 404 status
+                    self.send_response(HTTPStatus.NOT_FOUND)
+                    self.send_header("Content-Type", "text/html; charset=utf-8")
+                    self.send_header("Cache-Control", "no-store")
+                    self.end_headers()
                 return
         content = candidate.read_bytes()
         # AUDIT-34 + GAP-1+2: inject the site-wide footer into HTML
@@ -12669,6 +12880,29 @@ class Handler(BaseHTTPRequestHandler):
             guessed = "application/manifest+json"
         self.send_header("Content-Type", guessed or "application/octet-stream")
         self.send_header("Content-Length", str(len(content)))
+        # 2026-05-23 Cache-Control sweep: every page load was re-fetching
+        # CSS / JS / icons because no Cache-Control was set. Tier the
+        # static responses:
+        #   - HTML pages: no-cache headers (per-request rendered, vary
+        #     by language; let browser revalidate every navigation).
+        #   - CSS / JS: public, max-age=300 (5 min — short enough that
+        #     a deploy refresh propagates within a navigation cycle,
+        #     long enough to dedupe the typical multi-page session).
+        #   - Icons / fonts / images: public, max-age=86400 (1 day —
+        #     these are content-stable; the icons rarely change).
+        #   - JSON manifests / sitemaps / well-known: already handled
+        #     by their own endpoints; only fall here if served as a
+        #     static file (unusual).
+        suffix = candidate.suffix.lower()
+        if is_html:
+            self.send_header("Cache-Control", "no-cache, must-revalidate")
+        elif suffix in (".css", ".js", ".mjs"):
+            self.send_header("Cache-Control", "public, max-age=300")
+        elif suffix in (".ico", ".png", ".jpg", ".jpeg", ".gif", ".svg",
+                        ".webp", ".woff", ".woff2", ".ttf", ".otf"):
+            self.send_header("Cache-Control", "public, max-age=86400")
+        elif suffix == ".webmanifest":
+            self.send_header("Cache-Control", "public, max-age=300")
         if is_html:
             # Post-GAP-1+2 hardening (2026-05-23): HTML responses now
             # vary by Accept-Language (footer language + legal-page
@@ -12678,6 +12912,19 @@ class Handler(BaseHTTPRequestHandler):
             # wrong-language footer to mismatched visitors. Set it
             # only on HTML — JS/CSS/manifest responses don't vary.
             self.send_header("Vary", "Accept-Language, Cookie")
+            # 2026-05-23 lang cookie persistence: if the visitor
+            # explicitly asked for a language via ?lang=X, set a
+            # 1-year cookie so the choice survives navigation. The
+            # _resolve_user_language() chain already prefers the
+            # cookie over Accept-Language, so this turns a one-shot
+            # ?lang=de click into a sticky preference.
+            explicit_lang = self._lang_from_query()
+            if explicit_lang:
+                self.send_header(
+                    "Set-Cookie",
+                    f"lang={explicit_lang}; Path=/; Max-Age=31536000; "
+                    "SameSite=Lax; Secure"
+                )
         self.end_headers()
         if include_body:
             self.wfile.write(content)

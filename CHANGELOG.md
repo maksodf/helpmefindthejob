@@ -234,7 +234,102 @@ audit. Items below are commit-mapped to the working branch
   variables: `_ENV`, `_DATA_DIR`, `_HOST`, `_PORT`) — same migration
   schedule.
 
+### Added
+
+- **Branded bilingual 404 HTML page (AUDIT-24, 2026-05-23)** —
+  visitors mistyping a URL used to get the Python
+  ``BaseHTTPRequestHandler`` default error page or a JSON 404
+  body. Both unacceptable on a public-facing civic-commons site.
+  ``Handler._send_html_404()`` now serves a bilingual HTML page
+  matching the legal-page chrome — skip-link, header, mission
+  links (Home / Help / Status / Impressum), site footer +
+  language switcher all injected as usual. ``noindex,nofollow``
+  meta, ``Cache-Control: no-store``, ``Vary: Accept-Language,
+  Cookie`` so a CDN can't serve the wrong language. API
+  endpoints still return JSON 404 for machine consumers
+  (they don't go through ``serve_static``).
+
+- **OPTIONS preflight handler (AUDIT-23, 2026-05-23)** —
+  pre-fix, every ``OPTIONS`` request returned
+  ``501 Not Implemented`` from the BaseHTTPRequestHandler
+  default, breaking any cross-origin POST that triggered a
+  preflight (browser fetch with ``Content-Type: application/json``
+  or ``X-CSRF-Token``). New ``do_OPTIONS`` returns ``204 No
+  Content`` with explicit CORS headers for allow-listed origins
+  (``helpmefindthejob.org``, the ``www.`` alias, and dev
+  ``127.0.0.1`` / ``localhost``); any other origin gets a bare
+  204 with no CORS headers, which browsers treat as a preflight
+  rejection. ``Access-Control-Max-Age: 86400`` caches the
+  preflight for a day.
+
+- **BreadcrumbList JSON-LD on every indexable page
+  (2026-05-23)** — Google ranks ``BreadcrumbList`` structured
+  data for the navigation breadcrumb under search-result
+  snippets. Now present on all 8 legal pages (privacy / terms /
+  data-retention / impressum × EN+DE) with the 3-level
+  ``Home > Legal > <page>`` shape, plus on ``/help``,
+  ``/status``, ``/changelog`` with the 2-level
+  ``Home > <page>`` shape. Localised "Home" / "Legal" labels
+  match the page locale (``Startseite`` / ``Rechtliches`` on
+  DE pages). Regression guard in
+  ``tests/test_extras_breadcrumb_jsonld.py`` (+4).
+
+### Changed
+
+- **``/admin/*`` subpath server-side 403 (2026-05-23 extension
+  to GAP-3)** — pre-extension, only the literal ``/admin``
+  path got the server-side 403 for signed-in non-admin users;
+  any subpath (``/admin/users`` etc.) fell through to
+  ``serve_static`` and returned a plain 404, leaking that
+  ``/admin`` is a real route while only the exact match was
+  protected. Guard now covers ``/admin`` AND ``/admin/*``
+  subpaths.
+
+- **Permissions-Policy hardened (2026-05-23)** — extended the
+  existing geolocation / microphone / camera locks with
+  explicit opt-outs for Federated Learning of Cohorts
+  (``interest-cohort=()``), the Topics-API successor
+  (``browsing-topics=()``), and a defence-in-depth lockdown of
+  ``fullscreen=(self)``, ``accelerometer=()``,
+  ``gyroscope=()``, ``magnetometer=()``, ``usb=()``,
+  ``serial=()``, ``midi=()``, ``payment=()``. A civic-commons
+  project must opt out of ad-tracking signals; the rest harden
+  against any future XSS slip.
+
+- **Lang switcher choice now persists (2026-05-23)** — clicking
+  the footer / legal-page language switcher's ``?lang=de``
+  used to work for the current request only; the next page
+  fell back to ``Accept-Language``. Now ``?lang=de`` triggers
+  ``Set-Cookie: lang=de; Path=/; Max-Age=31536000; SameSite=Lax;
+  Secure`` so the choice survives navigation for 1 year. The
+  existing ``_resolve_user_language()`` chain already prefers
+  the cookie over Accept-Language, so the cookie just makes
+  the existing switch sticky.
+
+- **Cache-Control tiered on static assets (2026-05-23)** —
+  pre-fix, every page load re-downloaded ``/styles.css``,
+  ``/app.js``, ``/forgot-password.js``, and the ``/icons/*``
+  set because no ``Cache-Control`` was sent. Now tiered:
+  HTML stays ``no-cache, must-revalidate`` (per-request
+  rendered, varies by language), CSS/JS get
+  ``public, max-age=300`` (5-min revalidation), icons / fonts
+  / images get ``public, max-age=86400`` (1-day cache).
+
 ### Security
+
+- **Rate-limit on ``/api/auth/status`` (2026-05-23)** —
+  pre-fix the endpoint was unprotected. The SPA polls it; an
+  unbounded poller (or a hostile probe) could drown logs and
+  enable session-validity enumeration. New
+  ``STATE.claim_status_slot`` with 60 requests / minute / IP —
+  generous enough for legitimate single-tab polling (~1/min),
+  tight enough to defang trivial enumeration. Same Lock+dict
+  shape as the existing password-reset and CSP-report
+  limiters. Regression test in
+  ``tests/test_extras_status_rate_limit.py`` (+3) verifies
+  the limit triggers at the 61st request, that different IPs
+  have independent buckets, and that the rolling window
+  ages out stale timestamps.
 
 - **CSP report-collector RecursionError fix (GAP-8 hardening,
   2026-05-23 self-audit)** — `json.loads` of a hand-crafted JSON
