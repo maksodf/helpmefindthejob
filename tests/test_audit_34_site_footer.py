@@ -262,5 +262,144 @@ class SiteFooterLiveResponse(unittest.TestCase):
         )
 
 
+class SiteFooterBilingualAndLangSwitcher(unittest.TestCase):
+    """GAP-1+2 (post-self-audit, 2026-05-23): the footer must
+    localise on Accept-Language / ?lang= and must carry a language
+    switcher so EN visitors can flip to DE and vice versa."""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls._tmp = TemporaryDirectory()
+        cls.port = _free_port()
+        env = {
+            **os.environ,
+            "HELPMEFINDTHEJOB_DATA_DIR": cls._tmp.name,
+            "HELPMEFINDTHEJOB_AUDIT_SALT": "A" * 43 + "=",
+        }
+        cls._process = subprocess.Popen(
+            [sys.executable, str(ROOT / "app.py"), "--port", str(cls.port)],
+            cwd=ROOT,
+            env=env,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        cls._wait_for_health()
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        if cls._process.poll() is None:
+            cls._process.terminate()
+            try:
+                cls._process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                cls._process.kill()
+                cls._process.wait()
+        for stream in (cls._process.stdout, cls._process.stderr):
+            if stream is not None:
+                try:
+                    stream.close()
+                except Exception:  # noqa: BLE001
+                    pass
+        cls._tmp.cleanup()
+
+    @classmethod
+    def _wait_for_health(cls) -> None:
+        for _ in range(60):
+            try:
+                conn = http.client.HTTPConnection("127.0.0.1", cls.port, timeout=0.5)
+                conn.request("GET", "/api/health")
+                resp = conn.getresponse()
+                ok = resp.status == 200
+                resp.read()
+                conn.close()
+                if ok:
+                    return
+            except OSError:
+                time.sleep(0.1)
+        raise RuntimeError(f"server did not become healthy on port {cls.port}")
+
+    def _get(self, path: str, *, accept_language: str = "en") -> tuple[int, bytes]:
+        conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=2)
+        conn.request("GET", path, headers={"Accept-Language": accept_language})
+        resp = conn.getresponse()
+        try:
+            return resp.status, resp.read()
+        finally:
+            conn.close()
+
+    def test_en_footer_carries_english_section_headings(self) -> None:
+        status, body = self._get("/", accept_language="en")
+        self.assertEqual(status, 200)
+        for marker in (b">Contact</h3>", b">Legal</h3>", b">Project</h3>"):
+            self.assertIn(
+                marker, body,
+                f"GAP-1: English footer must carry English heading {marker!r}",
+            )
+
+    def test_de_footer_carries_german_section_headings_when_accept_language_de(self) -> None:
+        status, body = self._get("/", accept_language="de-DE,de;q=0.9")
+        self.assertEqual(status, 200)
+        for marker in (b">Kontakt</h3>", b">Rechtliches</h3>", b">Projekt</h3>"):
+            self.assertIn(
+                marker, body,
+                f"GAP-1: DE footer must carry German heading {marker!r}",
+            )
+        # DE-specific legal-link labels
+        self.assertIn(b">Datenschutz</a>", body)
+        self.assertIn(b">Nutzungsbedingungen</a>", body)
+        self.assertIn(b">Aufbewahrungsfristen</a>", body)
+        # English Project labels must NOT bleed into DE
+        self.assertNotIn(b">Contact</h3>", body)
+        self.assertNotIn(b">Legal</h3>", body)
+        self.assertNotIn(b">Project</h3>", body)
+
+    def test_de_footer_when_lang_query_de_overrides_accept_language(self) -> None:
+        # ?lang=de should beat Accept-Language: en
+        status, body = self._get("/?lang=de", accept_language="en-US")
+        self.assertEqual(status, 200)
+        self.assertIn(b">Kontakt</h3>", body)
+        self.assertNotIn(b">Contact</h3>", body)
+
+    def test_footer_carries_lang_switcher_with_both_languages(self) -> None:
+        status, body = self._get("/", accept_language="en")
+        self.assertEqual(status, 200)
+        self.assertIn(
+            b'class="site-footer-langswitch"', body,
+            "GAP-2: footer must carry the lang-switcher block",
+        )
+        # Both languages must be linked
+        self.assertIn(b'href="?lang=en"', body)
+        self.assertIn(b'href="?lang=de"', body)
+        # Both must declare hreflang for accessibility / SEO
+        self.assertIn(b'hreflang="en"', body)
+        self.assertIn(b'hreflang="de"', body)
+
+    def test_lang_switcher_marks_current_language_with_aria_current(self) -> None:
+        # EN page: the English link is aria-current="true"
+        _status, body_en = self._get("/", accept_language="en")
+        # Strip whitespace to handle multi-line markup
+        en_link = re.search(rb'<a[^>]*href="\?lang=en"[^>]*>English</a>', body_en)
+        de_link = re.search(rb'<a[^>]*href="\?lang=de"[^>]*>Deutsch</a>', body_en)
+        self.assertIsNotNone(en_link)
+        self.assertIsNotNone(de_link)
+        self.assertIn(b'aria-current="true"', en_link.group(0))
+        self.assertNotIn(b'aria-current="true"', de_link.group(0))
+
+        # DE page: the German link is aria-current="true"
+        _status, body_de = self._get("/", accept_language="de")
+        en_link_de = re.search(rb'<a[^>]*href="\?lang=en"[^>]*>English</a>', body_de)
+        de_link_de = re.search(rb'<a[^>]*href="\?lang=de"[^>]*>Deutsch</a>', body_de)
+        self.assertIsNotNone(en_link_de)
+        self.assertIsNotNone(de_link_de)
+        self.assertNotIn(b'aria-current="true"', en_link_de.group(0))
+        self.assertIn(b'aria-current="true"', de_link_de.group(0))
+
+
+# `re` is used in the bilingual-switcher tests above. Imported here
+# because the original test file didn't need it.
+import re  # noqa: E402
+
+
 if __name__ == "__main__":
     unittest.main()

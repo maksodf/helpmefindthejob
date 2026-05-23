@@ -4175,3 +4175,39 @@ html[dir="rtl"] .funnel-stage { align-items: flex-end; }
   background: rgba(255, 255, 255, 0.06);
   border-radius: 4px;
 }
+
+/* GAP-1+2: footer language switcher — centered under the 4-col
+ * grid. Current language carries aria-current="true" and is rendered
+ * unobtrusively in the muted text color; the alternate language is
+ * brighter so the call-to-action is obvious. */
+.site-footer-langswitch {
+  max-width: 1100px;
+  margin: 24px auto 0;
+  padding-top: 18px;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  text-align: center;
+  font-size: var(--text-sm, 13px);
+  color: var(--text-muted, #9ea4b5);
+}
+
+.site-footer-langswitch a {
+  color: var(--text, #e8eaee);
+  text-decoration: none;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.site-footer-langswitch a:hover,
+.site-footer-langswitch a:focus-visible {
+  text-decoration: underline;
+}
+
+.site-footer-langswitch a[aria-current="true"] {
+  color: var(--text-muted, #9ea4b5);
+  background: rgba(255, 255, 255, 0.04);
+  cursor: default;
+}
+
+.site-footer-langswitch a[aria-current="true"]:hover {
+  text-decoration: none;
+}

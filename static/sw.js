@@ -12,7 +12,11 @@
  * by default. We still cache the shell so the app loads under flaky
  * connectivity and offline reads work.
  */
-const CACHE_VERSION = "v0.20.0";
+// Bumped to v0.21.0 by the 2026-05-23 session: index.html (AUDIT-40
+// template wrap), app.js (AUDIT-40 materialisation IIFE), styles.css
+// (AUDIT-34 footer CSS), plus three new files we want cached. Old
+// users on v0.20.0 would otherwise keep the stale pre-AUDIT-40 shell.
+const CACHE_VERSION = "v0.21.0";
 // Cache name prefix bumped from `directjob-shell-` → `helpmefindthejob-shell-`
 // during the rename pass. The activate handler below explicitly cleans
 // up BOTH prefixes so users who installed the PWA pre-rename don't
@@ -32,6 +36,14 @@ const SHELL_PATHS = [
   // Locale registry (W3 D15 multilingual scaffolding). Cached so the
   // frontend's loadLocaleRegistry() works offline.
   "/i18n/locales.json",
+  // AUDIT-26 (2026-05-23): dedicated /forgot-password page extracted
+  // from the SPA shell. Cache the EN canonical, the DE courtesy
+  // translation, and the shared submit-handler JS so the page works
+  // offline (e.g. when a user follows an email link on a flaky
+  // connection).
+  "/forgot-password.html",
+  "/forgot-password.de.html",
+  "/forgot-password.js",
 ];
 
 self.addEventListener("install", (event) => {

@@ -294,6 +294,37 @@ class CspHeaderAndReportEndpoint(unittest.TestCase):
         )
         self.assertEqual(status, 204)
 
+    def test_csp_report_post_deeply_nested_body_does_not_crash(self) -> None:
+        """GAP-8 hardening (2026-05-23): a hostile client can hand-craft
+        a deeply-nested JSON body (json.dumps refuses to serialise past
+        ~1000 levels in Python, but the attacker constructs the string
+        directly). json.loads's recursive scanner can then raise
+        RecursionError, which used to bubble up to a 500. Post-fix the
+        handler catches RecursionError alongside ValueError/TypeError
+        and acks with 204."""
+        # 1100 nesting levels — comfortably past Python's default
+        # recursion limit but inside the 16 KB body cap (each level is
+        # 7 bytes: "{\"a\":" + "}" — so 1100 * 7 ≈ 7.7 KB).
+        depth = 1100
+        body = ('{"csp-report":' + ('{"a":' * depth) + 'null' + ('}' * depth) + '}').encode("utf-8")
+        # Sanity-check we're under the 16 KB cap so the test isn't
+        # silently exercising the size-rejection path instead.
+        from app import CSP_REPORT_MAX_BYTES
+        self.assertLess(len(body), CSP_REPORT_MAX_BYTES)
+        status, _headers, _resp_body = self._request(
+            "POST", "/csp-report",
+            body=body,
+            headers={
+                "Content-Type": "application/csp-report",
+                "Content-Length": str(len(body)),
+            },
+        )
+        self.assertEqual(
+            status, 204,
+            f"GAP-8: deeply-nested body must ack 204, got {status}. "
+            "RecursionError from json.loads is leaking through to a 500.",
+        )
+
     def test_csp_report_post_oversize_body_returns_413(self) -> None:
         # Send a Content-Length that exceeds the cap. We never actually
         # read the body when it's too large, so we can announce a big

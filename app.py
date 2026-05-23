@@ -332,7 +332,12 @@ def _summarize_csp_report(body: bytes) -> str | None:
         return None
     try:
         data = json.loads(decoded)
-    except (ValueError, TypeError):
+    except (ValueError, TypeError, RecursionError):
+        # GAP-8 hardening (2026-05-23): json.loads recurses on nested
+        # object/array literals and Python's default recursion limit
+        # (1000) means a hostile body of ~1000 nesting levels raises
+        # RecursionError. Treat it the same as a malformed body —
+        # silent drop, ack 204, never crash the request.
         return None
     reports = data if isinstance(data, list) else [data]
     summaries: list[str] = []
@@ -382,8 +387,61 @@ def _summarize_csp_report(body: bytes) -> str | None:
 # duplicated <footer> block through 14 static pages. Source of truth
 # is here. Carries: contact email, security email + RFC-9116 pointer,
 # legal page nav, Apache 2.0 license badge, Commons Conservancy
-# parent-org badge, app version, build SHA.
-SITE_FOOTER_HTML = f'''<footer class="site-footer" role="contentinfo" aria-label="Site footer">
+# parent-org badge, app version, build SHA, plus the bilingual
+# language switcher (post-self-audit GAP-1+2 fix, 2026-05-23).
+
+
+def _build_site_footer(lang: str) -> bytes:
+    """AUDIT-34 + GAP-1+2: build the site-wide footer for the given
+    language ('en' or 'de'). Strings are inlined here rather than
+    routed through static/i18n/*.json because the footer ships
+    server-side from Python and the i18n JSON files are loaded
+    client-side by the SPA; mirroring would just create drift.
+    """
+    if lang == "de":
+        return f'''<footer class="site-footer" role="contentinfo" aria-label="Webseiten-Fu&szlig;zeile">
+  <div class="site-footer-grid">
+    <section class="site-footer-col">
+      <p class="site-footer-tagline"><strong>Helpmefindthejob</strong> &mdash; quelloffener EU-Commons f&uuml;r die Arbeitssuche.</p>
+      <p class="muted small">Programm von <a href="https://commonsconservancy.org" rel="external noopener">The Commons Conservancy</a>. Apache 2.0 + CLA.</p>
+    </section>
+    <section class="site-footer-col" aria-labelledby="siteFooterContact">
+      <h3 id="siteFooterContact">Kontakt</h3>
+      <ul>
+        <li><a href="mailto:support@helpmefindthejob.org">support@helpmefindthejob.org</a></li>
+        <li><a href="mailto:security@helpmefindthejob.org">security@helpmefindthejob.org</a><br><span class="muted small"><a href="/.well-known/security.txt">security.txt</a> (RFC 9116)</span></li>
+      </ul>
+    </section>
+    <section class="site-footer-col" aria-labelledby="siteFooterLegal">
+      <h3 id="siteFooterLegal">Rechtliches</h3>
+      <ul>
+        <li><a href="/impressum">Impressum</a></li>
+        <li><a href="/privacy">Datenschutz</a></li>
+        <li><a href="/terms">Nutzungsbedingungen</a></li>
+        <li><a href="/data-retention">Aufbewahrungsfristen</a></li>
+      </ul>
+    </section>
+    <section class="site-footer-col" aria-labelledby="siteFooterProject">
+      <h3 id="siteFooterProject">Projekt</h3>
+      <p class="site-footer-badges">
+        <a class="site-footer-badge" href="https://github.com/maksodf/helpmefindthejob/blob/main/LICENSE" rel="license noopener">Apache 2.0</a>
+        <a class="site-footer-badge" href="https://commonsconservancy.org" rel="external noopener">Commons Conservancy</a>
+        <a class="site-footer-badge" href="https://github.com/maksodf/helpmefindthejob" rel="external noopener">Quellcode</a>
+      </p>
+      <p class="site-footer-version muted small">
+        <a href="/changelog">v{APP_VERSION}</a> &middot; Build <code>{BUILD_SHA}</code>
+      </p>
+    </section>
+  </div>
+  <p class="site-footer-langswitch" aria-label="Sprache w&auml;hlen / Choose language">
+    <a href="?lang=en" lang="en" hreflang="en">English</a>
+    <span aria-hidden="true"> &middot; </span>
+    <a href="?lang=de" lang="de" hreflang="de" aria-current="true">Deutsch</a>
+  </p>
+</footer>
+'''.encode("utf-8")
+    # 'en' default + any unknown lang
+    return f'''<footer class="site-footer" role="contentinfo" aria-label="Site footer">
   <div class="site-footer-grid">
     <section class="site-footer-col">
       <p class="site-footer-tagline"><strong>Helpmefindthejob</strong> &mdash; open-source EU civic employment commons.</p>
@@ -417,19 +475,36 @@ SITE_FOOTER_HTML = f'''<footer class="site-footer" role="contentinfo" aria-label
       </p>
     </section>
   </div>
+  <p class="site-footer-langswitch" aria-label="Choose language / Sprache w&auml;hlen">
+    <a href="?lang=en" lang="en" hreflang="en" aria-current="true">English</a>
+    <span aria-hidden="true"> &middot; </span>
+    <a href="?lang=de" lang="de" hreflang="de">Deutsch</a>
+  </p>
 </footer>
 '''.encode("utf-8")
 
 
-def _inject_html_footer(content: bytes) -> bytes:
-    """AUDIT-34: insert the site-wide footer before ``</body>`` if the
-    HTML response doesn't already have one. Idempotent: skips if the
-    page already carries ``class="site-footer"`` (defensive — no page
-    currently inlines it, but future hand-authored pages might).
+# Pre-compute both language variants once at module load — strings
+# don't change between requests, and pre-computing avoids any
+# format-string work per response.
+SITE_FOOTER_HTML_EN = _build_site_footer("en")
+SITE_FOOTER_HTML_DE = _build_site_footer("de")
+# Back-compat alias for code (and tests) that referenced the singular
+# constant name from the pre-GAP-1+2 implementation.
+SITE_FOOTER_HTML = SITE_FOOTER_HTML_EN
+
+
+def _inject_html_footer(content: bytes, lang: str = "en") -> bytes:
+    """AUDIT-34 + GAP-1+2: insert the site-wide footer before
+    ``</body>`` if the HTML response doesn't already have one.
+    Idempotent: skips if the page already carries
+    ``class="site-footer"``. The ``lang`` parameter picks the
+    pre-built EN or DE variant; unknown values fall back to EN.
     """
     if b'class="site-footer"' in content or b"</body>" not in content:
         return content
-    return content.replace(b"</body>", SITE_FOOTER_HTML + b"  </body>", 1)
+    footer = SITE_FOOTER_HTML_DE if lang == "de" else SITE_FOOTER_HTML_EN
+    return content.replace(b"</body>", footer + b"  </body>", 1)
 # Bool env-var parsing routes through env_compat.get_env_bool, which
 # accepts the permissive truthy set {"true", "1", "yes", "on"}
 # casefolded. Earlier these two vars used a strict `== "true"`
@@ -6773,6 +6848,68 @@ class Handler(BaseHTTPRequestHandler):
             return False
         return True
 
+    def _send_admin_forbidden_page(self) -> None:
+        """GAP-3 (2026-05-23): HTML 403 for non-admin users hitting
+        /admin. Same look-and-feel as the legal pages so the user
+        recognises it as part of the site, not a generic error."""
+        lang = self._resolve_user_language()
+        if lang == "de":
+            title = "Adminbereich &mdash; Helpmefindthejob"
+            heading = "Adminzugriff erforderlich"
+            lead = (
+                "Sie sind angemeldet, aber Ihr Konto ist kein "
+                "Administrator. Wenn Sie meinen, dies sei ein Fehler, "
+                "wenden Sie sich an einen Administrator Ihres Workspace."
+            )
+            back_label = "&larr; Zur&uuml;ck zur App"
+        else:
+            title = "Admin area &mdash; Helpmefindthejob"
+            heading = "Admin access required"
+            lead = (
+                "You're signed in, but your account isn't an "
+                "administrator. If you think this is a mistake, ask an "
+                "administrator of your workspace."
+            )
+            back_label = "&larr; Back to the app"
+        html_body = (
+            "<!doctype html>"
+            f'<html lang="{lang}">'
+            "<head>"
+            '<meta charset="utf-8">'
+            '<meta name="viewport" content="width=device-width, initial-scale=1">'
+            '<meta name="robots" content="noindex,nofollow">'
+            f"<title>{title}</title>"
+            '<link rel="icon" href="/favicon.ico" sizes="any">'
+            '<link rel="stylesheet" href="/styles.css">'
+            "</head>"
+            '<body class="legal-body">'
+            '<a class="skip-link" href="#mainContent">Skip to main content</a>'
+            '<main id="mainContent" class="legal-page">'
+            "<header>"
+            f'<a href="/" class="legal-back">{back_label}</a>'
+            f"<h1>{heading}</h1>"
+            "</header>"
+            "<section>"
+            f"<p>{lead}</p>"
+            "</section>"
+            "</main>"
+            "</body>"
+            "</html>"
+        )
+        encoded = html_body.encode("utf-8")
+        # Footer injection so this page also carries the site-wide
+        # footer (Apache 2.0 + Commons Conservancy + contact + lang
+        # switcher) — same surface area as every other static page.
+        encoded = _inject_html_footer(encoded, lang)
+        self.send_response(HTTPStatus.FORBIDDEN)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(encoded)))
+        # Per-request decision; never cache. Caddy / browsers must
+        # re-evaluate every time the user navigates here.
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        self.wfile.write(encoded)
+
     def do_GET(self) -> None:
         try:
             parsed = urlparse(self.path)
@@ -8322,6 +8459,19 @@ class Handler(BaseHTTPRequestHandler):
             if parsed.path == "/api/summary":
                 self.send_json({"summary": STATE.repository.watchlist_summary(user_id)})
                 return
+            # GAP-3 (2026-05-23): /admin must NOT leak the ~108 KB SPA
+            # shell to signed-in non-admin users. Pre-fix: anyone hitting
+            # /admin loaded the full SPA, then client-side isAdmin()
+            # bounced them to /jobs. Post-fix: server-side check —
+            # logged-in non-admin gets a small 403 HTML page; logged-out
+            # visitors still see the SPA shell (so they can sign in and
+            # land on the admin view via the AUDIT-27 state.view wiring
+            # if they happen to be admins).
+            if parsed.path == "/admin":
+                _admin_session = self.current_session()
+                if _admin_session is not None and not _admin_session.user.is_admin:
+                    self._send_admin_forbidden_page()
+                    return
             self.serve_static(parsed.path)
         except sqlite3.Error as error:
             # Phase 2 #78 Layer 2 — route DB errors through the
@@ -12089,6 +12239,9 @@ class Handler(BaseHTTPRequestHandler):
             "Disallow: /forgot-password",
             "Disallow: /admin",
             "Disallow: /r/",
+            # GAP-5 (2026-05-23): CSP violation collector — POST-only,
+            # but defence in depth.
+            "Disallow: /csp-report",
             "",
             f"Sitemap: {sitemap_url}",
             "",
@@ -12497,12 +12650,18 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_error_json(HTTPStatus.NOT_FOUND, "not_found", "File not found")
                 return
         content = candidate.read_bytes()
-        # AUDIT-34: inject the site-wide footer into HTML responses.
-        # Single source of truth in SITE_FOOTER_HTML; serve_static is
-        # the choke point for every static page (SPA shell + legal +
-        # auth-aux + help/status/changelog) so this catches them all.
+        # AUDIT-34 + GAP-1+2: inject the site-wide footer into HTML
+        # responses. Single source of truth in _build_site_footer();
+        # serve_static is the choke point for every static page (SPA
+        # shell + legal + auth-aux + help/status/changelog) so this
+        # catches them all. Language resolves via the existing
+        # _resolve_user_language helper (?lang= > cookie >
+        # Accept-Language > 'en') so the DE footer ships to DE
+        # visitors and the language switcher inside the footer is
+        # consistent with the surrounding page's localisation.
         if candidate.suffix.lower() == ".html":
-            content = _inject_html_footer(content)
+            footer_lang = self._resolve_user_language()
+            content = _inject_html_footer(content, footer_lang)
         self.send_response(HTTPStatus.OK)
         guessed = mimetypes.guess_type(candidate.name)[0]
         if guessed is None and candidate.suffix.lower() == ".webmanifest":

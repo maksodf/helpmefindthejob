@@ -622,6 +622,15 @@ async function initAcceptInvite() {
     target.textContent = "This invitation link is missing a token.";
     return;
   }
+  // GAP-4 (2026-05-23): the invitation token is one-time-use but
+  // leaving it in the URL bar means it ends up in browser history,
+  // in screen-share recordings, and in any Referer header sent to
+  // external resources loaded by this page. Replace the URL with
+  // the bare path NOW — we've already captured the token into a
+  // closure / form.dataset, so subsequent code paths don't need
+  // the query string. Use replaceState (not pushState) so the
+  // back button doesn't bring the token-carrying URL back.
+  history.replaceState({}, "", window.location.pathname);
   try {
     const payload = await api(`/api/auth/accept-invite/${encodeURIComponent(token)}`);
     target.textContent = `Invitation for ${payload.invitation.email} (${payload.invitation.role}). Expires ${new Date(payload.invitation.expiresAt).toLocaleString()}.`;
@@ -643,6 +652,11 @@ async function initResetPassword() {
     target.textContent = "This reset link is missing a token.";
     return;
   }
+  // GAP-4 (2026-05-23): scrub the token from window.location BEFORE
+  // making the API call. Browser history / screen-share recordings /
+  // Referer headers must not carry the secret. The token is already
+  // captured locally; the URL doesn't need to keep it.
+  history.replaceState({}, "", window.location.pathname);
   try {
     const payload = await api(`/api/auth/reset-password/${encodeURIComponent(token)}`);
     target.textContent = `Reset for ${payload.reset.email}. Link expires ${new Date(payload.reset.expiresAt).toLocaleString()}.`;

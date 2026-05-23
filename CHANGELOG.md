@@ -232,7 +232,145 @@ audit. Items below are commit-mapped to the working branch
   variables: `_ENV`, `_DATA_DIR`, `_HOST`, `_PORT`) — same migration
   schedule.
 
+### Security
+
+- **CSP report-collector RecursionError fix (GAP-8 hardening,
+  2026-05-23 self-audit)** — `json.loads` of a hand-crafted JSON
+  body nested ~1000 levels deep raised Python `RecursionError`
+  which the `_summarize_csp_report` helper didn't catch, bubbling
+  up to a 500. Now caught alongside `ValueError`/`TypeError` and
+  treated as a malformed body: silent drop, 204 ack, never crash
+  the request. Regression test in
+  `tests/test_audit_37_csp_reporting.py` constructs the payload
+  by string concatenation (bypassing Python's `json.dumps`
+  recursion limit), POSTs it, asserts the endpoint stays
+  responsive.
+
+- **One-time-use token stripped from URL after consumption
+  (GAP-4, 2026-05-23 self-audit)** — `initAcceptInvite()` and
+  `initResetPassword()` in `static/app.js` previously left
+  `?token=<secret>` in `window.location` after capturing the
+  value into `form.dataset`. The token then persisted in browser
+  history, screen-share recordings, and the Referer header of any
+  subresource the page loaded. Both functions now call
+  `history.replaceState({}, "", window.location.pathname)`
+  immediately after capturing the token, *before* the API call.
+  Regression guard in `tests/test_gap_4_token_history_strip.py`
+  parses the function body and asserts replaceState precedes any
+  `api(...)` call.
+
+- **Server-side 403 on /admin for non-admin users (GAP-3,
+  2026-05-23 self-audit)** — pre-fix, a signed-in non-admin
+  hitting /admin downloaded the full ~108 KB SPA shell before
+  the client-side `isAdmin()` check bounced them to /jobs.
+  Post-fix, the do_GET handler checks the session before falling
+  through to `serve_static`: logged-in non-admin gets a small
+  bilingual "Admin access required" HTML page with
+  `Cache-Control: no-store`; logged-out and logged-in admin paths
+  are unchanged. Regression guard in
+  `tests/test_gap_3_admin_server_side_403.py` walks the full
+  bootstrap-admin → admin-creates-member → member-login →
+  GET /admin flow and asserts a 403 with the expected page
+  content in both EN and DE.
+
+- **CSP log-injection sanitiser** — see Self-audit follow-up
+  commit `5e7ad5c`.
+
+- **TTDSG §25 referral-cookie removed (AUDIT-22)** — see Removed
+  section below.
+
 ### Added
+
+- **Bilingual site footer + language switcher (GAP-1 + GAP-2,
+  2026-05-23 self-audit)** — `SITE_FOOTER_HTML` was English-only
+  in the original AUDIT-34 ship, which gave DE visitors on
+  `/privacy.de` an English footer. Now there are EN and DE
+  pre-built footers (`SITE_FOOTER_HTML_EN`,
+  `SITE_FOOTER_HTML_DE`), and `_inject_html_footer(content, lang)`
+  picks the right one based on `_resolve_user_language()` —
+  ?lang= > lang cookie > Accept-Language > 'en'. Footer also
+  carries a new lang-switcher block at the bottom: two links
+  (`English` / `Deutsch`) with `aria-current="true"` on the
+  current language. CSS in `static/styles.css` under
+  `/* GAP-1+2 */`. Regression guard in
+  `tests/test_audit_34_site_footer.py` extends the existing
+  AUDIT-34 file with a new `SiteFooterBilingualAndLangSwitcher`
+  class (+5 tests): EN headings on EN page, DE headings on DE
+  page, ?lang= override beats Accept-Language, lang switcher
+  carries both hrefs + hreflang attributes, aria-current toggles
+  with the current language.
+
+- **Service-worker cache bumped to v0.21.0 (GAP-7,
+  2026-05-23 self-audit)** — `static/index.html` (template wrap),
+  `app.js` (materialisation IIFE), `styles.css` (footer CSS) all
+  changed in this session. Existing PWA users would otherwise
+  keep the stale v0.20.0 shell after deploy until they manually
+  cleared cache. Bumping `CACHE_VERSION` triggers the existing
+  `activate` handler's cleanup logic to drop old buckets. Three
+  new precache paths added: `/forgot-password.html`,
+  `/forgot-password.de.html`, `/forgot-password.js` — so the
+  AUDIT-26 page also works offline.
+
+- **Robots.txt `Disallow: /csp-report` (GAP-5, 2026-05-23
+  self-audit)** — POST-only endpoint, never crawled, but defence
+  in depth. Regression guard in
+  `tests/test_gap_5_6_robots_sitemap_alignment.py`.
+
+- **End-to-end session walkthrough test (GAP-9, 2026-05-23
+  self-audit)** — `tests/test_gap_9_session_e2e.py` boots one
+  server and walks every user-visible flow this session touched
+  in a single 17-stage test method: landing → forgot-password
+  page + submit → referral redirect (no cookie) → path-token
+  redirects → /admin SPA-shell while logged out → bootstrap
+  admin → create member → member login → /admin 403 → CSP report
+  POST → CSP/Report-To headers → footer on every page →
+  JSON-LD @id refs → robots/sitemap alignment → /api/version
+  buildSha → meta-description uniqueness. Catches interaction
+  regressions individual focused tests can't see.
+
+- **JSON-LD structural validation (GAP-10, 2026-05-23
+  self-audit)** — `tests/test_gap_10_jsonld_structural_validation.py`
+  (+11 tests) parses the JSON-LD from index.html and every legal
+  page and asserts: index has @context, has both canonical @ids,
+  Organization carries the required NGO fields (legalName,
+  address with all four sub-fields, contactPoint with valid
+  email format, foundingDate in ISO-8601, parentOrganization →
+  Commons Conservancy), SoftwareApplication carries Apache 2.0
+  license + softwareVersion, every legal page references the
+  canonical @ids by @id reference (not inline), every legal page
+  URL is absolute HTTPS pointing at the canonical host. The
+  cross-reference integrity test catches orphan @id references
+  (i.e., a legal page pointing at an @id that no longer exists
+  in index.html's @graph).
+
+- **Accessibility audit on new pages (GAP-11, 2026-05-23
+  self-audit)** — `tests/test_gap_11_accessibility_audit.py`
+  (+5 tests) runs the structural a11y checks that axe-core /
+  Lighthouse a11y check against the EN + DE forgot-password
+  pages, the live /forgot-password response, the injected
+  footer, and the /admin 403 page: single <h1>, html lang,
+  non-empty title, viewport meta, every input has a label or
+  aria-label, every required input also has aria-required="true",
+  skip-link present, no inline event handlers (CSP-compliant),
+  every anchor has href, footer carries role="contentinfo" +
+  aria-label, lang switcher marks current language with
+  aria-current.
+
+- **Lighthouse-equivalent programmatic checks (GAP-12,
+  2026-05-23 self-audit)** —
+  `tests/test_gap_12_lighthouse_equivalent_checks.py` (+8 tests)
+  enforces page-size budgets across every public surface
+  (`/` ≤ 130 KB, `/forgot-password` ≤ 8 KB, `/privacy` ≤ 25 KB,
+  etc.), no inline scripts in public HTML (CSP + Lighthouse flag
+  these as render-blocking), every `<script src>` carries
+  `defer`, no auto-fetched third-party resources outside the CSP
+  allowlist (`fonts.googleapis.com`, `fonts.gstatic.com`),
+  Cache-Control with max-age on robots/sitemap, Cache-Control
+  with no max-age on /api/version (per-request endpoint), full
+  security-header suite present (CSP, X-Content-Type-Options,
+  X-Frame-Options, Referrer-Policy, COOP, CORP,
+  Permissions-Policy, Report-To), Permissions-Policy locks down
+  geolocation / microphone / camera.
 
 - **Marketing-vs-app HTML split via `<template>` wrap (AUDIT-40)**
   — `static/index.html` was a single 1700-line file that mixed
