@@ -331,7 +331,7 @@ class SiteFooterBilingualAndLangSwitcher(unittest.TestCase):
     def test_en_footer_carries_english_section_headings(self) -> None:
         status, body = self._get("/", accept_language="en")
         self.assertEqual(status, 200)
-        for marker in (b">Contact</h3>", b">Legal</h3>", b">Project</h3>"):
+        for marker in (b">Contact</h2>", b">Legal</h2>", b">Project</h2>"):
             self.assertIn(
                 marker, body,
                 f"GAP-1: English footer must carry English heading {marker!r}",
@@ -340,7 +340,7 @@ class SiteFooterBilingualAndLangSwitcher(unittest.TestCase):
     def test_de_footer_carries_german_section_headings_when_accept_language_de(self) -> None:
         status, body = self._get("/", accept_language="de-DE,de;q=0.9")
         self.assertEqual(status, 200)
-        for marker in (b">Kontakt</h3>", b">Rechtliches</h3>", b">Projekt</h3>"):
+        for marker in (b">Kontakt</h2>", b">Rechtliches</h2>", b">Projekt</h2>"):
             self.assertIn(
                 marker, body,
                 f"GAP-1: DE footer must carry German heading {marker!r}",
@@ -349,17 +349,28 @@ class SiteFooterBilingualAndLangSwitcher(unittest.TestCase):
         self.assertIn(b">Datenschutz</a>", body)
         self.assertIn(b">Nutzungsbedingungen</a>", body)
         self.assertIn(b">Aufbewahrungsfristen</a>", body)
-        # English Project labels must NOT bleed into DE
-        self.assertNotIn(b">Contact</h3>", body)
-        self.assertNotIn(b">Legal</h3>", body)
-        self.assertNotIn(b">Project</h3>", body)
+        # English Project labels must NOT bleed into the FOOTER. We
+        # scope to the footer block because the SPA's settings view
+        # has an unrelated <h2>Legal</h2> heading in the appShell
+        # template that's also in body bytes.
+        footer_match = re.search(
+            rb'<footer[^>]*class="site-footer"[^>]*>(.*?)</footer>',
+            body, re.DOTALL,
+        )
+        self.assertIsNotNone(footer_match, "footer must be present")
+        footer_html = footer_match.group(1)
+        for english_heading in (b">Contact</h2>", b">Legal</h2>", b">Project</h2>"):
+            self.assertNotIn(
+                english_heading, footer_html,
+                f"DE footer must not contain {english_heading!r}",
+            )
 
     def test_de_footer_when_lang_query_de_overrides_accept_language(self) -> None:
         # ?lang=de should beat Accept-Language: en
         status, body = self._get("/?lang=de", accept_language="en-US")
         self.assertEqual(status, 200)
-        self.assertIn(b">Kontakt</h3>", body)
-        self.assertNotIn(b">Contact</h3>", body)
+        self.assertIn(b">Kontakt</h2>", body)
+        self.assertNotIn(b">Contact</h2>", body)
 
     def test_footer_carries_lang_switcher_with_both_languages(self) -> None:
         status, body = self._get("/", accept_language="en")

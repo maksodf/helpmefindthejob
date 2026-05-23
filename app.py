@@ -406,14 +406,14 @@ def _build_site_footer(lang: str) -> bytes:
       <p class="muted small">Programm von <a href="https://commonsconservancy.org" rel="external noopener">The Commons Conservancy</a>. Apache 2.0 + CLA.</p>
     </section>
     <section class="site-footer-col" aria-labelledby="siteFooterContact">
-      <h3 id="siteFooterContact">Kontakt</h3>
+      <h2 id="siteFooterContact" class="site-footer-heading">Kontakt</h2>
       <ul>
         <li><a href="mailto:support@helpmefindthejob.org">support@helpmefindthejob.org</a></li>
         <li><a href="mailto:security@helpmefindthejob.org">security@helpmefindthejob.org</a><br><span class="muted small"><a href="/.well-known/security.txt">security.txt</a> (RFC 9116)</span></li>
       </ul>
     </section>
     <section class="site-footer-col" aria-labelledby="siteFooterLegal">
-      <h3 id="siteFooterLegal">Rechtliches</h3>
+      <h2 id="siteFooterLegal" class="site-footer-heading">Rechtliches</h2>
       <ul>
         <li><a href="/impressum">Impressum</a></li>
         <li><a href="/privacy">Datenschutz</a></li>
@@ -422,7 +422,7 @@ def _build_site_footer(lang: str) -> bytes:
       </ul>
     </section>
     <section class="site-footer-col" aria-labelledby="siteFooterProject">
-      <h3 id="siteFooterProject">Projekt</h3>
+      <h2 id="siteFooterProject" class="site-footer-heading">Projekt</h2>
       <p class="site-footer-badges">
         <a class="site-footer-badge" href="https://github.com/maksodf/helpmefindthejob/blob/main/LICENSE" rel="license noopener">Apache 2.0</a>
         <a class="site-footer-badge" href="https://commonsconservancy.org" rel="external noopener">Commons Conservancy</a>
@@ -448,14 +448,14 @@ def _build_site_footer(lang: str) -> bytes:
       <p class="muted small">A Programme of <a href="https://commonsconservancy.org" rel="external noopener">The Commons Conservancy</a>. Apache 2.0 + CLA.</p>
     </section>
     <section class="site-footer-col" aria-labelledby="siteFooterContact">
-      <h3 id="siteFooterContact">Contact</h3>
+      <h2 id="siteFooterContact" class="site-footer-heading">Contact</h2>
       <ul>
         <li><a href="mailto:support@helpmefindthejob.org">support@helpmefindthejob.org</a></li>
         <li><a href="mailto:security@helpmefindthejob.org">security@helpmefindthejob.org</a><br><span class="muted small"><a href="/.well-known/security.txt">security.txt</a> (RFC 9116)</span></li>
       </ul>
     </section>
     <section class="site-footer-col" aria-labelledby="siteFooterLegal">
-      <h3 id="siteFooterLegal">Legal</h3>
+      <h2 id="siteFooterLegal" class="site-footer-heading">Legal</h2>
       <ul>
         <li><a href="/impressum">Impressum</a></li>
         <li><a href="/privacy">Privacy</a></li>
@@ -464,7 +464,7 @@ def _build_site_footer(lang: str) -> bytes:
       </ul>
     </section>
     <section class="site-footer-col" aria-labelledby="siteFooterProject">
-      <h3 id="siteFooterProject">Project</h3>
+      <h2 id="siteFooterProject" class="site-footer-heading">Project</h2>
       <p class="site-footer-badges">
         <a class="site-footer-badge" href="https://github.com/maksodf/helpmefindthejob/blob/main/LICENSE" rel="license noopener">Apache 2.0</a>
         <a class="site-footer-badge" href="https://commonsconservancy.org" rel="external noopener">Commons Conservancy</a>

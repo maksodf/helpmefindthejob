@@ -101,10 +101,16 @@
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
-    <a class="skip-link" href="#mainContent">Skip to main content</a>
-    <a class="skip-link" href="#primaryNav">Skip to navigation</a>
+    <!-- axe + Lighthouse fix (2026-05-23 browser audit): single
+         skip-link that targets a landmark visible from first paint.
+         The second "Skip to navigation" link targeted #primaryNav
+         inside the appShell <template> which is hidden for unauth
+         visitors → skip-link target not focusable → axe failed.
+         #authGate is now the default-visible main (the SPA's
+         renderAuth() hides it for authed users via showOnly()). -->
+    <a class="skip-link" href="#authGate">Skip to main content</a>
 
-    <main id="authGate" class="auth-gate" aria-labelledby="authGateHeading" hidden>
+    <main id="authGate" class="auth-gate" aria-labelledby="authGateHeading" tabindex="-1">
       <div class="auth-layout">
         <section class="auth-mission" aria-labelledby="missionHeading">
           <p class="auth-mission-tag" data-i18n="landing.tag">Open-source · Apache 2.0 · EU civic commons</p>

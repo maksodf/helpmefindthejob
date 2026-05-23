@@ -135,22 +135,22 @@ class SessionE2E(unittest.TestCase):
         self.assertIn(b'id="authGate"', body, "auth gate must be in live DOM")
         self.assertIn(b'class="site-footer"', body, "AUDIT-34: footer must be injected")
         # Default language is EN (no Accept-Language header in our probe)
-        self.assertIn(b">Contact</h3>", body, "EN footer for default request")
+        self.assertIn(b">Contact</h2>", body, "EN footer for default request")
 
         # ---------- Stage 2: switch to German ----------
         status, _h, body = self._request(
             "GET", "/", headers={"Accept-Language": "de-DE,de;q=0.9,en;q=0.5"}
         )
         self.assertEqual(status, 200)
-        self.assertIn(b">Kontakt</h3>", body, "GAP-1: DE Accept-Language → DE footer")
-        self.assertNotIn(b">Contact</h3>", body)
+        self.assertIn(b">Kontakt</h2>", body, "GAP-1: DE Accept-Language → DE footer")
+        self.assertNotIn(b">Contact</h2>", body)
 
         # ---------- Stage 3: ?lang= override ----------
         status, _h, body = self._request(
             "GET", "/?lang=de", headers={"Accept-Language": "en"}
         )
         self.assertEqual(status, 200)
-        self.assertIn(b">Kontakt</h3>", body, "?lang=de beats Accept-Language: en")
+        self.assertIn(b">Kontakt</h2>", body, "?lang=de beats Accept-Language: en")
 
         # ---------- Stage 4: forgot-password page ----------
         status, _h, body = self._request("GET", "/forgot-password")

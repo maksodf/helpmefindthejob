@@ -4061,7 +4061,11 @@ html[dir="rtl"] .funnel-stage { align-items: flex-end; }
   color: var(--text-muted, #888);
 }
 .language-switcher a {
-  color: var(--text-link, #7c5cff);
+  /* axe + Lighthouse fix (2026-05-23 browser audit): bumped from
+   * #7c5cff (3.95:1 contrast against the dark legal-body bg) to
+   * #a99fff (~6.8:1) so WCAG 1.4.3 AA passes. The brand-purple
+   * intent is preserved — just lighter. */
+  color: var(--text-link, #a99fff);
   text-decoration: none;
   padding: 2px 6px;
   border-radius: 4px;
@@ -4100,7 +4104,13 @@ html[dir="rtl"] .funnel-stage { align-items: flex-end; }
   margin: 0 auto;
 }
 
-.site-footer-col h3 {
+/* axe + Lighthouse fix (2026-05-23 browser audit): footer section
+ * headings are <h2> (not <h3>) so the heading-order rule passes —
+ * pages have <h1> then footer <h2>, no skipped level. The
+ * .site-footer-heading class keeps the visually-small uppercase
+ * styling regardless of underlying tag. */
+.site-footer-col h2,
+.site-footer-col .site-footer-heading {
   font-size: var(--text-xs, 12px);
   font-weight: 600;
   text-transform: uppercase;
@@ -4127,6 +4137,21 @@ html[dir="rtl"] .funnel-stage { align-items: flex-end; }
 .site-footer a:hover,
 .site-footer a:focus-visible {
   text-decoration: underline;
+}
+
+/* axe + Lighthouse fix (2026-05-23 browser audit): inline-in-text
+ * footer links must be distinguishable without color alone (WCAG
+ * 1.4.1). Underline the links inside flowing prose (the tagline
+ * "Programme of [Commons Conservancy]…" and the version line
+ * "v0.79.4 · build …"). Standalone block links (badges,
+ * lang-switcher, legal-link list items) keep no-underline because
+ * they're not embedded in surrounding text and are visually
+ * distinct as separate elements. */
+.site-footer-tagline a,
+.site-footer .muted a,
+.site-footer-version a {
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .site-footer-tagline {
