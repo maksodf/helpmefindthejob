@@ -72,7 +72,12 @@ _DESCRIPTION_RX = re.compile(
 # fit German translations (which tend to run ~25 % longer). Lower
 # bound of 30 keeps placeholders out.
 _MIN_DESCRIPTION_LEN = 30
-_MAX_DESCRIPTION_LEN = 220
+# Strict 160-char cap — Google truncates desktop SERP descriptions at
+# ~160 chars and mobile at ~120. Self-audit (2026-05-23) discovered
+# 5 descriptions exceeded this; the test was loosened to 220 to fit
+# German translations, but that allowed silent truncation. Tightened
+# to 160 so DE + EN both stay within the rendered window.
+_MAX_DESCRIPTION_LEN = 160
 
 
 def _extract_description(filename: str) -> str:

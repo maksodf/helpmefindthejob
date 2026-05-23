@@ -122,6 +122,38 @@ class CspReportSummariser(unittest.TestCase):
         from app import _summarize_csp_report
         self.assertIsNone(_summarize_csp_report(b'{"unrelated": "payload"}'))
 
+    def test_log_injection_via_newlines_neutralised(self) -> None:
+        """A hostile client controls the blocked-uri / document-uri
+        / directive fields. Newlines (or other control chars) in
+        those fields must be stripped before the summary hits the
+        logger; otherwise an attacker can craft a body that emits
+        fake log lines like ``\\n[ERROR] Database breach detected``
+        and fool downstream log monitoring."""
+        from app import _summarize_csp_report
+        hostile = json.dumps({
+            "csp-report": {
+                "effective-directive": "script-src",
+                "blocked-uri": "evil\n[CRITICAL] FAKE LOG INJECTION\nfollow-on",
+                "document-uri": "https://x/page\r\nfake-line",
+                "violated-directive": "with\ttab",
+            }
+        }).encode("utf-8")
+        summary = _summarize_csp_report(hostile)
+        self.assertIsNotNone(summary)
+        # No literal newline / carriage return / tab survives into
+        # the summary string.
+        for ctrl in ("\n", "\r", "\t"):
+            self.assertNotIn(
+                ctrl, summary,
+                f"AUDIT-37 hardening regression: control char {ctrl!r} "
+                f"survived sanitisation. Full summary: {summary!r}",
+            )
+        # The literal "FAKE LOG INJECTION" substring is fine on a
+        # single line — what we forbid is the line break that would
+        # have made it look like a standalone log entry. Verify the
+        # whole summary is one line.
+        self.assertEqual(summary.count("\n"), 0)
+
 
 class CspReportSlotRateLimit(unittest.TestCase):
     """Direct tests for the State.claim_csp_report_slot rate limiter."""

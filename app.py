@@ -294,6 +294,23 @@ def _resolve_build_sha() -> str:
 BUILD_SHA = _resolve_build_sha()
 
 
+_LOG_CTRL_CHARS = {ord(c): " " for c in "\n\r\t\x00\x0b\x0c"}
+
+
+def _sanitize_for_log(value) -> str:
+    """AUDIT-37 hardening: strip control chars that could be used to
+    inject fake log lines via attacker-controlled report fields.
+
+    Replaces \\n / \\r / \\t / NUL / vertical-tab / form-feed with a
+    plain space. Returns the literal string ``"unknown"`` when value
+    is falsy so the caller never has to write ``str(... or "unknown")``.
+    """
+    if not value:
+        return "unknown"
+    text = str(value)
+    return text.translate(_LOG_CTRL_CHARS)
+
+
 def _summarize_csp_report(body: bytes) -> str | None:
     """AUDIT-37: extract a compact, PII-safe summary from a CSP violation
     report body. Returns ``None`` if the body isn't JSON we can parse.
@@ -342,11 +359,17 @@ def _summarize_csp_report(body: bytes) -> str | None:
             # fields; refuse to log noise (and refuse to give an
             # attacker a free ride on our logger).
             continue
+        # CRITICAL: a hostile client controls the blocked-uri /
+        # document-uri / directive fields. Strip newlines and other
+        # control characters before they hit the logger, otherwise
+        # an attacker can craft a body that injects fake log lines
+        # ("\n[ERROR] Database breach") and fool downstream log
+        # monitoring.
         summaries.append(
             "directive={d} blocked={b} doc={u}".format(
-                d=str(directive or "unknown")[:64],
-                b=str(blocked or "unknown")[:128],
-                u=str(doc or "unknown")[:128],
+                d=_sanitize_for_log(directive)[:64],
+                b=_sanitize_for_log(blocked)[:128],
+                u=_sanitize_for_log(doc)[:128],
             )
         )
     if not summaries:
@@ -362,7 +385,7 @@ def _summarize_csp_report(body: bytes) -> str | None:
 # parent-org badge, app version, build SHA.
 SITE_FOOTER_HTML = f'''<footer class="site-footer" role="contentinfo" aria-label="Site footer">
   <div class="site-footer-grid">
-    <section class="site-footer-col site-footer-about">
+    <section class="site-footer-col">
       <p class="site-footer-tagline"><strong>Helpmefindthejob</strong> &mdash; open-source EU civic employment commons.</p>
       <p class="muted small">A Programme of <a href="https://commonsconservancy.org" rel="external noopener">The Commons Conservancy</a>. Apache 2.0 + CLA.</p>
     </section>
