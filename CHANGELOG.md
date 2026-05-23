@@ -234,6 +234,30 @@ audit. Items below are commit-mapped to the working branch
 
 ### Added
 
+- **CSP violation reporting (AUDIT-37)** — the project shipped a
+  strict CSP for months with no way to learn when it fired in the
+  wild. A violation in a user's browser was silently dropped, making
+  every CSP tightening a blind change. AUDIT-37 closes the loop:
+  the main CSP header now carries `report-uri /csp-report` (legacy,
+  universal browser support) and `report-to csp-endpoint` (modern
+  Reporting API); a `Report-To` header registers the named group;
+  a new `POST /csp-report` collector accepts both the legacy
+  `application/csp-report` and the modern `application/reports+json`
+  body shapes, emits a PII-safe summary (effective-directive +
+  blocked-uri + document-uri; never User-Agent / Cookie / client IP)
+  via the stdlib `logging` module at WARNING level, and always
+  returns `204 No Content` so the endpoint can't be used as an
+  oracle. Per-IP rate limit (50 / minute) and 16 KB body cap
+  prevent log flooding from misbehaving extensions or hostile
+  clients. Regression guard in
+  `tests/test_audit_37_csp_reporting.py` (+13): summariser unit
+  tests (legacy + Reporting API parsing, User-Agent PII omission,
+  no-CSP-fields no-op, unparseable-body None), direct rate-limit
+  test (51st claim returns False), and end-to-end live probes
+  (CSP header carries both directives, Report-To group registered,
+  POST returns 204 on both body shapes, invalid body still 204,
+  oversize body 413).
+
 - **Site-wide footer (AUDIT-34)** — `Handler.serve_static` now
   injects a single source-of-truth footer (`app.SITE_FOOTER_HTML`)
   into every HTML response that doesn't already carry one.

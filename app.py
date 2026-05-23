@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import logging
 import mimetypes
 import os
 import re
@@ -164,6 +165,8 @@ from company_discovery.tokens import TokenStore
 from company_discovery.watchlist_templates import get_template, list_templates
 
 ROOT = Path(__file__).parent
+_log = logging.getLogger(__name__)
+
 STATIC_ROOT = ROOT / "static"
 DATA_ROOT = Path(
     get_env("HELPMEFINDTHEJOB_DATA_DIR", str(ROOT / "data"))
@@ -179,6 +182,13 @@ SCHEDULER_PATH = DATA_ROOT / "scheduler.sqlite3"
 EMAIL_OUTBOX_PATH = DATA_ROOT / "email_outbox.log"
 PASSWORD_RESET_REQUEST_LIMIT = 5  # per-IP per 10 minutes
 PASSWORD_RESET_REQUEST_WINDOW = 600
+# AUDIT-37: CSP violation reports. Browsers can flood the endpoint if
+# a misbehaving extension keeps tripping the policy; the rate limit
+# keeps logs survivable. 50/min/IP is generous for legitimate use
+# (typical browser sends 1-3 reports per affected page load).
+CSP_REPORT_LIMIT = 50
+CSP_REPORT_WINDOW = 60
+CSP_REPORT_MAX_BYTES = 16 * 1024  # bytes — Reporting API bursts can be larger but truncate them anyway
 # Per-IP per 10 minutes. Set HELPMEFINDTHEJOB_REGISTER_LIMIT in dev / test
 # environments to relax the cap (e.g. red-team agents that need to
 # register 7+ throwaway accounts in quick succession). Production
@@ -282,6 +292,66 @@ def _resolve_build_sha() -> str:
 
 
 BUILD_SHA = _resolve_build_sha()
+
+
+def _summarize_csp_report(body: bytes) -> str | None:
+    """AUDIT-37: extract a compact, PII-safe summary from a CSP violation
+    report body. Returns ``None`` if the body isn't JSON we can parse.
+
+    The summary deliberately omits User-Agent, Cookie, client IP, and
+    anything else that could re-identify the reporter. It keeps only:
+    the violated directive (so operators can see which CSP clause
+    fired), the blocked URL (so they can decide whether to allow-list
+    it), and the document URL (which is already public since it's the
+    page the user was viewing).
+
+    Handles both shapes:
+      * legacy ``application/csp-report``  → ``{"csp-report": {...}}``
+      * Reporting API ``application/reports+json`` → ``[{"type":"csp-violation","body":{...}}, ...]``
+    """
+    try:
+        decoded = body.decode("utf-8")
+    except UnicodeDecodeError:
+        return None
+    try:
+        data = json.loads(decoded)
+    except (ValueError, TypeError):
+        return None
+    reports = data if isinstance(data, list) else [data]
+    summaries: list[str] = []
+    for report in reports:
+        if not isinstance(report, dict):
+            continue
+        body_data = report.get("csp-report") or report.get("body") or report
+        if not isinstance(body_data, dict):
+            continue
+        directive = (
+            body_data.get("effective-directive")
+            or body_data.get("effectiveDirective")
+            or body_data.get("violated-directive")
+            or body_data.get("violatedDirective")
+        )
+        blocked = (
+            body_data.get("blocked-uri")
+            or body_data.get("blockedURL")
+            or body_data.get("blockedUri")
+        )
+        doc = body_data.get("document-uri") or body_data.get("documentURL")
+        if not directive and not blocked and not doc:
+            # Body parsed as JSON but carried none of the CSP-shaped
+            # fields; refuse to log noise (and refuse to give an
+            # attacker a free ride on our logger).
+            continue
+        summaries.append(
+            "directive={d} blocked={b} doc={u}".format(
+                d=str(directive or "unknown")[:64],
+                b=str(blocked or "unknown")[:128],
+                u=str(doc or "unknown")[:128],
+            )
+        )
+    if not summaries:
+        return None
+    return "; ".join(summaries[:5])  # cap to 5 reports per body to keep logs survivable
 
 
 # AUDIT-34: site-wide footer. Injected server-side into any HTML
@@ -698,6 +768,11 @@ class AppState:
         self._reset_requests: dict[str, list[float]] = {}
         self._register_request_lock = Lock()
         self._register_requests: dict[str, list[float]] = {}
+        # AUDIT-37: per-IP rate-limit for CSP violation reports posted
+        # to /csp-report. Bucket dict + lock, same shape as the
+        # password-reset rate limiter.
+        self._csp_report_lock = Lock()
+        self._csp_requests: dict[str, list[float]] = {}
         self._demo_seed_lock = Lock()
         self.ai_providers = self._load_ai_providers()
         self.token_store = TokenStore(self.token_path, SECRET_KEY)
@@ -3110,6 +3185,30 @@ class AppState:
                 return False
             attempts.append(now)
             self._reset_requests[client_id] = attempts
+            return True
+
+    def claim_csp_report_slot(self, client_id: str) -> bool:
+        """AUDIT-37: atomic check-and-claim for CSP report submissions.
+
+        Same shape as :meth:`claim_password_reset_slot`. The window
+        defaults to 60s and the per-IP cap to 50 reports — generous
+        enough for a legitimate browser (a single page-load with a
+        broken script-src directive typically triggers 1-3 reports)
+        but tight enough that a misbehaving extension or a hostile
+        client can't flood operator logs."""
+
+        now = time.time()
+        with self._csp_report_lock:
+            attempts = [
+                t
+                for t in self._csp_requests.get(client_id, [])
+                if now - t < CSP_REPORT_WINDOW
+            ]
+            if len(attempts) >= CSP_REPORT_LIMIT:
+                self._csp_requests[client_id] = attempts
+                return False
+            attempts.append(now)
+            self._csp_requests[client_id] = attempts
             return True
 
     def claim_register_slot(self, client_id: str) -> bool:
@@ -6605,7 +6704,23 @@ class Handler(BaseHTTPRequestHandler):
             "img-src 'self' data:; "
             "connect-src 'self'; "
             "base-uri 'none'; "
-            "frame-ancestors 'none'",
+            "frame-ancestors 'none'; "
+            # AUDIT-37: violation reports. report-uri is the legacy
+            # directive (still supported by every major browser);
+            # report-to is the modern Reporting API hook, where the
+            # group name matches the Report-To header below.
+            "report-uri /csp-report; "
+            "report-to csp-endpoint",
+        )
+        # AUDIT-37: Reporting API endpoint configuration. The Report-To
+        # header registers the named group ("csp-endpoint") that the
+        # CSP report-to directive references. max_age is 126 days
+        # (the Chromium default cap); reports beyond that are dropped
+        # client-side until the policy is re-seen.
+        self.send_header(
+            "Report-To",
+            '{"group":"csp-endpoint","max_age":10886400,'
+            '"endpoints":[{"url":"/csp-report"}]}',
         )
         super().end_headers()
 
@@ -8241,6 +8356,39 @@ class Handler(BaseHTTPRequestHandler):
         try:
             parsed = urlparse(self.path)
             parts = [unquote(part) for part in parsed.path.strip("/").split("/") if part]
+
+            # AUDIT-37: CSP violation reports land here. Browsers POST
+            # automatically without CSRF tokens (the report is initiated
+            # by the rendering engine, not page JS), so this endpoint
+            # must NOT require CSRF. Runs before json.loads of the
+            # request body so we can rate-limit on size before parsing.
+            if parsed.path == "/csp-report":
+                client_id = self.client_address[0] if self.client_address else "unknown"
+                if not STATE.claim_csp_report_slot(client_id):
+                    self.send_response(HTTPStatus.TOO_MANY_REQUESTS)
+                    self.send_header("Content-Length", "0")
+                    self.end_headers()
+                    return
+                try:
+                    raw_len = int(self.headers.get("Content-Length", "0") or "0")
+                except ValueError:
+                    raw_len = 0
+                if raw_len > CSP_REPORT_MAX_BYTES:
+                    self.send_response(HTTPStatus.REQUEST_ENTITY_TOO_LARGE)
+                    self.send_header("Content-Length", "0")
+                    self.end_headers()
+                    return
+                if raw_len > 0:
+                    body = self.rfile.read(raw_len)
+                    summary = _summarize_csp_report(body)
+                    if summary:
+                        _log.warning("CSP violation report: %s", summary)
+                # Spec: respond 204 No Content regardless of whether
+                # the body was parseable. Browsers won't retry.
+                self.send_response(HTTPStatus.NO_CONTENT)
+                self.send_header("Content-Length", "0")
+                self.end_headers()
+                return
 
             # Stripe webhook needs raw bytes for signature verification, so it
             # must run before we json.loads the body.
