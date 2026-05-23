@@ -234,6 +234,45 @@ audit. Items below are commit-mapped to the working branch
 
 ### Added
 
+- **Per-page meta-description regression guard (AUDIT-47)** —
+  prior audit cycles authored distinct `<meta name="description">`
+  strings per public page. Without a guard the next templating
+  pass could quietly re-introduce the duplicate that triggered the
+  original audit (Google deduplicates SERP results by description,
+  so identical strings collapse multiple pages into one snippet).
+  New guard in `tests/test_audit_47_meta_description_uniqueness.py`
+  (+3): every public page (index, four legal × 2 languages, help,
+  status, changelog, forgot-password × 2 languages = 14 surfaces)
+  carries a description that is (a) present and non-empty, (b)
+  within the 30-220 char band Google renders (220 leaves room for
+  German translations, which run ~25 % longer than English), (c)
+  carries the "Helpmefindthejob" brand, and (d) is globally
+  unique across the public surface.
+
+### Changed
+
+- **JSON-LD `WebSite` / `Organization` centralisation (AUDIT-46)**
+  — every legal page (privacy / terms / data-retention /
+  impressum, EN + DE = 8 files) previously inlined a degraded
+  `WebSite` definition inside `WebPage.isPartOf` and omitted any
+  `publisher` field. Search engines saw two different `WebSite`
+  entities for the same site (the canonical full-definition one
+  on `/`, plus a name+url-only shadow on each legal page) and
+  couldn't link policy pages to the canonical Organization. Both
+  fields now reference the canonical `@id`s declared in the
+  `index.html` `@graph` block:
+  `{"@id": "https://helpmefindthejob.org/#website"}` for
+  `isPartOf` and `{"@id": "https://helpmefindthejob.org/#organization"}`
+  for `publisher`. Regression guard in
+  `tests/test_audit_46_jsonld_centralisation.py` (+5):
+  index.html carries both canonical `@id`s in its `@graph`, every
+  legal page references both by `@id` (no inline `@type`/`name`/
+  `url` duplication), and a textual tripwire forbids the inline
+  `"@type": "WebSite"` / `"@type": "Organization"` patterns from
+  ever reappearing in a legal-page source.
+
+### Added
+
 - **CSP violation reporting (AUDIT-37)** — the project shipped a
   strict CSP for months with no way to learn when it fired in the
   wild. A violation in a user's browser was silently dropped, making
