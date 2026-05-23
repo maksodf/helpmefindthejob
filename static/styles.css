@@ -4397,11 +4397,14 @@ html[dir="rtl"] .funnel-stage { align-items: flex-end; }
   color: var(--text-muted, #888);
 }
 .language-switcher a {
-  /* axe + Lighthouse fix (2026-05-23 browser audit): bumped from
-   * #7c5cff (3.95:1 contrast against the dark legal-body bg) to
-   * #a99fff (~6.8:1) so WCAG 1.4.3 AA passes. The brand-purple
-   * intent is preserved — just lighter. */
-  color: var(--text-link, #a99fff);
+  /* 2026-05-23 (UX-F1 follow-up): use the canonical design tokens
+   * (--accent-text for inactive link, --text for active). Pre-fix
+   * the fallback chain referenced --text-link and --text-default
+   * which DON'T EXIST in the design system, so the literal fallback
+   * colors (#a99fff, #e8e8ee) leaked through — near-white text on
+   * the white light-mode surface rendered the active language
+   * completely invisible. */
+  color: var(--accent-text);
   text-decoration: none;
   padding: 2px 6px;
   border-radius: 4px;
@@ -4410,9 +4413,9 @@ html[dir="rtl"] .funnel-stage { align-items: flex-end; }
   text-decoration: underline;
 }
 .language-switcher a[aria-current="true"] {
-  color: var(--text-default, #e8e8ee);
+  color: var(--text);
   font-weight: 600;
-  background: rgba(124, 92, 255, 0.12);
+  background: var(--accent-2-weak);
 }
 
 /* ---------- /status page status-grid (2026-05-23 CSP-extraction)
@@ -5081,8 +5084,12 @@ html[lang="de"] .api-docs-de-note { display: block; }
 }
 
 .site-footer-langswitch a[aria-current="true"] {
-  color: var(--text-muted, #9ea4b5);
-  background: rgba(255, 255, 255, 0.04);
+  /* 2026-05-23 (UX-F1 follow-up): switched background from a hard-
+   * coded white-overlay (worked dark-mode-only) to --surface-2 so
+   * the "current" pill stays visible in both themes. */
+  color: var(--text);
+  font-weight: 600;
+  background: var(--surface-2);
   cursor: default;
 }
 
