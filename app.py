@@ -7398,10 +7398,7 @@ class Handler(BaseHTTPRequestHandler):
         if lang == "de":
             title = "Seite nicht gefunden &mdash; Helpmefindthejob"
             heading = "Diese Seite gibt es nicht"
-            lead = (
-                "Die von Ihnen aufgerufene Adresse existiert nicht (mehr). "
-                "Vielleicht hilft eine dieser Seiten weiter:"
-            )
+            lead = "Vielleicht hilft eine dieser Seiten weiter:"
             back_label = "&larr; Zur&uuml;ck zur Startseite"
             links = [
                 ("/", "Startseite"),
@@ -7412,10 +7409,7 @@ class Handler(BaseHTTPRequestHandler):
         else:
             title = "Page not found &mdash; Helpmefindthejob"
             heading = "This page doesn&rsquo;t exist"
-            lead = (
-                "The URL you visited doesn&rsquo;t exist (any more). One of "
-                "these might help:"
-            )
+            lead = "Try one of these instead:"
             back_label = "&larr; Back to the home page"
             links = [
                 ("/", "Home"),
