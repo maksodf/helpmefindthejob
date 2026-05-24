@@ -127,15 +127,7 @@ def build_transport(
     smtp_password: str | None = None,
     smtp_starttls: bool | None = None,
 ) -> EmailTransport:
-    backend = (
-        (
-            backend
-            or get_env("HELPMEFINDTHEJOB_EMAIL_BACKEND")
-            or "console"
-        )
-        .strip()
-        .casefold()
-    )
+    backend = (backend or get_env("HELPMEFINDTHEJOB_EMAIL_BACKEND") or "console").strip().casefold()
     if backend == "smtp":
         host = smtp_host or get_env("HELPMEFINDTHEJOB_SMTP_HOST", "")
         port = smtp_port or int(get_env("HELPMEFINDTHEJOB_SMTP_PORT", "587"))
@@ -152,10 +144,7 @@ def build_transport(
         use_tls = (
             smtp_starttls
             if smtp_starttls is not None
-            else get_env("HELPMEFINDTHEJOB_SMTP_STARTTLS", "true")
-            .strip()
-            .casefold()
-            == "true"
+            else get_env("HELPMEFINDTHEJOB_SMTP_STARTTLS", "true").strip().casefold() == "true"
         )
         return SmtpTransport(
             host=host, port=port, username=username, password=password, use_tls=use_tls
@@ -164,7 +153,4 @@ def build_transport(
 
 
 def email_from_address() -> str:
-    return (
-        get_env("HELPMEFINDTHEJOB_EMAIL_FROM")
-        or "helpmefindthejob@localhost"
-    )
+    return get_env("HELPMEFINDTHEJOB_EMAIL_FROM") or "helpmefindthejob@localhost"

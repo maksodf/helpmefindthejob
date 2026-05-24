@@ -53,7 +53,6 @@ from company_discovery.sso_oidc import (
     validate_id_token,
 )
 
-
 # -------------------------------------------------------------------------
 # PKCE
 # -------------------------------------------------------------------------
@@ -70,9 +69,11 @@ class PkceGeneration(unittest.TestCase):
 
     def test_challenge_is_sha256_of_verifier(self):
         verifier, challenge = generate_pkce()
-        expected = base64.urlsafe_b64encode(
-            hashlib.sha256(verifier.encode("ascii")).digest()
-        ).rstrip(b"=").decode("ascii")
+        expected = (
+            base64.urlsafe_b64encode(hashlib.sha256(verifier.encode("ascii")).digest())
+            .rstrip(b"=")
+            .decode("ascii")
+        )
         self.assertEqual(challenge, expected)
 
     def test_verifier_only_url_safe_chars(self):
@@ -119,9 +120,7 @@ class AuthorizationUrlBuilder(unittest.TestCase):
         self.assertEqual(params["nonce"], ["nonce-xyz"])
         self.assertEqual(params["code_challenge"], ["challenge-123"])
         self.assertEqual(params["code_challenge_method"], ["S256"])
-        self.assertEqual(
-            params["redirect_uri"], ["https://app.example.com/sso/callback"]
-        )
+        self.assertEqual(params["redirect_uri"], ["https://app.example.com/sso/callback"])
 
     def test_default_scope_includes_openid_email_profile(self):
         url = build_authorization_url(
@@ -238,7 +237,9 @@ class DiscoveryParsing(unittest.TestCase):
             def __enter__(self):
                 from io import BytesIO
 
-                return BytesIO(b'{"issuer":"x","authorization_endpoint":"y","token_endpoint":"z","jwks_uri":"j"}')
+                return BytesIO(
+                    b'{"issuer":"x","authorization_endpoint":"y","token_endpoint":"z","jwks_uri":"j"}'
+                )
 
             def __exit__(self, *args):
                 pass
@@ -247,9 +248,7 @@ class DiscoveryParsing(unittest.TestCase):
             captured.append(req.full_url)
             return _Ctx()
 
-        with patch(
-            "company_discovery.sso_oidc.urllib.request.urlopen", side_effect=fake_urlopen
-        ):
+        with patch("company_discovery.sso_oidc.urllib.request.urlopen", side_effect=fake_urlopen):
             discover("https://idp.example.com/")  # trailing slash
         self.assertEqual(
             captured[0],
@@ -360,7 +359,8 @@ class EmailDomainRouting(unittest.TestCase):
         # should not match anything
         for email in ("a@hospital.de", "b@ngo.org", "c@anywhere.com"):
             p = route_by_email_domain(
-                [self.providers[2]], email  # only the no-domain provider
+                [self.providers[2]],
+                email,  # only the no-domain provider
             )
             self.assertIsNone(p)
 
@@ -556,9 +556,7 @@ class JitProvisioning(unittest.TestCase):
 
     def test_email_match_links_existing_local_user(self):
         # Existing password-only user
-        existing = self.store.create_user(
-            "bob@hospital.de", "long-password-1234"
-        )
+        existing = self.store.create_user("bob@hospital.de", "long-password-1234")
         # First SSO login with a different subject but matching email
         linked = self.store.find_or_create_sso_user(
             provider_id="azure",
@@ -629,7 +627,6 @@ class TokenExchangeErrors(unittest.TestCase):
 
     def test_http_error_maps_to_token_error(self):
         from io import BytesIO
-
         from urllib.error import HTTPError
 
         err = HTTPError(
@@ -639,9 +636,7 @@ class TokenExchangeErrors(unittest.TestCase):
             hdrs={},
             fp=BytesIO(b'{"error":"invalid_grant"}'),
         )
-        with patch(
-            "company_discovery.sso_oidc.urllib.request.urlopen", side_effect=err
-        ):
+        with patch("company_discovery.sso_oidc.urllib.request.urlopen", side_effect=err):
             with self.assertRaises(OidcTokenError) as cm:
                 exchange_code_for_tokens(
                     self.provider,
@@ -665,9 +660,7 @@ class TokenExchangeErrors(unittest.TestCase):
             def __exit__(self, *args):
                 pass
 
-        with patch(
-            "company_discovery.sso_oidc.urllib.request.urlopen", return_value=_Ctx()
-        ):
+        with patch("company_discovery.sso_oidc.urllib.request.urlopen", return_value=_Ctx()):
             with self.assertRaises(OidcTokenError) as cm:
                 exchange_code_for_tokens(
                     self.provider,
@@ -717,11 +710,7 @@ class SignedCookieRoundtrip(unittest.TestCase):
         payload = json.loads(body)
         payload["nonce"] = "TAMPERED"
         new_body = json.dumps(payload, sort_keys=True).encode()
-        tampered = (
-            base64.urlsafe_b64encode(new_body).rstrip(b"=").decode("ascii")
-            + "."
-            + sig_b64
-        )
+        tampered = base64.urlsafe_b64encode(new_body).rstrip(b"=").decode("ascii") + "." + sig_b64
         with self.assertRaises(OidcStateMismatchError) as cm:
             self.verify(tampered, secret_key=self.secret)
         self.assertIn("hmac_mismatch", str(cm.exception))
@@ -752,9 +741,9 @@ class HttpRoutesPresence(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.src = Path(
-            str(Path(__file__).resolve().parent.parent / "app.py")
-        ).read_text(encoding="utf-8")
+        cls.src = Path(str(Path(__file__).resolve().parent.parent / "app.py")).read_text(
+            encoding="utf-8"
+        )
 
     def test_providers_route_present(self):
         self.assertIn('"/api/auth/sso/oidc/providers"', self.src)

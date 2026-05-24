@@ -52,7 +52,6 @@ def _free_port() -> int:
 
 
 class GlobalSiteHeader(unittest.TestCase):
-
     @classmethod
     def setUpClass(cls) -> None:
         cls._tmp = TemporaryDirectory()
@@ -134,7 +133,8 @@ class GlobalSiteHeader(unittest.TestCase):
             with self.subTest(path=path):
                 _status, body = self._get(path)
                 self.assertIn(
-                    'class="site-header"', body,
+                    'class="site-header"',
+                    body,
                     f"UX-G1 regression: {path} is missing the global "
                     "site-header. _inject_html_header wasn't called or "
                     "the path-based exclusion is too broad.",
@@ -144,7 +144,8 @@ class GlobalSiteHeader(unittest.TestCase):
         status, body = self._get("/this-url-definitely-does-not-exist")
         self.assertEqual(status, 404)
         self.assertIn(
-            'class="site-header"', body,
+            'class="site-header"',
+            body,
             "UX-G1 regression: 404 page missing global header. "
             "_send_html_404 must call _inject_html_header.",
         )
@@ -155,7 +156,8 @@ class GlobalSiteHeader(unittest.TestCase):
 
         _status, body = self._get("/")
         self.assertNotIn(
-            'class="site-header"', body,
+            'class="site-header"',
+            body,
             "UX-G1 regression: SPA shell (/) is now getting the global "
             "header injected. The SPA has its own .topbar; this would "
             "create a duplicate nav. The serve_static path-based check "
@@ -165,9 +167,9 @@ class GlobalSiteHeader(unittest.TestCase):
     def test_spa_admin_route_does_not_get_global_header(self) -> None:
         _status, body = self._get("/admin")
         self.assertNotIn(
-            'class="site-header"', body,
-            "UX-G1 regression: /admin (SPA route) is now getting the "
-            "global header injected.",
+            'class="site-header"',
+            body,
+            "UX-G1 regression: /admin (SPA route) is now getting the global header injected.",
         )
 
     def test_header_carries_primary_nav_in_english(self) -> None:
@@ -175,9 +177,9 @@ class GlobalSiteHeader(unittest.TestCase):
         for label in ("Help", "Status", "API", "Changelog"):
             with self.subTest(label=label):
                 self.assertIn(
-                    f">{label}<", body,
-                    f"UX-G1 regression: EN nav label '{label}' missing "
-                    "from the header on /help.",
+                    f">{label}<",
+                    body,
+                    f"UX-G1 regression: EN nav label '{label}' missing from the header on /help.",
                 )
 
     def test_header_translates_nav_in_de(self) -> None:
@@ -188,14 +190,15 @@ class GlobalSiteHeader(unittest.TestCase):
         # Hilfe and Änderungen are the DE-specific labels — Status
         # and API stay the same string in both bundles.
         self.assertIn(
-            ">Hilfe<", body,
+            ">Hilfe<",
+            body,
             "UX-G1 regression: DE nav label 'Hilfe' missing on "
             "/help?lang=de. _build_site_header(lang='de') broken.",
         )
         self.assertIn(
-            ">Änderungen<", body,
-            "UX-G1 regression: DE nav label 'Änderungen' missing on "
-            "/help?lang=de.",
+            ">Änderungen<",
+            body,
+            "UX-G1 regression: DE nav label 'Änderungen' missing on /help?lang=de.",
         )
 
     def test_g2_language_switcher_in_header_not_only_footer(self) -> None:
@@ -203,7 +206,8 @@ class GlobalSiteHeader(unittest.TestCase):
         # UX-G2: language switcher must live in the header too, not
         # only in the footer. Probe by class name.
         self.assertIn(
-            'class="site-header-langswitch"', body,
+            'class="site-header-langswitch"',
+            body,
             "UX-G2 regression: site-header-langswitch missing — the "
             "language switcher only lives in the footer again.",
         )
@@ -211,7 +215,8 @@ class GlobalSiteHeader(unittest.TestCase):
     def test_brand_mark_is_link_to_home(self) -> None:
         _status, body = self._get("/help")
         self.assertIn(
-            'class="site-header-brand" href="/"', body,
+            'class="site-header-brand" href="/"',
+            body,
             "UX-G1 regression: brand mark missing or doesn't link "
             "to /. Brand must be the canonical home affordance.",
         )
@@ -221,7 +226,8 @@ class GlobalSiteHeader(unittest.TestCase):
         # Two occurrences would mean double-injection. We expect
         # exactly one site-header.
         self.assertEqual(
-            body.count('class="site-header"'), 1,
+            body.count('class="site-header"'),
+            1,
             "UX-G1 regression: site-header injected more than once. "
             "_inject_html_header idempotency check broken.",
         )

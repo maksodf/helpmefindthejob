@@ -27,7 +27,6 @@ from company_discovery.cv_photo import (
     normalise_photo_upload,
 )
 
-
 # Minimal valid 1x1 PNG (no metadata to begin with)
 _PNG_1x1 = bytes.fromhex(
     "89504e470d0a1a0a"  # PNG signature
@@ -84,7 +83,9 @@ class WebPMetadataStripping(unittest.TestCase):
 
     def test_truncated_webp_returned_as_is(self) -> None:
         """Defense: don't corrupt a truncated upload."""
-        raw = b"RIFF" + struct.pack("<I", 1000) + b"WEBP" + b"VP8 " + struct.pack("<I", 1000) + b"abc"
+        raw = (
+            b"RIFF" + struct.pack("<I", 1000) + b"WEBP" + b"VP8 " + struct.pack("<I", 1000) + b"abc"
+        )
         # Chunk claims 1000 bytes but we only have 3 → bail
         self.assertEqual(_strip_webp_metadata(raw), raw)
 
@@ -105,9 +106,7 @@ class EncryptionAtRest(unittest.TestCase):
         )
         self.addCleanup(self.state.auth_store.close)
         self.addCleanup(self.state.repository.close)
-        self.user = self.state.auth_store.create_user(
-            "photo@example.com", "secret-pass-12345"
-        )
+        self.user = self.state.auth_store.create_user("photo@example.com", "secret-pass-12345")
 
     def test_cv_photo_uri_encrypted_on_disk(self) -> None:
         # Skip if no crypto layer (dev environment without master key)
@@ -150,9 +149,7 @@ class ConsentTimestamp(unittest.TestCase):
         )
         self.addCleanup(self.state.auth_store.close)
         self.addCleanup(self.state.repository.close)
-        self.user = self.state.auth_store.create_user(
-            "consent@example.com", "secret-pass-12345"
-        )
+        self.user = self.state.auth_store.create_user("consent@example.com", "secret-pass-12345")
 
     def test_profile_carries_cv_photo_consent_at_field(self) -> None:
         profile = self.state.profile_for(self.user.id)

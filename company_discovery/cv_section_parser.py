@@ -39,7 +39,6 @@ import re
 from dataclasses import dataclass, field
 from typing import Any
 
-
 # Canonical section IDs. UI labels live separately (per-locale).
 SECTION_PREAMBLE = "preamble"
 SECTION_SUMMARY = "summary"

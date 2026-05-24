@@ -27,7 +27,6 @@ import struct
 import unittest
 from pathlib import Path
 
-
 REPO_ROOT = Path(__file__).resolve().parent.parent
 STATIC = REPO_ROOT / "static"
 
@@ -91,7 +90,7 @@ class EveryPublicPageLinksAllThreeIcons(unittest.TestCase):
         missing = []
         for page in PAGES:
             html = (STATIC / page).read_text(encoding="utf-8")
-            if '/favicon.ico' not in html:
+            if "/favicon.ico" not in html:
                 missing.append(page)
         self.assertEqual(missing, [], f"Pages missing /favicon.ico <link>: {missing}")
 
@@ -99,11 +98,9 @@ class EveryPublicPageLinksAllThreeIcons(unittest.TestCase):
         missing = []
         for page in PAGES:
             html = (STATIC / page).read_text(encoding="utf-8")
-            if '/apple-touch-icon.png' not in html:
+            if "/apple-touch-icon.png" not in html:
                 missing.append(page)
-        self.assertEqual(
-            missing, [], f"Pages missing /apple-touch-icon.png <link>: {missing}"
-        )
+        self.assertEqual(missing, [], f"Pages missing /apple-touch-icon.png <link>: {missing}")
 
     def test_every_page_has_og_image_pointing_at_real_file(self) -> None:
         """og:image meta tag must point at an existing PNG so social
@@ -119,7 +116,7 @@ class EveryPublicPageLinksAllThreeIcons(unittest.TestCase):
                     # Map URL → file on disk
                     # URL form: https://helpmefindthejob.org/icons/og-card.png
                     if url.startswith("https://helpmefindthejob.org/"):
-                        rel = url[len("https://helpmefindthejob.org/"):]
+                        rel = url[len("https://helpmefindthejob.org/") :]
                     else:
                         rel = url.lstrip("/")
                     p = STATIC / rel

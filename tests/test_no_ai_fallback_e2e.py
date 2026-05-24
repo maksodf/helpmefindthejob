@@ -274,9 +274,7 @@ class FreshDeployDefaultsToManual(unittest.TestCase):
                 start_scheduler=False,
             )
             try:
-                user = state.auth_store.create_user(
-                    "fresh@example.com", "secret-pass-12345678"
-                )
+                user = state.auth_store.create_user("fresh@example.com", "secret-pass-12345678")
                 provider = state.ai_provider_for(user.id)
                 self.assertEqual(provider.invocation_mode, "manual")
                 self.assertEqual(provider.provider_id, "manual")

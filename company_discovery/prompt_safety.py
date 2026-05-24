@@ -74,7 +74,9 @@ _INJECTION_PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
     # plural) forms; both are grammatical for "vorherige[n]
     # Anweisungen" depending on case.
     (
-        re.compile(r"(?i)ignoriere (?:alle )?(?:vorherigen?|vorigen?) (?:anweisungen|instruktionen)"),
+        re.compile(
+            r"(?i)ignoriere (?:alle )?(?:vorherigen?|vorigen?) (?:anweisungen|instruktionen)"
+        ),
         "[neutralised:ignoriere-vorherige]",
     ),
     (

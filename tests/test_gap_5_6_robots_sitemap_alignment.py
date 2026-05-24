@@ -46,7 +46,6 @@ def _free_port() -> int:
 
 
 class RobotsAndSitemapAlignment(unittest.TestCase):
-
     @classmethod
     def setUpClass(cls) -> None:
         cls._tmp = TemporaryDirectory()
@@ -113,7 +112,8 @@ class RobotsAndSitemapAlignment(unittest.TestCase):
         self.assertEqual(status, 200)
         text = body.decode("utf-8")
         self.assertIn(
-            "Disallow: /csp-report", text,
+            "Disallow: /csp-report",
+            text,
             "GAP-5: /csp-report must be in robots.txt Disallow even "
             "though the endpoint is POST-only.",
         )
@@ -154,7 +154,8 @@ class RobotsAndSitemapAlignment(unittest.TestCase):
                 # etc — but we don't have any such page so substring
                 # match is safe enough here.
                 self.assertNotIn(
-                    forbidden, text,
+                    forbidden,
+                    text,
                     f"GAP-6: sitemap.xml lists {forbidden!r}, which is "
                     "robots-Disallowed. Either drop it from the sitemap "
                     "or open it for indexing — never both at once.",
@@ -176,7 +177,8 @@ class RobotsAndSitemapAlignment(unittest.TestCase):
         ):
             with self.subTest(indexable=indexable):
                 self.assertIn(
-                    indexable, text,
+                    indexable,
+                    text,
                     f"GAP-6: sitemap.xml missing {indexable!r}.",
                 )
 

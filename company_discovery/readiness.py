@@ -65,19 +65,13 @@ class ReadinessReport:
 
 
 def _redact_email_backend() -> ReadinessSignal:
-    backend = (
-        (get_env("HELPMEFINDTHEJOB_EMAIL_BACKEND") or "console")
-        .strip()
-        .casefold()
-    )
+    backend = (get_env("HELPMEFINDTHEJOB_EMAIL_BACKEND") or "console").strip().casefold()
     public_url = (get_env("HELPMEFINDTHEJOB_PUBLIC_URL") or "").strip()
     if backend == "smtp":
         host = get_env("HELPMEFINDTHEJOB_SMTP_HOST", "")
         port = get_env("HELPMEFINDTHEJOB_SMTP_PORT", "")
         username = bool(get_env("HELPMEFINDTHEJOB_SMTP_USERNAME"))
-        password_present = bool(
-            get_env("HELPMEFINDTHEJOB_SMTP_PASSWORD")
-        )
+        password_present = bool(get_env("HELPMEFINDTHEJOB_SMTP_PASSWORD"))
         from_address_present = bool(get_env("HELPMEFINDTHEJOB_EMAIL_FROM"))
         missing: list[str] = []
         if not host:
@@ -161,11 +155,7 @@ def _public_url_signal() -> ReadinessSignal:
 
 
 def _backup_signal(*, data_dir: Path) -> ReadinessSignal:
-    backend = (
-        (get_env("HELPMEFINDTHEJOB_BACKUP_BACKEND") or "local")
-        .strip()
-        .casefold()
-    )
+    backend = (get_env("HELPMEFINDTHEJOB_BACKUP_BACKEND") or "local").strip().casefold()
     backup_dir = (os.environ.get("BACKUP_DIR") or "./backups").strip()
     retention = (os.environ.get("BACKUP_RETENTION_DAYS") or "30").strip()
     detail = {"backend": backend, "directory": backup_dir, "retentionDays": retention}
@@ -200,9 +190,7 @@ def _backup_signal(*, data_dir: Path) -> ReadinessSignal:
 
 def _monitoring_signal() -> ReadinessSignal:
     domain = (get_env("HELPMEFINDTHEJOB_DOMAIN") or "").strip()
-    monitor_url = (
-        get_env("HELPMEFINDTHEJOB_MONITORING_URL") or ""
-    ).strip()
+    monitor_url = (get_env("HELPMEFINDTHEJOB_MONITORING_URL") or "").strip()
     log_target = (get_env("HELPMEFINDTHEJOB_LOG_TARGET") or "").strip()
     detail = {
         "monitoringUrl": monitor_url or None,
@@ -235,16 +223,10 @@ def _monitoring_signal() -> ReadinessSignal:
 
 
 def _billing_signal() -> ReadinessSignal:
-    backend = (
-        (get_env("HELPMEFINDTHEJOB_BILLING_BACKEND") or "manual")
-        .strip()
-        .casefold()
-    )
+    backend = (get_env("HELPMEFINDTHEJOB_BILLING_BACKEND") or "manual").strip().casefold()
     if backend == "stripe":
         api_key = bool(get_env("HELPMEFINDTHEJOB_STRIPE_API_KEY"))
-        price_team = bool(
-            get_env("HELPMEFINDTHEJOB_STRIPE_PRICE_TEAM")
-        )
+        price_team = bool(get_env("HELPMEFINDTHEJOB_STRIPE_PRICE_TEAM"))
         price_org = bool(get_env("HELPMEFINDTHEJOB_STRIPE_PRICE_ORG"))
         if api_key and (price_team or price_org):
             return ReadinessSignal(
@@ -271,11 +253,7 @@ def _billing_signal() -> ReadinessSignal:
 
 
 def _legal_signal() -> ReadinessSignal:
-    reviewed = (
-        (get_env("HELPMEFINDTHEJOB_LEGAL_REVIEWED") or "")
-        .strip()
-        .casefold()
-    )
+    reviewed = (get_env("HELPMEFINDTHEJOB_LEGAL_REVIEWED") or "").strip().casefold()
     if reviewed in TRUE_VALUES:
         return ReadinessSignal(
             id="legal",

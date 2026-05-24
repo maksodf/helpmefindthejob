@@ -254,9 +254,7 @@ def adjacent_cities(
     return edges
 
 
-def neighbour_keys(
-    city: str | None, *, max_minutes: int | None = None
-) -> tuple[str, ...]:
+def neighbour_keys(city: str | None, *, max_minutes: int | None = None) -> tuple[str, ...]:
     """Convenience: just the normalised keys of the neighbour
     endpoints, with ``city`` itself excluded."""
 

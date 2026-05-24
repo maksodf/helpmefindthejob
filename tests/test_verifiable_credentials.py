@@ -89,9 +89,7 @@ class SignerPersistence(unittest.TestCase):
     def test_keypair_generated_on_first_call(self):
         with TemporaryDirectory() as tmp:
             key_path = Path(tmp) / "key.json"
-            signer = Ed25519Signer.from_file_or_create(
-                key_path, signer_did="did:web:test"
-            )
+            signer = Ed25519Signer.from_file_or_create(key_path, signer_did="did:web:test")
             self.assertTrue(key_path.exists())
             blob = json.loads(key_path.read_text(encoding="utf-8"))
             self.assertEqual(blob["alg"], "Ed25519")
@@ -120,9 +118,7 @@ class SignVerifyRoundtrip(unittest.TestCase):
         self.addCleanup(self.tmp.cleanup)
         key_path = Path(self.tmp.name) / "key.json"
         self.signer_did = "did:web:test-issuer.example.com"
-        self.signer = Ed25519Signer.from_file_or_create(
-            key_path, signer_did=self.signer_did
-        )
+        self.signer = Ed25519Signer.from_file_or_create(key_path, signer_did=self.signer_did)
         self.registry = IssuerRegistry()
         self.registry.register(
             IssuerRecord(
@@ -221,9 +217,7 @@ class VerifierFailureModes(unittest.TestCase):
     def _make_signed(self) -> dict:
         # Use the signer's own DID for the issuer so we don't trip
         # the issuer_mismatch defense.
-        return self.signer.sign_credential(
-            _make_unsigned_vc(issuer=self.signer.signer_did)
-        )
+        return self.signer.sign_credential(_make_unsigned_vc(issuer=self.signer.signer_did))
 
     def test_missing_proof_field(self):
         vc = _make_unsigned_vc(issuer=self.signer.signer_did)
@@ -305,12 +299,8 @@ class CrossAgentTransmission(unittest.TestCase):
             )
             # Shared registry — both agents register themselves at boot
             registry = IssuerRegistry()
-            registry.register(
-                IssuerRecord(agent_a.signer_did, agent_a.public_key_multibase())
-            )
-            registry.register(
-                IssuerRecord(agent_b.signer_did, agent_b.public_key_multibase())
-            )
+            registry.register(IssuerRecord(agent_a.signer_did, agent_a.public_key_multibase()))
+            registry.register(IssuerRecord(agent_b.signer_did, agent_b.public_key_multibase()))
 
             # Agent A issues a credential to a user
             vc = _make_unsigned_vc(issuer=agent_a.signer_did)
@@ -330,12 +320,8 @@ class CrossAgentTransmission(unittest.TestCase):
                 Path(tmp) / "agent_b.json", signer_did="did:web:agent-b"
             )
             registry = IssuerRegistry()
-            registry.register(
-                IssuerRecord(agent_a.signer_did, agent_a.public_key_multibase())
-            )
-            registry.register(
-                IssuerRecord(agent_b.signer_did, agent_b.public_key_multibase())
-            )
+            registry.register(IssuerRecord(agent_a.signer_did, agent_a.public_key_multibase()))
+            registry.register(IssuerRecord(agent_b.signer_did, agent_b.public_key_multibase()))
             vc = _make_unsigned_vc(issuer=agent_a.signer_did)
             signed = agent_a.sign_credential(vc)
             # Man-in-the-middle changes the decision to denied
@@ -377,9 +363,7 @@ class CrossAgentTransmission(unittest.TestCase):
                 Path(tmp) / "agent_b.json", signer_did="did:web:agent-b"
             )
             registry = IssuerRegistry()
-            registry.register(
-                IssuerRecord(agent_a.signer_did, agent_a.public_key_multibase())
-            )
+            registry.register(IssuerRecord(agent_a.signer_did, agent_a.public_key_multibase()))
             # Hand-craft a forgery: sign with agent B's key (via its
             # legitimate API which signs as agent B), then SWAP the
             # issuer field on the wire to claim agent A.

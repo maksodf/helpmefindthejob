@@ -82,8 +82,10 @@ def _journey_for_persona(slug: str, *, location: str = "Berlin") -> UserJourney:
 def _make_jobs(n: int) -> list[AggregatedJob]:
     return [
         AggregatedJob(
-            title=f"Job {i}", company_name=f"Co{i}",
-            source="arbeitnow", source_url=f"https://x.test/{i}",
+            title=f"Job {i}",
+            company_name=f"Co{i}",
+            source="arbeitnow",
+            source_url=f"https://x.test/{i}",
         )
         for i in range(n)
     ]
@@ -92,6 +94,7 @@ def _make_jobs(n: int) -> list[AggregatedJob]:
 # ----------------------------------------------------------------------
 # OPERATOR-REQUIRED CROSS-SUB-STATE COLLISION TESTS (Finding 3)
 # ----------------------------------------------------------------------
+
 
 class CrossSubStateCollisionTests(unittest.TestCase):
     """The 3 tokens with sub-state-specific meanings — pinned exactly
@@ -168,9 +171,23 @@ class CrossSubStateCollisionTests(unittest.TestCase):
 # PARSER + ENTRY-TOKEN TESTS
 # ----------------------------------------------------------------------
 
+
 class ParseAutoRelaxResponseTests(unittest.TestCase):
     def test_advance_tokens(self) -> None:
-        for tok in ("yes", "y", "ja", "j", "ok", "okay", "go", "weiter", "confirm", "do it", "apply", "sure"):
+        for tok in (
+            "yes",
+            "y",
+            "ja",
+            "j",
+            "ok",
+            "okay",
+            "go",
+            "weiter",
+            "confirm",
+            "do it",
+            "apply",
+            "sure",
+        ):
             with self.subTest(tok=tok):
                 self.assertEqual(parse_auto_relax_response(tok), "advance")
 
@@ -197,7 +214,15 @@ class ParseAutoRelaxResponseTests(unittest.TestCase):
 
 class ParseMenuAutoRelaxEntryTests(unittest.TestCase):
     def test_known_entry_tokens(self) -> None:
-        for tok in ("auto", "auto-relax", "suggest", "guide me", "help me decide", "system suggest", "relax"):
+        for tok in (
+            "auto",
+            "auto-relax",
+            "suggest",
+            "guide me",
+            "help me decide",
+            "system suggest",
+            "relax",
+        ):
             with self.subTest(tok=tok):
                 self.assertTrue(parse_menu_auto_relax_entry(tok))
 
@@ -210,6 +235,7 @@ class ParseMenuAutoRelaxEntryTests(unittest.TestCase):
 # ----------------------------------------------------------------------
 # CAVEAT VERBATIM IN AUTO-RELAX SUGGESTION
 # ----------------------------------------------------------------------
+
 
 class AutoRelaxCaveatTests(unittest.TestCase):
     """Visa-constrained personas in auto-mode MUST see the
@@ -260,6 +286,7 @@ class AutoRelaxCaveatTests(unittest.TestCase):
 # COLD-CACHE vs WARM-CACHE UX
 # ----------------------------------------------------------------------
 
+
 class CountSurfacingTests(unittest.TestCase):
     def test_cold_cache_omits_count(self) -> None:
         engine, cache, path = _make_engine_with_cache()
@@ -295,8 +322,7 @@ class CountSurfacingTests(unittest.TestCase):
             self.assertIn(
                 "23",
                 result.reply,
-                "warm-cache auto-relax suggestion must surface the "
-                "actual cached count (23)",
+                "warm-cache auto-relax suggestion must surface the actual cached count (23)",
             )
             self.assertIn("recent searches show", result.reply.lower())
         finally:
@@ -307,6 +333,7 @@ class CountSurfacingTests(unittest.TestCase):
 # ----------------------------------------------------------------------
 # AUTO-RELAX HIDDEN WHEN N=0 (Operator Q-1 invariant)
 # ----------------------------------------------------------------------
+
 
 class AutoRelaxHiddenWhenN0Tests(unittest.TestCase):
     """Operator-approved invariant: auto-relax menu slot is hidden
@@ -336,6 +363,7 @@ class AutoRelaxHiddenWhenN0Tests(unittest.TestCase):
 # ----------------------------------------------------------------------
 # FINAL-STATE EXHAUSTION
 # ----------------------------------------------------------------------
+
 
 class FinalStateExhaustionTests(unittest.TestCase):
     """All 3 widenings confirmed/declined + still 0 results → auto
@@ -377,6 +405,7 @@ class FinalStateExhaustionTests(unittest.TestCase):
 # MENU/AUTO-MODE INTERLEAVE
 # ----------------------------------------------------------------------
 
+
 class MenuAutoModeInterleaveTests(unittest.TestCase):
     def test_cancel_returns_to_menu_with_declined_persisted(self) -> None:
         j = _journey_for_persona("aicha")
@@ -397,6 +426,7 @@ class MenuAutoModeInterleaveTests(unittest.TestCase):
 # ----------------------------------------------------------------------
 # APPLY-AFFORDANCE FROM AUTO-MODE
 # ----------------------------------------------------------------------
+
 
 class AdvanceFromAutoRelaxTests(unittest.TestCase):
     def test_advance_widen_location_fires_search(self) -> None:
@@ -426,6 +456,7 @@ class AdvanceFromAutoRelaxTests(unittest.TestCase):
 # ----------------------------------------------------------------------
 # UNKNOWN INPUT RE-ASKS
 # ----------------------------------------------------------------------
+
 
 class UnknownInputReasksTests(unittest.TestCase):
     def test_unknown_input_re_asks_current_suggestion(self) -> None:

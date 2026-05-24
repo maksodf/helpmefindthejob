@@ -55,18 +55,10 @@ def _hour_key(when: datetime | None = None) -> str:
 
 @dataclass(frozen=True)
 class QuotaLimits:
-    scans_per_day: int = int(
-        get_env("HELPMEFINDTHEJOB_QUOTA_SCANS_PER_DAY", "50")
-    )
-    ai_per_day: int = int(
-        get_env("HELPMEFINDTHEJOB_QUOTA_AI_PER_DAY", "50")
-    )
-    domain_per_hour: int = int(
-        get_env("HELPMEFINDTHEJOB_QUOTA_DOMAIN_PER_HOUR", "30")
-    )
-    active_scans: int = int(
-        get_env("HELPMEFINDTHEJOB_QUOTA_ACTIVE_SCANS", "3")
-    )
+    scans_per_day: int = int(get_env("HELPMEFINDTHEJOB_QUOTA_SCANS_PER_DAY", "50"))
+    ai_per_day: int = int(get_env("HELPMEFINDTHEJOB_QUOTA_AI_PER_DAY", "50"))
+    domain_per_hour: int = int(get_env("HELPMEFINDTHEJOB_QUOTA_DOMAIN_PER_HOUR", "30"))
+    active_scans: int = int(get_env("HELPMEFINDTHEJOB_QUOTA_ACTIVE_SCANS", "3"))
 
 
 class QuotaError(Exception):

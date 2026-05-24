@@ -31,7 +31,6 @@ from pathlib import Path
 from unittest.mock import patch
 from urllib.error import HTTPError
 
-
 # Add the SDK dir to sys.path so `from helpmefindthejob_sdk
 # import ...` resolves. In production the partner would copy
 # the directory into their own project.
@@ -98,9 +97,7 @@ class ConstructorValidation(unittest.TestCase):
 
 class RequestHeadersShape(unittest.TestCase):
     def test_get_includes_cookie(self):
-        client = Client(
-            base_url="https://example.com", session_cookie="abc-123"
-        )
+        client = Client(base_url="https://example.com", session_cookie="abc-123")
         mock_urlopen = _MockUrlopen({"tools": []})
         with patch("helpmefindthejob_sdk.client.urllib.request.urlopen", mock_urlopen):
             client.list_tools()
@@ -160,7 +157,8 @@ class CallToolErrorMapping(unittest.TestCase):
         with patch(
             "helpmefindthejob_sdk.client.urllib.request.urlopen",
             side_effect=self._make_http_error(
-                400, body='{"error":{"code":"invalid_payload","message":"missing_required_fields:industry"}}'
+                400,
+                body='{"error":{"code":"invalid_payload","message":"missing_required_fields:industry"}}',
             ),
         ):
             with self.assertRaises(ToolValidationError) as cm:
@@ -236,12 +234,24 @@ class TypedWrappers(unittest.TestCase):
 class CatalogueAndOpenApiFetch(unittest.TestCase):
     def test_list_tools_returns_list(self):
         client = Client(base_url="https://example.com", session_cookie="x")
-        mock_urlopen = _MockUrlopen({
-            "tools": [
-                {"name": "tool1", "description": "...", "inputSchema": {}, "restPath": "/api/v1/tools/tool1"},
-                {"name": "tool2", "description": "...", "inputSchema": {}, "restPath": "/api/v1/tools/tool2"},
-            ]
-        })
+        mock_urlopen = _MockUrlopen(
+            {
+                "tools": [
+                    {
+                        "name": "tool1",
+                        "description": "...",
+                        "inputSchema": {},
+                        "restPath": "/api/v1/tools/tool1",
+                    },
+                    {
+                        "name": "tool2",
+                        "description": "...",
+                        "inputSchema": {},
+                        "restPath": "/api/v1/tools/tool2",
+                    },
+                ]
+            }
+        )
         with patch("helpmefindthejob_sdk.client.urllib.request.urlopen", mock_urlopen):
             tools = client.list_tools()
         self.assertEqual(len(tools), 2)
@@ -249,10 +259,12 @@ class CatalogueAndOpenApiFetch(unittest.TestCase):
 
     def test_get_openapi_spec_returns_dict(self):
         client = Client(base_url="https://example.com", session_cookie="x")
-        mock_urlopen = _MockUrlopen({
-            "openapi": "3.0.3",
-            "paths": {},
-        })
+        mock_urlopen = _MockUrlopen(
+            {
+                "openapi": "3.0.3",
+                "paths": {},
+            }
+        )
         with patch("helpmefindthejob_sdk.client.urllib.request.urlopen", mock_urlopen):
             spec = client.get_openapi_spec()
         self.assertEqual(spec["openapi"], "3.0.3")
@@ -268,6 +280,7 @@ class SdkSurfaceImports(unittest.TestCase):
             ToolValidationError,
             __version__,
         )
+
         # Class identity sanity
         self.assertTrue(issubclass(AuthRequiredError, HelpmefindthejobError))
         self.assertTrue(issubclass(ToolNotFoundError, HelpmefindthejobError))

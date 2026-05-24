@@ -22,7 +22,6 @@ import re
 import unittest
 from pathlib import Path
 
-
 REPO_ROOT = Path(__file__).resolve().parent.parent
 STATIC = REPO_ROOT / "static"
 SW_JS = STATIC / "sw.js"
@@ -53,10 +52,7 @@ class ServiceWorkerPrecachePathsResolve(unittest.TestCase):
                 missing.append((url_path, str(disk_path)))
 
         if missing:
-            details = "\n".join(
-                f"  {url} → {disk} (does not exist)"
-                for url, disk in missing
-            )
+            details = "\n".join(f"  {url} → {disk} (does not exist)" for url, disk in missing)
             self.fail(
                 "Service-worker SHELL_PATHS entries that 404 — the SW "
                 "install will fail silently for these:\n" + details

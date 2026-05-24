@@ -48,7 +48,6 @@ import unittest
 from html.parser import HTMLParser
 from pathlib import Path
 
-
 REPO_ROOT = Path(__file__).resolve().parent.parent
 STATIC = REPO_ROOT / "static"
 INDEX_HTML = STATIC / "index.html"
@@ -294,8 +293,7 @@ class AriaLiveRegions(unittest.TestCase):
         # urgent. At least one of either must be present.
         self.assertTrue(
             'role="status"' in text or 'role="alert"' in text or 'role="log"' in text,
-            "index.html has no role=status/alert/log — dynamic updates "
-            "aren't announced",
+            "index.html has no role=status/alert/log — dynamic updates aren't announced",
         )
 
 
@@ -307,13 +305,9 @@ class FormControlsAreLabeled(unittest.TestCase):
     def _orphan_inputs(self, html_text: str) -> list[str]:
         orphans = []
         # Collect all label[for=…] targets
-        label_targets = set(
-            re.findall(r'<label[^>]+\bfor="([^"]+)"', html_text)
-        )
+        label_targets = set(re.findall(r'<label[^>]+\bfor="([^"]+)"', html_text))
         # Iterate every form input
-        for match in re.finditer(
-            r'<(input|select|textarea)\b[^>]*>', html_text, re.IGNORECASE
-        ):
+        for match in re.finditer(r"<(input|select|textarea)\b[^>]*>", html_text, re.IGNORECASE):
             tag_block = match.group(0)
             tag = match.group(1).lower()
             # hidden inputs don't need labels (they're not perceived)
@@ -330,9 +324,7 @@ class FormControlsAreLabeled(unittest.TestCase):
                 continue
             id_match = re.search(r'\bid="([^"]+)"', tag_block, re.IGNORECASE)
             has_aria_label = bool(re.search(r'\baria-label="', tag_block, re.IGNORECASE))
-            has_aria_labelledby = bool(
-                re.search(r'\baria-labelledby="', tag_block, re.IGNORECASE)
-            )
+            has_aria_labelledby = bool(re.search(r'\baria-labelledby="', tag_block, re.IGNORECASE))
             has_label_for = id_match and id_match.group(1) in label_targets
             if not (has_aria_label or has_aria_labelledby or has_label_for):
                 orphans.append(tag_block[:120])
@@ -422,9 +414,7 @@ class NoAutoplayAudio(unittest.TestCase):
                 continue
             text = path.read_text(encoding="utf-8")
             # Find every <audio> or <video> tag
-            for match in re.finditer(
-                r"<(audio|video)\b[^>]*>", text, re.IGNORECASE
-            ):
+            for match in re.finditer(r"<(audio|video)\b[^>]*>", text, re.IGNORECASE):
                 tag = match.group(0)
                 if re.search(r"\bautoplay\b", tag, re.IGNORECASE):
                     # Allow if muted (autoplaying silently is OK per spec)
@@ -473,9 +463,7 @@ class ButtonsHaveAccessibleName(unittest.TestCase):
             text_only = re.sub(r"<!--.*?-->", "", text_only, flags=re.DOTALL).strip()
             has_text = bool(text_only)
             has_aria_label = bool(re.search(r'\baria-label="', attrs, re.IGNORECASE))
-            has_aria_labelledby = bool(
-                re.search(r'\baria-labelledby="', attrs, re.IGNORECASE)
-            )
+            has_aria_labelledby = bool(re.search(r'\baria-labelledby="', attrs, re.IGNORECASE))
             has_title = bool(re.search(r'\btitle="[^"]+"', attrs, re.IGNORECASE))
             if not (has_text or has_aria_label or has_aria_labelledby or has_title):
                 orphans.append(match.group(0)[:160])

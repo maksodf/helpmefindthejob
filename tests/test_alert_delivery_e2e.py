@@ -104,19 +104,13 @@ class ClassifyPushException(unittest.TestCase):
         )
 
     def test_gone_classification_404(self):
-        self.assertEqual(
-            classify_push_exception(_FakeWebPushException(404)), "gone"
-        )
+        self.assertEqual(classify_push_exception(_FakeWebPushException(404)), "gone")
 
     def test_gone_classification_410(self):
-        self.assertEqual(
-            classify_push_exception(_FakeWebPushException(410)), "gone"
-        )
+        self.assertEqual(classify_push_exception(_FakeWebPushException(410)), "gone")
 
     def test_transient_classification_503(self):
-        self.assertEqual(
-            classify_push_exception(_FakeWebPushException(503)), "transient"
-        )
+        self.assertEqual(classify_push_exception(_FakeWebPushException(503)), "transient")
 
     def test_transient_classification_no_response(self):
         # A bare ConnectionError has no .response attribute — must
@@ -153,9 +147,7 @@ class EmailDigestE2E(unittest.TestCase):
         self.state = _build_state(Path(self.tmp.name))
         self.addCleanup(self.state.auth_store.close)
         self.addCleanup(self.state.repository.close)
-        self.user = self.state.auth_store.create_user(
-            "digest@example.com", "secret-pass-12345678"
-        )
+        self.user = self.state.auth_store.create_user("digest@example.com", "secret-pass-12345678")
 
     def test_send_user_digest_writes_to_transport(self):
         # Replace the email transport with a recording mock so we
@@ -242,9 +234,7 @@ class NotifyNewMatchesE2E(unittest.TestCase):
         self.state = _build_state(Path(self.tmp.name))
         self.addCleanup(self.state.auth_store.close)
         self.addCleanup(self.state.repository.close)
-        self.user = self.state.auth_store.create_user(
-            "push@example.com", "secret-pass-12345678"
-        )
+        self.user = self.state.auth_store.create_user("push@example.com", "secret-pass-12345678")
         _clear_vapid_env()
         self.addCleanup(_clear_vapid_env)
 
@@ -286,7 +276,9 @@ class NotifyNewMatchesE2E(unittest.TestCase):
 
     # ---- happy path -------------------------------------------------------
 
-    def _setup_one_matching_job(self) -> tuple[Company, DiscoveredJob, SavedSearch, PushSubscription]:
+    def _setup_one_matching_job(
+        self,
+    ) -> tuple[Company, DiscoveredJob, SavedSearch, PushSubscription]:
         company = Company(
             user_id=self.user.id,
             name="ACME Pflege",
@@ -428,9 +420,7 @@ class SlackNotifyE2E(unittest.TestCase):
         self.state = _build_state(Path(self.tmp.name))
         self.addCleanup(self.state.auth_store.close)
         self.addCleanup(self.state.repository.close)
-        self.user = self.state.auth_store.create_user(
-            "slack@example.com", "secret-pass-12345678"
-        )
+        self.user = self.state.auth_store.create_user("slack@example.com", "secret-pass-12345678")
         self.company = Company(
             user_id=self.user.id,
             name="ACME GmbH",
@@ -487,16 +477,13 @@ class SlackNotifyE2E(unittest.TestCase):
         profile.slack_fit_threshold = 0.5
         self.state.repository.save_user_profile(profile)
         job = self._make_job(score=0.85, job_id="job-dedup-1")
-        with patch(
-            "app.post_high_fit_notification", return_value={"status": "ok"}
-        ) as mock_post:
+        with patch("app.post_high_fit_notification", return_value={"status": "ok"}) as mock_post:
             self.state.maybe_notify_slack(self.user.id, job)
             self.state.maybe_notify_slack(self.user.id, job)
         self.assertEqual(
             mock_post.call_count,
             1,
-            "second call for the same job MUST be deduped via "
-            "slack_notified_job_ids",
+            "second call for the same job MUST be deduped via slack_notified_job_ids",
         )
 
     def test_failed_ping_does_not_mark_notified(self):
@@ -540,9 +527,7 @@ class SlackNotifyE2E(unittest.TestCase):
         self.state.repository.save_user_profile(profile)
         # Send one more
         job = self._make_job(score=0.85, job_id="job-new")
-        with patch(
-            "app.post_high_fit_notification", return_value={"status": "ok"}
-        ):
+        with patch("app.post_high_fit_notification", return_value={"status": "ok"}):
             self.state.maybe_notify_slack(self.user.id, job)
         profile_reloaded = self.state.profile_for(self.user.id)
         self.assertLessEqual(

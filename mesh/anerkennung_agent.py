@@ -47,7 +47,6 @@ from mesh.common import (
     serve_until_stopped,
 )
 
-
 AGENT_NAME = "anerkennung-agent"
 AGENT_VERSION = "0.1.0"
 AGENT_DID = "did:web:anerkennung-agent.helpmefindthejob.org"
@@ -62,8 +61,18 @@ PATHWAYS: list[dict[str, Any]] = [
         "matches": {
             "qualification_field_in": ["nursing", "krankenpflege", "pflege"],
             "country_origin_in": [
-                "tunisia", "tn", "morocco", "ma", "egypt", "eg",
-                "jordan", "jo", "lebanon", "lb", "philippines", "ph",
+                "tunisia",
+                "tn",
+                "morocco",
+                "ma",
+                "egypt",
+                "eg",
+                "jordan",
+                "jo",
+                "lebanon",
+                "lb",
+                "philippines",
+                "ph",
             ],
         },
         "decision": "partial_recognition",
@@ -77,9 +86,12 @@ PATHWAYS: list[dict[str, Any]] = [
         "label": "Engineering BSc/MSc under § 4 AsylG",
         "matches": {
             "qualification_field_in": [
-                "electrical engineering", "elektrotechnik",
-                "mechanical engineering", "maschinenbau",
-                "civil engineering", "bauingenieurwesen",
+                "electrical engineering",
+                "elektrotechnik",
+                "mechanical engineering",
+                "maschinenbau",
+                "civil engineering",
+                "bauingenieurwesen",
             ],
             "residency_status_in": ["§ 4 asylg", "§4 asylg", "4 asylg", "asylg"],
         },
@@ -94,7 +106,10 @@ PATHWAYS: list[dict[str, Any]] = [
         "label": "Approbation (medicine) under § 24 Ukraine protection",
         "matches": {
             "qualification_field_in": [
-                "general medicine", "internal medicine", "medizin", "humanmedizin",
+                "general medicine",
+                "internal medicine",
+                "medizin",
+                "humanmedizin",
             ],
             "country_origin_in": ["ukraine", "ua"],
         },
@@ -165,9 +180,7 @@ def _make_verification_decision(payload: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _build_unsigned_credential(
-    decision: dict[str, Any], user_id: str
-) -> dict[str, Any]:
+def _build_unsigned_credential(decision: dict[str, Any], user_id: str) -> dict[str, Any]:
     """Construct the unsigned VC body. The real Ed25519 proof is
     attached by :class:`mesh.verifiable_credentials.Ed25519Signer`
     in :func:`issue_signed_credential`.
@@ -198,9 +211,7 @@ def _build_unsigned_credential(
     }
 
 
-def issue_signed_credential(
-    decision: dict[str, Any], user_id: str, signer
-) -> dict[str, Any]:
+def issue_signed_credential(decision: dict[str, Any], user_id: str, signer) -> dict[str, Any]:
     """Build + sign a VC. ``signer`` is an
     :class:`mesh.verifiable_credentials.Ed25519Signer` whose
     ``signer_did`` equals :data:`AGENT_DID` (the signer enforces
@@ -309,9 +320,7 @@ def main() -> None:
     )
     parser.add_argument(
         "--audit-path",
-        default=os.environ.get(
-            "MESH_ANERKENNUNG_AUDIT", "data/mesh/anerkennung-agent-audit.log"
-        ),
+        default=os.environ.get("MESH_ANERKENNUNG_AUDIT", "data/mesh/anerkennung-agent-audit.log"),
     )
     parser.add_argument(
         "--signing-key",
@@ -329,9 +338,7 @@ def main() -> None:
         default_registry,
     )
 
-    signer = Ed25519Signer.from_file_or_create(
-        Path(args.signing_key), signer_did=AGENT_DID
-    )
+    signer = Ed25519Signer.from_file_or_create(Path(args.signing_key), signer_did=AGENT_DID)
     # Register ourselves in the in-process registry so a same-
     # process verifier can find us. Production deploys publish
     # the DID document at /.well-known/did.json — see

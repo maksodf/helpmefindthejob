@@ -277,9 +277,7 @@ class AuditLogEmitter:
                     separators=(",", ":"),
                     ensure_ascii=True,
                 )
-                tentative_hmac = self._compute_chain_hmac(
-                    self._last_chain_hmac, canonical
-                )
+                tentative_hmac = self._compute_chain_hmac(self._last_chain_hmac, canonical)
                 record["chain_hmac"] = tentative_hmac
                 self._rotate_if_needed()
                 self.log_path.parent.mkdir(parents=True, exist_ok=True)
@@ -385,9 +383,7 @@ def default_emitter() -> AuditLogEmitter:
         data_root = Path(get_env("HELPMEFINDTHEJOB_DATA_ROOT", "data"))
         log_path = data_root / "ai_act_audit.log"
         salt = _resolve_salt(get_env("HELPMEFINDTHEJOB_AUDIT_SALT", ""))
-        plaintext_pii = get_env(
-            "HELPMEFINDTHEJOB_AUDIT_PLAINTEXT_PII", "false"
-        ).lower() in {
+        plaintext_pii = get_env("HELPMEFINDTHEJOB_AUDIT_PLAINTEXT_PII", "false").lower() in {
             "true",
             "1",
             "yes",
@@ -605,9 +601,7 @@ def verify_chain(log_paths: list[Path], salt: bytes) -> ChainVerificationResult:
                         return ChainVerificationResult(
                             ok=False,
                             records_checked=len(all_records),
-                            first_break_reason=(
-                                f"unsupported_schema_version:{schema_v!r}"
-                            ),
+                            first_break_reason=(f"unsupported_schema_version:{schema_v!r}"),
                         )
                     seq = obj.get("sequence_no")
                     if not isinstance(seq, int):

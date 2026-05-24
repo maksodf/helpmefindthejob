@@ -142,17 +142,11 @@ class ReleaseWorkflowActionsArePinned(unittest.TestCase):
     OpenSSF Scorecard 'pinned-dependencies' check that the existing
     workflows already enforce."""
 
-    PIN_RE = re.compile(
-        r"uses:\s*([^@\s]+)@([0-9a-f]{40})\s*#\s*v[0-9]+\.[0-9]+(\.[0-9]+)?"
-    )
+    PIN_RE = re.compile(r"uses:\s*([^@\s]+)@([0-9a-f]{40})\s*#\s*v[0-9]+\.[0-9]+(\.[0-9]+)?")
 
     def test_every_uses_is_sha_pinned(self) -> None:
         src = WORKFLOW_PATH.read_text(encoding="utf-8")
-        uses_lines = [
-            ln.strip()
-            for ln in src.splitlines()
-            if ln.strip().startswith("uses:")
-        ]
+        uses_lines = [ln.strip() for ln in src.splitlines() if ln.strip().startswith("uses:")]
         self.assertGreater(
             len(uses_lines),
             0,

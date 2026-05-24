@@ -71,8 +71,10 @@ def _make_engine() -> tuple[DiagnosticEngine, AggregatorResultCache, Path]:
 def _make_jobs(n: int) -> list[AggregatedJob]:
     return [
         AggregatedJob(
-            title=f"Job {i}", company_name=f"Co{i}",
-            source="arbeitnow", source_url=f"https://x.test/{i}",
+            title=f"Job {i}",
+            company_name=f"Co{i}",
+            source="arbeitnow",
+            source_url=f"https://x.test/{i}",
         )
         for i in range(n)
     ]
@@ -93,6 +95,7 @@ def _journey_for_persona(slug: str, *, location: str = "Berlin") -> UserJourney:
 # ----------------------------------------------------------------------
 # 7. CountZeroShownExactly (operator Q3 push-back)
 # ----------------------------------------------------------------------
+
 
 class CountZeroShownExactlyTests(unittest.TestCase):
     """Operator Q3 push-back: a cache hit returning 0 results IS
@@ -156,6 +159,7 @@ class CountZeroShownExactlyTests(unittest.TestCase):
 # 1. ColdCachePanelMatrixTests
 # ----------------------------------------------------------------------
 
+
 class ColdCachePanelMatrixTests(unittest.TestCase):
     def test_no_counts_in_menu_for_any_persona(self) -> None:
         engine, cache, path = _make_engine()
@@ -180,9 +184,7 @@ class ColdCachePanelMatrixTests(unittest.TestCase):
                 with self.subTest(persona=persona.slug):
                     j = _journey_for_persona(persona.slug)
                     new_laterals = _compute_new_laterals(j)
-                    result = _enter_auto_relax(
-                        j, new_laterals=new_laterals, engine=engine
-                    )
+                    result = _enter_auto_relax(j, new_laterals=new_laterals, engine=engine)
                     self.assertNotIn(
                         "postings)",
                         result.reply,
@@ -196,6 +198,7 @@ class ColdCachePanelMatrixTests(unittest.TestCase):
 # ----------------------------------------------------------------------
 # 2. WarmCacheMixedScenarioTests
 # ----------------------------------------------------------------------
+
 
 class WarmCacheMixedScenarioTests(unittest.TestCase):
     def test_widen_warm_drop_cold_in_menu(self) -> None:
@@ -223,6 +226,7 @@ class WarmCacheMixedScenarioTests(unittest.TestCase):
 # 3 + 8 + 9. PerLateralMixedStateTests + MenuAggregate variants
 # ----------------------------------------------------------------------
 
+
 class PerLateralMixedStateTests(unittest.TestCase):
     def test_per_lateral_rendering_mixed_state_auto_relax(self) -> None:
         engine, cache, path = _make_engine()
@@ -249,9 +253,7 @@ class PerLateralMixedStateTests(unittest.TestCase):
             # Force try_laterals to be first in auto-mode (Aïcha
             # constrained order = laterals first, so it's already
             # first; no need to manipulate state)
-            result = _enter_auto_relax(
-                j, new_laterals=new_laterals, engine=engine
-            )
+            result = _enter_auto_relax(j, new_laterals=new_laterals, engine=engine)
             # Warm laterals show their counts inline
             self.assertIn("(~12 postings)", result.reply)
             self.assertIn("(~8 postings)", result.reply)
@@ -297,14 +299,11 @@ class MenuAggregateOmittedOnPartialLateralsTests(unittest.TestCase):
             # Verify try_laterals affordance is present but has NO count
             # parenthetical (the line ends with the description, not "(...)")
             # Search for the try_laterals line:
-            line = next(
-                ln for ln in reply.split("\n") if "Try lateral roles" in ln
-            )
+            line = next(ln for ln in reply.split("\n") if "Try lateral roles" in ln)
             self.assertNotIn(
                 "postings)",
                 line,
-                "try_laterals menu line must omit aggregate on partial "
-                "lateral cache state",
+                "try_laterals menu line must omit aggregate on partial lateral cache state",
             )
         finally:
             cache.close()
@@ -325,9 +324,7 @@ class MenuAggregateShownOnAllLateralsWarmTests(unittest.TestCase):
                     _make_jobs(c),
                 )
             reply = _format_review_empty_reply(j, engine=engine)
-            line = next(
-                ln for ln in reply.split("\n") if "Try lateral roles" in ln
-            )
+            line = next(ln for ln in reply.split("\n") if "Try lateral roles" in ln)
             # Aggregate = 12 + 8 + 4 = 24
             self.assertIn(
                 "(~24 postings)",
@@ -342,6 +339,7 @@ class MenuAggregateShownOnAllLateralsWarmTests(unittest.TestCase):
 # ----------------------------------------------------------------------
 # 4. SeedAssertsValueInvariant
 # ----------------------------------------------------------------------
+
 
 class SeedAssertsValueInvariantTests(unittest.TestCase):
     """Seed exactly N, assert exactly N appears in surface text.
@@ -378,6 +376,7 @@ class SeedAssertsValueInvariantTests(unittest.TestCase):
 # 5. NoLLMInvocationTests
 # ----------------------------------------------------------------------
 
+
 class NoLLMInvocationTests(unittest.TestCase):
     """Piece 5 surface is template + cache. Static-import grep on
     widening.py guarantees no LLM dependencies. Mirror piece-2 pattern."""
@@ -410,6 +409,7 @@ class NoLLMInvocationTests(unittest.TestCase):
 # 6. BothModesShowCountsTests
 # ----------------------------------------------------------------------
 
+
 class BothModesShowCountsTests(unittest.TestCase):
     def test_widen_location_count_appears_in_menu_and_auto_relax(self) -> None:
         engine, cache, path = _make_engine()
@@ -437,6 +437,7 @@ class BothModesShowCountsTests(unittest.TestCase):
 # ----------------------------------------------------------------------
 # Helpers — probe_lateral_counts shape contract
 # ----------------------------------------------------------------------
+
 
 class ProbeLateralCountsTests(unittest.TestCase):
     def test_returns_aligned_list(self) -> None:
@@ -494,9 +495,7 @@ class ProbeLateralCountsTests(unittest.TestCase):
                 canonical_query("Senior Registered nurse", ""),
                 _make_jobs(999),
             )
-            counts = probe_lateral_counts(
-                j, ["Senior Registered nurse"], engine=engine
-            )
+            counts = probe_lateral_counts(j, ["Senior Registered nurse"], engine=engine)
             self.assertEqual(
                 counts[0],
                 9,

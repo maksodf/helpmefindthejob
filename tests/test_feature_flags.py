@@ -143,8 +143,7 @@ class PercentageRollout(unittest.TestCase):
         collisions = sum(
             1
             for i in range(100)
-            if _percentage_bucket("flag_one", f"u-{i}")
-            == _percentage_bucket("flag_two", f"u-{i}")
+            if _percentage_bucket("flag_one", f"u-{i}") == _percentage_bucket("flag_two", f"u-{i}")
         )
         # Expect ~1% collisions for two independent uint8-bucket hashes
         self.assertLess(collisions, 10)
@@ -163,9 +162,7 @@ class PercentageRollout(unittest.TestCase):
         )
         try:
             count_enabled = sum(
-                1
-                for i in range(1000)
-                if is_enabled("ui.test_dist", user_id=f"user-{i}")
+                1 for i in range(1000) if is_enabled("ui.test_dist", user_id=f"user-{i}")
             )
             # Empirical 1000-trial: expect ~500 ± ~30 (3σ ≈ 30 for binomial)
             self.assertGreater(count_enabled, 400)
@@ -179,17 +176,13 @@ class PercentageRollout(unittest.TestCase):
     def test_rollout_zero_pct_disabled_for_everyone(self):
         # experiment.example_ab has rollout_percent=0
         for i in range(50):
-            self.assertFalse(
-                is_enabled("experiment.example_ab", user_id=f"user-{i}")
-            )
+            self.assertFalse(is_enabled("experiment.example_ab", user_id=f"user-{i}"))
 
     def test_rollout_100_pct_enabled_for_everyone(self):
         # ui.new_funnel_card has rollout_percent=100 + default=True;
         # either way every user gets True
         for i in range(50):
-            self.assertTrue(
-                is_enabled("ui.new_funnel_card", user_id=f"user-{i}")
-            )
+            self.assertTrue(is_enabled("ui.new_funnel_card", user_id=f"user-{i}"))
 
 
 class DecisionPrecedence(unittest.TestCase):
@@ -241,18 +234,14 @@ class AssignVariant(unittest.TestCase):
 
     def test_distributes_across_two_variants(self):
         variants = ["A", "B"]
-        counts = Counter(
-            assign_variant("exp1", f"user-{i}", variants) for i in range(1000)
-        )
+        counts = Counter(assign_variant("exp1", f"user-{i}", variants) for i in range(1000))
         # Both arms should land within ±10% of 50:50
         self.assertGreater(counts["A"], 400)
         self.assertGreater(counts["B"], 400)
 
     def test_distributes_across_three_variants(self):
         variants = ["A", "B", "C"]
-        counts = Counter(
-            assign_variant("exp_three", f"user-{i}", variants) for i in range(900)
-        )
+        counts = Counter(assign_variant("exp_three", f"user-{i}", variants) for i in range(900))
         for v in variants:
             self.assertGreater(counts[v], 200)  # ~33% with margin
             self.assertLess(counts[v], 400)
@@ -262,16 +251,8 @@ class AssignVariant(unittest.TestCase):
         # different experiments — so we can run multiple
         # experiments concurrently without coupling.
         variants = ["A", "B"]
-        a_exp1 = sum(
-            1
-            for i in range(100)
-            if assign_variant("exp_a", f"user-{i}", variants) == "A"
-        )
-        a_exp2 = sum(
-            1
-            for i in range(100)
-            if assign_variant("exp_b", f"user-{i}", variants) == "A"
-        )
+        a_exp1 = sum(1 for i in range(100) if assign_variant("exp_a", f"user-{i}", variants) == "A")
+        a_exp2 = sum(1 for i in range(100) if assign_variant("exp_b", f"user-{i}", variants) == "A")
         # The same arm count would suggest coupling
         self.assertNotEqual(a_exp1, a_exp2)
 

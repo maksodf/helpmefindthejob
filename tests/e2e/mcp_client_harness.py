@@ -92,7 +92,7 @@ class MCPHarness:
     def data_dir(self) -> Path:
         return self._data_dir
 
-    def start(self) -> "MCPHarness":
+    def start(self) -> MCPHarness:
         if self._proc is not None:
             raise MCPHarnessError("harness already started")
         env = os.environ.copy()
@@ -136,7 +136,7 @@ class MCPHarness:
         self._proc = None
         return exit_code
 
-    def __enter__(self) -> "MCPHarness":
+    def __enter__(self) -> MCPHarness:
         return self.start()
 
     def __exit__(self, *exc_info: Any) -> None:
@@ -149,9 +149,7 @@ class MCPHarness:
         error envelope."""
 
         if self._proc is None:
-            raise MCPHarnessError(
-                "harness not started; call start() or use the context manager"
-            )
+            raise MCPHarnessError("harness not started; call start() or use the context manager")
         self._next_id += 1
         message = {
             "jsonrpc": "2.0",
@@ -175,9 +173,7 @@ class MCPHarness:
 
     def _send_and_read(self, payload: str, *, context: str) -> dict[str, Any]:
         if self._proc is None:
-            raise MCPHarnessError(
-                "harness not started; call start() or use the context manager"
-            )
+            raise MCPHarnessError("harness not started; call start() or use the context manager")
         assert self._proc.stdin is not None
         assert self._proc.stdout is not None
         try:
@@ -246,9 +242,7 @@ def parse_tool_result(response: dict[str, Any]) -> tuple[dict[str, Any], bool]:
         )
     result = response.get("result")
     if not isinstance(result, dict):
-        raise MCPHarnessError(
-            f"response missing dict 'result'; got {type(result).__name__}"
-        )
+        raise MCPHarnessError(f"response missing dict 'result'; got {type(result).__name__}")
     is_error = bool(result.get("isError", False))
     content = result.get("content") or []
     if not content or "text" not in content[0]:
@@ -266,28 +260,21 @@ def assert_ok(response: dict[str, Any]) -> dict[str, Any]:
         raise AssertionError(f"expected ok, got isError=True payload={payload!r}")
     status = payload.get("status")
     if status != "ok":
-        raise AssertionError(
-            f"expected payload.status='ok', got {status!r} payload={payload!r}"
-        )
+        raise AssertionError(f"expected payload.status='ok', got {status!r} payload={payload!r}")
     return payload
 
 
-def assert_tool_error(
-    response: dict[str, Any], *, status: str | None = None
-) -> dict[str, Any]:
+def assert_tool_error(response: dict[str, Any], *, status: str | None = None) -> dict[str, Any]:
     """Assert a tools/call surfaced a tool-level error
     (``isError=True``). Optionally check ``payload['status']``. Returns
     the payload."""
 
     payload, is_error = parse_tool_result(response)
     if not is_error:
-        raise AssertionError(
-            f"expected isError=True, got isError=False payload={payload!r}"
-        )
+        raise AssertionError(f"expected isError=True, got isError=False payload={payload!r}")
     if status is not None and payload.get("status") != status:
         raise AssertionError(
-            f"expected payload.status={status!r}, got {payload.get('status')!r} "
-            f"payload={payload!r}"
+            f"expected payload.status={status!r}, got {payload.get('status')!r} payload={payload!r}"
         )
     return payload
 

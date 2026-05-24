@@ -575,10 +575,7 @@ class SaltFailFastTests(unittest.TestCase):
             _warnings.simplefilter("always")
             salt = audit_log._resolve_salt(salt_b64)
         self.assertEqual(salt, b"y" * 32)
-        salt_warnings = [
-            w for w in caught
-            if "HELPMEFINDTHEJOB_AUDIT_SALT" in str(w.message)
-        ]
+        salt_warnings = [w for w in caught if "HELPMEFINDTHEJOB_AUDIT_SALT" in str(w.message)]
         self.assertEqual(
             salt_warnings,
             [],

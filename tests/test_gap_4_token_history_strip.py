@@ -46,7 +46,7 @@ class TokenStrippedFromUrlAfterConsumption(unittest.TestCase):
 
     def _extract_function(self, name: str) -> str:
         match = re.search(
-            rf'(async\s+)?function\s+{re.escape(name)}\s*\([^)]*\)\s*\{{',
+            rf"(async\s+)?function\s+{re.escape(name)}\s*\([^)]*\)\s*\{{",
             self.src,
         )
         self.assertIsNotNone(match, f"function {name} not found in app.js")
@@ -60,13 +60,14 @@ class TokenStrippedFromUrlAfterConsumption(unittest.TestCase):
             elif ch == "}":
                 depth -= 1
                 if depth == 0:
-                    return self.src[start:i + 1]
+                    return self.src[start : i + 1]
         raise AssertionError(f"unbalanced braces extracting {name}")
 
     def test_init_reset_password_strips_token_from_url(self) -> None:
         body = self._extract_function("initResetPassword")
         self.assertIn(
-            "history.replaceState", body,
+            "history.replaceState",
+            body,
             "GAP-4 regression: initResetPassword() must call "
             "history.replaceState to remove ?token=X from window.location "
             "after capturing the token. Otherwise the secret persists in "
@@ -75,7 +76,8 @@ class TokenStrippedFromUrlAfterConsumption(unittest.TestCase):
         # Must use replaceState (not pushState) so back-button doesn't
         # bring the token-carrying URL back
         self.assertNotIn(
-            "history.pushState", body,
+            "history.pushState",
+            body,
             "GAP-4: use replaceState (not pushState) — pushState leaves "
             "the token-carrying URL one back-button click away.",
         )
@@ -83,7 +85,8 @@ class TokenStrippedFromUrlAfterConsumption(unittest.TestCase):
     def test_init_accept_invite_strips_token_from_url(self) -> None:
         body = self._extract_function("initAcceptInvite")
         self.assertIn(
-            "history.replaceState", body,
+            "history.replaceState",
+            body,
             "GAP-4 regression: initAcceptInvite() must call "
             "history.replaceState to remove ?token=X from window.location.",
         )
@@ -102,7 +105,8 @@ class TokenStrippedFromUrlAfterConsumption(unittest.TestCase):
                 self.assertGreater(replace_pos, 0, f"no replaceState in {name}")
                 self.assertGreater(api_pos, 0, f"no api( call in {name}")
                 self.assertLess(
-                    replace_pos, api_pos,
+                    replace_pos,
+                    api_pos,
                     f"GAP-4: in {name}, history.replaceState must run BEFORE "
                     f"the api(...) call so the token is scrubbed from the URL "
                     "before any network activity could carry it in Referer.",
@@ -115,7 +119,8 @@ class TokenStrippedFromUrlAfterConsumption(unittest.TestCase):
             with self.subTest(function=name):
                 body = self._extract_function(name)
                 self.assertIn(
-                    "form.dataset.token = token", body,
+                    "form.dataset.token = token",
+                    body,
                     f"GAP-4: {name} must still capture the token into "
                     "form.dataset.token; we only want to scrub it from the "
                     "URL, not lose it entirely.",

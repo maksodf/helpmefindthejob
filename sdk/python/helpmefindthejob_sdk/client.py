@@ -109,17 +109,11 @@ class Client:
             if err.code == 401:
                 raise AuthRequiredError("session cookie missing or expired") from err
             if err.code == 404:
-                raise ToolNotFoundError(
-                    f"Tool '{tool_name}' not in catalogue"
-                ) from err
+                raise ToolNotFoundError(f"Tool '{tool_name}' not in catalogue") from err
             if err.code == 400:
                 body = err.read().decode("utf-8", errors="replace")
-                raise ToolValidationError(
-                    f"Payload validation failed: {body[:300]}"
-                ) from err
-            raise HelpmefindthejobError(
-                f"Tool call failed ({err.code}): {err.reason}"
-            ) from err
+                raise ToolValidationError(f"Payload validation failed: {body[:300]}") from err
+            raise HelpmefindthejobError(f"Tool call failed ({err.code}): {err.reason}") from err
         return response.get("result")
 
     # -- typed wrappers for the most common tools -------------------------
@@ -201,9 +195,7 @@ class Client:
         except urllib.error.HTTPError as err:
             if err.code == 401:
                 raise AuthRequiredError("session cookie missing or expired") from err
-            raise HelpmefindthejobError(
-                f"GET {path} failed ({err.code}): {err.reason}"
-            ) from err
+            raise HelpmefindthejobError(f"GET {path} failed ({err.code}): {err.reason}") from err
         except urllib.error.URLError as err:
             raise HelpmefindthejobError(f"network error: {err.reason}") from err
         return json.loads(raw)

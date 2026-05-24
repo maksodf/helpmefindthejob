@@ -32,7 +32,6 @@ from pathlib import Path
 from threading import Lock
 from typing import Any
 
-
 # The i18n directory lives under static/. Resolved relative to this
 # file so the module is path-independent (tests + production both
 # work). Override via env var for test isolation if ever needed.

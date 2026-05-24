@@ -158,7 +158,8 @@ class MobilePwaBrowserSmoke(unittest.TestCase):
             # 6. No console errors. (Warnings are OK; errors are not.)
             #    Filter known-noisy entries (favicon 404 in test, etc.)
             real_errors = [
-                e for e in console_errors
+                e
+                for e in console_errors
                 if "favicon" not in e.lower()
                 and "Manifest" not in e  # PWA manifest warnings can fire under headless emulation
             ]
@@ -184,9 +185,7 @@ class MobilePwaBrowserSmoke(unittest.TestCase):
 
     def test_ios_safari_iphone_12_landing_smoke(self) -> None:
         if self.webkit is None:
-            self.skipTest(
-                f"WebKit not available: {getattr(self, '_webkit_error', 'unknown')}"
-            )
+            self.skipTest(f"WebKit not available: {getattr(self, '_webkit_error', 'unknown')}")
         device = self._pw.devices.get("iPhone 12")
         if device is None:
             self.skipTest("Playwright iPhone 12 device descriptor unavailable")

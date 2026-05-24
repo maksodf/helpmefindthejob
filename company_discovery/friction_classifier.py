@@ -49,10 +49,10 @@ Public API:
 Determinism: pure function, deterministic substring match, tie-
 break by alphabetical persona slug. Pinned by a regression test.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
-
 
 # ─── Phase 1 pattern tables ──────────────────────────────────────
 
@@ -372,15 +372,15 @@ def classify_with_telemetry(cv_text: str) -> ClassificationResult:
         for marker in STRONG_MARKERS[slug]:
             if marker.casefold() in text_lower:
                 return ClassificationResult(
-                    slug=slug, confidence="strong", match_count=1,
+                    slug=slug,
+                    confidence="strong",
+                    match_count=1,
                 )
 
     # Scored fallback — multi-signal soft match.
     scored: dict[str, int] = {}
     for slug in sorted(SCORED_PATTERNS.keys()):
-        count = sum(
-            1 for p in SCORED_PATTERNS[slug] if p.casefold() in text_lower
-        )
+        count = sum(1 for p in SCORED_PATTERNS[slug] if p.casefold() in text_lower)
         if count >= SCORED_MIN_HITS:
             scored[slug] = count
 
@@ -389,9 +389,7 @@ def classify_with_telemetry(cv_text: str) -> ClassificationResult:
 
     # Highest count wins; alphabetical tie-break.
     max_count = max(scored.values())
-    winners = sorted(
-        slug for slug, count in scored.items() if count == max_count
-    )
+    winners = sorted(slug for slug, count in scored.items() if count == max_count)
     # Phase 2 #76 sub-piece (b): surface the tied alternatives so the
     # chat UX can mention them ("you might also be in Y") and let the
     # user override via the change flow. Tied list excludes the

@@ -36,7 +36,6 @@ import re
 from dataclasses import dataclass, field
 from typing import Any
 
-
 # Flag identifiers. These are the canonical machine-readable
 # slugs; UI labels live in FLAG_LABELS below. Stable strings —
 # downstream consumers (loosen_visa_status affordance, JobIndex
@@ -68,18 +67,22 @@ ALL_FLAGS: tuple[str, ...] = (
 # Negative flags signal barrier (bad for migrant users; useful
 # input to the loosen_visa_status widening logic — these are the
 # flags the user might want to ignore if they're under-qualified).
-POSITIVE_FLAGS: frozenset[str] = frozenset({
-    FLAG_ANERKENNUNG_FRIENDLY,
-    FLAG_BLUE_CARD_OK,
-    FLAG_WIEDEREINSTIEG_FRIENDLY,
-    FLAG_AUSBILDUNG_CLASS,
-    FLAG_PARAGRAPH_16D,
-    FLAG_HUMANITARIAN_PATHWAY,
-})
-NEGATIVE_FLAGS: frozenset[str] = frozenset({
-    FLAG_EU_CITIZENS_ONLY,
-    FLAG_PERMANENT_RESIDENCE_REQUIRED,
-})
+POSITIVE_FLAGS: frozenset[str] = frozenset(
+    {
+        FLAG_ANERKENNUNG_FRIENDLY,
+        FLAG_BLUE_CARD_OK,
+        FLAG_WIEDEREINSTIEG_FRIENDLY,
+        FLAG_AUSBILDUNG_CLASS,
+        FLAG_PARAGRAPH_16D,
+        FLAG_HUMANITARIAN_PATHWAY,
+    }
+)
+NEGATIVE_FLAGS: frozenset[str] = frozenset(
+    {
+        FLAG_EU_CITIZENS_ONLY,
+        FLAG_PERMANENT_RESIDENCE_REQUIRED,
+    }
+)
 
 # Human-readable labels for UI rendering. EN-first; DE versions
 # live in the i18n bundles per project convention.
@@ -121,9 +124,9 @@ class VisaStatusFlag:
             "slug": self.slug,
             "label": self.label(),
             "evidence": list(self.evidence),
-            "polarity": "positive" if self.is_positive() else (
-                "negative" if self.is_negative() else "neutral"
-            ),
+            "polarity": "positive"
+            if self.is_positive()
+            else ("negative" if self.is_negative() else "neutral"),
         }
 
 
@@ -137,7 +140,9 @@ class VisaStatusFlag:
 _ANERKENNUNG_PATTERNS: tuple[re.Pattern[str], ...] = (
     re.compile(r"\banerkennung(?:s)?\s*[-\s]?(?:freundlich|friendly|partner)\b", re.IGNORECASE),
     re.compile(r"\bsupports?\s+anerkennung\b", re.IGNORECASE),
-    re.compile(r"\bberufsanerkennung\s+(?:unterstützt|wird unterstützt|gefördert)\b", re.IGNORECASE),
+    re.compile(
+        r"\bberufsanerkennung\s+(?:unterstützt|wird unterstützt|gefördert)\b", re.IGNORECASE
+    ),
     re.compile(r"\banerkennung\s+läuft\b", re.IGNORECASE),
     re.compile(r"\bin\s+anerkennung(?:sverfahren)?\b", re.IGNORECASE),
     re.compile(r"\banpassungslehrgang\b", re.IGNORECASE),
@@ -220,9 +225,16 @@ _PERMANENT_RESIDENCE_PATTERNS: tuple[re.Pattern[str], ...] = (
         r"\bpermanent\s+residen(?:t|tship|cy|ce)\s+(?:required|necessary|essential)\b",
         re.IGNORECASE,
     ),
-    re.compile(r"\bniederlassungserlaubnis\s+(?:erforderlich|required|vorausgesetzt)\b", re.IGNORECASE),
-    re.compile(r"\bunbefristeter?\s+aufenthaltstitel\s+(?:erforderlich|notwendig)\b", re.IGNORECASE),
-    re.compile(r"(?:^|\s)§\s*9\s+(?:aufenthG?|aufenthaltsgesetz)\s+(?:erforderlich|required)\b", re.IGNORECASE),
+    re.compile(
+        r"\bniederlassungserlaubnis\s+(?:erforderlich|required|vorausgesetzt)\b", re.IGNORECASE
+    ),
+    re.compile(
+        r"\bunbefristeter?\s+aufenthaltstitel\s+(?:erforderlich|notwendig)\b", re.IGNORECASE
+    ),
+    re.compile(
+        r"(?:^|\s)§\s*9\s+(?:aufenthG?|aufenthaltsgesetz)\s+(?:erforderlich|required)\b",
+        re.IGNORECASE,
+    ),
 )
 
 
@@ -318,34 +330,46 @@ def annotate_jobs_with_visa_status_flags(jobs: list[Any]) -> list[Any]:
 # their row; allow widening to postings without those flags.
 FRICTION_CLASS_PREFERRED_FLAGS: dict[str, frozenset[str]] = {
     # Aïcha — §16d Anerkennungsweg
-    "aicha": frozenset({
-        FLAG_ANERKENNUNG_FRIENDLY,
-        FLAG_PARAGRAPH_16D,
-    }),
+    "aicha": frozenset(
+        {
+            FLAG_ANERKENNUNG_FRIENDLY,
+            FLAG_PARAGRAPH_16D,
+        }
+    ),
     # Yusuf — EU Blue Card
-    "yusuf": frozenset({
-        FLAG_BLUE_CARD_OK,
-    }),
+    "yusuf": frozenset(
+        {
+            FLAG_BLUE_CARD_OK,
+        }
+    ),
     # Olga — §24 Ukrainian temporary protection
-    "olga": frozenset({
-        FLAG_HUMANITARIAN_PATHWAY,
-        FLAG_ANERKENNUNG_FRIENDLY,
-    }),
+    "olga": frozenset(
+        {
+            FLAG_HUMANITARIAN_PATHWAY,
+            FLAG_ANERKENNUNG_FRIENDLY,
+        }
+    ),
     # Mahmoud — §4 AsylG
-    "mahmoud": frozenset({
-        FLAG_HUMANITARIAN_PATHWAY,
-        FLAG_AUSBILDUNG_CLASS,
-    }),
+    "mahmoud": frozenset(
+        {
+            FLAG_HUMANITARIAN_PATHWAY,
+            FLAG_AUSBILDUNG_CLASS,
+        }
+    ),
     # Maria — EU citizen (no visa constraint; broad)
     "maria": frozenset(),  # no preferred flags — Maria has no visa friction
     # Käthe — Wiedereinstieg
-    "kaethe": frozenset({
-        FLAG_WIEDEREINSTIEG_FRIENDLY,
-    }),
+    "kaethe": frozenset(
+        {
+            FLAG_WIEDEREINSTIEG_FRIENDLY,
+        }
+    ),
     # Tobias — Quereinstieg (native-DACH career changer; no visa)
-    "tobias": frozenset({
-        FLAG_AUSBILDUNG_CLASS,  # career-change roles often Ausbildung-class
-    }),
+    "tobias": frozenset(
+        {
+            FLAG_AUSBILDUNG_CLASS,  # career-change roles often Ausbildung-class
+        }
+    ),
 }
 
 
@@ -361,9 +385,7 @@ FRICTION_CLASS_BARRIER_FLAGS: dict[str, frozenset[str]] = {
 }
 
 
-def has_barrier_for_class(
-    flags: list[VisaStatusFlag], friction_class_slug: str
-) -> bool:
+def has_barrier_for_class(flags: list[VisaStatusFlag], friction_class_slug: str) -> bool:
     """True iff the detected flags include any HARD BARRIER for
     the given friction class. Used by the journey's widening
     logic: if `has_barrier_for_class(flags, user.class) == True`,
@@ -377,9 +399,7 @@ def has_barrier_for_class(
     return bool(detected_slugs & barriers)
 
 
-def matches_preferred_for_class(
-    flags: list[VisaStatusFlag], friction_class_slug: str
-) -> bool:
+def matches_preferred_for_class(flags: list[VisaStatusFlag], friction_class_slug: str) -> bool:
     """True iff the detected flags include any PREFERRED match
     for the friction class. Used by the journey's ranking logic
     to surface stronger matches first."""

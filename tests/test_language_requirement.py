@@ -54,42 +54,32 @@ class DeNativeLevelDetection(unittest.TestCase):
         self.assertTrue(any("muttersprachler" in ev.lower() for ev in req.evidence))
 
     def test_native_german_speaker_detected(self):
-        req = detect_language_requirement(
-            "Native German speaker required for client-facing role."
-        )
+        req = detect_language_requirement("Native German speaker required for client-facing role.")
         self.assertEqual(req.language, "de")
         self.assertEqual(req.level, "native")
 
 
 class DeC1LevelDetection(unittest.TestCase):
     def test_verhandlungssicher_detected(self):
-        req = detect_language_requirement(
-            "Sie bringen verhandlungssicheres Deutsch mit."
-        )
+        req = detect_language_requirement("Sie bringen verhandlungssicheres Deutsch mit.")
         self.assertEqual(req.language, "de")
         self.assertEqual(req.level, "C1+")
         self.assertTrue(any("verhandlungssicher" in ev.lower() for ev in req.evidence))
 
     def test_fliessend_deutsch_detected(self):
-        req = detect_language_requirement(
-            "Anforderungen: Fließend Deutsch in Wort und Schrift."
-        )
+        req = detect_language_requirement("Anforderungen: Fließend Deutsch in Wort und Schrift.")
         self.assertEqual(req.language, "de")
         self.assertEqual(req.level, "C1+")
 
     def test_c1_explicit_detected(self):
-        req = detect_language_requirement(
-            "Sehr gute Deutschkenntnisse (C1) erforderlich."
-        )
+        req = detect_language_requirement("Sehr gute Deutschkenntnisse (C1) erforderlich.")
         self.assertEqual(req.language, "de")
         self.assertEqual(req.level, "C1+")
 
 
 class DeB2LevelDetection(unittest.TestCase):
     def test_b2_explicit_detected(self):
-        req = detect_language_requirement(
-            "Wir erwarten Deutsch B2."
-        )
+        req = detect_language_requirement("Wir erwarten Deutsch B2.")
         self.assertEqual(req.language, "de")
         self.assertEqual(req.level, "B2+")
 
@@ -101,16 +91,12 @@ class DeB2LevelDetection(unittest.TestCase):
 
 class DeB1LevelDetection(unittest.TestCase):
     def test_b1_explicit_detected(self):
-        req = detect_language_requirement(
-            "Deutsch B1 ist ausreichend für den Start."
-        )
+        req = detect_language_requirement("Deutsch B1 ist ausreichend für den Start.")
         self.assertEqual(req.language, "de")
         self.assertEqual(req.level, "B1+")
 
     def test_grundkenntnisse_deutsch_detected(self):
-        req = detect_language_requirement(
-            "Vorteilhaft: Grundkenntnisse Deutsch."
-        )
+        req = detect_language_requirement("Vorteilhaft: Grundkenntnisse Deutsch.")
         self.assertEqual(req.language, "de")
         self.assertEqual(req.level, "B1+")
 
@@ -121,9 +107,7 @@ class DeUnscopedRequiredDetection(unittest.TestCase):
         erforderlich" defaults to B2+ per Bundesagentur für Arbeit
         guidance."""
 
-        req = detect_language_requirement(
-            "Folgende Voraussetzungen: Deutsch erforderlich."
-        )
+        req = detect_language_requirement("Folgende Voraussetzungen: Deutsch erforderlich.")
         self.assertEqual(req.language, "de")
         self.assertEqual(req.level, "B2+")
 
@@ -142,16 +126,12 @@ class EnLevelDetection(unittest.TestCase):
         self.assertEqual(req.level, "native")
 
     def test_fluent_english_detected(self):
-        req = detect_language_requirement(
-            "Fluent in English is essential for this role."
-        )
+        req = detect_language_requirement("Fluent in English is essential for this role.")
         self.assertEqual(req.language, "en")
         self.assertEqual(req.level, "C1+")
 
     def test_good_english_detected(self):
-        req = detect_language_requirement(
-            "Good English required for daily standups."
-        )
+        req = detect_language_requirement("Good English required for daily standups.")
         self.assertEqual(req.language, "en")
         self.assertEqual(req.level, "B2+")
 
@@ -181,9 +161,7 @@ class BilingualDetection(unittest.TestCase):
         self.assertGreater(len(en_evidence), 0)
 
     def test_de_higher_than_en_picks_de(self):
-        req = detect_language_requirement(
-            "Native German required. Basic English helpful."
-        )
+        req = detect_language_requirement("Native German required. Basic English helpful.")
         self.assertEqual(req.language, "de")
         self.assertEqual(req.level, "native")
 
@@ -209,8 +187,7 @@ class EdgeCases(unittest.TestCase):
         false-positive. Doctrine: silent > guessing."""
 
         req = detect_language_requirement(
-            "Wir suchen einen Softwareentwickler. Standort Berlin. "
-            "Vollzeit, 38h/Woche, ab sofort."
+            "Wir suchen einen Softwareentwickler. Standort Berlin. Vollzeit, 38h/Woche, ab sofort."
         )
         self.assertTrue(req.is_silent())
 
@@ -242,15 +219,11 @@ class ConfidenceScoring(unittest.TestCase):
         self.assertEqual(req.confidence, "high")
 
     def test_medium_confidence_with_single_c1_evidence(self):
-        req = detect_language_requirement(
-            "Verhandlungssichere Deutschkenntnisse."
-        )
+        req = detect_language_requirement("Verhandlungssichere Deutschkenntnisse.")
         self.assertEqual(req.confidence, "medium")
 
     def test_low_confidence_with_single_b1_evidence(self):
-        req = detect_language_requirement(
-            "Grundkenntnisse Deutsch sind nützlich."
-        )
+        req = detect_language_requirement("Grundkenntnisse Deutsch sind nützlich.")
         # Single B1 match → low (no C1+ specificity)
         self.assertEqual(req.confidence, "low")
 
@@ -303,6 +276,7 @@ class AnnotatorBehaviour(unittest.TestCase):
         class _BadJob:
             description = "Fluent English required."
             raw = None
+
         jobs = [_BadJob()]
         # Must not raise
         annotate_jobs_with_language_requirement(jobs)
@@ -316,6 +290,7 @@ class AnnotatorBehaviour(unittest.TestCase):
         class _NoDesc:
             description = None
             raw = {}
+
         jobs = [_NoDesc()]
         annotate_jobs_with_language_requirement(jobs)
         self.assertNotIn("languageRequirement", jobs[0].raw)

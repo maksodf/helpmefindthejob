@@ -61,7 +61,6 @@ def _free_port() -> int:
 
 
 class PublicSignupOpenByDefault(unittest.TestCase):
-
     @classmethod
     def setUpClass(cls) -> None:
         cls._tmp = TemporaryDirectory()
@@ -129,10 +128,15 @@ class PublicSignupOpenByDefault(unittest.TestCase):
     def _post_json(self, path: str, payload: dict) -> tuple[int, dict[str, str], bytes]:
         conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=4)
         body = json.dumps(payload).encode("utf-8")
-        conn.request("POST", path, body=body, headers={
-            "Content-Type": "application/json",
-            "Content-Length": str(len(body)),
-        })
+        conn.request(
+            "POST",
+            path,
+            body=body,
+            headers={
+                "Content-Type": "application/json",
+                "Content-Length": str(len(body)),
+            },
+        )
         resp = conn.getresponse()
         try:
             return resp.status, dict(resp.getheaders()), resp.read()
@@ -154,13 +158,17 @@ class PublicSignupOpenByDefault(unittest.TestCase):
         open-by-default public signup."""
 
         # Register a first user.
-        status, _h, body = self._post_json("/api/auth/register", {
-            "email": "first-user@example.org",
-            "password": "test-password-1234",
-        })
+        status, _h, body = self._post_json(
+            "/api/auth/register",
+            {
+                "email": "first-user@example.org",
+                "password": "test-password-1234",
+            },
+        )
         # 200 (or 201/202 — any 2xx) means the user was created.
         self.assertIn(
-            status, (200, 201, 202),
+            status,
+            (200, 201, 202),
             f"first user registration failed: {status} / {body!r}",
         )
 
@@ -197,20 +205,21 @@ class PublicSignupOpenByDefault(unittest.TestCase):
         status, _h, body = self._get("/")
         self.assertEqual(status, 200)
         text = body.decode("utf-8")
-        self.assertIn('id="registerConsent"', text,
-                      "consent block missing from SPA shell")
+        self.assertIn('id="registerConsent"', text, "consent block missing from SPA shell")
         # The element exists. Now confirm it does NOT carry the
         # `hidden` attribute by default. We probe the exact opening
         # tag so we don't false-positive on a `hidden` later in the
         # markup.
         import re as _re
+
         rx = _re.compile(
             r'<div\s+[^>]*id="registerConsent"[^>]*>',
         )
         m = rx.search(text)
         self.assertIsNotNone(m, "registerConsent div opening tag not found")
         self.assertNotIn(
-            " hidden", m.group(0),
+            " hidden",
+            m.group(0),
             "UX-P0 follow-up regression: <div id='registerConsent'> "
             "is back to default-hidden. JS hydration delays / cache /"
             " blocked JS leave the user unable to register.",
@@ -227,15 +236,18 @@ class PublicSignupOpenByDefault(unittest.TestCase):
         text = body.decode("utf-8")
 
         self.assertIn(
-            'id="registerHeading"', text,
+            'id="registerHeading"',
+            text,
             "registerForm heading element missing from SPA shell",
         )
         self.assertIn(
-            'data-i18n="auth.createPublicHeading"', text,
+            'data-i18n="auth.createPublicHeading"',
+            text,
             "registerHeading must use auth.createPublicHeading i18n key",
         )
         self.assertIn(
-            'data-i18n="auth.createPublicLead"', text,
+            'data-i18n="auth.createPublicLead"',
+            text,
             "registerLead must use auth.createPublicLead i18n key",
         )
         self.assertNotIn(
@@ -264,6 +276,7 @@ class ComposeFileDoesNotOverrideCodeDefault(unittest.TestCase):
     def test_compose_prod_default_is_true(self) -> None:
         compose = (ROOT / "docker-compose.prod.yml").read_text(encoding="utf-8")
         import re as _re
+
         rx = _re.compile(
             r"HELPMEFINDTHEJOB_ALLOW_REGISTRATION:\s*"
             r"\$\{HELPMEFINDTHEJOB_ALLOW_REGISTRATION:-(\w+)\}",
@@ -275,7 +288,8 @@ class ComposeFileDoesNotOverrideCodeDefault(unittest.TestCase):
             "env line entirely — the container won't pick up the env var.",
         )
         self.assertEqual(
-            m.group(1), "true",
+            m.group(1),
+            "true",
             "UX-P0 follow-up regression: compose-file default is "
             f"{m.group(1)!r} but must be 'true' to match the code "
             "default in app.py. Pre-fix prod silently closed sign-up.",

@@ -23,8 +23,8 @@ from __future__ import annotations
 
 import unittest
 from pathlib import Path
-
 from pathlib import Path as _RPath
+
 _REPO_ROOT = _RPath(__file__).resolve().parent.parent
 
 
@@ -126,8 +126,7 @@ class ChangelogCurrencyContract(unittest.TestCase):
         self.assertEqual(
             missing,
             [],
-            "post-13-plan session items missing from CHANGELOG: "
-            f"{missing}",
+            f"post-13-plan session items missing from CHANGELOG: {missing}",
         )
 
     def test_commit_hashes_referenced_for_each_major_item(self):

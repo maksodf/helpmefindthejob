@@ -304,7 +304,11 @@ class HttpPhase2Tests(unittest.TestCase):
         self.assertEqual(payload["status"], "sent")
         outbox = Path(self.tmp.name) / "email_outbox.log"
         self.assertTrue(outbox.exists())
-        entries = [json.loads(line) for line in outbox.read_text(encoding="utf-8").splitlines() if line.strip()]
+        entries = [
+            json.loads(line)
+            for line in outbox.read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        ]
         self.assertTrue(any("digest" in entry["subject"].casefold() for entry in entries))
 
     def test_billing_admin_only(self) -> None:

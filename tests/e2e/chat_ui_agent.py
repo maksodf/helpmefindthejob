@@ -129,7 +129,9 @@ def main() -> int:
             page.wait_for_timeout(1500)
             # Use textContent (not inner_text) — bubbles are appended
             # as plain text nodes, no HTML semantics to render.
-            tc = page.evaluate("() => document.querySelector('#dockChatTranscript')?.textContent || ''")
+            tc = page.evaluate(
+                "() => document.querySelector('#dockChatTranscript')?.textContent || ''"
+            )
             asks_confirm = ("UI-Corp" in tc) and ("Confirm" in tc)
             report(
                 "confirmation_prompt_renders",

@@ -49,7 +49,6 @@ def _free_port() -> int:
 
 
 class ForgotAnd404Polish(unittest.TestCase):
-
     @classmethod
     def setUpClass(cls) -> None:
         cls._tmp = TemporaryDirectory()
@@ -115,29 +114,29 @@ class ForgotAnd404Polish(unittest.TestCase):
         status, body = self._get("/this-url-does-not-exist")
         self.assertEqual(status, 404)
         self.assertNotIn(
-            "(any more)", body,
-            "UX-B5 regression: apologetic '(any more)' parenthetical "
-            "is back on the EN 404 page.",
+            "(any more)",
+            body,
+            "UX-B5 regression: apologetic '(any more)' parenthetical is back on the EN 404 page.",
         )
 
     def test_b5_404_de_no_mehr_parenthetical(self) -> None:
         conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=2)
-        conn.request("GET", "/this-url-does-not-exist",
-                     headers={"Accept-Language": "de"})
+        conn.request("GET", "/this-url-does-not-exist", headers={"Accept-Language": "de"})
         resp = conn.getresponse()
         status, body = resp.status, resp.read().decode("utf-8")
         conn.close()
         self.assertEqual(status, 404)
         self.assertNotIn(
-            "(mehr)", body,
-            "UX-B5 regression: apologetic '(mehr)' parenthetical is "
-            "back on the DE 404 page.",
+            "(mehr)",
+            body,
+            "UX-B5 regression: apologetic '(mehr)' parenthetical is back on the DE 404 page.",
         )
 
     def test_c6_en_rate_limit_hint_present(self) -> None:
         _status, body = self._get("/forgot-password")
         self.assertIn(
-            "5 reset emails every 10 minutes", body,
+            "5 reset emails every 10 minutes",
+            body,
             "UX-C6 regression: rate-limit hint missing from EN "
             "forgot-password page. Users retrying repeatedly need "
             "to know why they're being silently rate-limited.",
@@ -145,15 +144,14 @@ class ForgotAnd404Polish(unittest.TestCase):
 
     def test_c6_de_rate_limit_hint_present(self) -> None:
         conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=2)
-        conn.request("GET", "/forgot-password",
-                     headers={"Accept-Language": "de"})
+        conn.request("GET", "/forgot-password", headers={"Accept-Language": "de"})
         resp = conn.getresponse()
         body = resp.read().decode("utf-8")
         conn.close()
         self.assertIn(
-            "5 Reset-E-Mails pro 10 Minuten", body,
-            "UX-C6 regression: rate-limit hint missing from DE "
-            "forgot-password page.",
+            "5 Reset-E-Mails pro 10 Minuten",
+            body,
+            "UX-C6 regression: rate-limit hint missing from DE forgot-password page.",
         )
 
     def test_c7_post_submit_success_copy_wired(self) -> None:

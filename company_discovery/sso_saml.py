@@ -67,12 +67,10 @@ import urllib.parse
 import zlib
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
-from typing import Any
 
 from lxml import etree
 from signxml import XMLVerifier
 from signxml.exceptions import InvalidSignature
-
 
 _log = logging.getLogger(__name__)
 
@@ -155,14 +153,10 @@ def load_idps_from_env() -> list[SamlIdpConfig]:
     configs: list[SamlIdpConfig] = []
     for idp_id in idp_ids:
         env_key = idp_id.upper().replace("-", "_")
-        entity_id = os.environ.get(
-            f"{_ENV_PREFIX}{env_key}_ENTITY_ID", ""
-        ).strip()
+        entity_id = os.environ.get(f"{_ENV_PREFIX}{env_key}_ENTITY_ID", "").strip()
         sso_url = os.environ.get(f"{_ENV_PREFIX}{env_key}_SSO_URL", "").strip()
         cert_pem = os.environ.get(f"{_ENV_PREFIX}{env_key}_CERT_PEM", "").strip()
-        email_domain = os.environ.get(
-            f"{_ENV_PREFIX}{env_key}_EMAIL_DOMAIN", ""
-        ).strip()
+        email_domain = os.environ.get(f"{_ENV_PREFIX}{env_key}_EMAIL_DOMAIN", "").strip()
         missing = []
         if not entity_id:
             missing.append("ENTITY_ID")
@@ -239,7 +233,7 @@ def build_authn_request(
         f'AssertionConsumerServiceURL="{acs_url}" '
         f'ProtocolBinding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST">'
         f"<saml:Issuer>{sp_entity_id}</saml:Issuer>"
-        f'<samlp:NameIDPolicy '
+        f"<samlp:NameIDPolicy "
         f'Format="urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress" '
         f'AllowCreate="true"/>'
         f"</samlp:AuthnRequest>"
@@ -277,9 +271,7 @@ def _normalize_cert(cert_pem: str) -> bytes:
         # Re-wrap to 64-char lines per PEM convention
         lines = [body[i : i + 64] for i in range(0, len(body), 64)]
         stripped = (
-            "-----BEGIN CERTIFICATE-----\n"
-            + "\n".join(lines)
-            + "\n-----END CERTIFICATE-----"
+            "-----BEGIN CERTIFICATE-----\n" + "\n".join(lines) + "\n-----END CERTIFICATE-----"
         )
     return stripped.encode("utf-8")
 
@@ -351,25 +343,20 @@ def parse_and_validate_response(
     # ---- Step 2: Destination ----
     destination = root.get("Destination", "")
     if destination and destination != acs_url:
-        raise SamlResponseError(
-            f"destination_mismatch:got={destination!r} expected={acs_url!r}"
-        )
+        raise SamlResponseError(f"destination_mismatch:got={destination!r} expected={acs_url!r}")
 
     # ---- Step 3: Issuer matches IdP ----
     issuer_el = assertion.find("saml:Issuer", _NS)
     if issuer_el is None or (issuer_el.text or "") != idp.entity_id:
         actual = issuer_el.text if issuer_el is not None else None
-        raise SamlResponseError(
-            f"issuer_mismatch:got={actual!r} expected={idp.entity_id!r}"
-        )
+        raise SamlResponseError(f"issuer_mismatch:got={actual!r} expected={idp.entity_id!r}")
 
     # ---- Step 4: InResponseTo ----
     if expected_request_id:
         in_response_to = root.get("InResponseTo", "")
         if in_response_to != expected_request_id:
             raise SamlResponseError(
-                f"in_response_to_mismatch:got={in_response_to!r} "
-                f"expected={expected_request_id!r}"
+                f"in_response_to_mismatch:got={in_response_to!r} expected={expected_request_id!r}"
             )
 
     # ---- Step 5: Conditions/Audience ----
@@ -378,14 +365,10 @@ def parse_and_validate_response(
         raise SamlResponseError("assertion_missing_conditions")
     audiences = [
         (e.text or "").strip()
-        for e in conditions.findall(
-            "saml:AudienceRestriction/saml:Audience", _NS
-        )
+        for e in conditions.findall("saml:AudienceRestriction/saml:Audience", _NS)
     ]
     if sp_entity_id not in audiences:
-        raise SamlResponseError(
-            f"audience_mismatch:got={audiences!r} expected={sp_entity_id!r}"
-        )
+        raise SamlResponseError(f"audience_mismatch:got={audiences!r} expected={sp_entity_id!r}")
 
     # ---- Step 6: Conditions/NotBefore + NotOnOrAfter ----
     now = datetime.now(timezone.utc)
@@ -393,41 +376,35 @@ def parse_and_validate_response(
     not_on_or_after_str = conditions.get("NotOnOrAfter", "")
     if not_before_str:
         try:
-            not_before = datetime.strptime(
-                not_before_str, "%Y-%m-%dT%H:%M:%SZ"
-            ).replace(tzinfo=timezone.utc)
+            not_before = datetime.strptime(not_before_str, "%Y-%m-%dT%H:%M:%SZ").replace(
+                tzinfo=timezone.utc
+            )
         except ValueError:
             # Some IdPs include fractional seconds; try alt format
             try:
-                not_before = datetime.strptime(
-                    not_before_str, "%Y-%m-%dT%H:%M:%S.%fZ"
-                ).replace(tzinfo=timezone.utc)
+                not_before = datetime.strptime(not_before_str, "%Y-%m-%dT%H:%M:%S.%fZ").replace(
+                    tzinfo=timezone.utc
+                )
             except ValueError as err:
-                raise SamlResponseError(
-                    f"not_before_parse_failed:{not_before_str}"
-                ) from err
+                raise SamlResponseError(f"not_before_parse_failed:{not_before_str}") from err
         if now < not_before - _delta(clock_skew_seconds):
-            raise SamlResponseError(
-                f"assertion_not_yet_valid:not_before={not_before_str}"
-            )
+            raise SamlResponseError(f"assertion_not_yet_valid:not_before={not_before_str}")
     if not_on_or_after_str:
         try:
-            not_after = datetime.strptime(
-                not_on_or_after_str, "%Y-%m-%dT%H:%M:%SZ"
-            ).replace(tzinfo=timezone.utc)
+            not_after = datetime.strptime(not_on_or_after_str, "%Y-%m-%dT%H:%M:%SZ").replace(
+                tzinfo=timezone.utc
+            )
         except ValueError:
             try:
-                not_after = datetime.strptime(
-                    not_on_or_after_str, "%Y-%m-%dT%H:%M:%S.%fZ"
-                ).replace(tzinfo=timezone.utc)
+                not_after = datetime.strptime(not_on_or_after_str, "%Y-%m-%dT%H:%M:%S.%fZ").replace(
+                    tzinfo=timezone.utc
+                )
             except ValueError as err:
                 raise SamlResponseError(
                     f"not_on_or_after_parse_failed:{not_on_or_after_str}"
                 ) from err
         if now > not_after + _delta(clock_skew_seconds):
-            raise SamlResponseError(
-                f"assertion_expired:not_on_or_after={not_on_or_after_str}"
-            )
+            raise SamlResponseError(f"assertion_expired:not_on_or_after={not_on_or_after_str}")
 
     # ---- Step 7: extract NameID + attributes ----
     subject_el = assertion.find("saml:Subject/saml:NameID", _NS)
@@ -436,9 +413,7 @@ def parse_and_validate_response(
     name_id = (subject_el.text or "").strip()
 
     attributes: dict[str, list[str]] = {}
-    for attr in assertion.findall(
-        "saml:AttributeStatement/saml:Attribute", _NS
-    ):
+    for attr in assertion.findall("saml:AttributeStatement/saml:Attribute", _NS):
         attr_name = attr.get("Name", "")
         values = [
             (v.text or "").strip()
@@ -468,9 +443,7 @@ def _delta(seconds: int) -> timedelta:
     return timedelta(seconds=seconds)
 
 
-def _extract_email(
-    attributes: dict[str, list[str]], *, fallback_nameid: str
-) -> str:
+def _extract_email(attributes: dict[str, list[str]], *, fallback_nameid: str) -> str:
     """Pull the email from common attribute names. Falls back
     to NameID if it looks like an email."""
 
@@ -534,18 +507,16 @@ def build_sp_metadata(
         f'Location="{acs_url}" index="0" isDefault="true"/>'
         f"</SPSSODescriptor>"
         f"<Organization>"
-        f"<OrganizationName xml:lang=\"en\">{sp_name}</OrganizationName>"
-        f"<OrganizationDisplayName xml:lang=\"en\">{sp_name}</OrganizationDisplayName>"
-        f"<OrganizationURL xml:lang=\"en\">https://helpmefindthejob.org</OrganizationURL>"
+        f'<OrganizationName xml:lang="en">{sp_name}</OrganizationName>'
+        f'<OrganizationDisplayName xml:lang="en">{sp_name}</OrganizationDisplayName>'
+        f'<OrganizationURL xml:lang="en">https://helpmefindthejob.org</OrganizationURL>'
         f"</Organization>"
         f"</EntityDescriptor>"
     )
     return xml.encode("utf-8")
 
 
-def route_by_email_domain(
-    idps: list[SamlIdpConfig], email: str
-) -> SamlIdpConfig | None:
+def route_by_email_domain(idps: list[SamlIdpConfig], email: str) -> SamlIdpConfig | None:
     """Find the IdP configured for an email's domain. Same
     pattern as ``sso_oidc.route_by_email_domain``."""
 

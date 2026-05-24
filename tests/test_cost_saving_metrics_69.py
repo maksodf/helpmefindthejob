@@ -173,9 +173,7 @@ class SnapshotConfidence(unittest.TestCase):
                 user_id=f"u-{i}",
             )
         snap = log.snapshot()
-        self.assertEqual(
-            snap["mechanisms"][MECHANISM_SHORTER_JOURNEY]["confidence"], "plausible"
-        )
+        self.assertEqual(snap["mechanisms"][MECHANISM_SHORTER_JOURNEY]["confidence"], "plausible")
         # Top up to PROVEN threshold
         for i in range(PROVEN_EVENT_THRESHOLD - PLAUSIBLE_EVENT_THRESHOLD):
             log.record(
@@ -185,9 +183,7 @@ class SnapshotConfidence(unittest.TestCase):
                 user_id=f"u-p-{i}",
             )
         snap = log.snapshot()
-        self.assertEqual(
-            snap["mechanisms"][MECHANISM_SHORTER_JOURNEY]["confidence"], "proven"
-        )
+        self.assertEqual(snap["mechanisms"][MECHANISM_SHORTER_JOURNEY]["confidence"], "proven")
 
     def test_snapshot_counts_distinct_users(self) -> None:
         log, tmp = _make_log(enabled=True)
@@ -215,9 +211,7 @@ class SnapshotConfidence(unittest.TestCase):
             user_id="u-1",
         )
         snap = log.snapshot()
-        self.assertEqual(
-            snap["mechanisms"][MECHANISM_FEWER_WRONG_FIT_APPS]["unit"], "apps_skipped"
-        )
+        self.assertEqual(snap["mechanisms"][MECHANISM_FEWER_WRONG_FIT_APPS]["unit"], "apps_skipped")
 
 
 class EnvOptIn(unittest.TestCase):
@@ -225,10 +219,13 @@ class EnvOptIn(unittest.TestCase):
         import os
 
         # Save / restore — the test harness shouldn't have these set
-        original = {k: os.environ.pop(k, None) for k in (
-            "HELPMEFINDTHEJOB_COST_METRICS",
-            "HELPMEFINDTHEJOB_COST_METRICS",
-        )}
+        original = {
+            k: os.environ.pop(k, None)
+            for k in (
+                "HELPMEFINDTHEJOB_COST_METRICS",
+                "HELPMEFINDTHEJOB_COST_METRICS",
+            )
+        }
         try:
             self.assertFalse(_env_enabled())
         finally:

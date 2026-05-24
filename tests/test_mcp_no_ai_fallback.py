@@ -123,18 +123,12 @@ class TemplatedFallbackForEveryTool(unittest.TestCase):
         # Even with no network, this should return a structured
         # response — never crash. Status may be ok/blocked/error/
         # not_found depending on the seed company state.
-        out = self.tools.find_company_career_page(
-            userId="u-no-ai", companyId=self.company_id
-        )
+        out = self.tools.find_company_career_page(userId="u-no-ai", companyId=self.company_id)
         self.assertIn("status", out)
-        self.assertIn(
-            out["status"], {"ok", "blocked", "error", "not_found"}
-        )
+        self.assertIn(out["status"], {"ok", "blocked", "error", "not_found"})
 
     def test_scan_company_career_page_no_ai(self) -> None:
-        out = self.tools.scan_company_career_page(
-            userId="u-no-ai", companyId=self.company_id
-        )
+        out = self.tools.scan_company_career_page(userId="u-no-ai", companyId=self.company_id)
         self.assertIn("status", out)
         # Status may be "blocked", "completed", "error" depending on
         # whether the URL resolves — but must be a string
@@ -165,8 +159,9 @@ class TemplatedFallbackForEveryTool(unittest.TestCase):
 
     def test_import_discovered_job_no_ai(self) -> None:
         # Need a discovered_job first — seed one via service
-        from company_discovery.models import DiscoveredJob
         from datetime import datetime, timezone
+
+        from company_discovery.models import DiscoveredJob
 
         discovered = DiscoveredJob(
             user_id="u-no-ai",
@@ -176,9 +171,7 @@ class TemplatedFallbackForEveryTool(unittest.TestCase):
             raw_snippet="Backend Eng @ Acme",
         )
         saved = self.tools.service.repository.save_discovered_job(discovered)
-        out = self.tools.import_discovered_job(
-            userId="u-no-ai", discoveredJobId=saved.id
-        )
+        out = self.tools.import_discovered_job(userId="u-no-ai", discoveredJobId=saved.id)
         self.assertEqual(out["status"], "ok")
         self.assertIn("job", out)
 
@@ -237,9 +230,7 @@ class TemplatedFallbackForEveryTool(unittest.TestCase):
             raw_snippet="Pflege job",
         )
         saved = self.tools.service.repository.save_discovered_job(discovered)
-        out = self.tools.export_eures_compatible(
-            userId="u-no-ai", discoveredJobId=saved.id
-        )
+        out = self.tools.export_eures_compatible(userId="u-no-ai", discoveredJobId=saved.id)
         self.assertEqual(out["status"], "ok")
         self.assertIn("eures", out)
 

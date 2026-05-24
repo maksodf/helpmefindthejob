@@ -30,7 +30,6 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class AutocompleteContract(unittest.TestCase):
-
     @classmethod
     def setUpClass(cls) -> None:
         cls.index_html = (ROOT / "static" / "index.html").read_text(encoding="utf-8")
@@ -79,9 +78,7 @@ class AutocompleteContract(unittest.TestCase):
     ]
 
     def _expect_autocomplete(self, input_id: str, value: str) -> None:
-        rx = re.compile(
-            rf'<input[^>]*id="{re.escape(input_id)}"[^>]*\bautocomplete="([^"]*)"'
-        )
+        rx = re.compile(rf'<input[^>]*id="{re.escape(input_id)}"[^>]*\bautocomplete="([^"]*)"')
         m = rx.search(self.index_html)
         self.assertIsNotNone(
             m,
@@ -89,9 +86,9 @@ class AutocompleteContract(unittest.TestCase):
             f"autocomplete attribute entirely. Set autocomplete='{value}'.",
         )
         self.assertEqual(
-            m.group(1), value,
-            f"UX-C4: <input id='{input_id}'> autocomplete is "
-            f"{m.group(1)!r}, expected {value!r}.",
+            m.group(1),
+            value,
+            f"UX-C4: <input id='{input_id}'> autocomplete is {m.group(1)!r}, expected {value!r}.",
         )
 
     def test_auth_inputs_have_correct_autocomplete(self) -> None:

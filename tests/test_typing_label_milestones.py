@@ -81,7 +81,7 @@ def _extract_typing_labels() -> dict[str, list[dict[str, object]]]:
     # downstream assertions can stay shape-agnostic. The substantive
     # contract (first stage after=0, monotonic, ≥2 stages for long-
     # ops) is independent of which key holds the EN string.
-    for category, stages in parsed.items():
+    for _category, stages in parsed.items():
         if not isinstance(stages, list):
             continue
         for stage in stages:

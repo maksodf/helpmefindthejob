@@ -47,12 +47,10 @@ import json
 import logging
 import sqlite3
 import threading
-import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Callable, Iterable
-
+from typing import Any, Callable
 
 _log = logging.getLogger(__name__)
 
@@ -409,9 +407,7 @@ class BackgroundJobQueue:
             result=result,
         )
 
-    def _handle_failure(
-        self, job: JobRecord, current_attempt: int, exc: BaseException
-    ) -> None:
+    def _handle_failure(self, job: JobRecord, current_attempt: int, exc: BaseException) -> None:
         error_msg = f"{type(exc).__name__}: {exc}"[:500]
         if current_attempt >= job.max_attempts:
             self._finalise(
@@ -426,9 +422,7 @@ class BackgroundJobQueue:
             self.max_backoff_minutes,
             2 ** (current_attempt - 1),
         )
-        next_at = (_now_dt() + timedelta(minutes=backoff_minutes)).isoformat(
-            timespec="seconds"
-        )
+        next_at = (_now_dt() + timedelta(minutes=backoff_minutes)).isoformat(timespec="seconds")
         with self._lock:
             self._connection.execute(
                 """
@@ -453,9 +447,7 @@ class BackgroundJobQueue:
     ) -> None:
         if status not in JOB_STATUSES:
             raise ValueError(f"invalid_status:{status!r}")
-        result_json = (
-            json.dumps(result, default=str) if result is not None else None
-        )
+        result_json = json.dumps(result, default=str) if result is not None else None
         with self._lock:
             self._connection.execute(
                 """

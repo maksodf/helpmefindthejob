@@ -26,7 +26,6 @@ import re
 import unittest
 from pathlib import Path
 
-
 REPO_ROOT = Path(__file__).resolve().parent.parent
 APPLICATION_PACKAGE = REPO_ROOT / "docs" / "grant" / "12-application-package.md"
 APPLICATION_DRAFT = REPO_ROOT / "docs" / "grant" / "application-draft-2026-05-19.md"
@@ -47,9 +46,7 @@ class ApplicationBodyHasNoUnverifiedPreciseNumbers(unittest.TestCase):
         # Tolerate the audit-trail phrasing "(was: ...)" — only
         # body assertions count.
         body_lines = [
-            ln
-            for ln in self.body.splitlines()
-            if "(was:" not in ln and "was: " not in ln
+            ln for ln in self.body.splitlines() if "(was:" not in ln and "was: " not in ln
         ]
         body_text = "\n".join(body_lines)
 
@@ -74,9 +71,7 @@ class ApplicationBodyHasNoUnverifiedPreciseNumbers(unittest.TestCase):
         the count entirely + name the operational architecture."""
 
         body_lines = [
-            ln
-            for ln in self.body.splitlines()
-            if "(was:" not in ln and "was: " not in ln
+            ln for ln in self.body.splitlines() if "(was:" not in ln and "was: " not in ln
         ]
         body_text = "\n".join(body_lines)
 

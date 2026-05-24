@@ -169,9 +169,7 @@ class JobIndexAdjacencyIntegration(unittest.TestCase):
                 self._job("https://e.x/B2", "Dev", "Brandenburg"),
             ]
         )
-        out = self.index.count_with_adjacent_cities(
-            location="Berlin", max_minutes=45
-        )
+        out = self.index.count_with_adjacent_cities(location="Berlin", max_minutes=45)
         adjacent_cities_in_result = {a["city"] for a in out["adjacent"]}
         self.assertNotIn("brandenburg", adjacent_cities_in_result)
         self.assertIn("potsdam", adjacent_cities_in_result)

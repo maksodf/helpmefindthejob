@@ -34,12 +34,8 @@ class PushUnavailableError(RuntimeError):
 
 def _vapid_keys() -> tuple[str, str, str] | None:
     public = get_env("HELPMEFINDTHEJOB_VAPID_PUBLIC_KEY", "").strip()
-    private = get_env(
-        "HELPMEFINDTHEJOB_VAPID_PRIVATE_KEY", ""
-    ).strip()
-    contact = get_env(
-        "HELPMEFINDTHEJOB_VAPID_CONTACT", "mailto:operator@example.com"
-    ).strip()
+    private = get_env("HELPMEFINDTHEJOB_VAPID_PRIVATE_KEY", "").strip()
+    contact = get_env("HELPMEFINDTHEJOB_VAPID_CONTACT", "mailto:operator@example.com").strip()
     if not public or not private:
         return None
     return public, private, contact

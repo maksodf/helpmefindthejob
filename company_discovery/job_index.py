@@ -43,13 +43,11 @@ import re
 import sqlite3
 import time
 import unicodedata
-from dataclasses import asdict
 from pathlib import Path
 from threading import RLock
 from typing import Iterable
 
 from .aggregators import AggregatedJob, _decode, _encode
-
 
 _DEFAULT_TTL_SECONDS = 14 * 24 * 3600  # 14 days
 
@@ -68,14 +66,26 @@ _SENIORITY_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
     # German compound forms: "Teamleiter" / "Abteilungsleiterin" /
     # "Projektleitung" — \b doesn't fire inside the compound, so we
     # match the leiter/leiterin/leitung suffix without trailing \b.
-    ("lead", re.compile(
-        r"\b(?:lead|teamlead)\b|\b\w*leiter(?:in)?\b|\b\w*leitung\b",
-        re.IGNORECASE,
-    )),
+    (
+        "lead",
+        re.compile(
+            r"\b(?:lead|teamlead)\b|\b\w*leiter(?:in)?\b|\b\w*leitung\b",
+            re.IGNORECASE,
+        ),
+    ),
     ("senior", re.compile(r"\b(?:senior|sr\.?|sn\.?|erfahren(?:e[rn]?)?)\b", re.IGNORECASE)),
-    ("junior", re.compile(r"\b(?:junior|jr\.?|einstieg|entry[- ]level|berufseinsteiger)\b", re.IGNORECASE)),
-    ("intern", re.compile(r"\b(?:intern|praktikant(?:in)?|trainee|werkstudent(?:in)?)\b", re.IGNORECASE)),
-    ("apprentice", re.compile(r"\b(?:apprentice|auszubildende[rn]?|azubi|ausbildung)\b", re.IGNORECASE)),
+    (
+        "junior",
+        re.compile(r"\b(?:junior|jr\.?|einstieg|entry[- ]level|berufseinsteiger)\b", re.IGNORECASE),
+    ),
+    (
+        "intern",
+        re.compile(r"\b(?:intern|praktikant(?:in)?|trainee|werkstudent(?:in)?)\b", re.IGNORECASE),
+    ),
+    (
+        "apprentice",
+        re.compile(r"\b(?:apprentice|auszubildende[rn]?|azubi|ausbildung)\b", re.IGNORECASE),
+    ),
 ]
 
 
@@ -106,14 +116,51 @@ def classify_seniority(title: str | None) -> str:
 # common EN function-words. The higher-frequency language wins;
 # ties / both-zero return "".
 _DE_FUNCTION_WORDS = {
-    "und", "der", "die", "das", "ein", "eine", "ist", "sind", "wir",
-    "uns", "sie", "ihre", "wird", "werden", "mit", "für", "von",
-    "auch", "nicht", "haben", "hat", "kann", "können",
+    "und",
+    "der",
+    "die",
+    "das",
+    "ein",
+    "eine",
+    "ist",
+    "sind",
+    "wir",
+    "uns",
+    "sie",
+    "ihre",
+    "wird",
+    "werden",
+    "mit",
+    "für",
+    "von",
+    "auch",
+    "nicht",
+    "haben",
+    "hat",
+    "kann",
+    "können",
 }
 _EN_FUNCTION_WORDS = {
-    "the", "and", "you", "your", "we", "our", "with", "for", "are",
-    "is", "this", "that", "have", "has", "will", "can", "should",
-    "would", "also", "not",
+    "the",
+    "and",
+    "you",
+    "your",
+    "we",
+    "our",
+    "with",
+    "for",
+    "are",
+    "is",
+    "this",
+    "that",
+    "have",
+    "has",
+    "will",
+    "can",
+    "should",
+    "would",
+    "also",
+    "not",
 }
 
 
@@ -184,6 +231,7 @@ def _norm_location(text: str | None) -> str:
     # function in some paths).
     try:
         from company_discovery.city_adjacency import CITY_ALIASES
+
         return CITY_ALIASES.get(normalised, normalised)
     except ImportError:
         return normalised
@@ -309,9 +357,7 @@ class JobIndex:
             # caller didn't pre-supply the facet. Heuristics are
             # cheap (substring matches), safe to run on every row.
             row_seniority = (
-                seniority_class
-                if seniority_class is not None
-                else classify_seniority(job.title)
+                seniority_class if seniority_class is not None else classify_seniority(job.title)
             )
             row_language = (
                 language_detected
@@ -451,8 +497,8 @@ class JobIndex:
         if neighbours:
             # Import here to keep the module-level cycle clean
             from company_discovery.city_adjacency import (
-                normalise_city,
                 adjacent_cities,
+                normalise_city,
             )
 
             edges = adjacent_cities(location, max_minutes=max_minutes)
@@ -531,9 +577,7 @@ class JobIndex:
 
         now = int(time.time())
         with self._lock:
-            cur = self._connection.execute(
-                "DELETE FROM job_index WHERE ttl_at < ?", (now,)
-            )
+            cur = self._connection.execute("DELETE FROM job_index WHERE ttl_at < ?", (now,))
             self._connection.commit()
             return cur.rowcount
 

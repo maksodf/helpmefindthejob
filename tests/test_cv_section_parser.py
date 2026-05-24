@@ -45,7 +45,6 @@ from company_discovery.cv_section_parser import (
     parse_sections,
 )
 
-
 # ---------------------------------------------------------------------------
 # Header recognition — English headers
 # ---------------------------------------------------------------------------
@@ -202,14 +201,7 @@ class MixedLanguageCv(unittest.TestCase):
 
 class PreambleAndStructure(unittest.TestCase):
     def test_preamble_lines_before_first_header(self):
-        cv = (
-            "Jane Doe\n"
-            "jane@example.com\n"
-            "+49 30 12345678\n"
-            "\n"
-            "Experience\n"
-            "2020-2024 Acme Corp\n"
-        )
+        cv = "Jane Doe\njane@example.com\n+49 30 12345678\n\nExperience\n2020-2024 Acme Corp\n"
         parsed = parse_sections(cv)
         self.assertIn(SECTION_PREAMBLE, parsed.sections)
         preamble = "\n".join(parsed.sections[SECTION_PREAMBLE])
@@ -217,14 +209,7 @@ class PreambleAndStructure(unittest.TestCase):
         self.assertIn("jane@example.com", preamble)
 
     def test_empty_lines_separate_blocks(self):
-        cv = (
-            "Experience\n"
-            "Acme Corp\n"
-            "2020-2024\n"
-            "\n"
-            "Bigco Inc\n"
-            "2015-2020\n"
-        )
+        cv = "Experience\nAcme Corp\n2020-2024\n\nBigco Inc\n2015-2020\n"
         parsed = parse_sections(cv)
         # Two blocks in experience: Acme + Bigco
         self.assertEqual(len(parsed.sections[SECTION_EXPERIENCE]), 2)
@@ -232,9 +217,7 @@ class PreambleAndStructure(unittest.TestCase):
     def test_detected_headers_preserved(self):
         cv = "PROFESSIONAL SUMMARY:\nExperienced engineer."
         parsed = parse_sections(cv)
-        self.assertEqual(
-            parsed.detected_headers[SECTION_SUMMARY], "PROFESSIONAL SUMMARY:"
-        )
+        self.assertEqual(parsed.detected_headers[SECTION_SUMMARY], "PROFESSIONAL SUMMARY:")
 
 
 # ---------------------------------------------------------------------------
@@ -369,6 +352,7 @@ Anerkennungsbescheid Bundesland Berlin (im Verfahren)
         d = parsed.to_dict()
         # JSON-serialisable
         import json
+
         json.dumps(d)
         self.assertIn("sections", d)
         self.assertIn("detectedHeaders", d)
@@ -384,9 +368,9 @@ class AppPyWiring(unittest.TestCase):
     extension are wired in app.py."""
 
     def setUp(self):
-        self.src = Path(
-            str(Path(__file__).resolve().parent.parent / "app.py")
-        ).read_text(encoding="utf-8")
+        self.src = Path(str(Path(__file__).resolve().parent.parent / "app.py")).read_text(
+            encoding="utf-8"
+        )
 
     def test_cv_upload_returns_parsed_cv(self):
         self.assertIn("from company_discovery.cv_section_parser import", self.src)
@@ -410,6 +394,7 @@ class DriftGuards(unittest.TestCase):
 
     def test_parsedcv_is_dataclass(self):
         from dataclasses import is_dataclass
+
         self.assertTrue(is_dataclass(ParsedCv))
 
     def test_parsedcv_get_returns_empty_for_missing(self):

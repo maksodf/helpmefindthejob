@@ -62,7 +62,7 @@ def _free_port() -> int:
 
 # Inline event handlers banned by CSP; this list covers the common ones
 _INLINE_HANDLER_RX = re.compile(
-    r'\son(click|load|submit|change|focus|blur|mouseover|mouseout|keydown|keyup|keypress|input|error)=',
+    r"\son(click|load|submit|change|focus|blur|mouseover|mouseout|keydown|keyup|keypress|input|error)=",
     re.IGNORECASE,
 )
 
@@ -79,7 +79,8 @@ def _audit_html(html: str, source_name: str, testcase: unittest.TestCase) -> Non
     # 2. Single h1
     h1_count = html.count("<h1")
     testcase.assertEqual(
-        h1_count, 1,
+        h1_count,
+        1,
         f"{source_name}: must have exactly one <h1>, found {h1_count}",
     )
 
@@ -98,7 +99,7 @@ def _audit_html(html: str, source_name: str, testcase: unittest.TestCase) -> Non
     )
 
     # 5. Every <input> has an associated label OR aria-label
-    for input_match in re.finditer(r'<input\s+([^>]*?)/?>', html):
+    for input_match in re.finditer(r"<input\s+([^>]*?)/?>", html):
         attrs = input_match.group(1)
         input_id_match = re.search(r'\bid="([^"]+)"', attrs)
         input_type_match = re.search(r'\btype="([^"]+)"', attrs)
@@ -106,19 +107,17 @@ def _audit_html(html: str, source_name: str, testcase: unittest.TestCase) -> Non
             continue
         if input_id_match:
             input_id = input_id_match.group(1)
-            has_label = re.search(
-                rf'<label[^>]*\sfor="{re.escape(input_id)}"', html
-            )
+            has_label = re.search(rf'<label[^>]*\sfor="{re.escape(input_id)}"', html)
             has_aria_label = 'aria-label="' in attrs or 'aria-labelledby="' in attrs
             testcase.assertTrue(
                 has_label or has_aria_label,
-                f"{source_name}: <input id={input_id!r}> has no <label for=…> "
-                "and no aria-label",
+                f"{source_name}: <input id={input_id!r}> has no <label for=…> and no aria-label",
             )
             # Required inputs must also have aria-required (defense)
             if "required" in attrs:
                 testcase.assertIn(
-                    'aria-required="true"', attrs,
+                    'aria-required="true"',
+                    attrs,
                     f"{source_name}: required <input id={input_id!r}> missing "
                     "aria-required=true (HTML5 required attribute alone isn't "
                     "consistently announced by screen readers)",
@@ -128,7 +127,7 @@ def _audit_html(html: str, source_name: str, testcase: unittest.TestCase) -> Non
     match = _INLINE_HANDLER_RX.search(html)
     if match:
         # Show context for the failure
-        context = html[max(0, match.start() - 30):match.end() + 30]
+        context = html[max(0, match.start() - 30) : match.end() + 30]
         testcase.fail(
             f"{source_name}: inline event handler found: ...{context}... "
             "CSP would block these even if they worked."
@@ -138,13 +137,12 @@ def _audit_html(html: str, source_name: str, testcase: unittest.TestCase) -> Non
     for anchor_match in re.finditer(r"<a(\s+[^>]*?)>", html):
         attrs = anchor_match.group(1)
         if 'href="' not in attrs:
-            testcase.fail(
-                f"{source_name}: <a> without href: <a{attrs}>"
-            )
+            testcase.fail(f"{source_name}: <a> without href: <a{attrs}>")
 
     # 8. Skip-link present (WCAG 2.4.1 bypass blocks)
     testcase.assertIn(
-        'class="skip-link"', html,
+        'class="skip-link"',
+        html,
         f"{source_name}: missing skip-link (WCAG 2.4.1)",
     )
 
@@ -238,14 +236,13 @@ class LiveSurfacesA11y(unittest.TestCase):
         # Extract just the footer
         footer_match = re.search(
             r'<footer[^>]*class="site-footer"[^>]*>(.*?)</footer>',
-            html, re.DOTALL,
+            html,
+            re.DOTALL,
         )
         self.assertIsNotNone(footer_match)
         footer_tag = re.search(r'<footer[^>]*class="site-footer"[^>]*>', html).group(0)
-        self.assertIn('role="contentinfo"', footer_tag,
-                      "site-footer must declare role=contentinfo")
-        self.assertIn('aria-label="', footer_tag,
-                      "site-footer must carry an aria-label")
+        self.assertIn('role="contentinfo"', footer_tag, "site-footer must declare role=contentinfo")
+        self.assertIn('aria-label="', footer_tag, "site-footer must carry an aria-label")
         # Lang switcher must mark current language
         self.assertIn('aria-current="true"', footer_match.group(1))
 
@@ -258,7 +255,9 @@ class LiveSurfacesA11y(unittest.TestCase):
         # checks the structural-a11y invariants of a manually-rendered
         # version of the page by calling the helper through a stub.
         # Skip if the helper isn't directly invocable.
-        import importlib, sys as _sys
+        import importlib
+        import sys as _sys
+
         if "app" in _sys.modules:
             app = _sys.modules["app"]
         else:
@@ -266,22 +265,29 @@ class LiveSurfacesA11y(unittest.TestCase):
         # Build a Handler with the minimum surface and call the helper
         # to capture its output.
         from io import BytesIO
+
         class _Capture:
             def __init__(self):
                 self.headers_sent = []
                 self.body = BytesIO()
                 self.status = None
+
             def send_response(self, status):
                 self.status = status
+
             def send_header(self, k, v):
                 self.headers_sent.append((k, v))
+
             def end_headers(self):
                 pass
+
             @property
             def wfile(self):
                 return self.body
+
             def _resolve_user_language(self):
                 return "en"
+
             # Bind the method-under-test to this object so it can use
             # the stubbed helpers.
             _send_admin_forbidden_page = app.Handler._send_admin_forbidden_page

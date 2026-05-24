@@ -30,7 +30,6 @@ import re
 import unittest
 from pathlib import Path
 
-
 REPO_ROOT = Path(__file__).resolve().parent.parent
 STATIC = REPO_ROOT / "static"
 
@@ -137,8 +136,7 @@ class EveryFormControlHasProgrammaticLabel(unittest.TestCase):
             self.assertEqual(
                 dangling,
                 [],
-                f"{page}: <label for=> pointing at non-existent ids: "
-                f"{dangling}",
+                f"{page}: <label for=> pointing at non-existent ids: {dangling}",
             )
 
     def test_no_duplicate_ids(self) -> None:
@@ -211,8 +209,7 @@ class FormControlsHaveAriaScaffolding(unittest.TestCase):
             self.assertEqual(
                 dangling,
                 [],
-                f"{page}: aria-describedby pointing at non-existent ids: "
-                f"{dangling}",
+                f"{page}: aria-describedby pointing at non-existent ids: {dangling}",
             )
 
 

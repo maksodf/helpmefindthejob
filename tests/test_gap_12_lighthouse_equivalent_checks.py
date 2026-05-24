@@ -45,7 +45,7 @@ ROOT = Path(__file__).resolve().parents[1]
 # Page-size budgets in bytes. Cap is "what we ship today, +20%
 # headroom" — tightens drift on accidentally-bloated pages.
 _SIZE_BUDGETS = {
-    "/": 130_000,            # SPA shell, ~109 KB today
+    "/": 130_000,  # SPA shell, ~109 KB today
     # UX-G1 (2026-05-23): the global site header added ~3 KB of
     # markup to every public page; was 8 KB before. Bumped to 12 KB
     # to keep headroom for future header refinements without
@@ -92,7 +92,6 @@ def _free_port() -> int:
 
 
 class PageQualityChecks(unittest.TestCase):
-
     @classmethod
     def setUpClass(cls) -> None:
         cls._tmp = TemporaryDirectory()
@@ -160,7 +159,8 @@ class PageQualityChecks(unittest.TestCase):
                 status, _h, body = self._get(path)
                 self.assertEqual(status, 200, f"{path} → {status}")
                 self.assertLess(
-                    len(body), budget,
+                    len(body),
+                    budget,
                     f"GAP-12 budget: {path} is {len(body)} bytes, budget {budget}. "
                     "Either drop content or raise the budget here with a comment "
                     "explaining why.",
@@ -177,7 +177,7 @@ class PageQualityChecks(unittest.TestCase):
                 # Match <script ...> without a src attribute
                 for m in re.finditer(r"<script(\s+[^>]*)?>", text):
                     attrs = m.group(1) or ""
-                    if "src=" not in attrs and "type=\"application/ld+json\"" not in attrs:
+                    if "src=" not in attrs and 'type="application/ld+json"' not in attrs:
                         self.fail(
                             f"GAP-12: {path} contains inline <script>: {m.group(0)}. "
                             "CSP blocks these; Lighthouse flags as render-blocking."
@@ -197,7 +197,8 @@ class PageQualityChecks(unittest.TestCase):
                     if "://" in src and not src.startswith(f"http://127.0.0.1:{self.port}"):
                         continue
                     self.assertIn(
-                        "defer", tag,
+                        "defer",
+                        tag,
                         f"GAP-12: {path} loads {src!r} without defer — "
                         f"parser-blocking. <script ... defer></script>.",
                     )
@@ -214,10 +215,19 @@ class PageQualityChecks(unittest.TestCase):
         )
         img_src_rx = re.compile(r'<img[^>]+src="(https?://[^"]+)"')
         iframe_src_rx = re.compile(r'<iframe[^>]+src="(https?://[^"]+)"')
-        host_rx = re.compile(r'^https?://([^/]+)')
+        host_rx = re.compile(r"^https?://([^/]+)")
 
-        for path in ("/", "/privacy", "/impressum", "/forgot-password", "/help",
-                     "/changelog", "/status", "/data-retention", "/terms"):
+        for path in (
+            "/",
+            "/privacy",
+            "/impressum",
+            "/forgot-password",
+            "/help",
+            "/changelog",
+            "/status",
+            "/data-retention",
+            "/terms",
+        ):
             with self.subTest(path=path):
                 _status, _h, body = self._get(path)
                 text = body.decode("utf-8", errors="replace")
@@ -238,7 +248,8 @@ class PageQualityChecks(unittest.TestCase):
                     if host == "helpmefindthejob.org" or host.startswith("127.0.0.1"):
                         continue
                     self.assertIn(
-                        host, _CSP_ALLOWED_HOSTS,
+                        host,
+                        _CSP_ALLOWED_HOSTS,
                         f"GAP-12: {path} auto-fetches from third-party host "
                         f"{host!r} (resource: {url!r}) outside the CSP allowlist. "
                         "Add it to _CSP_ALLOWED_HOSTS (after CSP review) or drop "
@@ -251,7 +262,8 @@ class PageQualityChecks(unittest.TestCase):
                 _status, headers, _body = self._get(path)
                 cc = headers.get("Cache-Control", "")
                 self.assertIn(
-                    "max-age", cc,
+                    "max-age",
+                    cc,
                     f"GAP-12: {path} should set Cache-Control: public, max-age=… "
                     "so crawlers don't re-fetch every minute.",
                 )
@@ -265,7 +277,8 @@ class PageQualityChecks(unittest.TestCase):
         _status, headers, _body = self._get("/api/version")
         cc = headers.get("Cache-Control", "")
         self.assertNotIn(
-            "max-age", cc.lower(),
+            "max-age",
+            cc.lower(),
             f"GAP-12: /api/version returned Cache-Control with max-age: {cc!r}. "
             "Per-request endpoint must not be cached.",
         )
@@ -284,7 +297,8 @@ class PageQualityChecks(unittest.TestCase):
         ):
             with self.subTest(header=required):
                 self.assertIn(
-                    required, headers,
+                    required,
+                    headers,
                     f"GAP-12: missing security header {required!r}",
                 )
 
@@ -293,7 +307,8 @@ class PageQualityChecks(unittest.TestCase):
         perms = headers.get("Permissions-Policy", "")
         for forbidden in ("geolocation", "microphone", "camera"):
             self.assertIn(
-                f"{forbidden}=()", perms,
+                f"{forbidden}=()",
+                perms,
                 f"GAP-12: Permissions-Policy must lock down {forbidden}",
             )
 
@@ -312,12 +327,12 @@ class PageQualityChecks(unittest.TestCase):
     # via Lighthouse + the UptimeRobot dashboard.
 
     _LATENCY_BUDGETS_MS_P95 = {
-        "/api/health": 50,        # health check must be near-instant
-        "/": 250,                 # SPA shell load
-        "/privacy": 200,          # static legal page
-        "/impressum": 200,        # static legal page
-        "/help": 200,             # static help page
-        "/sitemap.xml": 150,      # sitemap is small + cacheable
+        "/api/health": 50,  # health check must be near-instant
+        "/": 250,  # SPA shell load
+        "/privacy": 200,  # static legal page
+        "/impressum": 200,  # static legal page
+        "/help": 200,  # static help page
+        "/sitemap.xml": 150,  # sitemap is small + cacheable
         "/.well-known/security.txt": 100,  # RFC 9116 surface
     }
 

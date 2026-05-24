@@ -154,7 +154,7 @@ def _find_transition(history: Iterable[Any], target: str) -> datetime | None:
     return None
 
 
-def build_funnel_summary(jobs: list["ImportedJob"]) -> FunnelSummary:
+def build_funnel_summary(jobs: list[ImportedJob]) -> FunnelSummary:
     """Aggregate a user's imported jobs into the public funnel
     snapshot. Pure function — no DB access, no side effects."""
 
@@ -225,7 +225,5 @@ def build_funnel_summary(jobs: list["ImportedJob"]) -> FunnelSummary:
         offer_rate=_safe_rate(offer_stage_count, interview_count),
         median_hours_to_apply=_median_hours_between(saved_to_applied),
         median_hours_apply_to_reply=_median_hours_between(applied_to_reply),
-        median_hours_apply_to_interview=_median_hours_between(
-            applied_to_interview
-        ),
+        median_hours_apply_to_interview=_median_hours_between(applied_to_interview),
     )

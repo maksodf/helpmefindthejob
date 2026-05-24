@@ -18,6 +18,7 @@ Doctrine: this closes the "no browser walk for #80" gap I flagged
 in the honest-audit response. Top-tier closure for #80 requires
 actual-browser verification, not just JS-source contract pinning.
 """
+
 from __future__ import annotations
 
 import os
@@ -222,7 +223,11 @@ def main() -> int:
             checks = [
                 ("subject section parsed", "#coverLetterSectionSubject", "Sehr geehrte Damen"),
                 ("body section parsed", "#coverLetterSectionBody", "Mit großem Interesse"),
-                ("editing notes section parsed", "#coverLetterSectionEditingNotes", "Verify the telc-B1-Pflege"),
+                (
+                    "editing notes section parsed",
+                    "#coverLetterSectionEditingNotes",
+                    "Verify the telc-B1-Pflege",
+                ),
                 ("assumptions section parsed", "#coverLetterSectionAssumptions", "Assumed German"),
             ]
             for name, selector, needle in checks:
@@ -262,11 +267,16 @@ def main() -> int:
                 )
                 page.wait_for_timeout(100)
                 # Read the tag via text_content (works without visibility).
-                tag_text = page.locator(
-                    "#coverLetterCitationsList .cover-letter-citation-tag"
-                ).first.text_content(timeout=1500) or ""
-                ok = "[" in tag_text and "]" in tag_text and any(
-                    k in tag_text for k in ("CV", "JD", "Inference")
+                tag_text = (
+                    page.locator(
+                        "#coverLetterCitationsList .cover-letter-citation-tag"
+                    ).first.text_content(timeout=1500)
+                    or ""
+                )
+                ok = (
+                    "[" in tag_text
+                    and "]" in tag_text
+                    and any(k in tag_text for k in ("CV", "JD", "Inference"))
                 )
                 report(
                     "citation expand shows tagged source",

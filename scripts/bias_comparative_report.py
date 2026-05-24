@@ -66,18 +66,17 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
+from company_discovery.ai_providers import AIProviderConfig  # noqa: E402
+from company_discovery.analysis import (  # noqa: E402
+    build_auto_fit_prompt,
+    parse_auto_fit_output,
+)
+from company_discovery.models import DiscoveredJob, UserProfile  # noqa: E402
 from company_discovery.persona_fixtures import (  # noqa: E402
     PERSONAS,
     BiasScenario,
     PersonaFixture,
 )
-from company_discovery.analysis import (  # noqa: E402
-    build_auto_fit_prompt,
-    parse_auto_fit_output,
-)
-from company_discovery.ai_providers import AIProviderConfig  # noqa: E402
-from company_discovery.models import DiscoveredJob, UserProfile  # noqa: E402
-
 
 CACHE_DIR = REPO_ROOT / "data" / "bias_comparative_cache"
 REPORT_DIR = REPO_ROOT / "docs" / "grant"
@@ -87,7 +86,6 @@ REPORT_DIR = REPO_ROOT / "docs" / "grant"
 # but we re-import to avoid coupling test infrastructure to the cap
 # substrate's exact key names.
 from company_discovery.cost_caps import PROVIDER_RATES_EUR_PER_MTOK
-
 
 # Hand-curated subset of providers the runner can target. Each
 # entry maps the public provider_id to (env_var_for_key, model,
@@ -124,9 +122,7 @@ PROVIDER_CONFIGS: dict[str, dict[str, Any]] = {
     "ollama": {
         "env_key": None,
         "model": os.environ.get("HELPMEFINDTHEJOB_BIAS_MODEL", "llama3.1:8b"),
-        "url": os.environ.get(
-            "HELPMEFINDTHEJOB_OLLAMA_URL", "http://localhost:11434"
-        )
+        "url": os.environ.get("HELPMEFINDTHEJOB_OLLAMA_URL", "http://localhost:11434")
         + "/api/generate",
         "kind": "ollama",
     },
@@ -167,7 +163,7 @@ class CallOutcome:
         }
 
     @classmethod
-    def from_dict(cls, raw: dict[str, Any]) -> "CallOutcome":
+    def from_dict(cls, raw: dict[str, Any]) -> CallOutcome:
         return cls(
             provider_id=raw["provider_id"],
             persona_slug=raw["persona_slug"],
@@ -216,10 +212,7 @@ def _load_cached_outcomes(provider_id: str) -> dict[tuple[str, str], CallOutcome
 def _append_outcome_to_cache(outcome: CallOutcome) -> None:
     path = _cache_path_for(outcome.provider_id)
     with path.open("a", encoding="utf-8") as fh:
-        fh.write(
-            json.dumps(outcome.to_dict(), sort_keys=True, separators=(",", ":"))
-            + "\n"
-        )
+        fh.write(json.dumps(outcome.to_dict(), sort_keys=True, separators=(",", ":")) + "\n")
 
 
 # ---------------------------------------------------------------------------
@@ -258,9 +251,7 @@ def _call_openai_compatible(
     )
 
 
-def _call_google(
-    url: str, api_key: str, model: str, prompt: str
-) -> tuple[str, int, int]:
+def _call_google(url: str, api_key: str, model: str, prompt: str) -> tuple[str, int, int]:
     body = json.dumps(
         {
             "contents": [{"role": "user", "parts": [{"text": prompt}]}],
@@ -285,9 +276,7 @@ def _call_google(
     )
 
 
-def _call_anthropic(
-    url: str, api_key: str, model: str, prompt: str
-) -> tuple[str, int, int]:
+def _call_anthropic(url: str, api_key: str, model: str, prompt: str) -> tuple[str, int, int]:
     body = json.dumps(
         {
             "model": model,
@@ -396,7 +385,9 @@ def _build_fit_prompt(persona: PersonaFixture, scenario: BiasScenario) -> str:
 
 
 def _estimate_cost_eur(provider_id: str, prompt_tokens: int, completion_tokens: int) -> float:
-    rates = PROVIDER_RATES_EUR_PER_MTOK.get(provider_id, {"prompt_per_mtok": 0.0, "completion_per_mtok": 0.0})
+    rates = PROVIDER_RATES_EUR_PER_MTOK.get(
+        provider_id, {"prompt_per_mtok": 0.0, "completion_per_mtok": 0.0}
+    )
     p = prompt_tokens / 1_000_000 * rates["prompt_per_mtok"]
     c = completion_tokens / 1_000_000 * rates["completion_per_mtok"]
     return round(p + c, 6)
@@ -519,7 +510,9 @@ def run_provider(
                 _append_outcome_to_cache(outcome)
                 outcomes.append(outcome)
                 if progress:
-                    progress(f"  ✗ {provider_id} {persona.slug}/{scenario.label} {outcome.error_class}")
+                    progress(
+                        f"  ✗ {provider_id} {persona.slug}/{scenario.label} {outcome.error_class}"
+                    )
     summary = {
         "provider_id": provider_id,
         "total_cells": len(outcomes),
@@ -557,9 +550,9 @@ def _cross_provider_disagreement(
     for provider_id, outs in by_provider.items():
         for o in outs:
             if o.status == "ok" and o.raw_score is not None:
-                cell_scores.setdefault(
-                    (o.persona_slug, o.scenario_label), {}
-                )[provider_id] = o.raw_score
+                cell_scores.setdefault((o.persona_slug, o.scenario_label), {})[provider_id] = (
+                    o.raw_score
+                )
     rows: list[dict[str, Any]] = []
     for (persona, scenario), provider_scores in cell_scores.items():
         if len(provider_scores) < 2:
@@ -580,7 +573,9 @@ def _cross_provider_disagreement(
     return rows[:20]
 
 
-def render_markdown(by_provider: dict[str, list[CallOutcome]], summaries: list[dict[str, Any]]) -> str:
+def render_markdown(
+    by_provider: dict[str, list[CallOutcome]], summaries: list[dict[str, Any]]
+) -> str:
     lines: list[str] = []
     lines.append("# Bias-methodology comparative report")
     lines.append("")
@@ -607,7 +602,9 @@ def render_markdown(by_provider: dict[str, list[CallOutcome]], summaries: list[d
     lines.append("")
     lines.append("## Per-provider summary")
     lines.append("")
-    lines.append("| Provider | OK | Errors | Skipped (no key) | Over budget | Cache misses | Total cost (€) |")
+    lines.append(
+        "| Provider | OK | Errors | Skipped (no key) | Over budget | Cache misses | Total cost (€) |"
+    )
     lines.append("|---|---|---|---|---|---|---|")
     for s in summaries:
         lines.append(
@@ -623,10 +620,13 @@ def render_markdown(by_provider: dict[str, list[CallOutcome]], summaries: list[d
     lines.append("|" + "---|" * (len(persona_slugs) + 1))
     for provider_id, outs in sorted(by_provider.items()):
         means = _per_persona_mean(outs)
-        row = f"| {provider_id} | " + " | ".join(
-            f"{means.get(p, float('nan')):.1f}" if p in means else "—"
-            for p in persona_slugs
-        ) + " |"
+        row = (
+            f"| {provider_id} | "
+            + " | ".join(
+                f"{means.get(p, float('nan')):.1f}" if p in means else "—" for p in persona_slugs
+            )
+            + " |"
+        )
         lines.append(row)
     lines.append("")
     lines.append("## Top 20 highest-disagreement cells")
@@ -659,12 +659,8 @@ def render_markdown(by_provider: dict[str, list[CallOutcome]], summaries: list[d
         "- Score parser: `company_discovery.analysis.parse_auto_fit_output` "
         "(0–100 integer; reasons/gaps optional)"
     )
-    lines.append(
-        "- Personas: 7 fixtures from `company_discovery.persona_fixtures.PERSONAS`"
-    )
-    lines.append(
-        "- Temperature: 0 across all providers (reproducibility)"
-    )
+    lines.append("- Personas: 7 fixtures from `company_discovery.persona_fixtures.PERSONAS`")
+    lines.append("- Temperature: 0 across all providers (reproducibility)")
     lines.append("")
     lines.append("## Re-running")
     lines.append("")
@@ -715,8 +711,7 @@ def main(argv: list[str] | None = None) -> int:
         type=Path,
         default=None,
         help=(
-            "Markdown report output path. Defaults to "
-            "docs/grant/bias-comparative-report-<date>.md"
+            "Markdown report output path. Defaults to docs/grant/bias-comparative-report-<date>.md"
         ),
     )
     args = parser.parse_args(argv)
@@ -745,8 +740,7 @@ def main(argv: list[str] | None = None) -> int:
 
     REPORT_DIR.mkdir(parents=True, exist_ok=True)
     output_path = args.output or (
-        REPORT_DIR
-        / f"bias-comparative-report-{datetime.now(timezone.utc).date().isoformat()}.md"
+        REPORT_DIR / f"bias-comparative-report-{datetime.now(timezone.utc).date().isoformat()}.md"
     )
     md = render_markdown(by_provider, summaries)
     output_path.write_text(md, encoding="utf-8")

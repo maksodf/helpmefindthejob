@@ -29,7 +29,6 @@ import sys
 import unittest
 from pathlib import Path
 
-
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DEMO_PATH = REPO_ROOT / "examples" / "housing-stub-client" / "main.py"
 
@@ -54,8 +53,7 @@ class HousingStubDemoRuns(unittest.TestCase):
         self.assertEqual(
             self.result.returncode,
             0,
-            f"demo failed:\nSTDOUT:\n{self.stdout}\n"
-            f"STDERR:\n{self.result.stderr}",
+            f"demo failed:\nSTDOUT:\n{self.stdout}\nSTDERR:\n{self.result.stderr}",
         )
 
     def test_handshake_completed(self):
@@ -103,9 +101,7 @@ class HousingStubDemoRuns(unittest.TestCase):
     def test_filter_executed_against_real_listings(self):
         # The filter narrates how many listings it kept
         match = re.search(r"filter retained (\d+) of (\d+) listings", self.stdout)
-        self.assertIsNotNone(
-            match, "filter narration missing — demo broke silently"
-        )
+        self.assertIsNotNone(match, "filter narration missing — demo broke silently")
         kept, total = int(match.group(1)), int(match.group(2))
         self.assertEqual(total, 3, "demo has 3 mock listings; total drift")
         # For the no-profile / unknown-status default, the filter is
@@ -132,9 +128,7 @@ class HousingAgentStubFilterLogic(unittest.TestCase):
     read ``status`` instead of ``currentStatus``."""
 
     def setUp(self):
-        sys.path.insert(
-            0, str(REPO_ROOT / "examples" / "housing-stub-client")
-        )
+        sys.path.insert(0, str(REPO_ROOT / "examples" / "housing-stub-client"))
         from main import HousingAgentStub
 
         # No live MCP needed for the filter unit test
@@ -162,9 +156,7 @@ class HousingAgentStubFilterLogic(unittest.TestCase):
         """If the profile dict is the response payload directly
         (no `profile` wrapper), the filter still reads currentStatus."""
 
-        kept = self.stub.filter_listings_by_profile(
-            {"employment": {"currentStatus": "employed"}}
-        )
+        kept = self.stub.filter_listings_by_profile({"employment": {"currentStatus": "employed"}})
         self.assertEqual(len(kept), 3)
 
     def test_filter_reads_currentStatus_not_status(self):
@@ -182,8 +174,7 @@ class HousingAgentStubFilterLogic(unittest.TestCase):
         self.assertEqual(
             len(kept),
             3,
-            "filter is reading the wrong field (likely 'status' "
-            "instead of 'currentStatus')",
+            "filter is reading the wrong field (likely 'status' instead of 'currentStatus')",
         )
 
 
@@ -195,9 +186,7 @@ class HousingStubReadmeDocumentation(unittest.TestCase):
         self.readme = (REPO_ROOT / "examples" / "housing-stub-client" / "README.md").read_text(
             encoding="utf-8"
         )
-        self.example_index = (REPO_ROOT / "examples" / "README.md").read_text(
-            encoding="utf-8"
-        )
+        self.example_index = (REPO_ROOT / "examples" / "README.md").read_text(encoding="utf-8")
 
     def test_readme_names_both_modes(self):
         self.assertIn("Mode 1", self.readme)

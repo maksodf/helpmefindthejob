@@ -25,7 +25,6 @@ from __future__ import annotations
 import unittest
 from pathlib import Path
 
-
 STATIC = Path(__file__).resolve().parent.parent / "static"
 
 
@@ -71,7 +70,7 @@ class LegalPagesAreBilingual(unittest.TestCase):
             self.assertIn(
                 '<html lang="de">',
                 src,
-                f"{de_file} missing <html lang=\"de\">",
+                f'{de_file} missing <html lang="de">',
             )
         # EN courtesy translation of Impressum
         en_src = (STATIC / "impressum.en.html").read_text(encoding="utf-8")

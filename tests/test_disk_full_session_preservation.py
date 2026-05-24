@@ -41,7 +41,6 @@ from company_discovery.db_errors import (
     http_status_for,
 )
 
-
 REPO_ROOT = Path(__file__).resolve().parent.parent
 APP_JS = REPO_ROOT / "static" / "app.js"
 
@@ -81,11 +80,9 @@ def _extract_preserve_helpers() -> str:
                     end += 1
                     break
             end += 1
-        snippets.append(source[match.start():end])
+        snippets.append(source[match.start() : end])
     # Also pull out the storage-key constant
-    key_match = re.search(
-        r'const\s+_PENDING_WRITES_KEY\s*=\s*"[^"]+";', source
-    )
+    key_match = re.search(r'const\s+_PENDING_WRITES_KEY\s*=\s*"[^"]+";', source)
     if not key_match:
         raise RuntimeError("Could not locate _PENDING_WRITES_KEY constant in static/app.js")
     return key_match.group(0) + "\n" + "\n".join(snippets)
@@ -154,9 +151,7 @@ class CaseBFrontendContract(unittest.TestCase):
             timeout=10,
         )
         if result.returncode != 0:
-            raise AssertionError(
-                f"Node exited {result.returncode}; stderr:\n{result.stderr}"
-            )
+            raise AssertionError(f"Node exited {result.returncode}; stderr:\n{result.stderr}")
         return json.loads(result.stdout or "{}")
 
     def test_preserve_writes_appears_in_get(self) -> None:
@@ -269,9 +264,7 @@ class CaseBRetryContract(unittest.TestCase):
             timeout=10,
         )
         if result.returncode != 0:
-            raise AssertionError(
-                f"Node exited {result.returncode}; stderr:\n{result.stderr}"
-            )
+            raise AssertionError(f"Node exited {result.returncode}; stderr:\n{result.stderr}")
         return json.loads(result.stdout or "{}")
 
     def test_retry_drains_queue_when_all_succeed(self) -> None:

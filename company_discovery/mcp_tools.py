@@ -780,9 +780,9 @@ class CompanyDiscoveryMCPTools:
         # default per honesty-doctrine. Best-effort: never raises.
         try:
             from company_discovery.cost_saving_metrics import (
-                CostSavingMetricsLog,
-                MECHANISM_HIGHER_APPLY_RATE,
                 MECHANISM_FEWER_WRONG_FIT_APPS,
+                MECHANISM_HIGHER_APPLY_RATE,
+                CostSavingMetricsLog,
                 is_collection_enabled,
             )
 
@@ -937,10 +937,7 @@ class CompanyDiscoveryMCPTools:
         if status not in allowed_transitions.get(referral.status, set()):
             return {
                 "status": "invalid_transition",
-                "error": (
-                    f"cannot transition from {referral.status!r} to "
-                    f"{status!r}"
-                ),
+                "error": (f"cannot transition from {referral.status!r} to {status!r}"),
                 "currentStatus": referral.status,
             }
 

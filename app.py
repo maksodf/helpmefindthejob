@@ -142,7 +142,6 @@ from company_discovery.personas import (
 )
 from company_discovery.push_transport import (
     PushPayload,
-    PushUnavailableError,
     classify_push_exception,
     is_push_configured,
     send_push,
@@ -168,9 +167,7 @@ ROOT = Path(__file__).parent
 _log = logging.getLogger(__name__)
 
 STATIC_ROOT = ROOT / "static"
-DATA_ROOT = Path(
-    get_env("HELPMEFINDTHEJOB_DATA_DIR", str(ROOT / "data"))
-)
+DATA_ROOT = Path(get_env("HELPMEFINDTHEJOB_DATA_DIR", str(ROOT / "data")))
 DATA_PATH = DATA_ROOT / "company_discovery.sqlite3"
 AUTH_PATH = DATA_ROOT / "auth.sqlite3"
 AI_CONFIG_PATH = DATA_ROOT / "ai_provider.json"
@@ -188,7 +185,9 @@ PASSWORD_RESET_REQUEST_WINDOW = 600
 # (typical browser sends 1-3 reports per affected page load).
 CSP_REPORT_LIMIT = 50
 CSP_REPORT_WINDOW = 60
-CSP_REPORT_MAX_BYTES = 16 * 1024  # bytes — Reporting API bursts can be larger but truncate them anyway
+CSP_REPORT_MAX_BYTES = (
+    16 * 1024
+)  # bytes — Reporting API bursts can be larger but truncate them anyway
 # 2026-05-23: /api/auth/status is polled by the SPA (typically once
 # per minute, possibly more on tab focus). Pre-fix the endpoint was
 # unprotected — an attacker could use it to enumerate session
@@ -202,15 +201,12 @@ STATUS_REQUEST_WINDOW = 60
 # register 7+ throwaway accounts in quick succession). Production
 # stays at the default of 3.
 try:
-    REGISTER_REQUEST_LIMIT = int(
-        get_env("HELPMEFINDTHEJOB_REGISTER_LIMIT") or 3
-    )
+    REGISTER_REQUEST_LIMIT = int(get_env("HELPMEFINDTHEJOB_REGISTER_LIMIT") or 3)
 except ValueError:
     REGISTER_REQUEST_LIMIT = 3
 REGISTER_REQUEST_WINDOW = 600
 REQUIRE_EMAIL_VERIFICATION = (
-    get_env("HELPMEFINDTHEJOB_REQUIRE_EMAIL_VERIFICATION")
-    or ""
+    get_env("HELPMEFINDTHEJOB_REQUIRE_EMAIL_VERIFICATION") or ""
 ).strip().casefold() in ("true", "1", "yes")
 APP_PUBLIC_URL = get_env("HELPMEFINDTHEJOB_PUBLIC_URL") or ""
 
@@ -243,9 +239,7 @@ def _xss_safe_jsonld(payload: Any, json_module) -> str:
     """
 
     text = json_module.dumps(payload, ensure_ascii=False, separators=(",", ":"))
-    return (
-        text.replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
-    )
+    return text.replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
 
 
 LOCAL_USER_ID = "local-user"
@@ -292,7 +286,11 @@ def _resolve_build_sha() -> str:
         if packed.exists():
             for line in packed.read_text(encoding="utf-8").splitlines():
                 stripped = line.strip()
-                if stripped and not stripped.startswith("#") and stripped.endswith(" " + ref_target):
+                if (
+                    stripped
+                    and not stripped.startswith("#")
+                    and stripped.endswith(" " + ref_target)
+                ):
                     return stripped.split(" ", 1)[0][:12]
     except (OSError, ValueError):
         pass
@@ -399,11 +397,7 @@ def _summarize_csp_report(body: bytes) -> str | None:
         # ("\n[ERROR] Database breach") and fool downstream log
         # monitoring.
         summaries.append(
-            "directive={d} blocked={b} doc={u}".format(
-                d=_sanitize_for_log(directive)[:64],
-                b=_sanitize_for_log(blocked)[:128],
-                u=_sanitize_for_log(doc)[:128],
-            )
+            f"directive={_sanitize_for_log(directive)[:64]} blocked={_sanitize_for_log(blocked)[:128]} doc={_sanitize_for_log(doc)[:128]}"
         )
     if not summaries:
         return None
@@ -427,7 +421,7 @@ def _build_site_footer(lang: str) -> bytes:
     client-side by the SPA; mirroring would just create drift.
     """
     if lang == "de":
-        return f'''<footer class="site-footer" role="contentinfo" aria-label="Webseiten-Fu&szlig;zeile">
+        return f"""<footer class="site-footer" role="contentinfo" aria-label="Webseiten-Fu&szlig;zeile">
   <div class="site-footer-grid">
     <section class="site-footer-col">
       <p class="site-footer-tagline"><strong>Helpmefindthejob</strong> &mdash; quelloffener EU-Commons f&uuml;r die Arbeitssuche.</p>
@@ -471,9 +465,9 @@ def _build_site_footer(lang: str) -> bytes:
     <a href="?lang=de" lang="de" hreflang="de" aria-current="true">Deutsch</a>
   </p>
 </footer>
-'''.encode("utf-8")
+""".encode()
     # 'en' default + any unknown lang
-    return f'''<footer class="site-footer" role="contentinfo" aria-label="Site footer">
+    return f"""<footer class="site-footer" role="contentinfo" aria-label="Site footer">
   <div class="site-footer-grid">
     <section class="site-footer-col">
       <p class="site-footer-tagline"><strong>Helpmefindthejob</strong> &mdash; open-source EU civic employment commons.</p>
@@ -517,7 +511,7 @@ def _build_site_footer(lang: str) -> bytes:
     <a href="?lang=de" lang="de" hreflang="de">Deutsch</a>
   </p>
 </footer>
-'''.encode("utf-8")
+""".encode()
 
 
 # Pre-compute both language variants once at module load — strings
@@ -583,12 +577,17 @@ def _build_openapi_spec() -> dict[str, Any]:
                     "responses": {
                         "200": {
                             "description": "Application is healthy",
-                            "content": {"application/json": {"example": {
-                                "status": "ok", "version": APP_VERSION,
-                                "environment": "production",
-                                "registrationOpen": False,
-                                "schedulerActiveJobs": 0,
-                            }}},
+                            "content": {
+                                "application/json": {
+                                    "example": {
+                                        "status": "ok",
+                                        "version": APP_VERSION,
+                                        "environment": "production",
+                                        "registrationOpen": False,
+                                        "schedulerActiveJobs": 0,
+                                    }
+                                }
+                            },
                         },
                     },
                 },
@@ -600,11 +599,15 @@ def _build_openapi_spec() -> dict[str, Any]:
                     "responses": {
                         "200": {
                             "description": "Version info",
-                            "content": {"application/json": {"example": {
-                                "version": APP_VERSION,
-                                "environment": "production",
-                                "buildSha": BUILD_SHA,
-                            }}},
+                            "content": {
+                                "application/json": {
+                                    "example": {
+                                        "version": APP_VERSION,
+                                        "environment": "production",
+                                        "buildSha": BUILD_SHA,
+                                    }
+                                }
+                            },
                         },
                     },
                 },
@@ -613,19 +616,28 @@ def _build_openapi_spec() -> dict[str, Any]:
                 "get": {
                     "tags": ["health"],
                     "summary": "Rolling uptime history",
-                    "parameters": [{
-                        "name": "window", "in": "query",
-                        "description": "Window in hours (1–720). Defaults to 24.",
-                        "schema": {"type": "integer", "minimum": 1, "maximum": 720},
-                    }],
+                    "parameters": [
+                        {
+                            "name": "window",
+                            "in": "query",
+                            "description": "Window in hours (1–720). Defaults to 24.",
+                            "schema": {"type": "integer", "minimum": 1, "maximum": 720},
+                        }
+                    ],
                     "responses": {
                         "200": {
                             "description": "{windowHours, snapshotCount, okCount, uptimePercent, snapshots[]}",
-                            "content": {"application/json": {"example": {
-                                "windowHours": 24, "snapshotCount": 48,
-                                "okCount": 48, "uptimePercent": 100.0,
-                                "snapshots": [],
-                            }}},
+                            "content": {
+                                "application/json": {
+                                    "example": {
+                                        "windowHours": 24,
+                                        "snapshotCount": 48,
+                                        "okCount": 48,
+                                        "uptimePercent": 100.0,
+                                        "snapshots": [],
+                                    }
+                                }
+                            },
                         },
                     },
                 },
@@ -664,10 +676,14 @@ def _build_openapi_spec() -> dict[str, Any]:
                     "description": "Creates the first user (admin) on a fresh install. After bootstrap, this returns 403 unless the operator has opened public registration.",
                     "requestBody": {
                         "required": True,
-                        "content": {"application/json": {"example": {
-                            "email": "user@example.com",
-                            "password": "very-strong-password-1234",
-                        }}},
+                        "content": {
+                            "application/json": {
+                                "example": {
+                                    "email": "user@example.com",
+                                    "password": "very-strong-password-1234",
+                                }
+                            }
+                        },
                     },
                     "responses": {
                         "201": {"description": "User created + session issued"},
@@ -681,10 +697,14 @@ def _build_openapi_spec() -> dict[str, Any]:
                     "summary": "Login with email + password",
                     "requestBody": {
                         "required": True,
-                        "content": {"application/json": {"example": {
-                            "email": "user@example.com",
-                            "password": "very-strong-password-1234",
-                        }}},
+                        "content": {
+                            "application/json": {
+                                "example": {
+                                    "email": "user@example.com",
+                                    "password": "very-strong-password-1234",
+                                }
+                            }
+                        },
                     },
                     "responses": {
                         "200": {"description": "Session issued"},
@@ -707,9 +727,13 @@ def _build_openapi_spec() -> dict[str, Any]:
                     "description": "Always responds 202 — never leaks whether the email exists. Rate-limited per IP.",
                     "requestBody": {
                         "required": True,
-                        "content": {"application/json": {"example": {
-                            "email": "user@example.com",
-                        }}},
+                        "content": {
+                            "application/json": {
+                                "example": {
+                                    "email": "user@example.com",
+                                }
+                            }
+                        },
                     },
                     "responses": {"202": {"description": "Reset email queued if account exists"}},
                 },
@@ -848,11 +872,7 @@ def _ssr_translate_html(content: bytes, lang: str) -> bytes:
         # are plain text (no markup expected); escaping & < > makes
         # this safe against any future bundle entry that happens to
         # contain those characters.
-        escaped = (
-            translated.replace("&", "&amp;")
-                      .replace("<", "&lt;")
-                      .replace(">", "&gt;")
-        )
+        escaped = translated.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
         return f"{opener}{escaped}{closer}"
 
     text = _SSR_I18N_RX.sub(_repl, text)
@@ -867,26 +887,26 @@ def _ssr_translate_html(content: bytes, lang: str) -> bytes:
         # attribute AND its data-i18n-<attr> hint. We rebuild the
         # opener with the new attribute value.
         rx = re.compile(
-            r'(<[a-z0-9]+\b)'                                           # tag start (group 1)
-            r'([^>]*?)'                                                 # attrs before (group 2)
-            rf'({re.escape(attr_name)}=")([^"]*)(")'                    # live attr (groups 3/4/5)
-            r'([^>]*?)'                                                 # attrs between (group 6)
-            rf'(data-i18n-{re.escape(attr_name)}=")([^"]+)(")'          # i18n hint (groups 7/8/9)
-            r'([^>]*?)'                                                 # attrs after (group 10)
-            r'(/?>)',                                                   # tag close (group 11)
+            r"(<[a-z0-9]+\b)"  # tag start (group 1)
+            r"([^>]*?)"  # attrs before (group 2)
+            rf'({re.escape(attr_name)}=")([^"]*)(")'  # live attr (groups 3/4/5)
+            r"([^>]*?)"  # attrs between (group 6)
+            rf'(data-i18n-{re.escape(attr_name)}=")([^"]+)(")'  # i18n hint (groups 7/8/9)
+            r"([^>]*?)"  # attrs after (group 10)
+            r"(/?>)",  # tag close (group 11)
             re.IGNORECASE,
         )
 
         # Also support the i18n hint appearing BEFORE the live
         # attribute (HTML allows any attribute order).
         rx_swapped = re.compile(
-            r'(<[a-z0-9]+\b)'
-            r'([^>]*?)'
+            r"(<[a-z0-9]+\b)"
+            r"([^>]*?)"
             rf'(data-i18n-{re.escape(attr_name)}=")([^"]+)(")'
-            r'([^>]*?)'
+            r"([^>]*?)"
             rf'({re.escape(attr_name)}=")([^"]*)(")'
-            r'([^>]*?)'
-            r'(/?>)',
+            r"([^>]*?)"
+            r"(/?>)",
             re.IGNORECASE,
         )
 
@@ -898,9 +918,9 @@ def _ssr_translate_html(content: bytes, lang: str) -> bytes:
                 return match.group(0)
             escaped = (
                 translated.replace("&", "&amp;")
-                          .replace("<", "&lt;")
-                          .replace(">", "&gt;")
-                          .replace('"', "&quot;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace('"', "&quot;")
             )
             groups[attr_value_group - 1] = escaped
             return "".join(groups)
@@ -980,8 +1000,7 @@ def _build_site_header(lang: str) -> bytes:
         theme_label = "Toggle theme"
 
     nav_items = "".join(
-        f'<a class="site-header-nav-link" href="{href}">{label}</a>'
-        for href, label in nav
+        f'<a class="site-header-nav-link" href="{href}">{label}</a>' for href, label in nav
     )
     return f'''<header class="site-header" role="banner" aria-label="Site header">
   <div class="site-header-inner">
@@ -1012,7 +1031,7 @@ def _build_site_header(lang: str) -> bytes:
   </div>
 </header>
 <script src="/theme-toggle.js" defer></script>
-'''.encode("utf-8")
+'''.encode()
 
 
 SITE_HEADER_HTML_EN = _build_site_header("en")
@@ -1036,15 +1055,15 @@ def _inject_html_theme_attr(content: bytes, theme: str) -> bytes:
         return content
     # Replace <html lang="..."> with <html lang="..." data-theme="...">
     # Only if the <html> tag doesn't already carry data-theme.
-    pattern = re.compile(rb'<html\s+([^>]*?)>')
+    pattern = re.compile(rb"<html\s+([^>]*?)>")
     m = pattern.search(content)
     if not m:
         return content
     existing_attrs = m.group(1)
     if b"data-theme=" in existing_attrs:
         return content
-    new_open = b'<html ' + existing_attrs + b' data-theme="' + theme.encode("ascii") + b'">'
-    return content[:m.start()] + new_open + content[m.end():]
+    new_open = b"<html " + existing_attrs + b' data-theme="' + theme.encode("ascii") + b'">'
+    return content[: m.start()] + new_open + content[m.end() :]
 
 
 def _inject_html_header(content: bytes, lang: str = "en") -> bytes:
@@ -1062,6 +1081,8 @@ def _inject_html_header(content: bytes, lang: str = "en") -> bytes:
     header = SITE_HEADER_HTML_DE if lang == "de" else SITE_HEADER_HTML_EN
     insert_at = match.end()
     return content[:insert_at] + b"\n    " + header + content[insert_at:]
+
+
 # Bool env-var parsing routes through env_compat.get_env_bool, which
 # accepts the permissive truthy set {"true", "1", "yes", "on"}
 # casefolded. Earlier these two vars used a strict `== "true"`
@@ -1090,6 +1111,8 @@ def _hsts_enabled() -> bool:
     """
 
     return HSTS_ENABLED
+
+
 # 2026-05-23 — public sign-up is open by default. The civic-commons
 # mission is to serve anyone facing structural friction in the EU
 # labour market; gating sign-up behind operator action turned the
@@ -1101,9 +1124,7 @@ ALLOW_REGISTRATION = get_env_bool(
     "HELPMEFINDTHEJOB_ALLOW_REGISTRATION",
     default=True,
 )
-SECRET_KEY = get_env("HELPMEFINDTHEJOB_SECRET_KEY") or (
-    "dev-" + secrets.token_urlsafe(48)
-)
+SECRET_KEY = get_env("HELPMEFINDTHEJOB_SECRET_KEY") or ("dev-" + secrets.token_urlsafe(48))
 ADMIN_EMAIL = get_env("HELPMEFINDTHEJOB_ADMIN_EMAIL")
 ADMIN_PASSWORD = get_env("HELPMEFINDTHEJOB_ADMIN_PASSWORD")
 
@@ -1364,9 +1385,7 @@ class AppState:
         # roadmap that migrates them).
         from company_discovery.postgres_repository import is_postgres_url
 
-        database_url = get_env(
-            "HELPMEFINDTHEJOB_DATABASE_URL", ""
-        ).strip()
+        database_url = get_env("HELPMEFINDTHEJOB_DATABASE_URL", "").strip()
         if database_url and is_postgres_url(database_url):
             from company_discovery.postgres_repository import (
                 PostgresCompanyDiscoveryRepository,
@@ -1446,8 +1465,8 @@ class AppState:
         # 4-week plan Invariant 2 (2026-05-21): Trust Receipt store.
         # Shares the audit-log salt so receipts cryptographically link
         # to the audit-log chain. Located under data/trust_receipts/.
-        from company_discovery.trust_receipt_store import TrustReceiptStore
         from company_discovery import audit_log as _audit_log_mod
+        from company_discovery.trust_receipt_store import TrustReceiptStore
 
         _receipt_salt = _audit_log_mod.default_emitter().salt
         self.trust_receipt_store = TrustReceiptStore(
@@ -1463,9 +1482,7 @@ class AppState:
         )
         self.billing_backend = build_billing_backend(data_dir=self.data_path.parent)
         providers: list = [CuratedSearchProvider()]
-        if get_env(
-            "HELPMEFINDTHEJOB_DUCKDUCKGO_DISABLED", ""
-        ).strip().lower() not in (
+        if get_env("HELPMEFINDTHEJOB_DUCKDUCKGO_DISABLED", "").strip().lower() not in (
             "1",
             "true",
             "yes",
@@ -1732,9 +1749,7 @@ class AppState:
         13-plan item 4/13 — workspace admin UI completion.
         """
 
-        own_membership = self.repository.find_workspace_membership(
-            session_user_id, workspace_id
-        )
+        own_membership = self.repository.find_workspace_membership(session_user_id, workspace_id)
         if own_membership is None:
             # Fall through: the session user may be the implicit
             # owner of their own auto-created workspace (no row
@@ -1776,9 +1791,7 @@ class AppState:
         # Stable order: owner first, then admins, then members,
         # alphabetical by email within each group
         role_priority = {"owner": 0, "admin": 1, "member": 2}
-        result.sort(
-            key=lambda r: (role_priority.get(r["role"], 99), r["email"].lower())
-        )
+        result.sort(key=lambda r: (role_priority.get(r["role"], 99), r["email"].lower()))
         return result
 
     def update_workspace_member_role(
@@ -1805,9 +1818,7 @@ class AppState:
             raise ValueError("invalid_role")
         # Only the OWNER can change roles (not admins — admins can
         # invite but not promote/demote, per least-privilege)
-        actor_membership = self.repository.find_workspace_membership(
-            actor_user_id, workspace_id
-        )
+        actor_membership = self.repository.find_workspace_membership(actor_user_id, workspace_id)
         if actor_membership is None or actor_membership.role != "owner":
             raise ValueError("workspace_forbidden")
         target = self.repository.workspace_memberships.get(membership_id)
@@ -1853,9 +1864,7 @@ class AppState:
             KeyError(membership_id) — membership doesn't exist
         """
 
-        actor_membership = self.repository.find_workspace_membership(
-            actor_user_id, workspace_id
-        )
+        actor_membership = self.repository.find_workspace_membership(actor_user_id, workspace_id)
         if actor_membership is None:
             raise ValueError("workspace_forbidden")
         target = self.repository.workspace_memberships.get(membership_id)
@@ -2057,17 +2066,12 @@ class AppState:
             except (TypeError, ValueError) as err:
                 raise ValueError("invalid_retention_days") from err
             existing.retention_days = max(0, min(3650, days))
-        if (
-            "monthlySpendCapEur" in payload
-            or "monthly_spend_cap_eur" in payload
-        ):
+        if "monthlySpendCapEur" in payload or "monthly_spend_cap_eur" in payload:
             # Phase 2 #46 (2026-05-21): BYO-AI monthly cap.
             # Bounded 0–500 EUR; 0 means "no API calls allowed",
             # 500 is generous-enough headroom for power users who
             # genuinely run several hundred fit-score calls a month.
-            raw = payload.get(
-                "monthlySpendCapEur", payload.get("monthly_spend_cap_eur")
-            )
+            raw = payload.get("monthlySpendCapEur", payload.get("monthly_spend_cap_eur"))
             try:
                 cap = float(raw) if raw is not None else 5.0
             except (TypeError, ValueError) as err:
@@ -2134,9 +2138,7 @@ class AppState:
             "activeWorkspaceId": profile.active_workspace_id,
             "onboardingDismissed": bool(getattr(profile, "onboarding_dismissed", False)),
             "retentionDays": int(getattr(profile, "retention_days", 90) or 0),
-            "monthlySpendCapEur": float(
-                getattr(profile, "monthly_spend_cap_eur", 5.0) or 0.0
-            ),
+            "monthlySpendCapEur": float(getattr(profile, "monthly_spend_cap_eur", 5.0) or 0.0),
             "slackWebhookConfigured": bool(getattr(profile, "slack_webhook_url", "") or ""),
             "slackFitThreshold": float(getattr(profile, "slack_fit_threshold", 0.70) or 0.0),
             "aiConsentAt": profile.ai_consent_at.isoformat()
@@ -2553,27 +2555,14 @@ class AppState:
         "details": "…"}`` or a primitive count, never a secret.
         """
 
-        backup_remote = get_env(
-            "HELPMEFINDTHEJOB_BACKUP_REMOTE", ""
-        ).strip()
-        backup_backend = (
-            get_env("HELPMEFINDTHEJOB_BACKUP_BACKEND", "").strip()
-            or "local"
-        )
+        backup_remote = get_env("HELPMEFINDTHEJOB_BACKUP_REMOTE", "").strip()
+        backup_backend = get_env("HELPMEFINDTHEJOB_BACKUP_BACKEND", "").strip() or "local"
         push_configured = is_push_configured()
-        brave_configured = bool(
-            get_env("HELPMEFINDTHEJOB_BRAVE_API_KEY", "").strip()
-        )
+        brave_configured = bool(get_env("HELPMEFINDTHEJOB_BRAVE_API_KEY", "").strip())
         stripe_active = os.environ.get(
             "HELPMEFINDTHEJOB_BILLING_BACKEND", ""
-        ).strip() == "stripe" and bool(
-            get_env("HELPMEFINDTHEJOB_STRIPE_API_KEY", "").strip()
-        )
-        webhook_configured = bool(
-            get_env(
-                "HELPMEFINDTHEJOB_STRIPE_WEBHOOK_SECRET", ""
-            ).strip()
-        )
+        ).strip() == "stripe" and bool(get_env("HELPMEFINDTHEJOB_STRIPE_API_KEY", "").strip())
+        webhook_configured = bool(get_env("HELPMEFINDTHEJOB_STRIPE_WEBHOOK_SECRET", "").strip())
         # Subscription / membership counts (cheap; in-memory).
         push_subs = sum(1 for _ in self.repository.push_subscriptions.values())
         memberships = sum(1 for _ in self.repository.workspace_memberships.values())
@@ -2598,10 +2587,7 @@ class AppState:
             "billing": {
                 "backend": backup_backend
                 if False
-                else (
-                    get_env("HELPMEFINDTHEJOB_BILLING_BACKEND")
-                    or "manual"
-                ),
+                else (get_env("HELPMEFINDTHEJOB_BILLING_BACKEND") or "manual"),
                 "stripeActive": stripe_active,
                 "webhookConfigured": webhook_configured,
             },
@@ -3301,8 +3287,7 @@ class AppState:
         try:
             chat_session = self.chat_session_for(user_id)
             chat_history = [
-                {"role": t.role, "content": t.content}
-                for t in (chat_session.history or [])
+                {"role": t.role, "content": t.content} for t in (chat_session.history or [])
             ]
         except Exception as exc:  # noqa: BLE001 - same rationale as cvSections
             chat_history = []
@@ -3336,9 +3321,7 @@ class AppState:
                     "role": user_record.role,
                     "active": user_record.active,
                     "createdAt": (
-                        user_record.created_at.isoformat()
-                        if user_record.created_at
-                        else None
+                        user_record.created_at.isoformat() if user_record.created_at else None
                     ),
                     "twoFactorEnrolled": bool(getattr(user_record, "totp_secret", None)),
                 }
@@ -3353,9 +3336,7 @@ class AppState:
                 "cvText": profile.cv_text,
                 "cvPhotoDataUri": profile.cv_photo_data_uri,
                 "cvPhotoConsentAt": (
-                    profile.cv_photo_consent_at.isoformat()
-                    if profile.cv_photo_consent_at
-                    else None
+                    profile.cv_photo_consent_at.isoformat() if profile.cv_photo_consent_at else None
                 ),
                 "cvSections": cv_sections,
                 "targetRoles": list(profile.target_roles or []),
@@ -3368,16 +3349,12 @@ class AppState:
                 "theme": profile.theme,
                 "frictionClass": profile.friction_class,
                 "retentionDays": profile.retention_days,
-                "monthlySpendCapEur": float(
-                    getattr(profile, "monthly_spend_cap_eur", 5.0) or 0.0
-                ),
+                "monthlySpendCapEur": float(getattr(profile, "monthly_spend_cap_eur", 5.0) or 0.0),
                 "dismissedTerms": list(profile.dismissed_terms or []),
                 "hiddenSources": list(profile.hidden_sources or []),
                 "aiConsentProviderId": profile.ai_consent_provider_id,
                 "aiConsentAt": (
-                    profile.ai_consent_at.isoformat()
-                    if profile.ai_consent_at
-                    else None
+                    profile.ai_consent_at.isoformat() if profile.ai_consent_at else None
                 ),
             },
             # Watchlist + applications
@@ -3394,10 +3371,7 @@ class AppState:
             "journeyState": journey_state,
             # User-owned auxiliary records
             "analyticsEvents": self.repository.list_analytics_events(user_id, limit=5000),
-            "supportTickets": [
-                t
-                for t in self.repository.list_support_tickets(user_id=user_id)
-            ],
+            "supportTickets": [t for t in self.repository.list_support_tickets(user_id=user_id)],
             "pushSubscriptions": self.repository.list_push_subscriptions(user_id),
             "workspaceMemberships": self.repository.list_workspace_memberships(user_id),
             # Quality-audit transparency surface (2026-05-21): any
@@ -3866,9 +3840,7 @@ class AppState:
         now = time.time()
         with self._csp_report_lock:
             attempts = [
-                t
-                for t in self._csp_requests.get(client_id, [])
-                if now - t < CSP_REPORT_WINDOW
+                t for t in self._csp_requests.get(client_id, []) if now - t < CSP_REPORT_WINDOW
             ]
             if len(attempts) >= CSP_REPORT_LIMIT:
                 self._csp_requests[client_id] = attempts
@@ -3973,11 +3945,11 @@ class AppState:
         with self._cost_metrics_log_lock:
             if self._cost_metrics_log is not None:
                 return self._cost_metrics_log
+            from company_discovery import audit_log as _audit_log_mod
             from company_discovery.cost_saving_metrics import (
                 CostSavingMetricsLog,
                 is_collection_enabled,
             )
-            from company_discovery import audit_log as _audit_log_mod
 
             metrics_path = self.data_path.parent / "cost_saving_metrics.jsonl"
             self._cost_metrics_log = CostSavingMetricsLog(
@@ -4152,10 +4124,7 @@ class AppState:
             if company
             else ((job.also_seen_at and next(iter(job.also_seen_at), "")) or "")
         )
-        public_url = (
-            get_env("HELPMEFINDTHEJOB_PUBLIC_URL")
-            or "https://app.helpmefindthejob.org"
-        )
+        public_url = get_env("HELPMEFINDTHEJOB_PUBLIC_URL") or "https://app.helpmefindthejob.org"
         result = post_high_fit_notification(
             webhook_url=url,
             job_title=job.title or "",
@@ -4788,41 +4757,23 @@ class AppState:
         """Construct an AIProviderConfig that points the dispatcher at
         the operator's managed key — used as fallback when the user is
         in Manual mode. Returns None when no managed key is configured."""
-        managed_key = (
-            get_env("HELPMEFINDTHEJOB_MANAGED_AI_KEY") or ""
-        ).strip()
+        managed_key = (get_env("HELPMEFINDTHEJOB_MANAGED_AI_KEY") or "").strip()
         if not managed_key:
             return None
         # Opt-in flag so the operator decides whether to spend tokens
         # on chat-routing classifications.
-        enabled = (
-            (get_env("HELPMEFINDTHEJOB_CHAT_AI_ROUTER") or "")
-            .strip()
-            .lower()
-        )
+        enabled = (get_env("HELPMEFINDTHEJOB_CHAT_AI_ROUTER") or "").strip().lower()
         if enabled not in {"true", "1", "yes", "on"}:
             return None
-        upstream = (
-            (
-                get_env("HELPMEFINDTHEJOB_MANAGED_AI_PROVIDER")
-                or "openai"
-            )
-            .strip()
-            .lower()
-        )
+        upstream = (get_env("HELPMEFINDTHEJOB_MANAGED_AI_PROVIDER") or "openai").strip().lower()
         if upstream not in {"openai", "anthropic", "google_gemini", "deepseek", "openrouter"}:
             return None
         return AIProviderConfig(
             provider_id=upstream,
             invocation_mode="api",
-            model=(
-                get_env("HELPMEFINDTHEJOB_MANAGED_AI_MODEL") or ""
-            ).strip(),
+            model=(get_env("HELPMEFINDTHEJOB_MANAGED_AI_MODEL") or "").strip(),
             credential_reference="HELPMEFINDTHEJOB_MANAGED_AI_KEY",
-            base_url=(
-                get_env("HELPMEFINDTHEJOB_MANAGED_AI_BASE_URL")
-                or ""
-            ).strip(),
+            base_url=(get_env("HELPMEFINDTHEJOB_MANAGED_AI_BASE_URL") or "").strip(),
             command="",
             notes="managed-chat-router",
         )
@@ -5134,6 +5085,7 @@ class AppState:
             cluster_jobs,
         )
         from company_discovery.personas import get_persona
+
         if bucket_key:
             jobs = filter_jobs_by_type(jobs, job_type=bucket_key, location=location)
         elif normalize_location(location):
@@ -5305,8 +5257,7 @@ class AppState:
             # summary_msg from categorized) can also surface the
             # partial-failure banner consistently.
             "erroredOutcomes": [
-                {"provider": o.provider, "error": o.error}
-                for o in errored_outcomes
+                {"provider": o.provider, "error": o.error} for o in errored_outcomes
             ],
             # PART 9 Loop 29: total provider count so the client's
             # post-op elapsed-time footer can say "took 12.3s across
@@ -5389,9 +5340,7 @@ class AppState:
                 "ok": True,
                 "message": (
                     "Friction-class options (pick one to update your "
-                    "classification):\n\n"
-                    + "\n".join(lines)
-                    + "\n\n"
+                    "classification):\n\n" + "\n".join(lines) + "\n\n"
                     "Or type **/skip-friction** to opt out entirely."
                 ),
             }
@@ -5584,9 +5533,7 @@ class AppState:
             system = parts[0]
             user_msg = parts[1] if len(parts) > 1 else ""
             try:
-                for kind, payload in streaming_caller(
-                    system, user_msg, purpose="tailor_cv"
-                ):
+                for kind, payload in streaming_caller(system, user_msg, purpose="tailor_cv"):
                     if kind == "token":
                         accumulated.append(payload)
                         yield ("ai_token", {"text": payload})
@@ -5922,7 +5869,7 @@ class AppState:
         # analytics events. Each (name, payload) entry gets a
         # log_analytics call so the OQ-2 telemetry hook lands on
         # the same channel as other journey instrumentation.
-        for event_name, event_payload in (result.analytics_events or []):
+        for event_name, event_payload in result.analytics_events or []:
             try:
                 self.log_analytics(user_id, event_name, event_payload)
             except Exception:  # noqa: BLE001 - telemetry must never break chat
@@ -6052,9 +5999,7 @@ class AppState:
                         laterals_count = len(_compute_new_laterals(journey2))
                     except Exception:  # noqa: BLE001 - Case E best-effort: lateral count is decorative; failure to compute it must not block auto-relax offer
                         laterals_count = 0
-                    next_a = next_auto_relax_suggestion(
-                        journey2, new_laterals_count=laterals_count
-                    )
+                    next_a = next_auto_relax_suggestion(journey2, new_laterals_count=laterals_count)
                     if next_a is not None:
                         journey2.auto_relax_offered_id = next_a.id
                         journey2.review_substate = "auto_relax_offering"
@@ -6069,10 +6014,7 @@ class AppState:
                     journey2.review_substate = "empty"
                 # Piece 2: compute diagnostic via cache-only engine.
                 diag = self.diagnostic_engine.generate(
-                    role_text=(
-                        (journey2.target_roles[0] if journey2.target_roles else "")
-                        or ""
-                    ),
+                    role_text=((journey2.target_roles[0] if journey2.target_roles else "") or ""),
                     location=journey2.location or None,
                     filters={
                         "remote_required": journey2.remote_required,
@@ -6092,10 +6034,10 @@ class AppState:
                 # registry, never to a fixture slug — Loop 9.2
                 # investigation). Defaults to False when friction_class
                 # is "" (classifier didn't resolve) → unconstrained UX.
+                from company_discovery.analysis import _persona_fixture_for
                 from company_discovery.widening import (
                     classify_visa_constraint,
                 )
-                from company_discovery.analysis import _persona_fixture_for
 
                 try:
                     user_profile = self.profile_for(user_id)
@@ -6145,9 +6087,7 @@ class AppState:
                         journey2, new_laterals_count=len(new_laterals)
                     )
                     if next_a is not None:
-                        lateral_options = (
-                            new_laterals if next_a.id == TRY_LATERALS else None
-                        )
+                        lateral_options = new_laterals if next_a.id == TRY_LATERALS else None
                         count = _probe_auto_relax_count(
                             journey2,
                             next_a,
@@ -7182,9 +7122,7 @@ class AppState:
         import hashlib as _hashlib
         import hmac as _hmac
 
-        secret = get_env(
-            "HELPMEFINDTHEJOB_SECRET_KEY", "dev-secret"
-        ).encode("utf-8")
+        secret = get_env("HELPMEFINDTHEJOB_SECRET_KEY", "dev-secret").encode("utf-8")
         digest = _hmac.new(secret, user_id.encode("utf-8"), _hashlib.sha256).hexdigest()
         return digest[:24]
 
@@ -7381,7 +7319,7 @@ class Handler(BaseHTTPRequestHandler):
             "geolocation=(), microphone=(), camera=(), "
             "interest-cohort=(), browsing-topics=(), "
             "fullscreen=(self), accelerometer=(), gyroscope=(), "
-            "magnetometer=(), usb=(), serial=(), midi=(), payment=()"
+            "magnetometer=(), usb=(), serial=(), midi=(), payment=()",
         )
         # Phase 2 #47 (2026-05-21): cross-origin isolation headers.
         # COOP same-origin prevents window.opener attacks where a
@@ -7425,8 +7363,7 @@ class Handler(BaseHTTPRequestHandler):
         # client-side until the policy is re-seen.
         self.send_header(
             "Report-To",
-            '{"group":"csp-endpoint","max_age":10886400,'
-            '"endpoints":[{"url":"/csp-report"}]}',
+            '{"group":"csp-endpoint","max_age":10886400,"endpoints":[{"url":"/csp-report"}]}',
         )
         # 2026-05-23: Vary in a single consolidated header. Handlers
         # set self._vary_axes BEFORE calling send_response() to add
@@ -7577,8 +7514,7 @@ class Handler(BaseHTTPRequestHandler):
                 ("/impressum", "Impressum"),
             ]
         items = "".join(
-            f'<li><a class="legal-back" href="{href}">{label}</a></li>'
-            for href, label in links
+            f'<li><a class="legal-back" href="{href}">{label}</a></li>' for href, label in links
         )
         html_body = (
             "<!doctype html>"
@@ -7653,9 +7589,7 @@ class Handler(BaseHTTPRequestHandler):
         if allowed:
             self.send_header("Access-Control-Allow-Origin", origin)
             self.send_header("Access-Control-Allow-Credentials", "true")
-            self.send_header(
-                "Access-Control-Allow-Methods", "GET, POST, HEAD, OPTIONS"
-            )
+            self.send_header("Access-Control-Allow-Methods", "GET, POST, HEAD, OPTIONS")
             self.send_header(
                 "Access-Control-Allow-Headers",
                 "Content-Type, X-CSRF-Token, Accept-Language",
@@ -7840,7 +7774,9 @@ class Handler(BaseHTTPRequestHandler):
                 # buildSha} for partner integrators (MCP marketplaces, NLnet
                 # review checks) and the site footer (AUDIT-34 surfaces
                 # buildSha to operators for incident-correlation).
-                self.send_json({"version": APP_VERSION, "environment": APP_ENV, "buildSha": BUILD_SHA})
+                self.send_json(
+                    {"version": APP_VERSION, "environment": APP_ENV, "buildSha": BUILD_SHA}
+                )
                 return
             if parsed.path == "/api/docs":
                 # 2026-05-23: alias to the static api-docs.html page,
@@ -7895,13 +7831,7 @@ class Handler(BaseHTTPRequestHandler):
                 try:
                     set_gauge(
                         "helpmefindthejob_scheduler_active_jobs",
-                        float(
-                            sum(
-                                1
-                                for record in STATE.scheduler.all()
-                                if record.enabled
-                            )
-                        ),
+                        float(sum(1 for record in STATE.scheduler.all() if record.enabled)),
                         help_text="Active scheduled scan jobs (deployer-managed).",
                     )
                 except Exception:  # noqa: BLE001 - never break scrape
@@ -7909,9 +7839,7 @@ class Handler(BaseHTTPRequestHandler):
 
                 body = prometheus_text().encode("utf-8")
                 self.send_response(HTTPStatus.OK)
-                self.send_header(
-                    "Content-Type", "text/plain; version=0.0.4; charset=utf-8"
-                )
+                self.send_header("Content-Type", "text/plain; version=0.0.4; charset=utf-8")
                 self.send_header("Content-Length", str(len(body)))
                 self.send_header("Cache-Control", "no-store")
                 self.end_headers()
@@ -7940,14 +7868,8 @@ class Handler(BaseHTTPRequestHandler):
                 # the frontend injects the script. When not set, we ship
                 # zero third-party requests, which is the documented
                 # default (see docs/cookie-audit.md).
-                analytics_url = (
-                    get_env(
-                        "HELPMEFINDTHEJOB_ANALYTICS_SCRIPT_URL")
-                    or ""
-                ).strip()
-                analytics_domain = (
-                    get_env("HELPMEFINDTHEJOB_ANALYTICS_DOMAIN") or ""
-                ).strip()
+                analytics_url = (get_env("HELPMEFINDTHEJOB_ANALYTICS_SCRIPT_URL") or "").strip()
+                analytics_domain = (get_env("HELPMEFINDTHEJOB_ANALYTICS_DOMAIN") or "").strip()
                 self.send_json(
                     {
                         "analytics": {
@@ -7971,11 +7893,10 @@ class Handler(BaseHTTPRequestHandler):
 
                 qs = _parse_qs_t(parsed.query or "")
                 try:
-                    window_days = int((qs.get("window", ["30"])[0] or "30"))
+                    window_days = int(qs.get("window", ["30"])[0] or "30")
                     window_days = max(1, min(window_days, 90))
                 except (TypeError, ValueError):
                     window_days = 30
-                from datetime import datetime as _dt, timedelta as _td, timezone as _tz
 
                 # 60-second TTL cache around the aggregation so a
                 # public-endpoint DoS attempt degrades to "one full
@@ -7995,8 +7916,8 @@ class Handler(BaseHTTPRequestHandler):
                 # report "metrics not enabled".
                 cost_snapshot: dict[str, Any] | None = None
                 try:
-                    from company_discovery.cost_saving_metrics import CostSavingMetricsLog
                     from company_discovery import audit_log as _audit_log_mod
+                    from company_discovery.cost_saving_metrics import CostSavingMetricsLog
 
                     metrics_path = DATA_ROOT / "cost_saving_metrics.jsonl"
                     if metrics_path.exists():
@@ -8025,7 +7946,9 @@ class Handler(BaseHTTPRequestHandler):
                         },
                     )
                     return
-                html_body = _transparency.render_html(public, cost_saving_snapshot=cost_snapshot_public)
+                html_body = _transparency.render_html(
+                    public, cost_saving_snapshot=cost_snapshot_public
+                )
                 # Bracket the response with the same security-header
                 # discipline the auth pages use: no embedding (X-Frame-
                 # Options DENY), no MIME sniffing, and a strict CSP
@@ -8082,9 +8005,7 @@ class Handler(BaseHTTPRequestHandler):
                 ]
                 self.send_json({"idps": public})
                 return
-            saml_metadata_match = re.match(
-                r"^/api/auth/sso/saml/sp/metadata$", parsed.path
-            )
+            saml_metadata_match = re.match(r"^/api/auth/sso/saml/sp/metadata$", parsed.path)
             if saml_metadata_match:
                 from company_discovery.sso_saml import build_sp_metadata
 
@@ -8099,16 +8020,12 @@ class Handler(BaseHTTPRequestHandler):
                     acs_url=acs_url,
                 )
                 self.send_response(HTTPStatus.OK)
-                self.send_header(
-                    "Content-Type", "application/samlmetadata+xml; charset=utf-8"
-                )
+                self.send_header("Content-Type", "application/samlmetadata+xml; charset=utf-8")
                 self.send_header("Content-Length", str(len(metadata)))
                 self.end_headers()
                 self.wfile.write(metadata)
                 return
-            saml_login_match = re.match(
-                r"^/api/auth/sso/saml/([^/]+)/login$", parsed.path
-            )
+            saml_login_match = re.match(r"^/api/auth/sso/saml/([^/]+)/login$", parsed.path)
             if saml_login_match:
                 from company_discovery.sso_saml import (
                     build_authn_request,
@@ -8152,9 +8069,7 @@ class Handler(BaseHTTPRequestHandler):
                     code_verifier="",
                     redirect_uri=acs_url,
                 )
-                cookie_value = sign_auth_request(
-                    state_blob, secret_key=SECRET_KEY
-                )
+                cookie_value = sign_auth_request(state_blob, secret_key=SECRET_KEY)
                 self.send_response(HTTPStatus.SEE_OTHER)
                 self.send_header("Location", redirect_url)
                 cookie_parts = [
@@ -8186,25 +8101,21 @@ class Handler(BaseHTTPRequestHandler):
                 ]
                 self.send_json({"providers": public})
                 return
-            sso_login_match = re.match(
-                r"^/api/auth/sso/oidc/([^/]+)/login$", parsed.path
-            )
+            sso_login_match = re.match(r"^/api/auth/sso/oidc/([^/]+)/login$", parsed.path)
             if sso_login_match:
                 from company_discovery.sso_oidc import (
                     AuthRequest,
                     OidcDiscoveryError,
+                    build_authorization_url,
                     discover,
                     generate_pkce,
                     load_providers_from_env,
-                    build_authorization_url,
                     sign_auth_request,
                 )
 
                 provider_id = sso_login_match.group(1)
                 providers = load_providers_from_env()
-                provider = next(
-                    (p for p in providers if p.provider_id == provider_id), None
-                )
+                provider = next((p for p in providers if p.provider_id == provider_id), None)
                 if provider is None:
                     self.send_error_json(
                         HTTPStatus.NOT_FOUND,
@@ -8266,9 +8177,7 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_header("Set-Cookie", "; ".join(cookie_parts))
                 self.end_headers()
                 return
-            sso_callback_match = re.match(
-                r"^/api/auth/sso/oidc/([^/]+)/callback$", parsed.path
-            )
+            sso_callback_match = re.match(r"^/api/auth/sso/oidc/([^/]+)/callback$", parsed.path)
             if sso_callback_match:
                 from company_discovery.sso_oidc import (
                     OidcError,
@@ -8318,9 +8227,7 @@ class Handler(BaseHTTPRequestHandler):
                     )
                     return
                 try:
-                    auth_request = verify_auth_request(
-                        stored_cookie, secret_key=SECRET_KEY
-                    )
+                    auth_request = verify_auth_request(stored_cookie, secret_key=SECRET_KEY)
                 except OidcStateMismatchError as err:
                     self.send_error_json(
                         HTTPStatus.BAD_REQUEST,
@@ -8345,9 +8252,7 @@ class Handler(BaseHTTPRequestHandler):
                     return
                 # Look up the provider config + run the discovery
                 providers = load_providers_from_env()
-                provider = next(
-                    (p for p in providers if p.provider_id == provider_id), None
-                )
+                provider = next((p for p in providers if p.provider_id == provider_id), None)
                 if provider is None:
                     self.send_error_json(
                         HTTPStatus.NOT_FOUND,
@@ -8590,7 +8495,7 @@ class Handler(BaseHTTPRequestHandler):
             # arbitrary garbage paths through the redirect.
             for _token_prefix in ("/reset-password/", "/accept-invite/"):
                 if parsed.path.startswith(_token_prefix):
-                    _raw_token = parsed.path[len(_token_prefix):].strip("/").split("/", 1)[0]
+                    _raw_token = parsed.path[len(_token_prefix) :].strip("/").split("/", 1)[0]
                     _canonical = _token_prefix.rstrip("/")
                     if not _raw_token:
                         self.send_response(HTTPStatus.SEE_OTHER)
@@ -8779,8 +8684,7 @@ class Handler(BaseHTTPRequestHandler):
                     )
                     return
                 public_url = (
-                    get_env("HELPMEFINDTHEJOB_PUBLIC_URL")
-                    or "https://app.helpmefindthejob.org"
+                    get_env("HELPMEFINDTHEJOB_PUBLIC_URL") or "https://app.helpmefindthejob.org"
                 )
                 result = post_high_fit_notification(
                     webhook_url=url,
@@ -8928,9 +8832,7 @@ class Handler(BaseHTTPRequestHandler):
                 )
 
                 tools = CompanyDiscoveryMCPTools(STATE.service)
-                payload = tools.list_referrals(
-                    userId=user_id, status=status_filter
-                )
+                payload = tools.list_referrals(userId=user_id, status=status_filter)
                 if payload.get("status") == "invalid_arguments":
                     self.send_error_json(
                         HTTPStatus.BAD_REQUEST,
@@ -8977,9 +8879,7 @@ class Handler(BaseHTTPRequestHandler):
             # assigned to the current user for an A/B experiment.
             # 13-plan item 6/13. Builds on the feature-flag
             # substrate from item 5/13.
-            exp_variant_match = re.match(
-                r"^/api/experiments/([^/]+)/variant$", parsed.path
-            )
+            exp_variant_match = re.match(r"^/api/experiments/([^/]+)/variant$", parsed.path)
             if exp_variant_match:
                 from company_discovery.experiments import (
                     EXPERIMENTS,
@@ -9007,17 +8907,16 @@ class Handler(BaseHTTPRequestHandler):
             # /api/experiments/<name>/summary — aggregate per-variant
             # outcomes for an experiment. Admin-only (per-variant
             # counts could be sensitive in a small-cohort case).
-            exp_summary_match = re.match(
-                r"^/api/experiments/([^/]+)/summary$", parsed.path
-            )
+            exp_summary_match = re.match(r"^/api/experiments/([^/]+)/summary$", parsed.path)
             if exp_summary_match:
                 if not self.require_admin(session):
                     return
+                from dataclasses import asdict
+
                 from company_discovery.experiments import (
                     EXPERIMENTS,
                     summarize_experiment,
                 )
-                from dataclasses import asdict
 
                 experiment_name = exp_summary_match.group(1)
                 if experiment_name not in EXPERIMENTS:
@@ -9032,15 +8931,11 @@ class Handler(BaseHTTPRequestHandler):
                 return
             # /api/workspaces/<workspace_id>/members — list members
             # of a workspace (workspace admin UI completion).
-            ws_members_match = re.match(
-                r"^/api/workspaces/([^/]+)/members$", parsed.path
-            )
+            ws_members_match = re.match(r"^/api/workspaces/([^/]+)/members$", parsed.path)
             if ws_members_match:
                 workspace_id = ws_members_match.group(1)
                 try:
-                    members = STATE.list_workspace_members_enriched(
-                        user_id, workspace_id
-                    )
+                    members = STATE.list_workspace_members_enriched(user_id, workspace_id)
                 except ValueError:
                     self.send_error_json(
                         HTTPStatus.FORBIDDEN,
@@ -9176,9 +9071,7 @@ class Handler(BaseHTTPRequestHandler):
             # lookup returns 404.
             if parsed.path == "/api/receipts":
                 store = STATE.trust_receipt_store
-                self.send_json(
-                    {"receipts": store.list_for_user(data_user_id)}
-                )
+                self.send_json({"receipts": store.list_for_user(data_user_id)})
                 return
             if parsed.path.startswith("/api/receipts/"):
                 from company_discovery.trust_receipt import (
@@ -9297,7 +9190,10 @@ class Handler(BaseHTTPRequestHandler):
         try:
             parsed = urlparse(self.path)
             if parsed.path == "/api/version":
-                self.send_json({"version": APP_VERSION, "environment": APP_ENV, "buildSha": BUILD_SHA}, include_body=False)
+                self.send_json(
+                    {"version": APP_VERSION, "environment": APP_ENV, "buildSha": BUILD_SHA},
+                    include_body=False,
+                )
                 return
             if parsed.path == "/api/health":
                 self.send_json(STATE.health(None), include_body=False)
@@ -9393,9 +9289,7 @@ class Handler(BaseHTTPRequestHandler):
                     )
                     return
                 raw = self.rfile.read(length)
-                expected_secret = get_env(
-                    "HELPMEFINDTHEJOB_INBOUND_EMAIL_SECRET", ""
-                ).strip()
+                expected_secret = get_env("HELPMEFINDTHEJOB_INBOUND_EMAIL_SECRET", "").strip()
                 if not expected_secret:
                     self.send_error_json(
                         HTTPStatus.SERVICE_UNAVAILABLE,
@@ -9510,9 +9404,7 @@ class Handler(BaseHTTPRequestHandler):
                     return
                 raw = self.rfile.read(length)
                 signature_header = self.headers.get("Stripe-Signature", "")
-                secret = get_env(
-                    "HELPMEFINDTHEJOB_STRIPE_WEBHOOK_SECRET", ""
-                ).strip()
+                secret = get_env("HELPMEFINDTHEJOB_STRIPE_WEBHOOK_SECRET", "").strip()
                 if not secret:
                     self.send_error_json(
                         HTTPStatus.SERVICE_UNAVAILABLE,
@@ -9551,12 +9443,8 @@ class Handler(BaseHTTPRequestHandler):
                     )
                     return
                 price_to_plan = {
-                    get_env(
-                        "HELPMEFINDTHEJOB_STRIPE_PRICE_TEAM", ""
-                    ): "team",
-                    get_env(
-                        "HELPMEFINDTHEJOB_STRIPE_PRICE_ORG", ""
-                    ): "org",
+                    get_env("HELPMEFINDTHEJOB_STRIPE_PRICE_TEAM", ""): "team",
+                    get_env("HELPMEFINDTHEJOB_STRIPE_PRICE_ORG", ""): "org",
                     get_env(
                         "HELPMEFINDTHEJOB_STRIPE_PRICE_PRO_MONTHLY",
                         "",
@@ -9848,17 +9736,18 @@ class Handler(BaseHTTPRequestHandler):
             #   - audience + destination + InResponseTo + expiry
             #     checks in parse_and_validate_response
             if parsed.path == "/api/auth/sso/saml/acs":
+                from urllib.parse import parse_qs as _pq_acs
+
+                from company_discovery.sso_oidc import (
+                    OidcStateMismatchError,
+                    verify_auth_request,
+                )
                 from company_discovery.sso_saml import (
                     SamlError,
                     SamlResponseError,
                     load_idps_from_env,
                     parse_and_validate_response,
                 )
-                from company_discovery.sso_oidc import (
-                    OidcStateMismatchError,
-                    verify_auth_request,
-                )
-                from urllib.parse import parse_qs as _pq_acs
 
                 content_length = int(self.headers.get("Content-Length", "0") or "0")
                 if content_length <= 0 or content_length > MAX_JSON_BODY_BYTES:
@@ -9894,9 +9783,7 @@ class Handler(BaseHTTPRequestHandler):
                     )
                     return
                 try:
-                    auth_state = verify_auth_request(
-                        stored_cookie, secret_key=SECRET_KEY
-                    )
+                    auth_state = verify_auth_request(stored_cookie, secret_key=SECRET_KEY)
                 except OidcStateMismatchError as err:
                     self.send_error_json(
                         HTTPStatus.BAD_REQUEST,
@@ -9905,9 +9792,7 @@ class Handler(BaseHTTPRequestHandler):
                     )
                     return
                 idps = load_idps_from_env()
-                idp = next(
-                    (i for i in idps if i.idp_id == auth_state.provider_id), None
-                )
+                idp = next((i for i in idps if i.idp_id == auth_state.provider_id), None)
                 if idp is None:
                     self.send_error_json(
                         HTTPStatus.NOT_FOUND,
@@ -9974,9 +9859,7 @@ class Handler(BaseHTTPRequestHandler):
                     "Set-Cookie",
                     session_cookie_header(
                         new_session.token,
-                        max_age=int(
-                            STATE.auth_store.session_ttl.total_seconds()
-                        ),
+                        max_age=int(STATE.auth_store.session_ttl.total_seconds()),
                     ),
                 )
                 self.send_header(
@@ -10058,9 +9941,7 @@ class Handler(BaseHTTPRequestHandler):
                         "recoveryCodes": recovery_codes,
                         "user": make_user_payload(user, new_session.csrf_token),
                     },
-                    headers={
-                        "Set-Cookie": session_cookie_header(new_session.token, max_age)
-                    },
+                    headers={"Set-Cookie": session_cookie_header(new_session.token, max_age)},
                 )
                 return
 
@@ -10070,20 +9951,12 @@ class Handler(BaseHTTPRequestHandler):
                 # silently regenerate the user's lifeline.
                 password = str(payload.get("password") or "")
                 try:
-                    new_codes = STATE.auth_store.regenerate_recovery_codes(
-                        user_id, password
-                    )
+                    new_codes = STATE.auth_store.regenerate_recovery_codes(user_id, password)
                 except ValueError as error:
-                    self.send_error_json(
-                        HTTPStatus.FORBIDDEN, str(error), str(error)
-                    )
+                    self.send_error_json(HTTPStatus.FORBIDDEN, str(error), str(error))
                     return
-                STATE.log_analytics(
-                    user_id, "totp_recovery_codes_regenerated", {}
-                )
-                self.send_json(
-                    {"status": "regenerated", "recoveryCodes": new_codes}
-                )
+                STATE.log_analytics(user_id, "totp_recovery_codes_regenerated", {})
+                self.send_json({"status": "regenerated", "recoveryCodes": new_codes})
                 return
 
             if parsed.path == "/api/auth/totp/disable":
@@ -10103,9 +9976,7 @@ class Handler(BaseHTTPRequestHandler):
                         "status": "disabled",
                         "user": make_user_payload(user, new_session.csrf_token),
                     },
-                    headers={
-                        "Set-Cookie": session_cookie_header(new_session.token, max_age)
-                    },
+                    headers={"Set-Cookie": session_cookie_header(new_session.token, max_age)},
                 )
                 return
 
@@ -10854,7 +10725,14 @@ class Handler(BaseHTTPRequestHandler):
                             "result": result,
                             "session": session.to_dict(),
                         }
-                        for key in ("navigateTo", "totalJobs", "jobs", "jobType", "categories", "openUrl"):
+                        for key in (
+                            "navigateTo",
+                            "totalJobs",
+                            "jobs",
+                            "jobType",
+                            "categories",
+                            "openUrl",
+                        ):
                             if key in result:
                                 payload_out[key] = result[key]
                         self.send_json(payload_out)
@@ -10916,10 +10794,7 @@ class Handler(BaseHTTPRequestHandler):
                 if (
                     in_journey
                     and not user_message.startswith("/")
-                    and (
-                        session.pending is None
-                        or not session.pending.awaiting_confirmation
-                    )
+                    and (session.pending is None or not session.pending.awaiting_confirmation)
                 ):
                     # Route the message through the journey state
                     # machine. Skip when a pending command is awaiting
@@ -12209,8 +12084,8 @@ class Handler(BaseHTTPRequestHandler):
                         "Confirm consent in Settings before running AI on your CV.",
                     )
                     return
-                from company_discovery.persona_fixtures import friction_keywords_for
                 from company_discovery.cost_caps import CostCapExceeded
+                from company_discovery.persona_fixtures import friction_keywords_for
 
                 try:
                     result = execute_cv_tailoring(
@@ -12477,11 +12352,7 @@ class Handler(BaseHTTPRequestHandler):
             data_user_id = STATE.effective_user_id(user_id)
             # PATCH /api/workspaces/<id>/members/<membership_id>
             # — change a member's role. Owner-only.
-            if (
-                len(parts) == 5
-                and parts[:2] == ["api", "workspaces"]
-                and parts[3] == "members"
-            ):
+            if len(parts) == 5 and parts[:2] == ["api", "workspaces"] and parts[3] == "members":
                 workspace_id = parts[2]
                 membership_id = parts[4]
                 payload = self.read_json_body()
@@ -12604,9 +12475,7 @@ class Handler(BaseHTTPRequestHandler):
                         {
                             "error": {
                                 "code": "invalid_transition",
-                                "message": result.get(
-                                    "error", "invalid lifecycle transition"
-                                ),
+                                "message": result.get("error", "invalid lifecycle transition"),
                                 "currentStatus": result.get("currentStatus"),
                             }
                         },
@@ -12647,11 +12516,7 @@ class Handler(BaseHTTPRequestHandler):
             # DELETE /api/workspaces/<id>/members/<membership_id>
             # — remove member. Owner removes anyone; admin removes
             # regular members; any non-owner can self-remove.
-            if (
-                len(parts) == 5
-                and parts[:2] == ["api", "workspaces"]
-                and parts[3] == "members"
-            ):
+            if len(parts) == 5 and parts[:2] == ["api", "workspaces"] and parts[3] == "members":
                 workspace_id = parts[2]
                 membership_id = parts[4]
                 try:
@@ -12938,9 +12803,7 @@ class Handler(BaseHTTPRequestHandler):
         host = self.headers.get("Host", "").strip()
         if not host:
             return ""
-        forwarded_proto = (
-            self.headers.get("X-Forwarded-Proto", "").strip().lower()
-        )
+        forwarded_proto = self.headers.get("X-Forwarded-Proto", "").strip().lower()
         scheme = forwarded_proto if forwarded_proto in {"http", "https"} else "http"
         return f"{scheme}://{host}"
 
@@ -13117,8 +12980,8 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(encoded)
 
     def _send_seo_page(self, page: dict[str, Any]) -> None:
-        from html import escape as _escape
         import json as _json
+        from html import escape as _escape
 
         title = page["title"] or f"{page['role']} jobs in {page['city']}"
         intro = page["intro"] or (
@@ -13394,7 +13257,6 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(encoded)
 
-
     # AUDIT-6 + AUDIT-26: bilingual SSR pages (DE/EN). The four
     # legal pages plus the standalone /forgot-password page that
     # AUDIT-26 extracted from the SPA shell. /impressum is DE-
@@ -13406,7 +13268,9 @@ class Handler(BaseHTTPRequestHandler):
 
     def _resolve_user_language(self) -> str:
         """Pick 'de' or 'en' for bilingual SSR rendering (AUDIT-6 / AUDIT-26)."""
-        from urllib.parse import urlparse as _urlparse, parse_qs as _parse_qs
+        from urllib.parse import parse_qs as _parse_qs
+        from urllib.parse import urlparse as _urlparse
+
         qs = _urlparse(self.path).query
         if qs:
             params = _parse_qs(qs)
@@ -13442,7 +13306,8 @@ class Handler(BaseHTTPRequestHandler):
            users with no OS preference signal.
         """
 
-        from urllib.parse import urlparse as _urlparse, parse_qs as _parse_qs
+        from urllib.parse import parse_qs as _parse_qs
+        from urllib.parse import urlparse as _urlparse
 
         qs = _urlparse(self.path).query
         if qs:
@@ -13467,7 +13332,9 @@ class Handler(BaseHTTPRequestHandler):
         decide whether to set a persistent ``lang`` cookie — only
         when the visitor explicitly asked via the URL, not when the
         resolver fell back to Accept-Language."""
-        from urllib.parse import urlparse as _urlparse, parse_qs as _parse_qs
+        from urllib.parse import parse_qs as _parse_qs
+        from urllib.parse import urlparse as _urlparse
+
         qs = _urlparse(self.path).query
         if not qs:
             return None
@@ -13604,8 +13471,19 @@ class Handler(BaseHTTPRequestHandler):
             self.send_header("Cache-Control", "no-cache, must-revalidate")
         elif suffix in (".css", ".js", ".mjs"):
             self.send_header("Cache-Control", "public, max-age=300")
-        elif suffix in (".ico", ".png", ".jpg", ".jpeg", ".gif", ".svg",
-                        ".webp", ".woff", ".woff2", ".ttf", ".otf"):
+        elif suffix in (
+            ".ico",
+            ".png",
+            ".jpg",
+            ".jpeg",
+            ".gif",
+            ".svg",
+            ".webp",
+            ".woff",
+            ".woff2",
+            ".ttf",
+            ".otf",
+        ):
             self.send_header("Cache-Control", "public, max-age=86400")
         elif suffix == ".webmanifest":
             self.send_header("Cache-Control", "public, max-age=300")
@@ -13620,8 +13498,7 @@ class Handler(BaseHTTPRequestHandler):
             if explicit_lang:
                 self.send_header(
                     "Set-Cookie",
-                    f"lang={explicit_lang}; Path=/; Max-Age=31536000; "
-                    "SameSite=Lax; Secure"
+                    f"lang={explicit_lang}; Path=/; Max-Age=31536000; SameSite=Lax; Secure",
                 )
         self.end_headers()
         if include_body:
@@ -13694,9 +13571,7 @@ class Handler(BaseHTTPRequestHandler):
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--host", default=get_env("HELPMEFINDTHEJOB_HOST", "127.0.0.1")
-    )
+    parser.add_argument("--host", default=get_env("HELPMEFINDTHEJOB_HOST", "127.0.0.1"))
     parser.add_argument(
         "--port",
         type=int,

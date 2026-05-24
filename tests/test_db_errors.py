@@ -218,27 +218,21 @@ class RetryOnLockTests(unittest.TestCase):
 
 class AdminAlertEmissionTests(unittest.TestCase):
     def test_disk_full_emits_admin_alert(self):
-        with patch(
-            "company_discovery.audit_log.emit_system_event"
-        ) as mock_emit:
+        with patch("company_discovery.audit_log.emit_system_event") as mock_emit:
             emit_admin_alert(ERR_DISK_FULL, "detail string")
         mock_emit.assert_called_once()
         kwargs = mock_emit.call_args.kwargs
         self.assertEqual(kwargs.get("system_event_kind"), "db_disk_full")
 
     def test_schema_drift_emits_admin_alert(self):
-        with patch(
-            "company_discovery.audit_log.emit_system_event"
-        ) as mock_emit:
+        with patch("company_discovery.audit_log.emit_system_event") as mock_emit:
             emit_admin_alert(ERR_SCHEMA_DRIFT, "detail string")
         mock_emit.assert_called_once()
         kwargs = mock_emit.call_args.kwargs
         self.assertEqual(kwargs.get("system_event_kind"), "db_schema_drift")
 
     def test_lock_busy_does_not_emit_admin_alert(self):
-        with patch(
-            "company_discovery.audit_log.emit_system_event"
-        ) as mock_emit:
+        with patch("company_discovery.audit_log.emit_system_event") as mock_emit:
             emit_admin_alert(ERR_LOCK_BUSY, "detail")
         mock_emit.assert_not_called()
 

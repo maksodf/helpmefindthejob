@@ -42,7 +42,6 @@ def _free_port() -> int:
 
 
 class StaticAssetsBatch3(unittest.TestCase):
-
     def test_humans_txt_exists_and_has_team_section(self) -> None:
         path = STATIC / "humans.txt"
         self.assertTrue(path.is_file(), "humans.txt missing")
@@ -65,17 +64,18 @@ class StaticAssetsBatch3(unittest.TestCase):
     def test_index_has_theme_color_for_light_and_dark(self) -> None:
         src = (STATIC / "index.html").read_text(encoding="utf-8")
         self.assertIn(
-            'media="(prefers-color-scheme: light)"', src,
+            'media="(prefers-color-scheme: light)"',
+            src,
             "index.html must declare light-mode theme-color",
         )
         self.assertIn(
-            'media="(prefers-color-scheme: dark)"', src,
+            'media="(prefers-color-scheme: dark)"',
+            src,
             "index.html must declare dark-mode theme-color",
         )
 
 
 class LiveResponseBatch3(unittest.TestCase):
-
     @classmethod
     def setUpClass(cls) -> None:
         cls._tmp = TemporaryDirectory()
@@ -128,7 +128,9 @@ class LiveResponseBatch3(unittest.TestCase):
                 time.sleep(0.1)
         raise RuntimeError(f"server did not become healthy on port {cls.port}")
 
-    def _request(self, method: str, path: str, *, headers: dict | None = None) -> tuple[int, list[tuple[str, str]], bytes]:
+    def _request(
+        self, method: str, path: str, *, headers: dict | None = None
+    ) -> tuple[int, list[tuple[str, str]], bytes]:
         conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=2)
         conn.request(method, path, headers=headers or {})
         resp = conn.getresponse()
@@ -151,8 +153,7 @@ class LiveResponseBatch3(unittest.TestCase):
         self.assertEqual(loc, "/")
         # Find the Set-Cookie that clears lang
         clear_cookies = [
-            v for k, v in headers
-            if k.lower() == "set-cookie" and v.startswith("lang=")
+            v for k, v in headers if k.lower() == "set-cookie" and v.startswith("lang=")
         ]
         self.assertTrue(
             clear_cookies,
@@ -164,7 +165,8 @@ class LiveResponseBatch3(unittest.TestCase):
         _status, headers, _body = self._request("GET", "/api/health")
         coep = next((v for k, v in headers if k.lower() == "cross-origin-embedder-policy"), "")
         self.assertEqual(
-            coep, "require-corp",
+            coep,
+            "require-corp",
             "COEP must be require-corp to enable cross-origin isolation",
         )
 
@@ -173,7 +175,8 @@ class LiveResponseBatch3(unittest.TestCase):
         vary_values = [v for k, v in headers if k.lower() == "vary"]
         joined = ", ".join(vary_values)
         self.assertIn(
-            "Origin", joined,
+            "Origin",
+            joined,
             "Every response must Vary: Origin so a CDN can't cross-pollinate CORS state",
         )
 

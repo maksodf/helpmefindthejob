@@ -987,9 +987,7 @@ class JobAggregationEngine:
                         error="skipped_remote_only_for_location_search",
                     )
                 )
-                skipped_pairs.append(
-                    (provider.name, "skipped_remote_only_for_location_search")
-                )
+                skipped_pairs.append((provider.name, "skipped_remote_only_for_location_search"))
             else:
                 to_query.append(provider)
 
@@ -1048,8 +1046,7 @@ class JobAggregationEngine:
             worker_count = max_workers if max_workers is not None else min(len(to_query), 16)
             with ThreadPoolExecutor(max_workers=worker_count) as executor:
                 future_to_provider = {
-                    executor.submit(_one_provider, provider): provider.name
-                    for provider in to_query
+                    executor.submit(_one_provider, provider): provider.name for provider in to_query
                 }
                 for future in as_completed(future_to_provider):
                     name = future_to_provider[future]

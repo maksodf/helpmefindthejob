@@ -82,9 +82,7 @@ class TailorStreamingContract(unittest.TestCase):
         job = _seed_imported_job(self.state, self.user_id)
         # No cv_text on the profile.
         events = list(
-            self.state.chat_handler_tailor_cv_streaming(
-                self.user_id, {"importedJobId": job.id}
-            )
+            self.state.chat_handler_tailor_cv_streaming(self.user_id, {"importedJobId": job.id})
         )
         self.assertEqual(len(events), 1)
         kind, payload = events[0]
@@ -105,9 +103,7 @@ class TailorStreamingContract(unittest.TestCase):
         self.state.repository.save_user_profile(profile)
 
         events = list(
-            self.state.chat_handler_tailor_cv_streaming(
-                self.user_id, {"importedJobId": job.id}
-            )
+            self.state.chat_handler_tailor_cv_streaming(self.user_id, {"importedJobId": job.id})
         )
         ai_tokens = [e for e in events if e[0] == "ai_token"]
         finals = [e for e in events if e[0] == "done_payload"]
@@ -148,15 +144,14 @@ class TailorStreamingContract(unittest.TestCase):
                         prompt=system + "\n\n" + user_msg,
                     ),
                 )
+
             return _stream
 
         with patch.object(
             self.state, "_journey_ai_streaming_caller", return_value=fake_streaming_caller()
         ):
             events = list(
-                self.state.chat_handler_tailor_cv_streaming(
-                    self.user_id, {"importedJobId": job.id}
-                )
+                self.state.chat_handler_tailor_cv_streaming(self.user_id, {"importedJobId": job.id})
             )
 
         ai_tokens = [e for e in events if e[0] == "ai_token"]

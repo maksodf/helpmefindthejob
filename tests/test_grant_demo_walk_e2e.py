@@ -54,7 +54,6 @@ import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
 
@@ -86,9 +85,7 @@ class GrantDemoEndToEndWalk(unittest.TestCase):
         from mesh.anerkennung_agent import PATHWAYS
 
         # Aïcha pathway: pflege_drittstaaten
-        pflege = next(
-            (p for p in PATHWAYS if p["pathway_id"] == "pflege_drittstaaten"), None
-        )
+        pflege = next((p for p in PATHWAYS if p["pathway_id"] == "pflege_drittstaaten"), None)
         self.assertIsNotNone(pflege, "pflege_drittstaaten pathway missing")
         self.assertIn("legal_basis", pflege)
         self.assertIn("issuing_authority", pflege)
@@ -142,8 +139,8 @@ class GrantDemoEndToEndWalk(unittest.TestCase):
 
         from company_discovery.transparency import (
             aggregate_ai_invocations,
-            render_public_aggregates,
             render_html,
+            render_public_aggregates,
         )
 
         agg = aggregate_ai_invocations([])
@@ -172,8 +169,8 @@ class GrantDemoEndToEndWalk(unittest.TestCase):
 
         from company_discovery.cost_saving_metrics import (
             ALL_MECHANISMS,
-            PROVEN_EVENT_THRESHOLD,
             PLAUSIBLE_EVENT_THRESHOLD,
+            PROVEN_EVENT_THRESHOLD,
         )
 
         self.assertEqual(len(ALL_MECHANISMS), 8, "doctrine specifies 8 mechanisms")

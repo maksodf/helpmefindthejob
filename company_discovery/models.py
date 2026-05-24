@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
@@ -273,7 +274,7 @@ SUPPORTED_LOCALES = ("en", "de")
 
 
 def available_locales(
-    i18n_dir: "Path | None" = None,
+    i18n_dir: Path | None = None,
 ) -> tuple[str, ...]:
     """Return the locale codes the runtime actually has bundles
     for. Reads ``static/i18n/<code>.json`` filenames; falls back
@@ -315,6 +316,7 @@ def _discover_locales_cached(i18n_dir_str: str) -> tuple[str, ...]:
     # First call sets up the cache. Subsequent calls hit it.
     global _DISCOVER_LOCALES_LRU
     if "_DISCOVER_LOCALES_LRU" not in globals() or _DISCOVER_LOCALES_LRU is None:
+
         @lru_cache(maxsize=32)
         def _cached(path_str: str) -> tuple[str, ...]:
             return _discover_locales(Path(path_str))
@@ -327,7 +329,7 @@ def _discover_locales_cached(i18n_dir_str: str) -> tuple[str, ...]:
 _DISCOVER_LOCALES_LRU = None
 
 
-def _discover_locales(i18n_dir: "Path") -> tuple[str, ...]:
+def _discover_locales(i18n_dir: Path) -> tuple[str, ...]:
     """Internal: scan i18n_dir for ``<code>.json`` files,
     validate the code shape, return sorted tuple. Falls back to
     SUPPORTED_LOCALES on any I/O error.
@@ -355,6 +357,7 @@ def _discover_locales(i18n_dir: "Path") -> tuple[str, ...]:
         return tuple(sorted(codes))
     except OSError:
         return SUPPORTED_LOCALES
+
 
 SUPPORTED_THEMES = ("dark", "light", "system")
 

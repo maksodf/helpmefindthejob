@@ -45,7 +45,7 @@ def _make_state() -> tuple[AppState, str]:
 def _seed_picked_job(state: AppState, user_id: str) -> None:
     """Put a picked job + CV on the user's profile/journey so the
     streaming handler has something to operate on."""
-    from company_discovery.journey import UserJourney, PHASE_TAILOR
+    from company_discovery.journey import PHASE_TAILOR, UserJourney
 
     profile = state.profile_for(user_id)
     profile.cv_text = (
@@ -80,9 +80,7 @@ class LetterStreamingContract(unittest.TestCase):
         self.addCleanup(lambda: self.state._test_tmp.cleanup())  # noqa: SLF001
 
     def test_missing_picked_job_yields_done_payload_with_message(self) -> None:
-        events = list(
-            self.state.chat_handler_draft_motivation_letter_streaming(self.user_id, {})
-        )
+        events = list(self.state.chat_handler_draft_motivation_letter_streaming(self.user_id, {}))
         self.assertEqual(len(events), 1)
         kind, payload = events[0]
         self.assertEqual(kind, "done_payload")
@@ -90,7 +88,7 @@ class LetterStreamingContract(unittest.TestCase):
         self.assertIn("Pick one", payload["message"])
 
     def test_missing_cv_yields_done_payload_with_cv_hint(self) -> None:
-        from company_discovery.journey import UserJourney, PHASE_TAILOR
+        from company_discovery.journey import PHASE_TAILOR, UserJourney
 
         profile = self.state.profile_for(self.user_id)
         journey = UserJourney(phase=PHASE_TAILOR)
@@ -108,9 +106,7 @@ class LetterStreamingContract(unittest.TestCase):
         profile.chat_state = {"journey": journey.to_dict()}
         self.state.repository.save_user_profile(profile)
 
-        events = list(
-            self.state.chat_handler_draft_motivation_letter_streaming(self.user_id, {})
-        )
+        events = list(self.state.chat_handler_draft_motivation_letter_streaming(self.user_id, {}))
         self.assertEqual(len(events), 1)
         kind, payload = events[0]
         self.assertEqual(kind, "done_payload")
@@ -120,9 +116,7 @@ class LetterStreamingContract(unittest.TestCase):
     def test_no_ai_provider_uses_templated_fallback_single_token(self) -> None:
         _seed_picked_job(self.state, self.user_id)
         # _journey_ai_streaming_caller returns None when no provider.
-        events = list(
-            self.state.chat_handler_draft_motivation_letter_streaming(self.user_id, {})
-        )
+        events = list(self.state.chat_handler_draft_motivation_letter_streaming(self.user_id, {}))
         ai_tokens = [e for e in events if e[0] == "ai_token"]
         finals = [e for e in events if e[0] == "done_payload"]
         # Template path: one ai_token carrying the full skeleton, then
@@ -162,6 +156,7 @@ class LetterStreamingContract(unittest.TestCase):
                         prompt=system + "\n\n" + user_msg,
                     ),
                 )
+
             return _stream
 
         with patch.object(

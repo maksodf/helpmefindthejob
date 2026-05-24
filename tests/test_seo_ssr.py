@@ -37,7 +37,6 @@ import urllib.request
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-
 STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
 
 
@@ -91,12 +90,8 @@ class StaticPagesSeoContract(unittest.TestCase):
         for page in PUBLIC_PAGES:
             with self.subTest(page=page):
                 src = self._read(page)
-                self.assertIn(
-                    'hreflang="en"', src, f"{page} missing hreflang en"
-                )
-                self.assertIn(
-                    'hreflang="de"', src, f"{page} missing hreflang de"
-                )
+                self.assertIn('hreflang="en"', src, f"{page} missing hreflang en")
+                self.assertIn('hreflang="de"', src, f"{page} missing hreflang de")
                 self.assertIn(
                     'hreflang="x-default"',
                     src,
@@ -121,9 +116,7 @@ class StaticPagesSeoContract(unittest.TestCase):
         for page in PUBLIC_PAGES:
             with self.subTest(page=page):
                 src = self._read(page)
-                self.assertIn(
-                    'name="twitter:card"', src, f"{page} missing twitter:card"
-                )
+                self.assertIn('name="twitter:card"', src, f"{page} missing twitter:card")
                 self.assertIn(
                     'name="twitter:title"',
                     src,
@@ -135,7 +128,7 @@ class StaticPagesSeoContract(unittest.TestCase):
             with self.subTest(page=page):
                 src = self._read(page)
                 self.assertIn(
-                    'application/ld+json',
+                    "application/ld+json",
                     src,
                     f"{page} missing JSON-LD structured data",
                 )
@@ -230,9 +223,7 @@ class LiveSsrRoutes(unittest.TestCase):
         cls.port = _free_port()
         cls.proc = None
         env = dict(os.environ)
-        env["HELPMEFINDTHEJOB_DATA_FILE"] = str(
-            Path(cls.tmpdir.name) / "data.json"
-        )
+        env["HELPMEFINDTHEJOB_DATA_FILE"] = str(Path(cls.tmpdir.name) / "data.json")
         env["HELPMEFINDTHEJOB_DISABLE_SCHEDULER"] = "1"
         env.pop("HELPMEFINDTHEJOB_DATABASE_URL", None)
         env.pop("HELPMEFINDTHEJOB_DATABASE_URL", None)
@@ -258,7 +249,9 @@ class LiveSsrRoutes(unittest.TestCase):
                 cls.proc.kill()
         cls.tmpdir.cleanup()
 
-    def _get(self, path: str, headers: dict[str, str] | None = None) -> tuple[int, dict[str, str], str]:
+    def _get(
+        self, path: str, headers: dict[str, str] | None = None
+    ) -> tuple[int, dict[str, str], str]:
         req = urllib.request.Request(f"http://127.0.0.1:{self.port}{path}")
         for key, value in (headers or {}).items():
             req.add_header(key, value)
@@ -290,9 +283,7 @@ class LiveSsrRoutes(unittest.TestCase):
         self.assertNotIn("khalo.org", body)
 
     def test_sitemap_xml_uses_host_header_when_public_url_unset(self):
-        _, _, body = self._get(
-            "/sitemap.xml", headers={"Host": "demo.example.com"}
-        )
+        _, _, body = self._get("/sitemap.xml", headers={"Host": "demo.example.com"})
         self.assertIn("demo.example.com", body)
         self.assertNotIn("127.0.0.1", body)  # Host header wins over fallback
 
@@ -334,9 +325,7 @@ class LiveSsrRoutes(unittest.TestCase):
         self.assertIn("Sitemap:", body)
 
     def test_robots_txt_sitemap_line_matches_host(self):
-        _, _, body = self._get(
-            "/robots.txt", headers={"Host": "demo.example.com"}
-        )
+        _, _, body = self._get("/robots.txt", headers={"Host": "demo.example.com"})
         self.assertIn("Sitemap: http://demo.example.com/sitemap.xml", body)
 
     def test_robots_txt_blocks_api_paths(self):
@@ -352,9 +341,9 @@ class SeoLandingPageEnrichment(unittest.TestCase):
     seo-pages.json, which is operator-owned."""
 
     def setUp(self):
-        self.src = Path(
-            str(Path(__file__).resolve().parent.parent / "app.py")
-        ).read_text(encoding="utf-8")
+        self.src = Path(str(Path(__file__).resolve().parent.parent / "app.py")).read_text(
+            encoding="utf-8"
+        )
         # Slice to just the _send_seo_page method body so the
         # assertions are scoped (other parts of app.py reference
         # similar tags for the SPA shell).
@@ -373,13 +362,13 @@ class SeoLandingPageEnrichment(unittest.TestCase):
         self.assertIn('name="twitter:description"', self.method)
 
     def test_renders_opengraph_locale_alternates(self):
-        self.assertIn('og:locale', self.method)
-        self.assertIn('og:locale:alternate', self.method)
-        self.assertIn('og:site_name', self.method)
+        self.assertIn("og:locale", self.method)
+        self.assertIn("og:locale:alternate", self.method)
+        self.assertIn("og:site_name", self.method)
 
     def test_renders_json_ld_structured_data(self):
-        self.assertIn('application/ld+json', self.method)
-        self.assertIn('schema.org', self.method)
+        self.assertIn("application/ld+json", self.method)
+        self.assertIn("schema.org", self.method)
         # WebPage + Organization + BreadcrumbList graph
         self.assertIn('"WebPage"', self.method)
         self.assertIn('"Organization"', self.method)
@@ -413,8 +402,9 @@ class SeoLandingPageEnrichment(unittest.TestCase):
         """Behavioural test: feed a payload containing </script> and
         verify the output cannot terminate a script tag."""
 
-        from app import _xss_safe_jsonld
         import json as _json
+
+        from app import _xss_safe_jsonld
 
         attack = {
             "title": "Hello</script><script>alert(1)</script>",

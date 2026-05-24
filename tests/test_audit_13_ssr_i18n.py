@@ -59,16 +59,18 @@ class SsrTranslatorUnit(unittest.TestCase):
 
     def test_en_locale_is_a_passthrough(self) -> None:
         from app import _ssr_translate_html
+
         html = b'<html lang="en"><body><p data-i18n="x">Fallback</p></body></html>'
         self.assertEqual(_ssr_translate_html(html, "en"), html)
 
     def test_de_locale_translates_landing_headline(self) -> None:
         from app import _ssr_translate_html
+
         html = (
-            '<html lang="en"><body>'
-            '<h1 data-i18n="landing.headline">The job search the labor market wasn&rsquo;t built for.</h1>'
-            "</body></html>"
-        ).encode("utf-8")
+            b'<html lang="en"><body>'
+            b'<h1 data-i18n="landing.headline">The job search the labor market wasn&rsquo;t built for.</h1>'
+            b"</body></html>"
+        )
         result = _ssr_translate_html(html, "de")
         text = result.decode("utf-8")
         # DE landing.headline from static/i18n/de.json should appear
@@ -80,15 +82,17 @@ class SsrTranslatorUnit(unittest.TestCase):
 
     def test_unknown_locale_is_a_passthrough(self) -> None:
         from app import _ssr_translate_html
+
         html = b'<html lang="en"><body><p data-i18n="x">Fallback</p></body></html>'
         self.assertEqual(_ssr_translate_html(html, "fr"), html)
 
     def test_unknown_key_keeps_fallback(self) -> None:
         from app import _ssr_translate_html
+
         html = (
             b'<html lang="en"><body>'
             b'<p data-i18n="this.key.does.not.exist">Specific fallback text</p>'
-            b'</body></html>'
+            b"</body></html>"
         )
         result = _ssr_translate_html(html, "de")
         self.assertIn(b"Specific fallback text", result)
@@ -98,13 +102,10 @@ class SsrTranslatorUnit(unittest.TestCase):
         # they're escaped in the rendered output. Use the cache
         # directly so we don't touch the real bundle on disk.
         import app
+
         app._LOCALE_BUNDLE_CACHE["xx-test"] = {"safety.test": "evil <script>alert(1)</script>"}
         try:
-            html = (
-                b'<html lang="en"><body>'
-                b'<p data-i18n="safety.test">orig</p>'
-                b'</body></html>'
-            )
+            html = b'<html lang="en"><body><p data-i18n="safety.test">orig</p></body></html>'
             result = app._ssr_translate_html(html, "xx-test")
             text = result.decode("utf-8")
             # Angle brackets escaped
@@ -184,7 +185,7 @@ class SsrLiveResponse(unittest.TestCase):
         self.assertEqual(status, 200)
         # The hero headline DE: "Die Stellensuche, für die der
         # Arbeitsmarkt nicht gebaut wurde."
-        self.assertIn("Stellensuche".encode("utf-8"), body)
+        self.assertIn(b"Stellensuche", body)
         # English fallback must be GONE from the first-paint HTML
         self.assertNotIn(b"The job search the labor market wasn", body)
         # Document-level lang attribute switched
@@ -195,12 +196,12 @@ class SsrLiveResponse(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertIn(b"The job search the labor market", body)
         self.assertIn(b'<html lang="en">', body)
-        self.assertNotIn("Stellensuche".encode("utf-8"), body)
+        self.assertNotIn(b"Stellensuche", body)
 
     def test_lang_query_de_overrides_accept_language(self) -> None:
         status, body = self._get("/?lang=de", accept_language="en-US,en;q=0.9")
         self.assertEqual(status, 200)
-        self.assertIn("Stellensuche".encode("utf-8"), body)
+        self.assertIn(b"Stellensuche", body)
         self.assertIn(b'<html lang="de">', body)
 
     def test_persona_cards_translated_to_german(self) -> None:

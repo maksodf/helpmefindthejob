@@ -39,8 +39,8 @@ changes, the test fails — that's the regression signal.
 
 Real-AI outputs from a one-time Ollama run are tracked separately in
 ``docs/grant/anschreiben-quality-walks-2026-05-20/*.md`` and the bias-
-methodology test cluster; this rig is the fast, deterministic comp-
-lement that runs on every commit.
+methodology test cluster; this rig is the fast, deterministic
+complement that runs on every commit.
 
 Doctrine reference: ``docs/grant/14-source-class-hierarchy.md``.
 """
@@ -162,9 +162,7 @@ class CoverLetterStructuralInvariants(unittest.TestCase):
         cv_text = self.inputs["cv_text"]
         # Match `← [CV] "<excerpt>"` patterns. The quoted excerpt is what
         # the AI claims to be citing from the CV.
-        for match in re.finditer(
-            r"←\s*\[CV\]\s*\"([^\"]+)\"", self.text, re.MULTILINE
-        ):
+        for match in re.finditer(r"←\s*\[CV\]\s*\"([^\"]+)\"", self.text, re.MULTILINE):
             excerpt = match.group(1).strip()
             self.assertIn(
                 excerpt,
@@ -180,16 +178,12 @@ class CoverLetterStructuralInvariants(unittest.TestCase):
         """Same class-E discipline for [JD] citations."""
 
         jd_text = self.inputs["jd_text"]
-        for match in re.finditer(
-            r"←\s*\[JD\]\s*\"([^\"]+)\"", self.text, re.MULTILINE
-        ):
+        for match in re.finditer(r"←\s*\[JD\]\s*\"([^\"]+)\"", self.text, re.MULTILINE):
             excerpt = match.group(1).strip()
             self.assertIn(
                 excerpt,
                 jd_text,
-                msg=(
-                    f"[JD] citation references text not found in JD fixture: {excerpt!r}"
-                ),
+                msg=(f"[JD] citation references text not found in JD fixture: {excerpt!r}"),
             )
 
 
@@ -267,17 +261,13 @@ class MotivationLetterStructuralInvariants(unittest.TestCase):
 
     def test_cv_grounded_claims_appear_in_cv(self) -> None:
         cv_text = self.inputs["cv_text"]
-        for match in re.finditer(
-            r"←\s*\[CV\]\s*\"([^\"]+)\"", self.text, re.MULTILINE
-        ):
+        for match in re.finditer(r"←\s*\[CV\]\s*\"([^\"]+)\"", self.text, re.MULTILINE):
             excerpt = match.group(1).strip()
             self.assertIn(excerpt, cv_text, msg=f"[CV] citation not in CV: {excerpt!r}")
 
     def test_jd_grounded_claims_appear_in_jd(self) -> None:
         jd_text = self.inputs["jd_text"]
-        for match in re.finditer(
-            r"←\s*\[JD\]\s*\"([^\"]+)\"", self.text, re.MULTILINE
-        ):
+        for match in re.finditer(r"←\s*\[JD\]\s*\"([^\"]+)\"", self.text, re.MULTILINE):
             excerpt = match.group(1).strip()
             self.assertIn(excerpt, jd_text, msg=f"[JD] citation not in JD: {excerpt!r}")
 
@@ -288,8 +278,8 @@ class PromptTemplateConsistencyTests(unittest.TestCase):
     test fails before the fixture-vs-output tests catch the drift."""
 
     def test_cover_letter_prompt_documents_citation_tags(self) -> None:
-        from company_discovery.analysis import build_cover_letter_brief_prompt
         from company_discovery.ai_providers import AIProviderConfig
+        from company_discovery.analysis import build_cover_letter_brief_prompt
         from company_discovery.models import ImportedJob
 
         provider = AIProviderConfig(

@@ -24,7 +24,8 @@ from __future__ import annotations
 
 import unittest
 
-from hypothesis import HealthCheck, given, settings, strategies as st
+from hypothesis import HealthCheck, given, settings
+from hypothesis import strategies as st
 
 from company_discovery.locale_parser import (
     NO_TOKENS_DE,
@@ -35,7 +36,6 @@ from company_discovery.locale_parser import (
     is_yes,
     parse_yes_no,
 )
-
 
 # Common settings: don't shrink for hours; ~200 examples is plenty
 # to surface invariant violations for these small surfaces.

@@ -32,7 +32,6 @@ import urllib.request
 import uuid
 from typing import Any
 
-
 HOUSING_URL = os.environ.get("MESH_HOUSING_URL", "http://127.0.0.1:8101")
 ANERKENNUNG_URL = os.environ.get("MESH_ANERKENNUNG_URL", "http://127.0.0.1:8102")
 SOCIAL_URL = os.environ.get("MESH_SOCIAL_URL", "http://127.0.0.1:8103")

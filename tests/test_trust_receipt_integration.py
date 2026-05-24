@@ -22,8 +22,8 @@ from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
 from app import AppState
-from company_discovery.analysis import AnalysisExecutionResult, _dispatch_provider
 from company_discovery.ai_providers import AIProviderConfig
+from company_discovery.analysis import AnalysisExecutionResult, _dispatch_provider
 from company_discovery.trust_receipt import (
     DECISION_TAILOR_CV,
     verify_trust_receipt,
@@ -55,9 +55,7 @@ class ReceiptEmitterChokepoint(unittest.TestCase):
     def test_receipt_minted_after_successful_dispatch(self) -> None:
         """A successful AI call through _dispatch_provider with a
         receipt_emitter set produces exactly one receipt on disk."""
-        provider = AIProviderConfig(
-            provider_id="manual", invocation_mode="manual"
-        )
+        provider = AIProviderConfig(provider_id="manual", invocation_mode="manual")
 
         fake_result = AnalysisExecutionResult(
             status="completed",
@@ -88,9 +86,7 @@ class ReceiptEmitterChokepoint(unittest.TestCase):
     def test_no_receipt_on_failed_dispatch(self) -> None:
         """If the AI dispatch raises, NO receipt is emitted —
         there's nothing to attest to on a failed call."""
-        provider = AIProviderConfig(
-            provider_id="manual", invocation_mode="manual"
-        )
+        provider = AIProviderConfig(provider_id="manual", invocation_mode="manual")
 
         with patch(
             "company_discovery.analysis._dispatch_provider_impl",
@@ -111,9 +107,7 @@ class ReceiptEmitterChokepoint(unittest.TestCase):
     def test_no_receipt_on_empty_output(self) -> None:
         """Provider returned successfully but with empty output —
         no decision to attest to, so no receipt."""
-        provider = AIProviderConfig(
-            provider_id="manual", invocation_mode="manual"
-        )
+        provider = AIProviderConfig(provider_id="manual", invocation_mode="manual")
         fake = AnalysisExecutionResult(
             status="completed",
             provider_id="manual",
@@ -132,14 +126,10 @@ class ReceiptEmitterChokepoint(unittest.TestCase):
                 purpose=DECISION_TAILOR_CV,
                 receipt_emitter=self.state.receipt_emitter_for(self.user_id),
             )
-        self.assertEqual(
-            len(self.state.trust_receipt_store.list_for_user(self.user_id)), 0
-        )
+        self.assertEqual(len(self.state.trust_receipt_store.list_for_user(self.user_id)), 0)
 
     def test_persisted_receipt_verifies_with_store_salt(self) -> None:
-        provider = AIProviderConfig(
-            provider_id="manual", invocation_mode="manual"
-        )
+        provider = AIProviderConfig(provider_id="manual", invocation_mode="manual")
         fake = AnalysisExecutionResult(
             status="completed",
             provider_id="manual",
@@ -168,9 +158,7 @@ class ReceiptEmitterChokepoint(unittest.TestCase):
         other_user = self.state.auth_store.create_user(
             "rcpt-other@example.com", "secret-pass-12345678"
         )
-        provider = AIProviderConfig(
-            provider_id="manual", invocation_mode="manual"
-        )
+        provider = AIProviderConfig(provider_id="manual", invocation_mode="manual")
         fake = AnalysisExecutionResult(
             status="completed",
             provider_id="manual",
@@ -190,20 +178,14 @@ class ReceiptEmitterChokepoint(unittest.TestCase):
                 receipt_emitter=self.state.receipt_emitter_for(self.user_id),
             )
         # User A has 1 receipt
-        self.assertEqual(
-            len(self.state.trust_receipt_store.list_for_user(self.user_id)), 1
-        )
+        self.assertEqual(len(self.state.trust_receipt_store.list_for_user(self.user_id)), 1)
         # User B has 0 receipts
-        self.assertEqual(
-            len(self.state.trust_receipt_store.list_for_user(other_user.id)), 0
-        )
+        self.assertEqual(len(self.state.trust_receipt_store.list_for_user(other_user.id)), 0)
 
     def test_receipt_carries_audit_log_linkage(self) -> None:
         """The minted receipt should carry the most-recent audit
         log sequence_no so a reviewer can correlate stores."""
-        provider = AIProviderConfig(
-            provider_id="manual", invocation_mode="manual"
-        )
+        provider = AIProviderConfig(provider_id="manual", invocation_mode="manual")
         fake = AnalysisExecutionResult(
             status="completed",
             provider_id="manual",
@@ -293,9 +275,7 @@ class ReceiptEmitterFailureIsolation(unittest.TestCase):
         self.addCleanup(lambda: self.state._test_tmp.cleanup())  # noqa: SLF001
 
     def test_emitter_exception_does_not_break_dispatch(self) -> None:
-        provider = AIProviderConfig(
-            provider_id="manual", invocation_mode="manual"
-        )
+        provider = AIProviderConfig(provider_id="manual", invocation_mode="manual")
         fake = AnalysisExecutionResult(
             status="completed",
             provider_id="manual",

@@ -40,17 +40,20 @@ class StatusPageMarkup(unittest.TestCase):
 
     def test_status_html_carries_30_day_tile(self) -> None:
         self.assertIn(
-            'id="uptime30d"', self.html,
+            'id="uptime30d"',
+            self.html,
             "30-day uptime tile must exist on /status",
         )
 
     def test_status_html_carries_uptime_bar_container(self) -> None:
         self.assertIn(
-            'id="uptimeBar"', self.html,
+            'id="uptimeBar"',
+            self.html,
             "24-cell uptime bar container must exist on /status",
         )
         self.assertIn(
-            'role="img"', self.html,
+            'role="img"',
+            self.html,
             "uptime bar must declare role=img for accessibility",
         )
 
@@ -59,8 +62,7 @@ class StatusPageMarkup(unittest.TestCase):
         self.assertIn('id="latencyStats"', self.html)
 
     def test_status_js_hydrates_30_day_uptime(self) -> None:
-        self.assertIn("window=720", self.js,
-                      "status.js must request 30-day window (720h)")
+        self.assertIn("window=720", self.js, "status.js must request 30-day window (720h)")
         self.assertIn("uptime30d", self.js)
 
     def test_status_js_renders_24_hourly_buckets(self) -> None:
@@ -77,9 +79,13 @@ class StatusPageMarkup(unittest.TestCase):
         self.assertIn("p95", self.js)
 
     def test_css_has_uptime_bar_styling(self) -> None:
-        for needed in (".uptime-bar", ".uptime-cell--ok",
-                       ".uptime-cell--warn", ".uptime-cell--bad",
-                       ".uptime-cell--empty"):
+        for needed in (
+            ".uptime-bar",
+            ".uptime-cell--ok",
+            ".uptime-cell--warn",
+            ".uptime-cell--bad",
+            ".uptime-cell--empty",
+        ):
             with self.subTest(rule=needed):
                 self.assertIn(needed, self.css)
 

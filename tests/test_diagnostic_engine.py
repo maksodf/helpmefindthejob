@@ -32,17 +32,16 @@ from company_discovery.journey import (
     _format_review_empty_reply,
 )
 
-
 # Mirror the 7-persona panel used by PART 5 + PART 6 walks.
 # Each entry is (role_text, location).
 PERSONAS = (
-    ("aicha",   "Registered nurse",                                       "Berlin"),
-    ("yusuf",   "Mechanical engineer",                                    "Munich"),
-    ("olga",    "Senior frontend developer",                              "Leipzig"),
-    ("mahmoud", "Auszubildender Anlagenmechaniker SHK",                   "Hamburg"),
-    ("maria",   "Altenpflegerin",                                         "Stuttgart"),
-    ("kaethe",  "Krankenschwester (Wiedereinstieg)",                      "Berlin"),
-    ("tobias",  "Senior Backend Developer (Public Sector / Civic Tech)",  "Hamburg"),
+    ("aicha", "Registered nurse", "Berlin"),
+    ("yusuf", "Mechanical engineer", "Munich"),
+    ("olga", "Senior frontend developer", "Leipzig"),
+    ("mahmoud", "Auszubildender Anlagenmechaniker SHK", "Hamburg"),
+    ("maria", "Altenpflegerin", "Stuttgart"),
+    ("kaethe", "Krankenschwester (Wiedereinstieg)", "Berlin"),
+    ("tobias", "Senior Backend Developer (Public Sector / Civic Tech)", "Hamburg"),
 )
 
 
@@ -107,9 +106,7 @@ class ColdCachePanelMatrixTests(unittest.TestCase):
         try:
             for slug, role_text, location in PERSONAS:
                 with self.subTest(persona=slug):
-                    diag = engine.generate(
-                        role_text=role_text, location=location, filters=None
-                    )
+                    diag = engine.generate(role_text=role_text, location=location, filters=None)
                     self.assertIsNone(
                         diag,
                         f"persona {slug}: cold-cache engine MUST return None "
@@ -132,9 +129,7 @@ class ColdCachePanelMatrixTests(unittest.TestCase):
                     journey.location = location
                     journey.review_substate = "empty"
                     # Engine returns None (cold cache)
-                    diag = engine.generate(
-                        role_text=role_text, location=location, filters=None
-                    )
+                    diag = engine.generate(role_text=role_text, location=location, filters=None)
                     self.assertIsNone(diag)
                     # Reply uses the strict-fact fallback
                     reply = _format_review_empty_reply(journey, diagnostic_text=None)
@@ -174,9 +169,7 @@ class WarmCacheDiagnosticTests(unittest.TestCase):
                 location="Leipzig",
                 filters=None,
             )
-            self.assertIsNotNone(
-                diag, "warm-cache relaxation candidate must produce a diagnostic"
-            )
+            self.assertIsNotNone(diag, "warm-cache relaxation candidate must produce a diagnostic")
             self.assertIn("13", diag, "diagnostic must surface the actual cached count")
             self.assertIn("frontend developer", diag)
             self.assertIn("Leipzig", diag)
@@ -191,9 +184,7 @@ class WarmCacheDiagnosticTests(unittest.TestCase):
             seeded_jobs = _make_aggregated_jobs(47, title_prefix="Krankenschwester")
             seeded_hash = canonical_query("Krankenschwester", "")
             cache.put("eures", seeded_hash, seeded_jobs)
-            diag = engine.generate(
-                role_text="Krankenschwester", location="Berlin", filters=None
-            )
+            diag = engine.generate(role_text="Krankenschwester", location="Berlin", filters=None)
             self.assertIsNotNone(diag)
             self.assertIn("47", diag)
             self.assertIn("no location filter", diag.lower())
@@ -209,9 +200,7 @@ class WarmCacheDiagnosticTests(unittest.TestCase):
             seeded_jobs = _make_aggregated_jobs(7)
             seeded_hash = canonical_query("nurse", "Berlin")
             cache.put("arbeitnow", seeded_hash, seeded_jobs)
-            diag = engine.generate(
-                role_text="Senior nurse", location="Berlin", filters=None
-            )
+            diag = engine.generate(role_text="Senior nurse", location="Berlin", filters=None)
             self.assertIsNotNone(diag)
             # The diagnostic must surface "7" and no other count
             self.assertIn("7", diag)
@@ -331,9 +320,7 @@ class RelaxationCandidatesTests(unittest.TestCase):
     def test_strips_senior_prefix(self) -> None:
         engine, cache, path = _make_engine()
         try:
-            candidates = engine._build_relaxation_candidates(
-                "Senior frontend developer", "Leipzig"
-            )
+            candidates = engine._build_relaxation_candidates("Senior frontend developer", "Leipzig")
             labels = [c.label for c in candidates]
             self.assertIn("drop_seniority", labels)
             self.assertIn("anywhere", labels)
@@ -345,9 +332,7 @@ class RelaxationCandidatesTests(unittest.TestCase):
     def test_no_seniority_strip_when_none_present(self) -> None:
         engine, cache, path = _make_engine()
         try:
-            candidates = engine._build_relaxation_candidates(
-                "Registered nurse", "Berlin"
-            )
+            candidates = engine._build_relaxation_candidates("Registered nurse", "Berlin")
             labels = [c.label for c in candidates]
             # "Registered" is not in the strippable seniority set
             self.assertNotIn("drop_seniority", labels)
@@ -361,9 +346,7 @@ class RelaxationCandidatesTests(unittest.TestCase):
     def test_no_anywhere_when_location_already_empty(self) -> None:
         engine, cache, path = _make_engine()
         try:
-            candidates = engine._build_relaxation_candidates(
-                "Senior frontend developer", None
-            )
+            candidates = engine._build_relaxation_candidates("Senior frontend developer", None)
             labels = [c.label for c in candidates]
             self.assertIn("drop_seniority", labels)
             # No location to widen

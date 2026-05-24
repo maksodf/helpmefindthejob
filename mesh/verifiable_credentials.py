@@ -69,7 +69,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-
 # ---------------------------------------------------------------------------
 # Public types
 # ---------------------------------------------------------------------------
@@ -134,7 +133,7 @@ class Ed25519Signer:
             "alg": "Ed25519",
             "createdAt": "2026-05-21T20:00:00+00:00",
             "publicKeyMultibase": "z6Mk...",
-            "privateKeyPkcs8Pem": "-----BEGIN PRIVATE KEY-----\\n..."
+            "privateKeyPkcs8Pem": "-----BEGIN PRIVATE KEY-----\\n...",
         }
 
     The PKCS8 PEM keeps the file inspectable; ``publicKeyMultibase``
@@ -152,9 +151,7 @@ class Ed25519Signer:
     # ---- factory --------------------------------------------------------
 
     @classmethod
-    def from_file_or_create(
-        cls, key_path: Path, *, signer_did: str
-    ) -> "Ed25519Signer":
+    def from_file_or_create(cls, key_path: Path, *, signer_did: str) -> Ed25519Signer:
         """Load Ed25519 keypair from ``key_path``. If absent, generate
         a new keypair and write it. Operator-facing — used by mesh
         agents at boot."""
@@ -249,9 +246,7 @@ class Ed25519Signer:
             raise ValueError("vc_already_signed")
         vc_issuer = unsigned_vc.get("issuer")
         if vc_issuer != self.signer_did:
-            raise ValueError(
-                f"issuer_mismatch:vc_says={vc_issuer!r} signer_is={self.signer_did!r}"
-            )
+            raise ValueError(f"issuer_mismatch:vc_says={vc_issuer!r} signer_is={self.signer_did!r}")
         # The proof is signed over the canonical form of the VC
         # WITHOUT the proof field (chicken-and-egg). We append the
         # proof scaffolding (without proofValue) and canonicalise.

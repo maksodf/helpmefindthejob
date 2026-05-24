@@ -54,9 +54,7 @@ class VariantAssignment(unittest.TestCase):
     def test_same_user_same_variant(self):
         v1 = get_variant("example_journey_first_step", "user-stable")
         for _ in range(50):
-            self.assertEqual(
-                v1, get_variant("example_journey_first_step", "user-stable")
-            )
+            self.assertEqual(v1, get_variant("example_journey_first_step", "user-stable"))
 
     def test_variant_in_declared_arms(self):
         for i in range(50):
@@ -65,8 +63,7 @@ class VariantAssignment(unittest.TestCase):
 
     def test_distributes_across_two_arms(self):
         counts = Counter(
-            get_variant("example_journey_first_step", f"user-{i}")
-            for i in range(1000)
+            get_variant("example_journey_first_step", f"user-{i}") for i in range(1000)
         )
         # Both arms should land within ±10% of 50:50
         self.assertGreater(counts["control"], 400)
@@ -92,9 +89,7 @@ class BuildOutcomePayloadShape(unittest.TestCase):
 
     def test_payload_variant_matches_get_variant(self):
         v = get_variant("example_journey_first_step", "user-x")
-        payload = build_outcome_payload(
-            "example_journey_first_step", "user-x", "any_kind"
-        )
+        payload = build_outcome_payload("example_journey_first_step", "user-x", "any_kind")
         self.assertEqual(payload["variant"], v)
 
 
@@ -107,9 +102,7 @@ class SummarizeExperimentEmpty(unittest.TestCase):
         self.addCleanup(self.state.repository.close)
 
     def test_summary_for_experiment_with_no_events(self):
-        summary = summarize_experiment(
-            "example_journey_first_step", self.state.repository
-        )
+        summary = summarize_experiment("example_journey_first_step", self.state.repository)
         self.assertIsInstance(summary, ExperimentSummary)
         # Every declared variant MUST appear in the output, even
         # with zero outcomes
@@ -137,15 +130,11 @@ class SummarizeExperimentWithEvents(unittest.TestCase):
                 "first_step_completed",
             )
             self.state.repository.save_analytics_event(
-                AnalyticsEvent(
-                    user_id=user_id, kind=OUTCOME_EVENT_KIND, payload=payload
-                )
+                AnalyticsEvent(user_id=user_id, kind=OUTCOME_EVENT_KIND, payload=payload)
             )
 
     def test_outcomes_distributed_across_both_variants(self):
-        summary = summarize_experiment(
-            "example_journey_first_step", self.state.repository
-        )
+        summary = summarize_experiment("example_journey_first_step", self.state.repository)
         total_outcomes = sum(v.outcomes_total for v in summary.variants)
         self.assertEqual(total_outcomes, 10)
         # Both arms should have at least one outcome (10 random
@@ -168,9 +157,7 @@ class SummarizeExperimentWithEvents(unittest.TestCase):
                 },
             )
         )
-        summary = summarize_experiment(
-            "example_journey_first_step", self.state.repository
-        )
+        summary = summarize_experiment("example_journey_first_step", self.state.repository)
         # The variant user-0 is in: outcomes_total += 1 (now 1 more
         # than its base count); unique_users stays the same (user-0
         # already counted)
@@ -203,9 +190,7 @@ class SummaryCorruptionResilience(unittest.TestCase):
                 },
             )
         )
-        summary = summarize_experiment(
-            "example_journey_first_step", self.state.repository
-        )
+        summary = summarize_experiment("example_journey_first_step", self.state.repository)
         variant_names = {v.variant for v in summary.variants}
         self.assertNotIn("phantom", variant_names)
         # And the sane variants still report zero
@@ -224,9 +209,7 @@ class SummaryCorruptionResilience(unittest.TestCase):
                 },
             )
         )
-        summary = summarize_experiment(
-            "example_journey_first_step", self.state.repository
-        )
+        summary = summarize_experiment("example_journey_first_step", self.state.repository)
         for v in summary.variants:
             self.assertEqual(v.outcomes_total, 0)
 
@@ -244,9 +227,7 @@ class SummaryCorruptionResilience(unittest.TestCase):
                 },
             )
         )
-        summary = summarize_experiment(
-            "example_journey_first_step", self.state.repository
-        )
+        summary = summarize_experiment("example_journey_first_step", self.state.repository)
         for v in summary.variants:
             self.assertEqual(v.outcomes_total, 0)
 
@@ -270,16 +251,16 @@ class UnregisteredRaisesEverywhere(unittest.TestCase):
 
 class HttpRoutesPresence(unittest.TestCase):
     def test_variant_route_present_in_source(self):
-        src = Path(
-            str(Path(__file__).resolve().parent.parent / "app.py")
-        ).read_text(encoding="utf-8")
+        src = Path(str(Path(__file__).resolve().parent.parent / "app.py")).read_text(
+            encoding="utf-8"
+        )
         self.assertIn("exp_variant_match", src)
         self.assertIn("/api/experiments/", src)
 
     def test_summary_route_present_in_source(self):
-        src = Path(
-            str(Path(__file__).resolve().parent.parent / "app.py")
-        ).read_text(encoding="utf-8")
+        src = Path(str(Path(__file__).resolve().parent.parent / "app.py")).read_text(
+            encoding="utf-8"
+        )
         self.assertIn("exp_summary_match", src)
         self.assertIn("summarize_experiment", src)
 

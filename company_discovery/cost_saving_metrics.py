@@ -116,7 +116,7 @@ class MetricsEvent:
         return json.dumps(payload, separators=(",", ":"), default=str)
 
     @classmethod
-    def from_dict(cls, raw: dict[str, Any]) -> "MetricsEvent":
+    def from_dict(cls, raw: dict[str, Any]) -> MetricsEvent:
         at_str = raw.get("at")
         at_dt = datetime.now(timezone.utc)
         if isinstance(at_str, str):
@@ -269,8 +269,7 @@ class CostSavingMetricsLog:
         """
 
         mechanism_stats: dict[str, dict[str, Any]] = {
-            m: {"events": 0, "total": 0.0, "unit": "", "users": set()}
-            for m in ALL_MECHANISMS
+            m: {"events": 0, "total": 0.0, "unit": "", "users": set()} for m in ALL_MECHANISMS
         }
         all_users: set[str] = set()
         timestamps: list[datetime] = []

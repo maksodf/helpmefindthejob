@@ -157,7 +157,7 @@ def _strip_webp_metadata(raw: bytes) -> bytes:
         # tolerate VP8X with EXIF flag set even when EXIF chunk is
         # absent — they just don't render metadata.
         if fourcc not in (b"EXIF", b"XMP "):
-            out_chunks.append(body[pos : chunk_end])
+            out_chunks.append(body[pos:chunk_end])
         # Chunks are padded to even byte boundary
         pos = chunk_end + (chunk_end % 2)
 

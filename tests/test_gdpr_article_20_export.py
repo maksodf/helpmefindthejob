@@ -91,9 +91,7 @@ class Article20ExportContract(unittest.TestCase):
             "workspaceMemberships",
         }
         missing = required - set(out.keys())
-        self.assertFalse(
-            missing, f"Article 20 export missing required categories: {missing}"
-        )
+        self.assertFalse(missing, f"Article 20 export missing required categories: {missing}")
 
     def test_export_carries_user_identity_without_secrets(self) -> None:
         out = self.state.export_data(self.alice_id)
@@ -171,8 +169,10 @@ class Article20ExportContract(unittest.TestCase):
         'data not loaded'."""
         # Force the journey loader to raise
         original_journey_load = self.state._journey_load
+
         def _broken_journey(uid):
             raise RuntimeError("simulated journey corruption")
+
         self.state._journey_load = _broken_journey
         try:
             out = self.state.export_data(self.alice_id)

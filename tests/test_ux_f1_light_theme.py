@@ -72,7 +72,8 @@ class LightThemeStaticContract(unittest.TestCase):
 
     def test_light_palette_via_data_theme_attribute(self) -> None:
         self.assertIn(
-            ':root[data-theme="light"]', self.styles,
+            ':root[data-theme="light"]',
+            self.styles,
             "UX-F1 regression: explicit [data-theme='light'] selector "
             "missing. Manual theme toggle relies on this.",
         )
@@ -88,7 +89,7 @@ class LightThemeStaticContract(unittest.TestCase):
             "theme without having to click the toggle.",
         )
         rx = re.compile(
-            r'@media\s*\(prefers-color-scheme:\s*light\)\s*\{\s*'
+            r"@media\s*\(prefers-color-scheme:\s*light\)\s*\{\s*"
             r':root:not\(\[data-theme="dark"\]\)\s*\{',
             re.MULTILINE,
         )
@@ -103,21 +104,22 @@ class LightThemeStaticContract(unittest.TestCase):
         # color-scheme: light dark; lets native form controls /
         # scrollbars adapt.
         self.assertIn(
-            "color-scheme: light dark", self.styles,
-            "UX-F1 regression: :root color-scheme must advertise "
-            "both light and dark.",
+            "color-scheme: light dark",
+            self.styles,
+            "UX-F1 regression: :root color-scheme must advertise both light and dark.",
         )
 
     def test_theme_toggle_script_exists_and_is_csp_safe(self) -> None:
         # Must not assign to .innerHTML (CSP / XSS).
-        innerhtml_rx = re.compile(r'\.innerHTML\s*=')
+        innerhtml_rx = re.compile(r"\.innerHTML\s*=")
         self.assertIsNone(
             innerhtml_rx.search(self.theme_js),
             "UX-F1: theme-toggle.js must not assign to .innerHTML.",
         )
         # Must wire to the header toggle button.
         self.assertIn(
-            'siteHeaderThemeToggle', self.theme_js,
+            "siteHeaderThemeToggle",
+            self.theme_js,
             "theme-toggle.js must target #siteHeaderThemeToggle.",
         )
         # Must persist via cookie + localStorage.
@@ -126,7 +128,8 @@ class LightThemeStaticContract(unittest.TestCase):
 
     def test_service_worker_caches_theme_toggle_script(self) -> None:
         self.assertIn(
-            '"/theme-toggle.js"', self.sw_js,
+            '"/theme-toggle.js"',
+            self.sw_js,
             "UX-F1: theme-toggle.js missing from SW SHELL_PATHS. "
             "Public pages need it cached for offline-first.",
         )
@@ -217,7 +220,8 @@ class LightThemeRuntimeContract(unittest.TestCase):
         # The default state lets the @media block decide.
         # Therefore <html> must NOT carry data-theme.
         self.assertNotIn(
-            'data-theme=', body[:300],  # match in the <html> open tag
+            "data-theme=",
+            body[:300],  # match in the <html> open tag
             "UX-F1 regression: data-theme attribute injected even "
             "without explicit theme choice. This breaks the system-"
             "preference auto-detection — the @media block can no "
@@ -227,7 +231,8 @@ class LightThemeRuntimeContract(unittest.TestCase):
     def test_theme_light_cookie_sets_data_theme_on_html(self) -> None:
         _status, body = self._get("/help", cookie="theme=light")
         self.assertIn(
-            'data-theme="light"', body[:400],
+            'data-theme="light"',
+            body[:400],
             "UX-F1 regression: theme=light cookie not honoured. "
             "Server must inject data-theme on <html> via "
             "_inject_html_theme_attr.",
@@ -236,7 +241,8 @@ class LightThemeRuntimeContract(unittest.TestCase):
     def test_theme_dark_query_sets_data_theme_on_html(self) -> None:
         _status, body = self._get("/help?theme=dark")
         self.assertIn(
-            'data-theme="dark"', body[:400],
+            'data-theme="dark"',
+            body[:400],
             "UX-F1 regression: ?theme=dark query param not honoured.",
         )
 
@@ -248,23 +254,24 @@ class LightThemeRuntimeContract(unittest.TestCase):
 
     def test_invalid_theme_value_is_ignored(self) -> None:
         _status, body = self._get("/help?theme=hotpink")
-        self.assertNotIn('data-theme=', body[:300])
+        self.assertNotIn("data-theme=", body[:300])
 
     def test_theme_toggle_button_in_global_header(self) -> None:
         _status, body = self._get("/help")
         self.assertIn(
-            'id="siteHeaderThemeToggle"', body,
-            "UX-F1 regression: theme toggle button missing from the "
-            "global header.",
+            'id="siteHeaderThemeToggle"',
+            body,
+            "UX-F1 regression: theme toggle button missing from the global header.",
         )
         # Must have both icon variants — CSS flips visibility.
-        self.assertIn('icon-moon', body)
-        self.assertIn('icon-sun', body)
+        self.assertIn("icon-moon", body)
+        self.assertIn("icon-sun", body)
 
     def test_theme_toggle_script_loaded_by_header(self) -> None:
         _status, body = self._get("/help")
         self.assertIn(
-            'src="/theme-toggle.js"', body,
+            'src="/theme-toggle.js"',
+            body,
             "UX-F1 regression: theme-toggle.js not loaded by the "
             "global header. Without the script, the toggle button "
             "does nothing.",
@@ -279,7 +286,8 @@ class LightThemeRuntimeContract(unittest.TestCase):
         status, body = self._get("/this-does-not-exist", cookie="theme=light")
         self.assertEqual(status, 404)
         self.assertIn(
-            'data-theme="light"', body[:400],
+            'data-theme="light"',
+            body[:400],
             "UX-F1 regression: 404 page misses the theme attribute "
             "injection — _send_html_404 must call "
             "_inject_html_theme_attr.",
@@ -295,7 +303,8 @@ class LightThemeRuntimeContract(unittest.TestCase):
 
         _status, body = self._get("/?theme=light")
         self.assertIn(
-            'data-theme="light"', body[:400],
+            'data-theme="light"',
+            body[:400],
             "UX-F1 regression: SPA shell first-paint no longer "
             "honours the theme cookie/query. The user would see "
             "a flash of dark before applyTheme() runs.",

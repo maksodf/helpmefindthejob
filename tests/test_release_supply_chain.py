@@ -37,7 +37,6 @@ import re
 import unittest
 from pathlib import Path
 
-
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SBOM_PATH = REPO_ROOT / "docs" / "releases" / "v0.1.0-sbom.json"
 COSIGN_PUB = REPO_ROOT / "docs" / "releases" / "v0.1.0-cosign.pub"

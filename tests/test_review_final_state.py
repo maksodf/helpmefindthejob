@@ -5,6 +5,7 @@
 Pins the operator-approved Q-G test invariants (1-11) for the
 exhausted-widening recovery flow.
 """
+
 from __future__ import annotations
 
 import unittest
@@ -46,11 +47,15 @@ def _make_exhausted_olga() -> UserJourney:
         location="",
         visa_constrained=True,
         target_roles=[
-            "DevOps Engineer", "sre", "platform engineer",
+            "DevOps Engineer",
+            "sre",
+            "platform engineer",
             "infrastructure engineer",
         ],
         applied_widenings=[
-            WIDEN_LOCATION, DROP_SENIORITY, TRY_LATERALS,
+            WIDEN_LOCATION,
+            DROP_SENIORITY,
+            TRY_LATERALS,
         ],
         proposed_laterals=[],
         diagnostic_text=(
@@ -80,8 +85,7 @@ class TriggerConditionTests(unittest.TestCase):
         j = _make_exhausted_olga()
         reply = _format_review_empty_reply(j, diagnostic_text=j.diagnostic_text)
         for wid in [WIDEN_LOCATION, DROP_SENIORITY, TRY_LATERALS]:
-            self.assertIn(WIDENING_LABEL[wid], reply,
-                f"summary missing label for {wid}:\n{reply}")
+            self.assertIn(WIDENING_LABEL[wid], reply, f"summary missing label for {wid}:\n{reply}")
 
 
 # Q-G invariant 8 (added): no premature trigger when offered != [].
@@ -101,8 +105,10 @@ class NoPrematureTriggerTests(unittest.TestCase):
 
     def test_offered_non_empty_with_one_applied_does_not_render_summary(self):
         j = UserJourney(
-            phase=PHASE_REVIEW, review_substate="empty",
-            role_text="Senior DevOps Engineer", location="Berlin",
+            phase=PHASE_REVIEW,
+            review_substate="empty",
+            role_text="Senior DevOps Engineer",
+            location="Berlin",
             visa_constrained=True,
             target_roles=["Senior DevOps Engineer"],
             applied_widenings=[WIDEN_LOCATION],
@@ -120,7 +126,8 @@ class NoPrematureTriggerTests(unittest.TestCase):
 class LegitimatelyConstrainedEdgeCaseTests(unittest.TestCase):
     def test_offered_empty_and_applied_empty_no_summary(self):
         j = UserJourney(
-            phase=PHASE_REVIEW, review_substate="empty",
+            phase=PHASE_REVIEW,
+            review_substate="empty",
             role_text="Pflegehelfer",
             bucket_key="pflegehelfer",
             location="",
@@ -246,7 +253,8 @@ class GiveUpFromFinalStateTests(unittest.TestCase):
 class SummaryEnumeratesAppliedWideningsTests(unittest.TestCase):
     def test_widen_location_bullet(self):
         j = UserJourney(
-            role_text="Pflegehelfer", location="",
+            role_text="Pflegehelfer",
+            location="",
             target_roles=["Pflegehelfer"],
         )
         bullet = _format_applied_widening_bullet(j, WIDEN_LOCATION)
@@ -255,7 +263,8 @@ class SummaryEnumeratesAppliedWideningsTests(unittest.TestCase):
 
     def test_drop_seniority_bullet_includes_stripped_role(self):
         j = UserJourney(
-            role_text="DevOps Engineer", location="Berlin",
+            role_text="DevOps Engineer",
+            location="Berlin",
             target_roles=["DevOps Engineer"],
         )
         bullet = _format_applied_widening_bullet(j, DROP_SENIORITY)
@@ -264,9 +273,12 @@ class SummaryEnumeratesAppliedWideningsTests(unittest.TestCase):
 
     def test_try_laterals_bullet_lists_laterals(self):
         j = UserJourney(
-            role_text="DevOps Engineer", location="Berlin",
+            role_text="DevOps Engineer",
+            location="Berlin",
             target_roles=[
-                "DevOps Engineer", "sre", "platform engineer",
+                "DevOps Engineer",
+                "sre",
+                "platform engineer",
             ],
         )
         bullet = _format_applied_widening_bullet(j, TRY_LATERALS)
@@ -281,7 +293,8 @@ class SummaryEnumeratesAppliedWideningsTests(unittest.TestCase):
         # additions, theoretically. Bullet should still render
         # without crashing.
         j = UserJourney(
-            role_text="DevOps Engineer", location="Berlin",
+            role_text="DevOps Engineer",
+            location="Berlin",
             target_roles=["DevOps Engineer"],
         )
         bullet = _format_applied_widening_bullet(j, TRY_LATERALS)
@@ -298,8 +311,11 @@ class NoPerWideningCountsInFinalStateTests(unittest.TestCase):
         # Per Q-C verdict (C-alpha): no per-widening counts at
         # final-state render -- cumulative-drift makes per-widening
         # cache counts mathematically misleading.
-        self.assertNotIn("postings)", summary_section,
-            "summary block leaked count parenthetical:\n" + summary_section)
+        self.assertNotIn(
+            "postings)",
+            summary_section,
+            "summary block leaked count parenthetical:\n" + summary_section,
+        )
 
 
 # Q-G invariant 6: never silently routes to PHASE_DONE; unknown
@@ -345,7 +361,9 @@ class CrossPersonaPanelTests(unittest.TestCase):
                     visa_constrained=constrained,
                     target_roles=[role, "lateral_a", "lateral_b"],
                     applied_widenings=[
-                        WIDEN_LOCATION, DROP_SENIORITY, TRY_LATERALS,
+                        WIDEN_LOCATION,
+                        DROP_SENIORITY,
+                        TRY_LATERALS,
                     ],
                 )
                 # Simulate widening application effects on state
@@ -353,14 +371,12 @@ class CrossPersonaPanelTests(unittest.TestCase):
                 # cleared location; TRY_LATERALS extended targets).
                 j.location = ""
                 reply = _format_review_empty_reply(j)
-                self.assertIn("You've tried these widenings:", reply,
-                    f"{name}: missing summary block")
-                self.assertIn("**Start fresh**", reply,
-                    f"{name}: missing start-fresh affordance")
-                self.assertIn("**Retry**", reply,
-                    f"{name}: missing retry affordance")
-                self.assertIn("**Give up**", reply,
-                    f"{name}: missing give-up affordance")
+                self.assertIn(
+                    "You've tried these widenings:", reply, f"{name}: missing summary block"
+                )
+                self.assertIn("**Start fresh**", reply, f"{name}: missing start-fresh affordance")
+                self.assertIn("**Retry**", reply, f"{name}: missing retry affordance")
+                self.assertIn("**Give up**", reply, f"{name}: missing give-up affordance")
 
 
 # Q-G invariant 10 (added): parse-precedence collision -- numeric
@@ -427,6 +443,7 @@ class PostStartFreshDiscoverRoutingTests(unittest.TestCase):
 
     def test_post_start_fresh_discover_handler_treats_input_as_role(self):
         from company_discovery.journey import _advance_discover
+
         j = _make_exhausted_olga()
         _advance_review_empty(j, "start fresh")
         # Simulate the next user turn: typing a fresh role.

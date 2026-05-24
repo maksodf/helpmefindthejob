@@ -113,9 +113,7 @@ class InMemoryCompanyDiscoveryRepository:
                 removed += 1
         return removed
 
-    def get_discovered_job(
-        self, user_id: str, discovered_job_id: str
-    ) -> DiscoveredJob | None:
+    def get_discovered_job(self, user_id: str, discovered_job_id: str) -> DiscoveredJob | None:
         """Phase 2 #57 (2026-05-21): missing accessor that the
         export_eures_compatible MCP tool relied on. Without it
         every call returned 'not_found' via the AttributeError-

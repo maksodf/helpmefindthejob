@@ -30,7 +30,6 @@ import unittest
 
 from company_discovery.mcp_tools import TOOL_SCHEMAS
 
-
 SEMVER_RE = re.compile(r"^[0-9]+\.[0-9]+\.[0-9]+(?:-[A-Za-z0-9.-]+)?$")
 
 

@@ -60,7 +60,6 @@ def _free_port() -> int:
 
 
 class DELandingNoEnglishLeaks(unittest.TestCase):
-
     @classmethod
     def setUpClass(cls) -> None:
         cls._tmp = TemporaryDirectory()
@@ -136,7 +135,8 @@ class DELandingNoEnglishLeaks(unittest.TestCase):
         )
         # And the DE value should be present.
         self.assertIn(
-            ">Heute<", body,
+            ">Heute<",
+            body,
             "DE viewTitle 'Heute' missing from SSR render.",
         )
 
@@ -152,13 +152,15 @@ class DELandingNoEnglishLeaks(unittest.TestCase):
     def test_dock_chat_placeholder_translated_in_de(self) -> None:
         body = self._get_de()
         self.assertNotIn(
-            'placeholder="Type what you want to do…"', body,
+            'placeholder="Type what you want to do…"',
+            body,
             "UX-B9 regression: dock chat placeholder still English on DE. "
             "The SSR attribute-translation pass must run.",
         )
         # DE value present.
         self.assertIn(
-            "Sag mir, was du tun willst", body,
+            "Sag mir, was du tun willst",
+            body,
             "DE dock placeholder missing from SSR render.",
         )
 
@@ -172,7 +174,8 @@ class DELandingNoEnglishLeaks(unittest.TestCase):
         ):
             with self.subTest(english=english):
                 self.assertNotIn(
-                    english, body,
+                    english,
+                    body,
                     f"UX-B9 regression: {english} still English on DE.",
                 )
 
@@ -194,8 +197,7 @@ class DELandingNoEnglishLeaks(unittest.TestCase):
     def test_i18n_dock_chat_keys_in_both_bundles(self) -> None:
         en = json.loads((ROOT / "static" / "i18n" / "en.json").read_text(encoding="utf-8"))
         de = json.loads((ROOT / "static" / "i18n" / "de.json").read_text(encoding="utf-8"))
-        for key in ("dock.chat.placeholder", "dock.chat.form",
-                    "dock.chat.input", "dock.chat.send"):
+        for key in ("dock.chat.placeholder", "dock.chat.form", "dock.chat.input", "dock.chat.send"):
             with self.subTest(key=key):
                 self.assertIn(key, en, f"{key} missing from en.json")
                 self.assertIn(key, de, f"{key} missing from de.json")

@@ -32,7 +32,6 @@ import urllib.request
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SCHEMA_DIR = REPO_ROOT / "mcp_server" / "schemas"
 
@@ -81,8 +80,7 @@ class PerToolSchemaFiles(unittest.TestCase):
                 self.assertEqual(
                     from_disk,
                     tool,
-                    f"schema drift for {tool['name']}; re-run "
-                    f"scripts/export_mcp_schemas.py",
+                    f"schema drift for {tool['name']}; re-run scripts/export_mcp_schemas.py",
                 )
 
     def test_no_orphan_schema_files(self):
@@ -104,9 +102,7 @@ class PerToolSchemaFiles(unittest.TestCase):
         )
 
     def test_index_manifest_is_in_sync(self):
-        manifest = json.loads(
-            (SCHEMA_DIR / "index.json").read_text(encoding="utf-8")
-        )
+        manifest = json.loads((SCHEMA_DIR / "index.json").read_text(encoding="utf-8"))
         self.assertEqual(
             manifest["toolCount"],
             len(self.tools),
@@ -136,15 +132,11 @@ class PerToolSchemaFiles(unittest.TestCase):
                 text=True,
                 timeout=30,
             )
-            self.assertEqual(
-                result.returncode, 0, f"export failed: {result.stderr}"
-            )
+            self.assertEqual(result.returncode, 0, f"export failed: {result.stderr}")
             after = {}
             for p in SCHEMA_DIR.glob("*.json"):
                 after[p.name] = p.read_bytes()
-            self.assertEqual(
-                before, after, "export script is not idempotent"
-            )
+            self.assertEqual(before, after, "export script is not idempotent")
 
 
 # -------------------------------------------------------------------------
@@ -182,9 +174,7 @@ class HttpCatalogueSurface(unittest.TestCase):
         cls.tmpdir = TemporaryDirectory()
         cls.port = _free_port()
         env = dict(os.environ)
-        env["HELPMEFINDTHEJOB_DATA_FILE"] = str(
-            Path(cls.tmpdir.name) / "data.json"
-        )
+        env["HELPMEFINDTHEJOB_DATA_FILE"] = str(Path(cls.tmpdir.name) / "data.json")
         env["HELPMEFINDTHEJOB_DISABLE_SCHEDULER"] = "1"
         env.pop("HELPMEFINDTHEJOB_DATABASE_URL", None)
         cls.proc = subprocess.Popen(
@@ -276,9 +266,7 @@ class HttpCatalogueSurface(unittest.TestCase):
         """HEAD request — returns (status, headers, body_length).
         body_length should be 0 (HEAD never returns a body)."""
 
-        req = urllib.request.Request(
-            f"http://127.0.0.1:{self.port}{path}", method="HEAD"
-        )
+        req = urllib.request.Request(f"http://127.0.0.1:{self.port}{path}", method="HEAD")
         with urllib.request.urlopen(req, timeout=5) as resp:
             return (
                 resp.status,

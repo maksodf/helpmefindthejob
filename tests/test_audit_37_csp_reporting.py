@@ -58,32 +58,38 @@ def _free_port() -> int:
     return port
 
 
-_LEGACY_REPORT = json.dumps({
-    "csp-report": {
-        "blocked-uri": "https://evil.example/inject.js",
-        "document-uri": "https://helpmefindthejob.org/",
-        "effective-directive": "script-src",
-        "original-policy": "default-src 'self'; script-src 'self'; report-uri /csp-report",
-        "referrer": "",
-        "status-code": 200,
-        "violated-directive": "script-src 'self'",
+_LEGACY_REPORT = json.dumps(
+    {
+        "csp-report": {
+            "blocked-uri": "https://evil.example/inject.js",
+            "document-uri": "https://helpmefindthejob.org/",
+            "effective-directive": "script-src",
+            "original-policy": "default-src 'self'; script-src 'self'; report-uri /csp-report",
+            "referrer": "",
+            "status-code": 200,
+            "violated-directive": "script-src 'self'",
+        }
     }
-}).encode("utf-8")
+).encode("utf-8")
 
-_REPORTING_API_REPORT = json.dumps([{
-    "type": "csp-violation",
-    "url": "https://helpmefindthejob.org/",
-    "user_agent": "Mozilla/5.0 (would-be-PII)",
-    "body": {
-        "blockedURL": "https://evil.example/inject.js",
-        "disposition": "enforce",
-        "documentURL": "https://helpmefindthejob.org/",
-        "effectiveDirective": "script-src",
-        "originalPolicy": "default-src 'self'; report-to csp-endpoint",
-        "referrer": "",
-        "statusCode": 200,
-    }
-}]).encode("utf-8")
+_REPORTING_API_REPORT = json.dumps(
+    [
+        {
+            "type": "csp-violation",
+            "url": "https://helpmefindthejob.org/",
+            "user_agent": "Mozilla/5.0 (would-be-PII)",
+            "body": {
+                "blockedURL": "https://evil.example/inject.js",
+                "disposition": "enforce",
+                "documentURL": "https://helpmefindthejob.org/",
+                "effectiveDirective": "script-src",
+                "originalPolicy": "default-src 'self'; report-to csp-endpoint",
+                "referrer": "",
+                "statusCode": 200,
+            },
+        }
+    ]
+).encode("utf-8")
 
 
 class CspReportSummariser(unittest.TestCase):
@@ -91,6 +97,7 @@ class CspReportSummariser(unittest.TestCase):
 
     def test_legacy_report_extracts_directive_and_blocked_uri(self) -> None:
         from app import _summarize_csp_report
+
         summary = _summarize_csp_report(_LEGACY_REPORT)
         self.assertIsNotNone(summary)
         self.assertIn("directive=script-src", summary)
@@ -99,6 +106,7 @@ class CspReportSummariser(unittest.TestCase):
 
     def test_reporting_api_report_extracts_camelcase_fields(self) -> None:
         from app import _summarize_csp_report
+
         summary = _summarize_csp_report(_REPORTING_API_REPORT)
         self.assertIsNotNone(summary)
         self.assertIn("directive=script-src", summary)
@@ -106,20 +114,24 @@ class CspReportSummariser(unittest.TestCase):
 
     def test_summary_omits_user_agent_pii(self) -> None:
         from app import _summarize_csp_report
+
         summary = _summarize_csp_report(_REPORTING_API_REPORT)
         self.assertIsNotNone(summary)
         self.assertNotIn(
-            "would-be-PII", summary,
+            "would-be-PII",
+            summary,
             "AUDIT-37: summary must NOT include User-Agent (PII)",
         )
         self.assertNotIn("Mozilla", summary)
 
     def test_unparseable_body_returns_none(self) -> None:
         from app import _summarize_csp_report
+
         self.assertIsNone(_summarize_csp_report(b"this is not json"))
 
     def test_non_csp_json_returns_none(self) -> None:
         from app import _summarize_csp_report
+
         self.assertIsNone(_summarize_csp_report(b'{"unrelated": "payload"}'))
 
     def test_log_injection_via_newlines_neutralised(self) -> None:
@@ -130,21 +142,25 @@ class CspReportSummariser(unittest.TestCase):
         fake log lines like ``\\n[ERROR] Database breach detected``
         and fool downstream log monitoring."""
         from app import _summarize_csp_report
-        hostile = json.dumps({
-            "csp-report": {
-                "effective-directive": "script-src",
-                "blocked-uri": "evil\n[CRITICAL] FAKE LOG INJECTION\nfollow-on",
-                "document-uri": "https://x/page\r\nfake-line",
-                "violated-directive": "with\ttab",
+
+        hostile = json.dumps(
+            {
+                "csp-report": {
+                    "effective-directive": "script-src",
+                    "blocked-uri": "evil\n[CRITICAL] FAKE LOG INJECTION\nfollow-on",
+                    "document-uri": "https://x/page\r\nfake-line",
+                    "violated-directive": "with\ttab",
+                }
             }
-        }).encode("utf-8")
+        ).encode("utf-8")
         summary = _summarize_csp_report(hostile)
         self.assertIsNotNone(summary)
         # No literal newline / carriage return / tab survives into
         # the summary string.
         for ctrl in ("\n", "\r", "\t"):
             self.assertNotIn(
-                ctrl, summary,
+                ctrl,
+                summary,
                 f"AUDIT-37 hardening regression: control char {ctrl!r} "
                 f"survived sanitisation. Full summary: {summary!r}",
             )
@@ -159,7 +175,8 @@ class CspReportSlotRateLimit(unittest.TestCase):
     """Direct tests for the State.claim_csp_report_slot rate limiter."""
 
     def test_first_50_pass_then_429(self) -> None:
-        from app import STATE, CSP_REPORT_LIMIT
+        from app import CSP_REPORT_LIMIT, STATE
+
         client = "192.0.2.1"
         # Make sure the bucket starts empty for this client
         with STATE._csp_report_lock:  # noqa: SLF001 — test setup
@@ -225,9 +242,14 @@ class CspHeaderAndReportEndpoint(unittest.TestCase):
                 time.sleep(0.1)
         raise RuntimeError(f"server did not become healthy on port {cls.port}")
 
-    def _request(self, method: str, path: str, *,
-                 body: bytes | None = None,
-                 headers: dict[str, str] | None = None) -> tuple[int, dict[str, str], bytes]:
+    def _request(
+        self,
+        method: str,
+        path: str,
+        *,
+        body: bytes | None = None,
+        headers: dict[str, str] | None = None,
+    ) -> tuple[int, dict[str, str], bytes]:
         conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=2)
         conn.request(method, path, body=body, headers=headers or {})
         resp = conn.getresponse()
@@ -240,7 +262,8 @@ class CspHeaderAndReportEndpoint(unittest.TestCase):
         _status, headers, _body = self._request("GET", "/api/health")
         csp = headers.get("Content-Security-Policy", "")
         self.assertIn(
-            "report-uri /csp-report", csp,
+            "report-uri /csp-report",
+            csp,
             "AUDIT-37: legacy report-uri directive must be present in CSP header",
         )
 
@@ -248,7 +271,8 @@ class CspHeaderAndReportEndpoint(unittest.TestCase):
         _status, headers, _body = self._request("GET", "/api/health")
         csp = headers.get("Content-Security-Policy", "")
         self.assertIn(
-            "report-to csp-endpoint", csp,
+            "report-to csp-endpoint",
+            csp,
             "AUDIT-37: modern report-to directive must be present in CSP header",
         )
 
@@ -267,18 +291,26 @@ class CspHeaderAndReportEndpoint(unittest.TestCase):
 
     def test_csp_report_post_legacy_returns_204(self) -> None:
         status, _headers, body = self._request(
-            "POST", "/csp-report",
+            "POST",
+            "/csp-report",
             body=_LEGACY_REPORT,
-            headers={"Content-Type": "application/csp-report", "Content-Length": str(len(_LEGACY_REPORT))},
+            headers={
+                "Content-Type": "application/csp-report",
+                "Content-Length": str(len(_LEGACY_REPORT)),
+            },
         )
         self.assertEqual(status, 204)
         self.assertEqual(body, b"")
 
     def test_csp_report_post_reporting_api_returns_204(self) -> None:
         status, _headers, body = self._request(
-            "POST", "/csp-report",
+            "POST",
+            "/csp-report",
             body=_REPORTING_API_REPORT,
-            headers={"Content-Type": "application/reports+json", "Content-Length": str(len(_REPORTING_API_REPORT))},
+            headers={
+                "Content-Type": "application/reports+json",
+                "Content-Length": str(len(_REPORTING_API_REPORT)),
+            },
         )
         self.assertEqual(status, 204)
         self.assertEqual(body, b"")
@@ -288,7 +320,8 @@ class CspHeaderAndReportEndpoint(unittest.TestCase):
         # endpoint be used as an oracle for what shapes we accept.
         bad = b"not json at all"
         status, _headers, _body = self._request(
-            "POST", "/csp-report",
+            "POST",
+            "/csp-report",
             body=bad,
             headers={"Content-Type": "application/csp-report", "Content-Length": str(len(bad))},
         )
@@ -306,13 +339,15 @@ class CspHeaderAndReportEndpoint(unittest.TestCase):
         # recursion limit but inside the 16 KB body cap (each level is
         # 7 bytes: "{\"a\":" + "}" — so 1100 * 7 ≈ 7.7 KB).
         depth = 1100
-        body = ('{"csp-report":' + ('{"a":' * depth) + 'null' + ('}' * depth) + '}').encode("utf-8")
+        body = ('{"csp-report":' + ('{"a":' * depth) + "null" + ("}" * depth) + "}").encode("utf-8")
         # Sanity-check we're under the 16 KB cap so the test isn't
         # silently exercising the size-rejection path instead.
         from app import CSP_REPORT_MAX_BYTES
+
         self.assertLess(len(body), CSP_REPORT_MAX_BYTES)
         status, _headers, _resp_body = self._request(
-            "POST", "/csp-report",
+            "POST",
+            "/csp-report",
             body=body,
             headers={
                 "Content-Type": "application/csp-report",
@@ -320,7 +355,8 @@ class CspHeaderAndReportEndpoint(unittest.TestCase):
             },
         )
         self.assertEqual(
-            status, 204,
+            status,
+            204,
             f"GAP-8: deeply-nested body must ack 204, got {status}. "
             "RecursionError from json.loads is leaking through to a 500.",
         )
@@ -331,12 +367,14 @@ class CspHeaderAndReportEndpoint(unittest.TestCase):
         # length without sending the bytes — the server rejects on the
         # Content-Length check before any read.
         from app import CSP_REPORT_MAX_BYTES
+
         oversize = CSP_REPORT_MAX_BYTES + 1
         # Use a dummy connection that announces the size without sending
         # the full body — the server should respond before reading.
         conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=2)
         conn.request(
-            "POST", "/csp-report",
+            "POST",
+            "/csp-report",
             body=b"x",  # tiny body; Content-Length header is what trips the check
             headers={
                 "Content-Type": "application/csp-report",

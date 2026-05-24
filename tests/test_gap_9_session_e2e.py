@@ -105,9 +105,14 @@ class SessionE2E(unittest.TestCase):
                 time.sleep(0.1)
         raise RuntimeError(f"server did not become healthy on port {cls.port}")
 
-    def _request(self, method: str, path: str, *,
-                 body: bytes | None = None,
-                 headers: dict[str, str] | None = None) -> tuple[int, dict[str, str], bytes]:
+    def _request(
+        self,
+        method: str,
+        path: str,
+        *,
+        body: bytes | None = None,
+        headers: dict[str, str] | None = None,
+    ) -> tuple[int, dict[str, str], bytes]:
         conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=2)
         conn.request(method, path, body=body, headers=headers or {})
         resp = conn.getresponse()
@@ -128,10 +133,16 @@ class SessionE2E(unittest.TestCase):
         # ---------- Stage 1: anonymous visit to landing ----------
         status, _h, body = self._request("GET", "/")
         self.assertEqual(status, 200, "landing page must serve")
-        self.assertIn(b'<template id="appShellTemplate"', body,
-                      "AUDIT-40: landing must carry the template wrap")
-        self.assertNotIn(b'data-view="jobs"', body[:15523],
-                         "AUDIT-40: no app strings in the crawler-visible prefix")
+        self.assertIn(
+            b'<template id="appShellTemplate"',
+            body,
+            "AUDIT-40: landing must carry the template wrap",
+        )
+        self.assertNotIn(
+            b'data-view="jobs"',
+            body[:15523],
+            "AUDIT-40: no app strings in the crawler-visible prefix",
+        )
         self.assertIn(b'id="authGate"', body, "auth gate must be in live DOM")
         self.assertIn(b'class="site-footer"', body, "AUDIT-34: footer must be injected")
         # Default language is EN (no Accept-Language header in our probe)
@@ -146,24 +157,23 @@ class SessionE2E(unittest.TestCase):
         self.assertNotIn(b">Contact</h2>", body)
 
         # ---------- Stage 3: ?lang= override ----------
-        status, _h, body = self._request(
-            "GET", "/?lang=de", headers={"Accept-Language": "en"}
-        )
+        status, _h, body = self._request("GET", "/?lang=de", headers={"Accept-Language": "en"})
         self.assertEqual(status, 200)
         self.assertIn(b">Kontakt</h2>", body, "?lang=de beats Accept-Language: en")
 
         # ---------- Stage 4: forgot-password page ----------
         status, _h, body = self._request("GET", "/forgot-password")
         self.assertEqual(status, 200)
-        self.assertLess(len(body), 10_000,
-                        f"AUDIT-26: dedicated page should be tiny, got {len(body)} bytes")
+        self.assertLess(
+            len(body), 10_000, f"AUDIT-26: dedicated page should be tiny, got {len(body)} bytes"
+        )
         self.assertIn(b"forgotPasswordForm", body)
-        self.assertNotIn(b"appShell", body,
-                         "AUDIT-26: page must NOT carry the SPA shell")
+        self.assertNotIn(b"appShell", body, "AUDIT-26: page must NOT carry the SPA shell")
 
         # ---------- Stage 5: forgot-password submit ----------
         status, _h, body = self._request(
-            "POST", "/api/auth/forgot-password",
+            "POST",
+            "/api/auth/forgot-password",
             body=json.dumps({"email": "nobody@example.invalid"}).encode("utf-8"),
             headers={"Content-Type": "application/json"},
         )
@@ -176,7 +186,8 @@ class SessionE2E(unittest.TestCase):
         self.assertEqual(headers.get("Location"), "/?ref=abc123")
         cookies = headers.get("Set-Cookie", "")
         self.assertNotIn(
-            "helpmefindthejob_ref", cookies,
+            "helpmefindthejob_ref",
+            cookies,
             "AUDIT-22: referral redirect must NOT emit the consent-tracking cookie",
         )
 
@@ -185,7 +196,8 @@ class SessionE2E(unittest.TestCase):
         status, headers, _body = self._request("GET", f"/reset-password/{valid_token}")
         self.assertEqual(status, 303)
         self.assertEqual(
-            headers.get("Location"), f"/reset-password?token={valid_token}",
+            headers.get("Location"),
+            f"/reset-password?token={valid_token}",
             "AUDIT-27: path-token redirects to canonical query form",
         )
         # Malformed token 404s
@@ -199,11 +211,14 @@ class SessionE2E(unittest.TestCase):
 
         # ---------- Stage 9: bootstrap admin + create member ----------
         status, headers, body = self._request(
-            "POST", "/api/auth/register",
-            body=json.dumps({
-                "email": "e2e-admin@example.invalid",
-                "password": "very-strong-password-9999",
-            }).encode("utf-8"),
+            "POST",
+            "/api/auth/register",
+            body=json.dumps(
+                {
+                    "email": "e2e-admin@example.invalid",
+                    "password": "very-strong-password-9999",
+                }
+            ).encode("utf-8"),
             headers={"Content-Type": "application/json"},
         )
         if status not in (200, 201):
@@ -214,12 +229,15 @@ class SessionE2E(unittest.TestCase):
         self.assertTrue(admin_payload["user"]["isAdmin"])
 
         status, _h, _body = self._request(
-            "POST", "/api/admin/users",
-            body=json.dumps({
-                "email": "e2e-member@example.invalid",
-                "password": "very-strong-password-8888",
-                "role": "member",
-            }).encode("utf-8"),
+            "POST",
+            "/api/admin/users",
+            body=json.dumps(
+                {
+                    "email": "e2e-member@example.invalid",
+                    "password": "very-strong-password-8888",
+                    "role": "member",
+                }
+            ).encode("utf-8"),
             headers={
                 "Content-Type": "application/json",
                 "Cookie": admin_cookie,
@@ -230,11 +248,14 @@ class SessionE2E(unittest.TestCase):
 
         # ---------- Stage 10: member login, then /admin → 403 ----------
         status, headers, body = self._request(
-            "POST", "/api/auth/login",
-            body=json.dumps({
-                "email": "e2e-member@example.invalid",
-                "password": "very-strong-password-8888",
-            }).encode("utf-8"),
+            "POST",
+            "/api/auth/login",
+            body=json.dumps(
+                {
+                    "email": "e2e-member@example.invalid",
+                    "password": "very-strong-password-8888",
+                }
+            ).encode("utf-8"),
             headers={"Content-Type": "application/json"},
         )
         self.assertEqual(status, 200)
@@ -242,23 +263,25 @@ class SessionE2E(unittest.TestCase):
         member_payload = json.loads(body.decode("utf-8"))
         self.assertFalse(member_payload["user"]["isAdmin"])
 
-        status, headers, body = self._request(
-            "GET", "/admin", headers={"Cookie": member_cookie}
-        )
-        self.assertEqual(status, 403,
-                         "GAP-3: logged-in non-admin /admin → 403, not SPA")
+        status, headers, body = self._request("GET", "/admin", headers={"Cookie": member_cookie})
+        self.assertEqual(status, 403, "GAP-3: logged-in non-admin /admin → 403, not SPA")
         self.assertLess(len(body), 15_000)
         self.assertIn(b"Admin access required", body)
         self.assertEqual(headers.get("Cache-Control"), "no-store")
 
         # ---------- Stage 11: CSP report POST (AUDIT-37) ----------
-        csp_body = json.dumps({"csp-report": {
-            "blocked-uri": "https://evil.example/x.js",
-            "document-uri": "https://helpmefindthejob.org/",
-            "effective-directive": "script-src",
-        }}).encode("utf-8")
+        csp_body = json.dumps(
+            {
+                "csp-report": {
+                    "blocked-uri": "https://evil.example/x.js",
+                    "document-uri": "https://helpmefindthejob.org/",
+                    "effective-directive": "script-src",
+                }
+            }
+        ).encode("utf-8")
         status, _h, _body = self._request(
-            "POST", "/csp-report",
+            "POST",
+            "/csp-report",
             body=csp_body,
             headers={
                 "Content-Type": "application/csp-report",
@@ -276,28 +299,36 @@ class SessionE2E(unittest.TestCase):
         self.assertIn('"csp-endpoint"', report_to)
 
         # ---------- Stage 13: footer present on every public surface ----------
-        for path in ("/", "/privacy", "/terms", "/impressum", "/data-retention",
-                     "/help", "/status", "/changelog", "/forgot-password"):
+        for path in (
+            "/",
+            "/privacy",
+            "/terms",
+            "/impressum",
+            "/data-retention",
+            "/help",
+            "/status",
+            "/changelog",
+            "/forgot-password",
+        ):
             with self.subTest(path=path):
                 status, _h, body = self._request("GET", path)
                 self.assertEqual(status, 200)
-                self.assertIn(b'class="site-footer"', body,
-                              f"AUDIT-34: footer missing on {path}")
+                self.assertIn(b'class="site-footer"', body, f"AUDIT-34: footer missing on {path}")
                 # Lang switcher present
-                self.assertIn(b'class="site-footer-langswitch"', body,
-                              f"GAP-2: lang switcher missing on {path}")
+                self.assertIn(
+                    b'class="site-footer-langswitch"',
+                    body,
+                    f"GAP-2: lang switcher missing on {path}",
+                )
 
         # ---------- Stage 14: JSON-LD @id references (AUDIT-46) ----------
         status, _h, body = self._request("GET", "/privacy")
         self.assertEqual(status, 200)
-        m = re.search(rb'<script type="application/ld\+json">\s*(.*?)\s*</script>',
-                      body, re.DOTALL)
+        m = re.search(rb'<script type="application/ld\+json">\s*(.*?)\s*</script>', body, re.DOTALL)
         self.assertIsNotNone(m)
         jsonld = json.loads(m.group(1).decode("utf-8"))
-        self.assertEqual(jsonld["isPartOf"]["@id"],
-                         "https://helpmefindthejob.org/#website")
-        self.assertEqual(jsonld["publisher"]["@id"],
-                         "https://helpmefindthejob.org/#organization")
+        self.assertEqual(jsonld["isPartOf"]["@id"], "https://helpmefindthejob.org/#website")
+        self.assertEqual(jsonld["publisher"]["@id"], "https://helpmefindthejob.org/#organization")
 
         # ---------- Stage 15: robots/sitemap alignment (GAPs 5+6) ----------
         status, _h, body = self._request("GET", "/robots.txt")
@@ -307,8 +338,7 @@ class SessionE2E(unittest.TestCase):
         self.assertEqual(status, 200)
         for forbidden in (b"/csp-report", b"/admin", b"/forgot-password"):
             with self.subTest(forbidden=forbidden):
-                self.assertNotIn(forbidden, sitemap_body,
-                                 f"GAP-6: sitemap leaks {forbidden!r}")
+                self.assertNotIn(forbidden, sitemap_body, f"GAP-6: sitemap leaks {forbidden!r}")
 
         # ---------- Stage 16: /api/version exposes buildSha ----------
         status, _h, body = self._request("GET", "/api/version")
@@ -320,17 +350,25 @@ class SessionE2E(unittest.TestCase):
 
         # ---------- Stage 17: meta descriptions distinct + length-bounded ----------
         descs: dict[str, str] = {}
-        for path in ("/", "/privacy", "/terms", "/impressum", "/data-retention",
-                     "/help", "/status", "/changelog"):
+        for path in (
+            "/",
+            "/privacy",
+            "/terms",
+            "/impressum",
+            "/data-retention",
+            "/help",
+            "/status",
+            "/changelog",
+        ):
             status, _h, body = self._request("GET", path)
             self.assertEqual(status, 200)
             m = re.search(rb'<meta name="description" content="([^"]*)"', body)
             self.assertIsNotNone(m, f"{path} missing description")
             desc = m.group(1).decode("utf-8")
-            self.assertLessEqual(len(desc), 160,
-                                 f"{path} description {len(desc)} > 160 (SERP truncated)")
-            self.assertNotIn(desc, descs,
-                             f"{path} duplicates description of {descs.get(desc)}")
+            self.assertLessEqual(
+                len(desc), 160, f"{path} description {len(desc)} > 160 (SERP truncated)"
+            )
+            self.assertNotIn(desc, descs, f"{path} duplicates description of {descs.get(desc)}")
             descs[desc] = path
 
 

@@ -90,9 +90,7 @@ class CostCapChatHandlerIntegration(unittest.TestCase):
         # Seed spend that exceeds the cap
         self._seed_spend(2.5)
 
-        result = self.state.chat_handler_tailor_cv(
-            self.user_id, {"importedJobId": job.id}
-        )
+        result = self.state.chat_handler_tailor_cv(self.user_id, {"importedJobId": job.id})
         self.assertFalse(result["ok"])
         self.assertEqual(result.get("code"), "cost_cap_exceeded")
         self.assertIn("€", result["message"])
@@ -111,9 +109,7 @@ class CostCapChatHandlerIntegration(unittest.TestCase):
         self._seed_spend(2.5)
 
         events = list(
-            self.state.chat_handler_tailor_cv_streaming(
-                self.user_id, {"importedJobId": job.id}
-            )
+            self.state.chat_handler_tailor_cv_streaming(self.user_id, {"importedJobId": job.id})
         )
         finals = [e for e in events if e[0] == "done_payload"]
         # The streaming variant should yield exactly one done_payload
@@ -152,9 +148,7 @@ class CostCapChatHandlerIntegration(unittest.TestCase):
         provider = self.state.ai_provider_for(self.user_id)
         ctx = self.state.cost_cap_context_for(self.user_id)
         with self.assertRaises(CostCapExceeded):
-            execute_cv_tailoring(
-                job, provider, "", profile, cap_context=ctx
-            )
+            execute_cv_tailoring(job, provider, "", profile, cap_context=ctx)
 
     def test_execute_cover_letter_brief_enforces_cap_at_chokepoint(self) -> None:
         """Same as above for the cover-letter path. Closes the
@@ -179,40 +173,30 @@ class CostCapChatHandlerIntegration(unittest.TestCase):
         provider = self.state.ai_provider_for(self.user_id)
         ctx = self.state.cost_cap_context_for(self.user_id)
         with self.assertRaises(CostCapExceeded):
-            execute_cover_letter_brief(
-                job, provider, "", profile, cap_context=ctx
-            )
+            execute_cover_letter_brief(job, provider, "", profile, cap_context=ctx)
 
     def test_update_profile_persists_monthly_cap(self) -> None:
         """The user must be able to change their cap via the
         profile-update API. Without this, the default 5.0 is
         unchangeable — a UX gap."""
 
-        profile = self.state.update_profile(
-            self.user_id, {"monthlySpendCapEur": 25.0}
-        )
+        profile = self.state.update_profile(self.user_id, {"monthlySpendCapEur": 25.0})
         self.assertEqual(profile.monthly_spend_cap_eur, 25.0)
 
     def test_update_profile_clamps_cap_to_safe_range(self) -> None:
         """Cap is clamped 0–500 EUR. Negative values become 0;
         anything over 500 becomes 500."""
 
-        profile = self.state.update_profile(
-            self.user_id, {"monthlySpendCapEur": -10.0}
-        )
+        profile = self.state.update_profile(self.user_id, {"monthlySpendCapEur": -10.0})
         self.assertEqual(profile.monthly_spend_cap_eur, 0.0)
-        profile = self.state.update_profile(
-            self.user_id, {"monthlySpendCapEur": 99999.0}
-        )
+        profile = self.state.update_profile(self.user_id, {"monthlySpendCapEur": 99999.0})
         self.assertEqual(profile.monthly_spend_cap_eur, 500.0)
 
     def test_update_profile_rejects_non_numeric_cap(self) -> None:
         """Garbage values raise — not silently default to 5.0."""
 
         with self.assertRaises(ValueError):
-            self.state.update_profile(
-                self.user_id, {"monthlySpendCapEur": "expensive"}
-            )
+            self.state.update_profile(self.user_id, {"monthlySpendCapEur": "expensive"})
 
     def test_bootstrap_payload_surfaces_cap(self) -> None:
         """The Settings UI reads the cap from the bootstrap payload."""
@@ -307,9 +291,7 @@ class CostCapChatHandlerIntegration(unittest.TestCase):
         job = _seed_imported_job(self.state, self.user_id)
         self._seed_spend(100.0)
 
-        result = self.state.chat_handler_tailor_cv(
-            self.user_id, {"importedJobId": job.id}
-        )
+        result = self.state.chat_handler_tailor_cv(self.user_id, {"importedJobId": job.id})
         # The call may fail for other reasons (no real ollama
         # running), but it must NOT fail with cost_cap_exceeded.
         self.assertNotEqual(result.get("code"), "cost_cap_exceeded")

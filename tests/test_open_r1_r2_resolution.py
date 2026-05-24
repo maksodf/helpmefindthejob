@@ -18,14 +18,12 @@ from __future__ import annotations
 
 import unittest
 from pathlib import Path
-
 from pathlib import Path as _RPath
+
 _REPO_ROOT = _RPath(__file__).resolve().parent.parent
 
 
-RESEARCH_DOC = Path(
-    str(_REPO_ROOT / "docs/grant/04-research-and-decisions.md")
-)
+RESEARCH_DOC = Path(str(_REPO_ROOT / "docs/grant/04-research-and-decisions.md"))
 
 
 class R1DeadlineAuditTrail(unittest.TestCase):

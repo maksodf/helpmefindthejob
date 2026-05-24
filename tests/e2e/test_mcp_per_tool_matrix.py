@@ -40,7 +40,6 @@ from tests.e2e.mcp_client_harness import (
     parse_tool_result,
 )
 
-
 # Per-tool happy-shape inputs. Each entry is (tool_name, kwargs,
 # expected_outcome) where expected_outcome is "ok" (assert_ok) or one of
 # {"tool_error", "ok_or_tool_error"}. Tools that need pre-existing repo
@@ -162,7 +161,11 @@ _WRONG_TYPE: list[tuple[str, dict[str, object]]] = [
     ),
     (
         "add_company_to_watchlist",
-        {"userId": 123, "name": "X", "websiteUrl": "https://example.invalid"},  # userId must be string
+        {
+            "userId": 123,
+            "name": "X",
+            "websiteUrl": "https://example.invalid",
+        },  # userId must be string
     ),
     (
         "find_company_career_page",
@@ -458,7 +461,9 @@ class MCPJSONRPCErrorEnvelopeE2E(unittest.TestCase):
         self.assertIsNone(response.get("id"))
         # Message body should reflect a parse failure mode.
         self.assertTrue(
-            any(token in err.get("message", "").lower() for token in ("expect", "delimiter", "char")),
+            any(
+                token in err.get("message", "").lower() for token in ("expect", "delimiter", "char")
+            ),
             msg=f"unexpected parse-error message {err!r}",
         )
 

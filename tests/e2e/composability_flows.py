@@ -55,9 +55,7 @@ def _step(out: TextIO, n: int, title: str) -> None:
     out.write(f"\n### Step {n}. {title}\n\n")
 
 
-def _call_block(
-    out: TextIO, tool: str, arguments: dict[str, Any]
-) -> None:
+def _call_block(out: TextIO, tool: str, arguments: dict[str, Any]) -> None:
     out.write("```json\n")
     out.write(json.dumps({"tool": tool, "arguments": arguments}, indent=2, ensure_ascii=False))
     out.write("\n```\n\n")
@@ -77,9 +75,9 @@ def _shorten_for_display(value: Any, *, max_list: int = 4) -> Any:
         return {k: _shorten_for_display(v, max_list=max_list) for k, v in value.items()}
     if isinstance(value, list):
         if len(value) > max_list:
-            return [
-                _shorten_for_display(item, max_list=max_list) for item in value[:max_list]
-            ] + [f"... ({len(value) - max_list} more)"]
+            return [_shorten_for_display(item, max_list=max_list) for item in value[:max_list]] + [
+                f"... ({len(value) - max_list} more)"
+            ]
         return [_shorten_for_display(item, max_list=max_list) for item in value]
     return value
 
@@ -135,9 +133,7 @@ def run_aicha_flow(harness: MCPHarness, out: TextIO) -> dict[str, Any]:
         "watchlist creation -> direct HTML job extraction -> portable civic "
         "profile -> housing-agent referral -> outcome event recorded.\n\n"
     )
-    out.write(
-        "All 7 tool calls succeed against a fresh data dir (no prior repository state).\n"
-    )
+    out.write("All 7 tool calls succeed against a fresh data dir (no prior repository state).\n")
 
     summary: dict[str, Any] = {"persona": "aicha", "user_id": user_id, "steps": []}
 
@@ -163,7 +159,9 @@ def run_aicha_flow(harness: MCPHarness, out: TextIO) -> dict[str, Any]:
         f"(housing, recognition, language schools) can reference without "
         f"re-classifying Aicha's profession.\n"
     )
-    summary["steps"].append({"n": 1, "tool": "query_esco_skill", "ok": True, "code": nurse_match["code"]})
+    summary["steps"].append(
+        {"n": 1, "tool": "query_esco_skill", "ok": True, "code": nurse_match["code"]}
+    )
 
     # 2. Suggest companies ----------------------------------------------
     _step(out, 2, "suggest_relevant_companies(targetRoles, industry=healthcare)")
@@ -179,11 +177,15 @@ def run_aicha_flow(harness: MCPHarness, out: TextIO) -> dict[str, Any]:
     suggestions = payload2.get("suggestions", [])
     assert suggestions, "expected at least one curated suggestion or category"
     top_suggestion = suggestions[0]
-    summary["steps"].append({"n": 2, "tool": "suggest_relevant_companies", "ok": True, "count": len(suggestions)})
+    summary["steps"].append(
+        {"n": 2, "tool": "suggest_relevant_companies", "ok": True, "count": len(suggestions)}
+    )
 
     # 3. Add to watchlist -----------------------------------------------
     _step(out, 3, "add_company_to_watchlist(userId, name, websiteUrl)")
-    company_name = top_suggestion.get("name") or top_suggestion.get("category") or "Pflege Berlin Mitte gGmbH"
+    company_name = (
+        top_suggestion.get("name") or top_suggestion.get("category") or "Pflege Berlin Mitte gGmbH"
+    )
     args3 = {
         "userId": user_id,
         "name": company_name,
@@ -200,7 +202,9 @@ def run_aicha_flow(harness: MCPHarness, out: TextIO) -> dict[str, Any]:
         f"**Composability anchor:** company id `{company_id}` is now the "
         f"shared key for subsequent extract / scan / consent calls.\n"
     )
-    summary["steps"].append({"n": 3, "tool": "add_company_to_watchlist", "ok": True, "company_id": company_id})
+    summary["steps"].append(
+        {"n": 3, "tool": "add_company_to_watchlist", "ok": True, "company_id": company_id}
+    )
 
     # 4. Extract jobs from supplied HTML --------------------------------
     _step(out, 4, "extract_direct_jobs_from_company_site(html=<fixture>)")
@@ -211,14 +215,25 @@ def run_aicha_flow(harness: MCPHarness, out: TextIO) -> dict[str, Any]:
         "html": _AICHA_JOB_FIXTURE_HTML,
     }
     # Don't print the full HTML in the JSON block -- replace with a placeholder.
-    _call_block(out, "extract_direct_jobs_from_company_site", {**args4, "html": "<HTML fixture: 30 lines with JSON-LD JobPosting>"})
+    _call_block(
+        out,
+        "extract_direct_jobs_from_company_site",
+        {**args4, "html": "<HTML fixture: 30 lines with JSON-LD JobPosting>"},
+    )
     response = harness.call_tool("extract_direct_jobs_from_company_site", **args4)
     payload4 = assert_ok(response)
     _response_block(out, payload4, is_error=False)
     extracted_jobs = payload4.get("jobs", [])
     assert extracted_jobs, "expected JSON-LD parser to surface the fixture's JobPosting"
     job_title = extracted_jobs[0].get("title", "<no title>")
-    summary["steps"].append({"n": 4, "tool": "extract_direct_jobs_from_company_site", "ok": True, "jobs": len(extracted_jobs)})
+    summary["steps"].append(
+        {
+            "n": 4,
+            "tool": "extract_direct_jobs_from_company_site",
+            "ok": True,
+            "jobs": len(extracted_jobs),
+        }
+    )
 
     # 5. Portable profile -----------------------------------------------
     _step(out, 5, "get_user_profile_for_consent(userId, scopes)")
@@ -271,7 +286,9 @@ def run_aicha_flow(harness: MCPHarness, out: TextIO) -> dict[str, Any]:
     assert referral["sourceAgent"] == "helpmefindthejob"
     assert referral["targetAgent"] == "housing-agent"
     assert referral["userConsentRequired"] is True
-    summary["steps"].append({"n": 6, "tool": "propose_referral", "ok": True, "referralId": referral["referralId"]})
+    summary["steps"].append(
+        {"n": 6, "tool": "propose_referral", "ok": True, "referralId": referral["referralId"]}
+    )
 
     # 7. Outcome event --------------------------------------------------
     _step(out, 7, "record_user_outcome(jobId, outcomeType='applied')")
@@ -384,7 +401,9 @@ def run_esco_eures_flow(harness: MCPHarness, out: TextIO) -> dict[str, Any]:
         "into a multi-step pipeline without special-casing missing-job "
         "errors -- the contract is the same shape either way.\n"
     )
-    summary["steps"].append({"n": 4, "tool": "export_eures_compatible", "ok": True, "status": payload4.get("status")})
+    summary["steps"].append(
+        {"n": 4, "tool": "export_eures_compatible", "ok": True, "status": payload4.get("status")}
+    )
 
     out.write(
         "\n## Result\n\n"

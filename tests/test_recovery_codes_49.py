@@ -44,9 +44,7 @@ class RecoveryCodeRegeneration(unittest.TestCase):
         self.addCleanup(self.state.auth_store.close)
         self.addCleanup(self.state.repository.close)
         self.addCleanup(self.tmp.cleanup)
-        self.user = self.state.auth_store.create_user(
-            "alice-49@example.com", "strong-pass-12345"
-        )
+        self.user = self.state.auth_store.create_user("alice-49@example.com", "strong-pass-12345")
 
     def _enroll_totp(self) -> None:
         enrollment = self.state.auth_store.start_totp_enrollment(self.user.id)
@@ -55,9 +53,7 @@ class RecoveryCodeRegeneration(unittest.TestCase):
 
     def test_regenerate_returns_8_fresh_codes(self) -> None:
         self._enroll_totp()
-        codes = self.state.auth_store.regenerate_recovery_codes(
-            self.user.id, "strong-pass-12345"
-        )
+        codes = self.state.auth_store.regenerate_recovery_codes(self.user.id, "strong-pass-12345")
         self.assertEqual(len(codes), 8)
         # All codes are unique
         self.assertEqual(len(set(codes)), 8)
@@ -72,27 +68,17 @@ class RecoveryCodeRegeneration(unittest.TestCase):
             self.user.id, "strong-pass-12345"
         )
         # Regenerate again — the first batch must no longer work
-        self.state.auth_store.regenerate_recovery_codes(
-            self.user.id, "strong-pass-12345"
-        )
-        self.assertFalse(
-            self.state.auth_store.consume_recovery_code(
-                self.user.id, first_batch[0]
-            )
-        )
+        self.state.auth_store.regenerate_recovery_codes(self.user.id, "strong-pass-12345")
+        self.assertFalse(self.state.auth_store.consume_recovery_code(self.user.id, first_batch[0]))
 
     def test_regenerate_rejects_wrong_password(self) -> None:
         self._enroll_totp()
         with self.assertRaises(ValueError):
-            self.state.auth_store.regenerate_recovery_codes(
-                self.user.id, "wrong-password"
-            )
+            self.state.auth_store.regenerate_recovery_codes(self.user.id, "wrong-password")
 
     def test_regenerate_rejects_when_totp_not_enrolled(self) -> None:
         with self.assertRaises(ValueError) as cm:
-            self.state.auth_store.regenerate_recovery_codes(
-                self.user.id, "strong-pass-12345"
-            )
+            self.state.auth_store.regenerate_recovery_codes(self.user.id, "strong-pass-12345")
         self.assertIn("totp_not_enabled", str(cm.exception))
 
 
@@ -110,22 +96,16 @@ class RemainingCodeCount(unittest.TestCase):
         self.addCleanup(self.state.auth_store.close)
         self.addCleanup(self.state.repository.close)
         self.addCleanup(self.tmp.cleanup)
-        self.user = self.state.auth_store.create_user(
-            "alice-49b@example.com", "strong-pass-12345"
-        )
+        self.user = self.state.auth_store.create_user("alice-49b@example.com", "strong-pass-12345")
 
     def test_count_zero_before_totp_enrollment(self) -> None:
-        self.assertEqual(
-            self.state.auth_store.count_remaining_recovery_codes(self.user.id), 0
-        )
+        self.assertEqual(self.state.auth_store.count_remaining_recovery_codes(self.user.id), 0)
 
     def test_count_eight_after_enrollment(self) -> None:
         enrollment = self.state.auth_store.start_totp_enrollment(self.user.id)
         code = _totp_at(enrollment["secret"], when=datetime.now(timezone.utc))
         self.state.auth_store.confirm_totp_enrollment(self.user.id, code)
-        self.assertEqual(
-            self.state.auth_store.count_remaining_recovery_codes(self.user.id), 8
-        )
+        self.assertEqual(self.state.auth_store.count_remaining_recovery_codes(self.user.id), 8)
 
     def test_count_decreases_as_codes_are_consumed(self) -> None:
         enrollment = self.state.auth_store.start_totp_enrollment(self.user.id)
@@ -133,12 +113,8 @@ class RemainingCodeCount(unittest.TestCase):
         codes = self.state.auth_store.confirm_totp_enrollment(self.user.id, code)
         # Use 3 codes
         for c in codes[:3]:
-            self.assertTrue(
-                self.state.auth_store.consume_recovery_code(self.user.id, c)
-            )
-        self.assertEqual(
-            self.state.auth_store.count_remaining_recovery_codes(self.user.id), 5
-        )
+            self.assertTrue(self.state.auth_store.consume_recovery_code(self.user.id, c))
+        self.assertEqual(self.state.auth_store.count_remaining_recovery_codes(self.user.id), 5)
 
     def test_user_payload_surfaces_remaining_count(self) -> None:
         enrollment = self.state.auth_store.start_totp_enrollment(self.user.id)

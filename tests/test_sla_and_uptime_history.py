@@ -35,7 +35,6 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SLA_DOC = REPO_ROOT / "docs" / "SLA-template.md"
 
@@ -186,9 +185,7 @@ class HealthHistoryEndpointLive(unittest.TestCase):
         cls.tmpdir = TemporaryDirectory()
         cls.port = _free_port()
         env = dict(os.environ)
-        env["HELPMEFINDTHEJOB_DATA_FILE"] = str(
-            Path(cls.tmpdir.name) / "data.json"
-        )
+        env["HELPMEFINDTHEJOB_DATA_FILE"] = str(Path(cls.tmpdir.name) / "data.json")
         env["HELPMEFINDTHEJOB_DISABLE_SCHEDULER"] = "1"
         env.pop("HELPMEFINDTHEJOB_DATABASE_URL", None)
         cls.proc = subprocess.Popen(
@@ -290,7 +287,8 @@ class RingBufferBoundedness(unittest.TestCase):
 
     def test_ring_buffer_drops_oldest_on_overflow(self):
         from tempfile import TemporaryDirectory
-        from app import AppState, MAX_HEALTH_SNAPSHOTS
+
+        from app import MAX_HEALTH_SNAPSHOTS, AppState
 
         with TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -303,7 +301,7 @@ class RingBufferBoundedness(unittest.TestCase):
             )
             try:
                 # Push 2x the cap; verify it stays capped
-                for i in range(MAX_HEALTH_SNAPSHOTS * 2):
+                for _ in range(MAX_HEALTH_SNAPSHOTS * 2):
                     state.record_health_snapshot({"status": "ok"})
                 # Ring buffer should never exceed the cap
                 self.assertLessEqual(
@@ -317,6 +315,7 @@ class RingBufferBoundedness(unittest.TestCase):
 
     def test_max_snapshots_constant_present(self):
         from app import MAX_HEALTH_SNAPSHOTS
+
         self.assertGreaterEqual(MAX_HEALTH_SNAPSHOTS, 1000)
         self.assertLessEqual(MAX_HEALTH_SNAPSHOTS, 50000)
 
@@ -348,12 +347,8 @@ class StatusPageReadsHistory(unittest.TestCase):
     script-src self)."""
 
     def setUp(self):
-        self.html = (REPO_ROOT / "static" / "status.html").read_text(
-            encoding="utf-8"
-        )
-        self.js = (REPO_ROOT / "static" / "status.js").read_text(
-            encoding="utf-8"
-        )
+        self.html = (REPO_ROOT / "static" / "status.html").read_text(encoding="utf-8")
+        self.js = (REPO_ROOT / "static" / "status.js").read_text(encoding="utf-8")
 
     def test_uptime_cards_present(self):
         self.assertIn('id="uptime24h"', self.html)

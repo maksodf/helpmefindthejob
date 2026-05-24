@@ -50,7 +50,6 @@ def _free_port() -> int:
 
 
 class StatusPagePolish(unittest.TestCase):
-
     @classmethod
     def setUpClass(cls) -> None:
         cls._tmp = TemporaryDirectory()
@@ -116,7 +115,8 @@ class StatusPagePolish(unittest.TestCase):
         body = self._get("/status")
         # No #appStorage element, no "Storage" card label.
         self.assertNotIn(
-            'id="appStorage"', body,
+            'id="appStorage"',
+            body,
             "UX-A2 regression: #appStorage card reappeared on /status. "
             "/api/health no longer exposes storage publicly (AUDIT-42), "
             "so this card always shows em-dash. Keep it deleted.",
@@ -125,7 +125,8 @@ class StatusPagePolish(unittest.TestCase):
     def test_a3_latency_empty_state_copy_in_ssr(self) -> None:
         body = self._get("/status")
         self.assertIn(
-            "Not enough data yet", body,
+            "Not enough data yet",
+            body,
             "UX-A3 regression: latency-trend empty-state copy missing. "
             "An em-dash placeholder makes the feature look broken; "
             "render real copy when the buffer is empty.",
@@ -143,7 +144,8 @@ class StatusPagePolish(unittest.TestCase):
     def test_b4_no_internal_operator_runbook_reference(self) -> None:
         body = self._get("/status")
         self.assertNotIn(
-            "operator-launch-runbook.md", body,
+            "operator-launch-runbook.md",
+            body,
             "UX-B4 regression: internal operator-runbook reference is "
             "back on the public /status page. Public pages must not "
             "leak internal-only file paths.",
@@ -155,7 +157,8 @@ class StatusPagePolish(unittest.TestCase):
         # every 30 seconds. No third-party uptime vendor." — written
         # for ops/operators, not end-users.
         self.assertNotIn(
-            "third-party uptime vendor", body,
+            "third-party uptime vendor",
+            body,
             "UX-B4 regression: operator-internal phrasing about uptime "
             "vendors is back on the public /status page.",
         )

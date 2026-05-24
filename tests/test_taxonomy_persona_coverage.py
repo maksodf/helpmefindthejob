@@ -32,11 +32,11 @@ pin the persona-coverage contract:
 from __future__ import annotations
 
 import unittest
+from pathlib import Path as _RPath
 
 from company_discovery.job_type_filter import TAXONOMY, identify_bucket
 from company_discovery.persona_fixtures import PERSONAS
 
-from pathlib import Path as _RPath
 _REPO_ROOT = _RPath(__file__).resolve().parent.parent
 
 
@@ -307,9 +307,8 @@ class LateralRoleFallbackCoverage(unittest.TestCase):
         # source to keep this test stable across refactors.
         import re
         from pathlib import Path
-        src = Path(
-            str(_REPO_ROOT / "company_discovery/journey.py")
-        ).read_text(encoding="utf-8")
+
+        src = Path(str(_REPO_ROOT / "company_discovery/journey.py")).read_text(encoding="utf-8")
         # Find the fallback_map literal block + extract keys
         start = src.find("fallback_map = {")
         end = src.find("}", start)

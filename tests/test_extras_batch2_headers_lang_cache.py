@@ -59,7 +59,6 @@ def _free_port() -> int:
 
 
 class HeadersLangCacheExtras(unittest.TestCase):
-
     @classmethod
     def setUpClass(cls) -> None:
         cls._tmp = TemporaryDirectory()
@@ -153,7 +152,8 @@ class HeadersLangCacheExtras(unittest.TestCase):
         ):
             with self.subTest(directive=required):
                 self.assertIn(
-                    required, perms,
+                    required,
+                    perms,
                     f"Permissions-Policy missing {required!r}",
                 )
 
@@ -175,7 +175,8 @@ class HeadersLangCacheExtras(unittest.TestCase):
         self.assertTrue(ma_match)
         ma = int(ma_match[0].split("=", 1)[1].strip())
         self.assertGreaterEqual(
-            ma, 30 * 86400,
+            ma,
+            30 * 86400,
             "lang cookie Max-Age should be ≥ 30 days for stickiness",
         )
         self.assertIn("SameSite=Lax", cookie)
@@ -209,7 +210,8 @@ class HeadersLangCacheExtras(unittest.TestCase):
         _status, headers, _body = self._get("/privacy")
         cc = headers.get("Cache-Control", "")
         self.assertIn(
-            "no-cache", cc.lower(),
+            "no-cache",
+            cc.lower(),
             f"HTML must be no-cache (per-request rendered), got {cc!r}",
         )
 

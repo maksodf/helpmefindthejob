@@ -210,9 +210,7 @@ def run_migrations(
                     connection.execute(stmt)
                 # Bump user_version inside the same transaction
                 # so schema change + version bump are atomic.
-                connection.execute(
-                    f"PRAGMA user_version = {int(migration.version)}"
-                )
+                connection.execute(f"PRAGMA user_version = {int(migration.version)}")
                 connection.execute("COMMIT")
             except Exception:
                 try:

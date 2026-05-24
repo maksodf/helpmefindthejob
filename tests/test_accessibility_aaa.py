@@ -39,7 +39,6 @@ import re
 import unittest
 from pathlib import Path
 
-
 REPO_ROOT = Path(__file__).resolve().parent.parent
 STATIC = REPO_ROOT / "static"
 STYLES = STATIC / "styles.css"
@@ -215,9 +214,7 @@ class LinkPurposeAAA(unittest.TestCase):
         whitespace. Returns lowercase + stripped strings."""
 
         texts: list[str] = []
-        for match in re.finditer(
-            r"<a\b[^>]*>(.*?)</a>", html_text, re.IGNORECASE | re.DOTALL
-        ):
+        for match in re.finditer(r"<a\b[^>]*>(.*?)</a>", html_text, re.IGNORECASE | re.DOTALL):
             inner = match.group(1)
             # Strip nested tags (svg, span, etc.)
             text_only = re.sub(r"<[^>]+>", "", inner)
@@ -238,9 +235,7 @@ class LinkPurposeAAA(unittest.TestCase):
             # excludes it for the same reason; AAA stays consistent.
             if name == "index.html":
                 continue
-            for text in self._extract_link_texts(
-                path.read_text(encoding="utf-8")
-            ):
+            for text in self._extract_link_texts(path.read_text(encoding="utf-8")):
                 if text in _VAGUE_LINK_PHRASES:
                     offenders.append((name, text))
         self.assertEqual(
@@ -268,8 +263,7 @@ class SectionHeadings(unittest.TestCase):
             self.assertRegex(
                 text,
                 r"<h1\b",
-                f"{name}: missing <h1> — top-level page heading "
-                "required for AAA 2.4.10",
+                f"{name}: missing <h1> — top-level page heading required for AAA 2.4.10",
             )
 
 
@@ -297,8 +291,7 @@ class StatedTargetIsHonest(unittest.TestCase):
             self.assertIn(
                 "axe-core",
                 text,
-                "ACCESSIBILITY.md claims AAA without referencing "
-                "a runtime axe-core audit",
+                "ACCESSIBILITY.md claims AAA without referencing a runtime axe-core audit",
             )
 
 

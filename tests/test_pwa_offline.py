@@ -43,7 +43,6 @@ import re
 import unittest
 from pathlib import Path
 
-
 REPO_ROOT = Path(__file__).resolve().parent.parent
 STATIC = REPO_ROOT / "static"
 MANIFEST = STATIC / "manifest.webmanifest"
@@ -73,8 +72,7 @@ class ManifestShape(unittest.TestCase):
         self.assertNotIn(
             "Healthcare-management",
             desc,
-            "manifest description still carries the pre-rename "
-            "healthcare-management positioning",
+            "manifest description still carries the pre-rename healthcare-management positioning",
         )
 
     def test_required_pwa_fields_present(self):
@@ -256,7 +254,8 @@ class PreRenameResidueGuard(unittest.TestCase):
             f"Handler.server_version still pre-rename: {Handler.server_version}",
         )
         self.assertNotIn(
-            "DirectJob", Handler.server_version,
+            "DirectJob",
+            Handler.server_version,
         )
 
     def test_no_directjob_residue_in_user_facing_files(self):
@@ -265,9 +264,7 @@ class PreRenameResidueGuard(unittest.TestCase):
             path = REPO_ROOT / rel
             if not path.exists():
                 continue
-            for lineno, line in enumerate(
-                path.read_text(encoding="utf-8").splitlines(), start=1
-            ):
+            for lineno, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
                 if "DirectJob" in line:
                     residues.append((rel, lineno, line.strip()[:100]))
         self.assertEqual(

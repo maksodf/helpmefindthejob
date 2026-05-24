@@ -626,9 +626,7 @@ class AuthStore:
         # later sets a password). The password is high-entropy and
         # never returned to the user.
         random_password = secrets.token_urlsafe(48)
-        user = self.create_user(
-            normalized_email, random_password, role="member"
-        )
+        user = self.create_user(normalized_email, random_password, role="member")
         # Mark email-verified — the IdP has already verified ownership
         # (the user proved control of the SSO identity, which by
         # construction owns the email at the IdP's authority)
@@ -1383,11 +1381,7 @@ class AuthStore:
         # - role (NEW — demoting an admin must immediately revoke
         #   the admin-scoped session the demoted user still holds;
         #   otherwise they keep admin powers until token expiry)
-        if (
-            password is not None
-            or not new_active
-            or new_role != user.role
-        ):
+        if password is not None or not new_active or new_role != user.role:
             self.delete_user_sessions(user_id)
         return self.get_user(user_id)
 

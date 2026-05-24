@@ -41,7 +41,6 @@ import json
 import unittest
 from pathlib import Path
 
-
 REPO_ROOT = Path(__file__).resolve().parent.parent
 INDEX_HTML = REPO_ROOT / "static" / "index.html"
 MANIFEST = REPO_ROOT / "static" / "manifest.webmanifest"
@@ -58,12 +57,13 @@ class IndexHtmlLinksManifest(unittest.TestCase):
         self.assertRegex(
             self.src,
             r'<link[^>]*rel="manifest"[^>]*href="[^"]*manifest[^"]*"',
-            "static/index.html missing <link rel=\"manifest\" href=...> tag — "
+            'static/index.html missing <link rel="manifest" href=...> tag — '
             "install prompt won't fire on any browser without this",
         )
 
     def test_link_rel_manifest_points_at_existing_manifest(self) -> None:
         import re
+
         m = re.search(r'<link[^>]*rel="manifest"[^>]*href="([^"]*)"', self.src)
         self.assertIsNotNone(m)
         href = m.group(1)
@@ -114,19 +114,15 @@ class ManifestRequiredFields(unittest.TestCase):
         The 'any' sizes value satisfies this for SVG vector icons."""
         icons = self.data.get("icons", [])
         eligible = [
-            ic for ic in icons
+            ic
+            for ic in icons
             if ic.get("sizes") == "any"
-            or any(
-                int(s.split("x")[0]) >= 192
-                for s in ic.get("sizes", "").split()
-                if "x" in s
-            )
+            or any(int(s.split("x")[0]) >= 192 for s in ic.get("sizes", "").split() if "x" in s)
         ]
         self.assertGreater(
             len(eligible),
             0,
-            "no install-eligible icon (need ≥192×192 PNG or sizes=\"any\" SVG); "
-            f"got {icons!r}",
+            f'no install-eligible icon (need ≥192×192 PNG or sizes="any" SVG); got {icons!r}',
         )
 
 
@@ -168,8 +164,7 @@ class ServiceWorkerRegistered(unittest.TestCase):
         self.assertRegex(
             src,
             r'<script[^>]*src="[^"]*app(?:\.min)?\.js"',
-            "static/index.html doesn't load the app bundle — SW registration "
-            "never executes",
+            "static/index.html doesn't load the app bundle — SW registration never executes",
         )
 
     def test_sw_file_exists(self) -> None:
@@ -184,8 +179,7 @@ class ServiceWorkerRegistered(unittest.TestCase):
         self.assertEqual(
             SW_JS.parent.name,
             "static",
-            f"sw.js should be at static/sw.js so its default scope is /; "
-            f"got {SW_JS}",
+            f"sw.js should be at static/sw.js so its default scope is /; got {SW_JS}",
         )
 
 

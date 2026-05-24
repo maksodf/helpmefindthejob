@@ -47,9 +47,7 @@ class RoleTextPreservationTests(unittest.TestCase):
     def _walk_role(self, user_message: str) -> UserJourney:
         """Helper: advance a fresh journey through the role question
         with the supplied message and return the resulting journey."""
-        journey = UserJourney(
-            phase=PHASE_DISCOVER, discover_step=DISCOVER_ASK_ROLE
-        )
+        journey = UserJourney(phase=PHASE_DISCOVER, discover_step=DISCOVER_ASK_ROLE)
         result = _advance_discover(journey, user_message)
         return result.journey
 
@@ -71,8 +69,7 @@ class RoleTextPreservationTests(unittest.TestCase):
         self.assertEqual(
             journey.matched_token,
             "frontend developer",
-            "matched_token must capture the canonical substring "
-            "for aggregator-query widening",
+            "matched_token must capture the canonical substring for aggregator-query widening",
         )
 
     def test_returning_krankenschwester_preserves_modifier_today(self) -> None:

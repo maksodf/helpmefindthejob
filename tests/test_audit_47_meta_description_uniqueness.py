@@ -97,12 +97,14 @@ class MetaDescriptionPerPage(unittest.TestCase):
             with self.subTest(filename=filename):
                 desc = _extract_description(filename)
                 self.assertGreaterEqual(
-                    len(desc), _MIN_DESCRIPTION_LEN,
+                    len(desc),
+                    _MIN_DESCRIPTION_LEN,
                     f"AUDIT-47: {filename} description is too short "
                     f"({len(desc)} chars) — looks like a placeholder.",
                 )
                 self.assertLessEqual(
-                    len(desc), _MAX_DESCRIPTION_LEN,
+                    len(desc),
+                    _MAX_DESCRIPTION_LEN,
                     f"AUDIT-47: {filename} description is too long "
                     f"({len(desc)} chars) — Google truncates at ~160.",
                 )
@@ -112,7 +114,8 @@ class MetaDescriptionPerPage(unittest.TestCase):
             with self.subTest(filename=filename):
                 desc = _extract_description(filename)
                 self.assertIn(
-                    "Helpmefindthejob", desc,
+                    "Helpmefindthejob",
+                    desc,
                     f"AUDIT-47: {filename} description doesn't carry the brand; "
                     "SERP results then collapse into anonymous snippets.",
                 )

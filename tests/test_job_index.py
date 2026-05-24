@@ -118,9 +118,7 @@ class JobIndexUpsertTests(unittest.TestCase):
         """Re-upsert with empty role_bucket must not clobber an
         existing non-empty value."""
         url = "https://acme.example/jobs/1"
-        self.index.upsert_jobs(
-            [_make_job("X", "Acme", "Berlin", url)], role_bucket="developer"
-        )
+        self.index.upsert_jobs([_make_job("X", "Acme", "Berlin", url)], role_bucket="developer")
         # Second upsert with empty role_bucket
         self.index.upsert_jobs([_make_job("X v2", "Acme", "Berlin", url)])
         # The original role_bucket survives
@@ -232,9 +230,7 @@ class SeniorityHeuristicTests(unittest.TestCase):
         self.assertEqual(classify_seniority("Staff Senior Engineer"), "staff")
 
     def test_principal_outranks_lead_token(self):
-        self.assertEqual(
-            classify_seniority("Principal Lead Architect"), "principal"
-        )
+        self.assertEqual(classify_seniority("Principal Lead Architect"), "principal")
 
     def test_director_resolves(self):
         self.assertEqual(classify_seniority("Director of Engineering"), "director")
@@ -294,10 +290,7 @@ class LanguageHeuristicTests(unittest.TestCase):
         # Carefully constructed to score equally on both sides.
         # Threshold requires both to be >=3 AND not equal — equal
         # counts mean we abstain.
-        text = (
-            "Wir und der die das ist und. "
-            "The and you we are is have."
-        )
+        text = "Wir und der die das ist und. The and you we are is have."
         # Exact equal: both hit 6 DE + 6 EN tokens-ish; either way
         # the contract is "non-DE / non-EN one wins, or abstain on
         # tie". Verify the function returns something stable.
@@ -313,21 +306,19 @@ class HeuristicWriteThroughTests(unittest.TestCase):
     def setUp(self) -> None:
         self.tmp = TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
-        self.index = JobIndex(
-            Path(self.tmp.name) / "heur.sqlite", ttl_seconds=3600
-        )
+        self.index = JobIndex(Path(self.tmp.name) / "heur.sqlite", ttl_seconds=3600)
         self.addCleanup(self.index.close)
 
     def test_heuristic_populates_seniority(self):
         job = _make_job(
-            "Senior Frontend Developer", "C1", "Berlin",
+            "Senior Frontend Developer",
+            "C1",
+            "Berlin",
             "https://x.example/senior-fe",
         )
         self.index.upsert_jobs([job])
         # The heuristic should have tagged this row with senior.
-        self.assertEqual(
-            self.index.count_by_facets(seniority_class="senior"), 1
-        )
+        self.assertEqual(self.index.count_by_facets(seniority_class="senior"), 1)
 
     def test_heuristic_populates_language(self):
         job = _make_job(
@@ -355,12 +346,8 @@ class HeuristicWriteThroughTests(unittest.TestCase):
         )
         # Heuristic would say "senior" — caller forces "junior".
         self.index.upsert_jobs([job], seniority_class="junior")
-        self.assertEqual(
-            self.index.count_by_facets(seniority_class="junior"), 1
-        )
-        self.assertEqual(
-            self.index.count_by_facets(seniority_class="senior"), 0
-        )
+        self.assertEqual(self.index.count_by_facets(seniority_class="junior"), 1)
+        self.assertEqual(self.index.count_by_facets(seniority_class="senior"), 0)
 
 
 class AggregatorWriteThroughTests(unittest.TestCase):
@@ -377,10 +364,13 @@ class AggregatorWriteThroughTests(unittest.TestCase):
     def _stub_provider(self, name: str, jobs: list[AggregatedJob]):
         class _Stub:
             remote_only = False
+
             def __init__(self_inner):
                 self_inner.name = name
+
             def search(self_inner, **_):
                 return list(jobs)
+
         return _Stub()
 
     def test_dedupd_jobs_written_to_index_with_role_bucket(self):
@@ -416,9 +406,7 @@ class AggregatorWriteThroughTests(unittest.TestCase):
             cache=None,
             # index=None default
         )
-        result_jobs, _outcomes = engine.search(
-            query="developer", location="Berlin"
-        )
+        result_jobs, _outcomes = engine.search(query="developer", location="Berlin")
         self.assertEqual(len(result_jobs), 1)
         # No write-through happened (the index passed to our setUp
         # isn't wired to this engine).
@@ -450,15 +438,14 @@ class DiagnosticEngineIndexIntegrationTests(unittest.TestCase):
     def setUp(self) -> None:
         self.tmp = TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
-        self.index = JobIndex(
-            Path(self.tmp.name) / "diag.sqlite", ttl_seconds=3600
-        )
+        self.index = JobIndex(Path(self.tmp.name) / "diag.sqlite", ttl_seconds=3600)
         self.addCleanup(self.index.close)
 
     def test_engine_with_index_returns_facet_count(self):
         """When the index has matching rows, the engine returns the
         facet count without probing the cache."""
         from company_discovery.diagnostic_engine import DiagnosticEngine
+
         # Seed the index with 5 frontend jobs in Berlin
         for i in range(5):
             self.index.upsert_jobs(
@@ -491,6 +478,7 @@ class DiagnosticEngineIndexIntegrationTests(unittest.TestCase):
     def test_engine_without_index_uses_cache_only(self):
         """Backwards compat: engines without index work as before."""
         from company_discovery.diagnostic_engine import DiagnosticEngine
+
         engine = DiagnosticEngine(cache=None)
         # No index, no cache: returns None.
         result = engine._cache_count_across_providers(  # noqa: SLF001

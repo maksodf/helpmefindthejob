@@ -24,6 +24,7 @@ routing invariant. The Bug E regression test
 specific live-walk-reproduced failure; the others close adjacent
 routing gaps that could have surfaced as Bug E variants.
 """
+
 from __future__ import annotations
 
 import unittest
@@ -72,8 +73,7 @@ def _make_journey_with_substate(
         search_results_by_category={},
         search_jobs_by_id={},
         diagnostic_text=(
-            "No live postings found for 'Registered nurse' "
-            "across the 8 connected providers."
+            "No live postings found for 'Registered nurse' across the 8 connected providers."
         ),
     )
 
@@ -101,7 +101,8 @@ class EmptySubstateRoutesToEmptyHandlerTests(unittest.TestCase):
         # Must NOT have looped back to the empty-state menu re-ask
         # (the failure mode the categories defensive branch caused).
         self.assertNotEqual(
-            result.persist, False,
+            result.persist,
+            False,
             "empty-state menu re-ask leaked: input '1' should advance",
         )
 
@@ -205,7 +206,7 @@ class AutoRelaxOfferingSubstateRoutesToAutoHandlerTests(unittest.TestCase):
         self.assertIn(WIDEN_LOCATION, j.applied_widenings)
 
     def test_skip_declines_and_offers_next_in_auto_mode(self):
-        """"skip" declines the current suggestion and asks for the
+        """ "skip" declines the current suggestion and asks for the
         next eligible one. Auto-mode stays active; substate stays
         auto_relax_offering with a new offered_id (or transitions
         to exhaustion-handling if no next)."""
@@ -500,7 +501,9 @@ class UniversalCancelDefersToStartFreshTests(unittest.TestCase):
         j = _make_journey_with_substate(
             "empty",
             applied_widenings=[
-                WIDEN_LOCATION, DROP_SENIORITY, TRY_LATERALS,
+                WIDEN_LOCATION,
+                DROP_SENIORITY,
+                TRY_LATERALS,
             ],
         )
         result = advance(j, "reset")
@@ -558,7 +561,9 @@ class UniversalCancelDefersToStartFreshTests(unittest.TestCase):
         j = _make_journey_with_substate(
             "empty",
             applied_widenings=[
-                WIDEN_LOCATION, DROP_SENIORITY, TRY_LATERALS,
+                WIDEN_LOCATION,
+                DROP_SENIORITY,
+                TRY_LATERALS,
             ],
         )
         result = advance(j, "neu starten")
@@ -581,13 +586,17 @@ class FinalStateRoutingTests(unittest.TestCase):
             review_substate="empty",
             role_text="DevOps Engineer",
             target_roles=[
-                "DevOps Engineer", "sre", "platform engineer",
+                "DevOps Engineer",
+                "sre",
+                "platform engineer",
                 "infrastructure engineer",
             ],
             location="",
             visa_constrained=True,
             applied_widenings=[
-                WIDEN_LOCATION, DROP_SENIORITY, TRY_LATERALS,
+                WIDEN_LOCATION,
+                DROP_SENIORITY,
+                TRY_LATERALS,
             ],
             diagnostic_text="No live postings found for 'DevOps Engineer'.",
             search_results_by_category={},
@@ -603,12 +612,16 @@ class FinalStateRoutingTests(unittest.TestCase):
             review_substate="empty",
             role_text="DevOps Engineer",
             target_roles=[
-                "DevOps Engineer", "sre", "platform engineer",
+                "DevOps Engineer",
+                "sre",
+                "platform engineer",
             ],
             location="",
             visa_constrained=False,
             applied_widenings=[
-                WIDEN_LOCATION, DROP_SENIORITY, TRY_LATERALS,
+                WIDEN_LOCATION,
+                DROP_SENIORITY,
+                TRY_LATERALS,
             ],
             search_results_by_category={},
         )

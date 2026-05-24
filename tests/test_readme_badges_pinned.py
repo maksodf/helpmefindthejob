@@ -21,7 +21,6 @@ import re
 import unittest
 from pathlib import Path
 
-
 README = Path(__file__).resolve().parent.parent / "README.md"
 
 

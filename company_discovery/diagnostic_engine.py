@@ -38,11 +38,9 @@ from dataclasses import dataclass
 from typing import Protocol
 
 from company_discovery.aggregators import (
-    AggregatedJob,
     AggregatorResultCache,
     canonical_query,
 )
-
 
 # Seniority qualifiers we can strip from role_text as a relaxation
 # candidate. Mirrors the prefixes detected in
@@ -213,9 +211,7 @@ class DiagnosticEngine:
     # Cache probes — no live calls
     # ------------------------------------------------------------------
 
-    def probe_cached_count(
-        self, query: str, location: str | None
-    ) -> int | None:
+    def probe_cached_count(self, query: str, location: str | None) -> int | None:
         """Public count primitive for per-candidate cache lookup.
 
         Used by ``DiagnosticEngine.generate`` (piece 2 — assembles
@@ -236,9 +232,7 @@ class DiagnosticEngine:
         """
         return self._cache_count_across_providers(query, location)
 
-    def _cache_count_across_providers(
-        self, query: str, location: str | None
-    ) -> int | None:
+    def _cache_count_across_providers(self, query: str, location: str | None) -> int | None:
         """Probe the cache across all configured providers for the
         given (query, location). Returns the count of unique jobs
         across cache hits, or None if no provider had a cache hit.
@@ -286,21 +280,21 @@ class DiagnosticEngine:
                     # by HELPMEFINDTHEJOB_COST_METRICS env var.
                     try:
                         from company_discovery.cost_saving_metrics import (
-                            CostSavingMetricsLog,
                             MECHANISM_PERSISTENT_INDEX_REUSE,
+                            CostSavingMetricsLog,
                             is_collection_enabled,
                         )
 
                         if is_collection_enabled():
-                            from company_discovery import audit_log as _audit_log_mod
                             from pathlib import Path as _Path
+
+                            from company_discovery import audit_log as _audit_log_mod
 
                             # The JobIndex carries its own sqlite
                             # path; the metrics JSONL lives next
                             # to it under cost_saving_metrics.jsonl.
                             metrics_path = (
-                                _Path(getattr(self.index, "path", "."))
-                                .parent
+                                _Path(getattr(self.index, "path", ".")).parent
                                 / "cost_saving_metrics.jsonl"
                             )
                             cs_log = CostSavingMetricsLog(
@@ -342,9 +336,7 @@ class DiagnosticEngine:
             for job in hit:
                 # De-dup by source_url; fall back to title-key.
                 key = (
-                    getattr(job, "source_url", None)
-                    or getattr(job, "title", None)
-                    or ""
+                    getattr(job, "source_url", None) or getattr(job, "title", None) or ""
                 ).casefold()
                 if key:
                     seen_keys.add(key)
@@ -352,9 +344,7 @@ class DiagnosticEngine:
             return None
         return len(seen_keys)
 
-    def _warm_cache_for_candidate(
-        self, query: str, location: str | None
-    ) -> None:  # noqa: ARG002 - piece-5 seam; arguments will be used when decorated
+    def _warm_cache_for_candidate(self, query: str, location: str | None) -> None:  # noqa: ARG002 - piece-5 seam; arguments will be used when decorated
         """Forward-compat seam for piece 5 (adjacent-criterion counts).
 
         In piece 2 this is a no-op — option (a) is strictly cache-only.
@@ -387,8 +377,7 @@ class DiagnosticEngine:
         loc_display = (location or "anywhere").strip() or "anywhere"
         # Lead sentence: state the fact + criterion
         lead = (
-            f"No matches found for **{role_display}** in **{loc_display}** "
-            f"with these preferences."
+            f"No matches found for **{role_display}** in **{loc_display}** with these preferences."
         )
         # Per-fact sentences (cap at 2 to stay within the 2-3 sentence budget)
         fact_sentences: list[str] = []

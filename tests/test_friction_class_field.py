@@ -10,6 +10,7 @@ Pins:
   - Analytics event emitted per classification call (loose contract)
   - Backward compat: existing JSON without the field deserializes to ""
 """
+
 from __future__ import annotations
 
 import dataclasses
@@ -167,7 +168,8 @@ class ReClassificationSemanticsTests(unittest.TestCase):
         j2 = _build_paste_journey()
         r2 = advance(j2, _neutral_cv())
         self.assertIn(
-            "friction_class", r2.profile_updates,
+            "friction_class",
+            r2.profile_updates,
             "friction_class must be in profile_updates on every paste "
             "(unconditional write); otherwise stale prior values leak",
         )
@@ -212,10 +214,7 @@ class TelemetryEventEmissionTests(unittest.TestCase):
         journey = _build_paste_journey()
         result = advance(journey, _aicha_cv())
         # Locate the friction_class_classified event
-        events = [
-            (n, p) for (n, p) in result.analytics_events
-            if n == "friction_class_classified"
-        ]
+        events = [(n, p) for (n, p) in result.analytics_events if n == "friction_class_classified"]
         self.assertEqual(len(events), 1)
         _, payload = events[0]
         for key in ("resolved", "confidence", "match_count"):
@@ -232,10 +231,7 @@ class TelemetryEventEmissionTests(unittest.TestCase):
         non-matches too."""
         journey = _build_paste_journey()
         result = advance(journey, _neutral_cv())
-        events = [
-            (n, p) for (n, p) in result.analytics_events
-            if n == "friction_class_classified"
-        ]
+        events = [(n, p) for (n, p) in result.analytics_events if n == "friction_class_classified"]
         self.assertEqual(len(events), 1)
         _, payload = events[0]
         self.assertEqual(payload["resolved"], "")
@@ -283,6 +279,7 @@ class HookFiresOnlyOnPasteTests(unittest.TestCase):
 
     def test_reuse_branch_no_classification(self):
         from company_discovery.journey import _advance_cv_check
+
         journey = UserJourney(phase=PHASE_CV_CHECK, cv_status="unknown")
         result = _advance_cv_check(journey, "reuse", has_existing_cv=True)
         event_names = [n for (n, _) in result.analytics_events]
@@ -293,6 +290,7 @@ class HookFiresOnlyOnPasteTests(unittest.TestCase):
         classify — there's no assembled text yet. Build COMPLETION
         does classify (covered separately)."""
         from company_discovery.journey import _advance_cv_check
+
         journey = UserJourney(phase=PHASE_CV_CHECK, cv_status="unknown")
         result = _advance_cv_check(journey, "build", has_existing_cv=False)
         event_names = [n for (n, _) in result.analytics_events]
@@ -300,6 +298,7 @@ class HookFiresOnlyOnPasteTests(unittest.TestCase):
 
     def test_unparseable_input_no_classification(self):
         from company_discovery.journey import _advance_cv_check
+
         journey = UserJourney(phase=PHASE_CV_CHECK, cv_status="unknown")
         result = _advance_cv_check(journey, "???", has_existing_cv=False)
         event_names = [n for (n, _) in result.analytics_events]
@@ -318,6 +317,7 @@ class CvBuildClassificationHookTests(unittest.TestCase):
         answers + return the final AdvanceResult that contains the
         classification."""
         from company_discovery.journey import _advance_cv_check
+
         journey = UserJourney(phase=PHASE_CV_CHECK, cv_status="building")
         # Seed answers from a persona-shaped CV (Aïcha §16d) so
         # classification reliably resolves.

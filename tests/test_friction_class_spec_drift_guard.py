@@ -25,7 +25,6 @@ from pathlib import Path
 
 from company_discovery.persona_fixtures import PERSONAS
 
-
 _SPEC_PATH = Path(__file__).resolve().parent.parent / "commons" / "friction-class-spec-v0.1.md"
 
 

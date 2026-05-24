@@ -55,19 +55,25 @@ class ChatDockCanonicalSurface(unittest.TestCase):
         self.app_js = (ROOT / "static" / "app.js").read_text(encoding="utf-8")
         self.app_min_js = (ROOT / "static" / "app.min.js").read_text(encoding="utf-8")
         self.styles_css = (ROOT / "static" / "styles.css").read_text(encoding="utf-8")
-        self.en_i18n = json.loads((ROOT / "static" / "i18n" / "en.json").read_text(encoding="utf-8"))
-        self.de_i18n = json.loads((ROOT / "static" / "i18n" / "de.json").read_text(encoding="utf-8"))
+        self.en_i18n = json.loads(
+            (ROOT / "static" / "i18n" / "en.json").read_text(encoding="utf-8")
+        )
+        self.de_i18n = json.loads(
+            (ROOT / "static" / "i18n" / "de.json").read_text(encoding="utf-8")
+        )
 
     def test_view_assistant_section_is_removed(self) -> None:
         self.assertNotIn(
-            'id="view-assistant"', self.index_html,
+            'id="view-assistant"',
+            self.index_html,
             "UX-R1 regression: <section id='view-assistant'> reappeared. "
             "The dock is canonical; do not add a second chat surface.",
         )
 
     def test_sidebar_assistant_nav_item_is_removed(self) -> None:
         self.assertNotIn(
-            'data-view="assistant"', self.index_html,
+            'data-view="assistant"',
+            self.index_html,
             "UX-R1 regression: sidebar nav-item with data-view='assistant' "
             "reappeared. Do not add a separate Assistant page to the nav — "
             "the dock is always-on, not a destination.",
@@ -91,7 +97,8 @@ class ChatDockCanonicalSurface(unittest.TestCase):
         for needle in forbidden:
             with self.subTest(needle=needle):
                 self.assertNotIn(
-                    needle, self.index_html,
+                    needle,
+                    self.index_html,
                     f"UX-R1 regression: {needle} reappeared in the SPA "
                     "shell. The dock-only architecture forbids this — "
                     "use the matching #dockChat* ID instead.",
@@ -113,7 +120,8 @@ class ChatDockCanonicalSurface(unittest.TestCase):
         ):
             with self.subTest(needle=needle):
                 self.assertIn(
-                    needle, self.index_html,
+                    needle,
+                    self.index_html,
                     f"Dock DOM disappeared: {needle}. "
                     "Re-check the deletion patch — too aggressive.",
                 )
@@ -133,7 +141,8 @@ class ChatDockCanonicalSurface(unittest.TestCase):
         for needle in forbidden_patterns:
             with self.subTest(needle=needle):
                 self.assertNotIn(
-                    needle, self.app_js,
+                    needle,
+                    self.app_js,
                     f"UX-R1 regression: app.js still references {needle}. "
                     "The selector targets a DOM that no longer exists. "
                     "Use the matching #dockChat* selector.",
@@ -141,7 +150,8 @@ class ChatDockCanonicalSurface(unittest.TestCase):
                 # Also check the minified bundle so a stale build can't
                 # silently mask a regression.
                 self.assertNotIn(
-                    needle, self.app_min_js,
+                    needle,
+                    self.app_min_js,
                     f"UX-R1 regression: app.min.js still references "
                     f"{needle}. Rebuild via scripts/build-static.sh.",
                 )
@@ -151,19 +161,22 @@ class ChatDockCanonicalSurface(unittest.TestCase):
         navigable view anymore."""
 
         self.assertNotIn(
-            "assistant: { title:", self.app_js,
+            "assistant: { title:",
+            self.app_js,
             "UX-R1 regression: VIEW_TITLES still has an 'assistant' "
             "entry. There is no Assistant view; the dock is always-on.",
         )
 
     def test_i18n_nav_assistant_key_removed_from_both_bundles(self) -> None:
         self.assertNotIn(
-            "nav.assistant", self.en_i18n,
+            "nav.assistant",
+            self.en_i18n,
             "UX-R1 regression: nav.assistant key reappeared in en.json. "
             "There is no Assistant nav item — drop the key.",
         )
         self.assertNotIn(
-            "nav.assistant", self.de_i18n,
+            "nav.assistant",
+            self.de_i18n,
             "UX-R1 regression: nav.assistant key reappeared in de.json. "
             "There is no Assistant nav item — drop the key.",
         )
@@ -172,7 +185,8 @@ class ChatDockCanonicalSurface(unittest.TestCase):
         en_keys = set(self.en_i18n.keys())
         de_keys = set(self.de_i18n.keys())
         self.assertSetEqual(
-            en_keys, de_keys,
+            en_keys,
+            de_keys,
             f"i18n key parity broken after UX-R1 deletion. "
             f"EN-DE diff: {en_keys - de_keys!r}, "
             f"DE-EN diff: {de_keys - en_keys!r}.",
@@ -274,12 +288,16 @@ class ChatDockRuntime(unittest.TestCase):
 
     def test_landing_serves_dock_not_view_assistant(self) -> None:
         body = self._get("/").decode("utf-8")
-        self.assertIn('id="chatDock"', body,
-                      "Live SPA shell missing #chatDock — the dock is "
-                      "the canonical chat surface.")
-        self.assertNotIn('id="view-assistant"', body,
-                         "Live SPA shell still serves the deleted "
-                         "view-assistant section.")
+        self.assertIn(
+            'id="chatDock"',
+            body,
+            "Live SPA shell missing #chatDock — the dock is the canonical chat surface.",
+        )
+        self.assertNotIn(
+            'id="view-assistant"',
+            body,
+            "Live SPA shell still serves the deleted view-assistant section.",
+        )
 
 
 if __name__ == "__main__":

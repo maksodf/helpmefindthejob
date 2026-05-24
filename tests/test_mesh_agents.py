@@ -27,6 +27,8 @@ from typing import Any
 
 from mesh.anerkennung_agent import (
     _make_verification_decision,
+)
+from mesh.anerkennung_agent import (
     make_handler as make_anerkennung_handler,
 )
 from mesh.common import (
@@ -39,14 +41,19 @@ from mesh.common import (
 )
 from mesh.housing_agent import (
     _make_intake_decision,
+)
+from mesh.housing_agent import (
     _match_cohort as _housing_match_cohort,
+)
+from mesh.housing_agent import (
     make_handler as make_housing_handler,
 )
 from mesh.social_services_agent import (
     _make_recommendation,
+)
+from mesh.social_services_agent import (
     make_handler as make_social_handler,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -365,9 +372,7 @@ class EndToEndMeshWalk(unittest.TestCase):
             },
         )
         self.assertEqual(decision["status"], "ok")
-        self.assertEqual(
-            decision["decision"]["pathway"], "pflege_drittstaaten"
-        )
+        self.assertEqual(decision["decision"]["pathway"], "pflege_drittstaaten")
         decision_id = decision["decision"]["decisionId"]
 
         # Step 2 — issue VC
@@ -390,9 +395,7 @@ class EndToEndMeshWalk(unittest.TestCase):
             },
         )
         self.assertEqual(housing_resp["status"], "ok")
-        self.assertEqual(
-            housing_resp["intake"]["cohort"], "berlin_aufenthaltsgesetz_16d"
-        )
+        self.assertEqual(housing_resp["intake"]["cohort"], "berlin_aufenthaltsgesetz_16d")
 
         # Step 4 — social-services eligibility
         social_resp = _post_json(
@@ -407,9 +410,7 @@ class EndToEndMeshWalk(unittest.TestCase):
             },
         )
         self.assertEqual(social_resp["status"], "ok")
-        self.assertEqual(
-            social_resp["recommendation"]["cohort"], "aicha_paragraph_16d_anerkennung"
-        )
+        self.assertEqual(social_resp["recommendation"]["cohort"], "aicha_paragraph_16d_anerkennung")
 
         # Step 5 — every agent recorded the event in its audit log
         for label, port, expected_event in (
@@ -513,9 +514,7 @@ class EndToEndMeshWalk(unittest.TestCase):
     def test_invalid_referral_is_rejected_by_housing_agent(self):
         bad_ref = _aicha_referral("housing-agent", "x", {})
         del bad_ref["userId"]
-        resp = _post_json(
-            f"http://127.0.0.1:{self.housing_port}/v1/intake", {"referral": bad_ref}
-        )
+        resp = _post_json(f"http://127.0.0.1:{self.housing_port}/v1/intake", {"referral": bad_ref})
         self.assertEqual(resp["status"], "rejected")
         self.assertEqual(resp["code"], "invalid_referral")
 

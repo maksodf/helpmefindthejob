@@ -49,17 +49,16 @@ from company_discovery.widening import (
     strip_seniority_prefix,
 )
 
-
 # Map from persona slug to expected visa-constrained flag — pinned
 # here so the classifier doesn't drift as fixtures evolve.
 EXPECTED_VISA_CONSTRAINED: dict[str, bool] = {
-    "aicha":   True,   # §16d AufenthG
-    "yusuf":   False,  # EU Blue Card (PORTABLE — Yusuf carve-out)
-    "olga":    True,   # §24 AufenthG temporary protection
-    "mahmoud": True,   # §4 AsylG subsidiary protection
-    "maria":   False,  # EU citizen (Freizügigkeit)
-    "kaethe":  False,  # German citizen
-    "tobias":  False,  # German citizen
+    "aicha": True,  # §16d AufenthG
+    "yusuf": False,  # EU Blue Card (PORTABLE — Yusuf carve-out)
+    "olga": True,  # §24 AufenthG temporary protection
+    "mahmoud": True,  # §4 AsylG subsidiary protection
+    "maria": False,  # EU citizen (Freizügigkeit)
+    "kaethe": False,  # German citizen
+    "tobias": False,  # German citizen
 }
 
 
@@ -121,8 +120,7 @@ class VisaConstraintClassifierTests(unittest.TestCase):
             with self.subTest(input=repr(bad)):
                 self.assertFalse(
                     classify_visa_constraint(bad),
-                    f"input {bad!r} should default to unconstrained "
-                    f"(don't add unnecessary caveat)",
+                    f"input {bad!r} should default to unconstrained (don't add unnecessary caveat)",
                 )
 
 
@@ -189,9 +187,7 @@ class CaveatPresenceTests(unittest.TestCase):
                 j = _journey_for_persona(slug)
                 offered = available_affordances(j, new_laterals_count=2)
                 widen = next((a for a in offered if a.id == WIDEN_LOCATION), None)
-                self.assertIsNotNone(
-                    widen, f"persona {slug} must have widen_location offered"
-                )
+                self.assertIsNotNone(widen, f"persona {slug} must have widen_location offered")
                 self.assertEqual(
                     widen.caveat,
                     LOCATION_CAVEAT_TEXT,
@@ -209,8 +205,7 @@ class CaveatPresenceTests(unittest.TestCase):
                 self.assertEqual(
                     widen.caveat,
                     "",
-                    f"persona {slug}: unconstrained, must NOT see the "
-                    f"Ausländerbehörde caveat",
+                    f"persona {slug}: unconstrained, must NOT see the Ausländerbehörde caveat",
                 )
 
     def test_caveat_text_is_operator_verbatim(self) -> None:
@@ -349,9 +344,7 @@ class CumulativeShrinkInvariantTests(unittest.TestCase):
         self.assertEqual(ids, [TRY_LATERALS])
 
         # Apply try_laterals → enters laterals_offered sub-state
-        outcome = apply_widening(
-            j, TRY_LATERALS, new_laterals=["Pflegeassistent", "Altenpfleger"]
-        )
+        outcome = apply_widening(j, TRY_LATERALS, new_laterals=["Pflegeassistent", "Altenpfleger"])
         self.assertEqual(outcome.action, "ask_confirm_laterals")
         self.assertEqual(j.review_substate, "laterals_offered")
         self.assertEqual(j.proposed_laterals, ["Pflegeassistent", "Altenpfleger"])
@@ -478,9 +471,7 @@ class SeniorityPrefixHelpersTests(unittest.TestCase):
             strip_seniority_prefix("Senior frontend developer"),
             "frontend developer",
         )
-        self.assertEqual(
-            strip_seniority_prefix("Lead Krankenpfleger"), "Krankenpfleger"
-        )
+        self.assertEqual(strip_seniority_prefix("Lead Krankenpfleger"), "Krankenpfleger")
 
 
 if __name__ == "__main__":

@@ -27,7 +27,6 @@ from __future__ import annotations
 import unittest
 from pathlib import Path
 
-
 REPO_ROOT = Path(__file__).resolve().parent.parent
 HERO = REPO_ROOT / "docs" / "screenshots" / "hero-landing.png"
 README = REPO_ROOT / "README.md"
@@ -72,9 +71,7 @@ class ReadmeHeroScreenshot(unittest.TestCase):
         # We allow optional title (`"..."`) after the path.
         import re
 
-        pattern = re.compile(
-            r"!\[([^\]]*)\]\(docs/screenshots/hero-landing\.png[^)]*\)"
-        )
+        pattern = re.compile(r"!\[([^\]]*)\]\(docs/screenshots/hero-landing\.png[^)]*\)")
         matches = pattern.findall(src)
         self.assertGreater(
             len(matches),

@@ -88,7 +88,8 @@ class IndexHtmlDeclaresCanonicalIds(unittest.TestCase):
         data = _extract_first_jsonld(html)
         ids = [item.get("@id") for item in data.get("@graph", [])]
         self.assertIn(
-            _CANONICAL_ORG_ID, ids,
+            _CANONICAL_ORG_ID,
+            ids,
             f"AUDIT-46: index.html @graph must declare {_CANONICAL_ORG_ID} so "
             "legal-page JSON-LD references resolve to a real entity.",
         )
@@ -98,7 +99,8 @@ class IndexHtmlDeclaresCanonicalIds(unittest.TestCase):
         data = _extract_first_jsonld(html)
         ids = [item.get("@id") for item in data.get("@graph", [])]
         self.assertIn(
-            _CANONICAL_WEBSITE_ID, ids,
+            _CANONICAL_WEBSITE_ID,
+            ids,
             f"AUDIT-46: index.html @graph must declare {_CANONICAL_WEBSITE_ID}.",
         )
 
@@ -113,18 +115,21 @@ class LegalPagesReferenceCanonicalIds(unittest.TestCase):
                 data = _extract_first_jsonld(html)
                 is_part_of = data.get("isPartOf")
                 self.assertIsInstance(
-                    is_part_of, dict,
+                    is_part_of,
+                    dict,
                     f"AUDIT-46: {filename} WebPage.isPartOf must be an object",
                 )
                 self.assertEqual(
-                    is_part_of.get("@id"), _CANONICAL_WEBSITE_ID,
+                    is_part_of.get("@id"),
+                    _CANONICAL_WEBSITE_ID,
                     f"AUDIT-46: {filename} must reference canonical WebSite via @id, "
                     f"got {is_part_of!r}",
                 )
                 # Inline @type/name/url duplication is the regression we're guarding
                 # against. Pure @id reference has neither.
                 self.assertNotIn(
-                    "@type", is_part_of,
+                    "@type",
+                    is_part_of,
                     f"AUDIT-46: {filename} isPartOf still inlines @type — should be "
                     "a pure @id reference to the canonical entity.",
                 )
@@ -136,11 +141,13 @@ class LegalPagesReferenceCanonicalIds(unittest.TestCase):
                 data = _extract_first_jsonld(html)
                 publisher = data.get("publisher")
                 self.assertIsInstance(
-                    publisher, dict,
+                    publisher,
+                    dict,
                     f"AUDIT-46: {filename} WebPage.publisher must be set",
                 )
                 self.assertEqual(
-                    publisher.get("@id"), _CANONICAL_ORG_ID,
+                    publisher.get("@id"),
+                    _CANONICAL_ORG_ID,
                     f"AUDIT-46: {filename} publisher must reference canonical "
                     f"Organization via @id, got {publisher!r}",
                 )
@@ -161,7 +168,8 @@ class LegalPagesReferenceCanonicalIds(unittest.TestCase):
             for pat in forbidden_patterns:
                 with self.subTest(filename=filename, pattern=pat):
                     self.assertNotIn(
-                        pat, html,
+                        pat,
+                        html,
                         f"AUDIT-46: {filename} re-inlines a {pat!r} JSON-LD entity — "
                         "use @id reference to the canonical declaration on / instead.",
                     )

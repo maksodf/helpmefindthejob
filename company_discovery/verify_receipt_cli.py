@@ -67,9 +67,7 @@ def _resolve_salt(salt_b64: str | None) -> bytes:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(
-        description="Verify a Trust Receipt signature offline"
-    )
+    parser = argparse.ArgumentParser(description="Verify a Trust Receipt signature offline")
     parser.add_argument("receipt_file", type=Path, help="path to the receipt JSON file")
     parser.add_argument(
         "--salt-b64",
@@ -100,7 +98,7 @@ def main(argv: list[str] | None = None) -> int:
 
     if result.ok:
         if not args.quiet:
-            print(f"✓ signature OK")
+            print("✓ signature OK")
             print(f"  receipt   = {receipt.get('receiptId')}")
             print(f"  decision  = {receipt.get('decisionType')}")
             print(f"  decidedAt = {receipt.get('decidedAt')}")

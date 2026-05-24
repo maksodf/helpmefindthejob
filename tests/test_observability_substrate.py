@@ -30,7 +30,6 @@ from tempfile import TemporaryDirectory
 
 from company_discovery import observability
 
-
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
 
@@ -47,17 +46,23 @@ class EnvGateHonoured(unittest.TestCase):
     def setUp(self):
         self._original = dict(os.environ)
         for key in (
-            "HELPMEFINDTHEJOB_SENTRY_DSN", "HELPMEFINDTHEJOB_SENTRY_DSN",
-            "HELPMEFINDTHEJOB_POSTHOG_KEY", "HELPMEFINDTHEJOB_POSTHOG_KEY",
-            "HELPMEFINDTHEJOB_POSTHOG_HOST", "HELPMEFINDTHEJOB_POSTHOG_HOST",
+            "HELPMEFINDTHEJOB_SENTRY_DSN",
+            "HELPMEFINDTHEJOB_SENTRY_DSN",
+            "HELPMEFINDTHEJOB_POSTHOG_KEY",
+            "HELPMEFINDTHEJOB_POSTHOG_KEY",
+            "HELPMEFINDTHEJOB_POSTHOG_HOST",
+            "HELPMEFINDTHEJOB_POSTHOG_HOST",
         ):
             os.environ.pop(key, None)
 
     def tearDown(self):
         for key in (
-            "HELPMEFINDTHEJOB_SENTRY_DSN", "HELPMEFINDTHEJOB_SENTRY_DSN",
-            "HELPMEFINDTHEJOB_POSTHOG_KEY", "HELPMEFINDTHEJOB_POSTHOG_KEY",
-            "HELPMEFINDTHEJOB_POSTHOG_HOST", "HELPMEFINDTHEJOB_POSTHOG_HOST",
+            "HELPMEFINDTHEJOB_SENTRY_DSN",
+            "HELPMEFINDTHEJOB_SENTRY_DSN",
+            "HELPMEFINDTHEJOB_POSTHOG_KEY",
+            "HELPMEFINDTHEJOB_POSTHOG_KEY",
+            "HELPMEFINDTHEJOB_POSTHOG_HOST",
+            "HELPMEFINDTHEJOB_POSTHOG_HOST",
         ):
             if key in self._original:
                 os.environ[key] = self._original[key]
@@ -129,9 +134,7 @@ class PIISanitiser(unittest.TestCase):
         self.assertEqual(result["user"]["persona_id"], "olga")
 
     def test_lists_sanitised(self):
-        result = observability._sanitise_for_telemetry(
-            [{"email": "a@b"}, {"persona_id": "yusuf"}]
-        )
+        result = observability._sanitise_for_telemetry([{"email": "a@b"}, {"persona_id": "yusuf"}])
         self.assertEqual(result[0]["email"], "<redacted>")
         self.assertEqual(result[1]["persona_id"], "yusuf")
 
@@ -297,9 +300,7 @@ class MetricsEndpointLive(unittest.TestCase):
         cls.tmpdir = TemporaryDirectory()
         cls.port = _free_port()
         env = dict(os.environ)
-        env["HELPMEFINDTHEJOB_DATA_FILE"] = str(
-            Path(cls.tmpdir.name) / "data.json"
-        )
+        env["HELPMEFINDTHEJOB_DATA_FILE"] = str(Path(cls.tmpdir.name) / "data.json")
         env["HELPMEFINDTHEJOB_DISABLE_SCHEDULER"] = "1"
         env.pop("HELPMEFINDTHEJOB_DATABASE_URL", None)
         cls.proc = subprocess.Popen(
@@ -357,12 +358,8 @@ class MetricsEndpointLive(unittest.TestCase):
         for _ in range(2):
             self._get("/api/health")
         _, _, body = self._get("/api/metrics")
-        self.assertIn(
-            "helpmefindthejob_http_request_duration_seconds", body
-        )
-        self.assertIn(
-            "helpmefindthejob_http_request_duration_seconds_count", body
-        )
+        self.assertIn("helpmefindthejob_http_request_duration_seconds", body)
+        self.assertIn("helpmefindthejob_http_request_duration_seconds_count", body)
 
     def test_scheduler_active_jobs_gauge_present(self):
         _, _, body = self._get("/api/metrics")

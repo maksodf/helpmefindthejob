@@ -38,7 +38,6 @@ from tempfile import TemporaryDirectory
 
 from company_discovery.cost_saving_metrics import (
     ALL_MECHANISMS,
-    CostSavingMetricsLog,
     MECHANISM_AI_BYO_SAVINGS,
     MECHANISM_FASTER_RECOGNITION,
     MECHANISM_FEWER_WRONG_FIT_APPS,
@@ -47,9 +46,9 @@ from company_discovery.cost_saving_metrics import (
     MECHANISM_PERSISTENT_INDEX_REUSE,
     MECHANISM_SELF_SERVE_ANERKENNUNG,
     MECHANISM_SHORTER_JOURNEY,
+    CostSavingMetricsLog,
     is_collection_enabled,
 )
-
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
@@ -129,8 +128,7 @@ class EveryMechanismIsWired(unittest.TestCase):
     def test_faster_recognition_wired(self):
         self.assertTrue(
             self._emitted_anywhere('"faster_recognition"'),
-            "faster_recognition has no live emit site — should be "
-            "alongside self_serve_anerkennung",
+            "faster_recognition has no live emit site — should be alongside self_serve_anerkennung",
         )
 
     def test_persistent_index_reuse_wired(self):
@@ -179,9 +177,7 @@ class AppStateExposesCostMetricsHelpers(unittest.TestCase):
         self.assertIn("cost_metrics_log:", cost_caps_src)
         # And AppState passes it through
         app_src = (REPO_ROOT / "app.py").read_text(encoding="utf-8")
-        self.assertIn(
-            "cost_metrics_log=self.cost_metrics_log()", app_src
-        )
+        self.assertIn("cost_metrics_log=self.cost_metrics_log()", app_src)
 
 
 # -------------------------------------------------------------------------
@@ -222,9 +218,7 @@ class JSONLEventsAccrueWhenEnabled(unittest.TestCase):
         self._path = Path(self._tmp.name) / "metrics.jsonl"
         # Use a deterministic salt for the test (the substrate
         # accepts any bytes-like salt).
-        self.log = CostSavingMetricsLog(
-            self._path, salt=b"test-salt-12345", enabled=True
-        )
+        self.log = CostSavingMetricsLog(self._path, salt=b"test-salt-12345", enabled=True)
 
     def tearDown(self):
         self._tmp.cleanup()
@@ -248,21 +242,17 @@ class JSONLEventsAccrueWhenEnabled(unittest.TestCase):
         self.assertEqual(seen, set(ALL_MECHANISMS))
 
     def test_disabled_recorder_writes_nothing(self):
-        disabled = CostSavingMetricsLog(
-            self._path, salt=b"x", enabled=False
-        )
+        disabled = CostSavingMetricsLog(self._path, salt=b"x", enabled=False)
         for mechanism in ALL_MECHANISMS:
-            self.assertFalse(disabled.record(
-                mechanism, user_id="u", value=1.0, unit="t", metadata={}
-            ))
+            self.assertFalse(
+                disabled.record(mechanism, user_id="u", value=1.0, unit="t", metadata={})
+            )
         self.assertFalse(self._path.exists())
 
     def test_snapshot_reads_events_back(self):
         for mechanism in ALL_MECHANISMS:
             for _ in range(5):
-                self.log.record(
-                    mechanism, user_id="u", value=1.0, unit="t", metadata={}
-                )
+                self.log.record(mechanism, user_id="u", value=1.0, unit="t", metadata={})
         snapshot = self.log.snapshot()
         # Snapshot shape: {windowDays, uniqueUsers, mechanisms: {<name>: {...}}}
         self.assertIn("mechanisms", snapshot)

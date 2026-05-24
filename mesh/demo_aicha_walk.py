@@ -47,7 +47,6 @@ import urllib.request
 import uuid
 from typing import Any
 
-
 # Default ports match mesh-docker-compose.yml + the env-var
 # fallbacks in each agent's __main__.
 HOUSING_URL = os.environ.get("MESH_HOUSING_URL", "http://127.0.0.1:8101")
@@ -125,9 +124,7 @@ def _section(title: str, body: str = "") -> None:
         print(textwrap.indent(body, "  "))
 
 
-def _build_referral(
-    target_agent: str, reason: str, context: dict[str, Any]
-) -> dict[str, Any]:
+def _build_referral(target_agent: str, reason: str, context: dict[str, Any]) -> dict[str, Any]:
     """Build a referral envelope matching the shape that the
     employment-agent's ``propose_referral`` MCP tool emits.
     Keeping this here (rather than importing from
@@ -206,7 +203,9 @@ def step3_housing_referral() -> dict[str, Any]:
     result = _post_json(f"{HOUSING_URL}/v1/intake", {"referral": referral})
     intake = result["intake"]
     print(f"  ✓ cohort = {intake['cohort']}")
-    print(f"  ✓ rent band = €{intake['monthlyRentBandEur'][0]}–€{intake['monthlyRentBandEur'][1]}/mo")
+    print(
+        f"  ✓ rent band = €{intake['monthlyRentBandEur'][0]}–€{intake['monthlyRentBandEur'][1]}/mo"
+    )
     print(f"  ✓ wait = {intake['estimatedWaitWeeksMin']}–{intake['estimatedWaitWeeksMax']} weeks")
     print(f"  ✓ tags = {intake['tags']}")
     return intake
@@ -271,8 +270,7 @@ def main() -> int:
     parser.add_argument(
         "--skip-health",
         action="store_true",
-        help="Skip the up-front health-check probes (use if you "
-        "already know the agents are up)",
+        help="Skip the up-front health-check probes (use if you already know the agents are up)",
     )
     args = parser.parse_args()
 

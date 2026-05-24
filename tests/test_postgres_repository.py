@@ -40,7 +40,6 @@ from company_discovery.postgres_repository import (
     is_postgres_url,
 )
 
-
 _LIVE_PG_URL = os.environ.get("TEST_POSTGRES_URL", "").strip()
 
 
@@ -109,9 +108,7 @@ class AppStateRoutesByDatabaseUrl(unittest.TestCase):
                 start_scheduler=False,
             )
             try:
-                self.assertIsInstance(
-                    state.repository, SqliteCompanyDiscoveryRepository
-                )
+                self.assertIsInstance(state.repository, SqliteCompanyDiscoveryRepository)
             finally:
                 state.auth_store.close()
                 state.repository.close()
@@ -125,14 +122,13 @@ class AppStateRoutesByDatabaseUrl(unittest.TestCase):
         `from app import AppState`, which we can't bypass cleanly.
         Source verification is the pragmatic equivalent."""
 
-        src = Path(
-            str(Path(__file__).resolve().parent.parent / "app.py")
-        ).read_text(encoding="utf-8")
-        # The routing block reads the env var
-        self.assertIn(
-            'get_env(\n            "HELPMEFINDTHEJOB_DATABASE_URL"',
-            src,
+        src = Path(str(Path(__file__).resolve().parent.parent / "app.py")).read_text(
+            encoding="utf-8"
         )
+        # The routing block reads the env var (format-agnostic — strip all
+        # whitespace so a future `ruff format` re-line-break is benign).
+        no_ws = "".join(src.split())
+        self.assertIn('get_env("HELPMEFINDTHEJOB_DATABASE_URL"', no_ws)
         # And imports + uses the Postgres repository conditionally
         self.assertIn("PostgresCompanyDiscoveryRepository", src)
         self.assertIn("is_postgres_url(database_url)", src)
@@ -156,19 +152,24 @@ class HealthEndpointReportsActualStorage(unittest.TestCase):
         - _storage_kind() helper still exists (admins need it).
         """
 
-        src = Path(
-            str(Path(__file__).resolve().parent.parent / "app.py")
-        ).read_text(encoding="utf-8")
+        src = Path(str(Path(__file__).resolve().parent.parent / "app.py")).read_text(
+            encoding="utf-8"
+        )
         self.assertNotIn('"storage": "sqlite"', src)
-        self.assertNotIn('"storage": self._storage_kind()', src,
-                         "AUDIT-42: storage no longer in public health")
-        self.assertIn("def _storage_kind(self) -> str:", src,
-                      "_storage_kind helper still needed for admin endpoints")
+        self.assertNotIn(
+            '"storage": self._storage_kind()', src, "AUDIT-42: storage no longer in public health"
+        )
+        self.assertIn(
+            "def _storage_kind(self) -> str:",
+            src,
+            "_storage_kind helper still needed for admin endpoints",
+        )
         self.assertIn('return "postgres"', src)
         self.assertIn('return "sqlite"', src)
 
     def test_storage_kind_helper_returns_sqlite_for_sqlite_repo(self):
         from app import AppState
+
         with TemporaryDirectory() as tmp:
             root = Path(tmp)
             state = AppState(
@@ -189,9 +190,9 @@ class RequirementsContract(unittest.TestCase):
     """psycopg must appear in requirements.txt + SBOM."""
 
     def test_requirements_lists_psycopg(self):
-        req = Path(
-            str(Path(__file__).resolve().parent.parent / "requirements.txt")
-        ).read_text(encoding="utf-8")
+        req = Path(str(Path(__file__).resolve().parent.parent / "requirements.txt")).read_text(
+            encoding="utf-8"
+        )
         self.assertIn("psycopg", req.lower())
 
     def test_sbom_lists_psycopg(self):
@@ -304,9 +305,7 @@ class LivePostgresRoundtrip(unittest.TestCase):
         self.assertEqual(u1_list[0].name, "C1")
 
     def test_company_delete_cascades_to_jobs(self):
-        company = Company(
-            user_id="u1", name="C", website_url="https://c.example"
-        )
+        company = Company(user_id="u1", name="C", website_url="https://c.example")
         self.repo.save_company(company)
         job = DiscoveredJob(
             user_id="u1",
@@ -347,9 +346,7 @@ class LivePostgresRoundtrip(unittest.TestCase):
         self.assertNotIn(search.id, self.repo.saved_searches)
         # DB check
         cur = self.repo._connection.cursor()
-        cur.execute(
-            "SELECT COUNT(*) FROM saved_searches WHERE id = %s", (search.id,)
-        )
+        cur.execute("SELECT COUNT(*) FROM saved_searches WHERE id = %s", (search.id,))
         count = cur.fetchone()[0]
         cur.close()
         self.assertEqual(count, 0)
@@ -364,14 +361,10 @@ class LivePostgresRoundtrip(unittest.TestCase):
         retrieved = self.repo.get_user_profile("u1")
         self.assertIsNotNone(retrieved)
         self.assertEqual(retrieved.persona_id, "aicha")
-        self.assertEqual(
-            retrieved.cv_text, "Aicha CV — Pflegekraft mit §16d pathway."
-        )
+        self.assertEqual(retrieved.cv_text, "Aicha CV — Pflegekraft mit §16d pathway.")
 
     def test_persistence_across_close_reopen(self):
-        company = Company(
-            user_id="u1", name="Persistent Co", website_url="https://p.example"
-        )
+        company = Company(user_id="u1", name="Persistent Co", website_url="https://p.example")
         self.repo.save_company(company)
         self.repo.close()
         # Reopen — _load should rehydrate the in-memory cache

@@ -30,7 +30,6 @@ from pathlib import Path
 from typing import Any, Iterable
 
 from company_discovery.trust_receipt import (
-    RECEIPT_SCHEMA_VERSION,
     TrustReceipt,
     verify_trust_receipt,
 )
@@ -77,9 +76,7 @@ class TrustReceiptStore:
         TrustReceipt by hand."""
         result = verify_trust_receipt(receipt.to_dict(), self.salt)
         if not result.ok:
-            raise ValueError(
-                f"refusing_to_save_unverifiable_receipt:{result.reason}"
-            )
+            raise ValueError(f"refusing_to_save_unverifiable_receipt:{result.reason}")
         path = self._user_log_path(user_id)
         line = receipt.to_jsonl() + "\n"
         with self._lock:

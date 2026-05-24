@@ -74,9 +74,7 @@ class RequestLocaleTests(unittest.TestCase):
 class HandleDbErrorTests(unittest.TestCase):
     def test_lock_busy_routes_503_with_friendly_message(self):
         h = _make_handler_stub()
-        with patch(
-            "company_discovery.db_errors.emit_admin_alert"
-        ) as alert_mock:
+        with patch("company_discovery.db_errors.emit_admin_alert") as alert_mock:
             h._handle_db_error(sqlite3.OperationalError("database is locked"))  # noqa: SLF001
         h.send_error_json.assert_called_once()
         (status, code, message), kwargs = h.send_error_json.call_args
@@ -90,9 +88,7 @@ class HandleDbErrorTests(unittest.TestCase):
 
     def test_disk_full_routes_507_with_admin_alert(self):
         h = _make_handler_stub()
-        with patch(
-            "company_discovery.audit_log.emit_system_event"
-        ) as audit_mock:
+        with patch("company_discovery.audit_log.emit_system_event") as audit_mock:
             h._handle_db_error(  # noqa: SLF001
                 sqlite3.OperationalError("database or disk is full")
             )
@@ -118,9 +114,7 @@ class HandleDbErrorTests(unittest.TestCase):
 
     def test_schema_drift_routes_500_with_generic_message(self):
         h = _make_handler_stub()
-        with patch(
-            "company_discovery.audit_log.emit_system_event"
-        ) as audit_mock:
+        with patch("company_discovery.audit_log.emit_system_event") as audit_mock:
             h._handle_db_error(  # noqa: SLF001
                 sqlite3.OperationalError("no such column: foo")
             )

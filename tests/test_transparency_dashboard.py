@@ -95,7 +95,9 @@ class AggregationContract(unittest.TestCase):
             _mk_record(seq=1, when=old, purpose="auto_fit"),
             _mk_record(seq=2, when=recent, purpose="auto_fit"),
         ]
-        agg = aggregate_ai_invocations(records, since=datetime.now(timezone.utc) - timedelta(days=30))
+        agg = aggregate_ai_invocations(
+            records, since=datetime.now(timezone.utc) - timedelta(days=30)
+        )
         self.assertEqual(agg["totalInvocations"], 1)
 
     def test_chain_head_is_max_sequence(self):
@@ -312,7 +314,13 @@ class CostSavingDPContract(unittest.TestCase):
     def test_small_event_counts_suppressed(self):
         snapshot = {
             "mechanisms": {
-                "shorter_journey": {"events": 3, "users": 2, "total": 5.0, "unit": "h", "confidence": "aspirational"},
+                "shorter_journey": {
+                    "events": 3,
+                    "users": 2,
+                    "total": 5.0,
+                    "unit": "h",
+                    "confidence": "aspirational",
+                },
             },
             "uniqueUsers": 2,
             "windowDays": 30,
@@ -353,7 +361,13 @@ class CostSavingDPContract(unittest.TestCase):
 
         snapshot = {
             "mechanisms": {
-                "good": {"events": 100, "users": 50, "total": 200, "unit": "x", "confidence": "plausible"},
+                "good": {
+                    "events": 100,
+                    "users": 50,
+                    "total": 200,
+                    "unit": "x",
+                    "confidence": "plausible",
+                },
                 "bad": "not a dict",
             },
             "uniqueUsers": 50,
@@ -457,7 +471,7 @@ class HTMLRendererContract(unittest.TestCase):
         agg = {
             "totalInvocations": 100,
             "byPurpose": {"<script>alert('xss')</script>": 50},
-            "byProvider": {"\"onerror=\"alert(1)": 30},
+            "byProvider": {'"onerror="alert(1)': 30},
             "byOutcome": {"<img src=x onerror=alert(1)>": 20},
             "refusals": {"<svg/onload=alert(1)>": 10},
             "windowDays": 30,
@@ -478,7 +492,7 @@ class HTMLRendererContract(unittest.TestCase):
         self.assertNotIn("<script>alert", html_out)
         self.assertNotIn("<img src=x onerror", html_out)
         self.assertNotIn("<svg/onload", html_out)
-        self.assertNotIn("\"onerror=\"alert", html_out)
+        self.assertNotIn('"onerror="alert', html_out)
         # Escaped forms MUST appear (proves the values went through
         # the escaper rather than being stripped entirely)
         self.assertIn("&lt;script&gt;", html_out)

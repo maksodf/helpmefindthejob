@@ -8,6 +8,7 @@ file under docs/grant/journey-walks-2026-05-20/.
 Usage:
     python3 scripts/journey_walk.py <persona-slug> <session-jar> <csrf>
 """
+
 from __future__ import annotations
 
 import json
@@ -15,7 +16,6 @@ import sys
 import time
 import urllib.error
 import urllib.request
-from http.cookies import SimpleCookie
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -164,7 +164,9 @@ def write_walk_md(out_dir: Path, walk: dict) -> Path:
         md.append("")
         md.append(f"**Input**: `{turn['input']}`")
         md.append("")
-        md.append(f"**Executed**: `{turn.get('executed')}`  |  **Phase after**: `{turn['journey_phase']}`  |  **Done**: `{turn['done']}`  |  **Elapsed**: {turn['elapsed_ms']} ms")
+        md.append(
+            f"**Executed**: `{turn.get('executed')}`  |  **Phase after**: `{turn['journey_phase']}`  |  **Done**: `{turn['done']}`  |  **Elapsed**: {turn['elapsed_ms']} ms"
+        )
         md.append("")
         if turn.get("error"):
             md.append(f"**ERROR**: `{turn['error']}`")
@@ -179,7 +181,9 @@ def write_walk_md(out_dir: Path, walk: dict) -> Path:
     # Gate-6.1 assessment per turn
     md.append("## Gate 6.1 assessment (per-turn)")
     md.append("")
-    md.append("| Turn | Phase | Clear entry? | Clear next-step prompt? | Clear exit signal? | No dead-end? |")
+    md.append(
+        "| Turn | Phase | Clear entry? | Clear next-step prompt? | Clear exit signal? | No dead-end? |"
+    )
     md.append("|---|---|---|---|---|---|")
     for i, turn in enumerate(captured, start=1):
         reply = turn["reply"] or ""
@@ -199,10 +203,16 @@ def write_walk_md(out_dir: Path, walk: dict) -> Path:
     md.append("## Operator inspection notes")
     md.append("")
     md.append("- Does each phase make it clear WHERE the user is in the 12-phase flow?")
-    md.append("- Is the next-step prompt unambiguous (one specific question, not a wall of options)?")
+    md.append(
+        "- Is the next-step prompt unambiguous (one specific question, not a wall of options)?"
+    )
     md.append("- Does the exit signal (phase advance) come back to the UI clearly?")
-    md.append("- For migrant personas: is friction context handled gracefully throughout, OR does the journey assume baseline German fluency / German-format CV?")
-    md.append("- For wider-friction personas (Käthe / Tobias): does the same UI work without over-emphasising friction they don't have?")
+    md.append(
+        "- For migrant personas: is friction context handled gracefully throughout, OR does the journey assume baseline German fluency / German-format CV?"
+    )
+    md.append(
+        "- For wider-friction personas (Käthe / Tobias): does the same UI work without over-emphasising friction they don't have?"
+    )
     md.append("")
     return out_dir, md
 

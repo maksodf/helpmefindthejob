@@ -41,10 +41,8 @@ import threading
 import time
 import urllib.error
 import urllib.request
-from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Any
-
 
 # ---------------------------------------------------------------------------
 # Env-var gates
@@ -78,14 +76,35 @@ def posthog_host() -> str:
 # replaced with ``"<redacted>"`` before dispatch to any external
 # backend. Conservative list — extend when new sensitive fields
 # appear in event payloads.
-_PII_KEYS: frozenset[str] = frozenset({
-    "email", "email_address", "cv_text", "cv", "cvText",
-    "password", "password_hash", "token", "authorization",
-    "auth", "session_token", "api_key", "apikey",
-    "phone", "phone_number", "address", "name", "full_name",
-    "first_name", "last_name", "given_name", "surname",
-    "ssn", "passport", "national_id",
-})
+_PII_KEYS: frozenset[str] = frozenset(
+    {
+        "email",
+        "email_address",
+        "cv_text",
+        "cv",
+        "cvText",
+        "password",
+        "password_hash",
+        "token",
+        "authorization",
+        "auth",
+        "session_token",
+        "api_key",
+        "apikey",
+        "phone",
+        "phone_number",
+        "address",
+        "name",
+        "full_name",
+        "first_name",
+        "last_name",
+        "given_name",
+        "surname",
+        "ssn",
+        "passport",
+        "national_id",
+    }
+)
 
 
 def _sanitise_for_telemetry(value: Any) -> Any:
@@ -151,7 +170,7 @@ def report_error(
         # Lazy init — only run once per process
         if not getattr(sentry_sdk, "_helpme_initialized", False):
             sentry_sdk.init(dsn=dsn, traces_sample_rate=0.0)
-            setattr(sentry_sdk, "_helpme_initialized", True)
+            sentry_sdk._helpme_initialized = True
         if context:
             with sentry_sdk.push_scope() as scope:
                 for k, v in _sanitise_for_telemetry(context).items():
@@ -242,7 +261,19 @@ class _Metric:
 # Default histogram buckets (seconds). Standard Prometheus bucket
 # layout; covers low-ms responses through long-running AI calls.
 _DEFAULT_HISTOGRAM_BUCKETS: tuple[float, ...] = (
-    0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0, 60.0,
+    0.005,
+    0.01,
+    0.025,
+    0.05,
+    0.1,
+    0.25,
+    0.5,
+    1.0,
+    2.5,
+    5.0,
+    10.0,
+    30.0,
+    60.0,
 )
 
 
@@ -370,20 +401,26 @@ def _escape_label(value: str) -> str:
 _REGISTRY = _MetricsRegistry()
 
 
-def inc(name: str, *, labels: dict[str, str] | None = None, value: float = 1.0, help_text: str = "") -> None:
+def inc(
+    name: str, *, labels: dict[str, str] | None = None, value: float = 1.0, help_text: str = ""
+) -> None:
     """Increment a counter metric. Creates the counter if it doesn't
     exist yet."""
 
     _REGISTRY.inc(name, labels=labels, value=value, help_text=help_text)
 
 
-def set_gauge(name: str, value: float, *, labels: dict[str, str] | None = None, help_text: str = "") -> None:
+def set_gauge(
+    name: str, value: float, *, labels: dict[str, str] | None = None, help_text: str = ""
+) -> None:
     """Set a gauge metric to a specific value."""
 
     _REGISTRY.set_gauge(name, value, labels=labels, help_text=help_text)
 
 
-def observe(name: str, value: float, *, labels: dict[str, str] | None = None, help_text: str = "") -> None:
+def observe(
+    name: str, value: float, *, labels: dict[str, str] | None = None, help_text: str = ""
+) -> None:
     """Record an observation against a histogram metric."""
 
     _REGISTRY.observe(name, value, labels=labels, help_text=help_text)

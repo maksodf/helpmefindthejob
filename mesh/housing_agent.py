@@ -51,7 +51,6 @@ from mesh.common import (
     validate_referral,
 )
 
-
 AGENT_NAME = "housing-agent"
 AGENT_VERSION = "0.1.0"
 
@@ -155,8 +154,7 @@ def _match_cohort(referral: dict[str, Any]) -> dict[str, Any]:
             ok = False
         if ok and "residency_status_in" in matchers:
             if not any(
-                token in residency or token in reason
-                for token in matchers["residency_status_in"]
+                token in residency or token in reason for token in matchers["residency_status_in"]
             ):
                 ok = False
         if ok:
@@ -256,7 +254,9 @@ def make_handler(audit: AgentAuditLog) -> type[JsonRequestHandler]:
 def main() -> None:
     parser = argparse.ArgumentParser(description="housing-agent simulator")
     parser.add_argument("--host", default="0.0.0.0")
-    parser.add_argument("--port", type=int, default=int(os.environ.get("MESH_HOUSING_PORT", "8101")))
+    parser.add_argument(
+        "--port", type=int, default=int(os.environ.get("MESH_HOUSING_PORT", "8101"))
+    )
     parser.add_argument(
         "--audit-path",
         default=os.environ.get("MESH_HOUSING_AUDIT", "data/mesh/housing-agent-audit.log"),

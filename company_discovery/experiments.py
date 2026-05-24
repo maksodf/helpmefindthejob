@@ -35,7 +35,7 @@ Honesty:
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from . import feature_flags
@@ -106,9 +106,7 @@ def get_variant(experiment_name: str, user_id: str) -> str:
     if experiment_name not in EXPERIMENTS:
         raise KeyError(f"unregistered_experiment:{experiment_name!r}")
     experiment = EXPERIMENTS[experiment_name]
-    return feature_flags.assign_variant(
-        experiment.name, user_id, experiment.variants
-    )
+    return feature_flags.assign_variant(experiment.name, user_id, experiment.variants)
 
 
 def build_outcome_payload(
@@ -162,7 +160,7 @@ class ExperimentSummary:
 
 def summarize_experiment(
     experiment_name: str,
-    repository: "CompanyDiscoveryRepository",
+    repository: CompanyDiscoveryRepository,
     *,
     limit: int = 10000,
 ) -> ExperimentSummary:
@@ -184,9 +182,7 @@ def summarize_experiment(
 
     # Initialize empty per-variant buckets so the output always
     # carries every declared variant, even if zero outcomes.
-    per_variant_outcomes: dict[str, dict[str, int]] = {
-        v: {} for v in experiment.variants
-    }
+    per_variant_outcomes: dict[str, dict[str, int]] = {v: {} for v in experiment.variants}
     per_variant_users: dict[str, set[str]] = {v: set() for v in experiment.variants}
 
     events = repository.list_analytics_events(limit=limit)

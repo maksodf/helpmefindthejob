@@ -55,13 +55,13 @@ _VALID_TOKEN_43 = "A" * 43  # token_urlsafe(32) shape
 _MIN_VALID_TOKEN = "abcd_-09"  # exactly 8 chars, all alphabet members
 
 _MALFORMED_TOKENS = (
-    "short",                  # too short (<8)
-    "a" * 257,                # too long (>256)
-    "has space",              # space not in alphabet
-    "has.dot",                # dot not in alphabet
-    "has/slash",              # slash splits the path before us
-    "has+plus",               # + (non-URL-safe base64) not in alphabet
-    "has=equals",             # padding not in token_urlsafe output
+    "short",  # too short (<8)
+    "a" * 257,  # too long (>256)
+    "has space",  # space not in alphabet
+    "has.dot",  # dot not in alphabet
+    "has/slash",  # slash splits the path before us
+    "has+plus",  # + (non-URL-safe base64) not in alphabet
+    "has=equals",  # padding not in token_urlsafe output
 )
 
 
@@ -144,13 +144,14 @@ class SpaTokenRoutesLive(unittest.TestCase):
     def test_admin_serves_spa_shell(self) -> None:
         status, _headers, body = self._get("/admin")
         self.assertEqual(
-            status, 200,
+            status,
+            200,
             f"AUDIT-27: /admin should serve the SPA shell, got {status}",
         )
         self.assertGreater(
-            len(body), 50_000,
-            f"AUDIT-27: /admin response is only {len(body)} bytes; expected "
-            "the ~103 KB SPA shell.",
+            len(body),
+            50_000,
+            f"AUDIT-27: /admin response is only {len(body)} bytes; expected the ~103 KB SPA shell.",
         )
         self.assertIn(b"<title>Helpmefindthejob", body)
         # SPA chrome markers — confirms it really is the shell, not
@@ -203,7 +204,8 @@ class SpaTokenRoutesLive(unittest.TestCase):
             with self.subTest(token=bad_token):
                 status, _headers, _body = self._get(f"/reset-password/{encoded}")
                 self.assertEqual(
-                    status, 404,
+                    status,
+                    404,
                     f"AUDIT-27: /reset-password/{bad_token!r} should 404; got {status}",
                 )
 
@@ -240,7 +242,7 @@ class SpaInitHandlesAdminPath(unittest.TestCase):
         self.assertIn(
             'path === "/admin"',
             src,
-            "AUDIT-27: static/app.js init() must branch on path === \"/admin\" "
+            'AUDIT-27: static/app.js init() must branch on path === "/admin" '
             "so a freshly-loaded /admin lands on the admin view.",
         )
 

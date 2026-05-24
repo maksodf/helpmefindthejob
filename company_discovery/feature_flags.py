@@ -159,7 +159,7 @@ def _percentage_bucket(flag_name: str, user_id: str) -> int:
 
     digest = hmac.new(
         _ROLLOUT_HMAC_SALT,
-        f"{flag_name}|{user_id}".encode("utf-8"),
+        f"{flag_name}|{user_id}".encode(),
         hashlib.sha256,
     ).digest()
     # Take the first 4 bytes as a big-endian uint32, mod 100
@@ -243,7 +243,7 @@ def assign_variant(
     # membership stays stable. Modulo by the variant count.
     digest = hmac.new(
         _ROLLOUT_HMAC_SALT,
-        f"experiment:{experiment_name}|{user_id}".encode("utf-8"),
+        f"experiment:{experiment_name}|{user_id}".encode(),
         hashlib.sha256,
     ).digest()
     bucket = int.from_bytes(digest[:4], "big") % len(variants)

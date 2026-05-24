@@ -66,16 +66,17 @@ from __future__ import annotations
 
 import base64
 import hashlib
+import hmac as _hmac
 import json
 import logging
 import os
 import secrets
+import time as _time
 import urllib.error
 import urllib.parse
 import urllib.request
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
-
 
 _log = logging.getLogger(__name__)
 
@@ -196,15 +197,9 @@ def load_providers_from_env() -> list[OidcProviderConfig]:
     for provider_id in provider_ids:
         env_key = provider_id.upper().replace("-", "_")
         issuer = os.environ.get(f"{_PROVIDER_ENV_PREFIX}{env_key}_ISSUER", "").strip()
-        client_id = os.environ.get(
-            f"{_PROVIDER_ENV_PREFIX}{env_key}_CLIENT_ID", ""
-        ).strip()
-        client_secret = os.environ.get(
-            f"{_PROVIDER_ENV_PREFIX}{env_key}_CLIENT_SECRET", ""
-        ).strip()
-        email_domain = os.environ.get(
-            f"{_PROVIDER_ENV_PREFIX}{env_key}_EMAIL_DOMAIN", ""
-        ).strip()
+        client_id = os.environ.get(f"{_PROVIDER_ENV_PREFIX}{env_key}_CLIENT_ID", "").strip()
+        client_secret = os.environ.get(f"{_PROVIDER_ENV_PREFIX}{env_key}_CLIENT_SECRET", "").strip()
+        email_domain = os.environ.get(f"{_PROVIDER_ENV_PREFIX}{env_key}_EMAIL_DOMAIN", "").strip()
         missing = []
         if not issuer:
             missing.append("ISSUER")
@@ -357,9 +352,7 @@ def exchange_code_for_tokens(
             raw = response.read().decode("utf-8")
     except urllib.error.HTTPError as err:
         body_preview = err.read().decode("utf-8", errors="replace")[:300]
-        raise OidcTokenError(
-            f"token_endpoint_http_{err.code}:{body_preview}"
-        ) from err
+        raise OidcTokenError(f"token_endpoint_http_{err.code}:{body_preview}") from err
     except urllib.error.URLError as err:
         raise OidcTokenError(f"token_endpoint_network:{err.reason}") from err
     try:
@@ -446,9 +439,6 @@ def validate_id_token(
 # The cookie carries an `exp` field; the verifier rejects expired blobs.
 
 
-import hmac as _hmac
-import time as _time
-
 _COOKIE_TTL_SECONDS = 10 * 60  # 10 minutes is plenty for an interactive login
 
 
@@ -492,9 +482,7 @@ def verify_auth_request(
         sig = base64.urlsafe_b64decode(sig_b64 + "=" * (-len(sig_b64) % 4))
     except (ValueError, base64.binascii.Error) as err:  # type: ignore[attr-defined]
         raise OidcStateMismatchError(f"cookie_decode_failed:{err}") from err
-    expected_sig = _hmac.new(
-        secret_key.encode("utf-8"), body, hashlib.sha256
-    ).digest()
+    expected_sig = _hmac.new(secret_key.encode("utf-8"), body, hashlib.sha256).digest()
     if not _hmac.compare_digest(sig, expected_sig):
         raise OidcStateMismatchError("cookie_hmac_mismatch")
     try:

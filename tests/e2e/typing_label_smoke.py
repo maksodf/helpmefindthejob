@@ -11,6 +11,7 @@ proof.
 
 Run via ``scripts/run-typing-label-smoke.sh`` (boots dev server).
 """
+
 from __future__ import annotations
 
 import os
@@ -81,6 +82,7 @@ def _send_chat_with_delay(page, message: str, delay_ms: int = 2500) -> str:
     text-content read since the bubble is removed when the response
     arrives.
     """
+
     def _slow_handler(route):
         time.sleep(delay_ms / 1000.0)
         route.continue_()
@@ -140,10 +142,22 @@ def main() -> int:
             # tests hit Playwright route-interception timing
             # fragility.
             test_cases = [
-                ("/start", "default fallback label", lambda L: "Thinking" in L or "Searching" in L or len(L) > 0),
+                (
+                    "/start",
+                    "default fallback label",
+                    lambda L: "Thinking" in L or "Searching" in L or len(L) > 0,
+                ),
                 ("/tailor", "tailor label", lambda L: "Tailoring" in L),
-                ("/letter", "letter label", lambda L: "motivation letter" in L.lower() or "drafting" in L.lower()),
-                ("/consult", "consult label", lambda L: "Analyzing" in L or "improvement" in L.lower()),
+                (
+                    "/letter",
+                    "letter label",
+                    lambda L: "motivation letter" in L.lower() or "drafting" in L.lower(),
+                ),
+                (
+                    "/consult",
+                    "consult label",
+                    lambda L: "Analyzing" in L or "improvement" in L.lower(),
+                ),
                 ("/find", "search label", lambda L: "Searching" in L),
             ]
             for msg, name, assertion in test_cases:

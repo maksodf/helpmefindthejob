@@ -189,7 +189,8 @@ class ChainAcrossRotations(unittest.TestCase):
             emitter.emit("system_event", outcome="ok", event_payload={"x": "y" * 200})
         # Should have produced at least one rotation
         rotated = [
-            p for p in log_path.parent.iterdir()
+            p
+            for p in log_path.parent.iterdir()
             if p.name.startswith(log_path.name + ".") and p != log_path
         ]
         self.assertGreater(len(rotated), 0, "Expected at least one rotation")
@@ -226,12 +227,14 @@ class SchemaVersionGate(unittest.TestCase):
         # Write a fake v1 legacy record directly (bypasses emitter)
         with log_path.open("w", encoding="utf-8") as fh:
             fh.write(
-                json.dumps({
-                    "schema_version": "v1",
-                    "event_id": "legacy-001",
-                    "event_type": "system_event",
-                    "outcome": "ok",
-                })
+                json.dumps(
+                    {
+                        "schema_version": "v1",
+                        "event_id": "legacy-001",
+                        "event_type": "system_event",
+                        "outcome": "ok",
+                    }
+                )
                 + "\n"
             )
         result = verify_chain([log_path], emitter.salt)
@@ -261,10 +264,12 @@ class WriteFailureDoesNotCorruptChain(unittest.TestCase):
         # un-writable. We monkey-patch the open() call inside
         # _write to raise OSError.
         original_open = type(log_path).open
+
         def failing_open(self, *args, **kwargs):
             if self == log_path:
                 raise OSError("disk full simulation")
             return original_open(self, *args, **kwargs)
+
         type(log_path).open = failing_open
         try:
             emitter.emit("system_event", outcome="ok")

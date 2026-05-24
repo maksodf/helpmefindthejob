@@ -54,6 +54,7 @@ class OpenApiSpecUnit(unittest.TestCase):
 
     def test_spec_has_required_top_level_fields(self) -> None:
         from app import _build_openapi_spec
+
         spec = _build_openapi_spec()
         self.assertEqual(spec["openapi"], "3.1.0")
         self.assertIn("info", spec)
@@ -65,6 +66,7 @@ class OpenApiSpecUnit(unittest.TestCase):
 
     def test_spec_covers_critical_public_paths(self) -> None:
         from app import _build_openapi_spec
+
         spec = _build_openapi_spec()
         for required_path in (
             "/api/health",
@@ -82,6 +84,7 @@ class OpenApiSpecUnit(unittest.TestCase):
 
     def test_spec_is_valid_json(self) -> None:
         from app import _get_openapi_spec_json
+
         raw = _get_openapi_spec_json()
         # Must round-trip without errors
         parsed = json.loads(raw)
@@ -182,6 +185,7 @@ class OpenApiLiveSurface(unittest.TestCase):
         # pattern via regex so a code-comment mention doesn't
         # false-positive.
         import re as _re
+
         assignment_rx = _re.compile(rb"\.innerHTML\s*=")
         self.assertIsNone(
             assignment_rx.search(body),

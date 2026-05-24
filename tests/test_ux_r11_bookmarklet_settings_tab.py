@@ -21,13 +21,13 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class BookmarkletTabPlacement(unittest.TestCase):
-
     def setUp(self) -> None:
         self.index_html = (ROOT / "static" / "index.html").read_text(encoding="utf-8")
 
     def test_bookmarklet_card_exists(self) -> None:
         self.assertIn(
-            'aria-label="Bookmarklet"', self.index_html,
+            'aria-label="Bookmarklet"',
+            self.index_html,
             "Bookmarklet card disappeared from the SPA shell.",
         )
 
@@ -46,9 +46,7 @@ class BookmarkletTabPlacement(unittest.TestCase):
         )
 
     def test_bookmarklet_card_under_workspace_tab(self) -> None:
-        rx = re.compile(
-            r'<section class="card" aria-label="Bookmarklet"[^>]*data-tab="workspace"'
-        )
+        rx = re.compile(r'<section class="card" aria-label="Bookmarklet"[^>]*data-tab="workspace"')
         self.assertIsNotNone(
             rx.search(self.index_html),
             "Bookmarklet card must carry data-tab='workspace'. "

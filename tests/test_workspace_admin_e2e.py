@@ -50,15 +50,9 @@ class ListMembersAuthorization(unittest.TestCase):
         self.state = _build_state(Path(self.tmp.name))
         self.addCleanup(self.state.auth_store.close)
         self.addCleanup(self.state.repository.close)
-        self.owner = self.state.auth_store.create_user(
-            "owner@example.com", "pwd-1234567890"
-        )
-        self.member = self.state.auth_store.create_user(
-            "member@example.com", "pwd-1234567890"
-        )
-        self.outsider = self.state.auth_store.create_user(
-            "outsider@example.com", "pwd-1234567890"
-        )
+        self.owner = self.state.auth_store.create_user("owner@example.com", "pwd-1234567890")
+        self.member = self.state.auth_store.create_user("member@example.com", "pwd-1234567890")
+        self.outsider = self.state.auth_store.create_user("outsider@example.com", "pwd-1234567890")
         self.workspace_id = self.state.workspace_id_for_owner(self.owner.id)
         # Ensure the owner has the implicit owner membership row
         self.state.ensure_owner_membership(self.owner.id)
@@ -73,9 +67,7 @@ class ListMembersAuthorization(unittest.TestCase):
         )
 
     def test_owner_sees_all_members(self):
-        members = self.state.list_workspace_members_enriched(
-            self.owner.id, self.workspace_id
-        )
+        members = self.state.list_workspace_members_enriched(self.owner.id, self.workspace_id)
         emails = {m["email"] for m in members}
         self.assertEqual(emails, {"owner@example.com", "member@example.com"})
         # Owner is sorted first
@@ -83,15 +75,11 @@ class ListMembersAuthorization(unittest.TestCase):
 
     def test_outsider_gets_forbidden(self):
         with self.assertRaises(ValueError) as cm:
-            self.state.list_workspace_members_enriched(
-                self.outsider.id, self.workspace_id
-            )
+            self.state.list_workspace_members_enriched(self.outsider.id, self.workspace_id)
         self.assertIn("workspace_forbidden", str(cm.exception))
 
     def test_member_sees_only_themselves(self):
-        members = self.state.list_workspace_members_enriched(
-            self.member.id, self.workspace_id
-        )
+        members = self.state.list_workspace_members_enriched(self.member.id, self.workspace_id)
         self.assertEqual(len(members), 1)
         self.assertEqual(members[0]["email"], "member@example.com")
         self.assertTrue(members[0]["isSelf"])
@@ -106,9 +94,7 @@ class ListMembersAuthorization(unittest.TestCase):
                 role="member",
             )
         )
-        members = self.state.list_workspace_members_enriched(
-            self.owner.id, self.workspace_id
-        )
+        members = self.state.list_workspace_members_enriched(self.owner.id, self.workspace_id)
         ghost = next(m for m in members if m["userId"] == "ghost_user_id")
         self.assertEqual(ghost["email"], "(removed user)")
 
@@ -120,15 +106,9 @@ class UpdateMemberRoleAuthorization(unittest.TestCase):
         self.state = _build_state(Path(self.tmp.name))
         self.addCleanup(self.state.auth_store.close)
         self.addCleanup(self.state.repository.close)
-        self.owner = self.state.auth_store.create_user(
-            "owner@example.com", "pwd-1234567890"
-        )
-        self.admin = self.state.auth_store.create_user(
-            "admin@example.com", "pwd-1234567890"
-        )
-        self.member = self.state.auth_store.create_user(
-            "member@example.com", "pwd-1234567890"
-        )
+        self.owner = self.state.auth_store.create_user("owner@example.com", "pwd-1234567890")
+        self.admin = self.state.auth_store.create_user("admin@example.com", "pwd-1234567890")
+        self.member = self.state.auth_store.create_user("member@example.com", "pwd-1234567890")
         self.workspace_id = self.state.workspace_id_for_owner(self.owner.id)
         self.state.ensure_owner_membership(self.owner.id)
         self.admin_membership = self.state.repository.save_workspace_membership(
@@ -172,9 +152,7 @@ class UpdateMemberRoleAuthorization(unittest.TestCase):
             membership_id=self.admin_membership.id,
             new_role="member",
         )
-        reloaded = self.state.repository.find_workspace_membership(
-            self.admin.id, self.workspace_id
-        )
+        reloaded = self.state.repository.find_workspace_membership(self.admin.id, self.workspace_id)
         self.assertEqual(reloaded.role, "member")
 
     def test_admin_cannot_promote_others(self):
@@ -224,15 +202,9 @@ class RemoveMemberAuthorization(unittest.TestCase):
         self.state = _build_state(Path(self.tmp.name))
         self.addCleanup(self.state.auth_store.close)
         self.addCleanup(self.state.repository.close)
-        self.owner = self.state.auth_store.create_user(
-            "owner@example.com", "pwd-1234567890"
-        )
-        self.admin = self.state.auth_store.create_user(
-            "admin@example.com", "pwd-1234567890"
-        )
-        self.member = self.state.auth_store.create_user(
-            "member@example.com", "pwd-1234567890"
-        )
+        self.owner = self.state.auth_store.create_user("owner@example.com", "pwd-1234567890")
+        self.admin = self.state.auth_store.create_user("admin@example.com", "pwd-1234567890")
+        self.member = self.state.auth_store.create_user("member@example.com", "pwd-1234567890")
         self.workspace_id = self.state.workspace_id_for_owner(self.owner.id)
         self.state.ensure_owner_membership(self.owner.id)
         self.admin_membership = self.state.repository.save_workspace_membership(
@@ -262,9 +234,7 @@ class RemoveMemberAuthorization(unittest.TestCase):
             membership_id=self.admin_membership.id,
         )
         self.assertIsNone(
-            self.state.repository.find_workspace_membership(
-                self.admin.id, self.workspace_id
-            )
+            self.state.repository.find_workspace_membership(self.admin.id, self.workspace_id)
         )
 
     def test_admin_can_remove_member(self):
@@ -274,16 +244,12 @@ class RemoveMemberAuthorization(unittest.TestCase):
             membership_id=self.member_membership.id,
         )
         self.assertIsNone(
-            self.state.repository.find_workspace_membership(
-                self.member.id, self.workspace_id
-            )
+            self.state.repository.find_workspace_membership(self.member.id, self.workspace_id)
         )
 
     def test_admin_cannot_remove_other_admin(self):
         # Add a second admin
-        other_admin_user = self.state.auth_store.create_user(
-            "admin2@example.com", "pwd-1234567890"
-        )
+        other_admin_user = self.state.auth_store.create_user("admin2@example.com", "pwd-1234567890")
         other_admin_membership = self.state.repository.save_workspace_membership(
             WorkspaceMembership(
                 user_id=other_admin_user.id,
@@ -306,9 +272,7 @@ class RemoveMemberAuthorization(unittest.TestCase):
             membership_id=self.member_membership.id,
         )
         self.assertIsNone(
-            self.state.repository.find_workspace_membership(
-                self.member.id, self.workspace_id
-            )
+            self.state.repository.find_workspace_membership(self.member.id, self.workspace_id)
         )
 
     def test_owner_cannot_be_removed(self):
@@ -336,17 +300,17 @@ class FrontendUIPresenceContract(unittest.TestCase):
     have admin endpoints but no way to use them."""
 
     def test_index_html_has_members_card(self):
-        text = Path(
-            str(Path(__file__).resolve().parent.parent / "static/index.html")
-        ).read_text(encoding="utf-8")
+        text = Path(str(Path(__file__).resolve().parent.parent / "static/index.html")).read_text(
+            encoding="utf-8"
+        )
         self.assertIn('id="workspaceMembersCard"', text)
         self.assertIn('id="workspaceMembersTable"', text)
         self.assertIn('id="workspaceMembersBody"', text)
 
     def test_app_js_has_renderer_and_fetches_endpoint(self):
-        text = Path(
-            str(Path(__file__).resolve().parent.parent / "static/app.js")
-        ).read_text(encoding="utf-8")
+        text = Path(str(Path(__file__).resolve().parent.parent / "static/app.js")).read_text(
+            encoding="utf-8"
+        )
         self.assertIn("renderWorkspaceMembersCard", text)
         self.assertIn("/api/workspaces/", text)
         # The renderer is in the dispatch list
@@ -379,23 +343,23 @@ class RoutesPresenceContract(unittest.TestCase):
     removes them fails CI."""
 
     def test_get_members_route_present(self):
-        src = Path(
-            str(Path(__file__).resolve().parent.parent / "app.py")
-        ).read_text(encoding="utf-8")
+        src = Path(str(Path(__file__).resolve().parent.parent / "app.py")).read_text(
+            encoding="utf-8"
+        )
         self.assertIn("/api/workspaces/", src)
         self.assertIn("ws_members_match", src)
         self.assertIn("list_workspace_members_enriched", src)
 
     def test_patch_member_role_route_present(self):
-        src = Path(
-            str(Path(__file__).resolve().parent.parent / "app.py")
-        ).read_text(encoding="utf-8")
+        src = Path(str(Path(__file__).resolve().parent.parent / "app.py")).read_text(
+            encoding="utf-8"
+        )
         self.assertIn("update_workspace_member_role", src)
 
     def test_delete_member_route_present(self):
-        src = Path(
-            str(Path(__file__).resolve().parent.parent / "app.py")
-        ).read_text(encoding="utf-8")
+        src = Path(str(Path(__file__).resolve().parent.parent / "app.py")).read_text(
+            encoding="utf-8"
+        )
         self.assertIn("remove_workspace_member", src)
 
 

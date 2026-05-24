@@ -24,7 +24,6 @@ import re
 import unittest
 from pathlib import Path
 
-
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
 # Sites that intentionally do NOT emit Trust Receipts, with
@@ -122,9 +121,7 @@ class ReceiptCoverageDriftGuard(unittest.TestCase):
         self.assertFalse(
             violations,
             "Found cap_context= call sites missing receipt_emitter=:\n"
-            + "\n".join(
-                f"  {f}:{ln}  {snippet}" for f, ln, snippet in violations
-            )
+            + "\n".join(f"  {f}:{ln}  {snippet}" for f, ln, snippet in violations)
             + "\n\nEvery user-facing AI dispatch site must emit a Trust "
             "Receipt OR be on EXEMPT_CALL_SITES with a recorded reason.",
         )

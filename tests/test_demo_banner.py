@@ -28,7 +28,6 @@ from __future__ import annotations
 import unittest
 from pathlib import Path
 
-
 REPO_ROOT = Path(__file__).resolve().parent.parent
 INDEX_HTML = REPO_ROOT / "static" / "index.html"
 DEMO_BANNER_JS = REPO_ROOT / "static" / "demo-banner.js"
@@ -102,9 +101,7 @@ class DemoBannerJavaScript(unittest.TestCase):
 
     def test_file_exists_and_substantive(self) -> None:
         self.assertTrue(DEMO_BANNER_JS.is_file())
-        self.assertGreater(
-            len(self.src), 500, "demo-banner.js suspiciously small"
-        )
+        self.assertGreater(len(self.src), 500, "demo-banner.js suspiciously small")
 
     def test_hostname_check(self) -> None:
         # The JS must hard-code the public demo subdomain so a
@@ -123,7 +120,7 @@ class DemoBannerJavaScript(unittest.TestCase):
         # exist + must be coded as the literal "1" (not e.g.
         # `.has('demo')` which would let `?demo=0` also reveal).
         self.assertIn(
-            'demo',
+            "demo",
             self.src,
         )
         self.assertIn(

@@ -138,16 +138,14 @@ class RefRedirectEmitsNoConsentCookieTests(unittest.TestCase):
                     return
             except OSError:
                 time.sleep(0.1)
-        self.fail("server did not become healthy on port {}".format(self.port))
+        self.fail(f"server did not become healthy on port {self.port}")
 
     def test_referral_redirect_does_not_emit_helpmefindthejob_ref_cookie(self) -> None:
         conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=2)
         conn.request("GET", "/r/abc123")
         resp = conn.getresponse()
         try:
-            self.assertEqual(
-                resp.status, 303, "expected 303 SEE_OTHER redirect from /r/<code>"
-            )
+            self.assertEqual(resp.status, 303, "expected 303 SEE_OTHER redirect from /r/<code>")
             self.assertEqual(resp.getheader("Location"), "/?ref=abc123")
             set_cookies = resp.headers.get_all("Set-Cookie") or []
             for cookie in set_cookies:

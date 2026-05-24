@@ -38,7 +38,6 @@ from company_discovery.migrations import (
     set_version,
 )
 
-
 REPO_ROOT = Path(__file__).resolve().parent.parent
 REPO_MIGRATIONS = REPO_ROOT / "migrations"
 
@@ -116,7 +115,9 @@ class CurrentVersionAndSetVersion(unittest.TestCase):
 class RunMigrationsContract(unittest.TestCase):
     def _make_migrations(self, dir_path: Path, n: int = 2) -> None:
         for i in range(1, n + 1):
-            (dir_path / f"{i:03d}_step.sql").write_text(f"CREATE TABLE IF NOT EXISTS step_{i} (id INTEGER PRIMARY KEY);\n", encoding="utf-8")
+            (dir_path / f"{i:03d}_step.sql").write_text(
+                f"CREATE TABLE IF NOT EXISTS step_{i} (id INTEGER PRIMARY KEY);\n", encoding="utf-8"
+            )
 
     def test_apply_to_fresh_db_runs_all_migrations(self):
         conn = sqlite3.connect(":memory:")
@@ -128,9 +129,7 @@ class RunMigrationsContract(unittest.TestCase):
             self.assertEqual(result.final_version, 3)
             self.assertEqual(result.applied, [1, 2, 3])
         # All step tables exist
-        cur = conn.execute(
-            "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
-        )
+        cur = conn.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")
         tables = [r[0] for r in cur.fetchall()]
         self.assertEqual(tables, ["step_1", "step_2", "step_3"])
 
@@ -162,18 +161,20 @@ class RunMigrationsContract(unittest.TestCase):
         conn = sqlite3.connect(":memory:")
         with TemporaryDirectory() as tmp:
             d = Path(tmp)
-            (d / "001_good.sql").write_text("CREATE TABLE good (id INTEGER PRIMARY KEY);\n", encoding="utf-8")
-            (d / "002_broken.sql").write_text("CREATE TABLE bad (id INTEGER PRIMARY KEY);\n"
-                "THIS IS NOT VALID SQL;\n", encoding="utf-8")
+            (d / "001_good.sql").write_text(
+                "CREATE TABLE good (id INTEGER PRIMARY KEY);\n", encoding="utf-8"
+            )
+            (d / "002_broken.sql").write_text(
+                "CREATE TABLE bad (id INTEGER PRIMARY KEY);\nTHIS IS NOT VALID SQL;\n",
+                encoding="utf-8",
+            )
             with self.assertRaises(sqlite3.Error):
                 run_migrations(conn, d)
         # After the failure, user_version is at 1 (the last
         # successfully-applied migration), not 2.
         self.assertEqual(current_version(conn), 1)
         # And the broken migration's first CREATE was rolled back
-        cur = conn.execute(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name='bad'"
-        )
+        cur = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='bad'")
         self.assertIsNone(cur.fetchone())
 
     def test_handles_empty_migrations_dir(self):
@@ -207,9 +208,7 @@ class RepoMigrationsDirectory(unittest.TestCase):
         result = run_migrations(conn, REPO_MIGRATIONS)
         self.assertGreaterEqual(result.final_version, 1)
         # Baseline tables must exist after applying
-        cur = conn.execute(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name='companies'"
-        )
+        cur = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='companies'")
         self.assertIsNotNone(cur.fetchone(), "baseline didn't create 'companies' table")
 
     def test_baseline_is_idempotent_with_create_schema(self):

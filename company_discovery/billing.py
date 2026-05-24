@@ -366,24 +366,16 @@ class StripeBillingBackend:
     ) -> None:
         self.path = path
         self.api_key = get_env("HELPMEFINDTHEJOB_STRIPE_API_KEY", "")
-        self.success_url = get_env(
-            "HELPMEFINDTHEJOB_STRIPE_SUCCESS_URL", ""
-        )
-        self.cancel_url = get_env(
-            "HELPMEFINDTHEJOB_STRIPE_CANCEL_URL", ""
-        )
+        self.success_url = get_env("HELPMEFINDTHEJOB_STRIPE_SUCCESS_URL", "")
+        self.cancel_url = get_env("HELPMEFINDTHEJOB_STRIPE_CANCEL_URL", "")
         self.price_lookup = {
-            "team": get_env(
-                "HELPMEFINDTHEJOB_STRIPE_PRICE_TEAM", ""
-            ),
+            "team": get_env("HELPMEFINDTHEJOB_STRIPE_PRICE_TEAM", ""),
             "org": get_env("HELPMEFINDTHEJOB_STRIPE_PRICE_ORG", ""),
             "pro_monthly": get_env(
                 "HELPMEFINDTHEJOB_STRIPE_PRICE_PRO_MONTHLY",
                 "",
             ),
-            "pro_annual": get_env(
-                "HELPMEFINDTHEJOB_STRIPE_PRICE_PRO_ANNUAL", ""
-            ),
+            "pro_annual": get_env("HELPMEFINDTHEJOB_STRIPE_PRICE_PRO_ANNUAL", ""),
         }
         self._transport: StripeTransport = transport or _default_stripe_transport
 
@@ -467,11 +459,7 @@ class StripeBillingBackend:
 
 
 def build_backend(*, data_dir: Path | None = None) -> BillingBackend:
-    backend = (
-        (get_env("HELPMEFINDTHEJOB_BILLING_BACKEND") or "manual")
-        .strip()
-        .casefold()
-    )
+    backend = (get_env("HELPMEFINDTHEJOB_BILLING_BACKEND") or "manual").strip().casefold()
     base = Path(data_dir) if data_dir else Path("data")
     if backend == "stripe":
         return StripeBillingBackend(path=base / "billing.json")

@@ -389,7 +389,11 @@ class HttpAuthAdminTests(unittest.TestCase):
                 break
             time.sleep(0.1)
         self.assertTrue(log_path.exists())
-        entries = [json.loads(line) for line in log_path.read_text(encoding="utf-8").splitlines() if line.strip()]
+        entries = [
+            json.loads(line)
+            for line in log_path.read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        ]
         actions = [entry["action"] for entry in entries]
         self.assertIn("create_user", actions)
         self.assertIn("update_active", actions)

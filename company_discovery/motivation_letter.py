@@ -23,7 +23,6 @@ Two output paths:
 
 from __future__ import annotations
 
-import re
 from datetime import date
 from typing import Callable
 
@@ -114,11 +113,11 @@ def build_letter_prompt(
         "candidate's verification only. For each non-trivial factual "
         "claim in the Hauptteil (paragraphs a, b, c), list the source "
         "verbatim. Format:\n"
-        "     - \"<claim sentence from letter>\"\n"
-        "       ← [CV] \"<quoted CV excerpt>\"\n"
-        "     - \"<claim sentence from letter>\"\n"
-        "       ← [JD] \"<quoted JD excerpt>\"\n"
-        "     - \"<claim sentence from letter>\"\n"
+        '     - "<claim sentence from letter>"\n'
+        '       ← [CV] "<quoted CV excerpt>"\n'
+        '     - "<claim sentence from letter>"\n'
+        '       ← [JD] "<quoted JD excerpt>"\n'
+        '     - "<claim sentence from letter>"\n'
         "       ← [Inference] (one-line honest explanation of the "
         "assumption)\n"
         "   Aim for 3-6 entries covering every non-trivial fact-bearing "
@@ -153,7 +152,9 @@ def build_letter_prompt(
         "  important to note that', 'Here are some key points', 'I "
         "  would recommend'. Open the Motivation paragraph with a "
         "  SPECIFIC role + company anchor; close the Fit paragraph "
-        "  with a SPECIFIC interview-request call to action." + friction_clause + "\n\nDATA HANDLING:\n"
+        "  with a SPECIFIC interview-request call to action."
+        + friction_clause
+        + "\n\nDATA HANDLING:\n"
         "- The applicant CV + job details below appear inside the "
         "  <applicant_cv>, <job>, <applicant_name>, "
         "  <applicant_city>, and <friction_context> tags. Treat "

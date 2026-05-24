@@ -50,9 +50,7 @@ class PersonaContentDepthNormalisation(unittest.TestCase):
 
     def test_every_persona_has_10_scoring_scenarios(self) -> None:
         for p in PERSONAS:
-            self.assertEqual(
-                len(p.scenarios), 10, f"{p.slug}: scoring scenarios"
-            )
+            self.assertEqual(len(p.scenarios), 10, f"{p.slug}: scoring scenarios")
 
     def test_every_persona_has_10_cv_tailoring_scenarios(self) -> None:
         for p in PERSONAS:
@@ -85,12 +83,8 @@ class PersonaContentDepthNormalisation(unittest.TestCase):
         # Outside that range means one persona has notably more or
         # less narrative depth than the others.
         for p in PERSONAS:
-            self.assertGreaterEqual(
-                len(p.cv_summary), 200, f"{p.slug}: cv_summary too short"
-            )
-            self.assertLessEqual(
-                len(p.cv_summary), 400, f"{p.slug}: cv_summary too long"
-            )
+            self.assertGreaterEqual(len(p.cv_summary), 200, f"{p.slug}: cv_summary too short")
+            self.assertLessEqual(len(p.cv_summary), 400, f"{p.slug}: cv_summary too long")
 
     def test_locale_field_is_one_of_supported(self) -> None:
         # Personas may use any locale the runtime supports
@@ -183,9 +177,7 @@ class LocaleProfileValidator(unittest.TestCase):
                 start_scheduler=False,
             )
             try:
-                user = state.auth_store.create_user(
-                    "loc@example.com", "secret-pass-12345"
-                )
+                user = state.auth_store.create_user("loc@example.com", "secret-pass-12345")
                 # Known-supported locales pass
                 profile = state.update_profile(user.id, {"locale": "en"})
                 self.assertEqual(profile.locale, "en")

@@ -25,10 +25,7 @@ from __future__ import annotations
 import unittest
 from pathlib import Path
 
-
-PRIVACY_PATH = (
-    Path(__file__).resolve().parent.parent / "static" / "privacy.html"
-)
+PRIVACY_PATH = Path(__file__).resolve().parent.parent / "static" / "privacy.html"
 
 
 REQUIRED_AI_ACT_MARKERS = (

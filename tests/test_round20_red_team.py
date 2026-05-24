@@ -76,16 +76,8 @@ class RedTeamAdversarialSuite(unittest.TestCase):
             agent.report.errored = True
             agent.report.error_text = f"{type(exc).__name__}: {exc}"[:500]
         # Surface findings for visibility
-        critical_or_high = [
-            f
-            for f in agent.report.findings
-            if f.severity in ("CRITICAL", "HIGH")
-        ]
-        medium_or_info = [
-            f
-            for f in agent.report.findings
-            if f.severity in ("MEDIUM", "INFO")
-        ]
+        critical_or_high = [f for f in agent.report.findings if f.severity in ("CRITICAL", "HIGH")]
+        medium_or_info = [f for f in agent.report.findings if f.severity in ("MEDIUM", "INFO")]
         if medium_or_info:
             print(
                 f"\n[red-team {agent_name}] {len(medium_or_info)} non-blocking findings:",

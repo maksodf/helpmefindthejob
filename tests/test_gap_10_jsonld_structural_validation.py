@@ -34,13 +34,19 @@ _CANONICAL_ORG_ID = "https://helpmefindthejob.org/#organization"
 _CANONICAL_WEB_ID = "https://helpmefindthejob.org/#website"
 _HTTPS_URL_RX = re.compile(r"^https://[a-zA-Z0-9._/-]+/?$")
 _EMAIL_RX = re.compile(r"^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
-_ISO_DATE_RX = re.compile(r"^\d{4}(-\d{2}(-\d{2}([T ]\d{2}:\d{2}(:\d{2})?(Z|[+-]\d{2}:\d{2})?)?)?)?$")
+_ISO_DATE_RX = re.compile(
+    r"^\d{4}(-\d{2}(-\d{2}([T ]\d{2}:\d{2}(:\d{2})?(Z|[+-]\d{2}:\d{2})?)?)?)?$"
+)
 
 _LEGAL_PAGES = (
-    "privacy.html", "privacy.de.html",
-    "terms.html", "terms.de.html",
-    "data-retention.html", "data-retention.de.html",
-    "impressum.html", "impressum.en.html",
+    "privacy.html",
+    "privacy.de.html",
+    "terms.html",
+    "terms.de.html",
+    "data-retention.html",
+    "data-retention.de.html",
+    "impressum.html",
+    "impressum.en.html",
 )
 
 
@@ -71,16 +77,16 @@ class IndexJsonLdGraph(unittest.TestCase):
 
     def test_organization_entity_complete(self) -> None:
         org = next(
-            (item for item in self.data["@graph"]
-             if item.get("@id") == _CANONICAL_ORG_ID),
+            (item for item in self.data["@graph"] if item.get("@id") == _CANONICAL_ORG_ID),
             None,
         )
         self.assertIsNotNone(org, "canonical Organization @id missing from @graph")
         # Required for NGO claim
         self.assertIn("name", org)
         self.assertIn("url", org)
-        self.assertTrue(_HTTPS_URL_RX.match(org["url"]),
-                        f"Organization.url must be HTTPS, got {org['url']!r}")
+        self.assertTrue(
+            _HTTPS_URL_RX.match(org["url"]), f"Organization.url must be HTTPS, got {org['url']!r}"
+        )
         # Address required for Impressum-equivalent
         address = org.get("address")
         self.assertIsInstance(address, dict)
@@ -100,8 +106,7 @@ class IndexJsonLdGraph(unittest.TestCase):
                 f"contactPoint must have email or url, got {cp!r}",
             )
             if "email" in cp:
-                self.assertRegex(cp["email"], _EMAIL_RX,
-                                 f"invalid email: {cp['email']!r}")
+                self.assertRegex(cp["email"], _EMAIL_RX, f"invalid email: {cp['email']!r}")
         # foundingDate is ISO-8601
         if "foundingDate" in org:
             self.assertRegex(str(org["foundingDate"]), _ISO_DATE_RX)
@@ -113,8 +118,7 @@ class IndexJsonLdGraph(unittest.TestCase):
 
     def test_website_entity_complete(self) -> None:
         web = next(
-            (item for item in self.data["@graph"]
-             if item.get("@id") == _CANONICAL_WEB_ID),
+            (item for item in self.data["@graph"] if item.get("@id") == _CANONICAL_WEB_ID),
             None,
         )
         self.assertIsNotNone(web, "canonical WebSite @id missing")
@@ -122,20 +126,25 @@ class IndexJsonLdGraph(unittest.TestCase):
         self.assertTrue(_HTTPS_URL_RX.match(web.get("url", "")))
         # Publisher must point at the canonical Organization @id
         publisher = web.get("publisher", {})
-        self.assertEqual(publisher.get("@id"), _CANONICAL_ORG_ID,
-                         "WebSite.publisher must @id-reference the canonical Organization")
+        self.assertEqual(
+            publisher.get("@id"),
+            _CANONICAL_ORG_ID,
+            "WebSite.publisher must @id-reference the canonical Organization",
+        )
 
     def test_software_application_consistent(self) -> None:
         sw = next(
-            (item for item in self.data["@graph"]
-             if item.get("@type") == "SoftwareApplication"),
+            (item for item in self.data["@graph"] if item.get("@type") == "SoftwareApplication"),
             None,
         )
         if sw is None:
             self.skipTest("no SoftwareApplication entity")
         self.assertIn("license", sw)
-        self.assertIn("apache", sw["license"].lower(),
-                      f"license should reference Apache 2.0, got {sw['license']!r}")
+        self.assertIn(
+            "apache",
+            sw["license"].lower(),
+            f"license should reference Apache 2.0, got {sw['license']!r}",
+        )
         # softwareVersion must match APP_VERSION from app.py — see
         # tests/test_changelog_currency.py for the version-drift guard
         self.assertIn("softwareVersion", sw)
@@ -150,7 +159,8 @@ class LegalPageJsonLdReferences(unittest.TestCase):
             with self.subTest(filename=filename):
                 data = _extract_jsonld(filename)
                 self.assertEqual(
-                    data.get("publisher", {}).get("@id"), _CANONICAL_ORG_ID,
+                    data.get("publisher", {}).get("@id"),
+                    _CANONICAL_ORG_ID,
                     f"{filename}: publisher must reference canonical Organization @id",
                 )
 
@@ -159,7 +169,8 @@ class LegalPageJsonLdReferences(unittest.TestCase):
             with self.subTest(filename=filename):
                 data = _extract_jsonld(filename)
                 self.assertEqual(
-                    data.get("isPartOf", {}).get("@id"), _CANONICAL_WEB_ID,
+                    data.get("isPartOf", {}).get("@id"),
+                    _CANONICAL_WEB_ID,
                     f"{filename}: isPartOf must reference canonical WebSite @id",
                 )
 
@@ -167,26 +178,28 @@ class LegalPageJsonLdReferences(unittest.TestCase):
         for filename in _LEGAL_PAGES:
             with self.subTest(filename=filename):
                 data = _extract_jsonld(filename)
-                self.assertEqual(data.get("@type"), "WebPage",
-                                 f"{filename} must declare @type WebPage")
+                self.assertEqual(
+                    data.get("@type"), "WebPage", f"{filename} must declare @type WebPage"
+                )
 
     def test_every_legal_page_url_is_absolute_https(self) -> None:
         for filename in _LEGAL_PAGES:
             with self.subTest(filename=filename):
                 data = _extract_jsonld(filename)
                 url = data.get("url", "")
-                self.assertTrue(_HTTPS_URL_RX.match(url),
-                                f"{filename} url must be absolute HTTPS, got {url!r}")
-                self.assertIn("helpmefindthejob.org", url,
-                              f"{filename} url must point at the canonical host")
+                self.assertTrue(
+                    _HTTPS_URL_RX.match(url), f"{filename} url must be absolute HTTPS, got {url!r}"
+                )
+                self.assertIn(
+                    "helpmefindthejob.org", url, f"{filename} url must point at the canonical host"
+                )
 
     def test_every_legal_page_declares_in_language(self) -> None:
         for filename in _LEGAL_PAGES:
             with self.subTest(filename=filename):
                 data = _extract_jsonld(filename)
                 lang = data.get("inLanguage")
-                self.assertIsInstance(lang, list,
-                                      f"{filename} inLanguage must be a list")
+                self.assertIsInstance(lang, list, f"{filename} inLanguage must be a list")
                 for code in lang:
                     self.assertIn(code, ("en", "de"))
 
@@ -206,7 +219,8 @@ class CrossReferenceIntegrity(unittest.TestCase):
                 referenced_id = data.get(ref_path, {}).get("@id")
                 with self.subTest(filename=filename, ref=ref_path):
                     self.assertIn(
-                        referenced_id, declared_ids,
+                        referenced_id,
+                        declared_ids,
                         f"GAP-10: {filename}.{ref_path} references @id "
                         f"{referenced_id!r} which is NOT declared in "
                         f"index.html @graph. Orphan reference.",

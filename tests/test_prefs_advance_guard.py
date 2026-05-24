@@ -74,11 +74,24 @@ class AdvanceTokenTests(unittest.TestCase):
 
     ADVANCE_TOKENS = (
         # Pre-Bug-B tokens (regression-pinned):
-        "none", "skip", "no preference", "nothing",
+        "none",
+        "skip",
+        "no preference",
+        "nothing",
         # Added in Bug B fix (operator spec 2026-05-20):
-        "nope", "no thanks",
-        "keine", "nichts", "kein bedarf", "nein danke",
-        "weiter", "next", "move on", "go", "fertig", "done", "proceed",
+        "nope",
+        "no thanks",
+        "keine",
+        "nichts",
+        "kein bedarf",
+        "nein danke",
+        "weiter",
+        "next",
+        "move on",
+        "go",
+        "fertig",
+        "done",
+        "proceed",
     )
 
     def test_each_token_advances_cleanly(self) -> None:
@@ -161,15 +174,27 @@ class UnrecognizedInputReasksTests(unittest.TestCase):
 
     UNRECOGNIZED_INPUTS = (
         # Numeric ambiguity (Aïcha shape-test repro):
-        "1", "2", "3",
+        "1",
+        "2",
+        "3",
         # Question / help-seeking (handled separately in Phase 2 #70):
-        "?", "huh", "what", "what?",
+        "?",
+        "huh",
+        "what",
+        "what?",
         # Casual ack-ish but not in advance set:
-        "ok", "okay", "yes", "yeah", "ja", "no",
+        "ok",
+        "okay",
+        "yes",
+        "yeah",
+        "ja",
+        "no",
         # German "I don't know" — explicit confusion signal:
-        "keine Ahnung", "weiß nicht",
+        "keine Ahnung",
+        "weiß nicht",
         # Random gibberish:
-        "asdf", "xyz",
+        "asdf",
+        "xyz",
     )
 
     def test_each_unrecognized_reasks(self) -> None:

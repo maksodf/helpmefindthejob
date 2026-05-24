@@ -32,9 +32,10 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from app import AppState
+from company_discovery.auth import AuthUser
 
 
-def _make_state() -> tuple[AppState, "AuthUser"]:
+def _make_state() -> tuple[AppState, AuthUser]:
     tmp = TemporaryDirectory()
     root = Path(tmp.name)
     state = AppState(
@@ -93,9 +94,7 @@ class SessionInvalidationContract(unittest.TestCase):
         self.assertEqual(_count_sessions_for(self.state, self.user.id), 3)
 
     def test_password_change_invalidates_all_sessions(self) -> None:
-        self.state.auth_store.update_user(
-            self.user.id, password="new-strong-password-12345"
-        )
+        self.state.auth_store.update_user(self.user.id, password="new-strong-password-12345")
         self.assertEqual(_count_sessions_for(self.state, self.user.id), 0)
 
     def test_account_deactivation_invalidates_all_sessions(self) -> None:
@@ -118,9 +117,7 @@ class SessionInvalidationContract(unittest.TestCase):
         password, sessions must NOT be invalidated. This is the
         legitimate use case where an admin re-saves a user form
         without changing anything."""
-        self.state.auth_store.update_user(
-            self.user.id, role=self.user.role, active=True
-        )
+        self.state.auth_store.update_user(self.user.id, role=self.user.role, active=True)
         self.assertEqual(
             _count_sessions_for(self.state, self.user.id),
             3,
@@ -143,6 +140,7 @@ class SessionInvalidationContract(unittest.TestCase):
         ).fetchone()
         secret = self.state.auth_store._decrypt_secret(row[0], self.user.id)
         from datetime import datetime, timezone
+
         from company_discovery.auth import _totp_at
 
         code = _totp_at(secret, when=datetime.now(timezone.utc))
@@ -162,6 +160,7 @@ class SessionInvalidationContract(unittest.TestCase):
         ).fetchone()
         secret = self.state.auth_store._decrypt_secret(row[0], self.user.id)
         from datetime import datetime, timezone
+
         from company_discovery.auth import _totp_at
 
         code = _totp_at(secret, when=datetime.now(timezone.utc))
@@ -181,9 +180,7 @@ class SessionInvalidationContract(unittest.TestCase):
 
     def test_cross_user_sessions_unaffected(self) -> None:
         """Invalidating user A's sessions must not touch user B's."""
-        other = self.state.auth_store.create_user(
-            "other-sess@example.com", "secret-pass-12345678"
-        )
+        other = self.state.auth_store.create_user("other-sess@example.com", "secret-pass-12345678")
         s_other = self.state.auth_store.create_session(other)
         self.assertEqual(_count_sessions_for(self.state, other.id), 1)
         # Demote/promote user A

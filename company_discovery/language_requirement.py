@@ -32,7 +32,6 @@ import re
 from dataclasses import dataclass, field
 from typing import Any
 
-
 # Language-level ladder, ordered low → high. The Goethe / CEFR
 # scale: A1 (beginner) → A2 → B1 → B2 → C1 → C2 → native.
 # Used by the loosen_language widening affordance to decide which
@@ -301,15 +300,11 @@ def detect_language_requirement(description: str | None) -> LanguageRequirement:
         if de_rank >= en_rank:
             primary_language = "de"
             primary_level = de_level
-            evidence = list(de_evidence) + [
-                f"+ EN: {ev}" for ev in en_evidence
-            ]
+            evidence = list(de_evidence) + [f"+ EN: {ev}" for ev in en_evidence]
         else:
             primary_language = "en"
             primary_level = en_level
-            evidence = list(en_evidence) + [
-                f"+ DE: {ev}" for ev in de_evidence
-            ]
+            evidence = list(en_evidence) + [f"+ DE: {ev}" for ev in de_evidence]
 
     # Confidence: "high" if 2+ pieces of evidence at the matched
     # level; "medium" if 1 piece + the level is C1+ or higher (more

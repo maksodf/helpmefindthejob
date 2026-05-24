@@ -25,7 +25,6 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any, Callable
 
-
 # ---------------------------------------------------------------------------
 # Referral envelope (must mirror MCP propose_referral output)
 # ---------------------------------------------------------------------------
@@ -206,9 +205,7 @@ class JsonRequestHandler(BaseHTTPRequestHandler):
                 pattern = "^" + re.sub(r"<[^/]+>", r"([^/]+)", p) + "$"
                 match = re.match(pattern, path)
                 if match:
-                    handler = lambda self, payload, _g=match.groups(), _h=h: _h(
-                        self, payload, *_g
-                    )
+                    handler = lambda self, payload, _g=match.groups(), _h=h: _h(self, payload, *_g)
                     break
         if handler is None:
             self._send_json(

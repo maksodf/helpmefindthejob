@@ -109,9 +109,7 @@ class RetryWithBackoff(unittest.TestCase):
     def setUp(self):
         self.tmp = TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
-        self.q = BackgroundJobQueue(
-            Path(self.tmp.name) / "q.sqlite3", max_attempts=3
-        )
+        self.q = BackgroundJobQueue(Path(self.tmp.name) / "q.sqlite3", max_attempts=3)
         self.addCleanup(self.q.close)
 
         def always_fail(payload):
@@ -234,9 +232,7 @@ class WorkerStartStopIdempotent(unittest.TestCase):
     def setUp(self):
         self.tmp = TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
-        self.q = BackgroundJobQueue(
-            Path(self.tmp.name) / "q.sqlite3", worker_count=2
-        )
+        self.q = BackgroundJobQueue(Path(self.tmp.name) / "q.sqlite3", worker_count=2)
         self.addCleanup(self.q.close)
 
     def test_start_idempotent(self):

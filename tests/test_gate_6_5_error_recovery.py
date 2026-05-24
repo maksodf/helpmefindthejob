@@ -9,6 +9,7 @@ wrapper changes (Fixes B + C — session-expiry + network-drop
 normalization) are JS-side and verified by spot review; no Python
 unit test reaches them.
 """
+
 from __future__ import annotations
 
 import unittest
@@ -20,6 +21,7 @@ class _StubOutcome:
     """Mirrors AggregationOutcome shape for testing the banner
     string-builder logic without needing the full aggregator
     engine + cache wired up."""
+
     provider: str
     error: str | None
 
@@ -99,22 +101,14 @@ class ErroredOutcomesPropagationContractTests(unittest.TestCase):
             _StubOutcome("arbeitnow", None),
             _StubOutcome("eures", "timeout_after_5s"),
         ]
-        serialised = [
-            {"provider": o.provider, "error": o.error}
-            for o in outcomes
-            if o.error
-        ]
+        serialised = [{"provider": o.provider, "error": o.error} for o in outcomes if o.error]
         self.assertEqual(len(serialised), 1)
         self.assertEqual(serialised[0]["provider"], "eures")
         self.assertEqual(serialised[0]["error"], "timeout_after_5s")
 
     def test_no_propagation_when_no_errors(self):
         outcomes = [_StubOutcome("a", None), _StubOutcome("b", None)]
-        serialised = [
-            {"provider": o.provider, "error": o.error}
-            for o in outcomes
-            if o.error
-        ]
+        serialised = [{"provider": o.provider, "error": o.error} for o in outcomes if o.error]
         self.assertEqual(serialised, [])
 
 

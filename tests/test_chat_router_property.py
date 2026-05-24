@@ -13,7 +13,8 @@ from __future__ import annotations
 import string
 import unittest
 
-from hypothesis import HealthCheck, given, settings, strategies as st
+from hypothesis import HealthCheck, given, settings
+from hypothesis import strategies as st
 
 from company_discovery import chat_router
 from company_discovery.chat_router import (
@@ -22,7 +23,6 @@ from company_discovery.chat_router import (
     keyword_route,
     parse_slash_command,
 )
-
 
 _SETTINGS = settings(
     max_examples=200,
@@ -55,9 +55,7 @@ _SLASH_BODY = st.text(
     min_size=1,
     max_size=80,
 )
-_SLASH_STRATEGY = st.builds(
-    lambda prefix, body: prefix + body, _SLASH_PREFIX, _SLASH_BODY
-)
+_SLASH_STRATEGY = st.builds(lambda prefix, body: prefix + body, _SLASH_PREFIX, _SLASH_BODY)
 
 
 # Known command names from the registry (for arg-extraction tests
@@ -150,9 +148,7 @@ class ExtractKeywordArgsInvariants(unittest.TestCase):
 
     @_SETTINGS
     @given(
-        command_name=st.text(
-            alphabet=string.ascii_lowercase + "_", min_size=0, max_size=30
-        ),
+        command_name=st.text(alphabet=string.ascii_lowercase + "_", min_size=0, max_size=30),
         message=_MESSAGE_STRATEGY,
     )
     def test_returns_dict_of_str_str(self, command_name, message):

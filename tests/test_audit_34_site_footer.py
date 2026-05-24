@@ -77,25 +77,31 @@ class SiteFooterConstantIntegrity(unittest.TestCase):
 
     def test_site_footer_constant_includes_required_markers(self) -> None:
         from app import SITE_FOOTER_HTML
+
         for marker in _REQUIRED_FOOTER_MARKERS:
             self.assertIn(
-                marker, SITE_FOOTER_HTML,
+                marker,
+                SITE_FOOTER_HTML,
                 f"AUDIT-34: SITE_FOOTER_HTML missing {marker!r}",
             )
 
     def test_site_footer_includes_version_and_build_sha(self) -> None:
-        from app import SITE_FOOTER_HTML, APP_VERSION, BUILD_SHA
+        from app import APP_VERSION, BUILD_SHA, SITE_FOOTER_HTML
+
         self.assertIn(
-            f"v{APP_VERSION}".encode("utf-8"), SITE_FOOTER_HTML,
+            f"v{APP_VERSION}".encode(),
+            SITE_FOOTER_HTML,
             "AUDIT-34: footer must include the app version",
         )
         self.assertIn(
-            f"<code>{BUILD_SHA}</code>".encode("utf-8"), SITE_FOOTER_HTML,
+            f"<code>{BUILD_SHA}</code>".encode(),
+            SITE_FOOTER_HTML,
             "AUDIT-34: footer must include the build SHA inside a <code> block",
         )
 
     def test_inject_html_footer_inserts_before_body_close(self) -> None:
         from app import _inject_html_footer
+
         page = b"<html><body><h1>Test</h1></body></html>"
         result = _inject_html_footer(page)
         self.assertIn(b'class="site-footer"', result)
@@ -105,28 +111,33 @@ class SiteFooterConstantIntegrity(unittest.TestCase):
         self.assertLess(footer_idx, body_close_idx, "Footer should be before </body>")
 
     def test_inject_html_footer_is_idempotent(self) -> None:
-        from app import _inject_html_footer, SITE_FOOTER_HTML
+        from app import SITE_FOOTER_HTML, _inject_html_footer
+
         page = b"<html><body>" + SITE_FOOTER_HTML + b"</body></html>"
         result = _inject_html_footer(page)
         self.assertEqual(
-            result.count(b'class="site-footer"'), 1,
+            result.count(b'class="site-footer"'),
+            1,
             "AUDIT-34: footer injection must be idempotent — re-running on a "
             "page that already has the footer should not duplicate it.",
         )
 
     def test_inject_html_footer_no_op_without_body_close(self) -> None:
         from app import _inject_html_footer
+
         page = b"<!doctype html>not-real-html"
         result = _inject_html_footer(page)
         self.assertEqual(result, page, "no </body> → no injection")
 
     def test_resolve_build_sha_returns_non_empty(self) -> None:
         from app import BUILD_SHA
+
         self.assertTrue(BUILD_SHA, "BUILD_SHA must resolve to a non-empty value")
         self.assertLessEqual(len(BUILD_SHA), 12, "BUILD_SHA must be ≤ 12 chars")
 
     def test_resolve_build_sha_respects_env_var(self) -> None:
         from app import _resolve_build_sha
+
         os.environ["HELPMEFINDTHEJOB_BUILD_SHA"] = "abc123def4567890"
         try:
             self.assertEqual(_resolve_build_sha(), "abc123def456")  # truncated to 12
@@ -227,7 +238,8 @@ class SiteFooterLiveResponse(unittest.TestCase):
         status, _headers, body = self._get("/")
         self.assertEqual(status, 200)
         self.assertEqual(
-            body.count(b'class="site-footer"'), 1,
+            body.count(b'class="site-footer"'),
+            1,
             "AUDIT-34: footer must appear exactly once per page (idempotent injection)",
         )
 
@@ -235,7 +247,8 @@ class SiteFooterLiveResponse(unittest.TestCase):
         status, _headers, body = self._get("/api/version")
         self.assertEqual(status, 200)
         self.assertNotIn(
-            b"site-footer", body,
+            b"site-footer",
+            body,
             "AUDIT-34: site-footer must not leak into JSON API responses",
         )
 
@@ -254,10 +267,12 @@ class SiteFooterLiveResponse(unittest.TestCase):
 
     def test_footer_contains_resolved_build_sha(self) -> None:
         from app import BUILD_SHA
+
         status, _headers, body = self._get("/privacy")
         self.assertEqual(status, 200)
         self.assertIn(
-            f"<code>{BUILD_SHA}</code>".encode("utf-8"), body,
+            f"<code>{BUILD_SHA}</code>".encode(),
+            body,
             "AUDIT-34: rendered footer must include the resolved BUILD_SHA",
         )
 
@@ -333,7 +348,8 @@ class SiteFooterBilingualAndLangSwitcher(unittest.TestCase):
         self.assertEqual(status, 200)
         for marker in (b">Contact</h2>", b">Legal</h2>", b">Project</h2>"):
             self.assertIn(
-                marker, body,
+                marker,
+                body,
                 f"GAP-1: English footer must carry English heading {marker!r}",
             )
 
@@ -342,7 +358,8 @@ class SiteFooterBilingualAndLangSwitcher(unittest.TestCase):
         self.assertEqual(status, 200)
         for marker in (b">Kontakt</h2>", b">Rechtliches</h2>", b">Projekt</h2>"):
             self.assertIn(
-                marker, body,
+                marker,
+                body,
                 f"GAP-1: DE footer must carry German heading {marker!r}",
             )
         # DE-specific legal-link labels
@@ -355,13 +372,15 @@ class SiteFooterBilingualAndLangSwitcher(unittest.TestCase):
         # template that's also in body bytes.
         footer_match = re.search(
             rb'<footer[^>]*class="site-footer"[^>]*>(.*?)</footer>',
-            body, re.DOTALL,
+            body,
+            re.DOTALL,
         )
         self.assertIsNotNone(footer_match, "footer must be present")
         footer_html = footer_match.group(1)
         for english_heading in (b">Contact</h2>", b">Legal</h2>", b">Project</h2>"):
             self.assertNotIn(
-                english_heading, footer_html,
+                english_heading,
+                footer_html,
                 f"DE footer must not contain {english_heading!r}",
             )
 
@@ -376,7 +395,8 @@ class SiteFooterBilingualAndLangSwitcher(unittest.TestCase):
         status, body = self._get("/", accept_language="en")
         self.assertEqual(status, 200)
         self.assertIn(
-            b'class="site-footer-langswitch"', body,
+            b'class="site-footer-langswitch"',
+            body,
             "GAP-2: footer must carry the lang-switcher block",
         )
         # Both languages must be linked
@@ -398,10 +418,10 @@ class SiteFooterBilingualAndLangSwitcher(unittest.TestCase):
         vary = resp.getheader("Vary") or ""
         resp.read()
         conn.close()
-        self.assertIn("Accept-Language", vary,
-                      "GAP-1+2 followup: HTML responses must Vary: Accept-Language")
-        self.assertIn("Cookie", vary,
-                      "GAP-1+2 followup: HTML responses must Vary: Cookie")
+        self.assertIn(
+            "Accept-Language", vary, "GAP-1+2 followup: HTML responses must Vary: Accept-Language"
+        )
+        self.assertIn("Cookie", vary, "GAP-1+2 followup: HTML responses must Vary: Cookie")
 
     def test_non_html_responses_vary_only_by_origin(self) -> None:
         """JS / CSS / manifest don't change by language, but post-
@@ -415,11 +435,13 @@ class SiteFooterBilingualAndLangSwitcher(unittest.TestCase):
         resp.read()
         conn.close()
         self.assertIn(
-            "Origin", vary,
+            "Origin",
+            vary,
             f"JS responses must Vary: Origin for CORS caching, got {vary!r}",
         )
         self.assertNotIn(
-            "Accept-Language", vary,
+            "Accept-Language",
+            vary,
             f"JS doesn't vary by language; should not be in Vary, got {vary!r}",
         )
 
@@ -447,7 +469,6 @@ class SiteFooterBilingualAndLangSwitcher(unittest.TestCase):
 # `re` is used in the bilingual-switcher tests above. Imported here
 # because the original test file didn't need it.
 import re  # noqa: E402
-
 
 if __name__ == "__main__":
     unittest.main()

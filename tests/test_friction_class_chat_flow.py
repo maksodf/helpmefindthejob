@@ -23,7 +23,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from app import AppState
-from company_discovery.chat_router import REGISTRY, parse_slash_command, keyword_route
+from company_discovery.chat_router import REGISTRY, keyword_route, parse_slash_command
 from company_discovery.friction_classifier import FRICTION_CLASS_LABELS
 
 
@@ -80,9 +80,7 @@ class FrictionClassChatHandlerContract(unittest.TestCase):
         self.addCleanup(lambda: self.state._test_tmp.cleanup())  # noqa: SLF001
 
     def test_change_with_list_arg_shows_seven_options(self):
-        result = self.state.chat_handler_friction_class_change(
-            self.user_id, {"slug": "list"}
-        )
+        result = self.state.chat_handler_friction_class_change(self.user_id, {"slug": "list"})
         self.assertTrue(result["ok"])
         # Every slug should appear in the listing message
         for slug in FRICTION_CLASS_LABELS:
@@ -96,18 +94,14 @@ class FrictionClassChatHandlerContract(unittest.TestCase):
         self.assertIn("aicha", result["message"])
 
     def test_change_with_valid_slug_updates_profile(self):
-        result = self.state.chat_handler_friction_class_change(
-            self.user_id, {"slug": "yusuf"}
-        )
+        result = self.state.chat_handler_friction_class_change(self.user_id, {"slug": "yusuf"})
         self.assertTrue(result["ok"])
         self.assertEqual(result["frictionClass"], "yusuf")
         profile = self.state.profile_for(self.user_id)
         self.assertEqual(profile.friction_class, "yusuf")
 
     def test_change_with_unknown_slug_returns_error(self):
-        result = self.state.chat_handler_friction_class_change(
-            self.user_id, {"slug": "bogus-slug"}
-        )
+        result = self.state.chat_handler_friction_class_change(self.user_id, {"slug": "bogus-slug"})
         self.assertFalse(result["ok"])
         self.assertIn("bogus-slug", result["message"])
         # No profile mutation on failure
@@ -115,9 +109,7 @@ class FrictionClassChatHandlerContract(unittest.TestCase):
         self.assertEqual(profile.friction_class, "")
 
     def test_change_with_uppercase_slug_normalises(self):
-        result = self.state.chat_handler_friction_class_change(
-            self.user_id, {"slug": "AICHA"}
-        )
+        result = self.state.chat_handler_friction_class_change(self.user_id, {"slug": "AICHA"})
         self.assertTrue(result["ok"])
         profile = self.state.profile_for(self.user_id)
         self.assertEqual(profile.friction_class, "aicha")
@@ -145,9 +137,9 @@ class JourneyPasteSuffixContract(unittest.TestCase):
 
     def test_paste_reply_includes_classification_label_when_confident(self):
         from company_discovery.journey import (
+            PHASE_CV_CHECK,
             UserJourney,
             _advance_cv_check,
-            PHASE_CV_CHECK,
         )
 
         journey = UserJourney(phase=PHASE_CV_CHECK, cv_status="unknown")
@@ -181,9 +173,9 @@ class JourneyPasteSuffixContract(unittest.TestCase):
 
     def test_paste_reply_no_suffix_when_no_confident_match(self):
         from company_discovery.journey import (
+            PHASE_CV_CHECK,
             UserJourney,
             _advance_cv_check,
-            PHASE_CV_CHECK,
         )
 
         # Generic resume — meets looks_like_pasted_cv shape (email +

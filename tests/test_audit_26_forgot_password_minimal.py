@@ -47,7 +47,7 @@ ROOT = Path(__file__).resolve().parents[1]
 STATIC = ROOT / "static"
 
 _MAX_PAGE_BYTES = 20_000  # SPA shell is ~103 KB; dedicated page is ~3 KB
-_FORBIDDEN_SPA_MARKERS = ("appShell", "authGate", "primaryNav", "id=\"app\"")
+_FORBIDDEN_SPA_MARKERS = ("appShell", "authGate", "primaryNav", 'id="app"')
 _REQUIRED_FORM_MARKERS = ("forgotPasswordForm", "forgotEmail", "forgot-password.js")
 
 
@@ -70,7 +70,8 @@ class ForgotPasswordStaticFilesPresent(unittest.TestCase):
         self.assertTrue(path.is_file(), f"missing {path}")
         size = path.stat().st_size
         self.assertLess(
-            size, 10_000,
+            size,
+            10_000,
             f"AUDIT-26: EN forgot-password.html grew to {size} bytes; "
             "should stay tiny (target < 5 KB).",
         )
@@ -80,7 +81,8 @@ class ForgotPasswordStaticFilesPresent(unittest.TestCase):
         self.assertTrue(path.is_file(), f"missing {path}")
         size = path.stat().st_size
         self.assertLess(
-            size, 10_000,
+            size,
+            10_000,
             f"AUDIT-26: DE forgot-password.de.html grew to {size} bytes; "
             "should stay tiny (target < 5 KB).",
         )
@@ -90,9 +92,9 @@ class ForgotPasswordStaticFilesPresent(unittest.TestCase):
         self.assertTrue(path.is_file(), f"missing {path}")
         size = path.stat().st_size
         self.assertLess(
-            size, 5_000,
-            f"AUDIT-26: forgot-password.js grew to {size} bytes; "
-            "should stay tiny (target < 3 KB).",
+            size,
+            5_000,
+            f"AUDIT-26: forgot-password.js grew to {size} bytes; should stay tiny (target < 3 KB).",
         )
 
     def test_en_page_has_required_markers_and_no_inline_script(self) -> None:
@@ -101,7 +103,8 @@ class ForgotPasswordStaticFilesPresent(unittest.TestCase):
             self.assertIn(marker, src, f"AUDIT-26 EN page missing {marker!r}")
         for marker in _FORBIDDEN_SPA_MARKERS:
             self.assertNotIn(
-                marker, src,
+                marker,
+                src,
                 f"AUDIT-26: EN page should not carry SPA-shell marker {marker!r}",
             )
         # CSP says script-src 'self' — no inline executable <script>
@@ -131,7 +134,8 @@ class ForgotPasswordStaticFilesPresent(unittest.TestCase):
         # serving the right localisation, not just a duplicate of EN.
         for de_phrase in ("Passwort vergessen", "Reset-Link senden", "Zur"):
             self.assertIn(
-                de_phrase, src,
+                de_phrase,
+                src,
                 f"AUDIT-26: DE page missing expected German phrase {de_phrase!r}",
             )
         # lang attribute must be 'de'
@@ -143,6 +147,7 @@ class ForgotPasswordBilingualRouting(unittest.TestCase):
 
     def test_forgot_password_is_in_bilingual_pages(self) -> None:
         from app import Handler
+
         self.assertIn(
             "/forgot-password",
             Handler._BILINGUAL_PAGES,
@@ -154,6 +159,7 @@ class ForgotPasswordBilingualRouting(unittest.TestCase):
         # spa_routes is a local variable inside serve_static(), so we test
         # the observable behaviour indirectly via _bilingual_page_path.
         from app import Handler
+
         self.assertEqual(
             Handler._bilingual_page_path(None, "/forgot-password", "en"),
             "/forgot-password",
@@ -222,7 +228,9 @@ class ForgotPasswordLiveResponse(unittest.TestCase):
                 time.sleep(0.1)
         raise RuntimeError(f"server did not become healthy on port {cls.port}")
 
-    def _get(self, path: str, headers: dict[str, str] | None = None) -> tuple[int, dict[str, str], str]:
+    def _get(
+        self, path: str, headers: dict[str, str] | None = None
+    ) -> tuple[int, dict[str, str], str]:
         conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=2)
         conn.request("GET", path, headers=headers or {})
         resp = conn.getresponse()
@@ -236,14 +244,16 @@ class ForgotPasswordLiveResponse(unittest.TestCase):
         status, _headers, body = self._get("/forgot-password")
         self.assertEqual(status, 200)
         self.assertLess(
-            len(body), _MAX_PAGE_BYTES,
+            len(body),
+            _MAX_PAGE_BYTES,
             f"AUDIT-26: /forgot-password body grew to {len(body)} bytes; "
             f"should stay under {_MAX_PAGE_BYTES} (vs ~103 KB SPA shell).",
         )
         self.assertIn("Forgot your password?", body)
         for marker in _FORBIDDEN_SPA_MARKERS:
             self.assertNotIn(
-                marker, body,
+                marker,
+                body,
                 f"AUDIT-26: default /forgot-password served the SPA shell "
                 f"(saw {marker!r}). Should serve forgot-password.html.",
             )
@@ -270,7 +280,9 @@ class ForgotPasswordLiveResponse(unittest.TestCase):
 
     def test_shared_js_is_reachable(self) -> None:
         status, _headers, body = self._get("/forgot-password.js")
-        self.assertEqual(status, 200, "AUDIT-26: forgot-password.js must be served as a static asset")
+        self.assertEqual(
+            status, 200, "AUDIT-26: forgot-password.js must be served as a static asset"
+        )
         self.assertIn("forgotPasswordForm", body)
         self.assertIn("/api/auth/forgot-password", body)
 
@@ -284,7 +296,8 @@ class ForgotPasswordLiveResponse(unittest.TestCase):
             status, _headers, body = self._get(route)
             self.assertEqual(status, 200, f"{route} should serve SPA shell, got {status}")
             self.assertGreater(
-                len(body), 50_000,
+                len(body),
+                50_000,
                 f"AUDIT-26 invariant: {route} should still be the ~103 KB SPA "
                 "shell until AUDIT-27 extracts dedicated pages.",
             )

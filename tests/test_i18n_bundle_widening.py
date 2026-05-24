@@ -31,7 +31,6 @@ from company_discovery.widening import (
     widening_label,
 )
 
-
 REPO_ROOT = Path(__file__).resolve().parent.parent
 EN_BUNDLE = REPO_ROOT / "static" / "i18n" / "en.json"
 DE_BUNDLE = REPO_ROOT / "static" / "i18n" / "de.json"
@@ -81,9 +80,7 @@ class I18nBundleTranslate(unittest.TestCase):
 
         for locale in ("en-US", "en_US", "en", "EN"):
             with self.subTest(locale=locale):
-                result = i18n_bundle.translate(
-                    "backend.widening.widen_location", locale
-                )
+                result = i18n_bundle.translate("backend.widening.widen_location", locale)
                 self.assertEqual(result, "Widened location")
 
     def test_translate_none_locale_falls_back_to_en(self):
@@ -237,7 +234,7 @@ class FrontendTypingLabelsReferenceBundleKeys(unittest.TestCase):
         # The schedule object is named TYPING_LABELS_SCHEDULE.
         self.assertIn("TYPING_LABELS_SCHEDULE", self.app_js)
         # Each schedule entry has a `key:` field
-        self.assertIn("key: \"backend.typing.", self.app_js)
+        self.assertIn('key: "backend.typing.', self.app_js)
 
     def test_every_referenced_typing_key_has_en_translation(self):
         """Extract every backend.typing.* key referenced in app.js
@@ -245,7 +242,8 @@ class FrontendTypingLabelsReferenceBundleKeys(unittest.TestCase):
         someone references a key without adding it to the bundle."""
 
         import re
-        keys = set(re.findall(r'backend\.typing\.[a-z]+(?:\.\d+)?', self.app_js))
+
+        keys = set(re.findall(r"backend\.typing\.[a-z]+(?:\.\d+)?", self.app_js))
         # Strip "default" which doesn't have an integer suffix
         for key in keys:
             with self.subTest(key=key):
@@ -257,7 +255,8 @@ class FrontendTypingLabelsReferenceBundleKeys(unittest.TestCase):
 
     def test_every_referenced_typing_key_has_de_translation(self):
         import re
-        keys = set(re.findall(r'backend\.typing\.[a-z]+(?:\.\d+)?', self.app_js))
+
+        keys = set(re.findall(r"backend\.typing\.[a-z]+(?:\.\d+)?", self.app_js))
         for key in keys:
             with self.subTest(key=key):
                 self.assertIn(

@@ -48,7 +48,6 @@ from mesh.common import (
     serve_until_stopped,
 )
 
-
 AGENT_NAME = "social-services-agent"
 AGENT_VERSION = "0.1.0"
 
@@ -152,15 +151,11 @@ def _match_cohort(profile_packet: dict[str, Any]) -> dict[str, Any]:
             f.lower() for f in m["friction_class_in"]
         ]:
             continue
-        if "residency_status_in" in m and not any(
-            r in residency for r in m["residency_status_in"]
-        ):
+        if "residency_status_in" in m and not any(r in residency for r in m["residency_status_in"]):
             continue
         if "has_children" in m and bool(m["has_children"]) != has_children:
             continue
-        if "career_intent_in" in m and not any(
-            c in career_intent for c in m["career_intent_in"]
-        ):
+        if "career_intent_in" in m and not any(c in career_intent for c in m["career_intent_in"]):
             continue
         return cohort
     return DEFAULT_RECOMMENDATION
@@ -183,11 +178,10 @@ def _make_recommendation(profile_packet: dict[str, Any]) -> dict[str, Any]:
         "nextSteps": list(cohort["next_steps"]),
         "durationMonths": cohort["duration_months"],
         "responsibleAuthority": cohort["responsible_authority"],
-        "userConsentReceivedAt": profile_packet.get("userConsentReceivedAt")
-        or now_iso(),
-        "consentExpiresAt": (
-            datetime.now(timezone.utc) + timedelta(days=30)
-        ).isoformat(timespec="seconds"),
+        "userConsentReceivedAt": profile_packet.get("userConsentReceivedAt") or now_iso(),
+        "consentExpiresAt": (datetime.now(timezone.utc) + timedelta(days=30)).isoformat(
+            timespec="seconds"
+        ),
     }
 
 
@@ -281,9 +275,7 @@ def main() -> None:
     )
     parser.add_argument(
         "--audit-path",
-        default=os.environ.get(
-            "MESH_SOCIAL_AUDIT", "data/mesh/social-services-agent-audit.log"
-        ),
+        default=os.environ.get("MESH_SOCIAL_AUDIT", "data/mesh/social-services-agent-audit.log"),
     )
     args = parser.parse_args()
     audit = AgentAuditLog(Path(args.audit_path))

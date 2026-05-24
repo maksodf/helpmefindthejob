@@ -37,7 +37,6 @@ import re
 from dataclasses import dataclass
 from typing import Any
 
-
 # Visa-constraint classifier — pattern-match against the
 # persona_fixtures.residency_status string. The Yusuf carve-out
 # (EU Blue Card is portable across EU employers → not constrained)
@@ -205,6 +204,7 @@ def widening_label(affordance: str, locale: str | None = "en") -> str:
     default = WIDENING_LABEL.get(affordance, affordance)
     return translate(key, locale=locale, default=default)
 
+
 # Affordance order for unconstrained personas (Yusuf / Maria /
 # Käthe / Tobias). Neutral: widen first, then seniority, then
 # laterals.
@@ -284,11 +284,7 @@ def available_affordances(
     # in which case dropping seniority would be a no-op for the
     # actual search. Doctrine: don't offer no-op affordances.
     if DROP_SENIORITY not in applied:
-        primary_query = (
-            journey.target_roles[0]
-            if journey.target_roles
-            else journey.role_text or ""
-        )
+        primary_query = journey.target_roles[0] if journey.target_roles else journey.role_text or ""
         if has_seniority_qualifier(primary_query):
             stripped = strip_seniority_prefix(primary_query)
             pool.append(
@@ -309,9 +305,7 @@ def available_affordances(
         )
 
     # Persona-aware ordering
-    order = (
-        _CONSTRAINED_ORDER if journey.visa_constrained else _UNCONSTRAINED_ORDER
-    )
+    order = _CONSTRAINED_ORDER if journey.visa_constrained else _UNCONSTRAINED_ORDER
 
     def _order_key(a: WideningAffordance) -> int:
         try:
@@ -364,20 +358,35 @@ def available_affordances(
 
 _WIDEN_LOCATION_TOKENS = frozenset(
     {
-        "widen location", "widen", "location", "anywhere", "wider location",
-        "broader location", "wider area", "weiter",
+        "widen location",
+        "widen",
+        "location",
+        "anywhere",
+        "wider location",
+        "broader location",
+        "wider area",
+        "weiter",
     }
 )
 _DROP_SENIORITY_TOKENS = frozenset(
     {
-        "drop seniority", "drop seniority qualifier", "drop senior",
-        "without seniority", "any seniority", "any level",
+        "drop seniority",
+        "drop seniority qualifier",
+        "drop senior",
+        "without seniority",
+        "any seniority",
+        "any level",
     }
 )
 _TRY_LATERALS_TOKENS = frozenset(
     {
-        "try laterals", "try lateral roles", "laterals", "lateral roles",
-        "related roles", "similar roles", "related",
+        "try laterals",
+        "try lateral roles",
+        "laterals",
+        "lateral roles",
+        "related roles",
+        "similar roles",
+        "related",
     }
 )
 
@@ -496,25 +505,54 @@ def apply_widening(
 
 _AUTO_RELAX_ADVANCE_TOKENS = frozenset(
     {
-        "yes", "y", "ja", "j", "ok", "okay", "go", "weiter",
-        "confirm", "do it", "apply", "sure",
+        "yes",
+        "y",
+        "ja",
+        "j",
+        "ok",
+        "okay",
+        "go",
+        "weiter",
+        "confirm",
+        "do it",
+        "apply",
+        "sure",
     }
 )
 _AUTO_RELAX_DECLINE_TOKENS = frozenset(
     {
-        "no", "n", "nein", "skip", "next", "nächste", "nachste",
-        "weiter zu", "decline",
+        "no",
+        "n",
+        "nein",
+        "skip",
+        "next",
+        "nächste",
+        "nachste",
+        "weiter zu",
+        "decline",
     }
 )
 _AUTO_RELAX_CANCEL_TOKENS = frozenset(
     {
-        "cancel", "back", "back to menu", "back-to-menu",
-        "stop", "abbrechen", "menu", "manual",
+        "cancel",
+        "back",
+        "back to menu",
+        "back-to-menu",
+        "stop",
+        "abbrechen",
+        "menu",
+        "manual",
     }
 )
 _AUTO_RELAX_GIVE_UP_TOKENS = frozenset(
     {
-        "give up", "done", "fertig", "exit", "quit", "end", "ende",
+        "give up",
+        "done",
+        "fertig",
+        "exit",
+        "quit",
+        "end",
+        "ende",
     }
 )
 
@@ -525,9 +563,18 @@ _AUTO_RELAX_GIVE_UP_TOKENS = frozenset(
 
 _AUTO_RELAX_ENTER_TOKENS = frozenset(
     {
-        "auto", "auto-relax", "auto relax", "autorelax",
-        "suggest", "system suggest", "guide me", "help me decide",
-        "relax", "auto mode", "auto-mode", "automatic",
+        "auto",
+        "auto-relax",
+        "auto relax",
+        "autorelax",
+        "suggest",
+        "system suggest",
+        "guide me",
+        "help me decide",
+        "relax",
+        "auto mode",
+        "auto-mode",
+        "automatic",
     }
 )
 
@@ -650,11 +697,7 @@ def probe_count_for_affordance(
     """
     if engine is None or affordance is None:
         return None
-    primary = (
-        journey.target_roles[0]
-        if journey.target_roles
-        else (journey.role_text or "")
-    )
+    primary = journey.target_roles[0] if journey.target_roles else (journey.role_text or "")
     try:
         if affordance.id == WIDEN_LOCATION:
             # Probe: same role, no location filter (what widen-location
@@ -662,9 +705,7 @@ def probe_count_for_affordance(
             return engine.probe_cached_count(query=primary, location=None)
         if affordance.id == DROP_SENIORITY:
             stripped = strip_seniority_prefix(primary)
-            return engine.probe_cached_count(
-                query=stripped, location=journey.location or None
-            )
+            return engine.probe_cached_count(query=stripped, location=journey.location or None)
         if affordance.id == TRY_LATERALS:
             if not lateral_options:
                 return None
@@ -678,9 +719,7 @@ def probe_count_for_affordance(
                 # location=None here — that would conflate two
                 # different widening affordances.
                 counts.append(
-                    engine.probe_cached_count(
-                        query=lat, location=journey.location or None
-                    )
+                    engine.probe_cached_count(query=lat, location=journey.location or None)
                 )
             # Aggregate iff ALL laterals warm (operator Q2):
             # partial-data sum would be decision-misleading.
@@ -717,11 +756,7 @@ def probe_lateral_counts(
     out: list[int | None] = []
     for lat in lateral_options:
         try:
-            out.append(
-                engine.probe_cached_count(
-                    query=lat, location=journey.location or None
-                )
-            )
+            out.append(engine.probe_cached_count(query=lat, location=journey.location or None))
         except Exception:  # noqa: BLE001 - Case E best-effort: count is decorative on the menu (None renders as "—"); never fail the lateral list assembly
             out.append(None)
     return out
@@ -747,13 +782,9 @@ def format_auto_relax_suggestion(
         placeholder).
     """
     if affordance.id == WIDEN_LOCATION:
-        suggestion = (
-            "Try widening to **search without the location filter**?"
-        )
+        suggestion = "Try widening to **search without the location filter**?"
     elif affordance.id == DROP_SENIORITY:
-        suggestion = (
-            f"Try widening to **{affordance.description}**?"
-        )
+        suggestion = f"Try widening to **{affordance.description}**?"
     elif affordance.id == TRY_LATERALS:
         if lateral_options:
             # Render per-lateral inline; mixed-state handled by
@@ -768,10 +799,7 @@ def format_auto_relax_suggestion(
                 else:
                     parts.append(f"**{role}**")
             roles_list = ", ".join(parts)
-            suggestion = (
-                f"Try widening to **lateral roles**? Would search "
-                f"these too: {roles_list}."
-            )
+            suggestion = f"Try widening to **lateral roles**? Would search these too: {roles_list}."
         else:
             suggestion = "Try widening to **lateral roles**?"
     else:

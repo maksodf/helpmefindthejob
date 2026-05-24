@@ -48,24 +48,16 @@ class PerUserRequestRateLimit(unittest.TestCase):
     def test_cap_blocks_after_threshold(self) -> None:
         # Custom low cap so the test runs in reasonable time
         for _ in range(5):
-            self.assertTrue(
-                self.state.claim_user_request_slot(self.user_id, cap=5)
-            )
+            self.assertTrue(self.state.claim_user_request_slot(self.user_id, cap=5))
         # 6th attempt must fail
-        self.assertFalse(
-            self.state.claim_user_request_slot(self.user_id, cap=5)
-        )
+        self.assertFalse(self.state.claim_user_request_slot(self.user_id, cap=5))
 
     def test_per_user_isolation(self) -> None:
         # User A hammers their cap; user B is unaffected
-        other = self.state.auth_store.create_user(
-            "other@example.com", "secret-pass-12345678"
-        )
+        other = self.state.auth_store.create_user("other@example.com", "secret-pass-12345678")
         for _ in range(5):
             self.state.claim_user_request_slot(self.user_id, cap=5)
-        self.assertFalse(
-            self.state.claim_user_request_slot(self.user_id, cap=5)
-        )
+        self.assertFalse(self.state.claim_user_request_slot(self.user_id, cap=5))
         self.assertTrue(self.state.claim_user_request_slot(other.id, cap=5))
 
     def test_stale_buckets_get_gc_on_periodic_sweep(self) -> None:
@@ -111,7 +103,7 @@ class SqlIdentifierDefense(unittest.TestCase):
             "users--",
             "users) UNION SELECT *",
             "users'OR'1",
-            "users\"OR\"1",
+            'users"OR"1',
             "",
             "users name",  # space
             "1users",  # leading digit
@@ -162,6 +154,7 @@ class SecurityHeadersResponse(unittest.TestCase):
         # headers to a fake writer. Use a minimal Handler with the
         # send_header method stubbed.
         from http.server import BaseHTTPRequestHandler
+
         from app import Handler
 
         captured: list[tuple[str, str]] = []
@@ -189,12 +182,8 @@ class SecurityHeadersResponse(unittest.TestCase):
         self.assertEqual(header_dict.get("X-Content-Type-Options"), "nosniff")
         self.assertEqual(header_dict.get("X-Frame-Options"), "DENY")
         self.assertEqual(header_dict.get("Referrer-Policy"), "strict-origin-when-cross-origin")
-        self.assertEqual(
-            header_dict.get("Cross-Origin-Opener-Policy"), "same-origin"
-        )
-        self.assertEqual(
-            header_dict.get("Cross-Origin-Resource-Policy"), "same-origin"
-        )
+        self.assertEqual(header_dict.get("Cross-Origin-Opener-Policy"), "same-origin")
+        self.assertEqual(header_dict.get("Cross-Origin-Resource-Policy"), "same-origin")
         self.assertIn("Content-Security-Policy", header_dict)
         # Permissions-Policy must lock down the dangerous APIs
         perms = header_dict.get("Permissions-Policy", "")

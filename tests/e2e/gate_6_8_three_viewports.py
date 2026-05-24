@@ -22,6 +22,7 @@ invariants. All pass = Gate 6.8 closed.
 
 Run via scripts/run-gate-6-8-smoke.sh.
 """
+
 from __future__ import annotations
 
 import os
@@ -147,7 +148,10 @@ def _test_viewport(browser, viewport: dict) -> None:
             except Exception:  # noqa: BLE001
                 continue
         if send_box:
-            ok = send_box["height"] >= TOUCH_TARGET_MIN_PX and send_box["width"] >= TOUCH_TARGET_MIN_PX
+            ok = (
+                send_box["height"] >= TOUCH_TARGET_MIN_PX
+                and send_box["width"] >= TOUCH_TARGET_MIN_PX
+            )
             report(
                 f"{name}: send button touch-target >= {TOUCH_TARGET_MIN_PX}px",
                 ok,
@@ -175,7 +179,9 @@ def _test_viewport(browser, viewport: dict) -> None:
         # Look for menu-toggle if nav isn't directly visible
         menu_toggle_visible = False
         try:
-            menu_toggle_visible = page.locator("#menuToggle, .menu-toggle, [aria-label*='menu' i]").first.is_visible(timeout=500)
+            menu_toggle_visible = page.locator(
+                "#menuToggle, .menu-toggle, [aria-label*='menu' i]"
+            ).first.is_visible(timeout=500)
         except Exception:  # noqa: BLE001
             pass
         ok = nav_visible or menu_toggle_visible
@@ -198,9 +204,7 @@ def _test_viewport(browser, viewport: dict) -> None:
             "}"
         )
         if transcript_overflow:
-            scrollable = transcript_overflow["overflowY"] in (
-                "auto", "scroll", "overlay"
-            )
+            scrollable = transcript_overflow["overflowY"] in ("auto", "scroll", "overlay")
             bounded = transcript_overflow["height"] < h
             ok = scrollable and bounded
             report(
@@ -228,7 +232,9 @@ def main() -> int:
         browser = pw.chromium.launch(headless=True)
         try:
             for viewport in VIEWPORTS:
-                print(f"\n--- Viewport: {viewport['name']} ({viewport['width']}x{viewport['height']}) ---")
+                print(
+                    f"\n--- Viewport: {viewport['name']} ({viewport['width']}x{viewport['height']}) ---"
+                )
                 _test_viewport(browser, viewport)
         finally:
             browser.close()

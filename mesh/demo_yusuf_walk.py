@@ -34,7 +34,6 @@ import urllib.request
 import uuid
 from typing import Any
 
-
 HOUSING_URL = os.environ.get("MESH_HOUSING_URL", "http://127.0.0.1:8101")
 ANERKENNUNG_URL = os.environ.get("MESH_ANERKENNUNG_URL", "http://127.0.0.1:8102")
 SOCIAL_URL = os.environ.get("MESH_SOCIAL_URL", "http://127.0.0.1:8103")
@@ -201,8 +200,8 @@ def main() -> int:
     )
     rec = social_resp["recommendation"]
     if rec["cohort"] == "default_unmatched":
-        print(f"  ✓ correctly fell through to default cohort (Beratungstermin)")
-        print(f"  ✓ no monetary benefit suggested (above threshold)")
+        print("  ✓ correctly fell through to default cohort (Beratungstermin)")
+        print("  ✓ no monetary benefit suggested (above threshold)")
     else:
         print(f"  ⚠ unexpected cohort match: {rec['cohort']}")
         return 1

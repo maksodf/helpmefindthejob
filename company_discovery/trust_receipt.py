@@ -43,7 +43,6 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any
 
-
 RECEIPT_SCHEMA_VERSION = "v1"
 
 
@@ -188,9 +187,7 @@ def build_trust_receipt(
         raise ValueError("salt_must_be_bytes_of_at_least_16_bytes")
 
     receipt_id_resolved = receipt_id or f"rcpt-{uuid.uuid4().hex[:12]}"
-    decided_at_resolved = decided_at or datetime.now(timezone.utc).isoformat(
-        timespec="seconds"
-    )
+    decided_at_resolved = decided_at or datetime.now(timezone.utc).isoformat(timespec="seconds")
 
     unsigned_payload = {
         "receiptId": receipt_id_resolved,
@@ -337,9 +334,7 @@ def render_receipt_markdown(receipt: TrustReceipt | dict[str, Any]) -> str:
     """Render a Trust Receipt as a human-readable markdown
     document the user can save / print / forward."""
     payload = receipt.to_dict() if isinstance(receipt, TrustReceipt) else dict(receipt)
-    payload["metadata"] = json.dumps(
-        payload.get("metadata") or {}, sort_keys=True, indent=2
-    )
+    payload["metadata"] = json.dumps(payload.get("metadata") or {}, sort_keys=True, indent=2)
     # Defensive: cast None to "null" for the markdown table
     for key in list(payload.keys()):
         if payload[key] is None:

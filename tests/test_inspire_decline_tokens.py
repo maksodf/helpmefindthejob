@@ -25,7 +25,6 @@ from company_discovery.journey import (
     _advance_inspire,
 )
 
-
 _DECLINE_TOKENS = (
     # Pre-Bug-A tokens (already worked, regression-pinned here):
     "no",
@@ -54,9 +53,7 @@ class InspireDeclineTokenTests(unittest.TestCase):
         # Simulate the inspire-suggestion offer state: lateral_roles
         # exist but the user is choosing to decline them.
         journey.lateral_roles = ["Senior Registered nurse", "Lead Registered nurse"]
-        result = _advance_inspire(
-            journey, decline_token, ai_available=False, ai_caller=None
-        )
+        result = _advance_inspire(journey, decline_token, ai_available=False, ai_caller=None)
         return result.journey
 
     def test_all_decline_tokens_set_single_target(self) -> None:
@@ -87,9 +84,7 @@ class InspireDeclineTokenTests(unittest.TestCase):
         journey = UserJourney(phase=PHASE_INSPIRE)
         journey.role_text = "Registered nurse"
         journey.lateral_roles = ["Senior Registered nurse"]
-        result = _advance_inspire(
-            journey, "yes", ai_available=False, ai_caller=None
-        )
+        result = _advance_inspire(journey, "yes", ai_available=False, ai_caller=None)
         self.assertEqual(
             result.journey.target_roles,
             ["Registered nurse", "Senior Registered nurse"],

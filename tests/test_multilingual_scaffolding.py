@@ -27,7 +27,6 @@ import json
 import unittest
 from pathlib import Path
 
-
 REPO_ROOT = Path(__file__).resolve().parent.parent
 LOCALES_REGISTRY = REPO_ROOT / "static" / "i18n" / "locales.json"
 I18N_DIR = REPO_ROOT / "static" / "i18n"
@@ -69,9 +68,7 @@ class LocaleRegistryShape(unittest.TestCase):
     def test_every_locale_has_required_fields(self):
         for locale in self.registry["locales"]:
             for field in REQUIRED_LOCALE_FIELDS:
-                self.assertIn(
-                    field, locale, f"locale {locale.get('code')!r} missing {field}"
-                )
+                self.assertIn(field, locale, f"locale {locale.get('code')!r} missing {field}")
 
     def test_every_locale_has_valid_direction(self):
         for locale in self.registry["locales"]:

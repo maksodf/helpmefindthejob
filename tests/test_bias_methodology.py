@@ -199,12 +199,8 @@ _SCORE_PATTERN = re.compile(
 _SUBSCORE_PATTERNS = {
     "skills": re.compile(r"SCORE_SKILLS\s*[:=]?\s*(\d{1,3})", re.IGNORECASE),
     "experience": re.compile(r"SCORE_EXPERIENCE\s*[:=]?\s*(\d{1,3})", re.IGNORECASE),
-    "location_language": re.compile(
-        r"SCORE_LOCATION_LANGUAGE\s*[:=]?\s*(\d{1,3})", re.IGNORECASE
-    ),
-    "friction_fit": re.compile(
-        r"SCORE_FRICTION_FIT\s*[:=]?\s*(\d{1,3})", re.IGNORECASE
-    ),
+    "location_language": re.compile(r"SCORE_LOCATION_LANGUAGE\s*[:=]?\s*(\d{1,3})", re.IGNORECASE),
+    "friction_fit": re.compile(r"SCORE_FRICTION_FIT\s*[:=]?\s*(\d{1,3})", re.IGNORECASE),
 }
 
 
@@ -708,10 +704,9 @@ class BiasMethodologyFitScoring(unittest.TestCase):
         # still on the prior day would otherwise stamp the wrong date.
         # The env var override remains the reproducibility anchor for
         # replay / fixture-regeneration use cases.
-        report_date = (
-            os.environ.get("HELPMEFINDTHEJOB_BIAS_REPORT_DATE", "").strip()
-            or datetime.now().astimezone().strftime("%Y-%m-%d")
-        )
+        report_date = os.environ.get(
+            "HELPMEFINDTHEJOB_BIAS_REPORT_DATE", ""
+        ).strip() or datetime.now().astimezone().strftime("%Y-%m-%d")
         out_path = (
             Path(__file__).resolve().parent.parent
             / "docs"

@@ -57,7 +57,6 @@ def _free_port() -> int:
 
 
 class FallbackHandlers(unittest.TestCase):
-
     @classmethod
     def setUpClass(cls) -> None:
         cls._tmp = TemporaryDirectory()
@@ -110,7 +109,9 @@ class FallbackHandlers(unittest.TestCase):
                 time.sleep(0.1)
         raise RuntimeError(f"server did not become healthy on port {cls.port}")
 
-    def _request(self, method: str, path: str, *, headers: dict | None = None) -> tuple[int, dict[str, str], bytes]:
+    def _request(
+        self, method: str, path: str, *, headers: dict | None = None
+    ) -> tuple[int, dict[str, str], bytes]:
         conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=2)
         conn.request(method, path, headers=headers or {})
         resp = conn.getresponse()
@@ -123,7 +124,8 @@ class FallbackHandlers(unittest.TestCase):
 
     def test_options_with_allowed_origin_returns_204_with_cors_headers(self) -> None:
         status, headers, body = self._request(
-            "OPTIONS", "/api/auth/forgot-password",
+            "OPTIONS",
+            "/api/auth/forgot-password",
             headers={"Origin": "https://helpmefindthejob.org"},
         )
         self.assertEqual(status, 204, "AUDIT-23: OPTIONS should be 204, not 501")
@@ -141,14 +143,16 @@ class FallbackHandlers(unittest.TestCase):
 
     def test_options_with_disallowed_origin_returns_bare_204(self) -> None:
         status, headers, body = self._request(
-            "OPTIONS", "/api/auth/forgot-password",
+            "OPTIONS",
+            "/api/auth/forgot-password",
             headers={"Origin": "https://attacker.example"},
         )
         self.assertEqual(status, 204)
         self.assertEqual(body, b"")
         # No CORS allow-origin echo for the attacker — browser will reject
         self.assertNotIn(
-            "Access-Control-Allow-Origin", headers,
+            "Access-Control-Allow-Origin",
+            headers,
             "AUDIT-23: must NOT echo back an unrecognised Origin",
         )
 
@@ -162,7 +166,8 @@ class FallbackHandlers(unittest.TestCase):
         status, headers, body = self._request("GET", "/this-does-not-exist-deliberately")
         self.assertEqual(status, 404)
         self.assertIn(
-            "text/html", headers.get("Content-Type", ""),
+            "text/html",
+            headers.get("Content-Type", ""),
             "AUDIT-24: 404 should be HTML, not JSON or plain text",
         )
         self.assertEqual(headers.get("Cache-Control"), "no-store")
@@ -175,7 +180,8 @@ class FallbackHandlers(unittest.TestCase):
 
     def test_unknown_url_with_accept_language_de_returns_german_404(self) -> None:
         status, _h, body = self._request(
-            "GET", "/this-does-not-exist-deliberately",
+            "GET",
+            "/this-does-not-exist-deliberately",
             headers={"Accept-Language": "de-DE,de;q=0.9"},
         )
         self.assertEqual(status, 404)
@@ -208,13 +214,17 @@ class FallbackHandlers(unittest.TestCase):
     def test_admin_subpath_serves_403_for_signed_in_non_admin(self) -> None:
         # Bootstrap admin
         status, headers, body = self._request(
-            "POST", "/api/auth/register",
+            "POST",
+            "/api/auth/register",
         )
         # Re-do via proper register flow
         conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=2)
         conn.request(
-            "POST", "/api/auth/register",
-            body=json.dumps({"email": "subpath-admin@example.invalid", "password": "very-strong-password-1234"}).encode("utf-8"),
+            "POST",
+            "/api/auth/register",
+            body=json.dumps(
+                {"email": "subpath-admin@example.invalid", "password": "very-strong-password-1234"}
+            ).encode("utf-8"),
             headers={"Content-Type": "application/json"},
         )
         resp = conn.getresponse()
@@ -236,12 +246,15 @@ class FallbackHandlers(unittest.TestCase):
         # Create a non-admin member
         conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=2)
         conn.request(
-            "POST", "/api/admin/users",
-            body=json.dumps({
-                "email": "subpath-member@example.invalid",
-                "password": "very-strong-password-5678",
-                "role": "member",
-            }).encode("utf-8"),
+            "POST",
+            "/api/admin/users",
+            body=json.dumps(
+                {
+                    "email": "subpath-member@example.invalid",
+                    "password": "very-strong-password-5678",
+                    "role": "member",
+                }
+            ).encode("utf-8"),
             headers={
                 "Content-Type": "application/json",
                 "Cookie": admin_cookie,
@@ -259,11 +272,14 @@ class FallbackHandlers(unittest.TestCase):
         # Login as member
         conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=2)
         conn.request(
-            "POST", "/api/auth/login",
-            body=json.dumps({
-                "email": "subpath-member@example.invalid",
-                "password": "very-strong-password-5678",
-            }).encode("utf-8"),
+            "POST",
+            "/api/auth/login",
+            body=json.dumps(
+                {
+                    "email": "subpath-member@example.invalid",
+                    "password": "very-strong-password-5678",
+                }
+            ).encode("utf-8"),
             headers={"Content-Type": "application/json"},
         )
         login_resp = conn.getresponse()
@@ -279,18 +295,21 @@ class FallbackHandlers(unittest.TestCase):
 
         # Hit /admin/users with member session → expect 403
         status, _h, body = self._request(
-            "GET", "/admin/users",
+            "GET",
+            "/admin/users",
             headers={"Cookie": member_cookie},
         )
         self.assertEqual(
-            status, 403,
+            status,
+            403,
             "/admin/* subpath must 403 for non-admin (was 404 pre-extension)",
         )
         self.assertIn(b"Admin access required", body)
 
         # And /admin (exact) — same behaviour
         status, _h, body = self._request(
-            "GET", "/admin",
+            "GET",
+            "/admin",
             headers={"Cookie": member_cookie},
         )
         self.assertEqual(status, 403)

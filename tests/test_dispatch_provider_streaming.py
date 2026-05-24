@@ -55,7 +55,7 @@ class _FakeResponse:
     def __init__(self, lines: list[bytes]) -> None:
         self._lines = lines
 
-    def __enter__(self) -> "_FakeResponse":
+    def __enter__(self) -> _FakeResponse:
         return self
 
     def __exit__(self, *exc_info) -> None:
@@ -82,7 +82,9 @@ class OllamaStreamingTests(unittest.TestCase):
             b'{"response": " world", "done": false}\n',
             b'{"response": "!", "done": true}\n',
         ]
-        provider = _provider("ollama", invocation_mode="local_http", base_url="http://127.0.0.1:11434")
+        provider = _provider(
+            "ollama", invocation_mode="local_http", base_url="http://127.0.0.1:11434"
+        )
         with _patch_urlopen_with(lines):
             events = list(
                 _dispatch_provider_streaming(
@@ -109,7 +111,9 @@ class OllamaStreamingTests(unittest.TestCase):
         self.assertIn("local", finals[0][1].error)
 
     def test_empty_stream_returns_provider_error(self) -> None:
-        provider = _provider("ollama", invocation_mode="local_http", base_url="http://127.0.0.1:11434")
+        provider = _provider(
+            "ollama", invocation_mode="local_http", base_url="http://127.0.0.1:11434"
+        )
         with _patch_urlopen_with([b'{"done": true}\n']):
             events = list(
                 _dispatch_provider_streaming("x", provider, runtime_credential="", purpose="t")
@@ -127,9 +131,12 @@ class OpenAICompatibleStreamingTests(unittest.TestCase):
             b"data: [DONE]\n",
         ]
         provider = _provider("openai", invocation_mode="api", credential_reference="OPENAI_API_KEY")
-        with patch("company_discovery.analysis.urlopen") as mock_url, patch(
-            "company_discovery.analysis._resolve_api_key",
-            return_value=("sk-test", "env"),
+        with (
+            patch("company_discovery.analysis.urlopen") as mock_url,
+            patch(
+                "company_discovery.analysis._resolve_api_key",
+                return_value=("sk-test", "env"),
+            ),
         ):
             mock_url.return_value = _FakeResponse(lines)
             events = list(
@@ -150,9 +157,7 @@ class OpenAICompatibleStreamingTests(unittest.TestCase):
             return_value=("", "env"),
         ):
             events = list(
-                _dispatch_provider_streaming(
-                    "x", provider, runtime_credential="", purpose="t"
-                )
+                _dispatch_provider_streaming("x", provider, runtime_credential="", purpose="t")
             )
         finals = [e for e in events if e[0] == "final"]
         self.assertEqual(finals[0][1].status, "configuration_error")
@@ -166,9 +171,12 @@ class OpenAICompatibleStreamingTests(unittest.TestCase):
             b"data: [DONE]\n",
         ]
         provider = _provider("openai", invocation_mode="api", credential_reference="OPENAI_API_KEY")
-        with patch("company_discovery.analysis.urlopen") as mock_url, patch(
-            "company_discovery.analysis._resolve_api_key",
-            return_value=("sk-test", "env"),
+        with (
+            patch("company_discovery.analysis.urlopen") as mock_url,
+            patch(
+                "company_discovery.analysis._resolve_api_key",
+                return_value=("sk-test", "env"),
+            ),
         ):
             mock_url.return_value = _FakeResponse(lines)
             events = list(
@@ -184,15 +192,18 @@ class GoogleGeminiStreamingTests(unittest.TestCase):
         # pipeline; encode the lines via .encode("utf-8") rather than
         # b"..." bytes literals (Python disallows non-ASCII bytes literals).
         lines = [
-            'data: {"candidates":[{"content":{"parts":[{"text":"Bonjour"}]}}]}\n'.encode("utf-8"),
-            'data: {"candidates":[{"content":{"parts":[{"text":" Aïcha"}]}}]}\n'.encode("utf-8"),
+            b'data: {"candidates":[{"content":{"parts":[{"text":"Bonjour"}]}}]}\n',
+            'data: {"candidates":[{"content":{"parts":[{"text":" Aïcha"}]}}]}\n'.encode(),
         ]
         provider = _provider(
             "google_gemini", invocation_mode="api", credential_reference="GEMINI_API_KEY"
         )
-        with patch("company_discovery.analysis.urlopen") as mock_url, patch(
-            "company_discovery.analysis._resolve_api_key",
-            return_value=("AIza-test", "env"),
+        with (
+            patch("company_discovery.analysis.urlopen") as mock_url,
+            patch(
+                "company_discovery.analysis._resolve_api_key",
+                return_value=("AIza-test", "env"),
+            ),
         ):
             mock_url.return_value = _FakeResponse(lines)
             events = list(
@@ -220,13 +231,9 @@ class CliProviderStreamingTests(unittest.TestCase):
             output="Hello from Claude Code",
             prompt="x",
         )
-        with patch(
-            "company_discovery.analysis._execute_cli", return_value=canned
-        ):
+        with patch("company_discovery.analysis._execute_cli", return_value=canned):
             events = list(
-                _dispatch_provider_streaming(
-                    "x", provider, runtime_credential="", purpose="t"
-                )
+                _dispatch_provider_streaming("x", provider, runtime_credential="", purpose="t")
             )
         # No token events; one final event carrying the canned result.
         token_chunks = [e for e in events if e[0] == "token"]
@@ -240,9 +247,7 @@ class ManualAndUnsupportedTests(unittest.TestCase):
     def test_manual_yields_handoff_required_final(self) -> None:
         provider = _provider("manual", invocation_mode="manual")
         events = list(
-            _dispatch_provider_streaming(
-                "x", provider, runtime_credential="", purpose="t"
-            )
+            _dispatch_provider_streaming("x", provider, runtime_credential="", purpose="t")
         )
         finals = [e for e in events if e[0] == "final"]
         self.assertEqual(len(finals), 1)
@@ -251,9 +256,7 @@ class ManualAndUnsupportedTests(unittest.TestCase):
     def test_unsupported_provider_yields_unsupported_final(self) -> None:
         provider = _provider("totally-bogus", invocation_mode="api")
         events = list(
-            _dispatch_provider_streaming(
-                "x", provider, runtime_credential="", purpose="t"
-            )
+            _dispatch_provider_streaming("x", provider, runtime_credential="", purpose="t")
         )
         finals = [e for e in events if e[0] == "final"]
         self.assertEqual(len(finals), 1)
@@ -271,14 +274,11 @@ class AuditEmissionTests(unittest.TestCase):
         provider = _provider(
             "ollama", invocation_mode="local_http", base_url="http://127.0.0.1:11434"
         )
-        with _patch_urlopen_with(lines), patch(
-            "company_discovery.analysis._emit_dispatch_audit"
-        ) as audit:
-            list(
-                _dispatch_provider_streaming(
-                    "x", provider, runtime_credential="", purpose="t"
-                )
-            )
+        with (
+            _patch_urlopen_with(lines),
+            patch("company_discovery.analysis._emit_dispatch_audit") as audit,
+        ):
+            list(_dispatch_provider_streaming("x", provider, runtime_credential="", purpose="t"))
         self.assertEqual(audit.call_count, 1)
         call_kwargs = audit.call_args.kwargs
         self.assertEqual(call_kwargs["purpose"], "t")

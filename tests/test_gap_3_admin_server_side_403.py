@@ -107,8 +107,14 @@ class AdminServerSideForbidden(unittest.TestCase):
                 time.sleep(0.1)
         raise RuntimeError(f"server did not become healthy on port {cls.port}")
 
-    def _request(self, method: str, path: str, *, body: bytes | None = None,
-                 headers: dict[str, str] | None = None) -> tuple[int, dict[str, str], bytes]:
+    def _request(
+        self,
+        method: str,
+        path: str,
+        *,
+        body: bytes | None = None,
+        headers: dict[str, str] | None = None,
+    ) -> tuple[int, dict[str, str], bytes]:
         conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=2)
         conn.request(method, path, body=body, headers=headers or {})
         resp = conn.getresponse()
@@ -120,7 +126,8 @@ class AdminServerSideForbidden(unittest.TestCase):
     def _register(self, email: str, password: str) -> tuple[int, str | None, dict | None]:
         """Register a user. Returns (status, session_cookie, payload)."""
         status, headers, body = self._request(
-            "POST", "/api/auth/register",
+            "POST",
+            "/api/auth/register",
             body=json.dumps({"email": email, "password": password}).encode("utf-8"),
             headers={"Content-Type": "application/json"},
         )
@@ -169,11 +176,14 @@ class AdminServerSideForbidden(unittest.TestCase):
             # If a previous test in this class already bootstrapped,
             # try logging in as the existing admin.
             status_login, headers, login_body = self._request(
-                "POST", "/api/auth/login",
-                body=json.dumps({
-                    "email": "admin@example.invalid",
-                    "password": "very-strong-password-1234",
-                }).encode("utf-8"),
+                "POST",
+                "/api/auth/login",
+                body=json.dumps(
+                    {
+                        "email": "admin@example.invalid",
+                        "password": "very-strong-password-1234",
+                    }
+                ).encode("utf-8"),
                 headers={"Content-Type": "application/json"},
             )
             if status_login != 200:
@@ -190,12 +200,15 @@ class AdminServerSideForbidden(unittest.TestCase):
 
         # Step 2: as admin, POST /api/admin/users to create a member.
         status_create, _h, _b = self._request(
-            "POST", "/api/admin/users",
-            body=json.dumps({
-                "email": member_email,
-                "password": member_password,
-                "role": "member",
-            }).encode("utf-8"),
+            "POST",
+            "/api/admin/users",
+            body=json.dumps(
+                {
+                    "email": member_email,
+                    "password": member_password,
+                    "role": "member",
+                }
+            ).encode("utf-8"),
             headers={
                 "Content-Type": "application/json",
                 "Cookie": admin_cookie,
@@ -207,11 +220,14 @@ class AdminServerSideForbidden(unittest.TestCase):
 
         # Step 3: log in as the new member, return their session cookie
         status_login, login_headers, login_body = self._request(
-            "POST", "/api/auth/login",
-            body=json.dumps({
-                "email": member_email,
-                "password": member_password,
-            }).encode("utf-8"),
+            "POST",
+            "/api/auth/login",
+            body=json.dumps(
+                {
+                    "email": member_email,
+                    "password": member_password,
+                }
+            ).encode("utf-8"),
             headers={"Content-Type": "application/json"},
         )
         if status_login != 200:
@@ -239,17 +255,17 @@ class AdminServerSideForbidden(unittest.TestCase):
         )
 
         # Hit /admin with the non-admin's session.
-        status, headers, body = self._request(
-            "GET", "/admin", headers={"Cookie": nonadmin_cookie}
-        )
+        status, headers, body = self._request("GET", "/admin", headers={"Cookie": nonadmin_cookie})
         self.assertEqual(
-            status, 403,
+            status,
+            403,
             f"GAP-3: logged-in non-admin /admin should be 403, got {status}. "
             "Pre-GAP-3 this would have leaked the ~108 KB SPA shell.",
         )
         # Body should be the small HTML page, NOT the SPA shell
         self.assertLess(
-            len(body), 15_000,
+            len(body),
+            15_000,
             f"GAP-3: 403 body is {len(body)} bytes — should be a small "
             "page, not the SPA shell. Pre-GAP-3 the SPA shell leaked through.",
         )
@@ -261,9 +277,9 @@ class AdminServerSideForbidden(unittest.TestCase):
         self.assertNotIn(b'id="loginForm"', body)
         # Cache-Control: no-store so browsers/Caddy don't cache the 403
         self.assertEqual(
-            headers.get("Cache-Control"), "no-store",
-            "GAP-3: 403 must be Cache-Control: no-store to keep the role "
-            "decision per-request.",
+            headers.get("Cache-Control"),
+            "no-store",
+            "GAP-3: 403 must be Cache-Control: no-store to keep the role decision per-request.",
         )
 
     def test_logged_in_non_admin_gets_german_403_when_accept_language_de(self) -> None:
@@ -273,7 +289,8 @@ class AdminServerSideForbidden(unittest.TestCase):
 
         # Request /admin with German Accept-Language
         status, _headers, body = self._request(
-            "GET", "/admin",
+            "GET",
+            "/admin",
             headers={
                 "Cookie": nonadmin_cookie,
                 "Accept-Language": "de-DE,de;q=0.9,en;q=0.5",

@@ -197,7 +197,11 @@ class HttpAdminExtrasTests(unittest.TestCase):
         self.assertEqual(payload["status"], "sent")
         # Verify outbox got the entry
         outbox = Path(self.tmp.name) / "email_outbox.log"
-        entries = [json.loads(line) for line in outbox.read_text(encoding="utf-8").splitlines() if line.strip()]
+        entries = [
+            json.loads(line)
+            for line in outbox.read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        ]
         self.assertTrue(any(entry["to"] == "ops@example.com" for entry in entries))
         # Body of the test email must not leak HELPMEFINDTHEJOB_SMTP_PASSWORD or admin password
         for entry in entries:

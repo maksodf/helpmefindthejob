@@ -26,16 +26,16 @@ from __future__ import annotations
 
 import unittest
 
-from hypothesis import HealthCheck, given, settings, strategies as st
+from hypothesis import HealthCheck, given, settings
+from hypothesis import strategies as st
 
 from company_discovery.journey import (
     ALL_PHASES,
-    AdvanceResult,
     PHASE_GREET,
+    AdvanceResult,
     UserJourney,
     advance,
 )
-
 
 _SETTINGS = settings(
     max_examples=100,
@@ -48,14 +48,51 @@ _SETTINGS = settings(
 # Includes common terms users might type ("cancel", "yes", "find a
 # job", "Berlin") so the generator exercises both happy and bizarre
 # paths.
-_MESSAGE_FRAGMENTS = st.sampled_from([
-    "yes", "no", "ja", "nein", "ok", "skip", "cancel", "stop", "exit",
-    "find a job", "wohnung", "Berlin", "Pflege", "frontend",
-    "5 years", "0 years", "letter", "consult", "save", "mark", "done",
-    "thanks", "give up", "1", "2", "3", "10", "100", "/start",
-    "/cancel", "/help", "/skip", "", " ", "  ",
-    "🙂", "ÄÖÜß", "<script>", "{}", "null", "undefined",
-])
+_MESSAGE_FRAGMENTS = st.sampled_from(
+    [
+        "yes",
+        "no",
+        "ja",
+        "nein",
+        "ok",
+        "skip",
+        "cancel",
+        "stop",
+        "exit",
+        "find a job",
+        "wohnung",
+        "Berlin",
+        "Pflege",
+        "frontend",
+        "5 years",
+        "0 years",
+        "letter",
+        "consult",
+        "save",
+        "mark",
+        "done",
+        "thanks",
+        "give up",
+        "1",
+        "2",
+        "3",
+        "10",
+        "100",
+        "/start",
+        "/cancel",
+        "/help",
+        "/skip",
+        "",
+        " ",
+        "  ",
+        "🙂",
+        "ÄÖÜß",
+        "<script>",
+        "{}",
+        "null",
+        "undefined",
+    ]
+)
 
 _RANDOM_MESSAGE = st.text(
     alphabet=st.characters(
@@ -177,8 +214,7 @@ class StateMachineNeverEscapes(unittest.TestCase):
             self.assertIn(
                 journey.phase,
                 ALL_PHASES,
-                f"journey escaped to invalid phase {journey.phase!r} "
-                f"after message {msg!r}",
+                f"journey escaped to invalid phase {journey.phase!r} after message {msg!r}",
             )
 
 

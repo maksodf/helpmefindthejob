@@ -17,14 +17,12 @@ from __future__ import annotations
 
 import unittest
 from pathlib import Path
-
 from pathlib import Path as _RPath
+
 _REPO_ROOT = _RPath(__file__).resolve().parent.parent
 
 
-RELEASE_DOC = Path(
-    str(_REPO_ROOT / "docs/releases/v0.1.0.md")
-)
+RELEASE_DOC = Path(str(_REPO_ROOT / "docs/releases/v0.1.0.md"))
 
 
 class ReleaseDocAddendumStructure(unittest.TestCase):

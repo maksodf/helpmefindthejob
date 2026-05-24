@@ -43,12 +43,12 @@ from lxml import etree
 from signxml import DigestAlgorithm, SignatureMethod, XMLSigner
 
 from company_discovery.sso_saml import (
+    _NS,
     SamlConfigError,
     SamlError,
     SamlIdpConfig,
     SamlResponseError,
     SamlUserClaims,
-    _NS,
     _extract_display_name,
     _extract_email,
     _normalize_cert,
@@ -59,7 +59,6 @@ from company_discovery.sso_saml import (
     parse_and_validate_response,
     route_by_email_domain,
 )
-
 
 # ---------------------------------------------------------------------------
 # Mock IdP — generates a keypair + cert and signs assertions on demand
@@ -72,9 +71,7 @@ class _MockIdp:
 
     def __init__(self, *, entity_id: str = "https://idp.example/entity"):
         self.entity_id = entity_id
-        self.private_key = rsa.generate_private_key(
-            public_exponent=65537, key_size=2048
-        )
+        self.private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
         public_key = self.private_key.public_key()
         # Build a self-signed cert
         subject = issuer = x509.Name(
@@ -182,7 +179,7 @@ class _MockIdp:
                 f"{in_response_to_attr}"
                 f'Destination="{acs_url}">'
                 f"<saml:Issuer>{self.entity_id}</saml:Issuer>"
-                f'<samlp:Status>'
+                f"<samlp:Status>"
                 f'<samlp:StatusCode Value="urn:oasis:names:tc:SAML:2.0:status:Success"/>'
                 f"</samlp:Status>"
                 f"{assertion_serialized}"
@@ -199,7 +196,7 @@ class _MockIdp:
                 f"{in_response_to_attr}"
                 f'Destination="{acs_url}">'
                 f"<saml:Issuer>{self.entity_id}</saml:Issuer>"
-                f'<samlp:Status>'
+                f"<samlp:Status>"
                 f'<samlp:StatusCode Value="urn:oasis:names:tc:SAML:2.0:status:Success"/>'
                 f"</samlp:Status>"
                 f"{assertion_xml}"
@@ -269,9 +266,7 @@ class IdpEnvLoading(unittest.TestCase):
         os.environ["HELPMEFINDTHEJOB_SAML_SHIBBOLETH_UNI_CERT_PEM"] = (
             "-----BEGIN CERTIFICATE-----\nMIIB\n-----END CERTIFICATE-----"
         )
-        os.environ["HELPMEFINDTHEJOB_SAML_SHIBBOLETH_UNI_EMAIL_DOMAIN"] = (
-            "uni-berlin.de"
-        )
+        os.environ["HELPMEFINDTHEJOB_SAML_SHIBBOLETH_UNI_EMAIL_DOMAIN"] = "uni-berlin.de"
         idps = load_idps_from_env()
         self.assertEqual(len(idps), 1)
         idp = idps[0]
@@ -349,7 +344,7 @@ class SpMetadataShape(unittest.TestCase):
         self.assertIn(b"https://sp.example/acs", metadata)
         self.assertIn(b"EntityDescriptor", metadata)
         self.assertIn(b"AssertionConsumerService", metadata)
-        self.assertIn(b"WantAssertionsSigned=\"true\"", metadata)
+        self.assertIn(b'WantAssertionsSigned="true"', metadata)
 
     def test_metadata_parses_as_xml(self):
         from lxml import etree as et
@@ -591,9 +586,7 @@ class ResponseValidationFailureModes(unittest.TestCase):
 
 class EmailExtraction(unittest.TestCase):
     def test_lowercase_email_attribute(self):
-        result = _extract_email(
-            {"email": ["Alice@Hospital.de"]}, fallback_nameid=""
-        )
+        result = _extract_email({"email": ["Alice@Hospital.de"]}, fallback_nameid="")
         self.assertEqual(result, "alice@hospital.de")
 
     def test_oid_attribute_name_recognised(self):
@@ -629,9 +622,7 @@ class DisplayNameExtraction(unittest.TestCase):
         self.assertEqual(result, "Alice Schmidt")
 
     def test_first_plus_last(self):
-        result = _extract_display_name(
-            {"givenName": ["Bob"], "surname": ["Müller"]}
-        )
+        result = _extract_display_name({"givenName": ["Bob"], "surname": ["Müller"]})
         self.assertEqual(result, "Bob Müller")
 
     def test_first_only(self):
@@ -690,9 +681,9 @@ class HttpRoutesPresence(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.src = Path(
-            str(Path(__file__).resolve().parent.parent / "app.py")
-        ).read_text(encoding="utf-8")
+        cls.src = Path(str(Path(__file__).resolve().parent.parent / "app.py")).read_text(
+            encoding="utf-8"
+        )
 
     def test_idps_listing_route_present(self):
         self.assertIn('"/api/auth/sso/saml/idps"', self.src)
@@ -731,9 +722,7 @@ class HttpRoutesPresence(unittest.TestCase):
         gate_pos = post_body.find(
             'if parsed.path.startswith("/api/"):\n                session = self.require_auth()'
         )
-        self.assertGreater(
-            gate_pos, 0, "auth gate not found in do_POST in expected shape"
-        )
+        self.assertGreater(gate_pos, 0, "auth gate not found in do_POST in expected shape")
         self.assertLess(
             acs_pos,
             gate_pos,

@@ -25,12 +25,12 @@ import unittest
 
 from company_discovery.visa_status_flags import (
     ALL_FLAGS,
-    FLAG_LABELS,
     FLAG_ANERKENNUNG_FRIENDLY,
     FLAG_AUSBILDUNG_CLASS,
     FLAG_BLUE_CARD_OK,
     FLAG_EU_CITIZENS_ONLY,
     FLAG_HUMANITARIAN_PATHWAY,
+    FLAG_LABELS,
     FLAG_PARAGRAPH_16D,
     FLAG_PERMANENT_RESIDENCE_REQUIRED,
     FLAG_WIEDEREINSTIEG_FRIENDLY,
@@ -66,16 +66,12 @@ class AnerkennungFlagDetection(unittest.TestCase):
         self.assertIn(FLAG_ANERKENNUNG_FRIENDLY, slugs)
 
     def test_anerkennungspartner_detected(self):
-        flags = detect_visa_status_flags(
-            "Klinik ist offizieller Anerkennungspartner."
-        )
+        flags = detect_visa_status_flags("Klinik ist offizieller Anerkennungspartner.")
         slugs = {f.slug for f in flags}
         self.assertIn(FLAG_ANERKENNUNG_FRIENDLY, slugs)
 
     def test_supports_anerkennung_detected(self):
-        flags = detect_visa_status_flags(
-            "We support Anerkennung for international nurses."
-        )
+        flags = detect_visa_status_flags("We support Anerkennung for international nurses.")
         slugs = {f.slug for f in flags}
         self.assertIn(FLAG_ANERKENNUNG_FRIENDLY, slugs)
 
@@ -108,39 +104,29 @@ class WiedereinstiegFlagDetection(unittest.TestCase):
         self.assertIn(FLAG_WIEDEREINSTIEG_FRIENDLY, slugs)
 
     def test_wiedereinsteigerinnen_detected(self):
-        flags = detect_visa_status_flags(
-            "Wiedereinsteigerinnen sind herzlich willkommen."
-        )
+        flags = detect_visa_status_flags("Wiedereinsteigerinnen sind herzlich willkommen.")
         slugs = {f.slug for f in flags}
         self.assertIn(FLAG_WIEDEREINSTIEG_FRIENDLY, slugs)
 
     def test_career_returner_detected(self):
-        flags = detect_visa_status_flags(
-            "Career returners welcome — after career break."
-        )
+        flags = detect_visa_status_flags("Career returners welcome — after career break.")
         slugs = {f.slug for f in flags}
         self.assertIn(FLAG_WIEDEREINSTIEG_FRIENDLY, slugs)
 
 
 class AusbildungFlagDetection(unittest.TestCase):
     def test_ausbildung_zur_detected(self):
-        flags = detect_visa_status_flags(
-            "Ausbildung zur Pflegefachkraft, Start September 2026."
-        )
+        flags = detect_visa_status_flags("Ausbildung zur Pflegefachkraft, Start September 2026.")
         slugs = {f.slug for f in flags}
         self.assertIn(FLAG_AUSBILDUNG_CLASS, slugs)
 
     def test_apprenticeship_detected(self):
-        flags = detect_visa_status_flags(
-            "Apprenticeship program for school leavers."
-        )
+        flags = detect_visa_status_flags("Apprenticeship program for school leavers.")
         slugs = {f.slug for f in flags}
         self.assertIn(FLAG_AUSBILDUNG_CLASS, slugs)
 
     def test_duale_ausbildung_detected(self):
-        flags = detect_visa_status_flags(
-            "Wir bieten eine duale Ausbildung mit Hochschulabschluss."
-        )
+        flags = detect_visa_status_flags("Wir bieten eine duale Ausbildung mit Hochschulabschluss.")
         slugs = {f.slug for f in flags}
         self.assertIn(FLAG_AUSBILDUNG_CLASS, slugs)
 
@@ -161,55 +147,41 @@ class Paragraph16DDetection(unittest.TestCase):
 
 class HumanitarianPathwayDetection(unittest.TestCase):
     def test_paragraph_24_detected(self):
-        flags = detect_visa_status_flags(
-            "Stelle für Personen mit Aufenthalt nach §24 AufenthG."
-        )
+        flags = detect_visa_status_flags("Stelle für Personen mit Aufenthalt nach §24 AufenthG.")
         slugs = {f.slug for f in flags}
         self.assertIn(FLAG_HUMANITARIAN_PATHWAY, slugs)
 
     def test_paragraph_4_asyl_detected(self):
-        flags = detect_visa_status_flags(
-            "Beschäftigung möglich nach §4 AsylG."
-        )
+        flags = detect_visa_status_flags("Beschäftigung möglich nach §4 AsylG.")
         slugs = {f.slug for f in flags}
         self.assertIn(FLAG_HUMANITARIAN_PATHWAY, slugs)
 
     def test_temporary_protection_detected(self):
-        flags = detect_visa_status_flags(
-            "Open to Ukrainian refugees under temporary protection."
-        )
+        flags = detect_visa_status_flags("Open to Ukrainian refugees under temporary protection.")
         slugs = {f.slug for f in flags}
         self.assertIn(FLAG_HUMANITARIAN_PATHWAY, slugs)
 
 
 class EuCitizensOnlyDetection(unittest.TestCase):
     def test_eu_citizens_only_detected(self):
-        flags = detect_visa_status_flags(
-            "Position open to EU citizens only — no sponsorship."
-        )
+        flags = detect_visa_status_flags("Position open to EU citizens only — no sponsorship.")
         slugs = {f.slug for f in flags}
         self.assertIn(FLAG_EU_CITIZENS_ONLY, slugs)
 
     def test_nur_fuer_eu_buerger_detected(self):
-        flags = detect_visa_status_flags(
-            "Stelle nur für EU-Bürger ausgeschrieben."
-        )
+        flags = detect_visa_status_flags("Stelle nur für EU-Bürger ausgeschrieben.")
         slugs = {f.slug for f in flags}
         self.assertIn(FLAG_EU_CITIZENS_ONLY, slugs)
 
 
 class PermanentResidenceDetection(unittest.TestCase):
     def test_permanent_residence_required_detected(self):
-        flags = detect_visa_status_flags(
-            "Permanent residency required — no work-visa sponsorship."
-        )
+        flags = detect_visa_status_flags("Permanent residency required — no work-visa sponsorship.")
         slugs = {f.slug for f in flags}
         self.assertIn(FLAG_PERMANENT_RESIDENCE_REQUIRED, slugs)
 
     def test_niederlassungserlaubnis_detected(self):
-        flags = detect_visa_status_flags(
-            "Niederlassungserlaubnis erforderlich für diese Position."
-        )
+        flags = detect_visa_status_flags("Niederlassungserlaubnis erforderlich für diese Position.")
         slugs = {f.slug for f in flags}
         self.assertIn(FLAG_PERMANENT_RESIDENCE_REQUIRED, slugs)
 
@@ -232,9 +204,7 @@ class EvidenceSurfacing(unittest.TestCase):
                 )
 
     def test_all_detected_flags_carry_evidence(self):
-        flags = detect_visa_status_flags(
-            "EU Blue Card sponsorship + Anerkennungs-friendly clinic."
-        )
+        flags = detect_visa_status_flags("EU Blue Card sponsorship + Anerkennungs-friendly clinic.")
         for f in flags:
             self.assertGreater(
                 len(f.evidence),
@@ -273,9 +243,7 @@ class MultiFlagDetection(unittest.TestCase):
         """Determinism: the returned list follows ALL_FLAGS ordering
         so downstream tooling can rely on stable iteration."""
 
-        flags = detect_visa_status_flags(
-            "Ausbildung in Pflege; Anerkennung-friendly clinic."
-        )
+        flags = detect_visa_status_flags("Ausbildung in Pflege; Anerkennung-friendly clinic.")
         slugs_in_order = [f.slug for f in flags]
         # Anerkennung comes before Ausbildung in ALL_FLAGS
         idx_a = ALL_FLAGS.index(FLAG_ANERKENNUNG_FRIENDLY)
@@ -329,9 +297,7 @@ class EdgeCases(unittest.TestCase):
         self.assertEqual(detect_visa_status_flags(None), [])
 
     def test_no_signal_returns_silent(self):
-        flags = detect_visa_status_flags(
-            "Software-Entwickler gesucht, Berlin, 38h/Woche."
-        )
+        flags = detect_visa_status_flags("Software-Entwickler gesucht, Berlin, 38h/Woche.")
         self.assertEqual(flags, [])
 
 
@@ -420,6 +386,7 @@ class AnnotatorBehaviour(unittest.TestCase):
         class _BadJob:
             description = "Anerkennungs-freundlich clinic."
             raw = None
+
         jobs = [_BadJob()]
         # Must not raise
         annotate_jobs_with_visa_status_flags(jobs)

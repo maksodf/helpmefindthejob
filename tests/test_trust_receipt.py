@@ -29,7 +29,6 @@ from company_discovery.trust_receipt import (
     verify_trust_receipt,
 )
 
-
 _TEST_SALT = b"test-salt-for-trust-receipts-suite-padding-padding"
 
 
@@ -144,9 +143,7 @@ class VerifyTrustReceipt(unittest.TestCase):
             response_text="r",
             salt=_TEST_SALT,
         )
-        result = verify_trust_receipt(
-            receipt.to_dict(), b"wrong-salt-aaaaaaaaaaaaaaaaaaaaaaaaa"
-        )
+        result = verify_trust_receipt(receipt.to_dict(), b"wrong-salt-aaaaaaaaaaaaaaaaaaaaaaaaa")
         self.assertFalse(result.ok)
         self.assertEqual(result.reason, "signature_mismatch")
 

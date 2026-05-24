@@ -131,10 +131,7 @@ def _candidate_profile_block(
     # segment registry signal driving breadth context above; the
     # friction-class slug drives the friction-context enrichment
     # below. Two fields, two concerns.
-    fixture_slug = (
-        profile.friction_class if profile and profile.friction_class
-        else ""
-    )
+    fixture_slug = profile.friction_class if profile and profile.friction_class else ""
     fixture = _persona_fixture_for(fixture_slug)
     if fixture is not None:
         if fixture.residency_status:
@@ -888,8 +885,12 @@ def _dispatch_provider(
                     )
 
                     byo_modes = {
-                        "openai", "google_gemini", "anthropic",
-                        "deepseek", "openrouter", "ollama",
+                        "openai",
+                        "google_gemini",
+                        "anthropic",
+                        "deepseek",
+                        "openrouter",
+                        "ollama",
                     }
                     if provider.invocation_mode in byo_modes:
                         metrics_log.record(
@@ -994,14 +995,7 @@ def _dispatch_provider_impl(
     #   HELPMEFINDTHEJOB_MANAGED_AI_MODEL     optional; falls back to a sane default
     #   HELPMEFINDTHEJOB_MANAGED_AI_BASE_URL  optional; for OpenAI-compatible gateways
     if provider.provider_id == "managed":
-        upstream = (
-            (
-                get_env("HELPMEFINDTHEJOB_MANAGED_AI_PROVIDER")
-                or "openai"
-            )
-            .strip()
-            .lower()
-        )
+        upstream = (get_env("HELPMEFINDTHEJOB_MANAGED_AI_PROVIDER") or "openai").strip().lower()
         if upstream not in {"openai", "anthropic", "google_gemini", "deepseek", "openrouter"}:
             return AnalysisExecutionResult(
                 status="configuration_error",
@@ -1010,9 +1004,7 @@ def _dispatch_provider_impl(
                 prompt=prompt,
                 error="HELPMEFINDTHEJOB_MANAGED_AI_PROVIDER must be one of: openai, anthropic, google_gemini, deepseek, openrouter.",
             )
-        if not (
-            get_env("HELPMEFINDTHEJOB_MANAGED_AI_KEY") or ""
-        ).strip():
+        if not (get_env("HELPMEFINDTHEJOB_MANAGED_AI_KEY") or "").strip():
             return AnalysisExecutionResult(
                 status="configuration_error",
                 provider_id="managed",
@@ -1023,16 +1015,9 @@ def _dispatch_provider_impl(
         provider = AIProviderConfig(
             provider_id=upstream,
             invocation_mode="api",
-            model=(
-                get_env("HELPMEFINDTHEJOB_MANAGED_AI_MODEL")
-                or provider.model
-                or ""
-            ).strip(),
+            model=(get_env("HELPMEFINDTHEJOB_MANAGED_AI_MODEL") or provider.model or "").strip(),
             credential_reference="HELPMEFINDTHEJOB_MANAGED_AI_KEY",
-            base_url=(
-                get_env("HELPMEFINDTHEJOB_MANAGED_AI_BASE_URL")
-                or ""
-            ).strip(),
+            base_url=(get_env("HELPMEFINDTHEJOB_MANAGED_AI_BASE_URL") or "").strip(),
             command="",
             notes="managed",
         )
@@ -1312,9 +1297,7 @@ def _dispatch_provider_streaming(
     final_result: AnalysisExecutionResult | None = None
     error_class: str | None = None
     try:
-        for event in _dispatch_provider_streaming_impl(
-            prompt, provider, runtime_credential
-        ):
+        for event in _dispatch_provider_streaming_impl(prompt, provider, runtime_credential):
             yield event
             if isinstance(event, tuple) and event[0] == "final":
                 final_result = event[1]
@@ -1354,8 +1337,12 @@ def _dispatch_provider_streaming(
                     )
 
                     byo_modes = {
-                        "openai", "google_gemini", "anthropic",
-                        "deepseek", "openrouter", "ollama",
+                        "openai",
+                        "google_gemini",
+                        "anthropic",
+                        "deepseek",
+                        "openrouter",
+                        "ollama",
                     }
                     if provider.invocation_mode in byo_modes:
                         metrics_log.record(
@@ -1374,11 +1361,7 @@ def _dispatch_provider_streaming(
         # Trust Receipt emission for streaming dispatches — same
         # contract as the single-shot path. Only fires on a
         # completed stream with non-empty output.
-        if (
-            receipt_emitter is not None
-            and final_result is not None
-            and final_result.output
-        ):
+        if receipt_emitter is not None and final_result is not None and final_result.output:
             try:
                 receipt_emitter(
                     purpose=purpose,
@@ -1415,14 +1398,7 @@ def _dispatch_provider_streaming_impl(
     # Managed AI: rebind to the operator's upstream provider before
     # the streaming dispatch (parity with _dispatch_provider_impl).
     if provider.provider_id == "managed":
-        upstream = (
-            (
-                get_env("HELPMEFINDTHEJOB_MANAGED_AI_PROVIDER")
-                or "openai"
-            )
-            .strip()
-            .lower()
-        )
+        upstream = (get_env("HELPMEFINDTHEJOB_MANAGED_AI_PROVIDER") or "openai").strip().lower()
         if upstream not in {"openai", "anthropic", "google_gemini", "deepseek", "openrouter"}:
             yield (
                 "final",
@@ -1435,9 +1411,7 @@ def _dispatch_provider_streaming_impl(
                 ),
             )
             return
-        if not (
-            get_env("HELPMEFINDTHEJOB_MANAGED_AI_KEY") or ""
-        ).strip():
+        if not (get_env("HELPMEFINDTHEJOB_MANAGED_AI_KEY") or "").strip():
             yield (
                 "final",
                 AnalysisExecutionResult(
@@ -1452,16 +1426,9 @@ def _dispatch_provider_streaming_impl(
         provider = AIProviderConfig(
             provider_id=upstream,
             invocation_mode="api",
-            model=(
-                get_env("HELPMEFINDTHEJOB_MANAGED_AI_MODEL")
-                or provider.model
-                or ""
-            ).strip(),
+            model=(get_env("HELPMEFINDTHEJOB_MANAGED_AI_MODEL") or provider.model or "").strip(),
             credential_reference="HELPMEFINDTHEJOB_MANAGED_AI_KEY",
-            base_url=(
-                get_env("HELPMEFINDTHEJOB_MANAGED_AI_BASE_URL")
-                or ""
-            ).strip(),
+            base_url=(get_env("HELPMEFINDTHEJOB_MANAGED_AI_BASE_URL") or "").strip(),
             command="",
             notes="managed",
         )
@@ -1681,14 +1648,8 @@ def _execute_google_gemini_streaming(
         )
         return
     model = provider.model or "gemini-1.5-flash"
-    base_url = (
-        provider.base_url
-        or "https://generativelanguage.googleapis.com/v1beta"
-    ).rstrip("/")
-    url = (
-        f"{base_url}/models/{model}:streamGenerateContent"
-        f"?alt=sse&key={api_key}"
-    )
+    base_url = (provider.base_url or "https://generativelanguage.googleapis.com/v1beta").rstrip("/")
+    url = f"{base_url}/models/{model}:streamGenerateContent?alt=sse&key={api_key}"
     body = {"contents": [{"parts": [{"text": prompt}]}]}
     request = Request(
         url,

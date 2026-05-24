@@ -29,7 +29,6 @@ import subprocess
 import unittest
 from pathlib import Path
 
-
 REPO_ROOT = Path(__file__).resolve().parent.parent
 MKDOCS_CONFIG = REPO_ROOT / "mkdocs.yml"
 
@@ -162,8 +161,7 @@ class MkdocsStrictBuildPasses(unittest.TestCase):
         self.assertEqual(
             result.returncode,
             0,
-            f"mkdocs build --strict failed:\nSTDOUT:\n{result.stdout}\n"
-            f"STDERR:\n{result.stderr}",
+            f"mkdocs build --strict failed:\nSTDOUT:\n{result.stdout}\nSTDERR:\n{result.stderr}",
         )
 
 

@@ -86,9 +86,7 @@ def _resolve_issuer(args, vc: dict[str, Any]) -> IssuerRecord:
                 "'publicKeyMultibase' — only Ed25519VerificationKey2020 "
                 "multibase keys are supported in this verifier"
             )
-        return IssuerRecord(
-            issuer_did=declared_issuer, public_key_multibase=pubkey
-        )
+        return IssuerRecord(issuer_did=declared_issuer, public_key_multibase=pubkey)
     raise SystemExit(
         "ERROR: no issuer key source. Pass either:\n"
         "  --issuer-public-key z6Mk...   (multibase public key)\n"

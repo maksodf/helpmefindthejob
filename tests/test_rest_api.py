@@ -28,7 +28,6 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from company_discovery.mcp_tools import TOOL_SCHEMAS
-from mcp_server import build_tools as _build_mcp_tools
 from company_discovery.rest_api import (
     API_VERSION,
     ToolNotFoundError,
@@ -37,6 +36,7 @@ from company_discovery.rest_api import (
     dispatch_tool_call,
     list_tools_for_rest,
 )
+from mcp_server import build_tools as _build_mcp_tools
 
 
 class ToolCatalogueParity(unittest.TestCase):
@@ -106,9 +106,7 @@ class DispatchToolCall(unittest.TestCase):
     def setUp(self):
         self.tmp = TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
-        self.tools = _build_mcp_tools(
-            data_path=Path(self.tmp.name) / "data.sqlite3"
-        )
+        self.tools = _build_mcp_tools(data_path=Path(self.tmp.name) / "data.sqlite3")
 
     def test_unknown_tool_raises_typed_error(self):
         with self.assertRaises(ToolNotFoundError):
@@ -169,9 +167,7 @@ class HttpRoutesPresence(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.src = (Path(__file__).resolve().parent.parent / "app.py").read_text(
-            encoding="utf-8"
-        )
+        cls.src = (Path(__file__).resolve().parent.parent / "app.py").read_text(encoding="utf-8")
 
     def test_openapi_route_present(self):
         self.assertIn('"/api/v1/openapi.json"', self.src)

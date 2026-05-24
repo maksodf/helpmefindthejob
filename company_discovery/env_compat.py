@@ -24,18 +24,28 @@ deployment".
 from __future__ import annotations
 
 import os
-from typing import Optional
-
+from typing import Optional, overload
 
 _TRUE_TOKENS = frozenset({"true", "1", "yes", "on"})
 
 
+@overload
+def get_env(name: str, default: str) -> str: ...
+@overload
+def get_env(name: str, default: None = ...) -> Optional[str]: ...
+@overload
+def get_env(name: str) -> Optional[str]: ...
 def get_env(name: str, default: Optional[str] = None) -> Optional[str]:
     """Return the env var ``name`` or ``default`` if unset.
 
     Empty string counts as set (returned as-is). This mirrors
     :func:`os.environ.get` and is intentional — some env vars
     (e.g. proxy URLs) accept an empty string as "explicitly off".
+
+    Overloads narrow the return type when a ``str`` default is
+    supplied (return is ``str``) vs. when no default is supplied
+    (return is ``Optional[str]``). This lets strict-checked callers
+    avoid ``cast`` / ``assert`` boilerplate at common sites.
     """
     return os.environ.get(name, default)
 

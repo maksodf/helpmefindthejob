@@ -30,7 +30,6 @@ import re
 import unittest
 from pathlib import Path
 
-
 REPO_ROOT = Path(__file__).resolve().parent.parent
 STATIC_DIR = REPO_ROOT / "static"
 
@@ -85,15 +84,11 @@ class NoInlineStyleAttributesInStaticHtml(unittest.TestCase):
                 if attr_re.search(line):
                     offenders.append((rel, lineno, line.strip()[:160]))
         if offenders:
-            details = "\n".join(
-                f"  {p}:{ln}: {snippet}"
-                for p, ln, snippet in offenders
-            )
+            details = "\n".join(f"  {p}:{ln}: {snippet}" for p, ln, snippet in offenders)
             self.fail(
-                "Inline style=\"...\" attributes found in static HTML; "
+                'Inline style="..." attributes found in static HTML; '
                 "CSP 'style-src 'self'' will block them. Lift each into "
-                "a class in static/styles.css and reference via class=\":\n"
-                + details
+                'a class in static/styles.css and reference via class=":\n' + details
             )
 
 
@@ -121,8 +116,7 @@ class NoExecutableInlineScriptsInStaticHtml(unittest.TestCase):
                 "Inline <script>...</script> with executable body found in "
                 "static HTML; CSP 'script-src 'self'' will block it. Extract "
                 "the body to a .js file under static/ and reference via "
-                "<script src=\"/file.js\" defer>:\n"
-                + details
+                '<script src="/file.js" defer>:\n' + details
             )
 
 

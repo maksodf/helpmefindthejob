@@ -45,7 +45,6 @@ import re
 import unittest
 from pathlib import Path
 
-
 # Patterns the operator listed at PART 5 release (2026-05-20).
 # Order matches the operator's wording for traceability.
 _FORBIDDEN_PATTERNS: tuple[str, ...] = (
@@ -82,8 +81,7 @@ def _latest_bias_sidecar() -> Path | None:
     # Prefer the plain bias-testing-YYYY-MM-DD-data.json over the
     # variant-suffixed ones (broadened, polish, pre-wiring).
     plain = [
-        p for p in candidates
-        if re.fullmatch(r"bias-testing-\d{4}-\d{2}-\d{2}-data\.json", p.name)
+        p for p in candidates if re.fullmatch(r"bias-testing-\d{4}-\d{2}-\d{2}-data\.json", p.name)
     ]
     if plain:
         return plain[-1]
@@ -100,15 +98,11 @@ def _iter_captured_text(sidecar: dict) -> list[tuple[str, str, str]]:
     for r in sidecar.get("scoring_results", []) or []:
         head = r.get("raw_output_head") or ""
         if head:
-            out.append(
-                (r.get("persona_slug", "?"), r.get("scenario_label", "?"), head)
-            )
+            out.append((r.get("persona_slug", "?"), r.get("scenario_label", "?"), head))
     for r in sidecar.get("cv_tailoring_results", []) or []:
         head = r.get("raw_output_head") or ""
         if head:
-            out.append(
-                (r.get("persona_slug", "?"), r.get("scenario_label", "?"), head)
-            )
+            out.append((r.get("persona_slug", "?"), r.get("scenario_label", "?"), head))
     return out
 
 
@@ -157,10 +151,7 @@ class GenericProseGuard(unittest.TestCase):
                     start = max(0, idx - 20)
                     end = min(len(head), idx + len(pattern) + 40)
                     snippet = head[start:end].replace("\n", "  ")
-                    hits.append(
-                        f"  {persona}/{scenario}: pattern '{pattern}'"
-                        f" -> '...{snippet}...'"
-                    )
+                    hits.append(f"  {persona}/{scenario}: pattern '{pattern}' -> '...{snippet}...'")
 
         if hits:
             self.fail(

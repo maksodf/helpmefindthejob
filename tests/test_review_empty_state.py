@@ -83,8 +83,16 @@ class GiveUpTokensTests(unittest.TestCase):
     """Explicit give-up tokens route to PHASE_DONE — and only those."""
 
     GIVE_UP_TOKENS = (
-        "give up", "done", "fertig", "exit", "quit", "stop",
-        "end", "ende", "abbruch", "abbrechen",
+        "give up",
+        "done",
+        "fertig",
+        "exit",
+        "quit",
+        "stop",
+        "end",
+        "ende",
+        "abbruch",
+        "abbrechen",
     )
 
     def test_each_token_lands_in_done(self) -> None:
@@ -109,9 +117,15 @@ class RetryTokensTests(unittest.TestCase):
     closure is integration-level."""
 
     RETRY_TOKENS = (
-        "retry", "search again", "try again", "again",
-        "nochmal", "noch einmal", "wieder versuchen",
-        "erneut", "neu suchen",
+        "retry",
+        "search again",
+        "try again",
+        "again",
+        "nochmal",
+        "noch einmal",
+        "wieder versuchen",
+        "erneut",
+        "neu suchen",
     )
 
     def test_each_token_refires_search(self) -> None:
@@ -184,12 +198,26 @@ class UnrecognizedInputReasksTests(unittest.TestCase):
     # test_widening.py for per-persona numeric semantics; this test
     # focuses on text inputs that should still re-ask.
     UNRECOGNIZED = (
-        "?", "huh", "what", "what?", "help",
-        "ok", "okay", "yes", "yeah", "ja", "no", "nein",
-        "asdf", "xyz", "keine Ahnung", "weiß nicht",
+        "?",
+        "huh",
+        "what",
+        "what?",
+        "help",
+        "ok",
+        "okay",
+        "yes",
+        "yeah",
+        "ja",
+        "no",
+        "nein",
+        "asdf",
+        "xyz",
+        "keine Ahnung",
+        "weiß nicht",
         # Preference-phase tokens that should NOT advance from
         # empty_state (they belong in PHASE_PREFS):
-        "min 50k", "startup",
+        "min 50k",
+        "startup",
         # "remote" is in widening's _WIDEN_LOCATION_TOKENS to handle
         # the "anywhere" remote-search intent inline — but it would
         # only match when WIDEN_LOCATION is in offered affordances.

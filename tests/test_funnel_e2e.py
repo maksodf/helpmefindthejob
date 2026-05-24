@@ -374,9 +374,7 @@ class FunnelFrontendWired(unittest.TestCase):
     so a regression that quietly removes them would fail CI."""
 
     def test_index_html_has_funnel_card(self):
-        path = Path(
-            str(Path(__file__).resolve().parent.parent / "static/index.html")
-        )
+        path = Path(str(Path(__file__).resolve().parent.parent / "static/index.html"))
         text = path.read_text(encoding="utf-8")
         self.assertIn('id="funnelCard"', text)
         self.assertIn('id="funnelStages"', text)
@@ -384,21 +382,20 @@ class FunnelFrontendWired(unittest.TestCase):
         self.assertIn('id="funnelVelocity"', text)
 
     def test_app_js_has_renderFunnelCard(self):
-        path = Path(
-            str(Path(__file__).resolve().parent.parent / "static/app.js")
-        )
+        path = Path(str(Path(__file__).resolve().parent.parent / "static/app.js"))
         text = path.read_text(encoding="utf-8")
         self.assertIn("renderFunnelCard", text)
         # Function calls /api/funnel/summary
         self.assertIn("/api/funnel/summary", text)
         # And is wired into the renderers dispatch list
-        self.assertRegex(text, r"renderers\s*=\s*\[[^\]]*renderFunnelCard", )
+        self.assertRegex(
+            text,
+            r"renderers\s*=\s*\[[^\]]*renderFunnelCard",
+        )
 
     def test_i18n_funnel_keys_present_in_both_locales(self):
         for locale in ("en", "de"):
-            path = Path(
-                str(Path(__file__).resolve().parent.parent / f"static/i18n/{locale}.json")
-            )
+            path = Path(str(Path(__file__).resolve().parent.parent / f"static/i18n/{locale}.json"))
             bundle = json.loads(path.read_text(encoding="utf-8"))
             for key in (
                 "dashboard.funnel.heading",

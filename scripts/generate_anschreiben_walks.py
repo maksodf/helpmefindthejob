@@ -39,7 +39,6 @@ from company_discovery.analysis import _dispatch_provider  # noqa: E402
 from company_discovery.motivation_letter import draft_with_ai  # noqa: E402
 from company_discovery.persona_fixtures import PERSONAS  # noqa: E402
 
-
 FORBIDDEN_FILLER = (
     "Hiermit bewerbe ich mich",
     "I am writing to express my interest",
@@ -119,9 +118,7 @@ def _generate_walk(persona, scenario, ai_caller) -> dict:
     role_tokens = list(persona.target_roles[:3])
     role_hits = [t for t in role_tokens if t.lower() in letter_lower]
     jd_context_tokens = _context_tokens_from_jd(scenario.job_description)
-    context_hits = [
-        t for t in jd_context_tokens if t.lower() in letter_lower
-    ]
+    context_hits = [t for t in jd_context_tokens if t.lower() in letter_lower]
 
     return {
         "persona": persona,
@@ -169,7 +166,7 @@ def _write_walk_md(out_dir: Path, walk: dict) -> Path:
 ## Generation metadata
 
 - Model: Ollama `llama3.1:8b`
-- Elapsed: {walk['elapsed_s']:.1f} s
+- Elapsed: {walk["elapsed_s"]:.1f} s
 - Output length: {len(letter)} chars
 - Prompt builder: `company_discovery.motivation_letter.build_letter_prompt`
 - Friction context surfaced via `residency_status` + `friction_notes` parameters
@@ -184,12 +181,12 @@ def _write_walk_md(out_dir: Path, walk: dict) -> Path:
 
 | Gate | Measure | Result |
 |---|---|---|
-| 4.2 | Forbidden-filler hits (case-insensitive, 8 patterns) | {len(filler_hits)} {'PASS' if not filler_hits else 'FAIL — ' + repr(filler_hits)} |
-| 4.3 | Markdown-bullet lines in body | {len(body_bullets)} {'PASS' if not body_bullets else 'FAIL'} |
-| 4.7 (role) | Role token from `persona.target_roles[:3]` present | {role_hits if role_hits else 'MISSING — FAIL'} |
-| 4.7 (context) | JD-derived context tokens found (heuristic) | {context_hits[:4] if context_hits else 'NONE'} ({len(context_hits)} / {len(walk['jd_context_tokens'])} candidates) |
+| 4.2 | Forbidden-filler hits (case-insensitive, 8 patterns) | {len(filler_hits)} {"PASS" if not filler_hits else "FAIL — " + repr(filler_hits)} |
+| 4.3 | Markdown-bullet lines in body | {len(body_bullets)} {"PASS" if not body_bullets else "FAIL"} |
+| 4.7 (role) | Role token from `persona.target_roles[:3]` present | {role_hits if role_hits else "MISSING — FAIL"} |
+| 4.7 (context) | JD-derived context tokens found (heuristic) | {context_hits[:4] if context_hits else "NONE"} ({len(context_hits)} / {len(walk["jd_context_tokens"])} candidates) |
 
-**4.7 decision rule**: PASS if `role_hits >= 1 AND context_hits >= 1`. {'PASS' if (role_hits and context_hits) else 'FAIL'}
+**4.7 decision rule**: PASS if `role_hits >= 1 AND context_hits >= 1`. {"PASS" if (role_hits and context_hits) else "FAIL"}
 
 ## Human-inspection notes (operator review)
 
@@ -254,9 +251,7 @@ def main() -> int:
     n_bullet_fail = sum(1 for w in walks if w["body_bullets"])
     n_role_fail = sum(1 for w in walks if not w["role_hits"])
     n_context_fail = sum(1 for w in walks if not w["context_hits"])
-    n_4_7_fail = sum(
-        1 for w in walks if not (w["role_hits"] and w["context_hits"])
-    )
+    n_4_7_fail = sum(1 for w in walks if not (w["role_hits"] and w["context_hits"]))
     print(f"4.2 forbidden-filler fails:     {n_filler_fail}/7")
     print(f"4.3 markdown-bullet fails:      {n_bullet_fail}/7")
     print(f"4.7 role-token-missing fails:   {n_role_fail}/7")
@@ -266,7 +261,9 @@ def main() -> int:
     if any([n_filler_fail, n_bullet_fail, n_4_7_fail]):
         print("STATUS: gate failures present. Inspect the per-persona .md files.")
         return 1
-    print("STATUS: 7/7 personas pass automated gates. Operator review for inspection-grade points still required.")
+    print(
+        "STATUS: 7/7 personas pass automated gates. Operator review for inspection-grade points still required."
+    )
     return 0
 
 

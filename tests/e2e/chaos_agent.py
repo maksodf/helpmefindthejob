@@ -1040,7 +1040,9 @@ def main() -> int:
 
     out = Path(os.environ.get("E2E_CHAOS_REPORT", "tests/e2e/chaos_report.json"))
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps([r.to_dict() for r in results], indent=2, ensure_ascii=False), encoding="utf-8")
+    out.write_text(
+        json.dumps([r.to_dict() for r in results], indent=2, ensure_ascii=False), encoding="utf-8"
+    )
     print(f"\n[chaos] report → {out}")
 
     print("\n" + "=" * 70)

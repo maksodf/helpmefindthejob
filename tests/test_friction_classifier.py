@@ -8,6 +8,7 @@ unclassified) + determinism guard test. This file ships those
 behavior so the Phase 1 best-guess substrate has documented
 expected behavior for downstream loops.
 """
+
 from __future__ import annotations
 
 import unittest
@@ -19,8 +20,8 @@ from company_discovery.friction_classifier import (
     classify_with_telemetry,
 )
 
-
 # ─── 7-persona panel — each CV gets classified to its own slug ───
+
 
 class SevenPersonaPanelTests(unittest.TestCase):
     """One test per fixture persona. Each CV uses fixture-shaped
@@ -101,6 +102,7 @@ class SevenPersonaPanelTests(unittest.TestCase):
 
 # ─── 1 unclassified — neutral CV with no fixture signals ────────
 
+
 class UnclassifiedTests(unittest.TestCase):
     def test_neutral_cv_returns_empty(self):
         cv = (
@@ -128,24 +130,19 @@ class UnclassifiedTests(unittest.TestCase):
 
 # ─── Determinism guard (OQ-5 verdict) ───────────────────────────
 
+
 class DeterminismGuardTests(unittest.TestCase):
     """OQ-5 verdict: classify(cv_text) called 10x returns identical
     output. Trivial test pinning the determinism invariant."""
 
     def test_classify_is_deterministic_10x(self):
-        cv = (
-            "Registered nurse, §16d Anerkennung process, Tunisia. "
-            "Email: a@x.de"
-        )
+        cv = "Registered nurse, §16d Anerkennung process, Tunisia. Email: a@x.de"
         results = [classify(cv) for _ in range(10)]
         self.assertEqual(len(set(results)), 1)
         self.assertEqual(results[0], "aicha")
 
     def test_classify_with_telemetry_is_deterministic_10x(self):
-        cv = (
-            "DevOps engineer, Berlin, §24 AufenthG, English team, "
-            "remote work."
-        )
+        cv = "DevOps engineer, Berlin, §24 AufenthG, English team, remote work."
         results = [classify_with_telemetry(cv) for _ in range(10)]
         slugs = {r.slug for r in results}
         confidences = {r.confidence for r in results}
@@ -156,6 +153,7 @@ class DeterminismGuardTests(unittest.TestCase):
 
 
 # ─── Tie-break (Q-D verdict — alphabetical slug) ────────────────
+
 
 class AlphabeticalTieBreakTests(unittest.TestCase):
     """Q-D verdict: ties broken alphabetically by persona slug.
@@ -189,6 +187,7 @@ class AlphabeticalTieBreakTests(unittest.TestCase):
 
 # ─── Scored fallback semantics ──────────────────────────────────
 
+
 class ScoredFallbackTests(unittest.TestCase):
     """Soft multi-signal matching: persona-specific patterns
     requiring ≥ SCORED_MIN_HITS to fire."""
@@ -196,10 +195,7 @@ class ScoredFallbackTests(unittest.TestCase):
     def test_two_scored_hits_qualifies(self):
         # aicha scored bank includes "Anerkennung" + "Krankenpflege"
         # + "Tunis" + "geriatric" etc. Two hits, no strong markers.
-        cv = (
-            "Years of Krankenpflege experience in Tunis. "
-            "Currently exploring the German market."
-        )
+        cv = "Years of Krankenpflege experience in Tunis. Currently exploring the German market."
         result = classify_with_telemetry(cv)
         self.assertEqual(result.slug, "aicha")
         self.assertEqual(result.confidence, "scored")
@@ -219,6 +215,7 @@ class ScoredFallbackTests(unittest.TestCase):
 
 # ─── ClassificationResult shape (OQ-2 telemetry contract) ───────
 
+
 class TelemetryContractTests(unittest.TestCase):
     """OQ-2 verdict: caller writes one log.info per classification
     call with resolved/confidence/match_count. The dataclass shape
@@ -228,8 +225,10 @@ class TelemetryContractTests(unittest.TestCase):
         cv = "§16d Anerkennung"
         result = classify_with_telemetry(cv)
         self.assertIsInstance(result, ClassificationResult)
-        # Frozen — mutation raises
-        with self.assertRaises(Exception):
+        # Frozen — mutation raises FrozenInstanceError (a subclass of AttributeError)
+        from dataclasses import FrozenInstanceError
+
+        with self.assertRaises(FrozenInstanceError):
             result.slug = "yusuf"  # type: ignore[misc]
 
     def test_strong_match_has_match_count_one(self):
@@ -265,6 +264,7 @@ class PersonaFrictionReconciliationTests(unittest.TestCase):
         from company_discovery.friction_classifier import (
             reconcile_persona_and_friction_class,
         )
+
         # Healthcare persona + Aïcha (healthcare friction) — aligned.
         hint = reconcile_persona_and_friction_class(
             persona_industry_terms=("health", "gesund", "klinik"),
@@ -276,6 +276,7 @@ class PersonaFrictionReconciliationTests(unittest.TestCase):
         from company_discovery.friction_classifier import (
             reconcile_persona_and_friction_class,
         )
+
         hint = reconcile_persona_and_friction_class(
             persona_industry_terms=("marketing", "brand", "growth"),
             friction_slug="aicha",
@@ -288,6 +289,7 @@ class PersonaFrictionReconciliationTests(unittest.TestCase):
         from company_discovery.friction_classifier import (
             reconcile_persona_and_friction_class,
         )
+
         hint = reconcile_persona_and_friction_class(
             persona_industry_terms=("marketing",),
             friction_slug="",
@@ -300,6 +302,7 @@ class PersonaFrictionReconciliationTests(unittest.TestCase):
         from company_discovery.friction_classifier import (
             reconcile_persona_and_friction_class,
         )
+
         for terms in (
             ("marketing", "brand"),
             ("finance", "bank"),
@@ -316,6 +319,7 @@ class PersonaFrictionReconciliationTests(unittest.TestCase):
         from company_discovery.friction_classifier import (
             reconcile_persona_and_friction_class,
         )
+
         # No persona industry signal — can't reconcile, so no hint.
         hint = reconcile_persona_and_friction_class(
             persona_industry_terms=(), friction_slug="aicha"
@@ -326,6 +330,7 @@ class PersonaFrictionReconciliationTests(unittest.TestCase):
         from company_discovery.friction_classifier import (
             reconcile_persona_and_friction_class,
         )
+
         hint = reconcile_persona_and_friction_class(
             persona_industry_terms=("marketing",), friction_slug="totally-bogus"
         )
@@ -335,6 +340,7 @@ class PersonaFrictionReconciliationTests(unittest.TestCase):
         from company_discovery.friction_classifier import (
             reconcile_persona_and_friction_class,
         )
+
         # Persona terms in uppercase, expected industry tokens in
         # lowercase — should still resolve as aligned.
         hint = reconcile_persona_and_friction_class(
@@ -358,7 +364,6 @@ class TiedSlugsTests(unittest.TestCase):
     def test_tied_slugs_excludes_the_winning_slug(self):
         from company_discovery.friction_classifier import (
             SCORED_PATTERNS,
-            SCORED_MIN_HITS,
         )
 
         # Construct a CV that packs SCORED_MIN_HITS markers from two
@@ -384,6 +389,7 @@ class TiedSlugsTests(unittest.TestCase):
 
 # ─── Case-insensitive matching ──────────────────────────────────
 
+
 class CaseInsensitiveTests(unittest.TestCase):
     """Patterns match regardless of CV text casing — the casefold()
     invariant."""
@@ -398,6 +404,7 @@ class CaseInsensitiveTests(unittest.TestCase):
 
 
 # ─── Defensive: None / non-string handling ──────────────────────
+
 
 class DefensiveInputTests(unittest.TestCase):
     def test_none_input_treated_as_empty(self):

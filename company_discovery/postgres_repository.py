@@ -78,7 +78,6 @@ from .models import (
 from .repository import InMemoryCompanyDiscoveryRepository
 from .sqlite_repository import _json_default, retry_on_lock
 
-
 _log = logging.getLogger(__name__)
 
 
@@ -172,9 +171,7 @@ class PostgresCompanyDiscoveryRepository(InMemoryCompanyDiscoveryRepository):
                     )
                     """
                 )
-                cur.execute(
-                    f"CREATE INDEX IF NOT EXISTS idx_{table}_user ON {table}(user_id)"
-                )
+                cur.execute(f"CREATE INDEX IF NOT EXISTS idx_{table}_user ON {table}(user_id)")
                 cur.execute(
                     f"CREATE INDEX IF NOT EXISTS idx_{table}_company ON {table}(company_id)"
                 )
@@ -209,8 +206,7 @@ class PostgresCompanyDiscoveryRepository(InMemoryCompanyDiscoveryRepository):
                 """
             )
             cur.execute(
-                "INSERT INTO schema_version (version) VALUES (1) "
-                "ON CONFLICT (version) DO NOTHING"
+                "INSERT INTO schema_version (version) VALUES (1) ON CONFLICT (version) DO NOTHING"
             )
             self._connection.commit()
             cur.close()
@@ -253,9 +249,7 @@ class PostgresCompanyDiscoveryRepository(InMemoryCompanyDiscoveryRepository):
     def save_company(self, company: Company) -> Company:
         with self._lock:
             result = super().save_company(company)
-            self._upsert(
-                "companies", company.id, company.user_id, None, asdict(company)
-            )
+            self._upsert("companies", company.id, company.user_id, None, asdict(company))
             return result
 
     def get_company(self, user_id: str, company_id: str) -> Company:
@@ -287,18 +281,14 @@ class PostgresCompanyDiscoveryRepository(InMemoryCompanyDiscoveryRepository):
     def save_discovery_run(self, run: CompanyDiscoveryRun) -> CompanyDiscoveryRun:
         with self._lock:
             result = super().save_discovery_run(run)
-            self._upsert(
-                "discovery_runs", run.id, run.user_id, run.company_id, asdict(run)
-            )
+            self._upsert("discovery_runs", run.id, run.user_id, run.company_id, asdict(run))
             return result
 
     @retry_on_lock()
     def save_scan(self, scan: CareerPageScan) -> CareerPageScan:
         with self._lock:
             result = super().save_scan(scan)
-            self._upsert(
-                "scans", scan.id, scan.user_id, scan.company_id, asdict(scan)
-            )
+            self._upsert("scans", scan.id, scan.user_id, scan.company_id, asdict(scan))
             return result
 
     @retry_on_lock()
@@ -331,9 +321,7 @@ class PostgresCompanyDiscoveryRepository(InMemoryCompanyDiscoveryRepository):
     def save_saved_search(self, search: SavedSearch) -> SavedSearch:
         with self._lock:
             result = super().save_saved_search(search)
-            self._upsert(
-                "saved_searches", search.id, search.user_id, None, asdict(search)
-            )
+            self._upsert("saved_searches", search.id, search.user_id, None, asdict(search))
             return result
 
     def delete_saved_search(self, user_id: str, search_id: str) -> None:
@@ -351,18 +339,14 @@ class PostgresCompanyDiscoveryRepository(InMemoryCompanyDiscoveryRepository):
     def save_analytics_event(self, event: AnalyticsEvent) -> AnalyticsEvent:
         with self._lock:
             result = super().save_analytics_event(event)
-            self._upsert(
-                "analytics_events", event.id, event.user_id, None, asdict(event)
-            )
+            self._upsert("analytics_events", event.id, event.user_id, None, asdict(event))
             return result
 
     @retry_on_lock()
     def save_support_ticket(self, ticket: SupportTicket) -> SupportTicket:
         with self._lock:
             result = super().save_support_ticket(ticket)
-            self._upsert(
-                "support_tickets", ticket.id, ticket.user_id, None, asdict(ticket)
-            )
+            self._upsert("support_tickets", ticket.id, ticket.user_id, None, asdict(ticket))
             return result
 
     # ------------------------------------------------------------------
@@ -373,9 +357,7 @@ class PostgresCompanyDiscoveryRepository(InMemoryCompanyDiscoveryRepository):
     def save_referral(self, referral: Referral) -> Referral:
         with self._lock:
             result = super().save_referral(referral)
-            self._upsert(
-                "referrals", referral.id, referral.user_id, None, asdict(referral)
-            )
+            self._upsert("referrals", referral.id, referral.user_id, None, asdict(referral))
             return result
 
     @retry_on_lock()
@@ -398,9 +380,7 @@ class PostgresCompanyDiscoveryRepository(InMemoryCompanyDiscoveryRepository):
             # repo). When `crypto` is set, cv_text + cv_photo_data_uri
             # are AEAD-encrypted with user_id as AAD before storage.
             if self._crypto is not None and payload.get("cv_text"):
-                payload["cv_text"] = self._crypto.encrypt(
-                    payload["cv_text"], aad=profile.user_id
-                )
+                payload["cv_text"] = self._crypto.encrypt(payload["cv_text"], aad=profile.user_id)
             if self._crypto is not None and payload.get("cv_photo_data_uri"):
                 payload["cv_photo_data_uri"] = self._crypto.encrypt(
                     payload["cv_photo_data_uri"], aad=profile.user_id
@@ -424,9 +404,7 @@ class PostgresCompanyDiscoveryRepository(InMemoryCompanyDiscoveryRepository):
             cur.close()
 
     @retry_on_lock()
-    def save_push_subscription(
-        self, subscription: PushSubscription
-    ) -> PushSubscription:
+    def save_push_subscription(self, subscription: PushSubscription) -> PushSubscription:
         with self._lock:
             result = super().save_push_subscription(subscription)
             self._upsert(
@@ -450,9 +428,7 @@ class PostgresCompanyDiscoveryRepository(InMemoryCompanyDiscoveryRepository):
             cur.close()
 
     @retry_on_lock()
-    def save_workspace_membership(
-        self, membership: WorkspaceMembership
-    ) -> WorkspaceMembership:
+    def save_workspace_membership(self, membership: WorkspaceMembership) -> WorkspaceMembership:
         with self._lock:
             result = super().save_workspace_membership(membership)
             self._upsert(
@@ -484,8 +460,6 @@ class PostgresCompanyDiscoveryRepository(InMemoryCompanyDiscoveryRepository):
         in-memory dicts inherited from
         :class:`InMemoryCompanyDiscoveryRepository`. Subsequent
         reads serve from memory; writes update both."""
-
-        from dataclasses import fields
 
         with self._lock:
             cur = self._connection.cursor()
@@ -552,9 +526,7 @@ class PostgresCompanyDiscoveryRepository(InMemoryCompanyDiscoveryRepository):
                 v = payload.get(field.name)
                 if isinstance(v, str):
                     try:
-                        payload[field.name] = datetime.fromisoformat(
-                            v.replace("Z", "+00:00")
-                        )
+                        payload[field.name] = datetime.fromisoformat(v.replace("Z", "+00:00"))
                     except ValueError:
                         pass
         try:

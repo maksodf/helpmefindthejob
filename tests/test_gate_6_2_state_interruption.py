@@ -25,6 +25,7 @@ Closure criterion (operator-approved): 3 personas × 3 phase-
 transitions each = 9 reload-cycle invariants. All pass = Gate
 6.2 closed.
 """
+
 from __future__ import annotations
 
 import json
@@ -51,9 +52,9 @@ from company_discovery.widening import (
 
 def _reload_cycle(journey: UserJourney) -> UserJourney:
     """Simulate one HTTP round-trip + page reload:
-      1. Serialise via to_dict() (what _journey_save writes)
-      2. JSON round-trip (what sqlite stores)
-      3. Deserialise via from_dict() (what _journey_load reads)
+    1. Serialise via to_dict() (what _journey_save writes)
+    2. JSON round-trip (what sqlite stores)
+    3. Deserialise via from_dict() (what _journey_load reads)
     """
     payload = journey.to_dict()
     serialised = json.dumps(payload)
@@ -122,11 +123,14 @@ class AichaStateInterruptionTests(unittest.TestCase):
         )
         restored = _reload_cycle(journey)
         self.assertEqual(restored.review_substate, "laterals_offered")
-        self.assertEqual(restored.proposed_laterals, [
-            "Senior Krankenpfleger",
-            "Pflegefachkraft",
-            "Krankenschwester",
-        ])
+        self.assertEqual(
+            restored.proposed_laterals,
+            [
+                "Senior Krankenpfleger",
+                "Pflegefachkraft",
+                "Krankenschwester",
+            ],
+        )
         self.assertEqual(restored.applied_widenings, [WIDEN_LOCATION])
         self.assertTrue(restored.visa_constrained)
 
@@ -158,8 +162,7 @@ class YusufStateInterruptionTests(unittest.TestCase):
         self.assertEqual(restored.phase, PHASE_CV_CHECK)
         self.assertEqual(restored.cv_status, "uploaded")
         self.assertEqual(restored.years_experience, 13)
-        self.assertEqual(restored.languages,
-                         ["TR: native", "EN: B2", "DE: A2"])
+        self.assertEqual(restored.languages, ["TR: native", "EN: B2", "DE: A2"])
         self.assertFalse(restored.visa_constrained)  # Blue Card carve-out preserved
 
     def test_reload_at_inspire(self):
@@ -231,8 +234,7 @@ class OlgaStateInterruptionTests(unittest.TestCase):
         self.assertEqual(restored.review_substate, "")
         self.assertTrue(restored.visa_constrained)
         self.assertIn("Tech / Engineering", restored.search_results_by_category)
-        self.assertEqual(restored.search_jobs_by_id["job_id_1"]["title"],
-                         "Cloud Backend Developer")
+        self.assertEqual(restored.search_jobs_by_id["job_id_1"]["title"], "Cloud Backend Developer")
 
     def test_reload_after_picked_category(self):
         journey = UserJourney(

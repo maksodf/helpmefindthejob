@@ -86,24 +86,16 @@ class RepositoryReferralRoundtrip(unittest.TestCase):
         self.assertIsNone(self.repo.get_referral("does-not-exist"))
 
     def test_list_filters_by_user(self):
-        r1 = self.repo.save_referral(
-            Referral(user_id="u1", target_agent="x", reason_code="r1")
-        )
-        r2 = self.repo.save_referral(
-            Referral(user_id="u2", target_agent="x", reason_code="r2")
-        )
+        r1 = self.repo.save_referral(Referral(user_id="u1", target_agent="x", reason_code="r1"))
+        r2 = self.repo.save_referral(Referral(user_id="u2", target_agent="x", reason_code="r2"))
         u1 = self.repo.list_referrals(user_id="u1")
         u2 = self.repo.list_referrals(user_id="u2")
         self.assertEqual([r.id for r in u1], [r1.id])
         self.assertEqual([r.id for r in u2], [r2.id])
 
     def test_list_filters_by_status(self):
-        r1 = Referral(
-            user_id="u1", target_agent="x", reason_code="r1", status="proposed"
-        )
-        r2 = Referral(
-            user_id="u1", target_agent="x", reason_code="r2", status="accepted"
-        )
+        r1 = Referral(user_id="u1", target_agent="x", reason_code="r1", status="proposed")
+        r2 = Referral(user_id="u1", target_agent="x", reason_code="r2", status="accepted")
         self.repo.save_referral(r1)
         self.repo.save_referral(r2)
         proposed = self.repo.list_referrals(user_id="u1", status="proposed")
@@ -112,9 +104,7 @@ class RepositoryReferralRoundtrip(unittest.TestCase):
         self.assertEqual([r.id for r in accepted], [r2.id])
 
     def test_delete(self):
-        r = self.repo.save_referral(
-            Referral(user_id="u1", target_agent="x", reason_code="r")
-        )
+        r = self.repo.save_referral(Referral(user_id="u1", target_agent="x", reason_code="r"))
         self.repo.delete_referral(r.id)
         self.assertIsNone(self.repo.get_referral(r.id))
 
@@ -147,18 +137,14 @@ class ProposeReferralPersists(unittest.TestCase):
         """The returned referralId must be the persisted ID, not a
         fresh uuid-stub."""
 
-        out = self.tools.propose_referral(
-            userId="u1", targetAgent="x", reason="test"
-        )
+        out = self.tools.propose_referral(userId="u1", targetAgent="x", reason="test")
         returned_id = out["referral"]["referralId"]
         # Persisted IDs use new_id's underscore convention
         self.assertTrue(returned_id.startswith("ref_"))
         self.assertIsNotNone(self.repo.get_referral(returned_id))
 
     def test_propose_referral_returns_status_field(self):
-        out = self.tools.propose_referral(
-            userId="u1", targetAgent="x", reason="test"
-        )
+        out = self.tools.propose_referral(userId="u1", targetAgent="x", reason="test")
         # The new shape includes status (lifecycle stage)
         self.assertEqual(out["referral"]["status"], "proposed")
 
@@ -171,9 +157,7 @@ class ProposeReferralPersists(unittest.TestCase):
         )
         referral_id = out["referral"]["referralId"]
         persisted = self.repo.get_referral(referral_id)
-        self.assertEqual(
-            persisted.supporting_info, {"originalMessage": "user said X"}
-        )
+        self.assertEqual(persisted.supporting_info, {"originalMessage": "user said X"})
 
     def test_propose_referral_no_repo_returns_stub(self):
         """Falls back to legacy stub shape when no repo is wired —
@@ -205,27 +189,19 @@ class ListReferralsTool(unittest.TestCase):
         self.assertEqual(out["referrals"], [])
 
     def test_returns_user_referrals(self):
-        self.tools.propose_referral(
-            userId="u1", targetAgent="housing", reason="r1"
-        )
-        self.tools.propose_referral(
-            userId="u1", targetAgent="healthcare", reason="r2"
-        )
+        self.tools.propose_referral(userId="u1", targetAgent="housing", reason="r1")
+        self.tools.propose_referral(userId="u1", targetAgent="healthcare", reason="r2")
         out = self.tools.list_referrals(userId="u1")
         self.assertEqual(len(out["referrals"]), 2)
 
     def test_status_filter_works(self):
-        out1 = self.tools.propose_referral(
-            userId="u1", targetAgent="x", reason="r1"
-        )
+        out1 = self.tools.propose_referral(userId="u1", targetAgent="x", reason="r1")
         self.tools.update_referral_status(
             userId="u1",
             referralId=out1["referral"]["referralId"],
             status="accepted",
         )
-        self.tools.propose_referral(
-            userId="u1", targetAgent="y", reason="r2"
-        )
+        self.tools.propose_referral(userId="u1", targetAgent="y", reason="r2")
         proposed = self.tools.list_referrals(userId="u1", status="proposed")
         accepted = self.tools.list_referrals(userId="u1", status="accepted")
         self.assertEqual(len(proposed["referrals"]), 1)
@@ -252,9 +228,7 @@ class UpdateReferralStatusLifecycle(unittest.TestCase):
         self.repo = InMemoryCompanyDiscoveryRepository()
         self.tools = CompanyDiscoveryMCPTools(_ServiceLike(self.repo))
         # Create a referral in 'proposed' state
-        out = self.tools.propose_referral(
-            userId="aicha", targetAgent="housing", reason="test"
-        )
+        out = self.tools.propose_referral(userId="aicha", targetAgent="housing", reason="test")
         self.referral_id = out["referral"]["referralId"]
 
     def test_proposed_to_accepted_transition(self):
@@ -314,22 +288,14 @@ class UpdateReferralStatusLifecycle(unittest.TestCase):
             ("followed_up", "expired"),
         ):
             # Set up a fresh referral in each from_state
-            out = self.tools.propose_referral(
-                userId="aicha", targetAgent="x", reason="r"
-            )
+            out = self.tools.propose_referral(userId="aicha", targetAgent="x", reason="r")
             rid = out["referral"]["referralId"]
             if from_state == "accepted":
-                self.tools.update_referral_status(
-                    userId="aicha", referralId=rid, status="accepted"
-                )
+                self.tools.update_referral_status(userId="aicha", referralId=rid, status="accepted")
             elif from_state == "declined":
-                self.tools.update_referral_status(
-                    userId="aicha", referralId=rid, status="declined"
-                )
+                self.tools.update_referral_status(userId="aicha", referralId=rid, status="declined")
             elif from_state == "followed_up":
-                self.tools.update_referral_status(
-                    userId="aicha", referralId=rid, status="accepted"
-                )
+                self.tools.update_referral_status(userId="aicha", referralId=rid, status="accepted")
                 self.tools.update_referral_status(
                     userId="aicha", referralId=rid, status="followed_up"
                 )
@@ -337,9 +303,7 @@ class UpdateReferralStatusLifecycle(unittest.TestCase):
             result = self.tools.update_referral_status(
                 userId="aicha", referralId=rid, status="expired"
             )
-            self.assertEqual(
-                result["status"], "ok", f"from_state={from_state}"
-            )
+            self.assertEqual(result["status"], "ok", f"from_state={from_state}")
 
     def test_invalid_status_value_rejected(self):
         out = self.tools.update_referral_status(
@@ -386,9 +350,7 @@ class CrossTenantIsolation(unittest.TestCase):
     def setUp(self):
         self.repo = InMemoryCompanyDiscoveryRepository()
         self.tools = CompanyDiscoveryMCPTools(_ServiceLike(self.repo))
-        out = self.tools.propose_referral(
-            userId="aicha", targetAgent="x", reason="r"
-        )
+        out = self.tools.propose_referral(userId="aicha", targetAgent="x", reason="r")
         self.referral_id = out["referral"]["referralId"]
 
     def test_cannot_update_other_users_referral(self):
@@ -509,9 +471,7 @@ class LivePostgresReferralRoundtrip(unittest.TestCase):
             repo2.close()
 
     def test_referral_delete_removes_from_postgres(self):
-        r = Referral(
-            user_id="u1", target_agent="x", reason_code="delete test"
-        )
+        r = Referral(user_id="u1", target_agent="x", reason_code="delete test")
         self.repo.save_referral(r)
         self.repo.delete_referral(r.id)
         cur = self.repo._connection.cursor()

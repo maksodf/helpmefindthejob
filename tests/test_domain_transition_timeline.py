@@ -20,14 +20,12 @@ from __future__ import annotations
 
 import unittest
 from pathlib import Path
-
 from pathlib import Path as _RPath
+
 _REPO_ROOT = _RPath(__file__).resolve().parent.parent
 
 
-RESEARCH_DOC = Path(
-    str(_REPO_ROOT / "docs/grant/04-research-and-decisions.md")
-)
+RESEARCH_DOC = Path(str(_REPO_ROOT / "docs/grant/04-research-and-decisions.md"))
 
 
 class DomainTransitionTimelinePresent(unittest.TestCase):
@@ -51,7 +49,7 @@ class DomainTransitionTimelinePresent(unittest.TestCase):
         self.assertGreater(start, 0)
         # The section extends to the next paragraph break (blank line
         # followed by non-table content)
-        section = self.src[start:start + 3000]
+        section = self.src[start : start + 3000]
 
         self.assertIn("khalo.org", section)
         self.assertIn("directjob-scout.example", section)
@@ -63,7 +61,7 @@ class DomainTransitionTimelinePresent(unittest.TestCase):
         reader can trace the rationale for each step."""
 
         start = self.src.find("Full domain-transition timeline")
-        section = self.src[start:start + 3000]
+        section = self.src[start : start + 3000]
         self.assertIn("Decision 12", section)
         self.assertIn("Decision 22", section)
 
@@ -73,12 +71,11 @@ class DomainTransitionTimelinePresent(unittest.TestCase):
         redundant churn."""
 
         start = self.src.find("Full domain-transition timeline")
-        section = self.src[start:start + 3000]
+        section = self.src[start : start + 3000]
         # Either phrasing is acceptable as long as the narrative
         # makes the distinct-decisions case
         self.assertTrue(
-            "redundant churn" in section.lower()
-            or "two distinct decisions" in section,
+            "redundant churn" in section.lower() or "two distinct decisions" in section,
             "timeline must distinguish the two renames as decisions "
             "for distinct reasons (not redundant churn)",
         )
@@ -105,7 +102,7 @@ class DomainTransitionTimelinePresent(unittest.TestCase):
         up TLD)."""
 
         start = self.src.find("Full domain-transition timeline")
-        section = self.src[start:start + 3000]
+        section = self.src[start : start + 3000]
         self.assertIn("RFC 2606", section)
 
 

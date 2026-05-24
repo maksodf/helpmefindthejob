@@ -27,7 +27,6 @@ import subprocess
 import sys
 import unittest
 
-
 _TRUTHY_TOKENS = ("true", "True", "TRUE", "1", "yes", "YES", "on", "On")
 _FALSY_TOKENS = ("false", "False", "0", "no", "off", "maybe", "")
 
@@ -39,9 +38,7 @@ def _resolve_constant(env_var: str, value: str, constant: str) -> bool:
     env[env_var] = value
     # Use a tmp data dir so the test doesn't disturb the dev DB.
     env.setdefault("HELPMEFINDTHEJOB_DATA_DIR", "/tmp/test-bool-env-app")
-    env.setdefault(
-        "HELPMEFINDTHEJOB_AUDIT_LOG_SALT", "test-static-salt-32chars-1234567890ab"
-    )
+    env.setdefault("HELPMEFINDTHEJOB_AUDIT_LOG_SALT", "test-static-salt-32chars-1234567890ab")
     proc = subprocess.run(
         [sys.executable, "-c", f"import app; print(app.{constant})"],
         env=env,

@@ -38,14 +38,14 @@ Design contract:
 from __future__ import annotations
 
 import html as _html_escape
-import json
 import math
 import random
+import threading as _threading
+import time as _time
 from collections import Counter
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
-
 
 # Differential-privacy epsilon. Lower = more privacy, less
 # accuracy. We use a moderate epsilon (1.0) appropriate for
@@ -66,9 +66,6 @@ SUPPRESSION_THRESHOLD = 5
 # scan per minute" while the dashboard stays fresh enough for the
 # public surface. We use a tuple key on (window_days, log_mtime)
 # so a fresh log invalidates the cache automatically.
-import threading as _threading
-import time as _time
-
 _AGGREGATE_CACHE: dict[tuple[Any, ...], tuple[float, dict[str, Any]]] = {}
 _AGGREGATE_CACHE_LOCK = _threading.Lock()
 _AGGREGATE_CACHE_TTL_SECONDS = 60.0
@@ -118,7 +115,9 @@ def cached_aggregate_for_path(
     return aggregates
 
 
-def apply_dp_noise(true_count: int, *, epsilon: float = DEFAULT_DP_EPSILON, rng: random.Random | None = None) -> int:
+def apply_dp_noise(
+    true_count: int, *, epsilon: float = DEFAULT_DP_EPSILON, rng: random.Random | None = None
+) -> int:
     """Add Laplace(0, 1/epsilon) noise to a count and round.
 
     The Laplace mechanism is the standard ε-differential privacy
@@ -342,7 +341,9 @@ def render_public_aggregates(
         "byOutcome": _noise_dict(aggregates.get("byOutcome", {})),
         "refusals": _noise_dict(aggregates.get("refusals", {})),
         "windowDays": aggregates.get("windowDays", 30),
-        "chainHead": aggregates.get("chainHead", {"sequenceNo": None, "chainHmacFingerprint": None}),
+        "chainHead": aggregates.get(
+            "chainHead", {"sequenceNo": None, "chainHmacFingerprint": None}
+        ),
         "privacy": {
             "dpEpsilon": epsilon,
             "suppressionThreshold": SUPPRESSION_THRESHOLD,
@@ -367,7 +368,9 @@ def _esc(value: object) -> str:
     return _html_escape.escape(str(value), quote=True)
 
 
-def render_html(public_aggregates: dict[str, Any], cost_saving_snapshot: dict[str, Any] | None = None) -> str:
+def render_html(
+    public_aggregates: dict[str, Any], cost_saving_snapshot: dict[str, Any] | None = None
+) -> str:
     """Render the public-facing /transparency HTML page.
 
     Inline-styled (no external CSS) so the page works behind a
@@ -397,9 +400,7 @@ def render_html(public_aggregates: dict[str, Any], cost_saving_snapshot: dict[st
 
     mechanism_rows = ""
     if cost_saving_snapshot:
-        for mech, stats in sorted(
-            cost_saving_snapshot.get("mechanisms", {}).items()
-        ):
+        for mech, stats in sorted(cost_saving_snapshot.get("mechanisms", {}).items()):
             raw_confidence = str(stats.get("confidence", "aspirational"))
             # CSS class allowlist: only the three known confidence
             # tiers can be embedded as a class attribute. Anything

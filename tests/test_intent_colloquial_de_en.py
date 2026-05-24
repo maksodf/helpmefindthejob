@@ -21,6 +21,7 @@ Gate 6.4 closure criterion (operator-approved): >= 5 colloquial
 variants per language per major intent category pass intent
 recognition via keyword_route OR parse_slash_command.
 """
+
 from __future__ import annotations
 
 import unittest
@@ -295,14 +296,12 @@ class IntentionalFallthroughToAiRouterTests(unittest.TestCase):
     def test_indirect_employment_phrasing_falls_through(self):
         # No "find/search/show ... job" verb-noun pair; no role token.
         # Should fall through to AI router for classification.
-        self.assertIsNone(_route(
-            "I'd like to explore career opportunities matching my profile"
-        ))
+        self.assertIsNone(_route("I'd like to explore career opportunities matching my profile"))
 
     def test_long_natural_language_query_falls_through(self):
-        self.assertIsNone(_route(
-            "I was wondering if there are any opportunities for someone like me"
-        ))
+        self.assertIsNone(
+            _route("I was wondering if there are any opportunities for someone like me")
+        )
 
     def test_de_polite_form_falls_through(self):
         self.assertIsNone(_route("Könnten Sie mir bei einem Job helfen?"))

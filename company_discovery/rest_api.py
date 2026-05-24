@@ -196,9 +196,7 @@ def build_openapi_spec(*, base_url: str = "") -> dict[str, Any]:
     return spec
 
 
-def _validate_required_fields(
-    payload: dict[str, Any], required: list[str]
-) -> list[str]:
+def _validate_required_fields(payload: dict[str, Any], required: list[str]) -> list[str]:
     """Return the list of required fields missing from payload.
     Empty list means valid."""
 
@@ -217,7 +215,7 @@ class ToolValidationError(ValueError):
 def dispatch_tool_call(
     tool_name: str,
     payload: dict[str, Any],
-    tools: "CompanyDiscoveryMCPTools",
+    tools: CompanyDiscoveryMCPTools,
     *,
     inject_user_id: str | None = None,
 ) -> Any:
@@ -250,17 +248,13 @@ def dispatch_tool_call(
     # Inject the authenticated user id BEFORE validation so a
     # request that omits userId (relying on the server to fill it)
     # still passes required-fields check.
-    if inject_user_id and "userId" in tool_spec.get("inputSchema", {}).get(
-        "properties", {}
-    ):
+    if inject_user_id and "userId" in tool_spec.get("inputSchema", {}).get("properties", {}):
         payload = {**payload, "userId": inject_user_id}
 
     required = tool_spec.get("inputSchema", {}).get("required", [])
     missing = _validate_required_fields(payload, required)
     if missing:
-        raise ToolValidationError(
-            f"missing_required_fields:{','.join(sorted(missing))}"
-        )
+        raise ToolValidationError(f"missing_required_fields:{','.join(sorted(missing))}")
 
     # Filter payload to only kwargs the method accepts so an
     # over-eager client doesn't get a TypeError. Inspect the

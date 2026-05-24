@@ -554,9 +554,7 @@ def is_cancel_token(msg: str) -> bool:
     return lc in _CANCEL_TOKENS
 
 
-def _should_defer_cancel_to_substate(
-    journey: UserJourney, msg_lower: str
-) -> bool:
+def _should_defer_cancel_to_substate(journey: UserJourney, msg_lower: str) -> bool:
     """Bug E.2 fix (Loop 9.1.5, 2026-05-20). Determine whether the
     universal cancel interception should be SKIPPED because the
     user's current Bug-C sub-state owns a cancel-mode meaning for
@@ -596,9 +594,7 @@ def _should_defer_cancel_to_substate(
     return False
 
 
-def _should_defer_give_up_to_substate(
-    journey: UserJourney, msg_lower: str
-) -> bool:
+def _should_defer_give_up_to_substate(journey: UserJourney, msg_lower: str) -> bool:
     """Bug E.2 collision item #1 + #2 (Loop 9.1.5b, 2026-05-20).
 
     Universal ``_CANCEL_TOKENS`` set overlaps with sub-state GIVE-
@@ -637,9 +633,7 @@ def _should_defer_give_up_to_substate(
     return False
 
 
-def _should_defer_start_fresh_to_substate(
-    journey: UserJourney, msg_lower: str
-) -> bool:
+def _should_defer_start_fresh_to_substate(journey: UserJourney, msg_lower: str) -> bool:
     """Bug E.2 collision item #3 (Loop 9.1.5b, 2026-05-20).
 
     Universal ``_CANCEL_TOKENS`` includes "reset", which is ALSO
@@ -706,7 +700,7 @@ _GENERIC_HELP_TEXT = (
 _HELP_CANCEL_TAIL = "\n\n(Type **cancel** any time to stop the journey.)"
 
 
-def help_text_for(journey: "UserJourney") -> str:
+def help_text_for(journey: UserJourney) -> str:
     """Return phase-tailored help text for the current journey
     position. Falls back to the generic "you're mid-journey" text
     only when no phase / sub-step entry exists.
@@ -1147,20 +1141,22 @@ def advance(
             if any(m in picked_title for m in anerkennung_markers) or any(
                 m in picked_company for m in anerkennung_markers
             ):
-                _cse.extend([
-                    (
-                        "self_serve_anerkennung",
-                        1.0,
-                        "self_serve_completions",
-                        {"picked_title": picked_title[:80]},
-                    ),
-                    (
-                        "faster_recognition",
-                        1.0,
-                        "recognition_completions",
-                        {"picked_title": picked_title[:80]},
-                    ),
-                ])
+                _cse.extend(
+                    [
+                        (
+                            "self_serve_anerkennung",
+                            1.0,
+                            "self_serve_completions",
+                            {"picked_title": picked_title[:80]},
+                        ),
+                        (
+                            "faster_recognition",
+                            1.0,
+                            "recognition_completions",
+                            {"picked_title": picked_title[:80]},
+                        ),
+                    ]
+                )
             return AdvanceResult(
                 reply=("Saved. Type `find a job` to start another search."),
                 journey=journey,
@@ -1275,20 +1271,18 @@ def _advance_discover(journey: UserJourney, msg: str) -> AdvanceResult:
                 reply=(
                     f"Did you mean **{suggestion}**? Reply "
                     f"**yes** to use {suggestion}, or type the "
-                    f"correct location (e.g., \"Munich\")."
+                    f'correct location (e.g., "Munich").'
                 ),
                 journey=journey,
             )
         # Either no typo suspicion, or user already saw the suggestion
         # and answered. Handle "yes" → accept the suggestion.
         if journey.location_canonical.startswith("typo:"):
-            original = journey.location_canonical[len("typo:"):]
+            original = journey.location_canonical[len("typo:") :]
             if msg.casefold() in {"yes", "y", "ja", "ok", "sure"}:
                 resolved = _suggest_city_correction(original) or original
                 journey.location = resolved
-                journey.location_canonical = (
-                    normalize_location(resolved) or ""
-                )
+                journey.location_canonical = normalize_location(resolved) or ""
             else:
                 # User typed a different location — accept it as-is.
                 journey.location = msg
@@ -1429,14 +1423,49 @@ _KNOWN_CITIES_FOR_TYPO = (
     # The big DACH ones first; substring + Levenshtein-1 detection
     # against this list catches "berli"→"Berlin", "münche"→"München",
     # "hambrug"→"Hamburg", etc.
-    "Berlin", "München", "Munich", "Hamburg", "Köln", "Cologne",
-    "Frankfurt", "Stuttgart", "Düsseldorf", "Dortmund", "Essen",
-    "Leipzig", "Dresden", "Hannover", "Hanover", "Nürnberg",
-    "Nuremberg", "Bremen", "Bonn", "Münster", "Karlsruhe",
-    "Mannheim", "Augsburg", "Wiesbaden", "Kiel", "Freiburg",
-    "Wien", "Vienna", "Zürich", "Zurich", "Basel", "Geneva",
-    "Genf", "London", "Paris", "Amsterdam", "Madrid", "Barcelona",
-    "Rome", "Milan", "Prague", "Warsaw", "Lisbon",
+    "Berlin",
+    "München",
+    "Munich",
+    "Hamburg",
+    "Köln",
+    "Cologne",
+    "Frankfurt",
+    "Stuttgart",
+    "Düsseldorf",
+    "Dortmund",
+    "Essen",
+    "Leipzig",
+    "Dresden",
+    "Hannover",
+    "Hanover",
+    "Nürnberg",
+    "Nuremberg",
+    "Bremen",
+    "Bonn",
+    "Münster",
+    "Karlsruhe",
+    "Mannheim",
+    "Augsburg",
+    "Wiesbaden",
+    "Kiel",
+    "Freiburg",
+    "Wien",
+    "Vienna",
+    "Zürich",
+    "Zurich",
+    "Basel",
+    "Geneva",
+    "Genf",
+    "London",
+    "Paris",
+    "Amsterdam",
+    "Madrid",
+    "Barcelona",
+    "Rome",
+    "Milan",
+    "Prague",
+    "Warsaw",
+    "Lisbon",
 )
 
 
@@ -1455,11 +1484,13 @@ def _edit_distance_le(a: str, b: str, max_dist: int) -> bool:
         cur_row = [i]
         for j, cb in enumerate(b, 1):
             cost = 0 if ca == cb else 1
-            cur_row.append(min(
-                cur_row[-1] + 1,        # insertion
-                prev_row[j] + 1,        # deletion
-                prev_row[j - 1] + cost, # substitution
-            ))
+            cur_row.append(
+                min(
+                    cur_row[-1] + 1,  # insertion
+                    prev_row[j] + 1,  # deletion
+                    prev_row[j - 1] + cost,  # substitution
+                )
+            )
         if min(cur_row) > max_dist:
             return False
         prev_row = cur_row
@@ -1471,10 +1502,12 @@ def _transliterate_de(text: str) -> str:
     Levenshtein check works for users who type "muenche" instead
     of "münche" (or vice versa). Case-preserving."""
     return (
-        text
-        .replace("ü", "ue").replace("Ü", "Ue")
-        .replace("ö", "oe").replace("Ö", "Oe")
-        .replace("ä", "ae").replace("Ä", "Ae")
+        text.replace("ü", "ue")
+        .replace("Ü", "Ue")
+        .replace("ö", "oe")
+        .replace("Ö", "Oe")
+        .replace("ä", "ae")
+        .replace("Ä", "Ae")
         .replace("ß", "ss")
     )
 
@@ -1501,8 +1534,7 @@ def _suggest_city_correction(text: str) -> str | None:
         return None
     lc = _transliterate_de(cleaned.casefold())
     # Already an exact known city — no suggestion needed.
-    if any(_transliterate_de(city.casefold()) == lc
-            for city in _KNOWN_CITIES_FOR_TYPO):
+    if any(_transliterate_de(city.casefold()) == lc for city in _KNOWN_CITIES_FOR_TYPO):
         return None
     # Levenshtein-1 match against the canonical list (on ASCII-fold).
     for city in _KNOWN_CITIES_FOR_TYPO:
@@ -1814,13 +1846,16 @@ def _advance_cv_check(journey: UserJourney, msg: str, *, has_existing_cv: bool) 
                 "friction_class": classification.slug,
             }
             chained.analytics_events.append(
-                ("friction_class_classified", {
-                    "resolved": classification.slug,
-                    "confidence": classification.confidence,
-                    "match_count": classification.match_count,
-                    "tied_slugs": list(classification.tied_slugs),
-                    "source": "paste",
-                }),
+                (
+                    "friction_class_classified",
+                    {
+                        "resolved": classification.slug,
+                        "confidence": classification.confidence,
+                        "match_count": classification.match_count,
+                        "tied_slugs": list(classification.tied_slugs),
+                        "source": "paste",
+                    },
+                ),
             )
             # Phase 2 #76 sub-piece (a) + (b): user-confirmation flow.
             # Surface the classification in the chat reply so the user
@@ -1840,9 +1875,7 @@ def _advance_cv_check(journey: UserJourney, msg: str, *, has_existing_cv: bool) 
             if classification.slug and label:
                 tied_clause = ""
                 if classification.tied_slugs:
-                    tied_labels = ", ".join(
-                        label_for(s) or s for s in classification.tied_slugs
-                    )
+                    tied_labels = ", ".join(label_for(s) or s for s in classification.tied_slugs)
                     tied_clause = (
                         f" Note: tied with {tied_labels} at the same "
                         f"score — alphabetical tie-break picked "
@@ -2013,8 +2046,18 @@ def _advance_inspire(
     # hit the bug. Widened the no-list to include the colloquial
     # negatives a user actually types.
     elif lc in {
-        "no", "n", "nein", "skip", "stick",
-        "none", "keine", "nope", "no thanks", "nein danke", "decline", "pass",
+        "no",
+        "n",
+        "nein",
+        "skip",
+        "stick",
+        "none",
+        "keine",
+        "nope",
+        "no thanks",
+        "nein danke",
+        "decline",
+        "pass",
     }:
         journey.target_roles = [aggregator_role]
     elif msg:
@@ -2338,9 +2381,23 @@ _PREFS_REASK_REPLY = (
 # set.
 _PREFS_ADVANCE_TOKENS = frozenset(
     {
-        "none", "skip", "no preference", "nothing", "nope", "no thanks",
-        "keine", "nichts", "kein bedarf", "nein danke",
-        "weiter", "next", "move on", "go", "fertig", "done", "proceed",
+        "none",
+        "skip",
+        "no preference",
+        "nothing",
+        "nope",
+        "no thanks",
+        "keine",
+        "nichts",
+        "kein bedarf",
+        "nein danke",
+        "weiter",
+        "next",
+        "move on",
+        "go",
+        "fertig",
+        "done",
+        "proceed",
     }
 )
 
@@ -2395,9 +2452,7 @@ def _advance_prefs(journey: UserJourney, msg: str) -> AdvanceResult:
             # advancing into a no-preferences search. Examples
             # that land here: "1", "2", "?", "ok", "huh", "what",
             # "keine Ahnung" (the user genuinely doesn't know).
-            return AdvanceResult(
-                reply=_PREFS_REASK_REPLY, journey=journey, persist=False
-            )
+            return AdvanceResult(reply=_PREFS_REASK_REPLY, journey=journey, persist=False)
 
     journey.phase = PHASE_SEARCH
     return AdvanceResult(
@@ -2421,15 +2476,29 @@ def _advance_prefs(journey: UserJourney, msg: str) -> AdvanceResult:
 
 _REVIEW_EMPTY_GIVE_UP_TOKENS = frozenset(
     {
-        "give up", "done", "fertig", "exit", "quit", "stop",
-        "end", "ende", "abbruch", "abbrechen",
+        "give up",
+        "done",
+        "fertig",
+        "exit",
+        "quit",
+        "stop",
+        "end",
+        "ende",
+        "abbruch",
+        "abbrechen",
     }
 )
 _REVIEW_EMPTY_RETRY_TOKENS = frozenset(
     {
-        "retry", "search again", "try again", "again",
-        "nochmal", "noch einmal", "wieder versuchen",
-        "erneut", "neu suchen",
+        "retry",
+        "search again",
+        "try again",
+        "again",
+        "nochmal",
+        "noch einmal",
+        "wieder versuchen",
+        "erneut",
+        "neu suchen",
     }
 )
 # Bug C piece 6 (2026-05-20): start-fresh tokens, sub-state-scoped
@@ -2442,10 +2511,21 @@ _REVIEW_EMPTY_RETRY_TOKENS = frozenset(
 # the normalized lc avoids substring confusion).
 _REVIEW_EMPTY_START_FRESH_TOKENS = frozenset(
     {
-        "start fresh", "start over", "restart", "new search",
-        "fresh start", "start again", "begin again", "reset",
-        "neu starten", "neue suche", "von vorne", "von vorn",
-        "nochmal anders", "neu anfangen", "zurücksetzen",
+        "start fresh",
+        "start over",
+        "restart",
+        "new search",
+        "fresh start",
+        "start again",
+        "begin again",
+        "reset",
+        "neu starten",
+        "neue suche",
+        "von vorne",
+        "von vorn",
+        "nochmal anders",
+        "neu anfangen",
+        "zurücksetzen",
         # Loop 15 (2026-05-20): colloquial multi-word DE variant.
         "lass uns nochmal anfangen",
     }
@@ -2484,9 +2564,7 @@ def _compute_new_laterals(journey: UserJourney) -> list[str]:
     return new
 
 
-def _format_applied_widening_bullet(
-    journey: UserJourney, widening_id: str
-) -> str:
+def _format_applied_widening_bullet(journey: UserJourney, widening_id: str) -> str:
     """One bullet line for the final-state summary block. Reads
     label from widening.WIDENING_LABEL (static) and composes the
     description from current journey state.
@@ -2500,28 +2578,22 @@ def _format_applied_widening_bullet(
     between cache state at widening application vs final-state).
     """
     from company_discovery.widening import (
-        WIDENING_LABEL,
-        WIDEN_LOCATION,
         DROP_SENIORITY,
         TRY_LATERALS,
+        WIDEN_LOCATION,
+        WIDENING_LABEL,
     )
 
     label = WIDENING_LABEL.get(widening_id, widening_id)
     if widening_id == WIDEN_LOCATION:
         return f"**{label}** — searched without the location filter"
     if widening_id == DROP_SENIORITY:
-        target = (
-            journey.target_roles[0]
-            if journey.target_roles
-            else (journey.role_text or "")
-        )
+        target = journey.target_roles[0] if journey.target_roles else (journey.role_text or "")
         if target:
             return f'**{label}** — searched for "{target}"'
         return f"**{label}**"
     if widening_id == TRY_LATERALS:
-        laterals = (
-            journey.target_roles[1:] if len(journey.target_roles) > 1 else []
-        )
+        laterals = journey.target_roles[1:] if len(journey.target_roles) > 1 else []
         if laterals:
             return f"**{label}** — {', '.join(laterals)}"
         return f"**{label}**"
@@ -2595,7 +2667,7 @@ _START_FRESH_BRIDGE_REPLY = (
     "OK — clearing your old search. Let's try with different "
     "criteria.\n\n"
     "**1. What kind of role this time?** "
-    "(e.g., \"Pflegehelfer\", \"bartender\", \"backend engineer\")"
+    '(e.g., "Pflegehelfer", "bartender", "backend engineer")'
 )
 
 
@@ -2669,9 +2741,7 @@ def _format_review_empty_reply(
     if (not offered) and journey.applied_widenings:
         summary_lines: list[str] = ["You've tried these widenings:"]
         for wid in journey.applied_widenings:
-            summary_lines.append(
-                f"  - {_format_applied_widening_bullet(journey, wid)}"
-            )
+            summary_lines.append(f"  - {_format_applied_widening_bullet(journey, wid)}")
         summary_lines.append("")
         summary_lines.append("All returned 0 matches.")
         summary_lines.append("")
@@ -2682,12 +2752,10 @@ def _format_review_empty_reply(
             "`neu starten` / `restart`)"
         )
         summary_lines.append(
-            "  2. **Retry** the same search "
-            "(or type `retry` / `nochmal` / `search again`)"
+            "  2. **Retry** the same search (or type `retry` / `nochmal` / `search again`)"
         )
         summary_lines.append(
-            "  3. **Give up** — end this journey "
-            "(or type `give up` / `done` / `fertig`)"
+            "  3. **Give up** — end this journey (or type `give up` / `done` / `fertig`)"
         )
         return f"{leading}\n\n" + "\n".join(summary_lines)
 
@@ -2730,19 +2798,15 @@ def _format_review_empty_reply(
         retry_n = n + 1
         give_up_n = n + 2
     menu_lines.append(
-        f"  {retry_n}. **Retry** the same search "
-        f"(or type `retry` / `nochmal` / `search again`)"
+        f"  {retry_n}. **Retry** the same search (or type `retry` / `nochmal` / `search again`)"
     )
     menu_lines.append(
-        f"  {give_up_n}. **Give up** — end this journey "
-        f"(or type `give up` / `done` / `fertig`)"
+        f"  {give_up_n}. **Give up** — end this journey (or type `give up` / `done` / `fertig`)"
     )
     return f"{leading}\n\n" + "\n".join(menu_lines)
 
 
-def _advance_review_empty(
-    journey: UserJourney, msg: str, *, engine: Any = None
-) -> AdvanceResult:
+def _advance_review_empty(journey: UserJourney, msg: str, *, engine: Any = None) -> AdvanceResult:
     """Empty-state review handler. PART 6 Bug C pieces 1-4 (2026-05-20).
 
     Never-implicit-done contract:
@@ -2768,7 +2832,8 @@ def _advance_review_empty(
     if not msg.strip():
         return AdvanceResult(
             reply=_format_review_empty_reply(
-                journey, diagnostic_text=journey.diagnostic_text or None,
+                journey,
+                diagnostic_text=journey.diagnostic_text or None,
                 engine=engine,
             ),
             journey=journey,
@@ -2850,9 +2915,7 @@ def _advance_review_empty(
         else:
             chosen = parse_affordance_choice(msg, offered)
             if chosen is not None:
-                outcome = apply_widening(
-                    journey, chosen.id, new_laterals=new_laterals
-                )
+                outcome = apply_widening(journey, chosen.id, new_laterals=new_laterals)
                 if outcome.action == "fire_search":
                     return AdvanceResult(
                         reply=(
@@ -2949,7 +3012,8 @@ def _advance_review_empty(
     # exit — operator's never-implicit-done invariant.
     return AdvanceResult(
         reply=_format_review_empty_reply(
-            journey, diagnostic_text=journey.diagnostic_text or None,
+            journey,
+            diagnostic_text=journey.diagnostic_text or None,
             engine=engine,
         ),
         journey=journey,
@@ -2960,9 +3024,7 @@ def _advance_review_empty(
 _LATERAL_CONFIRM_YES_TOKENS = frozenset(
     {"yes", "y", "all", "alle", "ja", "sure", "ok", "okay", "include all"}
 )
-_LATERAL_CONFIRM_NO_TOKENS = frozenset(
-    {"no", "n", "nein", "cancel", "skip", "back", "abbruch"}
-)
+_LATERAL_CONFIRM_NO_TOKENS = frozenset({"no", "n", "nein", "cancel", "skip", "back", "abbruch"})
 
 
 def _advance_review_laterals_offered(
@@ -3002,7 +3064,8 @@ def _advance_review_laterals_offered(
         journey.review_substate = "empty"
         return AdvanceResult(
             reply=_format_review_empty_reply(
-                journey, diagnostic_text=journey.diagnostic_text or None,
+                journey,
+                diagnostic_text=journey.diagnostic_text or None,
                 engine=engine,
             ),
             journey=journey,
@@ -3081,9 +3144,7 @@ def _enter_auto_relax(
         next_auto_relax_suggestion,
     )
 
-    affordance = next_auto_relax_suggestion(
-        journey, new_laterals_count=len(new_laterals)
-    )
+    affordance = next_auto_relax_suggestion(journey, new_laterals_count=len(new_laterals))
     if affordance is None:
         # Operator-required exhaustion path. Auto-relax has nothing
         # to offer (either all applied or all declined). Exit auto-
@@ -3095,7 +3156,8 @@ def _enter_auto_relax(
             reply=(
                 "I've gone through all the widening options I have.\n\n"
                 + _format_review_empty_reply(
-                    journey, diagnostic_text=journey.diagnostic_text or None,
+                    journey,
+                    diagnostic_text=journey.diagnostic_text or None,
                     engine=engine,
                 )
             ),
@@ -3195,9 +3257,7 @@ def _advance_review_auto_relax_offering(
         empty / unknown / noop fall-through."""
         # Re-discover the affordance — it may have changed if
         # journey state shifted between turns (defensive).
-        next_a = next_auto_relax_suggestion(
-            journey, new_laterals_count=len(new_laterals)
-        )
+        next_a = next_auto_relax_suggestion(journey, new_laterals_count=len(new_laterals))
         if next_a is None:
             # Sub-state corrupted (offered_id set but no eligible) —
             # exit auto-mode and route to menu.
@@ -3206,7 +3266,8 @@ def _advance_review_auto_relax_offering(
             journey.review_substate = "empty"
             return AdvanceResult(
                 reply=_format_review_empty_reply(
-                    journey, diagnostic_text=journey.diagnostic_text or None,
+                    journey,
+                    diagnostic_text=journey.diagnostic_text or None,
                     engine=engine,
                 ),
                 journey=journey,
@@ -3263,7 +3324,8 @@ def _advance_review_auto_relax_offering(
         journey.review_substate = "empty"
         return AdvanceResult(
             reply=_format_review_empty_reply(
-                journey, diagnostic_text=journey.diagnostic_text or None,
+                journey,
+                diagnostic_text=journey.diagnostic_text or None,
                 engine=engine,
             ),
             journey=journey,
@@ -3275,9 +3337,7 @@ def _advance_review_auto_relax_offering(
         if offered_id and offered_id not in journey.auto_relax_declined:
             journey.auto_relax_declined.append(offered_id)
         journey.auto_relax_offered_id = ""
-        next_a = next_auto_relax_suggestion(
-            journey, new_laterals_count=len(new_laterals)
-        )
+        next_a = next_auto_relax_suggestion(journey, new_laterals_count=len(new_laterals))
         if next_a is None:
             # Exhausted — exit auto-mode + emit exhaustion message + menu.
             journey.auto_relax_active = False
@@ -3286,7 +3346,8 @@ def _advance_review_auto_relax_offering(
                 reply=(
                     "I've gone through all the widening options I have.\n\n"
                     + _format_review_empty_reply(
-                        journey, diagnostic_text=journey.diagnostic_text or None,
+                        journey,
+                        diagnostic_text=journey.diagnostic_text or None,
                         engine=engine,
                     )
                 ),
@@ -3352,15 +3413,12 @@ def _reask_laterals_reply(journey: UserJourney) -> str:
         lines.append(f"  {i}. **{role}**")
     lines.append("")
     lines.append(
-        "Reply **yes** to include all, **no** to cancel, or pick by "
-        "number (e.g. `1` or `1, 3`)."
+        "Reply **yes** to include all, **no** to cancel, or pick by number (e.g. `1` or `1, 3`)."
     )
     return "\n".join(lines)
 
 
-def _advance_review(
-    journey: UserJourney, msg: str, *, engine: Any = None
-) -> AdvanceResult:
+def _advance_review(journey: UserJourney, msg: str, *, engine: Any = None) -> AdvanceResult:
     """User has been shown the categorized results and is picking a
     category. Renders the top-N jobs in the chosen category with
     title/company/location/link so the user can drill into a specific
@@ -3389,7 +3447,9 @@ def _advance_review(
     through direct handler calls.
     """
     if journey.review_substate in (
-        "empty", "laterals_offered", "auto_relax_offering",
+        "empty",
+        "laterals_offered",
+        "auto_relax_offering",
     ):
         return _advance_review_empty(journey, msg, engine=engine)
     categories = list(journey.search_results_by_category.keys())

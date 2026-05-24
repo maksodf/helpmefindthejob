@@ -26,10 +26,7 @@ from pathlib import Path
 from company_discovery.ai_providers import PROVIDER_OPTIONS
 
 MATRIX_DOC = (
-    Path(__file__).resolve().parent.parent
-    / "docs"
-    / "grant"
-    / "15-ai-provider-honesty-matrix.md"
+    Path(__file__).resolve().parent.parent / "docs" / "grant" / "15-ai-provider-honesty-matrix.md"
 )
 
 # Map from PROVIDER_OPTIONS id -> human-readable label expected to

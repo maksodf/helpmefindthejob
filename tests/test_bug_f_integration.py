@@ -21,6 +21,7 @@ This file pins the END-TO-END contract by direct unit-level
 simulation of the dispatcher's classification chain. Future
 refactors that break ANY link in the chain fail loudly here.
 """
+
 from __future__ import annotations
 
 import unittest
@@ -95,21 +96,24 @@ class CvPasteWritesFrictionClassEndToEndTests(unittest.TestCase):
         journey = UserJourney(phase=PHASE_CV_CHECK, cv_status="unknown")
         result = advance(journey, _aicha_cv())
         self.assertEqual(
-            result.profile_updates.get("friction_class"), "aicha",
+            result.profile_updates.get("friction_class"),
+            "aicha",
         )
 
     def test_maria_paste_sets_friction_class(self):
         journey = UserJourney(phase=PHASE_CV_CHECK, cv_status="unknown")
         result = advance(journey, _maria_cv())
         self.assertEqual(
-            result.profile_updates.get("friction_class"), "maria",
+            result.profile_updates.get("friction_class"),
+            "maria",
         )
 
     def test_neutral_paste_writes_empty_friction_class(self):
         journey = UserJourney(phase=PHASE_CV_CHECK, cv_status="unknown")
         result = advance(journey, _neutral_cv())
         self.assertEqual(
-            result.profile_updates.get("friction_class"), "",
+            result.profile_updates.get("friction_class"),
+            "",
         )
 
 
@@ -197,15 +201,13 @@ class EmptyStateUxForFrictionClassifiedUserTests(unittest.TestCase):
             role_text="Krankenpfleger",
             target_roles=["Krankenpfleger"],
             location="Berlin",
-            visa_constrained=True,   # ← the integration chain's output
+            visa_constrained=True,  # ← the integration chain's output
             applied_widenings=[],
-            diagnostic_text=(
-                "No live postings found for 'Krankenpfleger' in "
-                "Berlin."
-            ),
+            diagnostic_text=("No live postings found for 'Krankenpfleger' in Berlin."),
         )
         reply = _format_review_empty_reply(
-            journey, diagnostic_text=journey.diagnostic_text,
+            journey,
+            diagnostic_text=journey.diagnostic_text,
         )
         # Ausländerbehörde caveat renders under widen-location
         self.assertIn("Ausländerbehörde", reply)
@@ -231,8 +233,10 @@ class EmptyStateUxForFrictionClassifiedUserTests(unittest.TestCase):
         # Bug C piece-3 constrained order:
         # TRY_LATERALS, DROP_SENIORITY, WIDEN_LOCATION
         from company_discovery.widening import (
-            TRY_LATERALS, available_affordances,
+            TRY_LATERALS,
+            available_affordances,
         )
+
         journey = UserJourney(
             phase=PHASE_REVIEW,
             review_substate="empty",
@@ -249,8 +253,9 @@ class EmptyStateUxForFrictionClassifiedUserTests(unittest.TestCase):
     def test_unconstrained_ordering_puts_widen_first(self):
         # Unconstrained order: WIDEN_LOCATION first
         from company_discovery.widening import (
-            WIDEN_LOCATION, available_affordances,
+            available_affordances,
         )
+
         journey = UserJourney(
             phase=PHASE_REVIEW,
             review_substate="empty",
@@ -316,9 +321,7 @@ class FullChainContractSmokeTest(unittest.TestCase):
         profile = UserProfile(user_id="test-maria", friction_class=slug)
         # 3-5: chain resolves to NOT visa-constrained
         fixture = _persona_fixture_for(profile.friction_class)
-        is_constrained = classify_visa_constraint(
-            fixture.residency_status if fixture else ""
-        )
+        is_constrained = classify_visa_constraint(fixture.residency_status if fixture else "")
         self.assertFalse(is_constrained)
 
     def test_neutral_cv_to_unclassified_full_chain(self):
@@ -330,9 +333,7 @@ class FullChainContractSmokeTest(unittest.TestCase):
         profile = UserProfile(user_id="test-neutral", friction_class=slug)
         fixture = _persona_fixture_for(profile.friction_class)
         self.assertIsNone(fixture)
-        is_constrained = classify_visa_constraint(
-            getattr(fixture, "residency_status", "") or ""
-        )
+        is_constrained = classify_visa_constraint(getattr(fixture, "residency_status", "") or "")
         self.assertFalse(is_constrained)
 
 

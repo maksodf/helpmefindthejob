@@ -35,7 +35,6 @@ from scripts.bias_comparative_report import (
     run_provider,
 )
 
-
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
 
@@ -106,9 +105,7 @@ class CrossProviderComparativeDataPresent(unittest.TestCase):
             raise unittest.SkipTest("both DeepSeek + Ollama caches required")
         ds = list(_load_cached_outcomes("deepseek").values())
         ol = list(_load_cached_outcomes("ollama").values())
-        disagreements = _cross_provider_disagreement(
-            {"deepseek": ds, "ollama": ol}
-        )
+        disagreements = _cross_provider_disagreement({"deepseek": ds, "ollama": ol})
         self.assertGreater(
             len(disagreements),
             0,
@@ -170,12 +167,8 @@ class CachedDeepSeekRunPresent(unittest.TestCase):
         means = _per_persona_mean(self.outcomes)
         self.assertEqual(len(means), 7)
         for slug, mean in means.items():
-            self.assertGreaterEqual(
-                mean, 40, f"persona {slug} mean {mean} below plausible floor"
-            )
-            self.assertLessEqual(
-                mean, 90, f"persona {slug} mean {mean} above plausible ceiling"
-            )
+            self.assertGreaterEqual(mean, 40, f"persona {slug} mean {mean} below plausible floor")
+            self.assertLessEqual(mean, 90, f"persona {slug} mean {mean} above plausible ceiling")
 
     def test_every_cell_has_a_response_hash(self):
         for o in self.outcomes:
@@ -193,15 +186,14 @@ class ReplayOnlyDoesNotCallNetwork(unittest.TestCase):
 
     def test_replay_only_no_network_calls(self):
         with TemporaryDirectory() as tmp:
-            with patch(
-                "scripts.bias_comparative_report.CACHE_DIR", Path(tmp)
-            ), patch(
-                "scripts.bias_comparative_report._cache_path_for",
-                lambda pid: Path(tmp) / f"{pid}.jsonl",
+            with (
+                patch("scripts.bias_comparative_report.CACHE_DIR", Path(tmp)),
+                patch(
+                    "scripts.bias_comparative_report._cache_path_for",
+                    lambda pid: Path(tmp) / f"{pid}.jsonl",
+                ),
             ):
-                outcomes, summary = run_provider(
-                    "deepseek", live=False, max_eur=0.0
-                )
+                outcomes, summary = run_provider("deepseek", live=False, max_eur=0.0)
         self.assertGreater(len(outcomes), 0)
         # Every outcome is a cache miss — none are 'ok' (which
         # would mean a network call happened)
@@ -239,12 +231,8 @@ class CrossProviderDisagreement(unittest.TestCase):
         # Build 30 cells with descending spread
         by_provider = {"a": [], "b": []}
         for i in range(30):
-            by_provider["a"].append(
-                CallOutcome("a", "aicha", f"scen{i}", "ok", raw_score=10)
-            )
-            by_provider["b"].append(
-                CallOutcome("b", "aicha", f"scen{i}", "ok", raw_score=10 + i)
-            )
+            by_provider["a"].append(CallOutcome("a", "aicha", f"scen{i}", "ok", raw_score=10))
+            by_provider["b"].append(CallOutcome("b", "aicha", f"scen{i}", "ok", raw_score=10 + i))
         rows = _cross_provider_disagreement(by_provider)
         self.assertEqual(len(rows), 20)
         self.assertEqual(rows[0]["spread"], 29)  # highest first

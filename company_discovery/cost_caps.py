@@ -46,7 +46,6 @@ import calendar
 from dataclasses import dataclass
 from datetime import datetime, timezone
 
-
 # Per-provider, per-million-token EUR rates. Sourced from public
 # pricing pages 2026-Q1 (refresh quarterly). Where a provider
 # bills per-call rather than per-token, we fall back to an
@@ -71,12 +70,18 @@ PROVIDER_RATES_EUR_PER_MTOK: dict[str, dict[str, float]] = {
     "google_gemini": {"prompt_per_mtok": 1.15, "completion_per_mtok": 3.45},  # 1.5 Pro
     "deepseek": {"prompt_per_mtok": 0.13, "completion_per_mtok": 0.25},
     "openrouter": {"prompt_per_mtok": 2.30, "completion_per_mtok": 9.20},  # OpenAI-ish upper bound
-    "custom": {"prompt_per_mtok": 2.30, "completion_per_mtok": 9.20},  # unknown endpoint; use OpenAI-ish upper bound
+    "custom": {
+        "prompt_per_mtok": 2.30,
+        "completion_per_mtok": 9.20,
+    },  # unknown endpoint; use OpenAI-ish upper bound
     # Local / managed — free at point of use (no per-call charge to the user)
     "ollama": {"prompt_per_mtok": 0.0, "completion_per_mtok": 0.0},
     "manual": {"prompt_per_mtok": 0.0, "completion_per_mtok": 0.0},
     "claude_code": {"prompt_per_mtok": 0.0, "completion_per_mtok": 0.0},
-    "codex_cli": {"prompt_per_mtok": 0.0, "completion_per_mtok": 0.0},  # CLI session-auth, no per-call charge
+    "codex_cli": {
+        "prompt_per_mtok": 0.0,
+        "completion_per_mtok": 0.0,
+    },  # CLI session-auth, no per-call charge
     "managed": {"prompt_per_mtok": 0.0, "completion_per_mtok": 0.0},  # operator-side managed AI
 }
 
@@ -112,7 +117,7 @@ class CostCapContext:
     # bypass AppState).
     cost_metrics_log: object | None = None
 
-    def with_locale(self, locale: str) -> "CostCapContext":
+    def with_locale(self, locale: str) -> CostCapContext:
         from dataclasses import replace
 
         return replace(self, locale=locale)
@@ -198,9 +203,7 @@ def estimate_eur(
     prompt_tokens = _chars_to_tokens(len(prompt_text or ""))
     completion_tokens = _chars_to_tokens(len(response_text or ""))
     prompt_eur = prompt_tokens / 1_000_000 * rates["prompt_per_mtok"]
-    completion_eur = (
-        completion_tokens / 1_000_000 * rates["completion_per_mtok"]
-    )
+    completion_eur = completion_tokens / 1_000_000 * rates["completion_per_mtok"]
     return CostEstimate(
         provider_id=provider_id,
         prompt_tokens=prompt_tokens,

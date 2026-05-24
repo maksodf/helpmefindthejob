@@ -31,7 +31,6 @@ import textwrap
 from pathlib import Path
 from typing import Any
 
-
 # ---------------------------------------------------------------------------
 # Narration helpers
 # ---------------------------------------------------------------------------
@@ -221,9 +220,7 @@ class HousingAgentStub:
         unstable_states = {"job_seeking", "trial_period", "unemployed", "unknown"}
         if employment_status in unstable_states:
             return [
-                listing
-                for listing in self.LISTINGS
-                if not listing["requires_proof_of_employment"]
+                listing for listing in self.LISTINGS if not listing["requires_proof_of_employment"]
             ]
         return list(self.LISTINGS)
 

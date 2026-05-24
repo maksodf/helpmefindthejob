@@ -40,7 +40,8 @@ def _extract_all_jsonld(filename: str) -> list[dict]:
     blocks: list[dict] = []
     for match in re.finditer(
         r'<script type="application/ld\+json">\s*(.*?)\s*</script>',
-        html, re.DOTALL,
+        html,
+        re.DOTALL,
     ):
         try:
             blocks.append(json.loads(match.group(1)))
@@ -50,44 +51,46 @@ def _extract_all_jsonld(filename: str) -> list[dict]:
 
 
 _LEGAL = [
-    ("privacy.html",            "Privacy",              "en"),
-    ("privacy.de.html",         "Datenschutz",          "de"),
-    ("terms.html",              "Terms",                "en"),
-    ("terms.de.html",           "Nutzungsbedingungen",  "de"),
-    ("data-retention.html",     "Data retention",       "en"),
-    ("data-retention.de.html",  "Aufbewahrungsfristen", "de"),
-    ("impressum.html",          "Impressum",            "de"),
-    ("impressum.en.html",       "Imprint",              "en"),
+    ("privacy.html", "Privacy", "en"),
+    ("privacy.de.html", "Datenschutz", "de"),
+    ("terms.html", "Terms", "en"),
+    ("terms.de.html", "Nutzungsbedingungen", "de"),
+    ("data-retention.html", "Data retention", "en"),
+    ("data-retention.de.html", "Aufbewahrungsfristen", "de"),
+    ("impressum.html", "Impressum", "de"),
+    ("impressum.en.html", "Imprint", "en"),
 ]
 
 _SECONDARY = [
-    ("help.html",      "Help",      "/help"),
-    ("status.html",    "Status",    "/status"),
+    ("help.html", "Help", "/help"),
+    ("status.html", "Status", "/status"),
     ("changelog.html", "Changelog", "/changelog"),
 ]
 
 
 class LegalPagesHaveBreadcrumbList(unittest.TestCase):
-
     def test_every_legal_page_has_breadcrumbs_block(self) -> None:
-        for filename, expected_name, lang in _LEGAL:
+        for filename, expected_name, _lang in _LEGAL:
             with self.subTest(filename=filename):
                 blocks = _extract_all_jsonld(filename)
                 breadcrumbs = [b for b in blocks if b.get("@type") == "BreadcrumbList"]
                 self.assertEqual(
-                    len(breadcrumbs), 1,
+                    len(breadcrumbs),
+                    1,
                     f"{filename}: expected exactly one BreadcrumbList block, "
                     f"got {len(breadcrumbs)}",
                 )
                 items = breadcrumbs[0].get("itemListElement", [])
                 # Legal pages have 3 levels: Home > Legal > <Page>
                 self.assertEqual(
-                    len(items), 3,
+                    len(items),
+                    3,
                     f"{filename}: expected 3 breadcrumb levels, got {len(items)}",
                 )
                 # Third (current page) item name must match the page's locale
                 self.assertEqual(
-                    items[2]["name"], expected_name,
+                    items[2]["name"],
+                    expected_name,
                     f"{filename}: third crumb name {items[2]['name']!r} "
                     f"!= expected {expected_name!r}",
                 )
@@ -111,7 +114,7 @@ class LegalPagesHaveBreadcrumbList(unittest.TestCase):
         # Both privacy variants → /privacy
         # etc. The breadcrumb's terminal URL is locale-agnostic; the
         # NAME field carries the localisation.
-        for filename, expected_name, _lang in _LEGAL:
+        for filename, _expected_name, _lang in _LEGAL:
             with self.subTest(filename=filename):
                 blocks = _extract_all_jsonld(filename)
                 breadcrumbs = [b for b in blocks if b.get("@type") == "BreadcrumbList"][0]
@@ -123,19 +126,20 @@ class LegalPagesHaveBreadcrumbList(unittest.TestCase):
 
 
 class SecondaryPagesHaveBreadcrumbList(unittest.TestCase):
-
     def test_help_status_changelog_have_two_level_breadcrumbs(self) -> None:
         for filename, expected_name, expected_url in _SECONDARY:
             with self.subTest(filename=filename):
                 blocks = _extract_all_jsonld(filename)
                 breadcrumbs = [b for b in blocks if b.get("@type") == "BreadcrumbList"]
                 self.assertEqual(
-                    len(breadcrumbs), 1,
+                    len(breadcrumbs),
+                    1,
                     f"{filename}: expected exactly one BreadcrumbList block",
                 )
                 items = breadcrumbs[0]["itemListElement"]
                 self.assertEqual(
-                    len(items), 2,
+                    len(items),
+                    2,
                     f"{filename}: expected 2 breadcrumb levels (Home > {expected_name})",
                 )
                 self.assertEqual(items[0]["name"], "Home")
