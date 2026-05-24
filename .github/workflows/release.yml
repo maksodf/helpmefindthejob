@@ -1,0 +1,382 @@
+# Release workflow — cosign-sign + SLSA Level 2 provenance + SBOM + GitHub Release.
+#
+# PlanTowardPerfection Ceiling-2 boxes 2.14.8 (Cosign signing for
+# every release artifact, automated in CI on tag-push) and 2.14.9
+# (SLSA Level 2 build provenance — GitHub Actions can attach this
+# with minimal work).
+#
+# Trigger model:
+#   * Automatic — on push of a tag matching `v*` (the conventional
+#     SemVer-prefixed release tag). The maintainer cuts the signed
+#     git tag locally (`git tag -s v0.X.Y -m "..."; git push origin
+#     v0.X.Y`) and this workflow takes it from there.
+#   * Manual — `workflow_dispatch` accepts a `ref` input for ad-hoc
+#     re-signing of an existing tag (e.g., if cosign rotates its
+#     trust roots and the original signature needs re-attestation
+#     under the new chain).
+#
+# Cosign keyless mode (OIDC via GitHub Actions) is used by default
+# — no maintainer private key flows through the workflow secrets.
+# The signing identity is the GitHub Actions OIDC token issued for
+# this specific workflow run; downstream verifiers check the
+# Sigstore Fulcio root + the workflow identity (repo + ref +
+# actor) embedded in the cert.
+#
+# SLSA Level 2 is achieved by:
+#   * Build on a trusted platform (GitHub Actions hosted runner =
+#     L2).
+#   * Generate provenance via cosign attest with the
+#     slsaprovenance predicate type.
+#   * Provenance is signed under the same OIDC keyless model so
+#     downstream verifiers run a single cosign verify-blob-attestation
+#     command for both signature + provenance.
+#
+# Security notes:
+#   * Every action SHA-pinned per OpenSSF Scorecard
+#     "pinned-dependencies" check (see scorecard.yml for the rest
+#     of the repository's enforcement).
+#   * All ${{ github.* }} and ${{ github.event.* }} fields that
+#     could carry attacker-controlled content (actor, ref-name,
+#     event payload bodies) flow through `env:` blocks and are
+#     referenced in run: scripts as $VARNAME so shell-level command
+#     injection is structurally impossible. The `VERSION` variable
+#     is additionally regex-validated to v<MAJOR>.<MINOR>.<PATCH>
+#     before use.
+#   * `permissions:` is minimal per-job; only `sign-and-publish`
+#     needs `id-token: write` for keyless OIDC.
+
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Tag or commit ref to sign (e.g., v0.80.0)'
+        required: true
+        type: string
+
+permissions: read-all
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false  # release runs MUST not cancel each other
+
+jobs:
+  build-source-tarball:
+    name: Build source tarball
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.derive-version.outputs.version }}
+      tarball_sha256: ${{ steps.compute-sha256.outputs.sha256 }}
+      tarball_name: ${{ steps.derive-version.outputs.tarball_name }}
+    steps:
+      - name: Checkout the tag
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4.3.1
+        with:
+          ref: ${{ github.event.inputs.ref || github.ref }}
+          fetch-depth: 1
+
+      - name: Derive version from ref
+        id: derive-version
+        env:
+          INPUT_REF: ${{ github.event.inputs.ref || '' }}
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          # Prefer the dispatched input if present; otherwise the
+          # ref_name from the push (which for tag-push is the bare
+          # tag name without the refs/tags/ prefix).
+          ref="${INPUT_REF:-$GITHUB_REF_NAME}"
+          # Strict validation: SemVer-prefixed tag only
+          # (vX.Y.Z, optional -prerelease). Refuse anything else.
+          if ! printf '%s' "$ref" | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.-]+)?$'; then
+            echo "ERROR: ref $ref does not match strict v<MAJOR>.<MINOR>.<PATCH>[-<prerelease>] form" >&2
+            exit 1
+          fi
+          version="${ref#v}"
+          tarball_name="helpmefindthejob-${version}.tar.gz"
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "tarball_name=${tarball_name}" >> "$GITHUB_OUTPUT"
+          echo "Resolved version=${version}, tarball_name=${tarball_name}"
+
+      - name: Build canonical source tarball
+        env:
+          VERSION: ${{ steps.derive-version.outputs.version }}
+          TARBALL: ${{ steps.derive-version.outputs.tarball_name }}
+        run: |
+          set -euo pipefail
+          # `git archive` is bit-reproducible for the same input tree.
+          git archive \
+            --format=tar.gz \
+            --prefix="helpmefindthejob-${VERSION}/" \
+            -o "${TARBALL}" \
+            HEAD
+          ls -la "${TARBALL}"
+
+      - name: Compute SHA-256
+        id: compute-sha256
+        env:
+          TARBALL: ${{ steps.derive-version.outputs.tarball_name }}
+        run: |
+          set -euo pipefail
+          sha=$(sha256sum "${TARBALL}" | awk '{print $1}')
+          echo "sha256=${sha}" >> "$GITHUB_OUTPUT"
+          echo "SHA-256: ${sha}"
+
+      - name: Upload tarball artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
+        with:
+          name: source-tarball
+          path: ${{ steps.derive-version.outputs.tarball_name }}
+          retention-days: 90
+          if-no-files-found: error
+
+  generate-sbom:
+    name: Generate CycloneDX SBOM
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: build-source-tarball
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout the tag
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4.3.1
+        with:
+          ref: ${{ github.event.inputs.ref || github.ref }}
+          fetch-depth: 1
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
+        with:
+          python-version: '3.12'
+
+      - name: Install cyclonedx-py
+        run: pip install --no-cache-dir 'cyclonedx-bom>=4.0,<8.0'
+
+      - name: Generate SBOM
+        env:
+          VERSION: ${{ needs.build-source-tarball.outputs.version }}
+        run: |
+          set -euo pipefail
+          out="helpmefindthejob-${VERSION}-sbom.json"
+          cyclonedx-py requirements requirements.txt \
+            -o "${out}" \
+            --output-format json \
+            --spec-version 1.6
+          ls -la "${out}"
+
+      - name: Upload SBOM artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
+        with:
+          name: sbom
+          path: helpmefindthejob-${{ needs.build-source-tarball.outputs.version }}-sbom.json
+          retention-days: 90
+          if-no-files-found: error
+
+  sign-and-publish:
+    name: Sign + attest + publish release
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs:
+      - build-source-tarball
+      - generate-sbom
+    permissions:
+      contents: write          # for gh release create / upload
+      id-token: write          # for cosign keyless OIDC
+      attestations: write      # for SLSA provenance attestation
+    steps:
+      - name: Checkout the tag
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4.3.1
+        with:
+          ref: ${{ github.event.inputs.ref || github.ref }}
+          fetch-depth: 1
+
+      - name: Download tarball artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4.3.0
+        with:
+          name: source-tarball
+
+      - name: Download SBOM artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4.3.0
+        with:
+          name: sbom
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@d7d6bc7722e3daa8354c50bcb52f4837da5e9b6a  # v3.8.1
+        with:
+          cosign-release: 'v2.4.1'
+
+      - name: Cosign sign-blob (keyless via OIDC)
+        env:
+          TARBALL: ${{ needs.build-source-tarball.outputs.tarball_name }}
+          VERSION: ${{ needs.build-source-tarball.outputs.version }}
+        run: |
+          set -euo pipefail
+          bundle="v${VERSION}-source.tar.gz.sigstore"
+          cosign sign-blob \
+            --yes \
+            --bundle "${bundle}" \
+            "${TARBALL}"
+          ls -la "${bundle}"
+
+      - name: Generate SLSA Level 2 provenance + cosign attest
+        env:
+          TARBALL: ${{ needs.build-source-tarball.outputs.tarball_name }}
+          VERSION: ${{ needs.build-source-tarball.outputs.version }}
+          TARBALL_SHA256: ${{ needs.build-source-tarball.outputs.tarball_sha256 }}
+          GH_REPO: ${{ github.repository }}
+          GH_REF: ${{ github.ref }}
+          GH_SHA: ${{ github.sha }}
+          GH_EVENT_NAME: ${{ github.event_name }}
+          GH_ACTOR: ${{ github.actor }}
+          GH_RUN_ID: ${{ github.run_id }}
+          GH_RUN_ATTEMPT: ${{ github.run_attempt }}
+        run: |
+          set -euo pipefail
+          provenance="v${VERSION}-provenance.sigstore"
+          # Build the SLSA v0.2 provenance predicate.
+          # Schema: https://slsa.dev/provenance/v0.2
+          # All env-injected fields go through Python json.dumps() so
+          # any unexpected chars in $GH_ACTOR or similar cannot break
+          # the JSON structure or smuggle additional fields.
+          python3 - <<'PYEOF' > slsa-predicate.json
+          import json
+          import os
+          from datetime import datetime, timezone
+
+          predicate = {
+              "builder": {
+                  "id": f"https://github.com/{os.environ['GH_REPO']}/.github/workflows/release.yml@{os.environ['GH_REF']}"
+              },
+              "buildType": "https://github.com/Attestations/GitHubActionsWorkflow@v1",
+              "invocation": {
+                  "configSource": {
+                      "uri": f"git+https://github.com/{os.environ['GH_REPO']}@{os.environ['GH_REF']}",
+                      "digest": {"sha1": os.environ["GH_SHA"]},
+                      "entryPoint": ".github/workflows/release.yml",
+                  },
+                  "parameters": {},
+                  "environment": {
+                      "github_event_name": os.environ["GH_EVENT_NAME"],
+                      "github_actor": os.environ["GH_ACTOR"],
+                      "github_run_id": os.environ["GH_RUN_ID"],
+                      "github_run_attempt": os.environ["GH_RUN_ATTEMPT"],
+                  },
+              },
+              "metadata": {
+                  "buildInvocationId": os.environ["GH_RUN_ID"],
+                  "buildStartedOn": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                  "completeness": {
+                      "parameters": True,
+                      "environment": True,
+                      "materials": False,
+                  },
+                  "reproducible": True,
+              },
+              "materials": [
+                  {
+                      "uri": f"git+https://github.com/{os.environ['GH_REPO']}@{os.environ['GH_REF']}",
+                      "digest": {"sha1": os.environ["GH_SHA"]},
+                  },
+                  {
+                      "uri": os.environ["TARBALL"],
+                      "digest": {"sha256": os.environ["TARBALL_SHA256"]},
+                  },
+              ],
+          }
+          print(json.dumps(predicate, indent=2))
+          PYEOF
+
+          cosign attest-blob \
+            --yes \
+            --predicate slsa-predicate.json \
+            --type slsaprovenance \
+            --bundle "${provenance}" \
+            "${TARBALL}"
+          ls -la "${provenance}"
+
+      - name: Verify the signature round-trips (sanity check before publish)
+        env:
+          TARBALL: ${{ needs.build-source-tarball.outputs.tarball_name }}
+          VERSION: ${{ needs.build-source-tarball.outputs.version }}
+        run: |
+          set -euo pipefail
+          bundle="v${VERSION}-source.tar.gz.sigstore"
+          cosign verify-blob \
+            --bundle "${bundle}" \
+            --certificate-identity-regexp 'https://github\.com/.*/release\.yml@.*' \
+            --certificate-oidc-issuer 'https://token.actions.githubusercontent.com' \
+            "${TARBALL}"
+          echo "Cosign verification OK"
+
+      - name: Create / update the GitHub Release
+        env:
+          TARBALL: ${{ needs.build-source-tarball.outputs.tarball_name }}
+          VERSION: ${{ needs.build-source-tarball.outputs.version }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          sbom="helpmefindthejob-${VERSION}-sbom.json"
+          bundle="v${VERSION}-source.tar.gz.sigstore"
+          provenance="v${VERSION}-provenance.sigstore"
+          tag="v${VERSION}"
+
+          # Notes file from docs/releases/v<version>.md if present
+          notes_path="docs/releases/v${VERSION}.md"
+          notes_args=()
+          if [ -f "${notes_path}" ]; then
+            notes_args+=("--notes-file" "${notes_path}")
+          else
+            notes_args+=("--notes" "Helpmefindthejob ${tag} — automated release via .github/workflows/release.yml")
+          fi
+
+          # Create the release if it doesn't exist; otherwise upload to it
+          if gh release view "${tag}" >/dev/null 2>&1; then
+            gh release upload "${tag}" --clobber \
+              "${TARBALL}" \
+              "${bundle}" \
+              "${provenance}" \
+              "${sbom}"
+            echo "Uploaded artefacts to existing release ${tag}"
+          else
+            gh release create "${tag}" \
+              --title "Helpmefindthejob ${tag}" \
+              "${notes_args[@]}" \
+              "${TARBALL}" \
+              "${bundle}" \
+              "${provenance}" \
+              "${sbom}"
+            echo "Created release ${tag} with 4 artefacts"
+          fi
+
+      - name: Summary
+        env:
+          TARBALL: ${{ needs.build-source-tarball.outputs.tarball_name }}
+          VERSION: ${{ needs.build-source-tarball.outputs.version }}
+          TARBALL_SHA256: ${{ needs.build-source-tarball.outputs.tarball_sha256 }}
+        run: |
+          set -euo pipefail
+          {
+            echo "## Release artefacts published"
+            echo ""
+            echo "| Artefact | SHA-256 |"
+            echo "|---|---|"
+            echo "| Source tarball | \`${TARBALL_SHA256}\` |"
+            echo ""
+            echo "Cosign bundle + SLSA provenance signed via keyless OIDC."
+            echo "Downstream verification recipe:"
+            echo '```bash'
+            echo "gh release download v${VERSION} --pattern '*'"
+            echo "cosign verify-blob \\"
+            echo "  --bundle v${VERSION}-source.tar.gz.sigstore \\"
+            echo "  --certificate-identity-regexp 'https://github\\.com/.*/release\\.yml@.*' \\"
+            echo "  --certificate-oidc-issuer 'https://token.actions.githubusercontent.com' \\"
+            echo "  ${TARBALL}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

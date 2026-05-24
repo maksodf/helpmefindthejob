@@ -282,8 +282,8 @@ Each persona must have an audited end-to-end transcript (real run, real data, sc
 - [ ] **TLS hardening** — Caddy already terminates TLS; verify A+ rating on Qualys SSL Labs.
 - [ ] **HSTS preload list submission** — once stable on the production domain.
 - [ ] **CSP Report-To uri** wired to a real collector that the maintainer monitors (currently `/csp-report` stores to a ring buffer; needs alerting on spikes).
-- [ ] **Cosign signing for every release artifact** — automated in CI on tag-push.
-- [ ] **SLSA Level 2 build provenance** — GitHub Actions can attach this with minimal work.
+- [x] **Cosign signing for every release artifact** — automated in CI on tag-push. — done in this batch / proven by `.github/workflows/release.yml` (3 jobs: build-source-tarball + generate-sbom + sign-and-publish; triggers on `push: tags: ['v*']` + `workflow_dispatch`; sign-and-publish job has `id-token: write` for cosign keyless OIDC; verify-blob sanity-check runs before `gh release create`; every action SHA-pinned per OpenSSF Scorecard discipline). 15-test contract guard at `tests/test_release_workflow.py` pins the trigger/permission/signing/injection invariants.
+- [x] **SLSA Level 2 build provenance** — GitHub Actions can attach this with minimal work. — done in this batch / proven by `grep -n 'slsaprovenance' .github/workflows/release.yml` → `cosign attest-blob --type slsaprovenance --bundle v${VERSION}-provenance.sigstore` step. SLSA v0.2 predicate built via python3 json.dumps (so any unexpected chars in `$GH_ACTOR` or similar GitHub env vars cannot break JSON structure or smuggle additional fields). Materials section includes both the git ref (commit SHA via `${{ github.sha }}`) AND the tarball (SHA-256 from the build-source-tarball step output). L2 achieved via GitHub-hosted-runner trusted-build-platform requirement + OIDC-keyless provenance signing.
 
 ### 2.15 Accessibility and inclusion (real top-tier bar)
 
