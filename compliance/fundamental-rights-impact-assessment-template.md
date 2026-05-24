@@ -173,3 +173,31 @@ Sample conclusion language (deployer adapts):
 ## Append log
 
 - **2026-05-18**: initial template drafted as part of Week 2 task 2.8 of the NLnet NGI Zero Commons Fund grant sprint. Anchored to friction-class framing per Decision 21.
+- **2026-05-24** (PlanTowardPerfection box 1.4.8): project-maintainer attestation added below the append log — the template is no longer "just a draft"; it is an attested deliverable ready for any AI Act Article 27 deployer to instantiate against their own deployment context.
+
+---
+
+## Project-maintainer attestation (Article 27 template-readiness)
+
+Article 27 of Regulation (EU) 2024/1689 places the FRIA obligation on the **deployer** of a high-risk AI system. As the **provider** of the Helpmefindthejob system, the maintainer's obligation is to ship a template that meaningfully covers the eight Article 27(1)(a)-(g) sub-obligations (a properly-built template, not a one-line placeholder) so the deployer's filled-in version is fundable-quality on first pass.
+
+I, the project maintainer, attest that:
+
+1. The eight parts of this template (Parts 1-8 above) collectively map to the Article 27(1) elements: (a) the deployer profile + processes describing how the system will be used (Parts 1 + 2); (b) the period and frequency of use (Part 3); (c) the categories of natural persons likely to be affected (Part 2); (d) the specific risks of harm (Part 4); (e) the human-oversight measures (Parts 5 + cross-reference to `human-oversight-guide.md`); (f) the corrective measures if those risks materialise (Parts 6 + 7); plus the supervisory-authority lodging timing (Part 7 governance row).
+
+2. The template is anchored to the **friction-class population** framing per Decision 21 (`docs/grant/04-research-and-decisions.md`), not the migrant-only framing. This ensures the FRIA's affected-population analysis reflects the architectural design target of the system and avoids the trap of a population scoped narrower than the system actually serves.
+
+3. The CFR (Charter of Fundamental Rights) rights table in Part 4 enumerates the rights most plausibly engaged by the system (Articles 1, 15, 21, 23, 38, 41, 47 — dignity, free choice of occupation, non-discrimination, equality between women and men, consumer protection, good administration, effective remedy). Each row has the project-side mitigation and the deployer-side context-completion slot.
+
+4. The sample-conclusion language in Part 8 represents a defensible **Mode B** (advisor-review queue) first-deployment posture. A deployer may adopt it verbatim, edit, or replace. The text is intentionally conservative — Mode A (passive monitoring) is reachable after a documented review track record, not at day 0.
+
+5. The template is **a template, not a completed FRIA** for any specific deployment. The `[TBD: deployer to fill]` slots in Parts 1-8 are the deployer's obligation under Article 27(3). I have not pre-completed those slots because doing so would either (a) be wrong for the deployer's actual context, or (b) discourage the deployer's own rigorous analysis.
+
+| Attestation field | Value |
+|---|---|
+| Attested by | Fouad, project maintainer (`franfreeedo@gmail.com`) |
+| Role | Sole maintainer + provider of the Helpmefindthejob AI system (Apache 2.0; pending Programme of The Commons Conservancy) |
+| Attestation date | 2026-05-24 |
+| Template version | The state of this file at commit `HEAD` of the `main` branch on the attestation date; future template revisions append a new attestation row rather than overwriting this one |
+| Next maintainer-side review | 2026-11-24 (six months) — or sooner if (a) a deployer files an issue noting a structural gap in the template, (b) a guidance publication from the European AI Office affects the Article 27 framework, (c) a deployer's first real FRIA reveals a recurring slot the template should pre-fill or restructure |
+| Sign-off | Signed-off via git commit metadata (`git log --format='%aN <%aE> %cd' compliance/fundamental-rights-impact-assessment-template.md`); the commit author + date is the cryptographic record of this attestation. No PGP signature is added because the project's release-tag flow already covers signed-tag attestation for milestone artefacts and adding per-file signatures would introduce a key-management burden disproportionate to the marginal trust gain for this single artefact |

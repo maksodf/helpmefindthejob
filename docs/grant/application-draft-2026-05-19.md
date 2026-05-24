@@ -125,17 +125,31 @@ commits across the 4-week grant-readiness sprint, May 2026):
   CONTRIBUTING.md, CODE_OF_CONDUCT.md (Contributor Covenant 2.1),
   SECURITY.md, SUPPORT.md, AUTHORS.md, ACKNOWLEDGMENTS.md,
   TRADEMARK.md, cla.md.
-- **EU AI Act compliance pack**: 11 documents under `compliance/`
-  covering Articles 9, 10, 11 + Annex IV, 12, 13, 14, 15, 26, 27,
-  49. Articles **12** (audit log) and **14** (`/api/admin/oversight/queue`)
-  are wired in code; the remaining articles are deployer-doctrine
-  artefacts and templates. Article 15 methodology has executed
-  3 dated runs against `llama3.1:8b` (33.3% methodology surface
-  coverage — 2 of 6 scenario classes; remaining four classes
-  deferred to the partner-NGO pilot per honest scoping). The
-  most recent run is dated 2026-05-19; CV-tailoring criterion
-  passes at 92.9 %, fit-scoring surfaces 10 ONE-OFF OOB
-  divergences within the model's documented non-determinism band.
+- **EU AI Act compliance pack**: 14 documents under `compliance/`
+  covering AI Act Articles 9, 10, 11 + Annex IV, 12, 13, 14, 15 (incl.
+  15(5) resilience), 22, 26, 27, 49, 50, 73, 86 plus GDPR Articles
+  5, 20, 22, 28, 30, 32, 33, 35 — see [`compliance/INDEX.md`](compliance/INDEX.md)
+  for the full file × article reverse-lookup table. Articles **12**
+  (audit log) and **14** (`/api/admin/oversight/queue`) are wired in
+  code; the remaining articles are deployer-doctrine artefacts and
+  templates. Article 15 methodology has executed 4 dated runs against
+  `deepseek` + `ollama` (33.3% methodology surface coverage — 2 of 6
+  scenario classes; remaining four classes deferred to the partner-NGO
+  pilot per honest scoping). The most recent run is the 2026-05-21
+  cross-provider comparative (`docs/grant/bias-comparative-report-2026-05-21.md`
+  — 140 data points across 7 personas × 10 scenarios × 2 providers);
+  the prior 2026-05-19 polish run measured the AI-output-quality OOB
+  rate at 13.0 % (10 / 77), with the parser-layer score-clamp catching
+  out-of-range outputs before the user surface (see
+  `tests/test_prompt_injection_vectors.py::V3JdIndirectInjection`).
+  Article 15(5) resilience is documented in
+  [`compliance/prompt-injection-testing.md`](compliance/prompt-injection-testing.md)
+  (10 canonical vectors mapped to structural-defence layers) and pinned
+  by 8 unit tests in `tests/test_prompt_injection_vectors.py`.
+  Article 12 + 26(6) key-rotation procedure is documented in
+  [`compliance/audit-log-key-rotation.md`](compliance/audit-log-key-rotation.md)
+  (9 sections; active / sealed / destroyed key lifecycle; dated
+  rotation log).
 - **MCP server v0.2.0** with 13-tool catalogue, JSON-Schema
   validated input, stdio JSON-RPC transport — `docs/mcp-server.md`
   documents the contract.
@@ -523,10 +537,32 @@ Recommended attachments (each ≤ 50 MB; total ≤ 50 MB):
 3. **`ACCESSIBILITY.md` rendered as PDF** — accessibility audit
    evidence (the live HTML version is canonical, but a PDF
    snapshot at submission time anchors the claim).
+4. **`compliance/INDEX.md` rendered as PDF** — entry point to the
+   14-document EU AI Act compliance pack, with the full file ×
+   article reverse-lookup table so the reviewer can navigate
+   straight to the artefact addressing any Article they ask about.
+   The pack itself stays in the repo; this PDF is the navigational
+   index a reviewer downloads for offline reading.
+5. **`docs/grant/SECURITY-AUDIT.md` rendered as PDF** — gitleaks
+   full-history scan summary (2026-05-24): 17 hits, all triaged as
+   test-fixture false positives; zero real secrets in history.
+   Pairs with the `compliance/data-governance.md` security-controls
+   section for the trust-but-verify story.
+6. **`docs/grant/bias-comparative-report-2026-05-21.md` rendered as
+   PDF** — the 140-data-point cross-provider comparative bias run
+   (7 personas × 10 scenarios × 2 providers) including per-persona
+   means, top-spread disagreement table, and the reproducible
+   replay command. No competitor in this space publishes this
+   data; the PDF makes the reviewer's offline-reading flow as
+   strong as the in-repo file.
 
 Optional (skip if it adds bulk without adding evidence):
 - Letter of support PDF once a partner signs — see
   Milestone 6.
+- Individual compliance-pack files as PDFs (the INDEX above points
+  at every one in the repo; attaching each as a separate PDF is
+  bulk without adding evidence unless the reviewer specifically
+  requests it).
 
 ---
 

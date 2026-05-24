@@ -199,8 +199,38 @@ Each claim is tagged `proven` / `plausible` / `aspirational` in the cost-saving 
 
 The honest status: this document describes a methodology that is partially executed at synthetic-cohort scale and that will complete its remaining 4 scenario classes during the partner-NGO pilot. The methodology is the contract; the synthetic-interim results are documented in the dated bias-testing reports; the partner-NGO results are pending. We disclose the partial-execution gap in the transparency notice.
 
+### 8.1 Cross-provider comparative results (2026-05-21 run)
+
+A second run on 2026-05-21 layered cross-provider comparison on top of the synthetic-cohort coverage. The full report lives at [`docs/grant/bias-comparative-report-2026-05-21.md`](../docs/grant/bias-comparative-report-2026-05-21.md); the reproducible command sequence at the bottom of the report lets any deployer re-run it (replay-only by default, `--live` against their own provider keys).
+
+**Coverage**: 7 personas × 10 scenarios × 2 providers = 140 data points. Providers exercised: `deepseek` (paid, cloud) and `ollama` (open-weights, local). The other 6 BYO-AI providers (openai, anthropic, gemini, openrouter, codex-cli, claude-code) were not exercised in this run — they are scheduled for the next release-gate run per the AI Provider Honesty Matrix at [`../docs/grant/15-ai-provider-honesty-matrix.md`](../docs/grant/15-ai-provider-honesty-matrix.md).
+
+**Per-persona mean fit score (0–100), by provider**:
+
+| Persona | deepseek | ollama | Spread |
+|---|---|---|---|
+| aicha | 56.4 | 62.2 | 5.8 |
+| kaethe | 70.0 | 67.4 | 2.6 |
+| mahmoud | 59.2 | 57.0 | 2.2 |
+| maria | 58.9 | 60.1 | 1.2 |
+| olga | 61.3 | 50.4 | 10.9 |
+| tobias | 74.3 | 67.0 | 7.3 |
+| yusuf | 59.9 | 52.6 | 7.3 |
+
+**Top cross-provider disagreements** (the cells where providers scored a single scenario most differently): the largest spread was 30 points on `olga_mixed_distant_city` (deepseek=70, ollama=40), followed by 29 points on `olga_weak_wrong_industry_c` (34 vs 5), 22 points on `olga_weak_wrong_industry_b` and `tobias_weak_wrong_industry_a`. Full top-20 disagreement table in the report. The pattern is consistent: ollama scores the wrong-industry / distant-city scenarios harshly while deepseek scores them moderate-low. Both behaviours are defensible — they reflect different priors on transferability — but the spread is large enough that a single-provider deployment will bias the user-visible score in the provider's direction.
+
+**Out-of-bounds (OOB) hit rate**: the prior 2026-05-19 polished cohort run (`docs/grant/bias-testing-2026-05-18-polish.md`, summarised in `04-research-and-decisions.md` Part B 2026-05-19 entry) measured **10 / 77 = 13.0%** scoring out-of-bounds (where the model's per-criterion sub-scores don't sum to the SCORE total, or where SCORE is outside the 0-100 range, or where the reason / gaps fields are malformed in a way the parser rejects). The 2026-05-21 comparative run did not re-measure this metric — it focused on cross-provider mean drift — so the **13.0% OOB rate stands as the most recent honest measurement** and is the figure cited in the transparency notice. PlanTowardPerfection Section 2.8 (search-quality + provider coverage) tracks driving this below 3% as a Ceiling-2 deliverable.
+
+**Honest framing for reviewers and deployers**:
+
+- The methodology is reproducible end-to-end. The data is checked into `data/bias_comparative_cache/` for replay; the run can be re-issued with `python -m scripts.bias_comparative_report --replay-only`.
+- The 13.0% OOB rate is **not** the system's user-visible failure rate — the score-clamp (see `tests/test_prompt_injection_vectors.py::V3JdIndirectInjection`) catches out-of-range scores at the parser layer, so the user sees either a defensible score or "no fit score available" (depending on whether the OOB pattern was a value clamp or a regex miss). It is the methodology's flagged-rate for "AI output not in the expected canonical shape", which is a real quality metric for the AI provider but not a measure of harm reaching the user.
+- The cross-provider spread on harsh-scenario cells is the more important reviewer-visible signal. A deployer choosing between providers should look at the per-persona mean delta + the top-disagreement table and pick the provider whose scoring profile best matches their oversight capacity.
+- All of these numbers will move when the partner-NGO pilot runs the remaining 4 scenario classes; we will not retire this section's measurements until the partner-NGO scope has overwritten them.
+
 ---
 
 ## 9. Append log
 
 - **2026-05-18**: methodology drafted as part of Week 2 task 2.8 of the NLnet NGI Zero Commons Fund grant sprint. Pre-deployment re-test framework drafted. First scheduled execution: Week 3 partner-NGO pilot.
+- **2026-05-24** (PlanTowardPerfection box 1.4.7): §8.1 added — cross-provider comparative results from the 2026-05-21 run (7 personas × 10 scenarios × 2 providers = 140 data points; per-persona mean scores deepseek vs ollama; top-spread disagreement summary; the 13.0% OOB rate carried forward from the 2026-05-19 polished cohort run with the honest-framing paragraph distinguishing OOB-rate-as-AI-output-quality-metric from user-visible-harm-rate). Cross-references the comparative report at `docs/grant/bias-comparative-report-2026-05-21.md` and the parser-layer defence at `tests/test_prompt_injection_vectors.py::V3JdIndirectInjection` so reviewers can see the chain from measurement to safety surface.
