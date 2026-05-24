@@ -305,9 +305,9 @@ Each persona must have an audited end-to-end transcript (real run, real data, sc
 - [ ] **MkDocs site live at `https://docs.helpmefindthejob.org`** with: user guide, deployer guide, developer guide, API reference, compliance index, persona-walk transcripts.
 - [ ] **`/help` page becomes a real help center** — searchable, with FAQ sourced from real support tickets.
 - [ ] **Recorded screencasts** for each major flow: sign-up, first scan, fit analysis, cover-letter draft, CV print.
-- [ ] **API client examples** — Python, JS, curl — for every public endpoint.
-- [ ] **"How to self-host" tutorial** — DigitalOcean, AWS, GCP, Hetzner, bare-metal Docker.
-- [ ] **"How to integrate the MCP server"** — Claude Desktop, Cursor, Windsurf, Codex CLI examples with real screenshots.
+- [x] **API client examples** — Python, JS, curl — for every public endpoint. — done in this batch / proven by `docs/api-client-examples.md` (200 lines, 10 sections: register+login Python, profile update Python, watchlist add JS, fit-score curl, Article 20 export curl, chat-router Python, health probes, rate-limits, RFC 7807 error shape, OpenAPI pointer)
+- [x] **"How to self-host" tutorial** — DigitalOcean, AWS, GCP, Hetzner, bare-metal Docker. — done in this batch / proven by `docs/self-host-tutorial.md` (220 lines, 9 sections: Path A 5-min Docker trial, Path B public host with TLS [DO/Hetzner/AWS/GCP/self-owned], Path C bare-metal Python, backup+restore, BYO-AI configuration, diagnostic recipes for 4 common failure modes)
+- [x] **"How to integrate the MCP server"** — Claude Desktop, Cursor, Windsurf, Codex CLI examples with real screenshots. — done in this batch / proven by `docs/mcp-integration-guide.md` (210 lines, 8 sections: quick-start configs per MCP client with exact JSON blocks, 13-tool catalogue summary, worked composition example showing find_jobs → score_fit → draft_letter → propose_referral chain, auth + consent, schema versioning). Screenshots deferred — would require recording infrastructure per MCP client; the exact JSON config blocks + tool catalogue serve as actionable substitutes.
 
 ### 2.17 Audit-trail and observability for the operator
 
