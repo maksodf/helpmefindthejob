@@ -1,0 +1,67 @@
+# Browser-driven end-to-end test workflow.
+#
+# PlanTowardPerfection Ceiling-2 box 2.13.3: wires the existing
+# tests/e2e/* suite (currently skipped if E2E_BASE_URL not set)
+# into CI. Drives the same scripts/run-e2e.sh that local devs use.
+#
+# Security note: no untrusted GitHub event payload fields flow
+# into any run: step. Only static + env-controlled values.
+
+name: e2e
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions: read-all
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  browser-e2e:
+    name: Browser-driven E2E (Playwright + Chromium)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4.3.1
+        with:
+          fetch-depth: 1
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
+        with:
+          python-version: '3.12'
+
+      - name: Install runtime dependencies
+        run: pip install --no-cache-dir -r requirements.txt
+
+      - name: Install Playwright
+        run: pip install --no-cache-dir 'playwright>=1.40,<2.0'
+
+      - name: Install Chromium + WebKit (for mobile/PWA test_mobile_pwa_browsers)
+        run: python3 -m playwright install --with-deps chromium webkit
+
+      - name: Run browser E2E
+        env:
+          E2E_HEADLESS: 'true'
+          E2E_SCREENSHOTS: 'tests/e2e/screenshots'
+          HELPMEFINDTHEJOB_AUDIT_SALT: 'CIaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa='
+        run: bash scripts/run-e2e.sh
+
+      - name: Upload screenshots (always)
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
+        with:
+          name: e2e-screenshots
+          path: tests/e2e/screenshots/
+          retention-days: 14
+          if-no-files-found: warn

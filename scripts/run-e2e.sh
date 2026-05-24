@@ -76,4 +76,7 @@ mkdir -p "$E2E_SCREENSHOTS"
 E2E_BASE_URL="http://127.0.0.1:$PORT" \
   E2E_SCREENSHOTS="$E2E_SCREENSHOTS" \
   E2E_HEADLESS="${E2E_HEADLESS:-true}" \
-  python3 -m unittest tests.e2e.test_browser_flow -v
+  python3 -m unittest \
+    tests.e2e.test_browser_flow \
+    tests.e2e.test_mobile_pwa_browsers \
+    -v
