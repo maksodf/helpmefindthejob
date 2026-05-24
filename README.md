@@ -55,8 +55,17 @@ strategic context.
 **Status**: v0.1.0 — first stable pre-publication tag shipped 2026-05-18
 ([`docs/releases/v0.1.0.md`](docs/releases/v0.1.0.md), cosign-signed
 + CycloneDX SBOM). Public demo deployment at
-[`helpmefindthejob.org`](https://helpmefindthejob.org/) is pending the
-maintainer's DNS configuration (CNAME → GH Pages or apex hosting). The
+[`demo.helpmefindthejob.org`](https://demo.helpmefindthejob.org/)
+serves the seven canonical personas as pre-seeded read-only accounts
+(Aïcha, Yusuf, Olga, Mahmoud, Maria, Käthe, Tobias — shared password
+printed on the demo landing); the live apex
+[`helpmefindthejob.org`](https://helpmefindthejob.org/) hosts the
+same code with the public registration flow. DNS for the `demo.`
+subdomain is being configured by the maintainer; if the link does
+not yet resolve, the apex above is the same code with your own
+fresh account. Seed-personas recipe at
+[`scripts/seed-personas.py`](scripts/seed-personas.py) reproduces
+the demo state on any self-hosted instance. The
 main branch is intended to stay buildable but may contain unfinished
 work between tags. Honest about instability — see
 [`CONTRIBUTORS-NOTE.md`](CONTRIBUTORS-NOTE.md) for the project's history

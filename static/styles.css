@@ -5096,3 +5096,66 @@ html[lang="de"] .api-docs-de-note { display: block; }
 .site-footer-langswitch a[aria-current="true"]:hover {
   text-decoration: none;
 }
+
+/* PlanTowardPerfection box 1.6.5: demo-deployment banner.
+   Hidden by default via the `hidden` attribute on the <aside> in
+   static/index.html. /demo-banner.js removes the hidden attribute
+   iff the runtime hostname matches the demo subdomain (or ?demo=1
+   is in the query string). Styled to be visible without being
+   alarming — soft amber on light, deeper amber on dark, with a
+   1px bottom border so the page header still feels like the top
+   of the page. */
+.demo-banner {
+  background: #fef3c7;
+  color: #78350f;
+  border-bottom: 1px solid #fbbf24;
+  padding: 10px 16px;
+  margin: 0;
+  text-align: center;
+  font-size: 0.93em;
+  line-height: 1.45;
+  position: relative;
+  z-index: 100;
+}
+.demo-banner p {
+  margin: 0;
+  max-width: 720px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.demo-banner a {
+  color: #78350f;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.demo-banner a:hover,
+.demo-banner a:focus-visible {
+  text-decoration-thickness: 2px;
+}
+[data-theme="dark"] .demo-banner {
+  background: #422006;
+  color: #fef3c7;
+  border-bottom-color: #92400e;
+}
+[data-theme="dark"] .demo-banner a {
+  color: #fef3c7;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .demo-banner {
+    background: #422006;
+    color: #fef3c7;
+    border-bottom-color: #92400e;
+  }
+  :root:not([data-theme="light"]) .demo-banner a {
+    color: #fef3c7;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .demo-banner:not([hidden]) {
+    animation: demoBannerFadeIn 0.4s ease-out;
+  }
+}
+@keyframes demoBannerFadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}

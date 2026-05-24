@@ -110,8 +110,28 @@
          styles.css → styles.min.css ~28% smaller. Sources stay
          human-readable for dev; tests grep the source path. -->
     <link rel="stylesheet" href="/styles.min.css" />
+    <!-- PlanTowardPerfection box 1.6.5: tiny script that reveals
+         the demo-banner div below if the hostname matches
+         demo.helpmefindthejob.org (or ?demo=1 query param for QA).
+         No-op on apex / self-hosted / dev. -->
+    <script src="/demo-banner.js" defer></script>
   </head>
   <body>
+    <!-- PlanTowardPerfection box 1.6.5: demo-deployment banner.
+         Hidden by default; revealed by /demo-banner.js when the
+         runtime hostname matches the public demo subdomain. The
+         banner is intentionally lightweight (single <p>, two links)
+         so it does not need its own CSS bundle entry. -->
+    <aside id="demoBanner" class="demo-banner" hidden role="status" aria-label="Demo deployment notice">
+      <p>
+        <strong>Demo deployment</strong> &mdash; persona accounts reset nightly
+        at 00:00 UTC; nothing you do here is saved beyond that.
+        Want to keep your data?
+        <a href="https://github.com/maksodf/helpmefindthejob#quickstart" rel="external noopener">Self-host in 5 minutes</a>
+        or use the public apex at
+        <a href="https://helpmefindthejob.org" rel="external noopener">helpmefindthejob.org</a>.
+      </p>
+    </aside>
     <!-- axe + Lighthouse fix (2026-05-23 browser audit): single
          skip-link that targets a landmark visible from first paint.
          The second "Skip to navigation" link targeted #primaryNav
