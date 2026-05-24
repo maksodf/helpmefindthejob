@@ -15,6 +15,18 @@ Fixed · Security**.
 
 ## [Unreleased]
 
+(empty — open a new entry here when the first post-v0.80.0 commit lands.)
+
+---
+
+## [0.80.0] — 2026-05-24 (NLnet NGI Zero Commons Fund submission state)
+
+Release notes: [`docs/releases/v0.80.0.md`](docs/releases/v0.80.0.md).
+Signing recipe: [`docs/releases/v0.80.0-signing.md`](docs/releases/v0.80.0-signing.md).
+CycloneDX SBOM: [`docs/releases/v0.80.0-sbom.json`](docs/releases/v0.80.0-sbom.json).
+
+The version-number jump from v0.1.0 → v0.80.0 reflects ~300 commits of NLnet-pre-submission work between 2026-05-18 and 2026-05-24 (full EU AI Act compliance pack, governance pack, repository rename + sanitisation, friction-class architecture re-anchoring, persona walks, demo subdomain prep, self-host tutorial / MCP integration guide / API client examples, 3199-test unit suite). `APP_VERSION` in `app.py` has tracked `0.80.0` internally since the pre-submission slice; this tag aligns the cryptographic + git surface with the in-code declaration. Future post-grant work follows normal SemVer cadence from this anchor.
+
 Tracked in `docs/grant/02-execution-plan.md` §3.4 – §4.6 plus Phase 2 cleanup
 items in `docs/grant/03-post-grant.md`.
 
