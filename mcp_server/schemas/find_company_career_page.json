@@ -1,6 +1,7 @@
 {
   "name": "find_company_career_page",
   "description": "Find an obvious public career page from a company homepage, respecting robots.txt.",
+  "version": "0.2.0",
   "inputSchema": {
     "type": "object",
     "properties": {

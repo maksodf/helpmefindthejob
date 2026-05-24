@@ -1,6 +1,7 @@
 {
   "name": "get_company_watchlist_summary",
   "description": "Return dashboard metrics for company watchlist and direct-company discoveries.",
+  "version": "0.2.0",
   "inputSchema": {
     "type": "object",
     "properties": {

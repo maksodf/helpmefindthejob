@@ -170,6 +170,7 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
     {
         "name": "suggest_relevant_companies",
         "description": "Suggest curated healthcare-management companies and fallback categories from role, industry, and location preferences.",
+        "version": "0.2.0",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -183,6 +184,7 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
     {
         "name": "add_company_to_watchlist",
         "description": "Create a company watchlist entry without scanning external pages.",
+        "version": "0.2.0",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -200,6 +202,7 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
     {
         "name": "find_company_career_page",
         "description": "Find an obvious public career page from a company homepage, respecting robots.txt.",
+        "version": "0.2.0",
         "inputSchema": {
             "type": "object",
             "properties": {"userId": {"type": "string"}, "companyId": {"type": "string"}},
@@ -209,6 +212,7 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
     {
         "name": "scan_company_career_page",
         "description": "Scan one known public career page with robots.txt and max-page guards.",
+        "version": "0.2.0",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -222,6 +226,7 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
     {
         "name": "extract_direct_jobs_from_company_site",
         "description": "Extract jobs from supplied HTML without fetching: tries known ATS adapters first (Greenhouse / Lever / Personio), falls back to JobPosting JSON-LD parsing and visible job-link anchor extraction.",
+        "version": "0.2.0",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -236,6 +241,7 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
     {
         "name": "import_discovered_job",
         "description": "Import a reviewed discovered job into the normal job pipeline.",
+        "version": "0.2.0",
         "inputSchema": {
             "type": "object",
             "properties": {"userId": {"type": "string"}, "discoveredJobId": {"type": "string"}},
@@ -245,6 +251,7 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
     {
         "name": "deduplicate_discovered_jobs",
         "description": "Report likely duplicates among discovered direct-company jobs.",
+        "version": "0.2.0",
         "inputSchema": {
             "type": "object",
             "properties": {"userId": {"type": "string"}},
@@ -254,6 +261,7 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
     {
         "name": "get_company_watchlist_summary",
         "description": "Return dashboard metrics for company watchlist and direct-company discoveries.",
+        "version": "0.2.0",
         "inputSchema": {
             "type": "object",
             "properties": {"userId": {"type": "string"}},
@@ -269,6 +277,7 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
             "explicit user consent to compose their own recommendations "
             "with the user's employment + residence + outcomes context."
         ),
+        "version": "0.2.0",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -300,6 +309,7 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
             "user retains the choice to follow up or decline. Composition "
             "pattern 1 (sequential handoff) per 09-mcp-composition.md."
         ),
+        "version": "0.2.0",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -323,6 +333,7 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
             "colloquial synonyms (e.g. 'Krankenschwester') resolve to "
             "canonical entries."
         ),
+        "version": "0.2.0",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -341,6 +352,7 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
             "European Employment Services portal and any agent that reads "
             "EURES-shaped postings."
         ),
+        "version": "0.2.0",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -359,6 +371,7 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
             "uses these events as the primary measurement substrate for "
             "partner-pilot evidence (08-cost-saving-doctrine.md §1, §2, §8)."
         ),
+        "version": "0.2.0",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -383,6 +396,7 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
     {
         "name": "list_referrals",
         "description": "List referrals issued for a user. Optional status filter (proposed / accepted / declined / followed_up / expired) for the loosen-affordance flow + cost-saving doctrine outcome aggregation. Returns most-recent first.",
+        "version": "0.2.0",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -409,6 +423,7 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
     {
         "name": "update_referral_status",
         "description": "Update an existing referral's lifecycle status. Allowed transitions: proposed→accepted, proposed→declined, accepted→followed_up, *→expired. Optional outcome_note free-text the user supplies. Returns the updated referral.",
+        "version": "0.2.0",
         "inputSchema": {
             "type": "object",
             "properties": {

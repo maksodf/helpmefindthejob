@@ -1,6 +1,7 @@
 {
   "name": "query_esco_skill",
   "description": "Look up ESCO skill or occupation codes by free-text query. Cross-agent shared taxonomy. Backed by the v1-curated 2026-05-18 reference dataset (~80 entries spanning ISCO-08 occupations + ESCO skills, aligned to the seven-persona panel and Bundesagentur-für-Arbeit 2025 shortage codes). Matches against EN + DE labels and altLabels arrays, so colloquial synonyms (e.g. 'Krankenschwester') resolve to canonical entries.",
+  "version": "0.2.0",
   "inputSchema": {
     "type": "object",
     "properties": {

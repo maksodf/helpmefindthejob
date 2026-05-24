@@ -1,6 +1,7 @@
 {
   "name": "update_referral_status",
   "description": "Update an existing referral's lifecycle status. Allowed transitions: proposed→accepted, proposed→declined, accepted→followed_up, *→expired. Optional outcome_note free-text the user supplies. Returns the updated referral.",
+  "version": "0.2.0",
   "inputSchema": {
     "type": "object",
     "properties": {

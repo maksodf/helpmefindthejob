@@ -1,6 +1,7 @@
 {
   "name": "get_user_profile_for_consent",
   "description": "Return the user's portable civic profile (subset they have consented to share). Other open civic agents read this with explicit user consent to compose their own recommendations with the user's employment + residence + outcomes context.",
+  "version": "0.2.0",
   "inputSchema": {
     "type": "object",
     "properties": {

@@ -1,6 +1,7 @@
 {
   "name": "add_company_to_watchlist",
   "description": "Create a company watchlist entry without scanning external pages.",
+  "version": "0.2.0",
   "inputSchema": {
     "type": "object",
     "properties": {

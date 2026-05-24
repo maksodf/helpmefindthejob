@@ -61,6 +61,26 @@ The MCP `protocolVersion` advertised in the `initialize` response is pinned to t
 
 When `/mcp/version` and `/mcp/schemas.json` HTTP endpoints land (planned in §2.2 follow-up), the catalogue version and the full schema set will be reachable without spawning the stdio process.
 
+### Per-tool versioning (since v0.80.0)
+
+In addition to the catalogue-level `serverInfo.version`, every entry in `TOOL_SCHEMAS` carries a per-tool `version` field as of v0.80.0 (PlanTowardPerfection box 2.7.6). The field flows through `tools/list` JSON-RPC responses + the per-tool `mcp_server/schemas/<tool>.json` exported files, so an MCP client can pin against a specific tool-version contract:
+
+```jsonc
+{
+  "name": "find_jobs",
+  "version": "0.2.0",
+  "description": "...",
+  "inputSchema": { ... }
+}
+```
+
+Tool-version policy:
+
+- The v0.80.0 catalogue ships every tool at the `0.2.0` baseline (the catalogue went from v0.1.0 to v0.2.0 with the post-Phase-1 expansion).
+- Future per-tool schema changes bump the individual tool's `version` (MAJOR if backwards-incompatible, MINOR if additive, PATCH if clarifying). The catalogue-level `serverInfo.version` ALSO bumps following its own SemVer rules above.
+- A client targeting an older per-tool version that has since been bumped MAJOR should refuse to call the tool until the client is updated — graceful downgrade behaviour described per-client in [`docs/mcp-integration-guide.md`](mcp-integration-guide.md).
+- The contract is locked in by `tests/test_mcp_tool_schema_versioning.py` (5 tests: every tool has a version, every version is SemVer-shaped, the v0.2.0 baseline is pinned, the catalogue size of 15 tools is pinned, every tool keeps name + description + inputSchema + version as required keys).
+
 ## The 8-tool catalogue (current)
 
 Each tool's full JSON `inputSchema` is the canonical definition in [`company_discovery/mcp_tools.py`](https://github.com/maksodf/helpmefindthejob/blob/main/company_discovery/mcp_tools.py). This table summarises the required-fields surface and the standards alignment per tool; consult the source for the complete property list and types.

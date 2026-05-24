@@ -1,6 +1,7 @@
 {
   "name": "extract_direct_jobs_from_company_site",
   "description": "Extract jobs from supplied HTML without fetching: tries known ATS adapters first (Greenhouse / Lever / Personio), falls back to JobPosting JSON-LD parsing and visible job-link anchor extraction.",
+  "version": "0.2.0",
   "inputSchema": {
     "type": "object",
     "properties": {

@@ -1,6 +1,7 @@
 {
   "name": "scan_company_career_page",
   "description": "Scan one known public career page with robots.txt and max-page guards.",
+  "version": "0.2.0",
   "inputSchema": {
     "type": "object",
     "properties": {

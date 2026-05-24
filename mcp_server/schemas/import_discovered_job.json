@@ -1,6 +1,7 @@
 {
   "name": "import_discovered_job",
   "description": "Import a reviewed discovered job into the normal job pipeline.",
+  "version": "0.2.0",
   "inputSchema": {
     "type": "object",
     "properties": {
