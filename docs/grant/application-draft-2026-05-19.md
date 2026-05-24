@@ -525,6 +525,109 @@ infrastructure is generalisable:
 
 ---
 
+## Risks we acknowledge
+
+NGI0 winners are honest about the risks their project carries; the
+strongest applications make the reviewer's risk-assessment task
+easier rather than hiding the failure modes. The maintainer's
+on-record risk register at `docs/grant/05-risks-and-stakeholders.md`
+lists fifteen R-numbered concrete operational risks (R1 application
+deadline mismatch through R15 production-deployment leak); this
+section surfaces the four architectural / institutional risks that
+ride above that operational list and that a reviewer should weigh
+against the application's promises.
+
+**Adoption risk** — *the institutional uptake assumption is the
+critical hinge of the cost-saving doctrine* (`docs/grant/08-cost-saving-doctrine.md`).
+If only individuals self-host and zero institutions deploy at
+caseload scale, the cost-saving math is unverified and the impact
+story is bounded by what a single-maintainer civic-tech tool can
+reach via word-of-mouth. Mitigations: the three institutional
+outreach letters at `docs/grant/11-institutional-outreach.md` are
+sequenced for sending in the submission window (see Section 1.1 of
+`PlanTowardPerfection.MD`); the friction-class architecture means
+even non-migrant-focused institutions can adopt without scope
+mismatch (a Jobcenter serves all Bürgergeld recipients, not only
+the migrant subset); the Commons Conservancy programme path
+strengthens the institutional-trust posture for risk-averse
+adopters. Cross-refs: R13 (reviewer expects more partners than we
+secure — Low / Medium per the register); R10 (scope creep — High /
+Medium); R6 (cost-saving claims viewed as unverified marketing —
+Medium / Medium).
+
+**Sustainability risk** — *single-maintainer + grant-dependent
+funding is the dominant project-continuity exposure*. The maintainer
+plus one partner-contributor (co-resident; see `04-research-and-decisions.md`
+Decision 17) does not constitute a recruitment pipeline; if either
+steps away, the project enters survival mode. Mitigations: the
+Commons Conservancy wrapper guarantees continuity of governance
+even on maintainer transition (Programme is the legal home, not the
+maintainer's GitHub account); the multi-grant arc
+(`SUSTAINABILITY.md` 7-pillar model, post-NLnet Sovereign Tech Fund
++ Prototype Fund + FOSS contributor fund applications) reduces
+single-funder dependence; the Phase-2 framework-extraction work
+opens the project to commoditisation by other civic-tech projects,
+which broadens the contributor base. Cross-refs: R2 (single-author
+sustainability concern — High / High); R12 (maintainer burnout —
+Medium / High).
+
+**AI-vendor-lock-in risk** — *the BYO-AI architecture is the
+designed mitigation, but is not a complete defence*. The system runs
+on the deployer's choice of OpenAI / Anthropic / Gemini / DeepSeek /
+OpenRouter / Ollama / Codex CLI / Claude Code; switching providers
+is a configuration change, not a code change. But the prompt corpus
+(every `build_*_prompt` function in `company_discovery/analysis.py`)
+has been calibrated against the models the maintainer can afford to
+run (currently deepseek + ollama, per the 2026-05-21
+bias-comparative-report). Calibration that holds for those two
+models is **not guaranteed** to hold for the other six; the AI
+Provider Honesty Matrix at `docs/grant/15-ai-provider-honesty-matrix.md`
+documents the unverified surface honestly. Mitigations: the
+methodology in `compliance/accuracy-and-bias-testing.md` §3 gives a
+deployer the procedure to re-validate against their chosen provider;
+the prompt-injection unit tests
+(`tests/test_prompt_injection_vectors.py`) pin structural defences
+that hold regardless of provider compliance; the kill-switch
+(`HELPMEFINDTHEJOB_DETERMINISTIC_ONLY=true`) lets a deployer disable
+AI entirely if a provider becomes untrusted mid-deployment.
+Cross-refs: R5 (reviewer skepticism of MCP as a civic-tech standard
+— Medium / Medium); R14 (encryption / data-handling claims don't
+hold under scrutiny — Low / High).
+
+**Friction-class scope-creep risk** — *the friction-class
+architecture (Decision 21) is broader than the migrant-only framing,
+which strengthens the architecture but creates a narrative-coherence
+risk*. A reviewer reading the friction-class framing without the
+"migrant five as primary narrative anchor" caveat may interpret the
+project as scope-creep ("they're trying to solve every employment
+friction at once"); a deployer in a migrant-focused organisation may
+worry the project is drifting away from their use case; a press
+mention without the friction-class context may mis-position the
+project as a generic employment tool. Mitigations: every public
+artefact carries the seven-persona panel naming Aïcha + Yusuf + Olga
++ Mahmoud + Maria first (the migrant five as primary anchor) and
+Käthe + Tobias second (the wider friction-class as architectural
+demonstration); the `docs/grant/07-personas.md` document fixes the
+canonical persona-panel ordering; `compliance/deployer-operating-manual.md`
+§1 spells out which deployer-type serves which subset of the
+friction class. Cross-refs: R8 (German translation quality not
+native — Medium / Medium, indirect via the multilingual-coverage
+story); R10 (scope creep — High / Medium, named explicitly because
+this exact risk is its archetype).
+
+The application's claim to be a top-tier civic-commons project does
+not depend on all four risks resolving in the project's favour. It
+depends on the maintainer maintaining the documented mitigations,
+the Commons Conservancy programme continuing to provide governance
+continuity, and at least one institutional partner reaching
+production deployment in Phase 2. The honest framing for any
+reviewer: the system is shipped; the risks are named; the mitigations
+are in place; the unknowns are documented in
+`04-research-and-decisions.md` Part C; the Phase-2 roadmap addresses
+the highest-leverage residual exposures first.
+
+---
+
 ## Field 17 — Attachments (optional)
 
 Recommended attachments (each ≤ 50 MB; total ≤ 50 MB):

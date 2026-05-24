@@ -1,10 +1,20 @@
 # Helpmefindthejob — Project Brief
 
-**Last updated**: 2026-05-17
-**Status**: pre-application, planning phase complete
+**Last updated**: 2026-05-24 (v2 revision)
+**Status**: pre-submission, planning phase complete, execution in progress
 **Working branch**: `claude/project-analysis-bpHCo`
 
 This is the strategic source-of-truth document. Read end-to-end before working on anything. If anything else in the workspace contradicts this document, this document wins — and the contradiction is a bug to fix.
+
+### v2 changes since the 2026-05-17 v1 (this revision)
+
+- **§7 anchor persona panel** extended from five personas to **seven** per Decision 21 in `04-research-and-decisions.md`. The five most-acute migrant personas (Aïcha, Yusuf, Olga, Mahmoud, Maria) remain the primary narrative anchor; the two wider friction-class personas (Käthe, Tobias) demonstrate the friction-class claim architecturally without diluting the primary narrative.
+- **§10 institutional wrapper** reframed: Commons Conservancy admission is positioned as a **parallel long-term governance track**, not as a prerequisite for the NLnet submission. Per WinningPlan.MD v3 (re-verified against primary NLnet + Conservancy sources on 2026-05-23): NLnet's eligibility page explicitly states "no categorical exclusions"; the Conservancy hosts only 20 programmes (vs ~371 NLnet-funded projects); intake is a 12–24-month process. The sustainability story now anchors on what is definitely owned by the project (Apache 2.0 + CLA + full governance pack + 7-pillar SUSTAINABILITY.md + drafted outreach) and mentions the Conservancy as a parallel track rather than the centrepiece.
+- **§4 honest current state** rewording follows from the Conservancy reframe — the "single-author signal without institutional wrapper" line is no longer described as a BLOCKER fixed by Conservancy admission. It is a real residual exposure; the Commons Conservancy parallel-track plus the Phase-2 framework-extraction roadmap are the documented mitigations.
+
+Earlier reframes (already in v1):
+- Project rename Helpmefindthejob per Decision 22, sanitised in Week 1.
+- Friction-class framing per Decision 21 — applies to §1 mission, §2 positioning, §6 cost-saving doctrine, §7 personas.
 
 ---
 
@@ -123,7 +133,7 @@ The project has **never been publicly launched**. A single private-instance depl
 - Governance pack: CONTRIBUTING, CODE_OF_CONDUCT, SECURITY, SUPPORT, AUTHORS, ACKNOWLEDGMENTS, TRADEMARK (BLOCKER)
 - Proof of MCP composition with a second consumer (BLOCKER)
 - Internal residue: `khalo.org` hardcoded ~29× in `app.py`, tester names in commit messages, `keepbuildingtill100%tracker.MD` at root, commercial-narrative `docs/sellable-readiness-*` and `docs/marketing-copy.md` (MAJOR)
-- Single-author signal without institutional wrapper (BLOCKER — fixed by Commons Conservancy admission)
+- Single-author signal — partially mitigated by the Commons Conservancy parallel-track admission (not gating the NLnet submission per WinningPlan.MD v3) plus the Phase-2 framework-extraction roadmap; remains a real residual exposure named in the "Risks we acknowledge" section of the application draft
 - README opens with "self-hosted chat-driven job-hunting copilot" — commercial framing rather than commons (MAJOR — Week 1 rewrite)
 - No badges, no public roadmap, no CHANGELOG, no tagged releases (MAJOR)
 - CI is tests-only — no lint, no mypy, no coverage upload, no security scan (MAJOR)
@@ -188,17 +198,26 @@ This doctrine is not pitch language; it is a **design principle**. When a featur
 
 ## 7. The anchor persona panel
 
-Five personas serve as the design forcing function and the public narrative. Full profiles in `07-personas.md`.
+**Seven personas** serve as the design forcing function and the public narrative (v2 expansion per Decision 21). Full profiles in `07-personas.md`.
 
-| Persona | Origin | Profession | Status | German | Solves |
-|---|---|---|---|---|---|
-| Aïcha | Tunisia | Registered nurse | §16d Anerkennung | B1→B2 | Recognition-friendly employer matching + clinical-German CV |
-| Yusuf | Turkey | Mechanical engineer | EU Blue Card pending | A2 | Post-arrival timeline + cross-city role comparison |
-| Olga | Ukraine | Senior frontend dev | §24 protection | A2 | English-team / remote tech matching + residence-status explainer |
-| Mahmoud | Syria | Trade-apprentice | Subsidiärer Schutz | B2 (trades) | Ausbildung aggregation + Handwerk-format CV |
-| Maria | Romania | Care worker | EU citizen | A2 | Language-barrier-friendly Pflegedienst matching |
+The **five most-acute migrant personas** remain the **primary narrative anchor** — every public-facing demo, screenshot, and proposal section names one of them first. They are the strongest specific evidence the system serves the friction class.
 
-Every public-facing artifact references at least one persona concretely. The panel proves the system serves a *category* of human situations, not a single demographic. Real anonymised testers replace fictional ones over time.
+| # | Persona | Origin | Profession | Status | German | Solves |
+|---|---|---|---|---|---|---|
+| 1 | Aïcha | Tunisia | Registered nurse | §16d Anerkennung | B1→B2 | Recognition-friendly employer matching + clinical-German CV |
+| 2 | Yusuf | Turkey | Mechanical engineer | EU Blue Card pending | A2 | Post-arrival timeline + cross-city role comparison |
+| 3 | Olga | Ukraine | Senior frontend dev | §24 protection | A2 | English-team / remote tech matching + residence-status explainer |
+| 4 | Mahmoud | Syria | Trade-apprentice | Subsidiärer Schutz | B2 (trades) | Ausbildung aggregation + Handwerk-format CV |
+| 5 | Maria | Romania | Care worker | EU citizen | A2 | Language-barrier-friendly Pflegedienst matching |
+
+The **two wider friction-class personas** demonstrate the architecture is friction-driven, not demographic-driven. They appear in the persona panel diagrams + the seven-persona Playwright suite + the bias-comparative-report data; they do not displace the migrant five from the proposal narrative.
+
+| # | Persona | Origin | Profession | Status | German | Solves |
+|---|---|---|---|---|---|---|
+| 6 | Käthe | Germany | Registered nurse returning after caregiving gap | EU citizen | Native | 12-year-CV-gap reframing + 2026-format CV scaffolding + Wiedereinstiegsprogramme matching |
+| 7 | Tobias | Germany | Career changer, long-term unemployed | EU citizen | Native | Evidence-of-ROI cover-letter framing for non-linear careers + roles whose JD language signals openness |
+
+Every public-facing artifact references at least one of the five primary-anchor personas concretely; the two wider personas appear in any context where the friction-class architectural claim must be visibly substantiated. The panel proves the system serves a *category* of human situations, not a single demographic. Real anonymised testers replace fictional ones over time.
 
 ---
 
@@ -230,9 +249,9 @@ The institutional consequence: **every institution deploying our agent inherits 
 
 ---
 
-## 10. The institutional wrapper — Commons Conservancy
+## 10. The institutional wrapper — Commons Conservancy (parallel track)
 
-Helpmefindthejob will apply for admission as a Programme of **The Commons Conservancy** (Dutch stichting, founded 2016 by NLnet, multi-tenant legal-entity wrapper for open-source projects, free).
+Helpmefindthejob has applied (intake submitted) for admission as a Programme of **The Commons Conservancy** (Dutch stichting, founded 2016 by NLnet, multi-tenant legal-entity wrapper for open-source projects, free). **Admission is a parallel long-term governance track — NOT a prerequisite for the NLnet submission.** Per WinningPlan.MD v3 (re-verified against primary sources on 2026-05-23): NLnet's eligibility page explicitly states "no categorical exclusions"; only one of the 44 projects funded in the February 2026 NGI0 Commons round was an existing Conservancy programme; the Conservancy hosts only 20 programmes (vs ~371 NLnet-funded projects across 9 rounds); intake is a 12–24-month bespoke-DRACC-statutes process not designed for grant-routing speed. The sustainability story is therefore anchored on what is definitively owned by the project today (Apache 2.0 + CLA + governance pack + 7-pillar SUSTAINABILITY.md + drafted institutional outreach + multi-grant arc) and mentions the Conservancy intake as parallel evidence of long-term governance commitment.
 
 What this solves:
 
