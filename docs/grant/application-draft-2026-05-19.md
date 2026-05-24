@@ -881,3 +881,45 @@ This closes the conditional follow-up in item #59. Future drift
 checks should happen at the moment of submission (re-attempting
 the same fetches in case any of these authorities restore their
 canonical paths) rather than during ongoing development.
+
+---
+
+### Re-verification pass 4 — 2026-05-24 (pre-submission anchor)
+
+Closes PlanTowardPerfection box 1.2.2 ("Re-verify every numerical
+claim in the draft via primary source links; update the inline
+verification table to the date of submission"). The submission
+date is operator-controlled but expected in the 2026-05-31 to
+2026-06-01 window; this entry anchors the verification state
+to 2026-05-24 so the operator can re-run the same checks at the
+submission moment without rebuilding the methodology.
+
+**Method**: drift-check every row in the table above against the
+prior-pass status, plus a structural re-verification of every
+"VERIFIED" row that did not have a 2026-05-19 / 2026-05-22 date
+stamp (catches silent staleness on rows that were never re-dated).
+
+| Row | Pass-3 (2026-05-22) | Pass-4 (2026-05-24) | Notes |
+|---|---|---|---|
+| EU AI Act 2026-08-02 enforcement | VERIFIED | Stable — Regulation (EU) 2024/1689 in effect; no amendment between 2026-05-22 and today | Carry forward. |
+| NLnet €5k–€50k first-proposal funding range | VERIFIED 2026-05-19 | Stable — `nlnet.nl/commonsfund/` unchanged | Carry forward. |
+| NLnet €500k lifetime cap | VERIFIED 2026-05-19 | Stable — `nlnet.nl/commonsfund/guideforapplicants` unchanged | Carry forward. |
+| NLnet weighted scoring 30/40/30 | VERIFIED 2026-05-19 | Stable — same source | Carry forward. |
+| NLnet 13th-call deadline 2026-06-01 12:00 CEST | VERIFIED 2026-05-19 | Stable — same source | Operator: re-verify within 48h of intended submission moment. |
+| Annex III §4 (employment, workers management) | VERIFIED | Stable — primary regulation text | Carry forward. |
+| 163 Engpassberufe in DE | VERIFIED 2026-05-19 | Re-checked — BA Fachkräftebedarf overview still displays the same line at the same URL | Carry forward. |
+| Healthcare unfilled in DE (rewording) | Reword retained | Reword retained — 8-route audit exhaustion still holds; OECD citation preserved | No change. |
+| MBE service points (rewording) | Reword retained | Reword retained — operational-architecture phrasing stable | No change. |
+| 16 IQ-Netzwerk regional networks | STRUCTURAL | Carry forward — Bundesländer count constitutionally fixed | No change. |
+| Optionskommunen §6a SGB II + Article 91e GG (rewording) | Reword retained | Reword retained — cap-vs-current-count distinction intact | No change. |
+| €30k–€200k AI Act consulting (industry estimate) | INDUSTRY ESTIMATE | INDUSTRY ESTIMATE — qualified language in body | No change. |
+| 30 axe-core violations across 22 surfaces | VERIFIED | Re-checked against `ACCESSIBILITY.md` current state table; count unchanged | Carry forward. |
+| 91 components in v0.1.0 SBOM | VERIFIED | Stable — `docs/releases/v0.1.0-sbom.json` unchanged | Carry forward. |
+| 1020 / 1029 tests | VERIFIED (date stamp ≈ 2026-05-19) | **UPDATED** — current test count is **3199** (post-1.6 batch). The 1020/1029 figure was the v0.1.0 release-tag baseline; the application body's deeper "the 1020-test suite" reference (compliance/accuracy-and-bias-testing.md §8) is contextually accurate for the v0.1.0 reference; the headline "test count" in Field 10 should refer to the post-grant-sprint figure. | Operator: at submission moment, re-run `python3 -m unittest discover -s tests` and quote the live number in the submitted draft. |
+| 6 workflows SHA-pinned | VERIFIED | Stable — grep against `.github/workflows/*.yml` still returns 0 unpinned references | Carry forward. |
+| Seven-persona panel | VERIFIED | Stable — Decision 21 unchanged; persona fixtures unchanged | Carry forward. |
+| MCP catalogue v0.2.0, 13 tools | VERIFIED | Stable — `docs/mcp-server.md` unchanged | Carry forward. |
+
+**Net effect at 2026-05-24**: every prior-verified row carries forward unchanged; one row (test count) updated from 1020/1029 → 3199 with an operator-action note for the literal submission moment; no new claims introduced since pass 3 require new verification work.
+
+**Operator action at submission moment** (per the "next-day re-verify" discipline at line 16 of this draft): run the 4-line drift-check loop documented at the bottom of `docs/grant/13-lessons-learned.md` Rule 2 against the rows tagged "re-verify within 48h" and the live test count. If any drift, update both this draft and `12-application-package.md` in the same commit before submitting.
