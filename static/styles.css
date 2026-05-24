@@ -5159,3 +5159,124 @@ html[lang="de"] .api-docs-de-note { display: block; }
   from { opacity: 0; transform: translateY(-4px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+
+/* ─────────────────────────────────────────────────────────────────
+ * PlanTowardPerfection boxes 2.15.4 + 2.15.6 — high-contrast modes.
+ *
+ * Two adjacent CSS media queries serve users who have signalled they
+ * need higher contrast or Windows High Contrast Mode (forced-colors).
+ * Both queries leave the default theme untouched and only activate
+ * when the user's environment carries the relevant preference —
+ * by design they are no-ops for the default visitor.
+ *
+ * Coverage strategy: rather than enumerate every selector, we boost
+ * the contrast tokens at the :root level so the entire palette
+ * (text, borders, surfaces, accents) shifts uniformly. The HSL
+ * underpinning of the design tokens makes this a clean swap.
+ * ───────────────────────────────────────────────────────────────── */
+
+@media (prefers-contrast: more) {
+  /* User has signalled "give me more contrast." Push --text toward
+     pure white on dark / pure black on light + thicken every border
+     class so structural separators read at a higher contrast ratio. */
+  :root {
+    --text: #ffffff;
+    --text-muted: #e5e5ec;
+    --border: #ffffff;
+    --border-strong: #ffffff;
+    --surface-2: #000000;
+    --accent: #b4a8ff;  /* lighter shade of the accent — sufficient contrast against #000 */
+  }
+  :root[data-theme="light"] {
+    --text: #000000;
+    --text-muted: #1a1a1a;
+    --border: #000000;
+    --border-strong: #000000;
+    --surface-2: #ffffff;
+    --accent: #5028e0;  /* deeper shade of the accent — sufficient contrast against #fff */
+  }
+  /* Borders made visible everywhere — thin 1px lines are too subtle
+     in high-contrast mode. */
+  .card,
+  .metric-card,
+  .imported-row,
+  .find-jobs-row,
+  .saved-search-row,
+  .suggestion,
+  .demo-banner {
+    border-width: 2px;
+  }
+  /* Links must be clearly distinguishable from body text. */
+  a:not([class*="btn"]):not([class*="badge"]) {
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 2px;
+  }
+  /* Focus rings widened so keyboard focus is unambiguous. */
+  *:focus-visible {
+    outline: 3px solid var(--accent);
+    outline-offset: 2px;
+  }
+}
+
+@media (forced-colors: active) {
+  /* Windows High Contrast Mode (and similar forced-colors
+     environments). The system supplies its own palette via
+     `CanvasText`, `Canvas`, `LinkText`, `ButtonText`, `Highlight`,
+     etc. We drop our token overrides + let the system colours
+     through, then re-add structural borders + focus rings so
+     element boundaries stay visible in the forced palette.
+     See https://www.w3.org/TR/css-color-adjust-1/#forced-colors-mode
+     for the canonical reference. */
+  :root,
+  :root[data-theme="light"],
+  :root[data-theme="dark"] {
+    --text: CanvasText;
+    --text-muted: CanvasText;
+    --bg: Canvas;
+    --surface: Canvas;
+    --surface-2: Canvas;
+    --border: CanvasText;
+    --border-strong: CanvasText;
+    --accent: LinkText;
+  }
+  /* Borders forced visible — forced-colors strips many decorative
+     borders. Re-assert them on the structural cards/rows. */
+  .card,
+  .metric-card,
+  .imported-row,
+  .find-jobs-row,
+  .saved-search-row,
+  .suggestion,
+  .demo-banner {
+    border: 1px solid CanvasText;
+    forced-color-adjust: none;
+  }
+  /* Focus ring uses the system Highlight colour so it matches the
+     user's chosen focus palette. */
+  *:focus-visible {
+    outline: 2px solid Highlight;
+    outline-offset: 2px;
+  }
+  /* Buttons get explicit ButtonFace / ButtonText pairing so they
+     remain clearly button-shaped even when the page's accent
+     colours are overridden. */
+  .btn,
+  button {
+    background: ButtonFace;
+    color: ButtonText;
+    border: 1px solid ButtonText;
+  }
+  .btn:focus-visible,
+  button:focus-visible {
+    outline: 2px solid Highlight;
+    outline-offset: 2px;
+  }
+  /* Links use LinkText (system-defined). */
+  a:not([class*="btn"]):not([class*="badge"]) {
+    color: LinkText;
+  }
+  a:visited:not([class*="btn"]):not([class*="badge"]) {
+    color: VisitedText;
+  }
+}

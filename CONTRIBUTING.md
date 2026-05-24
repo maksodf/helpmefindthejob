@@ -267,3 +267,99 @@ contributors of code, translation, design, or institutional support are
 acknowledged in [`ACKNOWLEDGMENTS.md`](ACKNOWLEDGMENTS.md). We do not
 distinguish between "core" and "external" contributors in attribution —
 credit is granted by the contribution.
+
+## First-time contributor walk-through
+
+If this is your first PR to this project, here's the concrete path the
+maintainer expects + supports. Each step is intentionally small so a
+first-time contributor never has to invest hours before knowing whether
+their contribution is on the right track.
+
+1. **Pick the issue**. Issues tagged
+   [`good first issue`](https://github.com/maksodf/helpmefindthejob/issues?q=is%3Aopen+label%3A%22good+first+issue%22)
+   are explicitly maintainer-vetted for being small + self-contained +
+   not blocked on context the codebase doesn't supply. If you can't
+   find one that fits, open a new issue describing what you want to
+   work on; the maintainer will tell you within 2 working days whether
+   it's a good fit + flag any non-obvious considerations.
+2. **Comment on the issue before you start coding** — even just
+   `"I'd like to take this on, will open a PR within ~7 days."` This
+   prevents duplicate-effort frustration if someone else is already
+   in flight + gives the maintainer a chance to flag context you might
+   miss before you commit time.
+3. **Fork + branch off `main`**. Branch naming convention:
+   `<github-username>/<short-slug>`. Example:
+   `fouad/audit-log-csv-export`.
+4. **Make the change small**. The smallest correct PR is the easiest
+   to review + the most likely to land within the 2-week SLA below.
+   If your idea is large, split it: open a draft PR with the smallest
+   first slice, get it merged, then build on it.
+5. **Run the local checks** documented at [§"Development Setup"](#development-setup):
+   `python3 -m unittest discover -s tests -t .` must be green. The
+   [`quality.yml`](.github/workflows/quality.yml) workflow will run the
+   same checks (plus `ruff`, `mypy --strict` subset, coverage upload,
+   `pip-audit`) on your PR; resolving them locally first means the CI
+   is a confirmation not a discovery.
+6. **Sign the CLA assent** in your first PR per [§"Contributor License
+   Agreement"](#contributor-license-agreement). A single PR comment
+   does it for all subsequent PRs from the same GitHub account.
+7. **Open the PR against `main`**. Fill in the PR template's checklist
+   (purpose, test plan, screenshots if applicable, "what felt broken"
+   honest-state notes).
+8. **Wait for the maintainer's first response within the SLA below**.
+   The maintainer will either accept-as-is, request changes, or close
+   with reasoning. The maintainer will NOT ghost you.
+
+### Maintainer response SLA
+
+The maintainer commits to the following response cadence:
+
+| Event | First-response SLA | Notes |
+|---|---|---|
+| Issue opened with the `good first issue` label match | 2 working days | "Yes / no / suggest a different scope" |
+| Issue opened with a security tag (per `SECURITY.md`) | 5 working days | Per the SECURITY.md acknowledgement target |
+| PR opened by a first-time contributor | 7 working days | Substantive review (not just "thanks!") |
+| PR re-pushed after maintainer review | 5 working days | Same scope as the prior review |
+| PR ready-to-merge | 14 working days | The hard ceiling — if a PR has been in ready-to-merge state for 2 working weeks without merge, the maintainer is failing the SLA + the contributor should ping `support@helpmefindthejob.org` |
+
+These are FIRST-response SLAs, not merge SLAs. Some PRs take multiple
+review cycles; that's normal. What's not OK is silence — if you don't
+hear from the maintainer within the SLA window, that's a bug in the
+maintainer's process and you have standing to escalate.
+
+### What the maintainer is looking for
+
+Beyond the obvious (code correctness, tests pass, contract preserved):
+
+- **Honesty about scope**. If your PR fixes one bug but you saw three
+  more on the way, name them in the PR description. Either fix all
+  three (preferred per the no-gaps-behind doctrine in
+  [`CLAUDE.md`](CLAUDE.md)) or open separate issues for the other two.
+- **Test that would have caught the bug**. The regression-guard pattern
+  is: every fix lands with a test that fails BEFORE the fix and passes
+  AFTER. The PR description names the test file + the failing assertion
+  the fix targets.
+- **Honest about what didn't get tested**. If you couldn't verify a
+  surface (e.g., a manual screen-reader walkthrough you didn't have
+  time for), say so. Honest gaps land; hidden gaps don't.
+- **No new features inside a NLnet grant-window slice**. Look at
+  [`PlanTowardPerfection.MD`](PlanTowardPerfection.MD) — if there's an
+  active Ceiling-1 sprint, the "no new features" hard rule applies to
+  all contributors not just the maintainer.
+
+### What the maintainer will NEVER do
+
+- Silently close your PR without reasoning.
+- Apply your patch under their own name (every commit retains your
+  authorship + co-authorship if you used a co-author trailer).
+- Move the goalposts mid-review. If the maintainer asks for X, then
+  Y, then Z in successive rounds, ask explicitly: "is there a final
+  spec I should target?" The maintainer will commit to a fixed spec
+  rather than expanding scope each round.
+
+### If you're stuck
+
+Email `support@helpmefindthejob.org` or open a GitHub Discussion. The
+maintainer's intent is to keep the contribution latency below 2 weeks
+for the first response cycle; if you've been waiting longer than that,
+you've found a process bug + the maintainer wants to know.

@@ -176,3 +176,58 @@ The shortest honest answer the maintainer would give a journalist:
   per-use-case recommendations + binding-on-code surface defined.
   Cross-references to AI Act + source-class doctrine + cost-saving
   doctrine.
+- **2026-05-24** (PlanTowardPerfection box 2.8.5 — what-we-know-we-don't-know
+  appendix): the matrix above carries verified rows for the providers
+  the maintainer has exercised live + dispatcher-shape tested for the
+  rest. This appendix names the residual unknowns explicitly so a
+  reviewer + a deployer can scope their own pre-production validation.
+
+  **Live-exercised at v0.80.0** (latency / cost / output-quality measured
+  on the project's own prompts within the last 30 days):
+  - `deepseek` — 70 data points in `bias-comparative-report-2026-05-21.md`;
+    measured per-persona mean fit-score 56.4–74.3; OOB rate 13.0 % at
+    the 2026-05-19 polished-cohort run; cost ~€0.00 (cached replay
+    against `data/bias_comparative_cache/`); first-token latency
+    sub-second on the maintainer's network.
+  - `ollama` (local `llama3.1:8b`) — 70 data points in the same report;
+    measured per-persona mean fit-score 50.4–67.4; OOB rate carries
+    the same 13.0 % baseline; cost €0.00 by construction (local-only);
+    first-token latency depends on hardware, ~3-6 s on M-series Mac.
+
+  **Dispatcher-shape tested but NOT live-key-exercised** at v0.80.0:
+  - `openai`, `anthropic`, `gemini`, `openrouter` — the dispatcher
+    layer in `company_discovery/ai_providers.py` has unit tests
+    covering the request-shape, response-parsing, and error-class
+    handling per provider. What HAS NOT been measured: actual
+    per-persona output quality, latency-under-real-network-conditions,
+    cost-per-1k-tokens against the project's actual prompts, output
+    OOB rate. Bias-comparative-report-v2 (scaffolded in
+    `compliance/accuracy-and-bias-testing.md` §10) is the path to
+    measuring these 4 providers live — gated on the deployer providing
+    API keys + cost-cap budgets per the v2 reproducibility recipe.
+  - `codex_cli`, `claude_code` — these are local-CLI shims that
+    subprocess out to the user's installed Codex CLI / Claude Code.
+    Dispatcher-shape tested via subprocess mocks; actual behaviour is
+    "whatever the user's local CLI does", which is by-design out-of-
+    scope for the project's verification surface. Per the BYO-AI
+    contract the deployer is the one with skin in the game on the
+    output quality these surfaces produce.
+
+  **What this means for a NLnet reviewer or institutional deployer**:
+  the matrix above is honest about what's verified vs. what's not.
+  An institutional deployer choosing between providers should:
+  1. Decide on cost vs. data-egress posture (use the §"Data egress
+     posture" column above).
+  2. Run the bias-methodology-v2 recipe in
+     `compliance/accuracy-and-bias-testing.md` §10 against their
+     chosen provider with their own API key + cost-cap budget.
+  3. Compare the resulting per-persona means + OOB rate against the
+     deepseek + ollama baselines in `bias-comparative-report-2026-05-21.md`.
+  4. Document the choice in the deployer's
+     `compliance/transparency-notice.md` `[Deployer-managed addendum]`
+     so end-users see which provider's data-flow disclosure applies.
+
+  Steps 2–4 are the deployer-side verification surface; the project
+  side cannot validate against providers without the deployer's keys.
+  This appendix exists so that gap is recorded honestly rather than
+  glossed.

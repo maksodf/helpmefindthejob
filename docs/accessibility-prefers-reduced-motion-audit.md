@@ -129,8 +129,8 @@ The same prefers-* media-query family includes:
 | Media query | Coverage at v0.80.0 | Gap status |
 |---|---|---|
 | `prefers-reduced-motion` | 11 sites in `static/styles.css` | ✓ SUPPORTED (this audit) |
-| `prefers-contrast: more` | 0 sites | ✗ GAP — PlanTowardPerfection box 2.15.4; queued for Ceiling 2 |
-| `forced-colors` (Windows High Contrast Mode) | 0 sites | ✗ GAP — PlanTowardPerfection box 2.15.6; queued for Ceiling 2 |
+| `prefers-contrast: more` | 1 :root token-override block + 7 selector overrides | ✓ SUPPORTED (PlanTowardPerfection box 2.15.4 closed 2026-05-24) |
+| `forced-colors` (Windows High Contrast Mode) | 1 :root token-override block + button + link + focus + 6 card-class selectors using system colours (CanvasText / ButtonText / Highlight / LinkText) | ✓ SUPPORTED (PlanTowardPerfection box 2.15.6 closed 2026-05-24) |
 | `prefers-color-scheme` | extensively used (light + dark theme branches) | ✓ SUPPORTED |
 
 The two gaps (prefers-contrast + forced-colors) are honestly tracked as deferred CSS hardening work. Neither is a v0.80.0 blocker; both are pre-Phase-2 polish opportunities.
