@@ -28,7 +28,7 @@ import unittest
 from pathlib import Path
 
 
-REPO_ROOT = Path("/Users/fouad./Desktop/NasserMCPserver")
+REPO_ROOT = Path(__file__).resolve().parent.parent
 HERO = REPO_ROOT / "docs" / "screenshots" / "hero-landing.png"
 README = REPO_ROOT / "README.md"
 

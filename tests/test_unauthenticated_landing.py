@@ -23,7 +23,7 @@ import unittest
 from pathlib import Path
 
 
-REPO_ROOT = Path("/Users/fouad./Desktop/NasserMCPserver")
+REPO_ROOT = Path(__file__).resolve().parent.parent
 INDEX_HTML = REPO_ROOT / "static" / "index.html"
 EN_BUNDLE = REPO_ROOT / "static" / "i18n" / "en.json"
 DE_BUNDLE = REPO_ROOT / "static" / "i18n" / "de.json"

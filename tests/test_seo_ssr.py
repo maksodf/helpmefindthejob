@@ -38,7 +38,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 
-STATIC_DIR = Path("/Users/fouad./Desktop/NasserMCPserver/static")
+STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
 
 
 # -------------------------------------------------------------------------
@@ -239,7 +239,7 @@ class LiveSsrRoutes(unittest.TestCase):
         env.pop("HELPMEFINDTHEJOB_PUBLIC_URL", None)
         cls.proc = subprocess.Popen(
             [sys.executable, "app.py", "--port", str(cls.port)],
-            cwd="/Users/fouad./Desktop/NasserMCPserver",
+            cwd=str(Path(__file__).resolve().parent.parent),
             env=env,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
@@ -353,7 +353,7 @@ class SeoLandingPageEnrichment(unittest.TestCase):
 
     def setUp(self):
         self.src = Path(
-            "/Users/fouad./Desktop/NasserMCPserver/app.py"
+            str(Path(__file__).resolve().parent.parent / "app.py")
         ).read_text(encoding="utf-8")
         # Slice to just the _send_seo_page method body so the
         # assertions are scoped (other parts of app.py reference

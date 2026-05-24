@@ -36,6 +36,9 @@ import unittest
 from company_discovery.job_type_filter import TAXONOMY, identify_bucket
 from company_discovery.persona_fixtures import PERSONAS
 
+from pathlib import Path as _RPath
+_REPO_ROOT = _RPath(__file__).resolve().parent.parent
+
 
 PANEL_SLUGS = ("aicha", "yusuf", "olga", "mahmoud", "maria", "kaethe", "tobias")
 
@@ -305,7 +308,7 @@ class LateralRoleFallbackCoverage(unittest.TestCase):
         import re
         from pathlib import Path
         src = Path(
-            "/Users/fouad./Desktop/NasserMCPserver/company_discovery/journey.py"
+            str(_REPO_ROOT / "company_discovery/journey.py")
         ).read_text(encoding="utf-8")
         # Find the fallback_map literal block + extract keys
         start = src.find("fallback_map = {")

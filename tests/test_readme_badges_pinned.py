@@ -22,7 +22,7 @@ import unittest
 from pathlib import Path
 
 
-README = Path("/Users/fouad./Desktop/NasserMCPserver/README.md")
+README = Path(__file__).resolve().parent.parent / "README.md"
 
 
 class ReadmeBadgeBranchPins(unittest.TestCase):

@@ -126,7 +126,7 @@ class AppStateRoutesByDatabaseUrl(unittest.TestCase):
         Source verification is the pragmatic equivalent."""
 
         src = Path(
-            "/Users/fouad./Desktop/NasserMCPserver/app.py"
+            str(Path(__file__).resolve().parent.parent / "app.py")
         ).read_text(encoding="utf-8")
         # The routing block reads the env var
         self.assertIn(
@@ -157,7 +157,7 @@ class HealthEndpointReportsActualStorage(unittest.TestCase):
         """
 
         src = Path(
-            "/Users/fouad./Desktop/NasserMCPserver/app.py"
+            str(Path(__file__).resolve().parent.parent / "app.py")
         ).read_text(encoding="utf-8")
         self.assertNotIn('"storage": "sqlite"', src)
         self.assertNotIn('"storage": self._storage_kind()', src,
@@ -190,14 +190,14 @@ class RequirementsContract(unittest.TestCase):
 
     def test_requirements_lists_psycopg(self):
         req = Path(
-            "/Users/fouad./Desktop/NasserMCPserver/requirements.txt"
+            str(Path(__file__).resolve().parent.parent / "requirements.txt")
         ).read_text(encoding="utf-8")
         self.assertIn("psycopg", req.lower())
 
     def test_sbom_lists_psycopg(self):
         sbom = json.loads(
             Path(
-                "/Users/fouad./Desktop/NasserMCPserver/docs/releases/v0.1.0-sbom.json"
+                str(Path(__file__).resolve().parent.parent / "docs/releases/v0.1.0-sbom.json")
             ).read_text(encoding="utf-8")
         )
         names = {c["name"].lower() for c in sbom["components"]}

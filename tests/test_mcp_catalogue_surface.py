@@ -33,7 +33,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 
-REPO_ROOT = Path("/Users/fouad./Desktop/NasserMCPserver")
+REPO_ROOT = Path(__file__).resolve().parent.parent
 SCHEMA_DIR = REPO_ROOT / "mcp_server" / "schemas"
 
 

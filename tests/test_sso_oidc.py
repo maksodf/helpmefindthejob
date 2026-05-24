@@ -753,7 +753,7 @@ class HttpRoutesPresence(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.src = Path(
-            "/Users/fouad./Desktop/NasserMCPserver/app.py"
+            str(Path(__file__).resolve().parent.parent / "app.py")
         ).read_text(encoding="utf-8")
 
     def test_providers_route_present(self):

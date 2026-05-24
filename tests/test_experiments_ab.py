@@ -271,14 +271,14 @@ class UnregisteredRaisesEverywhere(unittest.TestCase):
 class HttpRoutesPresence(unittest.TestCase):
     def test_variant_route_present_in_source(self):
         src = Path(
-            "/Users/fouad./Desktop/NasserMCPserver/app.py"
+            str(Path(__file__).resolve().parent.parent / "app.py")
         ).read_text(encoding="utf-8")
         self.assertIn("exp_variant_match", src)
         self.assertIn("/api/experiments/", src)
 
     def test_summary_route_present_in_source(self):
         src = Path(
-            "/Users/fouad./Desktop/NasserMCPserver/app.py"
+            str(Path(__file__).resolve().parent.parent / "app.py")
         ).read_text(encoding="utf-8")
         self.assertIn("exp_summary_match", src)
         self.assertIn("summarize_experiment", src)

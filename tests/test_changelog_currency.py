@@ -24,8 +24,11 @@ from __future__ import annotations
 import unittest
 from pathlib import Path
 
+from pathlib import Path as _RPath
+_REPO_ROOT = _RPath(__file__).resolve().parent.parent
 
-CHANGELOG = Path("/Users/fouad./Desktop/NasserMCPserver/CHANGELOG.md")
+
+CHANGELOG = Path(str(_REPO_ROOT / "CHANGELOG.md"))
 
 
 class ChangelogFormatContract(unittest.TestCase):

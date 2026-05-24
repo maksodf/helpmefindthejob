@@ -31,7 +31,7 @@ from tempfile import TemporaryDirectory
 from company_discovery import observability
 
 
-REPO_ROOT = Path("/Users/fouad./Desktop/NasserMCPserver")
+REPO_ROOT = Path(__file__).resolve().parent.parent
 
 
 # ---------------------------------------------------------------------------

@@ -385,7 +385,7 @@ class AppPyWiring(unittest.TestCase):
 
     def setUp(self):
         self.src = Path(
-            "/Users/fouad./Desktop/NasserMCPserver/app.py"
+            str(Path(__file__).resolve().parent.parent / "app.py")
         ).read_text(encoding="utf-8")
 
     def test_cv_upload_returns_parsed_cv(self):

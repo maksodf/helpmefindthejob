@@ -35,7 +35,7 @@ from urllib.error import HTTPError
 # Add the SDK dir to sys.path so `from helpmefindthejob_sdk
 # import ...` resolves. In production the partner would copy
 # the directory into their own project.
-_SDK_DIR = Path("/Users/fouad./Desktop/NasserMCPserver/sdk/python")
+_SDK_DIR = Path(__file__).resolve().parent.parent / "sdk" / "python"
 if str(_SDK_DIR) not in sys.path:
     sys.path.insert(0, str(_SDK_DIR))
 

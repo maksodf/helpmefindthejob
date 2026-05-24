@@ -337,7 +337,7 @@ class FrontendUIPresenceContract(unittest.TestCase):
 
     def test_index_html_has_members_card(self):
         text = Path(
-            "/Users/fouad./Desktop/NasserMCPserver/static/index.html"
+            str(Path(__file__).resolve().parent.parent / "static/index.html")
         ).read_text(encoding="utf-8")
         self.assertIn('id="workspaceMembersCard"', text)
         self.assertIn('id="workspaceMembersTable"', text)
@@ -345,7 +345,7 @@ class FrontendUIPresenceContract(unittest.TestCase):
 
     def test_app_js_has_renderer_and_fetches_endpoint(self):
         text = Path(
-            "/Users/fouad./Desktop/NasserMCPserver/static/app.js"
+            str(Path(__file__).resolve().parent.parent / "static/app.js")
         ).read_text(encoding="utf-8")
         self.assertIn("renderWorkspaceMembersCard", text)
         self.assertIn("/api/workspaces/", text)
@@ -361,7 +361,7 @@ class FrontendUIPresenceContract(unittest.TestCase):
         for locale in ("en", "de"):
             bundle = json.loads(
                 Path(
-                    f"/Users/fouad./Desktop/NasserMCPserver/static/i18n/{locale}.json"
+                    str(Path(__file__).resolve().parent.parent / f"static/i18n/{locale}.json")
                 ).read_text(encoding="utf-8")
             )
             for key in (
@@ -380,7 +380,7 @@ class RoutesPresenceContract(unittest.TestCase):
 
     def test_get_members_route_present(self):
         src = Path(
-            "/Users/fouad./Desktop/NasserMCPserver/app.py"
+            str(Path(__file__).resolve().parent.parent / "app.py")
         ).read_text(encoding="utf-8")
         self.assertIn("/api/workspaces/", src)
         self.assertIn("ws_members_match", src)
@@ -388,13 +388,13 @@ class RoutesPresenceContract(unittest.TestCase):
 
     def test_patch_member_role_route_present(self):
         src = Path(
-            "/Users/fouad./Desktop/NasserMCPserver/app.py"
+            str(Path(__file__).resolve().parent.parent / "app.py")
         ).read_text(encoding="utf-8")
         self.assertIn("update_workspace_member_role", src)
 
     def test_delete_member_route_present(self):
         src = Path(
-            "/Users/fouad./Desktop/NasserMCPserver/app.py"
+            str(Path(__file__).resolve().parent.parent / "app.py")
         ).read_text(encoding="utf-8")
         self.assertIn("remove_workspace_member", src)
 

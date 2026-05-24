@@ -362,7 +362,7 @@ class FunnelHttpRouteContract(unittest.TestCase):
         # authenticated branch.
         # Instead we check: the funnel module is importable + the
         # route is reachable through the module's source.
-        with open("/Users/fouad./Desktop/NasserMCPserver/app.py", encoding="utf-8") as fh:
+        with open(str(Path(__file__).resolve().parent.parent / "app.py"), encoding="utf-8") as fh:
             src = fh.read()
         self.assertIn('"/api/funnel/summary"', src)
         self.assertIn("build_funnel_summary", src)
@@ -375,7 +375,7 @@ class FunnelFrontendWired(unittest.TestCase):
 
     def test_index_html_has_funnel_card(self):
         path = Path(
-            "/Users/fouad./Desktop/NasserMCPserver/static/index.html"
+            str(Path(__file__).resolve().parent.parent / "static/index.html")
         )
         text = path.read_text(encoding="utf-8")
         self.assertIn('id="funnelCard"', text)
@@ -385,7 +385,7 @@ class FunnelFrontendWired(unittest.TestCase):
 
     def test_app_js_has_renderFunnelCard(self):
         path = Path(
-            "/Users/fouad./Desktop/NasserMCPserver/static/app.js"
+            str(Path(__file__).resolve().parent.parent / "static/app.js")
         )
         text = path.read_text(encoding="utf-8")
         self.assertIn("renderFunnelCard", text)
@@ -397,7 +397,7 @@ class FunnelFrontendWired(unittest.TestCase):
     def test_i18n_funnel_keys_present_in_both_locales(self):
         for locale in ("en", "de"):
             path = Path(
-                f"/Users/fouad./Desktop/NasserMCPserver/static/i18n/{locale}.json"
+                str(Path(__file__).resolve().parent.parent / f"static/i18n/{locale}.json")
             )
             bundle = json.loads(path.read_text(encoding="utf-8"))
             for key in (

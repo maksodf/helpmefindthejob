@@ -30,7 +30,7 @@ import unittest
 from pathlib import Path
 
 
-REPO_ROOT = Path("/Users/fouad./Desktop/NasserMCPserver")
+REPO_ROOT = Path(__file__).resolve().parent.parent
 MKDOCS_CONFIG = REPO_ROOT / "mkdocs.yml"
 
 

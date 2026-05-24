@@ -422,7 +422,7 @@ class CatalogueExtension(unittest.TestCase):
         self.assertEqual(len(TOOL_SCHEMAS), 15)
 
     def test_per_tool_schema_files_exist(self):
-        repo_root = Path("/Users/fouad./Desktop/NasserMCPserver")
+        repo_root = Path(__file__).resolve().parent.parent
         schemas_dir = repo_root / "mcp_server" / "schemas"
         for new_tool in ("list_referrals", "update_referral_status"):
             with self.subTest(tool=new_tool):
