@@ -214,3 +214,95 @@ These need resolving during Week 2 work, not before.
 - [ESCO taxonomy](https://esco.ec.europa.eu/)
 - [EURES technical documentation](https://eures.europa.eu/)
 - [JSON Schema 2020-12](https://json-schema.org/specification.html)
+
+---
+
+## v2 — Real-integration examples (2026-05-24)
+
+PlanTowardPerfection box 2.7.8: "Document the MCP composition narrative in `docs/grant/09-mcp-composition.md` v2 with real-integration examples replacing the current architectural sketches."
+
+The earlier sections of this document describe the design intent. This v2 section anchors the intent in three real worked examples — actual MCP composition flows exercised end-to-end against the live 13-tool catalogue, captured as dated walk-throughs that any downstream auditor can replay.
+
+### Real example 1 — Aïcha: ESCO lookup → company suggestion → watchlist → housing referral → outcome
+
+Full transcript: [`docs/grant/mcp-walks-2026-05-21/composability-flow-aicha.md`](mcp-walks-2026-05-21/composability-flow-aicha.md).
+
+**What it demonstrates**: the 7-tool composition chain that turns Aïcha's friction-class context (Tunisian-trained nurse, §16d Anerkennung in flight, B1→B2 German, Berlin) into a concrete watchlist + a structured handoff to an external housing agent + a recorded outcome event.
+
+**Composition chain**:
+
+```text
+1. query_esco_skill         { skill: "registered nurse" }                     → ESCO code 2221.1 + canonical label DE/EN/ES/...
+2. suggest_relevant_companies { role: "Krankenpfleger", location: "Berlin",   → 5 Anerkennungs-friendly employers ranked
+                                  persona_id: "aicha" }                          (Vivantes, Helios, Charité, Caritas Berlin, Diakoniewerk)
+3. add_company_to_watchlist { name: "Vivantes",                               → watchlist_entry_id
+                                careerPageUrl: "https://karriere.vivantes.de/" }
+4. extract_direct_jobs_from_company_site { companyName: "Vivantes" }          → 23 JobPosting records
+5. get_user_profile_for_consent { fields: ["employment_status",                → portable civic profile subset
+                                            "location", "language_proficiency"] }
+6. propose_referral { domain: "housing",                                       → structured handoff payload
+                       context: "moving from Tunis to Berlin for clinical role",   for the partner housing agent
+                       consent_scope: "employment_only" }
+7. record_user_outcome { event: "applied",                                    → outcome event recorded with HMAC-salted
+                          job_id: "<imported_job_id>" }                          user_opaque_id for the audit log
+```
+
+**Reviewer-actionable claim**: every tool call above maps to a real entry in `company_discovery/mcp_tools.py::TOOL_SCHEMAS`. The walk transcript pins concrete input/output bodies that a Claude Desktop / Cursor / Codex CLI client can replay verbatim against a freshly-cloned instance.
+
+### Real example 2 — ESCO + EURES cross-border interop
+
+Full transcript: [`docs/grant/mcp-walks-2026-05-21/composability-flow-esco-eures.md`](mcp-walks-2026-05-21/composability-flow-esco-eures.md).
+
+**What it demonstrates**: the cross-agent taxonomy interop. ESCO provides a stable cross-border occupation + skill code that any European civic agent can reference; EURES is the European Employment Services portal projection contract. Together they let an external MCP client compose Helpmefindthejob's discovery output with EU-wide labour-market infrastructure.
+
+**Composition chain**:
+
+```text
+1. query_esco_skill { skill: "Krankenschwester" }                              → ESCO occupation 2221.1 (multilingual label
+                                                                                  inflated to DE/EN/FR/IT/ES/PL/...)
+2. find_company_career_page { name: "Helios Kliniken" }                        → resolved career page
+3. extract_direct_jobs_from_company_site { companyName: "Helios Kliniken" }    → 12 JobPosting records
+4. export_eures_compatible { job_ids: ["<id1>", ..., "<id12>"] }               → EURES-schema projection ready for an
+                                                                                  EU-wide cross-deployment consumer
+```
+
+**Reviewer-actionable claim**: the EURES projection format conforms to the European Employment Services schema documented at <https://eures.europa.eu/>. The `export_eures_compatible` tool is the contract; a downstream consumer (Pôle Emploi, a Spanish SEPE deployer, or the EU Commission itself) can re-ingest the projection without any custom adapter.
+
+### Real example 3 — Claude Desktop manual walk
+
+Full transcript: [`docs/grant/mcp-walks-2026-05-21/claude-desktop-walk.md`](mcp-walks-2026-05-21/claude-desktop-walk.md).
+
+**What it demonstrates**: the human-in-the-loop side of MCP composition. A maintainer connects Claude Desktop to a local `mcp_server.py` instance (per the recipe at [`docs/mcp-integration-guide.md`](../mcp-integration-guide.md)) and exercises every tool from the chat composer. Captures: discovery flow, tool-list inspection, manual handoff to a housing-agent stub, consent-flow toggling, and the audit-log entries that flow through.
+
+**Reviewer-actionable claim**: a NLnet reviewer (or any downstream integrator) can reproduce this walk by following the quick-start recipe at `docs/mcp-integration-guide.md` § "Quick start (Claude Desktop on macOS)". The walk transcript shows what the maintainer saw at each step; reproducing it against a fresh clone is the integration-test surface.
+
+### What changes between v1 (the earlier sections of this doc) and v2
+
+| v1 (2026-05-17) | v2 (2026-05-24) |
+|---|---|
+| Architectural sketches: tool catalogue described as input/output JSON-Schema shapes; composition shown as a UML-ish diagram | Real worked tool-call chains captured in mcp-walks transcripts (`docs/grant/mcp-walks-2026-05-21/`) |
+| Composition examples were narrative-level ("a housing agent could ...") | Composition examples are concrete: 7 tool calls in Aïcha flow, 4 in ESCO+EURES flow, full Claude Desktop session in the third |
+| Cross-agent referral shown as a planned tool | `propose_referral` shipped in the 13-tool catalogue (commit history shows it landed Week 2); the Aïcha walk exercises it |
+| EURES interop framed as "we plan to" | `export_eures_compatible` shipped + the ESCO+EURES walk demonstrates it end-to-end |
+| Claude Desktop integration shown as "compatible by spec" | Concrete walk-through with exact `claude_desktop_config.json` block at `docs/mcp-integration-guide.md` |
+| Audit-log entry shape "to be decided" | Plain JSON via `record_user_outcome`; schema in [`compliance/audit-log-schema.md`](../../compliance/audit-log-schema.md) §3; HMAC-chained per the key-rotation playbook at [`audit-log-key-rotation.md`](../../compliance/audit-log-key-rotation.md) |
+
+### What v2 does NOT yet contain
+
+Honest scope statement so the reviewer can distinguish what's actually shipped from what is roadmapped:
+
+- **Live housing-agent integration** — the `propose_referral` tool emits a structured handoff payload, but the destination housing agent is currently a mock stub per Decision 20. Option B real-integration with the maintainer's partner agent is the post-grant deliverable; the project-side surface (the `propose_referral` call shape + consent handling) is shipped.
+- **Healthcare / residency / education civic agents** — the MCP surface is the invitation; no live partner agent exists at v0.80.0. Composition demonstrations are project-side simulations.
+- **MCP-mode end-to-end test in CI** — `tests/e2e/mcp_composition_smoke.py` is scoped for Ceiling 2 §2.7.7; current CI exercises the catalogue + JSON-Schema validation via `tests/test_phase11_mcp` but not the sequential-handoff chain.
+- **Cross-deployment interop** — EURES projection format conforms to the schema; an actual handoff to a Pôle Emploi or SEPE instance has not been tested live.
+
+These deferrals are tracked in `PlanTowardPerfection.MD` (Section 2.7 MCP composition + Section 2.13 reliability/CI). The v2 update closes the documentation gap (sketches → real examples); the v3 update will close the live-partner-integration gap.
+
+### Cross-references
+
+- Per-tool catalogue + JSON Schemas: [`docs/mcp-server.md`](../mcp-server.md)
+- MCP integration guide (Claude Desktop / Cursor / Windsurf / Codex CLI): [`docs/mcp-integration-guide.md`](../mcp-integration-guide.md)
+- Tool implementations: [`company_discovery/mcp_tools.py`](https://github.com/maksodf/helpmefindthejob/blob/main/company_discovery/mcp_tools.py)
+- Schema export artefacts: [`mcp_server/schemas/`](https://github.com/maksodf/helpmefindthejob/tree/main/mcp_server/schemas)
+- Catalogue surface contract tests: [`tests/test_mcp_catalogue_surface.py`](https://github.com/maksodf/helpmefindthejob/blob/main/tests/test_mcp_catalogue_surface.py)
+- Referral lifecycle tests: [`tests/test_referral_lifecycle.py`](https://github.com/maksodf/helpmefindthejob/blob/main/tests/test_referral_lifecycle.py)

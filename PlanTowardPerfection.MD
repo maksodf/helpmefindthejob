@@ -197,7 +197,7 @@ Each persona must have an audited end-to-end transcript (real run, real data, sc
 - [ ] **MCP-tool discoverability** — `mcp/discover` endpoint that lists every connected agent + its capabilities so other clients (Claude Desktop, Cursor, etc.) can integrate.
 - [ ] **Schema versioning** — each MCP tool advertises a semver; clients downgrade gracefully.
 - [ ] **MCP-mode end-to-end test** — `tests/e2e/mcp_composition_smoke.py` simulates a sequential handoff (job-match → housing → credential check) and asserts the full chain returns coherent results.
-- [ ] **Document the MCP composition narrative** in `docs/grant/09-mcp-composition.md` v2 with real-integration examples replacing the current architectural sketches.
+- [x] **Document the MCP composition narrative** in `docs/grant/09-mcp-composition.md` v2 with real-integration examples replacing the current architectural sketches. — done in this batch / proven by `grep -n 'v2 — Real-integration examples' docs/grant/09-mcp-composition.md` → new §"v2 — Real-integration examples (2026-05-24)" appended (~110 lines) with 3 real worked composition examples: (1) Aïcha 7-tool chain ESCO→suggest→watchlist→extract→profile→housing-referral→outcome, (2) ESCO+EURES cross-border interop 4-tool chain, (3) Claude Desktop manual walk. Each example links to the dated mcp-walks transcript at `docs/grant/mcp-walks-2026-05-21/`. Also includes a v1→v2 delta table + honest scope statement of what v2 does NOT yet contain (live housing-agent integration is mock stub per Decision 20; healthcare/residency/education partner agents don't exist; MCP-mode e2e test in CI is scoped for Section 2.13).
 
 ### 2.8 Search quality + provider coverage
 
