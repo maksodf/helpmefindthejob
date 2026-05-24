@@ -25,7 +25,7 @@ class PwaArtifactTests(unittest.TestCase):
     def test_manifest_exists_and_is_valid_json(self) -> None:
         manifest = self.STATIC / "manifest.webmanifest"
         self.assertTrue(manifest.exists(), "manifest.webmanifest missing")
-        data = json.loads(manifest.read_text())
+        data = json.loads(manifest.read_text(encoding="utf-8"))
         for required in (
             "name",
             "short_name",
@@ -41,7 +41,7 @@ class PwaArtifactTests(unittest.TestCase):
     def test_service_worker_exists_and_caches_shell(self) -> None:
         sw = self.STATIC / "sw.js"
         self.assertTrue(sw.exists(), "sw.js missing")
-        body = sw.read_text()
+        body = sw.read_text(encoding="utf-8")
         # Hard requirements: install/activate/fetch listeners + a SHELL_PATHS list.
         for marker in (
             'addEventListener("install"',
@@ -57,7 +57,7 @@ class PwaArtifactTests(unittest.TestCase):
         self.assertTrue(icon.exists(), "icons/icon.svg missing")
 
     def test_index_links_manifest_and_apple_touch_icon(self) -> None:
-        html = (self.STATIC / "index.html").read_text()
+        html = (self.STATIC / "index.html").read_text(encoding="utf-8")
         self.assertIn('rel="manifest"', html)
         self.assertIn("/manifest.webmanifest", html)
         self.assertIn('rel="apple-touch-icon"', html)

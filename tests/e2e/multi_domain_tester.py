@@ -434,7 +434,7 @@ def main() -> int:
 
     out = Path(os.environ.get("E2E_MULTIDOMAIN_REPORT", "tests/e2e/multi_domain_report.json"))
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps(REPORT, indent=2, ensure_ascii=False))
+    out.write_text(json.dumps(REPORT, indent=2, ensure_ascii=False), encoding="utf-8")
 
     passed = sum(1 for r in REPORT if r["ok"])
     failed = len(REPORT) - passed

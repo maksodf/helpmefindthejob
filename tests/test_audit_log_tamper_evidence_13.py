@@ -47,7 +47,7 @@ class ChainStampingOnEmit(unittest.TestCase):
         emitter.emit("system_event", outcome="ok")
         records = [
             json.loads(line)
-            for line in log_path.read_text().splitlines()
+            for line in log_path.read_text(encoding="utf-8").splitlines()
             if line.strip()
         ]
         self.assertEqual(len(records), 1)
@@ -63,7 +63,7 @@ class ChainStampingOnEmit(unittest.TestCase):
             emitter.emit("system_event", outcome="ok")
         records = [
             json.loads(line)
-            for line in log_path.read_text().splitlines()
+            for line in log_path.read_text(encoding="utf-8").splitlines()
             if line.strip()
         ]
         self.assertEqual([r["sequence_no"] for r in records], [1, 2, 3, 4, 5])
@@ -75,7 +75,7 @@ class ChainStampingOnEmit(unittest.TestCase):
             emitter.emit("system_event", outcome="ok")
         records = [
             json.loads(line)
-            for line in log_path.read_text().splitlines()
+            for line in log_path.read_text(encoding="utf-8").splitlines()
             if line.strip()
         ]
         hmacs = [r["chain_hmac"] for r in records]
@@ -96,7 +96,7 @@ class VerifyHappyPath(unittest.TestCase):
     def test_empty_log_verifies_ok(self) -> None:
         _, log_path, tmp = _make_emitter()
         self.addCleanup(tmp.cleanup)
-        log_path.write_text("")
+        log_path.write_text("", encoding="utf-8")
         salt = b"test-salt-tamper-evidence-13" + b"0" * 16
         result = verify_chain([log_path], salt)
         self.assertTrue(result.ok)
@@ -110,11 +110,11 @@ class TamperDetection(unittest.TestCase):
         for _ in range(5):
             emitter.emit("system_event", outcome="ok")
         # Tamper: change record 3's outcome
-        lines = log_path.read_text().splitlines()
+        lines = log_path.read_text(encoding="utf-8").splitlines()
         record = json.loads(lines[2])
         record["outcome"] = "tampered_outcome"
         lines[2] = json.dumps(record, sort_keys=True)
-        log_path.write_text("\n".join(lines) + "\n")
+        log_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
         result = verify_chain([log_path], emitter.salt)
         self.assertFalse(result.ok)
         self.assertEqual(result.first_break_at_sequence, 3)
@@ -126,9 +126,9 @@ class TamperDetection(unittest.TestCase):
         for _ in range(5):
             emitter.emit("system_event", outcome="ok")
         # Delete record 3 entirely
-        lines = log_path.read_text().splitlines()
+        lines = log_path.read_text(encoding="utf-8").splitlines()
         del lines[2]
-        log_path.write_text("\n".join(lines) + "\n")
+        log_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
         result = verify_chain([log_path], emitter.salt)
         self.assertFalse(result.ok)
         self.assertEqual(result.first_break_reason, "sequence_gap")
@@ -139,10 +139,10 @@ class TamperDetection(unittest.TestCase):
         self.addCleanup(tmp.cleanup)
         for _ in range(5):
             emitter.emit("system_event", outcome="ok")
-        lines = log_path.read_text().splitlines()
+        lines = log_path.read_text(encoding="utf-8").splitlines()
         # Swap records 2 and 3 in file (but sequence_no still on record)
         lines[1], lines[2] = lines[2], lines[1]
-        log_path.write_text("\n".join(lines) + "\n")
+        log_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
         # Since verify_chain sorts by sequence_no, simple reordering
         # in the file does NOT defeat it — the chain still validates
         # because we walk in sequence order, not file order. This is
@@ -157,11 +157,11 @@ class TamperDetection(unittest.TestCase):
         for _ in range(3):
             emitter.emit("system_event", outcome="ok")
         # Replace record 2's chain_hmac with garbage
-        lines = log_path.read_text().splitlines()
+        lines = log_path.read_text(encoding="utf-8").splitlines()
         record = json.loads(lines[1])
         record["chain_hmac"] = "00" * 32  # 64 hex zeros
         lines[1] = json.dumps(record, sort_keys=True)
-        log_path.write_text("\n".join(lines) + "\n")
+        log_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
         result = verify_chain([log_path], emitter.salt)
         self.assertFalse(result.ok)
         self.assertEqual(result.first_break_at_sequence, 2)
@@ -207,7 +207,7 @@ class ChainAcrossRotations(unittest.TestCase):
         emitter2.emit("system_event", outcome="ok")
         records = [
             json.loads(line)
-            for line in log_path.read_text().splitlines()
+            for line in log_path.read_text(encoding="utf-8").splitlines()
             if line.strip()
         ]
         self.assertEqual([r["sequence_no"] for r in records], [1, 2, 3, 4, 5, 6])
@@ -242,7 +242,7 @@ class SchemaVersionGate(unittest.TestCase):
         emitter, log_path, tmp = _make_emitter()
         self.addCleanup(tmp.cleanup)
         emitter.emit("system_event", outcome="ok")
-        record = json.loads(log_path.read_text().splitlines()[0])
+        record = json.loads(log_path.read_text(encoding="utf-8").splitlines()[0])
         self.assertEqual(record["schema_version"], "v2")
 
 

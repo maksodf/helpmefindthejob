@@ -108,16 +108,16 @@ class DynamicLocaleDiscovery(unittest.TestCase):
     def test_discovers_json_bundles_in_directory(self) -> None:
         with TemporaryDirectory() as tmp:
             d = Path(tmp)
-            (d / "en.json").write_text("{}")
-            (d / "de.json").write_text("{}")
-            (d / "ar.json").write_text("{}")
+            (d / "en.json").write_text("{}", encoding="utf-8")
+            (d / "de.json").write_text("{}", encoding="utf-8")
+            (d / "ar.json").write_text("{}", encoding="utf-8")
             self.assertEqual(_discover_locales(d), ("ar", "de", "en"))
 
     def test_ignores_non_json_files(self) -> None:
         with TemporaryDirectory() as tmp:
             d = Path(tmp)
-            (d / "en.json").write_text("{}")
-            (d / "readme.md").write_text("notes")
+            (d / "en.json").write_text("{}", encoding="utf-8")
+            (d / "readme.md").write_text("notes", encoding="utf-8")
             self.assertEqual(_discover_locales(d), ("en",))
 
     def test_rejects_garbage_filenames(self) -> None:
@@ -125,10 +125,10 @@ class DynamicLocaleDiscovery(unittest.TestCase):
         accepted as a locale code."""
         with TemporaryDirectory() as tmp:
             d = Path(tmp)
-            (d / "en.json").write_text("{}")
+            (d / "en.json").write_text("{}", encoding="utf-8")
             # These should NOT be picked up as locales:
-            (d / "..etc.json").write_text("{}")
-            (d / "with space.json").write_text("{}")
+            (d / "..etc.json").write_text("{}", encoding="utf-8")
+            (d / "with space.json").write_text("{}", encoding="utf-8")
             (d / "with/slash.json").parent.mkdir(parents=True, exist_ok=True)
             # The slash one can't actually exist as a single file —
             # filesystems disallow / in names. Skip.

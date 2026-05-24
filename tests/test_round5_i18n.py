@@ -33,12 +33,12 @@ class I18nBundleTests(unittest.TestCase):
         self.assertTrue(self.DE_PATH.exists(), "de.json missing")
 
     def test_bundles_share_same_keys(self) -> None:
-        en = json.loads(self.EN_PATH.read_text())
-        de = json.loads(self.DE_PATH.read_text())
+        en = json.loads(self.EN_PATH.read_text(encoding="utf-8"))
+        de = json.loads(self.DE_PATH.read_text(encoding="utf-8"))
         self.assertEqual(set(en), set(de), "translation key drift")
 
     def test_german_strings_actually_german(self) -> None:
-        de = json.loads(self.DE_PATH.read_text())
+        de = json.loads(self.DE_PATH.read_text(encoding="utf-8"))
         # A handful of keys we know should look German.
         self.assertIn("Übersicht", de["nav.dashboard"])
         self.assertIn("Einstellungen", de["nav.settings"])

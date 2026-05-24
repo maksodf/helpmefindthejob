@@ -108,7 +108,9 @@ class HttpAdminExtrasTests(unittest.TestCase):
             text=True,
         )
         cls.base = f"http://127.0.0.1:{cls.port}"
-        for _ in range(40):
+        # 100 × 0.1s = 10s wall-clock budget for macOS slow TCP-bind
+        # cycle (see test.yml head comment + test_app_smoke.py).
+        for _ in range(100):
             try:
                 with urlopen(f"{cls.base}/api/health", timeout=0.5) as response:
                     if response.getcode() == 200:
@@ -195,7 +197,7 @@ class HttpAdminExtrasTests(unittest.TestCase):
         self.assertEqual(payload["status"], "sent")
         # Verify outbox got the entry
         outbox = Path(self.tmp.name) / "email_outbox.log"
-        entries = [json.loads(line) for line in outbox.read_text().splitlines() if line.strip()]
+        entries = [json.loads(line) for line in outbox.read_text(encoding="utf-8").splitlines() if line.strip()]
         self.assertTrue(any(entry["to"] == "ops@example.com" for entry in entries))
         # Body of the test email must not leak HELPMEFINDTHEJOB_SMTP_PASSWORD or admin password
         for entry in entries:

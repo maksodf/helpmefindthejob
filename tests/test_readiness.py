@@ -191,8 +191,8 @@ class ReadinessTests(unittest.TestCase):
         ):
             report = self._build()
         # admin_audit is partial until the file exists; create it then re-check
-        (self.data_dir / "admin_audit.log").write_text("{}\n")
-        (self.data_dir / "scheduler.sqlite3").write_text("")
+        (self.data_dir / "admin_audit.log").write_text("{}\n", encoding="utf-8")
+        (self.data_dir / "scheduler.sqlite3").write_text("", encoding="utf-8")
         with env(
             HELPMEFINDTHEJOB_PUBLIC_URL="https://example.org",
             HELPMEFINDTHEJOB_EMAIL_BACKEND="smtp",

@@ -131,8 +131,8 @@ class GrantDemoEndToEndWalk(unittest.TestCase):
         ol = REPO_ROOT / "data" / "bias_comparative_cache" / "ollama.jsonl"
         if not ds.exists() or not ol.exists():
             self.skipTest("bias caches absent (only present after live run)")
-        ds_lines = ds.read_text().strip().splitlines()
-        ol_lines = ol.read_text().strip().splitlines()
+        ds_lines = ds.read_text(encoding="utf-8").strip().splitlines()
+        ol_lines = ol.read_text(encoding="utf-8").strip().splitlines()
         self.assertEqual(len(ds_lines), 70, "DeepSeek cache MUST cover 7×10 scenarios")
         self.assertEqual(len(ol_lines), 70, "Ollama cache MUST cover 7×10 scenarios")
 

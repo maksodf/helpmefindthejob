@@ -154,7 +154,7 @@ class HttpInvitesAndResetTests(unittest.TestCase):
     def _read_outbox(self) -> list[dict]:
         if not self.outbox.exists():
             return []
-        return [json.loads(line) for line in self.outbox.read_text().splitlines() if line.strip()]
+        return [json.loads(line) for line in self.outbox.read_text(encoding="utf-8").splitlines() if line.strip()]
 
     def _wait_for_email(self, to: str, *, attempts: int = 20) -> dict:
         for _ in range(attempts):

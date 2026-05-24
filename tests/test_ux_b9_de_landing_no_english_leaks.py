@@ -192,8 +192,8 @@ class DELandingNoEnglishLeaks(unittest.TestCase):
         )
 
     def test_i18n_dock_chat_keys_in_both_bundles(self) -> None:
-        en = json.loads((ROOT / "static" / "i18n" / "en.json").read_text())
-        de = json.loads((ROOT / "static" / "i18n" / "de.json").read_text())
+        en = json.loads((ROOT / "static" / "i18n" / "en.json").read_text(encoding="utf-8"))
+        de = json.loads((ROOT / "static" / "i18n" / "de.json").read_text(encoding="utf-8"))
         for key in ("dock.chat.placeholder", "dock.chat.form",
                     "dock.chat.input", "dock.chat.send"):
             with self.subTest(key=key):

@@ -583,7 +583,7 @@ def main() -> int:
             browser.close()
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(json.dumps(reports, indent=2, ensure_ascii=False))
+    out_path.write_text(json.dumps(reports, indent=2, ensure_ascii=False), encoding="utf-8")
     print(f"\n[agent] wrote report to {out_path}")
 
     # Print a compact final summary

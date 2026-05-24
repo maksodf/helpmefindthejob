@@ -129,7 +129,9 @@ class HttpPhase2Tests(unittest.TestCase):
             text=True,
         )
         cls.base = f"http://127.0.0.1:{cls.port}"
-        for _ in range(40):
+        # 100 × 0.1s = 10s wall-clock budget for macOS slow TCP-bind
+        # cycle (see test.yml head comment + test_app_smoke.py).
+        for _ in range(100):
             try:
                 with urlopen(f"{cls.base}/api/health", timeout=0.5) as response:
                     if response.getcode() == 200:
@@ -302,7 +304,7 @@ class HttpPhase2Tests(unittest.TestCase):
         self.assertEqual(payload["status"], "sent")
         outbox = Path(self.tmp.name) / "email_outbox.log"
         self.assertTrue(outbox.exists())
-        entries = [json.loads(line) for line in outbox.read_text().splitlines() if line.strip()]
+        entries = [json.loads(line) for line in outbox.read_text(encoding="utf-8").splitlines() if line.strip()]
         self.assertTrue(any("digest" in entry["subject"].casefold() for entry in entries))
 
     def test_billing_admin_only(self) -> None:

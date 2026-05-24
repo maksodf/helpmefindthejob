@@ -47,7 +47,7 @@ class EmailTransportTests(unittest.TestCase):
             )
             self.assertEqual(len(transport.outbox), 2)
             self.assertEqual(transport.last_for("USER@example.com").subject, "hello")
-            lines = outbox.read_text().splitlines()
+            lines = outbox.read_text(encoding="utf-8").splitlines()
             self.assertEqual(len(lines), 2)
             self.assertIn("hello", lines[0])
 

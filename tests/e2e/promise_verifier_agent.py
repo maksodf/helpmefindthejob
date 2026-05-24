@@ -716,7 +716,7 @@ def main() -> int:
 
     out_path = Path(os.environ.get("E2E_PROMISE_REPORT", "tests/e2e/promise_report.json"))
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(json.dumps([r.to_dict() for r in results], indent=2, ensure_ascii=False))
+    out_path.write_text(json.dumps([r.to_dict() for r in results], indent=2, ensure_ascii=False), encoding="utf-8")
     print(f"\n[promise-verifier] report → {out_path}")
 
     print("\n" + "=" * 70)

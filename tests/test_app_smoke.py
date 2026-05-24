@@ -51,7 +51,16 @@ class AppSmokeTests(unittest.TestCase):
             )
             try:
                 base = f"http://127.0.0.1:{port}"
-                for _ in range(40):
+                # 100 × 0.1s = 10 s wall-clock budget. Cross-platform CI:
+                # GitHub Actions macOS runners exhibit a slower TCP-bind
+                # cycle than the ubuntu-latest runners (the original
+                # range(40) = 4 s was tight enough that the macOS matrix
+                # entry intermittently failed in setUpClass per the
+                # test.yml head comment). The longer budget is safe — on
+                # a healthy boot the first iteration succeeds well under
+                # 1 s; the additional headroom only burns wall-clock when
+                # something has actually gone wrong.
+                for _ in range(100):
                     try:
                         with urlopen(f"{base}/api/health", timeout=0.5) as response:
                             health = json.loads(response.read().decode("utf-8"))
@@ -59,7 +68,7 @@ class AppSmokeTests(unittest.TestCase):
                     except OSError:
                         time.sleep(0.1)
                 else:
-                    self.fail("server did not start")
+                    self.fail(f"server did not start (waited 10s on port {port})")
 
                 self.assertEqual(health["status"], "ok")
                 with urlopen(f"{base}/", timeout=1) as response:

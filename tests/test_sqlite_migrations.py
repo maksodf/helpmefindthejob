@@ -56,9 +56,9 @@ class DiscoverMigrations(unittest.TestCase):
     def test_skips_non_sql_files(self):
         with TemporaryDirectory() as tmp:
             d = Path(tmp)
-            (d / "001_baseline.sql").write_text("-- baseline\n")
-            (d / "README.md").write_text("# notes\n")
-            (d / "002_foo.txt").write_text("not SQL\n")
+            (d / "001_baseline.sql").write_text("-- baseline\n", encoding="utf-8")
+            (d / "README.md").write_text("# notes\n", encoding="utf-8")
+            (d / "002_foo.txt").write_text("not SQL\n", encoding="utf-8")
             migrations = discover_migrations(d)
             self.assertEqual(len(migrations), 1)
             self.assertEqual(migrations[0].version, 1)
@@ -67,26 +67,26 @@ class DiscoverMigrations(unittest.TestCase):
     def test_skips_misnamed_sql_files(self):
         with TemporaryDirectory() as tmp:
             d = Path(tmp)
-            (d / "001_ok.sql").write_text("-- ok\n")
-            (d / "baseline.sql").write_text("-- missing number\n")
-            (d / "abc_bad.sql").write_text("-- non-numeric\n")
+            (d / "001_ok.sql").write_text("-- ok\n", encoding="utf-8")
+            (d / "baseline.sql").write_text("-- missing number\n", encoding="utf-8")
+            (d / "abc_bad.sql").write_text("-- non-numeric\n", encoding="utf-8")
             migrations = discover_migrations(d)
             self.assertEqual(len(migrations), 1)
 
     def test_sorts_by_version_number(self):
         with TemporaryDirectory() as tmp:
             d = Path(tmp)
-            (d / "002_second.sql").write_text("-- 2\n")
-            (d / "001_first.sql").write_text("-- 1\n")
-            (d / "003_third.sql").write_text("-- 3\n")
+            (d / "002_second.sql").write_text("-- 2\n", encoding="utf-8")
+            (d / "001_first.sql").write_text("-- 1\n", encoding="utf-8")
+            (d / "003_third.sql").write_text("-- 3\n", encoding="utf-8")
             migrations = discover_migrations(d)
             self.assertEqual([m.version for m in migrations], [1, 2, 3])
 
     def test_version_gap_raises(self):
         with TemporaryDirectory() as tmp:
             d = Path(tmp)
-            (d / "001_first.sql").write_text("-- 1\n")
-            (d / "003_third.sql").write_text("-- 3\n")  # gap at 2
+            (d / "001_first.sql").write_text("-- 1\n", encoding="utf-8")
+            (d / "003_third.sql").write_text("-- 3\n", encoding="utf-8")  # gap at 2
             with self.assertRaises(ValueError) as cm:
                 discover_migrations(d)
             self.assertIn("gap", str(cm.exception).lower())
@@ -116,9 +116,7 @@ class CurrentVersionAndSetVersion(unittest.TestCase):
 class RunMigrationsContract(unittest.TestCase):
     def _make_migrations(self, dir_path: Path, n: int = 2) -> None:
         for i in range(1, n + 1):
-            (dir_path / f"{i:03d}_step.sql").write_text(
-                f"CREATE TABLE IF NOT EXISTS step_{i} (id INTEGER PRIMARY KEY);\n"
-            )
+            (dir_path / f"{i:03d}_step.sql").write_text(f"CREATE TABLE IF NOT EXISTS step_{i} (id INTEGER PRIMARY KEY);\n", encoding="utf-8")
 
     def test_apply_to_fresh_db_runs_all_migrations(self):
         conn = sqlite3.connect(":memory:")
@@ -164,13 +162,9 @@ class RunMigrationsContract(unittest.TestCase):
         conn = sqlite3.connect(":memory:")
         with TemporaryDirectory() as tmp:
             d = Path(tmp)
-            (d / "001_good.sql").write_text(
-                "CREATE TABLE good (id INTEGER PRIMARY KEY);\n"
-            )
-            (d / "002_broken.sql").write_text(
-                "CREATE TABLE bad (id INTEGER PRIMARY KEY);\n"
-                "THIS IS NOT VALID SQL;\n"
-            )
+            (d / "001_good.sql").write_text("CREATE TABLE good (id INTEGER PRIMARY KEY);\n", encoding="utf-8")
+            (d / "002_broken.sql").write_text("CREATE TABLE bad (id INTEGER PRIMARY KEY);\n"
+                "THIS IS NOT VALID SQL;\n", encoding="utf-8")
             with self.assertRaises(sqlite3.Error):
                 run_migrations(conn, d)
         # After the failure, user_version is at 1 (the last
@@ -254,9 +248,9 @@ class LatestAvailableVersion(unittest.TestCase):
     def test_returns_highest_version(self):
         with TemporaryDirectory() as tmp:
             d = Path(tmp)
-            (d / "001_a.sql").write_text("-- a\n")
-            (d / "002_b.sql").write_text("-- b\n")
-            (d / "003_c.sql").write_text("-- c\n")
+            (d / "001_a.sql").write_text("-- a\n", encoding="utf-8")
+            (d / "002_b.sql").write_text("-- b\n", encoding="utf-8")
+            (d / "003_c.sql").write_text("-- c\n", encoding="utf-8")
             self.assertEqual(latest_available_version(d), 3)
 
 

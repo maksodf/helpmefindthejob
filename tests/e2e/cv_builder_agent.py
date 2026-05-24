@@ -370,7 +370,7 @@ def run() -> int:
 
     out_path = Path(os.environ.get("E2E_CV_REPORT", "tests/e2e/cv_builder_report.json"))
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(json.dumps(results, indent=2, ensure_ascii=False))
+    out_path.write_text(json.dumps(results, indent=2, ensure_ascii=False), encoding="utf-8")
 
     failed = [r for r in results if not r["ok"]]
     print("\n" + "=" * 70)

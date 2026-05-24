@@ -297,6 +297,78 @@ class PageQualityChecks(unittest.TestCase):
                 f"GAP-12: Permissions-Policy must lock down {forbidden}",
             )
 
+    # ─── Performance latency budgets (PlanTowardPerfection box 2.13.7) ───
+    #
+    # In addition to the per-page size budgets above, we enforce a p95
+    # response-time budget per endpoint. Each endpoint is measured
+    # over N iterations from the same in-process server fixture; the
+    # 95th-percentile wall-clock duration must stay under the budget.
+    #
+    # Budgets are intentionally generous — these are local-loopback
+    # CI runner numbers (no network latency, no real-world load), so
+    # the threshold catches catastrophic regression (handler newly
+    # doing synchronous I/O) rather than micro-optimisation drift.
+    # The actual real-world latency budget is measured post-deploy
+    # via Lighthouse + the UptimeRobot dashboard.
+
+    _LATENCY_BUDGETS_MS_P95 = {
+        "/api/health": 50,        # health check must be near-instant
+        "/": 250,                 # SPA shell load
+        "/privacy": 200,          # static legal page
+        "/impressum": 200,        # static legal page
+        "/help": 200,             # static help page
+        "/sitemap.xml": 150,      # sitemap is small + cacheable
+        "/.well-known/security.txt": 100,  # RFC 9116 surface
+    }
+
+    _LATENCY_ITERATIONS = 20  # enough for a stable p95
+
+    def _percentile(self, sorted_samples: list[float], p: float) -> float:
+        # Linear-interpolation percentile, suitable for small N.
+        if not sorted_samples:
+            return 0.0
+        if len(sorted_samples) == 1:
+            return sorted_samples[0]
+        k = (len(sorted_samples) - 1) * (p / 100.0)
+        f = int(k)
+        c = min(f + 1, len(sorted_samples) - 1)
+        if f == c:
+            return sorted_samples[f]
+        d0 = sorted_samples[f] * (c - k)
+        d1 = sorted_samples[c] * (k - f)
+        return d0 + d1
+
+    def test_p95_latency_within_budget_per_endpoint(self) -> None:
+        """PlanTowardPerfection box 2.13.7: enforce p95 latency
+        budget per endpoint. Fires if a regression makes the 95th-
+        percentile response time exceed the budget."""
+
+        for path, budget_ms in self._LATENCY_BUDGETS_MS_P95.items():
+            with self.subTest(path=path):
+                samples_ms: list[float] = []
+                for _ in range(self._LATENCY_ITERATIONS):
+                    t0 = time.perf_counter()
+                    status, _h, _body = self._get(path)
+                    t1 = time.perf_counter()
+                    self.assertEqual(
+                        status,
+                        200,
+                        f"{path} → {status} during latency probe",
+                    )
+                    samples_ms.append((t1 - t0) * 1000.0)
+                samples_ms.sort()
+                p50 = self._percentile(samples_ms, 50.0)
+                p95 = self._percentile(samples_ms, 95.0)
+                self.assertLess(
+                    p95,
+                    budget_ms,
+                    f"GAP-12 p95 latency: {path} p95={p95:.1f} ms (p50={p50:.1f} ms) "
+                    f"exceeds budget {budget_ms} ms over "
+                    f"{self._LATENCY_ITERATIONS} iterations. Either fix the "
+                    "regression or — with deliberate justification — raise the "
+                    "budget here.",
+                )
+
 
 if __name__ == "__main__":
     unittest.main()

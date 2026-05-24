@@ -93,7 +93,7 @@ class SignerPersistence(unittest.TestCase):
                 key_path, signer_did="did:web:test"
             )
             self.assertTrue(key_path.exists())
-            blob = json.loads(key_path.read_text())
+            blob = json.loads(key_path.read_text(encoding="utf-8"))
             self.assertEqual(blob["alg"], "Ed25519")
             self.assertTrue(blob["publicKeyMultibase"].startswith("z"))
             self.assertIn("BEGIN PRIVATE KEY", blob["privateKeyPkcs8Pem"])

@@ -64,7 +64,7 @@ class OptInGate(unittest.TestCase):
         self.assertTrue(wrote)
         self.assertTrue(log.path.exists())
         # File contents are JSONL — one event per line
-        lines = log.path.read_text().splitlines()
+        lines = log.path.read_text(encoding="utf-8").splitlines()
         self.assertEqual(len(lines), 1)
 
 

@@ -314,7 +314,7 @@ class CLIVerifier(unittest.TestCase):
         )
         with TemporaryDirectory() as tmp:
             path = Path(tmp) / "receipt.json"
-            path.write_text(json.dumps(receipt.to_dict()))
+            path.write_text(json.dumps(receipt.to_dict()), encoding="utf-8")
             salt_b64 = base64.b64encode(_TEST_SALT).decode("ascii")
             res = self._run_cli(path, salt_b64, expect_exit=0)
             self.assertIn("signature OK", res.stdout)
@@ -332,7 +332,7 @@ class CLIVerifier(unittest.TestCase):
         receipt["aiProvider"] = "tampered"
         with TemporaryDirectory() as tmp:
             path = Path(tmp) / "receipt.json"
-            path.write_text(json.dumps(receipt))
+            path.write_text(json.dumps(receipt), encoding="utf-8")
             salt_b64 = base64.b64encode(_TEST_SALT).decode("ascii")
             res = self._run_cli(path, salt_b64, expect_exit=1)
             self.assertIn("signature_mismatch", res.stderr)
@@ -349,7 +349,7 @@ class CLIVerifier(unittest.TestCase):
         )
         with TemporaryDirectory() as tmp:
             path = Path(tmp) / "receipt.json"
-            path.write_text(json.dumps(receipt.to_dict()))
+            path.write_text(json.dumps(receipt.to_dict()), encoding="utf-8")
             wrong_b64 = base64.b64encode(b"wrong-salt" + b"0" * 32).decode("ascii")
             res = self._run_cli(path, wrong_b64, expect_exit=1)
             self.assertIn("signature_mismatch", res.stderr)
