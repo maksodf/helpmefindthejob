@@ -234,3 +234,80 @@ A second run on 2026-05-21 layered cross-provider comparison on top of the synth
 
 - **2026-05-18**: methodology drafted as part of Week 2 task 2.8 of the NLnet NGI Zero Commons Fund grant sprint. Pre-deployment re-test framework drafted. First scheduled execution: Week 3 partner-NGO pilot.
 - **2026-05-24** (PlanTowardPerfection box 1.4.7): §8.1 added — cross-provider comparative results from the 2026-05-21 run (7 personas × 10 scenarios × 2 providers = 140 data points; per-persona mean scores deepseek vs ollama; top-spread disagreement summary; the 13.0% OOB rate carried forward from the 2026-05-19 polished cohort run with the honest-framing paragraph distinguishing OOB-rate-as-AI-output-quality-metric from user-visible-harm-rate). Cross-references the comparative report at `docs/grant/bias-comparative-report-2026-05-21.md` and the parser-layer defence at `tests/test_prompt_injection_vectors.py::V3JdIndirectInjection` so reviewers can see the chain from measurement to safety surface.
+
+---
+
+## 10. Bias-comparative-report v2 — methodology scaffold (PlanTowardPerfection box 2.10.1)
+
+The v2 re-run is gated on the search-quality fixes in Ceiling 2 §2.8 of `PlanTowardPerfection.MD` landing first (EURES real API integration, full ESCO taxonomy, multi-language ESCO lookup, smart provider routing, friction-aware result re-ranking). This section scaffolds the v2 methodology so a future agent re-running the bias panel knows the contract.
+
+### 10.1 What changes between v1 (current) and v2
+
+**v1 baseline** (`docs/grant/bias-comparative-report-2026-05-21.md`):
+
+- 7 personas × 10 scenarios × 2 providers (`deepseek`, `ollama`) = **140 data points**
+- 13.0 % AI-output OOB rate measured on the prior 2026-05-19 polished cohort (10 / 77)
+- Top-spread disagreement: 30 / 29 / 22 / 22 points on `olga` + `tobias` wrong-industry cells
+- Methodology: pin `build_auto_fit_prompt` (production prompt; per-criterion anchor scale + score-clamp parser); replay-only path checked into `data/bias_comparative_cache/`
+
+**v2 expansion target**:
+
+- 7 personas × **30** scenarios × **6** providers (`deepseek`, `ollama`, `openai`, `anthropic`, `gemini`, `openrouter`) = **1260 data points** (~9× v1 coverage)
+- Per-persona scenario set expanded from 10 to 30 to include the friction-class edge cases that the search-quality fixes are designed to handle (e.g., `aicha_anerkennungs_friendly_employer_specialty_match`, `yusuf_blue_card_lateral_engineering_with_relocation`, `olga_english_team_remote_eu_with_vhs_pairing`, `mahmoud_eq_pre_ausbildung_with_berufsschule`, `maria_aip_with_architektenkammer_in_flight`, `kaethe_wiedereinstieg_with_paired_mentor`, `tobias_civic_tech_with_volunteer_portfolio`)
+- OOB-rate target: **below 3 %** (down from 13.0 %). Achieved by: (a) per-criterion sub-score validation in the prompt builder, (b) score-clamp regex tightening to reject out-of-range integers earlier, (c) JD-friction-keyword corpus expansion so anchor-scale recognition rate goes up
+- Friction-aware result re-ranking (§2.8 deliverable) is exercised explicitly: for each persona, the top-5 surfaced scores after re-ranking should weight `SCORE_FRICTION_FIT` more heavily; v2 measures the delta vs v1
+
+### 10.2 New per-provider rows
+
+In addition to the deepseek + ollama rows already populated, v2 adds:
+
+| Provider | Live-key required? | Cost-cap budget | Notes |
+|---|---|---|---|
+| openai | Yes (`OPENAI_API_KEY`) | €5.00 per full run | First-class API; expect lowest OOB rate |
+| anthropic | Yes (`ANTHROPIC_API_KEY`) | €8.00 per full run | Claude family; expect best per-criterion reasoning |
+| gemini | Yes (`GEMINI_API_KEY`) | €3.00 per full run | Lower cost; expect higher OOB rate (Gemini follows JSON-output rules less rigidly per the AI Provider Honesty Matrix) |
+| openrouter | Yes (`OPENROUTER_API_KEY`) | varies — routes to whichever model the operator pins | Use it as the BYO-many-providers shim |
+
+The other two BYO-AI providers in the catalogue (`codex_cli`, `claude_code`) are local-CLI shims, not network APIs; v2 exercises them via subprocess-mocked tests rather than a full bias panel run (their behaviour is the user's local CLI behaviour, not a provider-comparable measurement).
+
+### 10.3 Reproducibility recipe
+
+```bash
+# Pre-flight: confirm the search-quality fixes have landed
+python3 -m unittest discover -s tests -t . -k 'test_search_quality' -v
+# Expected: all green (otherwise v2 measurements would compare against
+# a moving target). If any fail, the v2 run is premature.
+
+# Cache-only replay first (no API calls)
+python3 -m scripts.bias_comparative_report \
+  --version v2 \
+  --replay-only \
+  --providers deepseek,ollama,openai,anthropic,gemini,openrouter \
+  --output docs/grant/bias-comparative-report-v2-<YYYY-MM-DD>.md
+
+# If cache is incomplete, populate live with cost-cap enforcement
+python3 -m scripts.bias_comparative_report \
+  --version v2 \
+  --live \
+  --cost-cap-eur-per-provider deepseek=2,ollama=0,openai=5,anthropic=8,gemini=3,openrouter=3 \
+  --abort-on-cap-breach
+```
+
+### 10.4 Acceptance criteria
+
+The v2 report is acceptance-ready when:
+
+- All 1260 data points have a parser-validated score in [0, 100] OR a documented OOB reason (the < 3 % target is on the OOB-but-clamped class, not the rejected-by-parser class).
+- The per-persona mean spread between providers does NOT widen vs v1 (i.e., the search-quality fixes don't introduce new disagreement); spreads can shrink (a good outcome).
+- Every friction-class anchor-scale band has at least one verified hit (so the per-persona Anerkennungs-friendly / Blue-Card-aware / Wiedereinstiegs-mentor / civic-tech-Quereinsteiger detection is empirically exercised, not just declared).
+- The full diff vs v1 is rendered as a per-persona × per-provider delta table; rows with > 10-point swings get a one-line maintainer-narrative explaining whether the swing is "search-quality-fix improvement" or "regression" or "model-vendor drift between v1 and v2 dates".
+
+### 10.5 Honest framing for the report
+
+v2 should retain the v1 honesty-discipline framing:
+
+- "OOB rate" is the AI-output-quality metric, NOT the user-visible-harm metric (the parser-layer score-clamp catches OOB outputs before they reach the user).
+- "Top-spread disagreement" is the cross-provider divergence metric, which informs deployer provider-choice but is not itself a "failure" (both providers may be defensibly scoring the same scenario differently).
+- "Mean per-persona score" is sensitive to scenario-corpus design — expansion to 30 scenarios per persona means v2 means are NOT directly comparable to v1 means (different denominators); the report calls this out explicitly.
+
+This methodology section is the contract; the v2 execution is the deliverable. Until v2 runs, v1 stands as the authoritative cross-provider measurement.

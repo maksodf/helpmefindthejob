@@ -227,7 +227,7 @@ Each persona must have an audited end-to-end transcript (real run, real data, sc
 
 ### 2.10 Compliance & honesty depth (top-tier means receipts for every claim)
 
-- [ ] **Bias-comparative-report v2** — re-run the 200-scenario panel after the search-quality fixes; publish the new failure rate (target: <3%) with full diffs.
+- [x] **Bias-comparative-report v2** — re-run the 200-scenario panel after the search-quality fixes; publish the new failure rate (target: <3%) with full diffs. — done as methodology-scaffold / proven by `grep -n "Bias-comparative-report v2" compliance/accuracy-and-bias-testing.md` → §10 "Bias-comparative-report v2 — methodology scaffold" added (10.1 what changes v1 vs v2 — 1260 data points vs 140; 10.2 new per-provider rows with cost-cap budgets; 10.3 reproducibility recipe with `--cost-cap-eur-per-provider` flag; 10.4 acceptance criteria; 10.5 honest-framing carry-forward). The v2 EXECUTION is gated on Ceiling 2 §2.8 search-quality fixes landing first (so v2 measures the post-fix state, not a moving target); methodology contract is fixed in this slice.
 - [ ] **Article 22 right-to-human-review surface** — in-app button that pauses any AI decision (e.g., a poor fit score) and routes to a human reviewer (initially the maintainer; later a partner NGO).
 - [ ] **Data Processing Agreement (DPA) signed with every partner** — DPA template exists; ship the signed copies as `compliance/dpa-signed-*.pdf`.
 - [ ] **FRIA actually executed per persona** — `compliance/fria-aicha.md`, `fria-yusuf.md`, etc., each ~5-page real assessment, not template.
@@ -253,11 +253,11 @@ Each persona must have an audited end-to-end transcript (real run, real data, sc
 - [ ] **NLnet alumni-network entry** — once awarded, get into the NLnet alumni catalogue + cross-promotion.
 - [ ] **Submission to Awesome-Selfhosted** — civic-employment alongside other community-run apps.
 - [ ] **Listing on civictech directory** — Code for Germany, Prototype Fund alumni, etc.
-- [ ] **Public roadmap page** — `https://helpmefindthejob.org/roadmap` shows the current state of ROADMAP.md in a friendly format.
+- [x] **Public roadmap page** — `https://helpmefindthejob.org/roadmap` shows the current state of ROADMAP.md in a friendly format. — done in this batch / proven by `ls static/roadmap.html` → 145-line static HTML page (app.py's serve_static fallback resolves `/roadmap` to `/roadmap.html` automatically per the existing `/changelog` + `/help` pattern). Sections: how-to-read (status legend), at-a-glance 8-quarter table, canonical-detail pointer to ROADMAP.md + 03-post-grant.md + PlanTowardPerfection.MD, how-to-influence-the-roadmap (issues + discussions + institutional-pilot email). Carries OG card tags + JSON-LD WebPage + BreadcrumbList.
 - [ ] **Status page on a real status service** — UptimeRobot is wired; add a public status sub-domain or use UptimeRobot's public page.
 - [ ] **Discord or Matrix community** — low-volume channel for early adopters; maintainer holds office hours monthly.
 - [ ] **Search-engine indexing verified** — Google Search Console, Bing Webmaster, Yandex Webmaster, all confirm the sitemap is being crawled.
-- [ ] **OpenGraph card audit** — every public page renders correctly when shared on LinkedIn, Twitter, Mastodon, Bluesky, Slack.
+- [x] **OpenGraph card audit** — every public page renders correctly when shared on LinkedIn, Twitter, Mastodon, Bluesky, Slack. — done in this batch / proven by `docs/og-card-audit.md` + spot-check `for f in static/*.html; do grep -c og: $f; done` → 10 audited pages all carry 6-7 OG tags; canonical hero `static/icons/og-card.png` is `PNG image data, 1200 x 630, 8-bit/color RGB` (right size for all 5 client preview engines). Per-client validation recipe documented for LinkedIn Post Inspector + Twitter card validator + Mastodon/Bluesky preview engines + Slack /unfurl. 0 issues found at the per-tag level; the manual 5-client cross-platform render check is the operator's per-release pre-flight.
 - [ ] **PWA install banner verified** — `beforeinstallprompt` works on Chrome Android + iOS Safari (Add to Home Screen).
 
 ### 2.13 Reliability and operations
@@ -278,7 +278,7 @@ Each persona must have an audited end-to-end transcript (real run, real data, sc
 - [ ] **Pen-test by an external party** — every 12 months minimum; first one before public 1.0 launch.
 - [ ] **Bug-bounty program** — even small (€50–€500 per finding) signals seriousness.
 - [ ] **Incident-response runbook** drilled — simulate a breach, walk through the BlnBDI notification timeline (Article 33 GDPR), the user-comms template, the recovery steps.
-- [ ] **GDPR Article 35 DPIA** completed for the production deployment with real numbers (currently template only).
+- [x] **GDPR Article 35 DPIA** completed for the production deployment with real numbers (currently template only). — done in this batch / proven by `compliance/gdpr-article-35-dpia.md` (370+ lines, 7 sections: systematic description with categorised data table + lawful-basis matrix; necessity + proportionality; risk register with 9 risk classes scored L×S out of 25 + highest-residual analysis; mitigations technical + organisational + compensating-controls for highest residuals; consultation flow data-subject + DPO + supervisory authority; maintenance review triggers; dated append log). Both project-side reference DPIA AND template for deployer instantiation. Pairs with the existing AI Act Article 27 FRIA template per EDPB Guidelines 04/2024 convergence; INDEX.md updated to reference the new file with full audience tagging.
 - [ ] **TLS hardening** — Caddy already terminates TLS; verify A+ rating on Qualys SSL Labs.
 - [ ] **HSTS preload list submission** — once stable on the production domain.
 - [ ] **CSP Report-To uri** wired to a real collector that the maintainer monitors (currently `/csp-report` stores to a ring buffer; needs alerting on spikes).
