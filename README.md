@@ -361,8 +361,11 @@ sustainability model) at [`docs/grant/03-post-grant.md`](docs/grant/03-post-gran
 - **Documentation site**: published via mkdocs-material to GitHub Pages
   (transitions to [`helpmefindthejob.org`](https://helpmefindthejob.org/)
   when the maintainer wires the CNAME).
-- **Public demo**: lands at `demo.helpmefindthejob.org` with the
-  seven-persona panel pre-seeded — pending maintainer DNS.
+- **Public demo**: live at [`demo.helpmefindthejob.org`](https://demo.helpmefindthejob.org/),
+  pre-seeded with the seven-persona panel. Registration is closed; log in with any
+  persona, e.g. `aicha@demo.helpmefindthejob.org` / `ExploreDemo2026` (also yusuf, olga,
+  mahmoud, maria, kaethe, tobias — same password). Shared sandbox; don't enter real
+  personal data.
 
 ## Why this exists
 

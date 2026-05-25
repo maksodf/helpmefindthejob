@@ -73,8 +73,8 @@ Until that activation: `https://github.com/maksodf/helpmefindthejob`
 (canonical source repository).
 
 **Live deployments**:
-- Public apex: [`https://helpmefindthejob.org`](https://helpmefindthejob.org/) — open public registration; the same code reviewers see in the repository.
-- Demo subdomain: [`https://demo.helpmefindthejob.org`](https://demo.helpmefindthejob.org/) — seeded with the seven canonical personas as read-only accounts (Aïcha, Yusuf, Olga, Mahmoud, Maria, Käthe, Tobias; shared password printed on the demo landing); accounts reset nightly so reviewer interactions never persist. DNS is being configured by the maintainer; until live, the apex above is the same code with a fresh-registration flow.
+- Public apex: [`https://helpmefindthejob.org`](https://helpmefindthejob.org/) — the same code reviewers see in the repository. Public registration is closed on this hosted instance (pre-launch); the full sign-up flow is exercised by self-hosting.
+- Demo subdomain: [`https://demo.helpmefindthejob.org`](https://demo.helpmefindthejob.org/) — live, seeded with the seven canonical personas as writable sandbox accounts (Aïcha, Yusuf, Olga, Mahmoud, Maria, Käthe, Tobias). Registration is closed; reviewers log in with any persona, e.g. `aicha@demo.helpmefindthejob.org` / `ExploreDemo2026` (shared demo password, also shown on the demo landing). Shared sandbox — the maintainer may reset accounts at any time.
 - Seed-personas recipe: [`scripts/seed-personas.py`](https://github.com/maksodf/helpmefindthejob/blob/main/scripts/seed-personas.py) reproduces the demo state on any self-hosted instance.
 
 ---
