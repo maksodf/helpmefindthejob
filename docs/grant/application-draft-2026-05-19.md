@@ -348,6 +348,16 @@ the **frugal-by-default** posture per Decision 10 — €37k is
 below the €50k first-proposal cap and reflects the genuine cost
 of the delivered work.
 
+**Rate basis (explicit)**: one solo maintainer-developer — no
+employees, no overhead/F&A, no per-seat or hardware costs.
+Blended labour rate **€60/hour**, well below EU commercial
+senior-developer rates. €37,000 ≈ **617 developer-hours**,
+distributed across the six milestones in proportion to the
+amounts above: M1 ~67h, M2 ~133h, M3 ~167h, M4 ~100h, M5 ~83h,
+M6 ~67h. No hardware purchase (existing equipment + an existing
+low-cost VM); no travel budgeted (any NGI/standards-meeting
+travel requested separately only if relevant).
+
 ---
 
 ## Field 13 — Other funding sources (optional)
@@ -426,40 +436,75 @@ CV-tailoring, or institutional-deployer compliance.
 
 ## Field 15 — Technical challenges (optional)
 
-Three categories of technical challenge anticipated for the
-remaining Phase 1 work + early Phase 2:
+We expect significant technical challenges in seven areas across
+remaining Phase 1 and early Phase 2. Most are partially solved;
+the honest framing below is which parts remain.
 
-**(1) Bias-testing methodology coverage**. The existing three
-dated bias-testing reports (`docs/grant/bias-testing-2026-05-*.md`)
-cover 33.3% of the methodology surface (2 of 6 scenario classes:
-scoring + CV-tailoring). The remaining four classes (onboarding,
-discovery, motivation-letter drafting, skill-gap brief) are
-sequenced for post-grant dated reports. The challenge is doing
-them well at the same honesty discipline — no tolerance
-manipulation — rather than executing them at all.
+**(1) AI safety on untrusted content.** Job descriptions, CVs and
+scraped career-page HTML are untrusted input fed to an LLM, so
+prompt injection and data exfiltration are real risks. We defend
+the pipeline with strict delimiting, output validation, and a
+documented 10-vector prompt-injection test suite
+(`compliance/prompt-injection-testing.md`,
+`tests/test_prompt_injection_*`). Hardening the remaining vectors
+and keeping the defence current across providers is ongoing.
 
-**(2) Cross-industry over-generalisation in fit-scoring**. The
-2026-05-18-polish run surfaced a prompt-phrasing sensitivity:
-the same persona-against-same-target-industry scenario scored
-in-band with explicit industry-jargon (Maria → Logistics
-Coordinator: 5/100) and over-band with generic phrasing (80/100,
-Δ +20 above tolerance ceiling). The 2026-05-19 prompt-enhancement
-run + cross-industry probe verdict (ONE-OFF across 7 personas)
-reclassified this as prompt-phrasing-sensitive, not systematic
-bias — but the underlying scoring sensitivity is a real product
-question. Phase 1 closes the methodology gap (`build_cv_tailoring_prompt`
-enhanced); Phase 2 probably needs per-criterion scoring
-breakdown rather than holistic scoring (the R4 entry in
-`compliance/risk-management-plan.md`).
+**(2) Fairness and accuracy of fit-scoring across friction
+classes.** The hardest correctness problem: an AI fit-score must
+not disadvantage a migrant nurse, a returning parent, or a career
+changer, and no automated final employment decision is ever made
+(AI Act high-risk concern). The cross-provider panel currently
+shows a ~10–13% out-of-band/disagreement rate. The bias-testing
+methodology covers 2 of 6 scenario classes (scoring +
+CV-tailoring, ~33%); the remaining four (onboarding, discovery,
+motivation-letter, skill-gap brief) are sequenced for dated
+post-grant reports — the challenge is executing them at the same
+honesty discipline (no tolerance manipulation). A known
+prompt-phrasing sensitivity (e.g. Maria → Logistics Coordinator
+scoring 5/100 with industry jargon vs 80/100 with generic
+phrasing) was reclassified as prompt-sensitive, not systematic
+bias; Phase 2 likely needs per-criterion rather than holistic
+scoring (R4 in `compliance/risk-management-plan.md`).
 
-**(3) Cross-civic-agent composition latency**. The MCP catalogue
-is JSON-Schema gated + the housing-agent integration is currently
-a mock stub per Decision 20 + Decision 11. When a real partner
-agent comes online (Option B path), the composition latency
-budget needs measurement — sequential handoff vs profile-shared
-composition vs orchestrated agent invocation each have different
-UX consequences for a user navigating a multi-domain civic
-journey. Phase 2 work.
+**(3) One workflow over heterogeneous, replaceable AI.** BYO-AI
+must work across OpenAI, Anthropic, Gemini, DeepSeek, OpenRouter
+and local Ollama, plus a deterministic no-AI fallback, with
+per-user cost caps and graceful degradation — abstracting very
+different APIs, latencies and quality behind one contract without
+locking users to a vendor.
+
+**(4) European standards interop at scale.** Full ESCO (~3,000
+occupations, ~13,500 skills, 27 languages, ~80 MB) with fast
+multilingual lookup, plus EURES-compatible export and schema.org
+JobPosting mapping over heterogeneous sources. Phase 1 ships a
+curated subset; the full build-time ingest + indexing is the
+Phase 2 scaling challenge.
+
+**(5) Composable, consent-bound civic infrastructure.** Exposing
+employment functions as versioned MCP tools that other civic
+agents (housing, residency, education) can compose with — every
+cross-agent profile share consent-bound and audit-logged, the
+tool contract versioning cleanly so clients degrade gracefully.
+The housing-agent integration is a mock stub today (Decision
+20/11); when a real partner agent comes online (Option B), the
+composition-latency budget needs measurement — sequential
+handoff vs profile-shared vs orchestrated invocation each have
+different UX consequences for a multi-domain civic journey
+(Phase 2).
+
+**(6) Verifiable trust + self-hosting for non-technical
+operators.** Tamper-evident (HMAC-chained) audit logs that
+survive restarts, encryption-at-rest with key rotation, and GDPR
+data-subject flows (export/delete/Article 22) — built in, not
+bolted on. Plus a deployment a Beratungsstelle can run without a
+dev team: reproducible Nix build, broad-platform install (the
+cryptography-wheel problem), fresh-clone CI.
+
+**(7) Accessibility on a dynamic, multilingual, chat-first UI.**
+WCAG 2.2 AA on a conversational SPA, screen-reader support for
+the dock/journey flow, and RTL for Arabic — harder than
+static-page a11y — while preserving German bureaucratic terms
+(Anerkennung, §16d) untranslated across locales.
 
 ---
 
@@ -682,7 +727,11 @@ Optional (skip if it adds bulk without adding evidence):
 
 > Claude (Anthropic) was used during the 4-week pre-submission
 > sprint to help draft documentation, accelerate code-review,
-> author tests, and structure the application package. Every
+> author tests, and structure the application package. OpenAI
+> Codex / GPT-5 (via ChatGPT/Codex) was additionally used on
+> 24–25 May 2026 to compare the project against existing
+> services, shorten application-field answers, and check that
+> claims were framed cautiously and tied to evidence. Every
 > substantive technical decision, every numerical claim, every
 > persona detail, every institutional positioning judgement was
 > made by the human maintainer; the LLM accelerated drafting and
