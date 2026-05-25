@@ -15,6 +15,8 @@ COPY app.py mcp_server.py ./
 COPY company_discovery ./company_discovery
 COPY static ./static
 COPY docs ./docs
+# demo/persona seeding entry point (ops) — imports company_discovery + app, both above
+COPY scripts/seed-personas.py ./scripts/seed-personas.py
 
 RUN mkdir -p /app/data
 
