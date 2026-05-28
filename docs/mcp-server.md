@@ -10,7 +10,7 @@
 
 `mcp_server.py` is a [Model Context Protocol](https://modelcontextprotocol.io) server that exposes Helpmefindthejob's civic-employment capabilities as a small, well-documented tool catalogue. It is the project's **composition surface**: other open civic agents (housing, healthcare, residency, education) can call Helpmefindthejob via the same protocol used by any MCP-aware client (Claude Desktop, Cursor, Continue, Cline, custom JSON-RPC clients), without forking either project.
 
-The current catalogue exposes **eight tools** (Week 1 baseline). Week 2 §2.3 in [`docs/grant/02-execution-plan.md`](grant/02-execution-plan.md) expands the catalogue to thirteen by adding five composition-oriented tools (`get_user_profile_for_consent`, `propose_referral`, `query_esco_skill`, `export_eures_compatible`, `record_user_outcome`).
+The current catalogue exposes **fifteen tools**, including the composition-oriented tools (`get_user_profile_for_consent`, `propose_referral`, `list_referrals`, `update_referral_status`, `query_esco_skill`, `export_eures_compatible`, `record_user_outcome`) that let other open civic agents discover, refer, and hand off work.
 
 ## Protocol surface
 
@@ -19,7 +19,7 @@ The current catalogue exposes **eight tools** (Week 1 baseline). Week 2 §2.3 in
 | Transport | JSON-RPC 2.0 over stdio |
 | MCP `protocolVersion` | `2024-11-05` |
 | `serverInfo.name` | `helpmefindthejob` |
-| `serverInfo.version` | `0.1.0` (catalogue SemVer; see versioning policy below) |
+| `serverInfo.version` | `0.2.0` (catalogue SemVer; see versioning policy below) |
 | Capabilities advertised | `{"tools": {}}` |
 | Source | [`mcp_server.py`](https://github.com/maksodf/helpmefindthejob/blob/main/mcp_server.py) (top-level entry point) |
 | Tool implementations | [`company_discovery/mcp_tools.py`](https://github.com/maksodf/helpmefindthejob/blob/main/company_discovery/mcp_tools.py) |
@@ -59,7 +59,7 @@ The tool catalogue follows [Semantic Versioning](https://semver.org/) independen
 
 The MCP `protocolVersion` advertised in the `initialize` response is pinned to the version the server has been tested against (currently `2024-11-05`). Upgrading to a newer MCP protocol version is a MAJOR change to the catalogue.
 
-When `/mcp/version` and `/mcp/schemas.json` HTTP endpoints land (planned in §2.2 follow-up), the catalogue version and the full schema set will be reachable without spawning the stdio process.
+The `/mcp/version` and `/mcp/schemas.json` HTTP endpoints expose the catalogue version and the full schema set without spawning the stdio process.
 
 ### Per-tool versioning (since v0.80.0)
 
@@ -81,7 +81,7 @@ Tool-version policy:
 - A client targeting an older per-tool version that has since been bumped MAJOR should refuse to call the tool until the client is updated — graceful downgrade behaviour described per-client in [`docs/mcp-integration-guide.md`](mcp-integration-guide.md).
 - The contract is locked in by `tests/test_mcp_tool_schema_versioning.py` (5 tests: every tool has a version, every version is SemVer-shaped, the v0.2.0 baseline is pinned, the catalogue size of 15 tools is pinned, every tool keeps name + description + inputSchema + version as required keys).
 
-## The 8-tool catalogue (current)
+## The 15-tool catalogue (current)
 
 Each tool's full JSON `inputSchema` is the canonical definition in [`company_discovery/mcp_tools.py`](https://github.com/maksodf/helpmefindthejob/blob/main/company_discovery/mcp_tools.py). This table summarises the required-fields surface and the standards alignment per tool; consult the source for the complete property list and types.
 
@@ -95,6 +95,13 @@ Each tool's full JSON `inputSchema` is the canonical definition in [`company_dis
 | 6 | `import_discovered_job` | `userId`, `discoveredJobId` | Persist a discovered job into the user's queue | schema.org JobPosting |
 | 7 | `deduplicate_discovered_jobs` | `userId` | Identify and merge duplicate job records | — |
 | 8 | `get_company_watchlist_summary` | `userId` | Return the user's watchlist with recent activity | — |
+| 9 | `query_esco_skill` | `query` | Look up ESCO skill/occupation codes by free-text query (cross-agent shared taxonomy) | ESCO |
+| 10 | `export_eures_compatible` | `userId`, `discoveredJobId` | Export a stored job in EURES-compatible schema fields for cross-deployment interoperability | EURES, schema.org JobPosting |
+| 11 | `get_user_profile_for_consent` | `userId`, `scopes` | Return the user's portable civic profile (consented subset) for other civic agents to read | — |
+| 12 | `propose_referral` | `userId`, `targetAgent`, `reason` | Emit a structured referral to another open civic agent; the user retains the choice | — |
+| 13 | `list_referrals` | `userId` | List referrals issued for a user (optional status filter) | — |
+| 14 | `update_referral_status` | `userId`, `referralId`, `status` | Advance a referral's lifecycle status (proposed → accepted → followed_up, …) | — |
+| 15 | `record_user_outcome` | `userId`, `jobId`, `outcomeType` | Persist an append-only outcome event (applied / replied / interviewing / offer / rejected / withdrawn) | — |
 
 Optional input fields per tool (full list in the source): `add_company_to_watchlist` accepts `careerPageUrl`, `sector`, `notes`, `watchEnabled`; `scan_company_career_page` accepts `careerPageUrl`; `suggest_relevant_companies` accepts `location`.
 
@@ -102,11 +109,11 @@ Optional input fields per tool (full list in the source): `add_company_to_watchl
 
 See [`docs/grant/09-mcp-composition.md`](grant/09-mcp-composition.md) for the full spec. Summary:
 
-1. **Sequential handoff** — agent A identifies an out-of-scope question, calls `propose_referral` on agent B, presents the structured referral to the user, hands over on consent. **Lowest coupling**: each agent runs independently; the only shared surface is the referral protocol. **Available** with the §2.3 catalogue expansion.
-2. **Profile-shared composition** — multiple agents in the same deployment read the user's portable civic profile via `get_user_profile_for_consent` (with explicit consent). **Medium coupling**: shared profile schema; both agents trust the same persistence layer. **Available** with the §2.3 catalogue expansion.
+1. **Sequential handoff** — agent A identifies an out-of-scope question, calls `propose_referral` on agent B, presents the structured referral to the user, hands over on consent. **Lowest coupling**: each agent runs independently; the only shared surface is the referral protocol. **Available** now.
+2. **Profile-shared composition** — multiple agents in the same deployment read the user's portable civic profile via `get_user_profile_for_consent` (with explicit consent). **Medium coupling**: shared profile schema; both agents trust the same persistence layer. **Available** now.
 3. **Orchestrated multi-agent conversation** — a meta-orchestrator routes a single conversation between multiple agents. **Highest coupling**, **Phase 2+ scope**.
 
-The §2.5 reference integration with an open housing agent demonstrates pattern 1 end-to-end and ships under [`examples/housing-agent-integration/`](https://github.com/maksodf/helpmefindthejob/tree/main/examples/) (lands Week 2 §2.5).
+A reference integration with an open housing agent demonstrates pattern 1 and ships under [`examples/housing-stub-client/`](https://github.com/maksodf/helpmefindthejob/tree/main/examples/housing-stub-client).
 
 ## Example client invocations
 

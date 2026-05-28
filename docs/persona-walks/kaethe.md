@@ -53,7 +53,7 @@ Mark-applied + the Wiedereinstiegs-course completion-date countdown shown alongs
 - **Wiedereinstiegs-employer dataset** is hand-curated for Munich + Bavaria; scaling beyond requires additional sources from regional Wohlfahrtsverbände returner networks.
 - **Part-time-shift filtering** is a JD-keyword scan; many roles are advertised full-time but the employer is open to part-time if asked — the system doesn't yet surface "open to part-time conversation" cues.
 - **Pflegeakademie / refresher-course catalogue** — Käthe must source her refresher course herself; the credentials-currency module (Section 2.6) is the long-term home for this.
-- **2026-format CV conventions** — the cv_builder uses a single CV template; persona-specific templates (e.g., a Wiedereinsteigerin-formatted CV emphasising the structured gap-explanation) are a Section 2.9 (Premium operator UX) deliverable.
+- **2026-format CV conventions** — the cv_builder uses a single CV template; persona-specific templates (e.g., a Wiedereinsteigerin-formatted CV emphasising the structured gap-explanation) are a Section 2.9 (advanced operator UX) deliverable.
 
 ---
 

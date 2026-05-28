@@ -7,7 +7,7 @@
 [![Fresh-clone install](https://github.com/maksodf/helpmefindthejob/actions/workflows/fresh-clone-install.yml/badge.svg?branch=main)](https://github.com/maksodf/helpmefindthejob/actions/workflows/fresh-clone-install.yml)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/maksodf/helpmefindthejob/badge)](https://securityscorecards.dev/viewer/?uri=github.com/maksodf/helpmefindthejob)
 [![codecov](https://codecov.io/gh/maksodf/helpmefindthejob/branch/main/graph/badge.svg)](https://codecov.io/gh/maksodf/helpmefindthejob)
-[![Release](https://img.shields.io/badge/release-v0.1.0-blue.svg)](https://github.com/maksodf/helpmefindthejob/releases)
+[![Release](https://img.shields.io/badge/release-v0.80.0-blue.svg)](https://github.com/maksodf/helpmefindthejob/releases)
 [![Languages](https://img.shields.io/badge/languages-EN%20%2B%20DE-informational.svg)](static/i18n/)
 [![MCP](https://img.shields.io/badge/MCP-2024--11--05-blueviolet.svg)](https://modelcontextprotocol.io)
 [![Docs](https://github.com/maksodf/helpmefindthejob/actions/workflows/docs-publish.yml/badge.svg?branch=main)](https://maksodf.github.io/helpmefindthejob/)
@@ -52,9 +52,9 @@ non-profit institutions across the EU can adopt, fork, and self-host
 without licence friction. See [`docs/grant/`](docs/grant/) for the full
 strategic context.
 
-**Status**: v0.1.0 — first stable pre-publication tag shipped 2026-05-18
-([`docs/releases/v0.1.0.md`](docs/releases/v0.1.0.md), cosign-signed
-+ CycloneDX SBOM). Public demo deployment at
+**Status**: v0.80.0 — current release (cosign-signed + CycloneDX SBOM,
+[`docs/releases/v0.80.0.md`](docs/releases/v0.80.0.md)); v0.1.0 was the
+first stable pre-publication tag (2026-05-18). Public demo deployment at
 [`demo.helpmefindthejob.org`](https://demo.helpmefindthejob.org/)
 serves the seven canonical personas as pre-seeded read-only accounts
 (Aïcha, Yusuf, Olga, Mahmoud, Maria, Käthe, Tobias — shared password
@@ -308,7 +308,7 @@ A quarterly roadmap with milestones for **2026 Q3 → 2028 Q2** lives at
 [`ROADMAP.md`](ROADMAP.md). At a glance:
 
 - **2026 Q3** — grant-sprint completion + first stable release
-  (v0.1.0 shipped 2026-05-18). Commons Conservancy application
+  (v0.80.0 current; v0.1.0 first stable tag 2026-05-18). Commons Conservancy application
   submitted; NLnet NGI Zero Commons Fund application submitted by
   end of Week 4.
 - **2026 Q4** — Arabic as the third UI language; first NGO pilot
@@ -350,7 +350,7 @@ sustainability model) at [`docs/grant/03-post-grant.md`](docs/grant/03-post-gran
 - [`docs/esco-integration.md`](docs/esco-integration.md) — ESCO + EURES
   integration reference.
 - [`docs/releases/`](docs/releases/) — version-controlled release
-  notes (`docs/releases/v0.1.0.md` for the current release).
+  notes (`docs/releases/v0.80.0.md` for the current release).
 - [`CONTRIBUTING.md`](CONTRIBUTING.md) — how to contribute.
 - [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) — Contributor Covenant 2.1.
 - [`SECURITY.md`](SECURITY.md) — private vulnerability disclosure.

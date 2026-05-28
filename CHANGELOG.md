@@ -1053,14 +1053,13 @@ to The Commons Conservancy pending, EU AI Act compliant by design.
 
 ---
 
-## [0.0.x] — pre-2026-05-17 (pre-sprint, commercial product)
+## [0.0.x] — pre-2026-05-17 (pre-sprint)
 
-The codebase pre-dates the grant-readiness sprint as a self-hosted
-commercial product with a Pro/Free tier (see Round 1–21 in the
-Git log). The active project direction shifted to a **civic-employment
-commons** at the start of the four-week sprint; the sanitisation pass
-in Week 1 task 1.4 cleared the commercial-vision residue from the
-working tree.
+The codebase pre-dates the grant-readiness sprint as an earlier
+self-hosted prototype. The project direction was set to an open-source
+**civic-employment commons** at the start of the four-week sprint, and
+the Week 1 sanitisation pass aligned the working tree with that
+positioning.
 
 The full pre-sprint history is preserved in the Git log (no
 history rewrite was performed — see Decision 12 in

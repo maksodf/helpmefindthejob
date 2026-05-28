@@ -68,11 +68,6 @@ You'll need real values for these (template at
 - `HELPMEFINDTHEJOB_POSTHOG_KEY` + `HELPMEFINDTHEJOB_POSTHOG_HOST` (events; EU host by default)
 - `HELPMEFINDTHEJOB_COST_METRICS=true` (8-mechanism doctrine measurement)
 
-**Optional billing** (Stripe — only if you're charging):
-
-- `HELPMEFINDTHEJOB_BILLING_BACKEND=stripe`
-- `HELPMEFINDTHEJOB_STRIPE_API_KEY` + `STRIPE_WEBHOOK_SECRET` + price IDs
-
 ---
 
 ## Phase 1 — Server prep (15 minutes, on the host)

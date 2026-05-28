@@ -64,10 +64,9 @@ flowchart TB
 
     %% Cross-cutting
     subgraph "Cross-cutting"
-        I18n["i18n bundles<br/><code>static/i18n/en.json</code><br/><code>static/i18n/de.json</code><br/><em>EN + DE shipped, 519-key parity</em>"]
-        MCPTools["MCP tool catalogue<br/><code>company_discovery/mcp_tools.py</code><br/><em>8 tools today, 13 after Week 2 §2.3 · JSON Schema enforced</em>"]
+        I18n["i18n bundles<br/><code>static/i18n/en.json</code><br/><code>static/i18n/de.json</code><br/><em>EN + DE shipped, 598-key parity</em>"]
+        MCPTools["MCP tool catalogue<br/><code>company_discovery/mcp_tools.py</code><br/><em>15 tools · JSON Schema enforced · per-tool versioning</em>"]
         Transports["Email + push transports<br/><code>company_discovery/email_transport.py</code><br/><code>company_discovery/push_transport.py</code>"]
-        Billing["Billing — Phase 2<br/><code>company_discovery/billing.py</code><br/><em>currently dormant; civic-commons positioning</em>"]
         SEO["SEO pages<br/><em>generated at <code>/jobs/&lt;slug&gt;</code></em>"]
     end
 
@@ -173,9 +172,8 @@ Organised by layer, with the file or module that implements each.
 | Component | Path | Role |
 |---|---|---|
 | **i18n bundles** | `static/i18n/en.json`, `static/i18n/de.json` | English and German UI; 519-key parity enforced by `tests/test_round5_i18n.py`. Served publicly at `/i18n/<lang>.json`. |
-| **MCP tool catalogue** | `company_discovery/mcp_tools.py` | 8 tools today (`suggest_relevant_companies`, `add_company_to_watchlist`, `find_company_career_page`, `scan_company_career_page`, `extract_direct_jobs_from_company_site`, `import_discovered_job`, `deduplicate_discovered_jobs`, `get_company_watchlist_summary`). Each carries a `Draft 7` JSON `inputSchema`. Week 2 §2.3 adds five more (`get_user_profile_for_consent`, `propose_referral`, `query_esco_skill`, `export_eures_compatible`, `record_user_outcome`) bringing the catalogue to 13. |
+| **MCP tool catalogue** | `company_discovery/mcp_tools.py` | 15 tools, each carrying a `Draft 7` JSON `inputSchema` and a per-tool `version` field: `suggest_relevant_companies`, `add_company_to_watchlist`, `find_company_career_page`, `scan_company_career_page`, `extract_direct_jobs_from_company_site`, `import_discovered_job`, `deduplicate_discovered_jobs`, `get_company_watchlist_summary`, `query_esco_skill`, `export_eures_compatible`, `get_user_profile_for_consent`, `propose_referral`, `list_referrals`, `update_referral_status`, `record_user_outcome`. |
 | **Email + push transports** | `company_discovery/email_transport.py`, `company_discovery/push_transport.py` | SMTP (with a `ConsoleTransport` default for dev / no-config), Web Push (VAPID). |
-| **Billing** | `company_discovery/billing.py` | Module preserved but **dormant** under the civic-commons positioning. Pro/Free framing removed from the public README; the Stripe integration sits behind a feature flag and is not part of the v0.1.0 release-line. |
 | **SEO pages** | static-route handler in `app.py` | Auto-generated `/jobs/<slug>` landing pages for organic discovery, configured via `data/seo-pages.json`. |
 
 ### External

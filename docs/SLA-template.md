@@ -41,7 +41,7 @@ deployment operated by **{HOSTING_PARTY}** for
 - Third-party services (AI providers — OpenAI / Gemini /
   Anthropic / Ollama; aggregator job boards — StepStone /
   Indeed / Arbeitnow / Muse / Bundesagentur; email delivery —
-  SMTP provider; Stripe billing if billing surface is enabled).
+  SMTP provider).
   Outages of these external services are reported as **degraded
   dependencies** but do not count against the uptime targets
   below.
@@ -136,8 +136,7 @@ The DPA covers:
 - Categories of personal data processed (identity / CV / outcomes
   / chat content)
 - Purposes of processing
-- Sub-processor list (AI providers, aggregator job boards, SMTP,
-  Stripe if enabled)
+- Sub-processor list (AI providers, aggregator job boards, SMTP)
 - Data location (EU / EEA only, by default)
 - Technical and organisational measures (TOMs) — encryption at
   rest via ChaCha20-Poly1305 AEAD; encryption in transit via TLS

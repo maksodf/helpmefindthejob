@@ -139,8 +139,5 @@ It exposes the company-discovery tools from `company_discovery/mcp_tools.py` and
 - CLI provider execution is intentionally restrictive.
 - Company suggestions combine a small curated healthcare employer list with category-level suggestions; this is not a live company database.
 - Browser smoke tests are skipped automatically if the sandbox blocks local port binding; manual server smoke is still available.
-- Stripe billing has a working Checkout backend behind
-  `HELPMEFINDTHEJOB_BILLING_BACKEND=stripe`; the pilot defaults to
-  manual billing.
 - Account deletion is two-step: user requests, admin confirms via
   `Admin → Tester accounts → Delete`. Last admin cannot be deleted.

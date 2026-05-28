@@ -105,10 +105,11 @@ docs/compliance/
 .tox/
 .nox/
 
-# Internal / commercial-vision docs relocated during the Week 1 grant-
+# Internal-only working docs relocated during the Week 1 grant-
 # sprint sanitisation pass (docs/grant/02-execution-plan.md task 1.4).
 # These are kept locally for reference but are not part of the public
 # commons project. Add new internal-only docs under private/ rather
 # than under docs/.
 private/
 .hypothesis/
+.gstack/

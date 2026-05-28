@@ -122,9 +122,9 @@ The project has **never been publicly launched**. A single private-instance depl
 - Encrypted profile-at-rest (ChaCha20-Poly1305)
 - CV builder, persona system, skill-gap atlas, application-outcome tracking
 - Full EN/DE i18n with German legal pages (Impressum §5 TMG)
-- MCP server skeleton (`mcp_server.py`) exposing 8 tools with JSON schemas
+- MCP server (`mcp_server.py`) exposing 15 tools with JSON schemas + per-tool versioning
 - Solid self-hosting story: Dockerfile, docker-compose.prod.yml, Caddy HTTPS, backup/restore scripts, restore-drill
-- 76 test files / 925 tests (i18n parity, journey state machine, persona ranking, encryption-at-rest including the AEAD migration, MCP catalogue input-schema enforcement, locale-aware yes/no parsing, 2FA enrollment, Stripe webhook signature verification, cross-workspace isolation, DuckDuckGo search provider, push transport, and the Playwright E2E entry point). Suite passes in ~18 s on bare host (verified 2026-05-18).
+- 220+ test files / 3,144 tests (i18n parity, journey state machine, persona ranking, encryption-at-rest including the AEAD migration, MCP catalogue input-schema enforcement, locale-aware yes/no parsing, 2FA enrollment, cross-workspace isolation, DuckDuckGo search provider, push transport, and the Playwright E2E entry point). Top-level suite verified 2026-05-29.
 - CI runs on Python 3.9 + 3.12
 
 ### Missing for grant credibility (these are the Week 1–4 deliverables)

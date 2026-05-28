@@ -343,7 +343,7 @@ Beyond the obvious (code correctness, tests pass, contract preserved):
   surface (e.g., a manual screen-reader walkthrough you didn't have
   time for), say so. Honest gaps land; hidden gaps don't.
 - **No new features inside a NLnet grant-window slice**. Look at
-  [`PlanTowardPerfection.MD`](PlanTowardPerfection.MD) — if there's an
+  [`PlanTowardPerfection.MD`](PlanTowardPerfection.md) — if there's an
   active Ceiling-1 sprint, the "no new features" hard rule applies to
   all contributors not just the maintainer.
 

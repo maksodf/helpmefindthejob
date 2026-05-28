@@ -17,14 +17,6 @@ When all three turn ✅, revisit this list.
 - 10 testers running scheduled scans simultaneously (DB lock contention, scheduler fairness)
 - Admin panel under load (readiness + stats still accurate?)
 
-### Billing / Stripe
-- Subscribe → cancel → re-subscribe → invoice end-to-end
-- Webhook handling: payment.failed, subscription.deleted, customer.deleted
-- Annual vs monthly plan switch (proration, downgrade behavior)
-- Refund flow
-- Stripe Customer Portal session creation under real key
-- Plan-limit enforcement at the *boundary* (creating saved-search #4 on free plan)
-
 ### Email
 - Verification email landing in Gmail / Outlook / iCloud inboxes (not spam)
 - Password-reset flow end-to-end via real SMTP

@@ -240,5 +240,5 @@ openapi-generator-cli generate \
 - WebSocket endpoints (none currently — the chat surface is request/response)
 - Server-Sent Events (used by streaming AI flows; documented in `/api/docs`)
 - Admin endpoints (`/api/admin/*`; documented but require the `admin` role)
-- Webhook endpoints (Stripe billing, push notifications, GitHub event ingestion)
+- Webhook endpoints (push notifications, GitHub event ingestion)
 - Custom MCP integration — see [`mcp-integration-guide.md`](mcp-integration-guide.md)

@@ -15,7 +15,7 @@ When team grows past 1 human, split these. Until then: one phone, one runbook.
 ## Severity ladder
 
 - **SEV-1** — site down, login broken, or active data loss. Comms within 15 min.
-- **SEV-2** — major feature broken (discovery, AI, billing) but workarounds exist. Comms within 60 min.
+- **SEV-2** — major feature broken (discovery, AI) but workarounds exist. Comms within 60 min.
 - **SEV-3** — minor degradation, cosmetic, single-user. No comms required; track in support.
 
 ## First five minutes — triage
@@ -99,7 +99,7 @@ Within 48 h of SEV-1 or SEV-2:
 1. Write a 1-page note in `docs/incidents/YYYY-MM-DD-<slug>.md` (folder created on first incident).
 2. **What broke. Why. What we changed to prevent recurrence.** Three sections, no preamble.
 3. If a memory-worthy lesson came out of it (deploy gotcha, infra gotcha, vendor weirdness), add a one-liner to the project memory under `gotchas`.
-4. Don't bother with public post-mortems until paid-customer count is in the double digits.
+4. Public post-mortems are optional at this stage; a private incident note is sufficient.
 
 ## When NOT to act
 
