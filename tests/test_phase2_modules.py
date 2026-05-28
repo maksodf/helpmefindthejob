@@ -8,7 +8,7 @@
 """Unit tests for Phase 2/3 modules.
 
 Covers structured_analysis, persona_ranking, discovery_providers,
-exports, onboarding, watchlist_templates, digests, billing.
+exports, onboarding, watchlist_templates, digests.
 """
 
 from __future__ import annotations
@@ -21,13 +21,6 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from company_discovery.ai_providers import AIProviderConfig
-from company_discovery.billing import (
-    ManualBillingBackend,
-    StripeBillingBackend,
-    Subscription,
-    build_backend,
-    plans_payload,
-)
 from company_discovery.digests import build_digest
 from company_discovery.discovery_providers import (
     CuratedSearchProvider,
@@ -359,85 +352,6 @@ class DigestsTests(unittest.TestCase):
         self.assertIn("No new direct-company roles", text)
 
 
-class BillingTests(unittest.TestCase):
-    def test_manual_backend_round_trip(self) -> None:
-        with TemporaryDirectory() as tmp:
-            backend = ManualBillingBackend(path=Path(tmp) / "billing.json")
-            self.assertEqual(backend.load().plan_id, "pilot")
-            backend.save(
-                Subscription(
-                    plan_id="team", status="active", seats=5, customer_email="x@example.com"
-                )
-            )
-            again = backend.load()
-            self.assertEqual(again.plan_id, "team")
-            self.assertEqual(again.seats, 5)
-            self.assertEqual(again.customer_email, "x@example.com")
-
-    def test_plans_payload_lists_all_tiers(self) -> None:
-        # Phase 2 #21 added the B2C single-user plans alongside the
-        # original B2B multi-seat plans. Both motions co-exist; the
-        # operator picks which Stripe Prices to wire via env.
-        plans = plans_payload()
-        ids = {p["id"] for p in plans}
-        self.assertEqual(ids, {"free", "pro_monthly", "pro_annual", "pilot", "team", "org"})
-
-    def test_stripe_backend_load_falls_back_to_local_cache(self) -> None:
-        with TemporaryDirectory() as tmp:
-            backend = StripeBillingBackend(path=Path(tmp) / "billing.json")
-            self.assertEqual(backend.load().plan_id, "pilot")
-            backend.save(Subscription(plan_id="team", status="active", seats=3))
-            self.assertEqual(backend.load().plan_id, "team")
-
-    def test_stripe_checkout_requires_configuration(self) -> None:
-        with TemporaryDirectory() as tmp:
-            backend = StripeBillingBackend(path=Path(tmp) / "billing.json")
-            with self.assertRaises(RuntimeError):
-                backend.create_checkout_session(plan_id="team")
-
-    def test_stripe_checkout_uses_injected_transport(self) -> None:
-        captured = {}
-
-        def fake_transport(method, url, form):
-            captured["method"] = method
-            captured["url"] = url
-            captured["form"] = dict(form)
-            return {
-                "id": "cs_test_123",
-                "url": "https://checkout.stripe.test/cs_test_123",
-                "expires_at": 1234567890,
-            }
-
-        with TemporaryDirectory() as tmp:
-            os.environ["HELPMEFINDTHEJOB_STRIPE_API_KEY"] = "sk_test_dummy"
-            os.environ["HELPMEFINDTHEJOB_STRIPE_PRICE_TEAM"] = "price_test_team"
-            os.environ["HELPMEFINDTHEJOB_STRIPE_SUCCESS_URL"] = "https://example/ok"
-            os.environ["HELPMEFINDTHEJOB_STRIPE_CANCEL_URL"] = "https://example/cancel"
-            try:
-                backend = StripeBillingBackend(
-                    path=Path(tmp) / "billing.json", transport=fake_transport
-                )
-                session = backend.create_checkout_session(
-                    plan_id="team", customer_email="x@example.com"
-                )
-            finally:
-                for key in (
-                    "HELPMEFINDTHEJOB_STRIPE_API_KEY",
-                    "HELPMEFINDTHEJOB_STRIPE_PRICE_TEAM",
-                    "HELPMEFINDTHEJOB_STRIPE_SUCCESS_URL",
-                    "HELPMEFINDTHEJOB_STRIPE_CANCEL_URL",
-                ):
-                    os.environ.pop(key, None)
-        self.assertEqual(session["id"], "cs_test_123")
-        self.assertEqual(captured["method"], "POST")
-        self.assertIn("checkout/sessions", captured["url"])
-        self.assertEqual(captured["form"]["line_items[0][price]"], "price_test_team")
-        self.assertEqual(captured["form"]["customer_email"], "x@example.com")
-
-    def test_build_backend_default_is_manual(self) -> None:
-        with TemporaryDirectory() as tmp:
-            backend = build_backend(data_dir=Path(tmp))
-            self.assertEqual(backend.name, "manual")
 
 
 if __name__ == "__main__":

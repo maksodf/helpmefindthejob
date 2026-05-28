@@ -344,23 +344,6 @@ class AuthStore:
             """
         )
         self.connection.execute("CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id)")
-        # Stripe webhook idempotency (PART I.4 of the 2026-05-19 deep
-        # audit). Stripe retries event delivery on non-2xx responses up
-        # to ~3 days. Without dedup on `event.id`, a retried delivery
-        # could re-apply the subscription state to the billing backend
-        # AND double-emit any analytics side-effects. The handler now
-        # INSERT-OR-IGNOREs the event.id; rowcount=0 means we've seen
-        # it before and short-circuit to a 200 OK (Stripe treats as
-        # accepted; stops retrying).
-        self.connection.execute(
-            """
-            CREATE TABLE IF NOT EXISTS stripe_webhook_events (
-                event_id TEXT PRIMARY KEY,
-                event_type TEXT NOT NULL,
-                processed_at TEXT NOT NULL
-            )
-            """
-        )
         # SSO linkage table (13-plan item 12/13). Maps a federated
         # identity (provider_id + subject) to a local user. Keyed
         # on (provider_id, subject) — the IdP's subject is the
@@ -386,33 +369,6 @@ class AuthStore:
         )
         self._ensure_admin_exists()
         self.connection.commit()
-
-    def mark_stripe_event_processed(self, event_id: str, event_type: str) -> bool:
-        """Record that we've processed a Stripe webhook event.
-
-        Returns ``True`` if this is the first time we've seen the event
-        (caller should process it). Returns ``False`` if the event id
-        was already recorded (caller should short-circuit to 200 OK
-        without re-applying side effects).
-
-        Empty event_id is treated as "always process" — Stripe always
-        includes an id in real webhooks; an empty id indicates a test
-        fixture or malformed payload that we don't want to dedupe on.
-        """
-        if not event_id:
-            return True
-        from datetime import datetime, timezone
-
-        now = datetime.now(timezone.utc).isoformat()
-        cursor = self.connection.execute(
-            "INSERT OR IGNORE INTO stripe_webhook_events(event_id, event_type, processed_at) "
-            "VALUES (?, ?, ?)",
-            (event_id, event_type or "", now),
-        )
-        self.connection.commit()
-        # rowcount == 1 → INSERT happened → first time we've seen it.
-        # rowcount == 0 → conflict → already recorded.
-        return cursor.rowcount == 1
 
     def _add_column_if_missing(self, table: str, column: str, definition: str) -> None:
         # Phase 2 #47 (2026-05-21): SQL identifier defense-in-depth.

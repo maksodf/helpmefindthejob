@@ -473,7 +473,6 @@ function absorbBootstrap(bootstrap) {
   state.bootstrapQuotas = bootstrap.quotas || null;
   state.savedSearches = bootstrap.savedSearches || [];
   state.watchlistTemplates = bootstrap.watchlistTemplates || [];
-  state.billingPlans = bootstrap.billingPlans || [];
   state.personas = bootstrap.personas || [];
   state.workspaces = bootstrap.workspaces || state.workspaces || [];
   state.activeWorkspaceId = bootstrap.activeWorkspaceId || null;
@@ -531,7 +530,6 @@ function clearAuthenticatedState() {
   state.companyFilter = "";
   state.savedSearches = [];
   state.watchlistTemplates = [];
-  state.billingPlans = [];
   state.personas = [];
   state.profile = { personaId: "healthcare-management", targetRoles: [], languages: [], cvText: "" };
   state.onboarding = { steps: [], progress: { completed: 0, total: 0 } };
@@ -723,7 +721,6 @@ function navigate(view) {
   $("#viewTitle").textContent = t(`view.${view}.title`, meta.title);
   $("#viewSubtitle").textContent = t(`view.${view}.subtitle`, meta.subtitle);
   if (view === "brief") renderBrief();
-  if (view === "settings") loadBilling();
   if (view === "admin" && isAdmin()) {
     loadAdminUsers().catch((error) => showToast(error.message, "error"));
     loadAdminTickets().catch(() => {});
@@ -750,7 +747,7 @@ function render() {
     renderProfile, renderTotpCard, renderNotifySettings,
     renderPrivacyAudit, renderWorkspacePicker, renderHistory,
     renderImportedJobs, renderBriefSummary, renderApplicationForm,
-    renderQuotaSummary, renderAdminUsers, renderBilling,
+    renderQuotaSummary, renderAdminUsers,
     renderSearchResults,
   ];
   for (const fn of renderers) {
@@ -2283,52 +2280,6 @@ function renderApplicationForm() {
   }
 }
 
-function renderBilling() {
-  const summary = $("#billingSummary");
-  const planSelect = $("#adminBillingPlan");
-  if (planSelect) {
-    planSelect.replaceChildren();
-    for (const plan of state.billingPlans || []) {
-      const opt = document.createElement("option");
-      opt.value = plan.id;
-      opt.textContent = `${plan.label} (€${plan.monthlyPriceEur}/mo · ${plan.seatsIncluded} seats)`;
-      planSelect.append(opt);
-    }
-  }
-  if (summary && state.subscription) {
-    const plan = (state.billingPlans || []).find((p) => p.id === state.subscription.plan_id);
-    summary.textContent = `${plan ? plan.label : state.subscription.plan_id} — ${state.subscription.status}, ${state.subscription.seats} seats.`;
-  } else if (summary) {
-    summary.textContent = "Subscription details load when you open Settings.";
-  }
-  // Manage-subscription button: only shows when there's a real
-  // Stripe customer to redirect (i.e. the user has completed at
-  // least one checkout). Otherwise the portal call would 400.
-  const manageBtn = $("#manageSubscriptionBtn");
-  if (manageBtn) {
-    const customerId = state.subscription?.customer_id;
-    manageBtn.hidden = !customerId;
-  }
-}
-
-async function manageSubscription() {
-  const message = $("#subscriptionMessage");
-  if (message) message.textContent = t("settings.subscription.opening", "Opening Stripe portal…");
-  try {
-    const payload = await api("/api/billing/portal", {
-      method: "POST", body: JSON.stringify({}),
-    });
-    const url = payload?.portal?.url;
-    if (url) {
-      window.location.assign(url);
-    } else if (message) {
-      message.textContent = t("settings.subscription.noUrl", "Portal session opened but returned no URL. Try again.");
-    }
-  } catch (error) {
-    if (message) message.textContent = error.message;
-  }
-}
-
 function renderQuotaSummary() {
   const el = $("#quotaSummary");
   if (!el) return;
@@ -3497,7 +3448,7 @@ function detectProviderFromKey(key) {
         if (byokPane) byokPane.hidden = false;
         document.getElementById("aiByokKey")?.focus();
       } else if (mode === "managed") {
-        // Real Stripe checkout is operator-pending; we collect waitlist
+        // Managed AI is operator-hosted and opt-in; we collect waitlist
         // signups via the analytics_events log so we can email when ready.
         try {
           const res = await api("/api/managed-ai/waitlist", { method: "POST", body: "{}" });
@@ -4870,36 +4821,6 @@ async function handleApplicationSave(event) {
   } catch (error) {
     setFormStatus("applicationStatusMessage", "error", error.message);
     showToast(error.message, "error");
-  }
-}
-
-async function loadBilling() {
-  try {
-    const payload = await api("/api/billing");
-    state.subscription = payload.subscription;
-    state.billingPlans = payload.plans;
-    renderBilling();
-  } catch (error) {
-    showToast(error.message, "error");
-  }
-}
-
-async function handleAdminBilling(event) {
-  event.preventDefault();
-  try {
-    const payload = await api("/api/admin/billing", {
-      method: "POST",
-      body: JSON.stringify({
-        planId: $("#adminBillingPlan")?.value ?? "",
-        status: $("#adminBillingStatus")?.value ?? "",
-        seats: Number($("#adminBillingSeats")?.value || 1),
-      }),
-    });
-    state.subscription = payload.subscription;
-    renderBilling();
-    setText("#adminBillingNote", "Saved.");
-  } catch (error) {
-    setText("#adminBillingNote", error.message);
   }
 }
 
@@ -6989,7 +6910,6 @@ $$(".segmented-btn").forEach((btn) => {
 
 $("#saveCurrentSearchBtn")?.addEventListener("click", saveCurrentSearch);
 $("#applicationForm")?.addEventListener("submit", handleApplicationSave);
-$("#manageSubscriptionBtn")?.addEventListener("click", manageSubscription);
 $("#shareEnabledToggle")?.addEventListener("change", async (event) => {
   const toggle = event.target;
   const jobId = toggle.dataset.jobId;
@@ -7034,7 +6954,6 @@ $("#supportForm")?.addEventListener("submit", handleSupport);
 $("#digestPreviewBtn")?.addEventListener("click", digestPreview);
 $("#digestSendBtn")?.addEventListener("click", digestSend);
 $("#refreshSupportBtn")?.addEventListener("click", loadAdminTickets);
-$("#adminBillingForm")?.addEventListener("submit", handleAdminBilling);
 $("#analyticsToggle")?.addEventListener("change", (event) => {
   setAnalyticsEnabled(event.target.checked);
 });

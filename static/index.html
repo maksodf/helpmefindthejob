@@ -1258,7 +1258,7 @@
                   <strong data-i18n="settings.ai.mode.managed.title">Managed</strong>
                   <span class="tag" data-i18n="settings.ai.mode.managed.tag">€5/mo · waitlist</span>
                 </div>
-                <p class="muted small" data-i18n="settings.ai.mode.managed.desc">We provide the AI for you — no key, no setup, all included in your Helpmefindthejob subscription. One click to enable when it opens. Best if you don't already have an AI account and don't want to deal with API keys. Tap to join the waitlist; we'll email you the moment it's live.</p>
+                <p class="muted small" data-i18n="settings.ai.mode.managed.desc">We provide the AI for you — no key, no setup, hosted by Helpmefindthejob. One click to enable when it opens. Best if you don't already have an AI account and don't want to deal with API keys. Tap to join the waitlist; we'll email you the moment it's live.</p>
               </button>
             </div>
             <div id="aiByokPane" class="ai-byok-pane" hidden>
@@ -1395,18 +1395,6 @@
               </form>
               <p id="deletionMessage" class="muted small" role="status"></p>
             </details>
-          </section>
-
-          <section class="card" aria-label="Subscription" data-tab="workspace">
-            <div class="card-heading">
-              <h2 data-i18n="settings.subscription.heading">Subscription</h2>
-              <p class="muted small" data-i18n="settings.subscription.lead">Self-serve via the Stripe Customer Portal — see invoices, update card, cancel.</p>
-            </div>
-            <div id="billingSummary" class="muted">Loading…</div>
-            <div class="subscription-actions">
-              <button id="manageSubscriptionBtn" type="button" class="btn btn-primary" data-i18n="settings.subscription.manage" hidden>Manage subscription</button>
-              <p id="subscriptionMessage" class="muted small" role="status" aria-live="polite"></p>
-            </div>
           </section>
 
           <section class="card" aria-label="Support" data-tab="workspace">
@@ -1633,33 +1621,6 @@
             <pre id="metricsResult" class="code-block" hidden></pre>
           </section>
 
-          <section class="card" aria-label="Subscription admin">
-            <div class="card-heading">
-              <h2 data-i18n="admin.subscription.heading">Subscription</h2>
-              <p class="muted" data-i18n="admin.subscription.lead">Set the active plan, seat count, and status. Stripe wiring is BLOCKED until credentials.</p>
-            </div>
-            <form id="adminBillingForm" class="admin-create-grid" novalidate>
-              <label class="field" for="adminBillingPlan">
-                <span data-i18n="admin.subscription.plan">Plan</span>
-                <select id="adminBillingPlan"></select>
-              </label>
-              <label class="field" for="adminBillingStatus">
-                <span data-i18n="admin.subscription.status">Status</span>
-                <select id="adminBillingStatus">
-                  <option value="active" data-i18n="admin.subscription.statusActive">Active</option>
-                  <option value="trialing" data-i18n="admin.subscription.statusTrialing">Trialing</option>
-                  <option value="past_due" data-i18n="admin.subscription.statusPastDue">Past due</option>
-                  <option value="cancelled" data-i18n="admin.subscription.statusCancelled">Cancelled</option>
-                </select>
-              </label>
-              <label class="field" for="adminBillingSeats">
-                <span data-i18n="admin.subscription.seats">Seats</span>
-                <input id="adminBillingSeats" type="number" min="1" max="500" value="5" />
-              </label>
-              <button class="btn btn-primary" type="submit" data-i18n="admin.subscription.save">Save</button>
-            </form>
-            <p id="adminBillingNote" class="muted small"></p>
-          </section>
 
           <section class="card" aria-label="Support tickets admin">
             <div class="card-heading">

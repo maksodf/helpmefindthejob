@@ -55,10 +55,8 @@ class CostCapChatHandlerIntegration(unittest.TestCase):
         self.addCleanup(lambda: self.state._test_tmp.cleanup())  # noqa: SLF001
 
     def _set_paid_api_provider(self) -> None:
-        # Bypass plan-tier gating (tests run as the default plan,
-        # which may not allow byok; the integration we care about
-        # is the cost-cap gate, not the plan gate). Setting the
-        # provider dict directly.
+        # Set the BYO-AI provider dict directly; the integration we
+        # care about here is the cost-cap gate.
         from company_discovery.ai_providers import AIProviderConfig
 
         self.state.ai_providers[self.user_id] = AIProviderConfig(

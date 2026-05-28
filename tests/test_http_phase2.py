@@ -16,7 +16,6 @@ Boots the app on a free port, mirrors the helper pattern used by
 - watchlist-template apply
 - exports endpoints (CSV + Markdown)
 - digest preview + send (ConsoleTransport)
-- billing GET + admin update
 - support submit
 - analytics event submission
 - last_login_at populated by login
@@ -177,7 +176,6 @@ class HttpPhase2Tests(unittest.TestCase):
         self.assertEqual(code, 200)
         self.assertIn("savedSearches", payload)
         self.assertIn("watchlistTemplates", payload)
-        self.assertIn("billingPlans", payload)
         self.assertIn("onboarding", payload)
         self.assertIn("applicationStatuses", payload)
         self.assertIn("saved", payload["applicationStatuses"])
@@ -310,44 +308,6 @@ class HttpPhase2Tests(unittest.TestCase):
             if line.strip()
         ]
         self.assertTrue(any("digest" in entry["subject"].casefold() for entry in entries))
-
-    def test_billing_admin_only(self) -> None:
-        code, payload, _, _ = self.admin.request("/api/billing")
-        self.assertEqual(code, 200)
-        self.assertEqual(payload["subscription"]["plan_id"], "pilot")
-        # Phase 2 #21 expanded the plan catalogue to include the B2C
-        # single-user plans (free / pro_monthly / pro_annual) alongside
-        # the original B2B multi-seat plans (pilot / team / org).
-        self.assertEqual(len(payload["plans"]), 6)
-        # Admin updates to team
-        code, payload, _, _ = self.admin.request(
-            "/api/admin/billing",
-            method="POST",
-            body={
-                "planId": "team",
-                "status": "active",
-                "seats": 10,
-                "customerEmail": "ops@example.com",
-            },
-        )
-        self.assertEqual(code, 200)
-        self.assertEqual(payload["subscription"]["plan_id"], "team")
-        self.assertEqual(payload["subscription"]["seats"], 10)
-
-        # Member is forbidden
-        code, _, _, _ = self.admin.request(
-            "/api/admin/users",
-            method="POST",
-            body={"email": "tester@example.com", "password": "very-secure-tester-pass-9"},
-        )
-        member = _Client(self.base)
-        member.login("tester@example.com", "very-secure-tester-pass-9")
-        code, _, _, _ = member.request(
-            "/api/admin/billing",
-            method="POST",
-            body={"planId": "team"},
-        )
-        self.assertEqual(code, 403)
 
     def test_support_ticket_submission(self) -> None:
         code, payload, _, _ = self.admin.request(

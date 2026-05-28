@@ -48,18 +48,6 @@ from company_discovery.analysis import (
     parse_auto_fit_output,
 )
 from company_discovery.auth import AuthSession, AuthStore, AuthUser
-from company_discovery.billing import (
-    Plan,
-    StripeBillingBackend,
-    Subscription,
-    apply_stripe_event,
-    find_plan,
-    plans_payload,
-    verify_stripe_webhook_signature,
-)
-from company_discovery.billing import (
-    build_backend as build_billing_backend,
-)
 from company_discovery.chat_router import (
     REGISTRY as CHAT_REGISTRY,
 )
@@ -1480,7 +1468,6 @@ class AppState:
             self.scheduler_path,
             handler=lambda user_id, trigger: self.run_user_daily(user_id, trigger=trigger),
         )
-        self.billing_backend = build_billing_backend(data_dir=self.data_path.parent)
         providers: list = [CuratedSearchProvider()]
         if get_env("HELPMEFINDTHEJOB_DUCKDUCKGO_DISABLED", "").strip().lower() not in (
             "1",
@@ -1598,7 +1585,6 @@ class AppState:
             "quotas": self.quota_store.usage(user_id),
             "savedSearches": self._saved_searches_with_alerts(data_user_id),
             "watchlistTemplates": list_templates(profile.persona_id),
-            "billingPlans": plans_payload(),
             "personas": list_personas_summary(),
             "profile": self._profile_payload(profile),
             "workspaces": self.list_user_workspaces(user_id),
@@ -2559,11 +2545,7 @@ class AppState:
         backup_backend = get_env("HELPMEFINDTHEJOB_BACKUP_BACKEND", "").strip() or "local"
         push_configured = is_push_configured()
         brave_configured = bool(get_env("HELPMEFINDTHEJOB_BRAVE_API_KEY", "").strip())
-        stripe_active = os.environ.get(
-            "HELPMEFINDTHEJOB_BILLING_BACKEND", ""
-        ).strip() == "stripe" and bool(get_env("HELPMEFINDTHEJOB_STRIPE_API_KEY", "").strip())
-        webhook_configured = bool(get_env("HELPMEFINDTHEJOB_STRIPE_WEBHOOK_SECRET", "").strip())
-        # Subscription / membership counts (cheap; in-memory).
+        # Membership counts (cheap; in-memory).
         push_subs = sum(1 for _ in self.repository.push_subscriptions.values())
         memberships = sum(1 for _ in self.repository.workspace_memberships.values())
         # Latest backup file mtime (best-effort; backups dir may not exist).
@@ -2583,13 +2565,6 @@ class AppState:
                 "duckduckgo": True,  # always-on, no key
                 "brave": brave_configured,
                 "curated": True,
-            },
-            "billing": {
-                "backend": backup_backend
-                if False
-                else (get_env("HELPMEFINDTHEJOB_BILLING_BACKEND") or "manual"),
-                "stripeActive": stripe_active,
-                "webhookConfigured": webhook_configured,
             },
             "backup": {
                 "backend": backup_backend,
@@ -4186,37 +4161,17 @@ class AppState:
             results["__drip_day7"] = drip["day7"]
         return results
 
-    def current_plan(self) -> Plan | None:
-        """Return the workspace's active plan as a Plan object, or None
-        when ``Subscription.plan_id`` doesn't match any plan in the
-        ``PLANS`` tuple (e.g. operator misconfigured, or a legacy
-        plan id that's been removed). Callers must guard accordingly."""
-
-        sub = self.get_subscription()
-        return find_plan(sub.plan_id)
-
     def plan_limits(self) -> dict[str, Any]:
-        """Snapshot of the active plan's tier limits — exactly the
-        attributes ``Plan`` carries beyond label / price. ``None`` for
-        ``savedSearchLimit`` means unlimited; the empty tuple for
-        ``aiModesAllowed`` is currently never produced by any shipped
-        plan but the enforcer treats it as "no AI at all" defensively."""
+        """Usage limits, applied uniformly to every account. This is a
+        civic-commons deployment with no paid tiers, so all accounts
+        receive the same permissive limits. ``None`` for
+        ``savedSearchLimit`` means unlimited."""
 
-        plan = self.current_plan()
-        if plan is None:
-            # Fall through to the most permissive shape so a misconfig
-            # doesn't accidentally lock a paying user out.
-            return {
-                "savedSearchLimit": None,
-                "aiModesAllowed": ("manual", "byok", "managed"),
-                "retentionDaysMax": 365,
-                "dailyDigestEnabled": True,
-            }
         return {
-            "savedSearchLimit": plan.saved_search_limit,
-            "aiModesAllowed": tuple(plan.ai_modes_allowed),
-            "retentionDaysMax": plan.retention_days_max,
-            "dailyDigestEnabled": plan.daily_digest_enabled,
+            "savedSearchLimit": None,
+            "aiModesAllowed": ("manual", "byok", "managed"),
+            "retentionDaysMax": 365,
+            "dailyDigestEnabled": True,
         }
 
     def assert_can_add_saved_search(self, user_id: str) -> None:
@@ -7208,46 +7163,6 @@ class AppState:
         )
         return text
 
-    def get_subscription(self) -> Subscription:
-        return self.billing_backend.load()
-
-    def update_subscription(
-        self,
-        *,
-        actor: AuthUser,
-        plan_id: str | None = None,
-        status: str | None = None,
-        seats: int | None = None,
-        notes: str | None = None,
-        customer_email: str | None = None,
-    ) -> Subscription:
-        sub = self.billing_backend.load()
-        if plan_id and not any(p["id"] == plan_id for p in plans_payload()):
-            raise ValueError("unknown_plan")
-        if status and status not in {"active", "trialing", "past_due", "cancelled"}:
-            raise ValueError("invalid_status")
-        if plan_id:
-            sub.plan_id = plan_id
-        if status:
-            sub.status = status
-            if status == "cancelled" and not sub.cancelled_at:
-                sub.cancelled_at = now_utc().isoformat()
-        if seats is not None:
-            sub.seats = max(1, int(seats))
-        if notes is not None:
-            sub.notes = notes
-        if customer_email is not None:
-            sub.customer_email = customer_email
-        sub.last_event = now_utc().isoformat()
-        result = self.billing_backend.save(sub)
-        self.record_admin_action(
-            actor=actor,
-            target=None,
-            action="update_billing",
-            details={"plan": result.plan_id, "status": result.status, "seats": result.seats},
-        )
-        return result
-
     def log_analytics(
         self, user_id: str, kind: str, payload: dict[str, Any] | None = None
     ) -> AnalyticsEvent:
@@ -8656,9 +8571,9 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json({"events": events})
                 return
             if parsed.path == "/api/managed-ai/waitlist":
-                # Express interest in the operator-side managed AI tier.
+                # Express interest in the operator-hosted managed AI option.
                 # We log it via analytics_event so admin can read the list
-                # later. Real Stripe billing wiring is operator-pending.
+                # later.
                 already = [
                     e
                     for e in STATE.repository.list_analytics_events(user_id=user_id, limit=20)
@@ -8841,11 +8756,6 @@ class Handler(BaseHTTPRequestHandler):
                     )
                     return
                 self.send_json(payload)
-                return
-            if parsed.path == "/api/billing":
-                self.send_json(
-                    {"subscription": STATE.get_subscription().to_dict(), "plans": plans_payload()}
-                )
                 return
             if parsed.path == "/api/watchlist-templates":
                 profile = STATE.profile_for(user_id)
@@ -9270,8 +9180,8 @@ class Handler(BaseHTTPRequestHandler):
                 self.end_headers()
                 return
 
-            # Stripe webhook needs raw bytes for signature verification, so it
-            # must run before we json.loads the body.
+            # The inbound-email webhook needs raw bytes for signature
+            # verification, so it must run before we json.loads the body.
             if parsed.path == "/api/inbound/email":
                 # Inbound webhook from Resend / Postmark / Mailgun for
                 # email-forward ingest. The webhook secret + per-user
@@ -9393,73 +9303,6 @@ class Handler(BaseHTTPRequestHandler):
                         "candidates": len(jobs),
                     }
                 )
-                return
-
-            if parsed.path == "/api/billing/webhook":
-                length = int(self.headers.get("Content-Length", "0"))
-                if length <= 0 or length > MAX_JSON_BODY_BYTES:
-                    self.send_error_json(
-                        HTTPStatus.BAD_REQUEST, "bad_body", "Webhook body required"
-                    )
-                    return
-                raw = self.rfile.read(length)
-                signature_header = self.headers.get("Stripe-Signature", "")
-                secret = get_env("HELPMEFINDTHEJOB_STRIPE_WEBHOOK_SECRET", "").strip()
-                if not secret:
-                    self.send_error_json(
-                        HTTPStatus.SERVICE_UNAVAILABLE,
-                        "webhook_unconfigured",
-                        "HELPMEFINDTHEJOB_STRIPE_WEBHOOK_SECRET not set.",
-                    )
-                    return
-                if not verify_stripe_webhook_signature(raw, signature_header, secret):
-                    self.send_error_json(
-                        HTTPStatus.BAD_REQUEST,
-                        "bad_signature",
-                        "Webhook signature verification failed.",
-                    )
-                    return
-                try:
-                    event = json.loads(raw.decode("utf-8"))
-                except (UnicodeDecodeError, json.JSONDecodeError):
-                    self.send_error_json(
-                        HTTPStatus.BAD_REQUEST, "bad_json", "Webhook body is not valid JSON."
-                    )
-                    return
-                # Idempotency dedup (PART I.4 of the deep audit). Stripe
-                # retries on non-2xx for up to ~3 days; if a previous
-                # delivery succeeded but our 200-OK response was lost,
-                # the same event.id arrives again. Short-circuit on a
-                # second arrival to avoid double-applying subscription
-                # state + analytics side-effects.
-                event_id = str(event.get("id") or "")
-                event_type = str(event.get("type") or "")
-                is_first_delivery = STATE.auth_store.mark_stripe_event_processed(
-                    event_id, event_type
-                )
-                if not is_first_delivery:
-                    self.send_json(
-                        {"status": "ok", "appliedType": event_type, "deduplicated": True}
-                    )
-                    return
-                price_to_plan = {
-                    get_env("HELPMEFINDTHEJOB_STRIPE_PRICE_TEAM", ""): "team",
-                    get_env("HELPMEFINDTHEJOB_STRIPE_PRICE_ORG", ""): "org",
-                    get_env(
-                        "HELPMEFINDTHEJOB_STRIPE_PRICE_PRO_MONTHLY",
-                        "",
-                    ): "pro_monthly",
-                    get_env(
-                        "HELPMEFINDTHEJOB_STRIPE_PRICE_PRO_ANNUAL",
-                        "",
-                    ): "pro_annual",
-                }
-                resolver = lambda price_id: price_to_plan.get(price_id) or ""
-                current = STATE.get_subscription()
-                next_state = apply_stripe_event(event, current, plan_resolver=resolver)
-                if next_state is not current:
-                    STATE.billing_backend.save(next_state)
-                self.send_json({"status": "ok", "appliedType": event.get("type")})
                 return
 
             payload = self.read_json_body()
@@ -11536,23 +11379,6 @@ class Handler(BaseHTTPRequestHandler):
                 text = STATE.send_user_digest(user=session.user)
                 self.send_json({"status": "sent", "preview": text})
                 return
-            if parsed.path == "/api/admin/billing":
-                if not self.require_admin(session):
-                    return
-                try:
-                    sub = STATE.update_subscription(
-                        actor=session.user,
-                        plan_id=payload.get("planId"),
-                        status=payload.get("status"),
-                        seats=payload.get("seats"),
-                        notes=payload.get("notes"),
-                        customer_email=payload.get("customerEmail"),
-                    )
-                except ValueError as error:
-                    self.send_error_json(HTTPStatus.BAD_REQUEST, str(error), str(error))
-                    return
-                self.send_json({"subscription": sub.to_dict()})
-                return
             if parsed.path == "/api/admin/email/test":
                 if not self.require_admin(session):
                     return
@@ -11563,49 +11389,6 @@ class Handler(BaseHTTPRequestHandler):
                     self.send_error_json(HTTPStatus.BAD_REQUEST, str(error), str(error))
                     return
                 self.send_json(result)
-                return
-            if parsed.path == "/api/admin/billing/checkout":
-                if not self.require_admin(session):
-                    return
-                if not isinstance(STATE.billing_backend, StripeBillingBackend):
-                    self.send_error_json(
-                        HTTPStatus.BAD_REQUEST,
-                        "stripe_disabled",
-                        "Stripe backend not active. Set HELPMEFINDTHEJOB_BILLING_BACKEND=stripe and credentials.",
-                    )
-                    return
-                plan_id = str(payload.get("planId") or "")
-                if not plan_id:
-                    self.send_error_json(
-                        HTTPStatus.BAD_REQUEST, "missing_plan", "planId is required"
-                    )
-                    return
-                try:
-                    result = STATE.billing_backend.create_checkout_session(
-                        plan_id=plan_id,
-                        customer_email=payload.get("customerEmail") or session.user.email,
-                    )
-                except ValueError as error:
-                    code = str(error)
-                    self.send_error_json(HTTPStatus.BAD_REQUEST, code, code)
-                    return
-                except RuntimeError as error:
-                    # Strip raw Stripe error detail before surfacing it to the admin —
-                    # the upstream message can include verbose request/response context.
-                    raw_code = str(error).split(":", 1)[0].strip() or "billing_backend_error"
-                    self.send_error_json(
-                        HTTPStatus.SERVICE_UNAVAILABLE,
-                        raw_code,
-                        "Stripe call failed. Check the configured Stripe credentials and product/price IDs.",
-                    )
-                    return
-                STATE.record_admin_action(
-                    actor=session.user,
-                    target=None,
-                    action="create_checkout_session",
-                    details={"planId": plan_id, "sessionId": result.get("id")},
-                )
-                self.send_json({"checkout": result})
                 return
             if parsed.path == "/api/account/deletion-request":
                 ticket = STATE.request_account_deletion(
@@ -11622,46 +11405,6 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json(
                     {"seeded": created, "bootstrap": STATE.bootstrap(user_id)}, HTTPStatus.CREATED
                 )
-                return
-            if parsed.path == "/api/billing/portal":
-                if not isinstance(STATE.billing_backend, StripeBillingBackend):
-                    self.send_error_json(
-                        HTTPStatus.BAD_REQUEST,
-                        "stripe_disabled",
-                        "Stripe backend not active. Self-managed billing is unavailable on the manual backend.",
-                    )
-                    return
-                subscription = STATE.get_subscription()
-                customer_id = subscription.customer_id or ""
-                if not customer_id:
-                    self.send_error_json(
-                        HTTPStatus.BAD_REQUEST,
-                        "no_customer",
-                        "No Stripe customer linked yet. Complete a checkout first.",
-                    )
-                    return
-                return_url = STATE.public_url_for("/?billing=portal-return")
-                try:
-                    result = STATE.billing_backend.create_portal_session(
-                        customer_id=customer_id,
-                        return_url=return_url,
-                    )
-                except ValueError as error:
-                    code = str(error)
-                    self.send_error_json(HTTPStatus.BAD_REQUEST, code, code)
-                    return
-                except RuntimeError as error:
-                    raw_code = str(error).split(":", 1)[0].strip() or "billing_backend_error"
-                    self.send_error_json(
-                        HTTPStatus.SERVICE_UNAVAILABLE,
-                        raw_code,
-                        "Stripe portal call failed. Operator has been notified.",
-                    )
-                    return
-                STATE.log_analytics(
-                    user_id, "billing_portal_opened", {"sessionId": result.get("id")}
-                )
-                self.send_json({"portal": result})
                 return
             # POST /api/v1/tools/<name> — dispatch a tool call.
             # 13-plan item 7/13. The MCP tool catalogue is the

@@ -36,10 +36,6 @@ _VARS = (
     "HELPMEFINDTHEJOB_LOG_TARGET",
     "HELPMEFINDTHEJOB_LEGAL_REVIEWED",
     "HELPMEFINDTHEJOB_READINESS_ALLOW_UNINITIALIZED_RUNTIME",
-    "HELPMEFINDTHEJOB_BILLING_BACKEND",
-    "HELPMEFINDTHEJOB_STRIPE_API_KEY",
-    "HELPMEFINDTHEJOB_STRIPE_PRICE_TEAM",
-    "HELPMEFINDTHEJOB_STRIPE_PRICE_ORG",
 )
 
 
@@ -158,16 +154,6 @@ class ReadinessTests(unittest.TestCase):
         with env(HELPMEFINDTHEJOB_LEGAL_REVIEWED="true"):
             self.assertEqual(_signal(self._build(), "legal").status, "ok")
 
-    def test_billing_manual_is_partial_stripe_complete_is_ok(self) -> None:
-        with env(HELPMEFINDTHEJOB_BILLING_BACKEND="manual"):
-            self.assertEqual(_signal(self._build(), "billing").status, "partial")
-        with env(
-            HELPMEFINDTHEJOB_BILLING_BACKEND="stripe",
-            HELPMEFINDTHEJOB_STRIPE_API_KEY="sk_test",
-            HELPMEFINDTHEJOB_STRIPE_PRICE_TEAM="price_team",
-        ):
-            self.assertEqual(_signal(self._build(), "billing").status, "ok")
-
     def test_overall_status_aggregation(self) -> None:
         with env(HELPMEFINDTHEJOB_PUBLIC_URL="https://example.org"):
             report = self._build()
@@ -185,9 +171,6 @@ class ReadinessTests(unittest.TestCase):
             HELPMEFINDTHEJOB_MONITORING_URL="https://uptime.example",
             HELPMEFINDTHEJOB_LOG_TARGET="loki",
             HELPMEFINDTHEJOB_LEGAL_REVIEWED="true",
-            HELPMEFINDTHEJOB_BILLING_BACKEND="stripe",
-            HELPMEFINDTHEJOB_STRIPE_API_KEY="sk_test",
-            HELPMEFINDTHEJOB_STRIPE_PRICE_TEAM="price_team",
         ):
             report = self._build()
         # admin_audit is partial until the file exists; create it then re-check
@@ -206,9 +189,6 @@ class ReadinessTests(unittest.TestCase):
             HELPMEFINDTHEJOB_MONITORING_URL="https://uptime.example",
             HELPMEFINDTHEJOB_LOG_TARGET="loki",
             HELPMEFINDTHEJOB_LEGAL_REVIEWED="true",
-            HELPMEFINDTHEJOB_BILLING_BACKEND="stripe",
-            HELPMEFINDTHEJOB_STRIPE_API_KEY="sk_test",
-            HELPMEFINDTHEJOB_STRIPE_PRICE_TEAM="price_team",
         ):
             report = self._build()
         self.assertEqual(report.overall_status, "ok")
