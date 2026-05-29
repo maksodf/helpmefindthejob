@@ -111,5 +111,22 @@ class HumanTrackStaysHonest(unittest.TestCase):
             self.assertEqual(item.get("owner"), "operator")
 
 
+class LedgerDocInSync(unittest.TestCase):
+    """The human-readable docs/claims-ledger.md must not drift from the JSON
+    source: it must surface every buildable claim's verify-with-one-command."""
+
+    def test_doc_references_every_one_command(self):
+        doc = REPO_ROOT / "docs" / "claims-ledger.md"
+        if not doc.exists():
+            self.skipTest("docs/claims-ledger.md not present")
+        text = doc.read_text(encoding="utf-8")
+        missing = [
+            c["oneCommand"]
+            for c in _ledger()["buildableClaims"]
+            if c["oneCommand"] not in text
+        ]
+        self.assertEqual(missing, [], f"claims-ledger.md is missing one-commands: {missing}")
+
+
 if __name__ == "__main__":
     unittest.main()

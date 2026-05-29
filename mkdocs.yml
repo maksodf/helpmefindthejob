@@ -178,6 +178,7 @@ nav:
   - Accessibility: https://github.com/maksodf/helpmefindthejob/blob/main/ACCESSIBILITY.md
   - MCP API: mcp-server.md
   - Composition protocol (CACP): protocol/cacp-v0.1.md
+  - Claims ledger: claims-ledger.md
   - Deployment:
       - Generic recipe: deployment-recipe.md
       - Production: production-deployment.md

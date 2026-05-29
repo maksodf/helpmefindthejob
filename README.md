@@ -284,6 +284,26 @@ The MCP composition tools (`propose_referral`, `bundle_civic_context`,
 `query_esco_skill`, `export_eures_compatible`) are wired today; the
 end-to-end demonstration arrives with the partner agent.
 
+## Verify it yourself
+
+You should not have to trust this README. Every headline claim has a single
+command that verifies it from a clean checkout — see the
+[claims ledger](docs/claims-ledger.md)
+([machine-readable source](claims-ledger.json), gated by
+`tests/test_claims_ledger.py`). A few:
+
+```bash
+python -m conformance.cacp              # CACP v0.1 conformance: reference server 14/14
+python -m escolib Krankenschwester       # standalone ESCO reconciliation -> 2221.1
+python -m biasprobe                      # comparative bias report, offline from committed caches
+./scripts/verify_reproducibility.sh      # deterministic, commit-bound source tarball
+./scripts/sign_release_local.sh          # offline cosign sign -> verify dry-run
+```
+
+The ledger is honest about its limits too: the human dimensions (real users,
+external audit, co-maintainers, partners, third-party adoption) are listed as
+**not built** — code cannot produce them, and the ledger's gate enforces that.
+
 ## Self-hosting
 
 Helpmefindthejob is designed to be deployed by a single NGO, a
