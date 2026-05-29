@@ -15,7 +15,65 @@ Fixed · Security**.
 
 ## [Unreleased]
 
-(empty — open a new entry here when the first post-v0.80.0 commit lands.)
+Ceiling-sprint work on `claude/ceiling-sprint` (2026-05-29): elevating the
+project from "app with an MCP wrapper" toward a reusable civic-agent
+interoperability primitive. Every headline claim is verifiable one command at a
+time via the [claims ledger](claims-ledger.json)
+(`python -m unittest tests.test_claims_ledger`), which also enforces the honest
+buildable-vs-human-track split.
+
+### Added
+
+- **CACP v0.1 — the Civic Agent Composition Protocol**: a normative spec
+  ([`docs/protocol/cacp-v0.1.md`](docs/protocol/cacp-v0.1.md)), a published
+  machine-readable civic-profile schema
+  (`static/.well-known/civic-profile.schema.json`), and a runnable conformance
+  suite (`python -m conformance.cacp`). The reference MCP server **and** a
+  second, independent from-scratch server
+  (`examples/independent_cacp_server.py`) both pass it 14/14; a negative-case
+  test proves the suite rejects non-conformant servers.
+- **`escolib`** — standalone, import-isolated ESCO/ISCO reconciliation library
+  with a CLI (`python -m escolib`) and a 100%-recall / 0-false-positive benchmark
+  on committed fixtures.
+- **`biasprobe`** — standalone, offline-replayable comparative bias-evaluation
+  harness (`python -m biasprobe`); the live runner delegates to it.
+- **`civic_agents`** — typed specialist-agent contracts + a deterministic
+  (no-AI) planner that emits a trust receipt into the Article-12 audit chain per
+  handoff; a golden-trace test verifies the receipts are chain-verified and
+  externally anchorable.
+- **Tamper-evident audit anchoring** (`company_discovery/audit_anchor.py`) — a
+  salt-free content digest + line count over the audit chain, offline-verifiable
+  against a committed fixture; detects record edit / deletion / non-v2 injection.
+- **Reproducible source build** (`scripts/build_reproducible_source_dist.py` +
+  `scripts/verify_reproducibility.sh`) — a deterministic, HEAD-commit-bound
+  source tarball.
+- **Local cosign signing dry-run** (`scripts/sign_release_local.sh`).
+- **Compliance starter kit** (`compliance/starter-kit/`) — a machine-readable AI
+  Act / GDPR article→artefact matrix with a build-breaking traceability gate,
+  plus `scripts/fill_template.py` to fork the templates.
+- **Claims ledger** (`claims-ledger.json` + `docs/claims-ledger.md`).
+
+### Changed
+
+- `scripts/bias_comparative_report.py` is now a thin adapter over `biasprobe`
+  (byte-identical report output); `mcp_tools.query_esco_skill` delegates to
+  `escolib`.
+- `STANDARDS.md` + `docs/agent-architecture.md` updated to reflect CACP v0.1 and
+  the implemented planner.
+- mypy strict subset expanded to 6 modules (added `audit_anchor`,
+  `civic_agents.contracts`, `civic_agents.planner`).
+
+### Fixed
+
+- Bias replay caches were present but un-tracked, so a fresh clone silently
+  skipped the replay tests (a skip-backed claim); now force-tracked + guarded.
+- Supply-chain tests no longer silently skip when artefacts are absent (hard-fail).
+- The reproducible build reads HEAD git objects, not the working tree (a dirty
+  file previously changed the digest).
+- The CACP-L2-05 conformance check re-reads the victim's persisted state instead
+  of trusting the attacker-call's response shape.
+- `scripts/fill_template.py` now detects every `{{...}}` slot (spaces and line
+  wraps included), so `--strict` can no longer pass a half-filled template.
 
 ---
 
