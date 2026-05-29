@@ -1,0 +1,116 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://helpmefindthejob.org/.well-known/civic-profile.schema.json",
+  "title": "Civic Agent Composition Protocol — Portable Civic Profile",
+  "description": "The consent-bound, scope-filtered portable civic profile a Helpmefindthejob-class agent returns from `get_user_profile_for_consent`, for composition by independent civic agents (housing, residency, education, healthcare). This is the published data contract for CACP v0.1; the live shape is pinned to this schema by tests/test_civic_profile_schema.py (validation + completeness), so the code cannot drift from this contract. `additionalProperties` is permitted at object levels for forward-compatible, additive evolution per the catalogue's versioning policy.",
+  "type": "object",
+  "required": ["userId", "scopes", "schemaVersion", "consentRecordedAt"],
+  "additionalProperties": true,
+  "properties": {
+    "userId": {
+      "type": "string",
+      "description": "Opaque identifier of the subject within the issuing deployment."
+    },
+    "scopes": {
+      "type": "array",
+      "description": "The consent scopes the caller requested; only the corresponding blocks are present.",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "enum": ["identity", "residence", "employment", "cv", "outcomes", "preferences"]
+      }
+    },
+    "schemaVersion": {
+      "type": "string",
+      "description": "Version of the profile payload shape (independent of the CACP protocol version)."
+    },
+    "consentRecordedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the consent for this scoped read was recorded (ISO 8601)."
+    },
+    "identity": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "userId": { "type": "string" },
+        "displayName": { "type": ["string", "null"] },
+        "publicHandle": { "type": ["string", "null"] },
+        "preferredLocale": { "type": "string", "description": "ISO 639-1 locale tag." }
+      }
+    },
+    "residence": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "country": { "type": ["string", "null"] },
+        "statusType": { "type": ["string", "null"], "description": "Residence/permit status (e.g. §16d, Blue Card)." },
+        "workAuthorisation": { "type": ["string", "null"] }
+      }
+    },
+    "employment": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "currentStatus": { "type": ["string", "null"] },
+        "targetRoleFamilies": { "type": "array", "items": { "type": "string" } },
+        "languageLevels": {
+          "type": "object",
+          "additionalProperties": { "type": "string" },
+          "description": "Map of language label to proficiency descriptor."
+        },
+        "escoSkillCodes": { "type": "array", "items": { "type": "string" }, "description": "ESCO/ISCO skill codes (see escolib / the ESCO reconciliation surface)." },
+        "watchedCompanies": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "cv": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "present": { "type": "boolean" },
+        "lastUpdatedAt": { "type": ["string", "null"], "format": "date-time" },
+        "note": { "type": "string" }
+      }
+    },
+    "outcomes": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "events": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "required": ["outcomeId", "userId", "outcomeType"],
+            "properties": {
+              "outcomeId": { "type": "string" },
+              "userId": { "type": "string" },
+              "jobId": { "type": ["string", "null"] },
+              "outcomeType": {
+                "type": "string",
+                "enum": ["applied", "replied", "interviewing", "offer", "rejected", "withdrawn"]
+              },
+              "occurredAt": { "type": "string", "format": "date-time" },
+              "recordedAt": { "type": "string", "format": "date-time" },
+              "schemaVersion": { "type": "string" }
+            }
+          }
+        },
+        "counts": {
+          "type": "object",
+          "additionalProperties": { "type": "integer", "minimum": 0 }
+        },
+        "total": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "preferences": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "remote": { "type": ["boolean", "null"] },
+        "salaryRange": { "type": ["string", "null"] },
+        "locationStrings": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  }
+}
