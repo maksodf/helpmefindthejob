@@ -589,7 +589,8 @@ PERSONAS: list[PersonaFixture] = [
 # 10 CV-tailoring scenarios (4 light + 4 moderate + 2 significant) per
 # persona. Generators are persona-aware (use the persona's industry,
 # location, friction context); first-run strong-fit scenarios above are
-# preserved as scenarios[0] so bias-testing-2026-05-18.md remains
+# preserved as scenarios[0] so the original 2026-05-18 baseline run (now
+# narrated in docs/grant/04-research-and-decisions.md Part B) remains
 # comparable.
 # ---------------------------------------------------------------------------
 
@@ -1238,7 +1239,7 @@ def friction_keywords_for(persona_id: str | None) -> list[str]:
     ``execute_cv_tailoring``'s ``friction_keywords`` parameter. The
     contract was verified at 87.1% overall pass-rate / 92.9% criterion-
     (d) pass-rate in the bias-testing run dated 2026-05-19 (see
-    ``docs/grant/bias-testing-2026-05-19.md``).
+    ``docs/grant/04-research-and-decisions.md`` Part B).
 
     Backward-compat: a ``None`` or non-panel persona_id returns ``[]``,
     which lets ``build_cv_tailoring_prompt`` skip the persona-specific

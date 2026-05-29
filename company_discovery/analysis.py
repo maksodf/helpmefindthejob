@@ -599,8 +599,9 @@ def build_cv_tailoring_prompt(
     testing finding: criterion (d) friction-context-keyword check
     failed 27/70 because the prompt did not ask the model to
     acknowledge the candidate's friction situation. See
-    ``docs/grant/bias-testing-2026-05-18-polish.md`` §"CV-tailoring
-    results" for the source finding.
+    ``docs/grant/04-research-and-decisions.md`` Part B (2026-05-19) for
+    the source finding (the dated bias-testing snapshots were consolidated
+    into the decision log in the e85946b docs-hygiene cleanup).
     """
 
     persona_label, profile_block = _candidate_profile_block(profile)
