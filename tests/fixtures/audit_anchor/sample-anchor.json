@@ -4,5 +4,6 @@
   "createdAt": "2026-05-29T00:00:00+00:00",
   "headChainHmac": "5bd2ca6432d1440ecec6cf1a0a6aedacb0a1fa35c91924bd9274144486ac7c7c",
   "lastSequenceNo": 3,
-  "recordCount": 3
+  "recordCount": 3,
+  "totalLines": 3
 }

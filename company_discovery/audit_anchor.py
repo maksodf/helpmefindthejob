@@ -95,6 +95,7 @@ class AuditAnchor:
 
     anchor_version: str
     record_count: int
+    total_lines: int
     last_sequence_no: int
     head_chain_hmac: str
     content_digest: str
@@ -104,6 +105,7 @@ class AuditAnchor:
         return {
             "anchorVersion": self.anchor_version,
             "recordCount": self.record_count,
+            "totalLines": self.total_lines,
             "lastSequenceNo": self.last_sequence_no,
             "headChainHmac": self.head_chain_hmac,
             "contentDigest": self.content_digest,
@@ -115,11 +117,30 @@ class AuditAnchor:
         return cls(
             anchor_version=str(raw["anchorVersion"]),
             record_count=int(raw["recordCount"]),
+            # -1 = "not recorded" (anchor written before total_lines existed);
+            # verify_anchor then skips the line-count check for forward-compat.
+            total_lines=int(raw.get("totalLines", -1)),
             last_sequence_no=int(raw["lastSequenceNo"]),
             head_chain_hmac=str(raw["headChainHmac"]),
             content_digest=str(raw["contentDigest"]),
             created_at=str(raw["createdAt"]),
         )
+
+
+def count_nonempty_lines(log_paths: list[Path]) -> int:
+    """Total non-empty lines across the log files, counting EVERY line —
+    including malformed / non-v2 ones that ``_ordered_v2_records`` skips. The
+    anchor commits to this so ``verify_anchor`` detects an injected junk line on
+    its own, not only via the chain verifier."""
+    total = 0
+    for path in log_paths:
+        if not path.exists():
+            continue
+        with path.open("r", encoding="utf-8") as handle:
+            for raw in handle:
+                if raw.strip():
+                    total += 1
+    return total
 
 
 def compute_anchor(log_paths: list[Path], *, created_at: str) -> AuditAnchor:
@@ -129,6 +150,7 @@ def compute_anchor(log_paths: list[Path], *, created_at: str) -> AuditAnchor:
     return AuditAnchor(
         anchor_version=ANCHOR_VERSION,
         record_count=len(records),
+        total_lines=count_nonempty_lines(log_paths),
         last_sequence_no=int(last.get("sequence_no", 0)),
         head_chain_hmac=str(last.get("chain_hmac", "")),
         content_digest=compute_content_digest(records),
@@ -168,9 +190,13 @@ class AnchorVerificationResult:
 
 
 def verify_anchor(log_paths: list[Path], anchor: AuditAnchor) -> AnchorVerificationResult:
-    """Recompute the content digest from the current logs and confirm it still
-    matches the anchored value. Any record edit / insertion / deletion changes
-    the digest (or the record count / head HMAC) and is reported here."""
+    """Recompute the anchor's commitments from the current logs and confirm each
+    still matches: the salt-free content digest over the v2 records, the v2
+    record count, the total non-empty line count (so an injected non-v2 / junk
+    line is caught here on its own, not only by ``verify_chain``), and the head
+    chain HMAC. Any v2-record edit, deletion, or reordering, or any line
+    insertion / removal, is reported. For the full integrity guarantee (chain
+    intact AND matching its anchor), use :func:`verify_chain_and_anchor`."""
     records = _ordered_v2_records(log_paths)
     actual = compute_content_digest(records)
     if actual != anchor.content_digest:
@@ -187,6 +213,15 @@ def verify_anchor(log_paths: list[Path], anchor: AuditAnchor) -> AnchorVerificat
             expected_digest=anchor.content_digest,
             actual_digest=actual,
         )
+    if anchor.total_lines >= 0:
+        actual_lines = count_nonempty_lines(log_paths)
+        if actual_lines != anchor.total_lines:
+            return AnchorVerificationResult(
+                ok=False,
+                reason=f"line_count_mismatch:expected={anchor.total_lines},actual={actual_lines}",
+                expected_digest=anchor.content_digest,
+                actual_digest=actual,
+            )
     head = str(records[-1].get("chain_hmac", "")) if records else ""
     if head != anchor.head_chain_hmac:
         return AnchorVerificationResult(

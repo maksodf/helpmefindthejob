@@ -100,6 +100,25 @@ class TamperingIsDetected(unittest.TestCase):
             )
             self.assertFalse(verify_chain([log], _FIXTURE_SALT).ok)
 
+    def test_injecting_a_non_v2_line_is_caught_by_anchor_alone(self):
+        # Regression guard: a non-v2 / junk line is skipped by _ordered_v2_records,
+        # so it does NOT change the content digest or v2 record_count. Before the
+        # total_lines commitment it was caught only by verify_chain; now
+        # verify_anchor detects it on its own via the line count.
+        anchor = load_anchor(_FIXTURE_ANCHOR)
+        with TemporaryDirectory() as tmp:
+            log = self._copy_fixture_log(tmp)
+            with log.open("a", encoding="utf-8") as fh:
+                fh.write('{"not":"a v2 record"}\n')
+            res = verify_anchor([log], anchor)
+            self.assertFalse(res.ok, "verify_anchor missed an injected non-v2 line")
+            self.assertTrue(
+                res.reason.startswith("line_count_mismatch"),
+                f"expected line_count_mismatch, got {res.reason}",
+            )
+            # verify_chain independently rejects the non-v2 line too.
+            self.assertFalse(verify_chain([log], _FIXTURE_SALT).ok)
+
 
 class FreshRoundTrip(unittest.TestCase):
     def test_compute_then_verify_then_tamper(self):
