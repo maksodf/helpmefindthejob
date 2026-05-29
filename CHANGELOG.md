@@ -15,7 +15,7 @@ Fixed · Security**.
 
 ## [Unreleased]
 
-Ceiling-sprint work on `claude/ceiling-sprint` (2026-05-29): elevating the
+Work landed 2026-05-29: elevating the
 project from "app with an MCP wrapper" toward a reusable civic-agent
 interoperability primitive. Every headline claim is verifiable one command at a
 time via the [claims ledger](claims-ledger.json)

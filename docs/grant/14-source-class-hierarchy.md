@@ -78,7 +78,7 @@ in classes A–F via in-context evidence, never as standalone authority.
 
 ## What PART 8 adds on top
 
-PART 8 (this slice) ships:
+This pass ships:
 
 - **Loop 24 (this commit)**: the doctrine document; transparency-notice
   extension cross-referencing the hierarchy; code-level provenance

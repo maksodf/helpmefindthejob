@@ -293,7 +293,7 @@ Honest scope statement so the reviewer can distinguish what's actually shipped f
 
 - **Live housing-agent integration** — the `propose_referral` tool emits a structured handoff payload, but the destination housing agent is currently a mock stub per Decision 20. Option B real-integration with the maintainer's partner agent is the post-grant deliverable; the project-side surface (the `propose_referral` call shape + consent handling) is shipped.
 - **Healthcare / residency / education civic agents** — the MCP surface is the invitation; no live partner agent exists at v0.80.0. Composition demonstrations are project-side simulations.
-- **MCP-mode end-to-end test in CI** — `tests/e2e/mcp_composition_smoke.py` is scoped for Ceiling 2 §2.7.7; current CI exercises the catalogue + JSON-Schema validation via `tests/test_phase11_mcp` but not the sequential-handoff chain.
+- **MCP-mode end-to-end test in CI** — `tests/e2e/mcp_composition_smoke.py` is scoped for a post-grant release; current CI exercises the catalogue + JSON-Schema validation via `tests/test_phase11_mcp` but not the sequential-handoff chain.
 - **Cross-deployment interop** — EURES projection format conforms to the schema; an actual handoff to a Pôle Emploi or SEPE instance has not been tested live.
 
 These deferrals are tracked as post-grant deliverables (MCP composition + reliability/CI; see `03-post-grant.md`). The v2 update closes the documentation gap (sketches → real examples); the v3 update will close the live-partner-integration gap.

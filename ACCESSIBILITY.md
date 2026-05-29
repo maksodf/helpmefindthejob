@@ -30,7 +30,7 @@ accessibility audits. Three passes have run so far (all 2026-05-19):
    axe-core 4.10) against 8 authenticated UI states reached by
    logging in as the seeded Aïcha persona. 14 violations pre-fix
    → 0 post-fix.
-3. **Third pass — polish trio** (this slice): closes the three
+3. **Third pass — polish trio**: closes the three
    known gaps the second pass left open.
    - **Sub-slice A: light-mode auth-surface re-run** — runner now
      accepts `--color-scheme {dark,light,both}`; 8 light-mode auth

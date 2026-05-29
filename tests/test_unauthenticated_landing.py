@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 """Unauthenticated landing-block contract (pre-deployment polish).
 
-Before this slice, ``static/index.html`` opened with a bare
+Previously, ``static/index.html`` opened with a bare
 "Sign in to continue" auth gate — meaning an NLnet reviewer or
 first-time visitor landing on `helpmefindthejob.org` saw a gate,
 not the project mission. The unauthenticated landing block sits

@@ -89,7 +89,7 @@ Can the purpose be achieved with less data? Analysis per processing operation:
 | CV text (full) | Yes — needed for tailored CV editing + cover-letter drafting | A skills-only mode exists (manual entry, no free text) |
 | Audit log | Yes — AI Act Article 12 mandatory | n/a |
 | AI call logging | Yes — Article 22 right-to-human-review + Article 26(6) deployer obligation | n/a |
-| Cross-session memory | Optional — opt-out via `/forget`-class chat verbs | "Cross-session memory" deferred to Ceiling 2 §2.1 |
+| Cross-session memory | Optional — opt-out via `/forget`-class chat verbs | "Cross-session memory" deferred to a post-grant release |
 
 ---
 
@@ -103,7 +103,7 @@ Can the purpose be achieved with less data? Analysis per processing operation:
 | User cannot exercise Art. 15/16/17/20 rights | Low (2) | Medium (3) | 6 | `/api/data/export` (Art. 20), `/api/profile/delete` (Art. 17), `/api/profile` POST (Art. 16); validated end-to-end in `compliance/article-20-export-proof.md` |
 | Audit-log key compromise enables linkage attack | Low (1) | High (4) | 4 | Key rotation playbook at `compliance/audit-log-key-rotation.md` + annual schedule + 6 incident-triggered rotation classes |
 | Stale CV data persists beyond retention | Low (2) | Low (2) | 4 | Default 180-day retention; deployer-configurable; explicit `/api/profile/delete` |
-| Migrant-status field discloses asylum stage to a non-EU AI provider | Medium (3) | High (5) — could affect asylum proceedings | 15 — **CRITICAL** | (a) `transparency-notice.md` warns user at the residency-status field; (b) deployer's BYO-AI choice can be restricted to EU-hosted Ollama; (c) deployer can disable the residency-status field via env-var override (Ceiling 2 §2.10.2 scope) |
+| Migrant-status field discloses asylum stage to a non-EU AI provider | Medium (3) | High (5) — could affect asylum proceedings | 15 — **CRITICAL** | (a) `transparency-notice.md` warns user at the residency-status field; (b) deployer's BYO-AI choice can be restricted to EU-hosted Ollama; (c) deployer can disable the residency-status field via env-var override (a post-grant enhancement) |
 | Deployer's operator account becomes admin-only without redundancy | Low (1) | High (4) | 4 | The role system supports multiple admins per workspace; deployer's onboarding flow recommends ≥2 admins |
 | AI hallucination causes user to pursue wrong-fit role | Medium (3) | Medium (3) | 9 | Per-criterion scoring + the score-clamp parser layer + the "AI outputs are suggestions, not decisions" framing in `transparency-notice.md` §"Limitations" |
 
@@ -146,7 +146,7 @@ Can the purpose be achieved with less data? Analysis per processing operation:
 - The residency-status field carries an explicit warning in the SPA UI before entry.
 - The deployer can restrict BYO-AI providers to EU-hosted options (Ollama at the deployer's own EU datacentre; future EU-only managed options).
 - The `transparency-notice.md` `[Deployer-managed addendum]` slot is where the deployer specifies which provider(s) the user's data may reach.
-- A future enhancement (Ceiling 2 §2.10.2 Article 22 in-app surface) will let the user toggle "do NOT send my residency-status field to AI" — currently this is an all-or-nothing AI-disable choice.
+- A future enhancement (a post-grant Article 22 in-app surface) will let the user toggle "do NOT send my residency-status field to AI" — currently this is an all-or-nothing AI-disable choice.
 
 ---
 

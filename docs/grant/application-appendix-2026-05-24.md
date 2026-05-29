@@ -71,7 +71,7 @@ Standards anchored: ESCO (occupations + skills), EURES (schema), schema.org/JobP
 |---|---|---|---|---|
 | 1 | Legal + governance pack (Apache 2.0, CLA, NOTICE, TRADEMARK, governance files) | €4,000 | Apache 2.0 + DCO + CC compliance | Shipped |
 | 2 | MCP composition reference (15-tool catalogue + JSON schemas + CI test) | €8,000 | MCP 2024-11-05 | Shipped |
-| 3 | EU AI Act compliance pack (14 documents in `compliance/`) | €10,000 | Art. 9 · 10 · 11+Annex IV · 12 · 13 · 14 · 15 · 22 · 26 · 27 · 49 · 50 · 73 · 86 + GDPR Art. 5 · 20 · 22 · 28 · 30 · 32 · 33 · 35 | Shipped (this slice 2026-05-24) |
+| 3 | EU AI Act compliance pack (14 documents in `compliance/`) | €10,000 | Art. 9 · 10 · 11+Annex IV · 12 · 13 · 14 · 15 · 22 · 26 · 27 · 49 · 50 · 73 · 86 + GDPR Art. 5 · 20 · 22 · 28 · 30 · 32 · 33 · 35 | Shipped (2026-05-24) |
 | 4 | Public demo + accessibility (mkdocs site + WCAG 2.2 AA evidence + persona-seeded demo) | €6,000 | WCAG 2.2 AA + Article 49 EU AI database | Demo deployment in flight (DNS gated); accessibility evidence shipped |
 | 5 | Reproducible builds + supply-chain (Nix flake + cosign + SBOM + Scorecard) | €5,000 | SLSA Level 2 (planned) + RFC 9116 | Shipped |
 | 6 | Institutional readiness + standards interop (ESCO 30-occupation / 50-skill reference + EURES projection + ≥1 letter of support + Commons Conservancy admission) | €4,000 | Cross-references all of the above | Conservancy intake submitted (parallel track); outreach drafted, send-gate at submission window |

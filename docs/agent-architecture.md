@@ -62,7 +62,7 @@ The monolith is justified at v0.80.0 because the chat-router's REGISTRY layer al
 
 The multi-agent refactor introduces a **planner agent** that decomposes user goals into sub-goals and routes each to a **specialist agent** with a typed contract.
 
-> **Implemented on the `claude/ceiling-sprint` branch (2026-05).** The planner and the six typed contracts below now ship in the `civic_agents/` package (`civic_agents/contracts.py`, `civic_agents/planner.py`): deterministic rule-based routing (the no-AI fallback), JSON-Schema-validated handoffs, and a trust receipt emitted into the Article-12 audit chain per step. `tests/test_civic_agents.py` carries the golden-trace replay that verifies the receipts land in the HMAC chain and are externally anchorable. The §2 design below is the specification it implements; §2.3 (“Why this isn’t shipped at v0.80.0”) is retained as the historical rationale for why it post-dates that release.
+> **Implemented as of 2026-05.** The planner and the six typed contracts below now ship in the `civic_agents/` package (`civic_agents/contracts.py`, `civic_agents/planner.py`): deterministic rule-based routing (the no-AI fallback), JSON-Schema-validated handoffs, and a trust receipt emitted into the Article-12 audit chain per step. `tests/test_civic_agents.py` carries the golden-trace replay that verifies the receipts land in the HMAC chain and are externally anchorable. The §2 design below is the specification it implements; §2.3 (“Why this isn’t shipped at v0.80.0”) is retained as the historical rationale for why it post-dates that release.
 
 ```text
 ┌─────────────────────────────────────────────────────────────────┐

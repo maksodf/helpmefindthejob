@@ -4,7 +4,7 @@
 
 Closes phase2-backlog item #68 (verified gaps from PART 6 walks):
 
-Before this slice, the bucket taxonomy at
+Previously, the bucket taxonomy at
 ``company_discovery/job_type_filter.py::TAXONOMY`` had no entries
 for several panel-persona canonical roles:
 

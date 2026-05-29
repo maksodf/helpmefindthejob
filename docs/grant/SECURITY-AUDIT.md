@@ -84,7 +84,7 @@ otherwise noted). None are submission blockers:
   security / incident readiness).
 - **Wire gitleaks into the existing OpenSSF Scorecard workflow** so
   every push to `main` gets a fresh secrets scan. Scope deferred to
-  Ceiling 2 Section 2.14 alongside the bug-bounty program work.
+  a post-grant security milestone alongside the bug-bounty program work.
 - **Quarterly cadence**: re-run this scan once per quarter and append
   a dated section below. Maintainer-owned task.
 

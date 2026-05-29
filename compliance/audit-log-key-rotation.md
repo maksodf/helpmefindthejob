@@ -228,4 +228,4 @@ Future multi-key verification testing should add:
 - A test that loads a synthetic two-era log and verifies the era 1 entries under the era 1 key and era 2 entries under the era 2 key.
 - A test that asserts a forged entry inserted across the era boundary fails chain validation under both keys.
 
-Both tests are deferred to Ceiling 2 Section 2.13 (reliability and operations); their absence does not block this playbook from being usable today, because rotation is a manual procedure with a human verifier on every step.
+Both tests are deferred to a post-grant reliability-and-operations milestone; their absence does not block this playbook from being usable today, because rotation is a manual procedure with a human verifier on every step.
