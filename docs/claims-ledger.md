@@ -40,7 +40,7 @@ never claimed as done — the ledger's gate fails if any is flipped to "built".
 | External security audit | not built | Needs a paid third party; internal review ≠ external audit. |
 | Co-maintainers / contributor community | not built | Code cannot manufacture a community. |
 | Signed institutional partners (MOUs) | not built | Outreach drafted but unsent. |
-| Third-party adoption of CACP | not built | Buildable proxy shipped: the in-repo reference agents pass conformance. |
+| Third-party adoption of CACP | not built | Buildable proxy: the reference MCP server passes conformance + a reference consumer composes with it. |
 
 This split — and the runnable one-commands above — is the project's integrity
 spine: claims are verifiable, and the limits are stated honestly.

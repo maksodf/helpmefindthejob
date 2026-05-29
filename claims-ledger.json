@@ -104,7 +104,7 @@
       "item": "Third-party adoption of CACP",
       "status": "not-built",
       "owner": "operator",
-      "note": "Buildable proxy shipped: the in-repo reference agents pass the conformance suite. Genuine external adoption is a human-track outcome."
+      "note": "Buildable proxy shipped: the in-repo reference MCP server passes the conformance suite, and a reference consumer (examples/housing-stub-client) composes with it. Genuine external adoption by another party is a human-track outcome."
     }
   ]
 }
