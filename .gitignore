@@ -82,7 +82,7 @@ cosign.password
 helpmefindthejob-*.tar.gz
 # The immutable v0.1.0 sdist must keep its original filename —
 # the cosign signature was computed over directjob-scout-0.1.0.tar.gz,
-# so renaming would break verification (Decision 22).
+# so renaming would break verification.
 directjob-scout-*.tar.gz
 
 # axe-core CLI accessibility audit JSON output. Each file is 100–400 KB

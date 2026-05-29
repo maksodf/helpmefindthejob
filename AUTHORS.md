@@ -29,7 +29,7 @@ Resolution of any placeholder line in this file (such as the co-maintainer entry
 
 The policy reflects the project's commitment to contributor autonomy and aligns with the spirit of the [Contributor Covenant](CODE_OF_CONDUCT.md), which the project has adopted. It also avoids a class of governance failure where a project bakes a contributor's name into public files without that contributor having said yes — a small but real harm that becomes hard to undo once mirrored, indexed, and forked.
 
-Background: this policy is recorded as Decision 18 in [`docs/grant/04-research-and-decisions.md`](docs/grant/04-research-and-decisions.md), dated 2026-05-17.
+Background: this consent-first authorship policy is documented in [`docs/grant/04-research-and-decisions.md`](docs/grant/04-research-and-decisions.md) (2026-05-17).
 
 ## Contributor License Agreement
 

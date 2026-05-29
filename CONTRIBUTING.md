@@ -29,8 +29,7 @@ buildable but may include unfinished work. The fresh-clone install
 is verified on every push by the `fresh-clone-install` CI workflow
 (`.github/workflows/fresh-clone-install.yml`) on `python:3.11-slim`
 and `python:3.12-slim` containers. The historical
-`cryptography` / `cffi` build issue is closed (see Week 3 task 3.1
-in `docs/grant/02-execution-plan.md`). If you still hit setup
+`cryptography` / `cffi` build issue is closed. If you still hit setup
 friction on a specific platform, please open an issue — fixing
 onboarding paper-cuts is itself a valuable contribution.
 
@@ -61,7 +60,7 @@ cd helpmefindthejob
 pip install -r requirements.txt
 
 # 2. Install development dependencies (pre-commit and friends; ruff /
-#    mypy / coverage land alongside Week 3 task 3.2).
+#    mypy / coverage).
 pip install -r requirements-dev.txt
 
 # 3. Activate the git pre-commit hook.
@@ -73,9 +72,8 @@ python3 app.py
 ```
 
 The pre-commit hook currently runs the SPDX-header check on every Python
-file you stage. It is intentionally minimal during the Week 1 phase of
-the grant sprint; lint, format, and type-check hooks (ruff, black, mypy)
-will be added in Week 3 (`docs/grant/02-execution-plan.md` §3.2).
+file you stage. It is intentionally minimal; lint, format, and
+type-check (ruff, mypy) run as CI gates — see `.github/workflows/quality.yml`.
 
 ### Nix workflow (optional, reproducible)
 
@@ -107,7 +105,7 @@ The suite passes natively on Python 3.11 + 3.12 across macOS, Linux,
 and minimal slim Docker containers — the `fresh-clone-install` CI
 workflow (`.github/workflows/fresh-clone-install.yml`) verifies this
 on every push. If your specific environment still has issues with
-cryptography wheels (extremely rare with the pinning landed in §3.1),
+cryptography wheels (extremely rare with the current pinning),
 run inside Docker as a fallback:
 
 ```bash
@@ -157,7 +155,7 @@ Use conventional commits with a clear scope:
 
 <optional body that explains the why, the trade-offs, and any non-
 obvious consequence. Wrap at 72 columns. Reference issues or planning
-docs by relative path, e.g. docs/grant/02-execution-plan.md §1.2.>
+docs by relative path, e.g. docs/grant/01-project-brief.md.>
 ```
 
 Types we use:
