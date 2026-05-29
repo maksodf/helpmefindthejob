@@ -41,6 +41,12 @@ _DATA_DIR = Path(os.environ.get("HELPMEFINDTHEJOB_DATA_DIR", "."))
 _AUDIT_SALT = base64.b64decode(os.environ.get("HELPMEFINDTHEJOB_AUDIT_SALT", "")) or b"local-dev-salt"
 _SCHEMA_PATH = Path(__file__).resolve().parent.parent / "static" / ".well-known" / "civic-profile.schema.json"
 
+# Deliberate, env-gated conformance violations — OFF by default (the server is
+# fully conformant). tests/test_cacp_conformance_teeth.py sets one of these to
+# prove the conformance suite actually REJECTS a non-conformant server (i.e. it
+# discriminates, rather than rubber-stamping). Never set in normal operation.
+_BREAK = os.environ.get("HELPMEFINDTHEJOB_CACP_BREAK", "")
+
 _SCHEMA_VERSION = "civic-profile/v1"
 _TOOL_VERSION = "1.0.0"
 _CONSENT_SCOPES = ("identity", "residence", "employment", "cv", "outcomes", "preferences")
@@ -122,7 +128,7 @@ class CacpServer:
                 },
             }
 
-        return [
+        tools = [
             tool("get_user_profile_for_consent", "Scope-filtered portable civic profile.",
                  {"userId": _STR, "scopes": {"type": "array", "items": _STR}}, ["userId", "scopes"]),
             tool("propose_referral", "Propose a cross-agent referral.",
@@ -137,6 +143,11 @@ class CacpServer:
             tool("record_user_outcome", "Record a measured user outcome.",
                  {"userId": _STR, "outcome": _STR}, ["userId", "outcome"]),
         ]
+        if _BREAK == "drop_tool":  # violate CACP-L1-04 (a required tool is absent)
+            tools = [t for t in tools if t["name"] != "record_user_outcome"]
+        elif _BREAK == "bad_semver":  # violate CACP-L1-03 (version is not SemVer)
+            tools[0]["version"] = "v1"
+        return tools
 
     # -- dispatch ----------------------------------------------------------
 
@@ -181,7 +192,7 @@ class CacpServer:
     def _consent(self, args: dict[str, Any]) -> dict[str, Any]:
         requested = list(args.get("scopes") or [])
         unknown = [s for s in requested if s not in _CONSENT_SCOPES]
-        if unknown:
+        if unknown and _BREAK != "accept_bad_scope":  # accept_bad_scope violates CACP-L3-02
             return self._problem("invalid_arguments", f"unknown consent scope(s): {unknown}")
         blocks = {
             "identity": {"displayName": "Aïcha B.", "preferredLang": "de"},
@@ -198,9 +209,12 @@ class CacpServer:
             "consentRecordedAt": _now(),
         }
         for scope in requested:
-            profile[scope] = blocks[scope]
-        # belt-and-braces: ensure we emit a schema-valid contract
-        jsonschema.validate(profile, self._schema)
+            profile[scope] = blocks.get(scope, {})  # .get so accept_bad_scope can't KeyError
+        # belt-and-braces: ensure we emit a schema-valid contract. (The schema's
+        # scope enum is itself a second rejection path — so accept_bad_scope must
+        # skip this too to simulate a server that does NO scope validation.)
+        if _BREAK != "accept_bad_scope":
+            jsonschema.validate(profile, self._schema)
         return {"profile": profile}
 
     def _propose(self, args: dict[str, Any]) -> dict[str, Any]:
@@ -231,6 +245,11 @@ class CacpServer:
         user_id, referral_id = str(args["userId"]), str(args["referralId"])
         new_status = str(args.get("status", ""))
         ref = self._find(user_id, referral_id)
+        if ref is None and _BREAK == "leak_tenant":  # leak_tenant violates CACP-L2-05
+            ref = next(
+                (r for refs in self._referrals.values() for r in refs if r["referralId"] == referral_id),
+                None,
+            )
         if ref is None:
             # tenant isolation: never leak that the referral exists for another user
             return self._problem("not_found", "referral not found for this user")
