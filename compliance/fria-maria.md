@@ -3,7 +3,7 @@
 
 # FRIA — Maria (Spain → Munich, EU Blue Card, underemployed architect)
 
-**Article**: AI Act Article 27. Instantiates the FRIA template for the **Maria** persona-class. PlanTowardPerfection box 2.10.4.
+**Article**: AI Act Article 27. Instantiates the FRIA template for the **Maria** persona-class.
 **Status**: project-side reference FRIA. Deployer instantiates with own context.
 **Last updated**: 2026-05-24.
 

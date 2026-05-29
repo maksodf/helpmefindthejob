@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 """Regression guards for the demo-deployment banner.
 
-PlanTowardPerfection box 1.6.5 ships a small banner that appears
+A small banner appears
 when a reviewer lands on `demo.helpmefindthejob.org` (or with
 `?demo=1` for QA). The banner explains accounts are reset nightly
 so reviewers do not worry about mutating shared data.

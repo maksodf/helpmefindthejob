@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 """Persona-smoke e2e — Aïcha (Tunisia → Berlin, §16d Anerkennung).
 
-PlanTowardPerfection Ceiling-2 box 2.5.9. See
+See
 `tests/e2e/persona_smoke_helpers.py` for the helper + rationale
 on why the in-process pattern is used rather than Playwright.
 """

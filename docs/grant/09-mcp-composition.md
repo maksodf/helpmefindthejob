@@ -219,7 +219,7 @@ These need resolving during Week 2 work, not before.
 
 ## v2 — Real-integration examples (2026-05-24)
 
-PlanTowardPerfection box 2.7.8: "Document the MCP composition narrative in `docs/grant/09-mcp-composition.md` v2 with real-integration examples replacing the current architectural sketches."
+This v2 update documents the MCP composition narrative with real-integration examples replacing the earlier architectural sketches.
 
 The earlier sections of this document describe the design intent. This v2 section anchors the intent in three real worked examples — actual MCP composition flows exercised end-to-end against the live 13-tool catalogue, captured as dated walk-throughs that any downstream auditor can replay.
 
@@ -296,7 +296,7 @@ Honest scope statement so the reviewer can distinguish what's actually shipped f
 - **MCP-mode end-to-end test in CI** — `tests/e2e/mcp_composition_smoke.py` is scoped for Ceiling 2 §2.7.7; current CI exercises the catalogue + JSON-Schema validation via `tests/test_phase11_mcp` but not the sequential-handoff chain.
 - **Cross-deployment interop** — EURES projection format conforms to the schema; an actual handoff to a Pôle Emploi or SEPE instance has not been tested live.
 
-These deferrals are tracked in `PlanTowardPerfection.MD` (Section 2.7 MCP composition + Section 2.13 reliability/CI). The v2 update closes the documentation gap (sketches → real examples); the v3 update will close the live-partner-integration gap.
+These deferrals are tracked as post-grant deliverables (MCP composition + reliability/CI; see `03-post-grant.md`). The v2 update closes the documentation gap (sketches → real examples); the v3 update will close the live-partner-integration gap.
 
 ### Cross-references
 

@@ -219,7 +219,7 @@ A second run on 2026-05-21 layered cross-provider comparison on top of the synth
 
 **Top cross-provider disagreements** (the cells where providers scored a single scenario most differently): the largest spread was 30 points on `olga_mixed_distant_city` (deepseek=70, ollama=40), followed by 29 points on `olga_weak_wrong_industry_c` (34 vs 5), 22 points on `olga_weak_wrong_industry_b` and `tobias_weak_wrong_industry_a`. Full top-20 disagreement table in the report. The pattern is consistent: ollama scores the wrong-industry / distant-city scenarios harshly while deepseek scores them moderate-low. Both behaviours are defensible — they reflect different priors on transferability — but the spread is large enough that a single-provider deployment will bias the user-visible score in the provider's direction.
 
-**Out-of-bounds (OOB) hit rate**: the prior 2026-05-19 polished cohort run (narrated in `04-research-and-decisions.md` Part B 2026-05-19 entry; the dated snapshot itself was consolidated there in the e85946b docs cleanup) measured **10 / 77 = 13.0%** scoring out-of-bounds (where the model's per-criterion sub-scores don't sum to the SCORE total, or where SCORE is outside the 0-100 range, or where the reason / gaps fields are malformed in a way the parser rejects). The 2026-05-21 comparative run did not re-measure this metric — it focused on cross-provider mean drift — so the **13.0% OOB rate stands as the most recent honest measurement** and is the figure cited in the transparency notice. PlanTowardPerfection Section 2.8 (search-quality + provider coverage) tracks driving this below 3% as a Ceiling-2 deliverable.
+**Out-of-bounds (OOB) hit rate**: the prior 2026-05-19 polished cohort run (narrated in `04-research-and-decisions.md` Part B 2026-05-19 entry; the dated snapshot itself was consolidated there in the e85946b docs cleanup) measured **10 / 77 = 13.0%** scoring out-of-bounds (where the model's per-criterion sub-scores don't sum to the SCORE total, or where SCORE is outside the 0-100 range, or where the reason / gaps fields are malformed in a way the parser rejects). The 2026-05-21 comparative run did not re-measure this metric — it focused on cross-provider mean drift — so the **13.0% OOB rate stands as the most recent honest measurement** and is the figure cited in the transparency notice. Driving this below 3% (search-quality + provider coverage) is a tracked post-grant deliverable (see `03-post-grant.md`).
 
 **Honest framing for reviewers and deployers**:
 
@@ -233,13 +233,13 @@ A second run on 2026-05-21 layered cross-provider comparison on top of the synth
 ## 9. Append log
 
 - **2026-05-18**: methodology drafted as part of Week 2 task 2.8 of the NLnet NGI Zero Commons Fund grant sprint. Pre-deployment re-test framework drafted. First scheduled execution: Week 3 partner-NGO pilot.
-- **2026-05-24** (PlanTowardPerfection box 1.4.7): §8.1 added — cross-provider comparative results from the 2026-05-21 run (7 personas × 10 scenarios × 2 providers = 140 data points; per-persona mean scores deepseek vs ollama; top-spread disagreement summary; the 13.0% OOB rate carried forward from the 2026-05-19 polished cohort run with the honest-framing paragraph distinguishing OOB-rate-as-AI-output-quality-metric from user-visible-harm-rate). Cross-references the comparative report at `docs/grant/bias-comparative-report-2026-05-21.md` and the parser-layer defence at `tests/test_prompt_injection_vectors.py::V3JdIndirectInjection` so reviewers can see the chain from measurement to safety surface.
+- **2026-05-24**: §8.1 added — cross-provider comparative results from the 2026-05-21 run (7 personas × 10 scenarios × 2 providers = 140 data points; per-persona mean scores deepseek vs ollama; top-spread disagreement summary; the 13.0% OOB rate carried forward from the 2026-05-19 polished cohort run with the honest-framing paragraph distinguishing OOB-rate-as-AI-output-quality-metric from user-visible-harm-rate). Cross-references the comparative report at `docs/grant/bias-comparative-report-2026-05-21.md` and the parser-layer defence at `tests/test_prompt_injection_vectors.py::V3JdIndirectInjection` so reviewers can see the chain from measurement to safety surface.
 
 ---
 
-## 10. Bias-comparative-report v2 — methodology scaffold (PlanTowardPerfection box 2.10.1)
+## 10. Bias-comparative-report v2 — methodology scaffold
 
-The v2 re-run is gated on the search-quality fixes in Ceiling 2 §2.8 of `PlanTowardPerfection.MD` landing first (EURES real API integration, full ESCO taxonomy, multi-language ESCO lookup, smart provider routing, friction-aware result re-ranking). This section scaffolds the v2 methodology so a future agent re-running the bias panel knows the contract.
+The v2 re-run is gated on the post-grant search-quality fixes (see `03-post-grant.md`) landing first (EURES real API integration, full ESCO taxonomy, multi-language ESCO lookup, smart provider routing, friction-aware result re-ranking). This section scaffolds the v2 methodology so a future agent re-running the bias panel knows the contract.
 
 ### 10.1 What changes between v1 (current) and v2
 

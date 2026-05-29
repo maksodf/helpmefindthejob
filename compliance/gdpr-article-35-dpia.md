@@ -6,7 +6,7 @@
 **Article**: GDPR Article 35 (Data Protection Impact Assessment for high-risk processing). Pairs with AI Act Article 27 (Fundamental Rights Impact Assessment) — see [`fundamental-rights-impact-assessment-template.md`](fundamental-rights-impact-assessment-template.md). Where the two assessments overlap, you can satisfy both via a combined GDPR-Art-35 + AI-Act-Art-27 instrument (the European Data Protection Board recommends this convergence — see EDPB Guidelines 04/2024 on Article 35).
 **Audience**: deployer's Data Protection Officer (DPO); provider's maintainer for the project-side reference assessment.
 **Status**: living document. Updated alongside every major release that changes a processing operation.
-**PlanTowardPerfection box**: 2.14.4 — "GDPR Article 35 DPIA completed for the production deployment with real numbers (currently template only)." The text below is BOTH the project-side reference DPIA (anchored to the maintainer's own self-host as a worked example) AND a template the institutional deployer instantiates for their deployment context.
+**Scope**: GDPR Article 35 DPIA for the production deployment with real numbers (a tracked post-grant deliverable; currently a reference/template). The text below is BOTH the project-side reference DPIA (anchored to the maintainer's own self-host as a worked example) AND a template the institutional deployer instantiates for their deployment context.
 
 ---
 
@@ -187,7 +187,7 @@ This DPIA is the project-side reference. The institutional deployer's supervisor
 
 | Date | Trigger | Assessor | Highest residual risk | Notes |
 |---|---|---|---|---|
-| 2026-05-24 | Initial DPIA (PlanTowardPerfection box 2.14.4) | Maintainer (project-side reference) | 15 (migrant-status disclosure to non-EU AI provider) | First substantive version; replaces the prior "template-only" state. Deployer-side instantiation is the next step at each institutional adoption. |
+| 2026-05-24 | Initial DPIA | Maintainer (project-side reference) | 15 (migrant-status disclosure to non-EU AI provider) | First substantive version; replaces the prior "template-only" state. Deployer-side instantiation is the next step at each institutional adoption. |
 
 Future assessments append below this row. Never overwrite a prior row; the audit trail is part of the deployer's accountability evidence under Art. 5(2).
 

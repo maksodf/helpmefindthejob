@@ -620,8 +620,7 @@ caseload scale, the cost-saving math is unverified and the impact
 story is bounded by what a single-maintainer civic-tech tool can
 reach via word-of-mouth. Mitigations: the three institutional
 outreach letters at `docs/grant/11-institutional-outreach.md` are
-sequenced for sending in the submission window (see Section 1.1 of
-`PlanTowardPerfection.MD`); the friction-class architecture means
+sequenced for sending in the submission window; the friction-class architecture means
 even non-migrant-focused institutions can adopt without scope
 mismatch (a Jobcenter serves all Bürgergeld recipients, not only
 the migrant subset); the Commons Conservancy programme path
@@ -975,9 +974,9 @@ canonical paths) rather than during ongoing development.
 
 ### Re-verification pass 4 — 2026-05-24 (pre-submission anchor)
 
-Closes PlanTowardPerfection box 1.2.2 ("Re-verify every numerical
-claim in the draft via primary source links; update the inline
-verification table to the date of submission"). The submission
+This pass re-verifies every numerical claim in the draft via primary
+source links and updates the inline verification table to the date of
+submission. The submission
 date is operator-controlled but expected in the 2026-05-31 to
 2026-06-01 window; this entry anchors the verification state
 to 2026-05-24 so the operator can re-run the same checks at the

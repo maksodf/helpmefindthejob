@@ -3,7 +3,7 @@
 
 # FRIA — Aïcha (Tunisia → Berlin, §16d Anerkennung)
 
-**Article**: AI Act Article 27 (FRIA for high-risk AI systems). Instantiates `compliance/fundamental-rights-impact-assessment-template.md` for the **Aïcha** persona-class as a worked example. PlanTowardPerfection box 2.10.4.
+**Article**: AI Act Article 27 (FRIA for high-risk AI systems). Instantiates `compliance/fundamental-rights-impact-assessment-template.md` for the **Aïcha** persona-class as a worked example.
 
 **Status**: project-side reference FRIA. A deployer who serves Aïcha-class users (Migrationsberatungsstellen, IQ-Netzwerk regional offices serving §16d Anerkennung pathways, Klinikum HR teams in DACH) instantiates a deployer-side variant with their specific affected-population numbers, oversight-person identity, and deployment-context modulations.
 

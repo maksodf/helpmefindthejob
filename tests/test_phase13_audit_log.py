@@ -553,7 +553,7 @@ class SaltFailFastTests(unittest.TestCase):
         self.assertEqual(salt, b"x" * 32)
 
     def test_production_env_with_configured_salt_emits_no_warning(self) -> None:
-        # PlanTowardPerfection box 1.4.2 verification: when env is
+        # Verification: when env is
         # production AND HELPMEFINDTHEJOB_AUDIT_SALT is set, the
         # `[audit_log] HELPMEFINDTHEJOB_AUDIT_SALT not set; generated
         # a per-process salt` UserWarning must NOT be emitted. Prior

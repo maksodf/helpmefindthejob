@@ -11,10 +11,9 @@ commit through `f225896` (UX-F1 follow-up).
 **Result**: **17 hits, all triaged as false positives** (test-fixture
 stubs in `tests/`). **No real secrets found in history.**
 
-This document satisfies Ceiling-1 box 1.3.7 of
-`PlanTowardPerfection.MD` ("Run `gitleaks` over the full git history +
-commit a summary into `docs/grant/14-source-class-hierarchy.md` or new
-`docs/grant/SECURITY-AUDIT.md`") and is referenced from the NLnet
+This document records running `gitleaks` over the full git history,
+with a summary committed into `docs/grant/14-source-class-hierarchy.md`
+or this `docs/grant/SECURITY-AUDIT.md`, and is referenced from the NLnet
 application package (Field 17 supporting material).
 
 ---
@@ -81,7 +80,7 @@ otherwise noted). None are submission blockers:
 
 - **Add `.gitleaks.toml` allowlist** so a CI run of gitleaks would
   produce zero hits without manual triage. Scope deferred to
-  `PlanTowardPerfection.MD` Ceiling 2 (Section 2.14 — privacy /
+  a future release (privacy /
   security / incident readiness).
 - **Wire gitleaks into the existing OpenSSF Scorecard workflow** so
   every push to `main` gets a fresh secrets scan. Scope deferred to

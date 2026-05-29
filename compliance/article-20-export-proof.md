@@ -204,6 +204,6 @@ This document captures the technical correctness of the export pipeline. It does
 
 | Date | Endpoints | All HTTP 200 | Bundle keys | Bundle bytes | Runner | Notes |
 |---|---|---|---|---|---|---|
-| 2026-05-24 | 5 / 5 | ✓ | 19 | 2463 | maintainer (local repro per §3) | First run for PlanTowardPerfection box 1.4.6. Fresh /tmp/export_proof_data, fresh user `aicha-tester@example.com`, manual AI provider, dark theme, EN locale. App on port 19602, HEAD commit `ebd3703`. |
+| 2026-05-24 | 5 / 5 | ✓ | 19 | 2463 | maintainer (local repro per §3) | First run. Fresh /tmp/export_proof_data, fresh user `aicha-tester@example.com`, manual AI provider, dark theme, EN locale. App on port 19602, HEAD commit `ebd3703`. |
 
 Append below this row on every test. Never overwrite.

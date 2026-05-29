@@ -5097,7 +5097,7 @@ html[lang="de"] .api-docs-de-note { display: block; }
   text-decoration: none;
 }
 
-/* PlanTowardPerfection box 1.6.5: demo-deployment banner.
+/* Demo-deployment banner.
    Hidden by default via the `hidden` attribute on the <aside> in
    static/index.html. /demo-banner.js removes the hidden attribute
    iff the runtime hostname matches the demo subdomain (or ?demo=1
@@ -5161,7 +5161,7 @@ html[lang="de"] .api-docs-de-note { display: block; }
 }
 
 /* ─────────────────────────────────────────────────────────────────
- * PlanTowardPerfection boxes 2.15.4 + 2.15.6 — high-contrast modes.
+ * High-contrast modes.
  *
  * Two adjacent CSS media queries serve users who have signalled they
  * need higher contrast or Windows High Contrast Mode (forced-colors).

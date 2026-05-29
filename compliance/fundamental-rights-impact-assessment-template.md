@@ -173,7 +173,7 @@ Sample conclusion language (deployer adapts):
 ## Append log
 
 - **2026-05-18**: initial template drafted as part of Week 2 task 2.8 of the NLnet NGI Zero Commons Fund grant sprint. Anchored to friction-class framing per Decision 21.
-- **2026-05-24** (PlanTowardPerfection box 1.4.8): project-maintainer attestation added below the append log — the template is no longer "just a draft"; it is an attested deliverable ready for any AI Act Article 27 deployer to instantiate against their own deployment context.
+- **2026-05-24**: project-maintainer attestation added below the append log — the template is no longer "just a draft"; it is an attested deliverable ready for any AI Act Article 27 deployer to instantiate against their own deployment context.
 
 ---
 

@@ -1,9 +1,6 @@
 # Copyright (c) 2026 Helpmefindthejob contributors
 # SPDX-License-Identifier: Apache-2.0
-"""Persona-smoke e2e — Maria (Spain → Munich, EU Blue Card).
-
-PlanTowardPerfection Ceiling-2 box 2.5.9.
-"""
+"""Persona-smoke e2e — Maria (Spain → Munich, EU Blue Card)."""
 
 from __future__ import annotations
 

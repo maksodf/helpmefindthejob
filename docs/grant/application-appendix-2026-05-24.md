@@ -14,7 +14,7 @@ linkcolor: blue
 
 # Helpmefindthejob — Application appendix (one page)
 
-PlanTowardPerfection box 1.4.9 + 1.2.5. Optional Field 17 attachment.
+Optional Field 17 attachment.
 
 ## 1. Persona panel (Decision 21, seven personas)
 

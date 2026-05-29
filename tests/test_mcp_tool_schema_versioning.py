@@ -2,8 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 """Regression guard for MCP per-tool schema versioning.
 
-PlanTowardPerfection Ceiling-2 box 2.7.6: "Schema versioning —
-each MCP tool advertises a semver; clients downgrade gracefully."
+Schema versioning —
+each MCP tool advertises a semver; clients downgrade gracefully.
 
 The v0.80.0 slice adds a per-tool `version` field to every entry
 in `company_discovery.mcp_tools.TOOL_SCHEMAS`. Downstream MCP

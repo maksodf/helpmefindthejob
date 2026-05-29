@@ -1,9 +1,6 @@
 # Copyright (c) 2026 Helpmefindthejob contributors
 # SPDX-License-Identifier: Apache-2.0
-"""Persona-smoke e2e — Käthe (Munich, Wiedereinsteigerin).
-
-PlanTowardPerfection Ceiling-2 box 2.5.9.
-"""
+"""Persona-smoke e2e — Käthe (Munich, Wiedereinsteigerin)."""
 
 from __future__ import annotations
 

@@ -3,7 +3,7 @@
 
 # FRIA — Mahmoud (Syria → Hamburg, §4 Subsidiärer Schutz, trade Ausbildung)
 
-**Article**: AI Act Article 27. Instantiates the FRIA template for the **Mahmoud** persona-class. PlanTowardPerfection box 2.10.4.
+**Article**: AI Act Article 27. Instantiates the FRIA template for the **Mahmoud** persona-class.
 **Status**: project-side reference FRIA. Deployer instantiates with own context.
 **Last updated**: 2026-05-24.
 

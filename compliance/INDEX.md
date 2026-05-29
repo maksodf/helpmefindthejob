@@ -49,7 +49,7 @@ The pack is designed to be **self-contained**: every regulatory obligation a dep
 
 For transparency on what reviewers should NOT expect to find in `compliance/`:
 
-- **Pen-test reports** — scoped for Ceiling 2 (`PlanTowardPerfection.MD` §2.14); first pen-test scheduled pre-v1.0.
+- **Pen-test reports** — scoped for a future release; first pen-test scheduled pre-v1.0.
 - **DPA-signed PDFs** — `dpa-template.md` is the template; signed copies will land as `compliance/dpa-signed-*.pdf` (gitignored) on the deployer's environment, never in the public repo.
 - **Per-deployer FRIA executions** — the template is project-side; each deployer's filled FRIA is private to that deployment and lives outside this repo.
 - **AI Provider Honesty Matrix** — lives at [`../docs/grant/15-ai-provider-honesty-matrix.md`](../docs/grant/15-ai-provider-honesty-matrix.md) because it's grant-application supporting material, not a compliance obligation per se.
@@ -92,4 +92,4 @@ For reviewers who think in articles rather than file names:
 
 ## Append log
 
-- **2026-05-24** (PlanTowardPerfection box 1.4.10): INDEX created. Includes the 11 pre-existing artefacts plus the 2 new ones from box 1.4.3 (audit-log-key-rotation) and box 1.4.4 (prompt-injection-testing). Article-reverse-lookup table reconciles every Article-cited obligation across the pack to its file. Maintainer reviewed for completeness against AI Act Chapter III (Articles 8-29) and the GDPR articles invoked by the data-flow.
+- **2026-05-24**: INDEX created. Includes the 11 pre-existing artefacts plus the 2 new ones from box 1.4.3 (audit-log-key-rotation) and box 1.4.4 (prompt-injection-testing). Article-reverse-lookup table reconciles every Article-cited obligation across the pack to its file. Maintainer reviewed for completeness against AI Act Chapter III (Articles 8-29) and the GDPR articles invoked by the data-flow.

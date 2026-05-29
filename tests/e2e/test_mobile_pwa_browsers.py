@@ -2,9 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 """Mobile + PWA browser-driven E2E coverage.
 
-PlanTowardPerfection Ceiling-2 box 2.13.2: "Mobile/PWA E2E test
-suite — Playwright runs against iOS Safari + Chrome Android, not
-just headless desktop Chromium."
+Mobile/PWA E2E test suite — runs against iOS Safari + Chrome
+Android, not just headless desktop Chromium.
 
 This module runs against the same booted-app fixture as the
 desktop tests/e2e/test_browser_flow.py — driven by

@@ -83,7 +83,7 @@ class ReadmeBadgeBranchPins(unittest.TestCase):
             # with URL-encoded slashes when the branch contains them.
             # Catch both raw and URL-encoded variants of a feature-
             # branch reference so a future regression cannot reintroduce
-            # the working-branch path that shipped pre-PlanTowardPerfection.
+            # the working-branch path that shipped pre-sanitisation.
             "branch/claude/",
             "branch/claude%2F",
         ]

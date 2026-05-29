@@ -1,9 +1,6 @@
 # Copyright (c) 2026 Helpmefindthejob contributors
 # SPDX-License-Identifier: Apache-2.0
-"""Persona-smoke e2e — Mahmoud (Syria → Hamburg, §4 Subsidiärer Schutz).
-
-PlanTowardPerfection Ceiling-2 box 2.5.9.
-"""
+"""Persona-smoke e2e — Mahmoud (Syria → Hamburg, §4 Subsidiärer Schutz)."""
 
 from __future__ import annotations
 

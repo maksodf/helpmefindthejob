@@ -221,7 +221,7 @@ The behaviours this playbook depends on are pinned by:
 
 - `tests/test_phase13_audit_log.py::SaltFailFastTests::test_production_env_with_no_salt_exits_one` — confirms a missing salt in production refuses to start.
 - `tests/test_phase13_audit_log.py::SaltFailFastTests::test_production_env_with_configured_salt_succeeds` — confirms a configured salt resolves correctly.
-- `tests/test_phase13_audit_log.py::SaltFailFastTests::test_production_env_with_configured_salt_emits_no_warning` — pins the "warning gone" invariant for PlanTowardPerfection box 1.4.2.
+- `tests/test_phase13_audit_log.py::SaltFailFastTests::test_production_env_with_configured_salt_emits_no_warning` — pins the "warning gone" invariant.
 
 Future multi-key verification testing should add:
 

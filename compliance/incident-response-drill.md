@@ -6,7 +6,7 @@
 **Article**: AI Act Article 73 (serious-incident reporting) + GDPR Article 33 (breach notification within 72 h) + Article 26(5) (deployer monitoring obligation).
 **Audience**: deployer's named oversight person + the data-protection officer + the operations engineer who has root access to the production droplet.
 **Pairs with**: [`deployer-operating-manual.md`](deployer-operating-manual.md) §10 (the 5-step incident workflow that this drill exercises).
-**Frequency**: quarterly drill recommended (PlanTowardPerfection box 2.14.3); annual minimum.
+**Frequency**: quarterly drill recommended; annual minimum.
 **Status**: living document. Append a dated drill record on every execution.
 
 ---
@@ -114,8 +114,8 @@ This drill exercises the **deployer-side process** for an incident affecting the
 
 - Test the project's own code paths (that's the unit suite + the CI workflows).
 - Test the upstream maintainer's incident-response (the maintainer's own drill is documented separately at `SECURITY.md` + the maintainer-side incident playbook).
-- Substitute for a full penetration test (pen-test is `PlanTowardPerfection.MD` §2.14.1; this drill is the operational rehearsal, not the offensive-security audit).
-- Substitute for a third-party security audit (the audit is `PlanTowardPerfection.MD` §2.14.1 + the operational rehearsal happens here on top of any audit's findings).
+- Substitute for a full penetration test (the pen-test is a tracked post-grant deliverable; this drill is the operational rehearsal, not the offensive-security audit).
+- Substitute for a third-party security audit (the audit is a tracked post-grant deliverable + the operational rehearsal happens here on top of any audit's findings).
 
 The drill complements those other surfaces; it doesn't replace them.
 
@@ -136,7 +136,7 @@ The maintainer's drill log is a separate section in the project-side `docs/incid
 
 | Date | Scenario | Drill team | Wall-clock duration | What broke | What got fixed | Notes |
 |---|---|---|---|---|---|---|
-| 2026-05-24 | (none — this file landed in the PlanTowardPerfection box 2.14.3 slice; first scheduled drill is **2026-Q4** alongside the first NGO pilot deployment per ROADMAP.md 2026 Q4 row) | n/a | n/a | n/a | n/a | Initial methodology authored. The drill team is the maintainer + the partner-NGO's named oversight person; the maintainer-side scenarios M1 + M2 also start on this cadence. |
+| 2026-05-24 | (none — this file landed in the compliance-pack slice; first scheduled drill is **2026-Q4** alongside the first NGO pilot deployment per ROADMAP.md 2026 Q4 row) | n/a | n/a | n/a | n/a | Initial methodology authored. The drill team is the maintainer + the partner-NGO's named oversight person; the maintainer-side scenarios M1 + M2 also start on this cadence. |
 
 Append below this row on every drill. Never overwrite a prior row; the audit trail is the accountability evidence.
 

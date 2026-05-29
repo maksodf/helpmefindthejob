@@ -1,6 +1,6 @@
 # Browser-driven end-to-end test workflow.
 #
-# PlanTowardPerfection Ceiling-2 box 2.13.3: wires the existing
+# Wires the existing
 # tests/e2e/* suite (currently skipped if E2E_BASE_URL not set)
 # into CI. Drives the same scripts/run-e2e.sh that local devs use.
 #

@@ -176,7 +176,7 @@ The shortest honest answer the maintainer would give a journalist:
   per-use-case recommendations + binding-on-code surface defined.
   Cross-references to AI Act + source-class doctrine + cost-saving
   doctrine.
-- **2026-05-24** (PlanTowardPerfection box 2.8.5 — what-we-know-we-don't-know
+- **2026-05-24** (what-we-know-we-don't-know
   appendix): the matrix above carries verified rows for the providers
   the maintainer has exercised live + dispatcher-shape tested for the
   rest. This appendix names the residual unknowns explicitly so a

@@ -96,7 +96,7 @@ The numbering is append-only. A retired vector keeps its number with a "retired 
 This document and its accompanying test file cover **deterministic, parser-mediated defence**. They do not cover:
 
 - **Model-jailbreak attacks** where the AI is induced to refuse its instructions in favour of the user's. We monitor the OWASP LLM Top 10 + the Anthropic Responsible Scaling Policy for new public jailbreak categories and add them as vectors when applicable.
-- **Cross-system attacks** where the AI calls an external tool (MCP, web fetch) that is itself compromised. The MCP integration tests at `tests/e2e/mcp_composition_smoke.py` (scope deferred to Ceiling 2 §2.7 of PlanTowardPerfection.MD) will cover that surface.
+- **Cross-system attacks** where the AI calls an external tool (MCP, web fetch) that is itself compromised. The MCP integration tests at `tests/e2e/mcp_composition_smoke.py` (scope deferred to a future release) will cover that surface.
 - **Side-channel attacks** (timing, token-usage observation) that infer secret state without parser bypass. These are real but well outside the threat model of a civic-tech tool.
 - **Supply-chain attacks on the AI provider itself**. The BYO-AI architecture means the deployer owns this risk; the provider-honesty matrix is the public surface where we document what we know.
 
@@ -108,6 +108,6 @@ The Article 15(5) obligation requires resilience to attacks at "the level of the
 
 | Date | Test type | Vectors covered | Result | Run-by | Notes |
 |---|---|---|---|---|---|
-| 2026-05-24 | Unit (parser/clamp/budget) | V1–V5, V8 | All pass | maintainer | Initial coverage shipped with PlanTowardPerfection box 1.4.5. Vectors V6, V7, V9, V10 are documented but their unit tests are scheduled for the next compliance-pack iteration; the live-provider re-test of §4 covers them empirically in the interim. |
+| 2026-05-24 | Unit (parser/clamp/budget) | V1–V5, V8 | All pass | maintainer | Initial coverage shipped. Vectors V6, V7, V9, V10 are documented but their unit tests are scheduled for the next compliance-pack iteration; the live-provider re-test of §4 covers them empirically in the interim. |
 
 Append below this row on every test. Never overwrite.
