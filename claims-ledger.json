@@ -1,0 +1,110 @@
+{
+  "ledgerVersion": "0.1",
+  "description": "Every headline claim the project makes, mapped to the committed artefact that backs it, the test that asserts it against the shipped path, and the single command a stranger runs to verify it — without trusting the maintainer. tests/test_claims_ledger.py turns this into a build gate: each artefact + asserting test + one-command target must exist, and the human-track items (which code cannot produce) must stay marked not-built. This is the machine-readable form of the sprint's integrity spine.",
+  "buildableClaims": [
+    {
+      "id": "cacp-conformance",
+      "dimension": "Composition protocol (CACP v0.1)",
+      "claim": "The reference MCP server passes the published CACP v0.1 conformance suite (14/14 across L1 catalogue, L2 referral lifecycle, L3 consent+audit).",
+      "artifacts": ["docs/protocol/cacp-v0.1.md", "conformance/cacp/harness.py", "static/.well-known/civic-profile.schema.json"],
+      "assertingTests": ["tests/test_cacp_conformance.py"],
+      "oneCommand": "python -m conformance.cacp"
+    },
+    {
+      "id": "escolib-reconcile",
+      "dimension": "escolib reusable library",
+      "claim": "escolib resolves occupational synonyms to canonical ESCO/ISCO codes standalone (no application import), with a 100%-recall / 0-false-positive benchmark on committed fixtures.",
+      "artifacts": ["escolib/__init__.py", "escolib/reconcile.py", "escolib/benchmark.py", "escolib/data/esco/occupations.json"],
+      "assertingTests": ["tests/test_escolib_standalone.py"],
+      "oneCommand": "python -m escolib Krankenschwester"
+    },
+    {
+      "id": "biasprobe-replay",
+      "dimension": "biasprobe bias harness",
+      "claim": "biasprobe replays the committed model-response caches into a comparative per-persona bias report offline, with zero application import.",
+      "artifacts": ["biasprobe/__init__.py", "biasprobe/report.py", "biasprobe/data/deepseek.jsonl", "biasprobe/data/ollama.jsonl"],
+      "assertingTests": ["tests/test_biasprobe_standalone.py", "tests/test_bias_comparative_runner.py"],
+      "oneCommand": "python -m biasprobe"
+    },
+    {
+      "id": "audit-anchor",
+      "dimension": "Trustworthiness — tamper-evident audit",
+      "claim": "The audit chain is anchorable to a salt-free content digest; a record edit, deletion, or non-v2 line injection is detected offline against a committed fixture.",
+      "artifacts": ["company_discovery/audit_anchor.py", "company_discovery/audit_log.py", "tests/fixtures/audit_anchor/sample-audit-log.jsonl", "tests/fixtures/audit_anchor/sample-anchor.json"],
+      "assertingTests": ["tests/test_audit_anchor.py"],
+      "oneCommand": "python -m unittest tests.test_audit_anchor"
+    },
+    {
+      "id": "reproducible-build",
+      "dimension": "Trustworthiness — reproducibility",
+      "claim": "The source tarball is deterministic and bound to the HEAD commit (reads git objects, not the working tree), so two builds from the same commit produce the same SHA-256 on any machine.",
+      "artifacts": ["scripts/build_reproducible_source_dist.py", "scripts/verify_reproducibility.sh"],
+      "assertingTests": ["tests/test_reproducibility.py"],
+      "oneCommand": "./scripts/verify_reproducibility.sh"
+    },
+    {
+      "id": "release-signing",
+      "dimension": "Trustworthiness — signing",
+      "claim": "The release signing flow (cosign sign-blob → verify-blob over the reproducible tarball) runs offline with an ephemeral key as a dry-run; the real release uses the operator's long-lived key.",
+      "artifacts": ["scripts/sign_release_local.sh", "docs/releases/v0.80.0-signing.md"],
+      "assertingTests": ["tests/test_release_signing_dryrun.py"],
+      "oneCommand": "./scripts/sign_release_local.sh"
+    },
+    {
+      "id": "multi-agent-planner",
+      "dimension": "Multi-agent planner",
+      "claim": "A deterministic planner decomposes a goal into specialist steps across typed JSON-Schema contracts, emitting a trust receipt per handoff into the HMAC audit chain; a golden trace replays it and the receipts are chain-verified + anchorable.",
+      "artifacts": ["civic_agents/contracts.py", "civic_agents/planner.py"],
+      "assertingTests": ["tests/test_civic_agents.py"],
+      "oneCommand": "python -m unittest tests.test_civic_agents"
+    },
+    {
+      "id": "compliance-traceability",
+      "dimension": "Compliance starter kit",
+      "claim": "Every AI Act / GDPR article in the compliance matrix cites an artefact that exists; a deleted or renamed evidence file breaks the build, and the matrix cannot drift from INDEX.md.",
+      "artifacts": ["compliance/starter-kit/kit-manifest.json", "compliance/INDEX.md", "scripts/fill_template.py"],
+      "assertingTests": ["tests/test_compliance_traceability.py", "tests/test_fill_template.py"],
+      "oneCommand": "python -m unittest tests.test_compliance_traceability"
+    },
+    {
+      "id": "supply-chain",
+      "dimension": "Trustworthiness — supply chain",
+      "claim": "A CycloneDX SBOM, cosign public key, and sigstore bundle ship for the release, asserted as hard requirements (no silent skips).",
+      "artifacts": ["docs/releases/v0.1.0-sbom.json", "docs/releases/v0.1.0-cosign.pub", "docs/releases/v0.1.0-source.tar.gz.sigstore"],
+      "assertingTests": ["tests/test_release_supply_chain.py"],
+      "oneCommand": "python -m unittest tests.test_release_supply_chain"
+    }
+  ],
+  "humanTrackItems": [
+    {
+      "item": "Real users with measured outcomes",
+      "status": "not-built",
+      "owner": "operator",
+      "note": "The seven personas are synthetic fixtures; code cannot produce real consented user sessions with measured outcomes."
+    },
+    {
+      "item": "External security audit",
+      "status": "not-built",
+      "owner": "operator",
+      "note": "Needs a paid third party; internal review + the prompt-injection/red-team harnesses are not an external audit."
+    },
+    {
+      "item": "Co-maintainers / contributor community",
+      "status": "not-built",
+      "owner": "operator",
+      "note": "Solo + one unnamed today; zero outside PRs. Code cannot manufacture a community."
+    },
+    {
+      "item": "Signed institutional partners (MOUs)",
+      "status": "not-built",
+      "owner": "operator",
+      "note": "Outreach drafts exist but are unsent; no signed partner."
+    },
+    {
+      "item": "Third-party adoption of CACP",
+      "status": "not-built",
+      "owner": "operator",
+      "note": "Buildable proxy shipped: the in-repo reference agents pass the conformance suite. Genuine external adoption is a human-track outcome."
+    }
+  ]
+}
