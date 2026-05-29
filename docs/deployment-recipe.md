@@ -5,10 +5,9 @@
 
 **Audience**: a contributor or institutional deployer who wants a public demo
 of Helpmefindthejob running against any Docker Compose + Caddy host.
-**Companion to**: [`production-deployment.md`](production-deployment.md) (the
-general production guide) and `docs/grant/02-execution-plan.md` §3.4 (the
-grant-sprint planning context).
-**Status**: living document; reviewed alongside every §3.4 / §3.5 ship.
+**Companion to**: [`production-deployment.md`](production-deployment.md), the
+general production guide.
+**Status**: living document.
 
 This recipe is **host-agnostic**. It does not commit the project to a
 specific hosting provider, registrar, monitoring vendor, or domain

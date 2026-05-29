@@ -4,8 +4,7 @@ Thank you for considering a contribution. Helpmefindthejob is an open
 civic-employment commons — a small focused codebase that aims to put
 specialist HR and bureaucratic-navigation knowledge directly into the
 hands of anyone facing structural labor-market friction in Europe, with
-migrants and EU-mobile workers as the most acute use case (see
-Decision 21 in `docs/grant/04-research-and-decisions.md`). Contributors
+migrants and EU-mobile workers as the most acute use case. Contributors
 are welcome from any background, and especially from people with direct
 lived experience of the problems the project tries to address.
 
@@ -184,8 +183,7 @@ body is optional but encouraged for anything non-trivial.
 
 Helpmefindthejob ships English + German today and grows by locale as
 native-speaker contributors join. If you'd like to add a locale —
-Arabic, Ukrainian, Turkish, Romanian are the post-grant targets per
-[Decision 6](docs/grant/04-research-and-decisions.md) — see
+Arabic, Ukrainian, Turkish, Romanian are the post-grant targets — see
 [`docs/translating.md`](docs/translating.md) for the full pathway:
 
 - Locale-bundle structure (`static/i18n/<locale>.json`)
@@ -195,8 +193,8 @@ Arabic, Ukrainian, Turkish, Romanian are the post-grant targets per
   (terms like `Anerkennung`, `§16d`, `TVöD`, `Wiedereinstieg`,
   `Ausbildung` stay German in every locale because they have
   legal-specific meaning that doesn't translate)
-- Translation-review process (native-speaker review per Decision 18
-  consent-first authorship; credit in `AUTHORS.md`)
+- Translation-review process (native-speaker review, consent-first
+  authorship; credit in `AUTHORS.md`)
 
 The CI parity test (`tests/test_phase0_i18n_parity.py`) gates
 locale-bundle PRs.
@@ -342,10 +340,9 @@ Beyond the obvious (code correctness, tests pass, contract preserved):
 - **Honest about what didn't get tested**. If you couldn't verify a
   surface (e.g., a manual screen-reader walkthrough you didn't have
   time for), say so. Honest gaps land; hidden gaps don't.
-- **No new features inside a NLnet grant-window slice**. Look at
-  [`PlanTowardPerfection.MD`](PlanTowardPerfection.md) — if there's an
-  active Ceiling-1 sprint, the "no new features" hard rule applies to
-  all contributors not just the maintainer.
+- **No new features inside a NLnet grant-window slice**. During an active
+  grant-window sprint, the "no new features" hard rule applies to all
+  contributors, not just the maintainer.
 
 ### What the maintainer will NEVER do
 

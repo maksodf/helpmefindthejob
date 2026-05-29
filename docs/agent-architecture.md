@@ -3,11 +3,9 @@
 
 # Agent architecture
 
-**PlanTowardPerfection box**: 2.1.1 — "Define the agent-architecture diagram: which agent owns which capability (search, fit-scoring, cover-letter, CV-build, Anerkennung tracking, housing handoff, etc.). Today everything is in the chat-router monolith."
-
 **Audience**: maintainer planning the post-v0.80.0 multi-agent refactor; integrators understanding the boundary between in-process subsystems vs. external MCP-composable civic agents.
 
-**Status**: design doc — describes the present (chat-router monolith) AND the Phase-2 target (specialist agents behind a planner). The actual refactor is `PlanTowardPerfection.MD` §2.1 (10 boxes, all features per the "no new product features in the NLnet window" hard rule — so the diagram below is the design contract, not yet the implementation).
+**Status**: design doc — describes the present (chat-router monolith) AND the Phase-2 target (specialist agents behind a planner). The multi-agent refactor is Phase-2 work; no new product features ship during the NLnet window, so the diagram below is the design contract, not yet the implementation.
 
 ---
 

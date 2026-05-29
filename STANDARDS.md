@@ -78,9 +78,9 @@ These are project-internal protocols today. As cross-civic-agent composition mat
 For a NLnet reviewer or institutional adopter doing a 10-minute deep-check of the standards claims:
 
 - **License + governance**: open [`LICENSE`](LICENSE), [`NOTICE`](NOTICE), [`cla.md`](cla.md), [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md). All are at repo root.
-- **MCP composition**: spawn `python3 mcp_server.py`, send the JSON-RPC `initialize` and `tools/list` calls documented in [`docs/mcp-server.md`](docs/mcp-server.md). Catalogue version + 8 tools + per-tool `inputSchema` come back.
+- **MCP composition**: spawn `python3 mcp_server.py`, send the JSON-RPC `initialize` and `tools/list` calls documented in [`docs/mcp-server.md`](docs/mcp-server.md). Catalogue version + 15 tools + per-tool `inputSchema` come back.
 - **Schema enforcement**: send a deliberately-malformed `tools/call` (e.g., omit a required field) and observe the RFC 7807 Problem Details payload with `violatedRule: "required"`. The test file [`tests/test_phase11_mcp_input_validation.py`](tests/test_phase11_mcp_input_validation.py) automates this.
 - **AEAD encryption**: read [`company_discovery/crypto_kit.py`](company_discovery/crypto_kit.py) (142 lines) and [`tests/test_phase9_totp_aead_migration.py`](tests/test_phase9_totp_aead_migration.py) for the round-trip / tamper / AAD-mismatch / nonce-uniqueness assertions.
-- **AI Act compliance**: open `compliance/` (lands Week 2 §2.8).
+- **AI Act compliance**: open `compliance/`.
 - **i18n parity**: run `python3 -m unittest tests.test_round5_i18n` — the parity check is part of the 925-test suite.
 - **Full test suite**: `python3 -m unittest discover tests` runs in ~18 s on a bare host (verified 2026-05-18; the dated feature-verification report was removed in the 2026-05-23 docs cleanup).

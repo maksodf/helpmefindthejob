@@ -58,7 +58,7 @@ This is the checklist the maintainer ran before the v0.80.0 NLnet-submission tag
 | MCP integration guide | ✅ 2026-05-24 | `docs/mcp-integration-guide.md` |
 | API client examples | ✅ 2026-05-24 | `docs/api-client-examples.md` |
 | Public roadmap page | ✅ 2026-05-24 | `static/roadmap.html` |
-| OpenGraph card audit | ✅ 2026-05-24 | `docs/og-card-audit.md` |
+| OpenGraph card audit | ✅ 2026-05-24 | internal QA log |
 
 ---
 
