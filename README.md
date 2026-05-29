@@ -73,6 +73,23 @@ including the 2026-05-19 project rename ([Decision 22](docs/grant/04-research-an
 and the deprecated commercial phase that preceded the civic-commons
 direction.
 
+## Project provenance
+
+We are transparent about where this project came from — the git history
+shows it, and honesty is the stronger signal than concealment. Helpmefindthejob
+was originally developed in private as a self-hosted prototype that explored a
+hosted, paid model. In May 2026 the direction was **deliberately changed to an
+open civic commons**: relicensed **Apache-2.0** (with a CLA), prepared as a
+Programme of **The Commons Conservancy**, the paid model removed, and the
+project centred on being free to run and self-host — bring-your-own-AI
+(including a fully offline path), encrypted user data, exportable records,
+**no paywall, no per-seat licensing, no vendor lock-in**.
+
+We deliberately did **not** rewrite git history to disguise that earlier phase.
+Preserving it lets anyone trace exactly when and why the direction changed, and
+[`CONTRIBUTORS-NOTE.md`](CONTRIBUTORS-NOTE.md) documents the transition in full.
+What you are evaluating today is a civic-employment commons, end to end.
+
 ## Brand wordmark
 
 The canonical name is **Helpmefindthejob** — one word, sentence-cased
