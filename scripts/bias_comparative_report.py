@@ -52,12 +52,10 @@ import argparse
 import hashlib
 import json
 import os
-import statistics
 import sys
 import time
 import urllib.error
 import urllib.request
-from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Iterable
@@ -85,6 +83,18 @@ REPORT_DIR = REPO_ROOT / "docs" / "grant"
 # Per-provider EUR/Mtok rates — should mirror cost_caps.PROVIDER_RATES_EUR_PER_MTOK
 # but we re-import to avoid coupling test infrastructure to the cap
 # substrate's exact key names.
+# The replay / metrics / report core lives in the standalone, import-isolated
+# ``biasprobe`` package. This module is the Helpmefindthejob live-run adapter
+# (provider callers + the production ``build_auto_fit_prompt`` seam) and
+# re-exports the core symbols so existing callers + tests keep their imports.
+from biasprobe import (  # noqa: E402
+    CallOutcome,
+    cache_path,
+    cross_provider_disagreement,
+    per_persona_mean,
+    render_markdown,
+)
+from biasprobe.outcomes import append_outcome_to_path, load_outcomes_from_path  # noqa: E402
 from company_discovery.cost_caps import PROVIDER_RATES_EUR_PER_MTOK
 
 # Hand-curated subset of providers the runner can target. Each
@@ -129,90 +139,22 @@ PROVIDER_CONFIGS: dict[str, dict[str, Any]] = {
 }
 
 
-@dataclass
-class CallOutcome:
-    provider_id: str
-    persona_slug: str
-    scenario_label: str
-    status: str  # "ok" | "error" | "skipped_no_key" | "over_budget"
-    raw_score: int | None = None
-    raw_reason: str | None = None
-    raw_gaps: list[str] = field(default_factory=list)
-    cost_eur: float = 0.0
-    prompt_tokens: int = 0
-    completion_tokens: int = 0
-    duration_ms: int = 0
-    error_class: str | None = None
-    response_hash: str | None = None
-
-    def to_dict(self) -> dict[str, Any]:
-        return {
-            "provider_id": self.provider_id,
-            "persona_slug": self.persona_slug,
-            "scenario_label": self.scenario_label,
-            "status": self.status,
-            "raw_score": self.raw_score,
-            "raw_reason": self.raw_reason,
-            "raw_gaps": list(self.raw_gaps),
-            "cost_eur": round(self.cost_eur, 6),
-            "prompt_tokens": self.prompt_tokens,
-            "completion_tokens": self.completion_tokens,
-            "duration_ms": self.duration_ms,
-            "error_class": self.error_class,
-            "response_hash": self.response_hash,
-        }
-
-    @classmethod
-    def from_dict(cls, raw: dict[str, Any]) -> CallOutcome:
-        return cls(
-            provider_id=raw["provider_id"],
-            persona_slug=raw["persona_slug"],
-            scenario_label=raw["scenario_label"],
-            status=raw["status"],
-            raw_score=raw.get("raw_score"),
-            raw_reason=raw.get("raw_reason"),
-            raw_gaps=list(raw.get("raw_gaps") or []),
-            cost_eur=float(raw.get("cost_eur", 0.0)),
-            prompt_tokens=int(raw.get("prompt_tokens", 0)),
-            completion_tokens=int(raw.get("completion_tokens", 0)),
-            duration_ms=int(raw.get("duration_ms", 0)),
-            error_class=raw.get("error_class"),
-            response_hash=raw.get("response_hash"),
-        )
-
-
 # ---------------------------------------------------------------------------
-# Cache helpers
+# Cache helpers — thin wrappers over biasprobe. Routed through ``_cache_path_for``
+# so a patched CACHE_DIR / _cache_path_for (tests) still controls read/write.
 # ---------------------------------------------------------------------------
 
 
 def _cache_path_for(provider_id: str) -> Path:
-    CACHE_DIR.mkdir(parents=True, exist_ok=True)
-    return CACHE_DIR / f"{provider_id}.jsonl"
+    return cache_path(CACHE_DIR, provider_id)
 
 
 def _load_cached_outcomes(provider_id: str) -> dict[tuple[str, str], CallOutcome]:
-    path = _cache_path_for(provider_id)
-    if not path.exists():
-        return {}
-    out: dict[tuple[str, str], CallOutcome] = {}
-    with path.open("r", encoding="utf-8") as fh:
-        for raw in fh:
-            line = raw.strip()
-            if not line:
-                continue
-            try:
-                outcome = CallOutcome.from_dict(json.loads(line))
-            except (json.JSONDecodeError, KeyError):
-                continue
-            out[(outcome.persona_slug, outcome.scenario_label)] = outcome
-    return out
+    return load_outcomes_from_path(_cache_path_for(provider_id))
 
 
 def _append_outcome_to_cache(outcome: CallOutcome) -> None:
-    path = _cache_path_for(outcome.provider_id)
-    with path.open("a", encoding="utf-8") as fh:
-        fh.write(json.dumps(outcome.to_dict(), sort_keys=True, separators=(",", ":")) + "\n")
+    append_outcome_to_path(_cache_path_for(outcome.provider_id), outcome)
 
 
 # ---------------------------------------------------------------------------
@@ -531,148 +473,12 @@ def run_provider(
 # ---------------------------------------------------------------------------
 
 
-def _per_persona_mean(outcomes: list[CallOutcome]) -> dict[str, float]:
-    by_persona: dict[str, list[int]] = {}
-    for o in outcomes:
-        if o.status != "ok" or o.raw_score is None:
-            continue
-        by_persona.setdefault(o.persona_slug, []).append(o.raw_score)
-    return {k: round(statistics.fmean(v), 2) for k, v in by_persona.items()}
-
-
-def _cross_provider_disagreement(
-    by_provider: dict[str, list[CallOutcome]],
-) -> list[dict[str, Any]]:
-    """For each (persona, scenario) cell, compute the max-min score
-    spread across providers. Returns the top 20 highest-disagreement
-    cells — the ones a reviewer should investigate."""
-    cell_scores: dict[tuple[str, str], dict[str, int]] = {}
-    for provider_id, outs in by_provider.items():
-        for o in outs:
-            if o.status == "ok" and o.raw_score is not None:
-                cell_scores.setdefault((o.persona_slug, o.scenario_label), {})[provider_id] = (
-                    o.raw_score
-                )
-    rows: list[dict[str, Any]] = []
-    for (persona, scenario), provider_scores in cell_scores.items():
-        if len(provider_scores) < 2:
-            continue
-        scores = list(provider_scores.values())
-        spread = max(scores) - min(scores)
-        if spread == 0:
-            continue
-        rows.append(
-            {
-                "persona": persona,
-                "scenario": scenario,
-                "spread": spread,
-                "scores": dict(sorted(provider_scores.items())),
-            }
-        )
-    rows.sort(key=lambda r: r["spread"], reverse=True)
-    return rows[:20]
-
-
-def render_markdown(
-    by_provider: dict[str, list[CallOutcome]], summaries: list[dict[str, Any]]
-) -> str:
-    lines: list[str] = []
-    lines.append("# Bias-methodology comparative report")
-    lines.append("")
-    lines.append(
-        f"Generated {datetime.now(timezone.utc).isoformat(timespec='seconds')} "
-        f"by `scripts/bias_comparative_report.py`."
-    )
-    lines.append("")
-    lines.append("## What this report measures")
-    lines.append("")
-    lines.append(
-        "For each AI provider, this report runs the SAME prompt (the production "
-        "`build_auto_fit_prompt`) against the SAME 7-persona × N-scenario panel, "
-        "captures the fit-score the provider returns, and reports per-provider + "
-        "per-persona aggregates plus cross-provider disagreement."
-    )
-    lines.append("")
-    lines.append(
-        "**No competitor in this space publishes this data.** It exists because the "
-        "project's bias-methodology test harness is reproducible — anyone with "
-        "API keys can re-run via `--live`; everyone else can re-validate via "
-        "`--replay-only` against the cached responses checked into the repo."
-    )
-    lines.append("")
-    lines.append("## Per-provider summary")
-    lines.append("")
-    lines.append(
-        "| Provider | OK | Errors | Skipped (no key) | Over budget | Cache misses | Total cost (€) |"
-    )
-    lines.append("|---|---|---|---|---|---|---|")
-    for s in summaries:
-        lines.append(
-            f"| {s['provider_id']} | {s['ok']} | {s['errors']} | {s['skipped_no_key']} | "
-            f"{s['over_budget']} | {s['cache_misses']} | {s['total_cost_eur']:.4f} |"
-        )
-    lines.append("")
-    lines.append("## Per-persona mean score by provider")
-    lines.append("")
-    persona_slugs = sorted({o.persona_slug for outs in by_provider.values() for o in outs})
-    header = "| Provider | " + " | ".join(persona_slugs) + " |"
-    lines.append(header)
-    lines.append("|" + "---|" * (len(persona_slugs) + 1))
-    for provider_id, outs in sorted(by_provider.items()):
-        means = _per_persona_mean(outs)
-        row = (
-            f"| {provider_id} | "
-            + " | ".join(
-                f"{means.get(p, float('nan')):.1f}" if p in means else "—" for p in persona_slugs
-            )
-            + " |"
-        )
-        lines.append(row)
-    lines.append("")
-    lines.append("## Top 20 highest-disagreement cells")
-    lines.append("")
-    lines.append(
-        "These are cells where providers disagree most strongly on the same "
-        "(persona, scenario). Worth investigating: which provider is right? "
-        "Or are both legitimately interpreting different facets?"
-    )
-    lines.append("")
-    lines.append("| Persona | Scenario | Spread | Provider scores |")
-    lines.append("|---|---|---|---|")
-    disagreements = _cross_provider_disagreement(by_provider)
-    if not disagreements:
-        lines.append("| _(no cross-provider data available in this run)_ | | | |")
-    else:
-        for row in disagreements:
-            scores_str = ", ".join(f"{p}={s}" for p, s in row["scores"].items())
-            lines.append(
-                f"| {row['persona']} | {row['scenario']} | {row['spread']} | {scores_str} |"
-            )
-    lines.append("")
-    lines.append("## Methodology")
-    lines.append("")
-    lines.append(
-        "- Prompt builder: `company_discovery.analysis.build_auto_fit_prompt` "
-        "(production prompt — same one used by `/auto-fit`)"
-    )
-    lines.append(
-        "- Score parser: `company_discovery.analysis.parse_auto_fit_output` "
-        "(0–100 integer; reasons/gaps optional)"
-    )
-    lines.append("- Personas: 7 fixtures from `company_discovery.persona_fixtures.PERSONAS`")
-    lines.append("- Temperature: 0 across all providers (reproducibility)")
-    lines.append("")
-    lines.append("## Re-running")
-    lines.append("")
-    lines.append("```bash")
-    lines.append("# Replay-only (no API calls; reads from data/bias_comparative_cache/)")
-    lines.append("python -m scripts.bias_comparative_report --replay-only")
-    lines.append("")
-    lines.append("# Live run against one provider")
-    lines.append("python -m scripts.bias_comparative_report --live --providers deepseek")
-    lines.append("```")
-    lines.append("")
-    return "\n".join(lines) + "\n"
+# _per_persona_mean, _cross_provider_disagreement, and render_markdown now live
+# in the standalone biasprobe package (imported at the top of this module).
+# Re-export the metric helpers under their historical private names so existing
+# callers + tests keep importing them from here.
+_per_persona_mean = per_persona_mean
+_cross_provider_disagreement = cross_provider_disagreement
 
 
 # ---------------------------------------------------------------------------

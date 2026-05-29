@@ -27,6 +27,12 @@ data/
 !escolib/data/
 !escolib/data/**
 
+# biasprobe/data/ is the standalone bias package's bundled copy of the caches
+# (same synthetic-persona fixtures). Its parent biasprobe/ is not excluded, so —
+# unlike data/bias_comparative_cache/ below — this negation works directly.
+!biasprobe/data/
+!biasprobe/data/**
+
 # data/bias_comparative_cache/ holds committed model-response caches (synthetic-
 # persona fit scores + model reasons + token/cost counts — NOT user data) that make
 # the bias-methodology report replayable offline. They MUST ship so a stranger can
