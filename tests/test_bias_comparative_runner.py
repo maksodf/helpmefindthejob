@@ -364,5 +364,49 @@ class BiasReportReferencesResolve(unittest.TestCase):
         self.assertGreater(scanned, 0, "guard scanned no references — the pattern may be broken")
 
 
+class CachesAreCommittedNotJustPresent(unittest.TestCase):
+    """Regression guard for the 2026-05-29 bug: the bias caches existed in the
+    working tree but were NOT git-tracked (matched by the any-depth ``data/``
+    ignore rule), so a fresh clone / CI had no caches and every replay test
+    above silently hit ``raise unittest.SkipTest`` — making the "anyone can
+    reproduce the published bias numbers from committed caches" claim
+    skip-backed. Presence in the working tree is NOT enough; the files must be
+    COMMITTED. This asserts git actually tracks them, so a gitignore regression
+    or accidental deletion goes red here instead of degrading to a silent skip.
+    """
+
+    CACHES = ("deepseek.jsonl", "ollama.jsonl")
+
+    def test_caches_are_git_tracked_not_just_present(self):
+        import subprocess
+
+        if not (REPO_ROOT / ".git").exists():
+            # Installed sdist with no git metadata: tracking is unverifiable here,
+            # but the *presence* tests above already cover "shipped". Never fires
+            # in a dev/CI checkout, so it does not add to the observed skip count.
+            self.skipTest("not a git checkout (e.g. installed sdist) — cannot verify tracking")
+        result = subprocess.run(
+            ["git", "ls-files", "data/bias_comparative_cache/"],
+            cwd=REPO_ROOT,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        tracked = {line.strip() for line in result.stdout.splitlines() if line.strip()}
+        for name in self.CACHES:
+            rel = f"data/bias_comparative_cache/{name}"
+            self.assertTrue(
+                (REPO_ROOT / rel).exists(),
+                f"{rel} missing from the working tree — regenerate or restore it.",
+            )
+            self.assertIn(
+                rel,
+                tracked,
+                f"{rel} is present locally but NOT git-tracked — it will be absent on a "
+                f"fresh clone and the replay tests will silently skip. Force-add it with "
+                f"`git add -f {rel}` (the any-depth data/ rule ignores it by default).",
+            )
+
+
 if __name__ == "__main__":
     unittest.main()

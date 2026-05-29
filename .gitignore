@@ -26,6 +26,16 @@ data/
 # NOT user data — it must ship with the package, so re-include it.
 !escolib/data/
 !escolib/data/**
+
+# data/bias_comparative_cache/ holds committed model-response caches (synthetic-
+# persona fit scores + model reasons + token/cost counts — NOT user data) that make
+# the bias-methodology report replayable offline. They MUST ship so a stranger can
+# reproduce the published bias numbers without API keys. The any-depth `data/` rule
+# above cannot be selectively un-ignored without weakening PII protection for sibling
+# data dirs (.venv/**/data, future nested data/), so these fixtures are force-tracked:
+#   git add -f data/bias_comparative_cache/*.jsonl
+# Add new provider caches the same way. tests/test_bias_comparative_runner.py asserts
+# they stay git-tracked (CachesAreCommittedNotJustPresent), so a regression goes red.
 *.sqlite3
 *.sqlite3-wal
 *.sqlite3-shm
