@@ -5,8 +5,6 @@
 
 **Audience**: the project maintainer running the canonical `helpmefindthejob.org` deployment + the `demo.helpmefindthejob.org` subdomain. For **deployer-side** operating procedures (Beratungsstellen / IQ-Netzwerk / Optionskommunen Jobcenter / NGO / university career service), the load-bearing doc is `compliance/deployer-operating-manual.md` (AI Act Article 26 obligations + the full operational chain).
 
-**PlanTowardPerfection box**: 2.10.5 — "Operator runbook updated quarterly (`docs/operator-launch-runbook.md`) with actual incident reports + lessons." The Week-1 sanitisation pass moved the prior commercial-product `operator-launch-runbook.md` to `private/`; this file is the recreated **public, civic-commons-positioned** equivalent.
-
 **Status**: living document. Append a dated quarterly review row to §3 on every cadence checkpoint.
 
 ---

@@ -63,7 +63,7 @@ The `/mcp/version` and `/mcp/schemas.json` HTTP endpoints expose the catalogue v
 
 ### Per-tool versioning (since v0.80.0)
 
-In addition to the catalogue-level `serverInfo.version`, every entry in `TOOL_SCHEMAS` carries a per-tool `version` field as of v0.80.0 (PlanTowardPerfection box 2.7.6). The field flows through `tools/list` JSON-RPC responses + the per-tool `mcp_server/schemas/<tool>.json` exported files, so an MCP client can pin against a specific tool-version contract:
+In addition to the catalogue-level `serverInfo.version`, every entry in `TOOL_SCHEMAS` carries a per-tool `version` field as of v0.80.0. The field flows through `tools/list` JSON-RPC responses + the per-tool `mcp_server/schemas/<tool>.json` exported files, so an MCP client can pin against a specific tool-version contract:
 
 ```jsonc
 {
@@ -232,7 +232,7 @@ console.log(JSON.parse(summary.result.content[0].text));
 proc.stdin.end();
 ```
 
-### Curl (HTTP catalogue endpoints — lands in §2.2 follow-up)
+### Curl (HTTP catalogue endpoints)
 
 ```bash
 # Schema catalogue (planned)
@@ -269,25 +269,13 @@ A deployer can dispatch on `status` for programmatic handling and surface `detai
 - **Single-process state**: the server is stateless at the request boundary; all state lives in the SQLite database. Multiple clients can connect via multiple subprocess instances pointed at the same `HELPMEFINDTHEJOB_DATA_DIR`.
 - **Encryption**: any persisted user data passes through [`company_discovery/crypto_kit.py`](https://github.com/maksodf/helpmefindthejob/blob/main/company_discovery/crypto_kit.py) at the storage layer. The CV-text column and TOTP-secret column are AEAD-encrypted at rest (ChaCha20-Poly1305 with AAD = user_id; see [`ARCHITECTURE.md`](https://github.com/maksodf/helpmefindthejob/blob/main/ARCHITECTURE.md) and [`SECURITY.md`](https://github.com/maksodf/helpmefindthejob/blob/main/SECURITY.md)).
 - **Logging**: stderr is reserved for human-readable diagnostics. Tool invocations + audit entries go to `data/admin_audit.log`.
-- **Subprocess integration-test note**: the JSON-RPC-over-stdio integration test at `tests/test_phase12_mcp_integration_e2e.py` previously emitted `ResourceWarning: unclosed file <TextIOWrapper ...>` on shutdown because the test client did not explicitly close the subprocess's stdout/stderr pipes (PART 6 of the 2026-05-19 pre-submission scope-tightening slice). The test client now closes both pipes plus the tempdir in a `finally` block — verified clean under `python3 -W error::ResourceWarning -m unittest tests.test_phase12_mcp_integration_e2e`. **The production server itself was never affected**; the warning lived entirely in the test harness.
+- **Subprocess integration-test note**: the JSON-RPC-over-stdio integration test at `tests/test_phase12_mcp_integration_e2e.py` previously emitted `ResourceWarning: unclosed file <TextIOWrapper ...>` on shutdown because the test client did not explicitly close the subprocess's stdout/stderr pipes. The test client now closes both pipes plus the tempdir in a `finally` block — verified clean under `python3 -W error::ResourceWarning -m unittest tests.test_phase12_mcp_integration_e2e`. **The production server itself was never affected**; the warning lived entirely in the test harness.
 
 ## Where the schemas live
 
-`TOOL_SCHEMAS` in [`company_discovery/mcp_tools.py`](https://github.com/maksodf/helpmefindthejob/blob/main/company_discovery/mcp_tools.py) is the canonical source. The schemas are JSON Schema Draft 7 documents. The [`/mcp/schemas.json`](https://demo.helpmefindthejob.org/mcp/schemas.json) HTTP endpoint exposing the full catalogue and [`/mcp/version`](https://demo.helpmefindthejob.org/mcp/version) reporting the catalogue version land in a §2.2 follow-up; until then, fetch the schemas via the stdio `tools/list` call.
+`TOOL_SCHEMAS` in [`company_discovery/mcp_tools.py`](https://github.com/maksodf/helpmefindthejob/blob/main/company_discovery/mcp_tools.py) is the canonical source. The schemas are JSON Schema Draft 7 documents. The [`/mcp/schemas.json`](https://demo.helpmefindthejob.org/mcp/schemas.json) HTTP endpoint exposes the full catalogue and [`/mcp/version`](https://demo.helpmefindthejob.org/mcp/version) reports the catalogue version; the stdio `tools/list` call returns the same schemas.
 
-A planned ergonomic addition is to split the schemas into individual files under `mcp_server/schemas/<tool-name>.json` so external tooling (linting, code generation) can read them without spawning the Python process. This is on the §2.2 follow-up list; the canonical definitions stay in `mcp_tools.py` and the filesystem export becomes a build artefact.
-
-## Roadmap — what changes in §2.3
-
-Five additional tools land in Week 2 §2.3 to enable cross-civic-agent composition:
-
-- `get_user_profile_for_consent` — return the user's portable civic profile (subset they have consented to share). Bound to a consent record per agent + per purpose.
-- `propose_referral` — emit a structured referral to another civic agent. Enables pattern-1 composition (sequential handoff).
-- `query_esco_skill` — look up an ESCO skill or occupation code. Cross-agent shared taxonomy.
-- `export_eures_compatible` — export a job listing in EURES schema. Cross-deployment interoperability.
-- `record_user_outcome` — persist an outcome event (applied, interviewed, hired) for analytics. Cost-saving-doctrine evidence.
-
-When these land the catalogue version bumps from `0.1.0` to `0.2.0` per the SemVer policy above.
+The schemas are also exported as individual files under `mcp_server/schemas/<tool-name>.json`, so external tooling (linting, code generation) can read them without spawning the Python process. The canonical definitions stay in `mcp_tools.py`; the filesystem export is a build artefact.
 
 ## See also
 

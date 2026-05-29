@@ -199,13 +199,13 @@ A worked example tying the components together. Aïcha is the Tunisian-trained r
 9. **Drill + tailor** → `PHASE_DRILL` → `PHASE_TAILOR` calls `analysis.py:tailor_cv` which routes through `ai_providers.py` to whatever provider the user has configured (Ollama for fully offline, OpenAI for managed, etc.). Output gated by a confirmation prompt before any write.
 10. **Letter** → `PHASE_LETTER` generates a motivation letter grounded in CV facts.
 11. **CV coaching** → `PHASE_CV_CONSULT` (`cv_consult.py`) suggests improvements; user can accept/decline per item, again gated.
-12. **Done** → `PHASE_DONE`; outcome recorded for analytics via `record_user_outcome` (post-§2.3).
+12. **Done** → `PHASE_DONE`; outcome recorded for analytics via `record_user_outcome`.
 
 Every persisting step at every phase records an audit-log entry; every AI invocation is gated by a confirmation prompt; every user-data column at rest is encrypted with the AEAD primitive.
 
 ## Composition surface
 
-The MCP server in `mcp_server.py` is the project's composition surface. The current catalogue (8 tools) is documented in `docs/grant/09-mcp-composition.md`; the post-Week-2 expansion to 13 tools is documented there too, alongside the three composition patterns (sequential handoff, profile-shared, orchestrated). A reference integration with an open housing agent lands in `examples/housing-agent-integration/` in Week 2 §2.5 as proof-of-pattern.
+The MCP server in `mcp_server.py` is the project's composition surface. The 15-tool catalogue is documented in `docs/grant/09-mcp-composition.md`, alongside the three composition patterns (sequential handoff, profile-shared, orchestrated). A reference integration with an open housing agent ships in `examples/housing-stub-client/` as proof-of-pattern.
 
 Every MCP `tools/call` payload is **JSON-Schema-validated** against the registered tool's `inputSchema` before dispatch (`mcp_server.validate_tool_arguments`). Validation failures return an RFC 7807 Problem Details payload via the standard MCP `isError=True` channel. This makes the published catalogue a real contract: a deployer can write a client against `tools/list` and trust the server to enforce the shape.
 
@@ -221,7 +221,7 @@ Every MCP `tools/call` payload is **JSON-Schema-validated** against the register
 ## Deployment shapes
 
 - **Single Docker container**, single SQLite database, single volume (`./data`). `docker-compose.yml` for dev; `docker-compose.prod.yml` with Caddy HTTPS for production-grade.
-- **Reproducible builds via Nix flake** (lands Week 3 §3.8).
+- **Reproducible builds via Nix flake.**
 - **Self-hostable on commodity hardware**: a Beratungsstelle-scale deployment runs comfortably on a 2-vCPU / 4-GB VM.
 
 ## EU AI Act compliance hooks

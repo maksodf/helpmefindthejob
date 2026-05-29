@@ -68,10 +68,8 @@ fresh account. Seed-personas recipe at
 the demo state on any self-hosted instance. The
 main branch is intended to stay buildable but may contain unfinished
 work between tags. Honest about instability — see
-[`CONTRIBUTORS-NOTE.md`](CONTRIBUTORS-NOTE.md) for the project's history
-including the 2026-05-19 project rename ([Decision 22](docs/grant/04-research-and-decisions.md#decision-22-project-rename--helpmefindthejob--helpmefindthejob))
-and the deprecated commercial phase that preceded the civic-commons
-direction.
+[`CONTRIBUTORS-NOTE.md`](CONTRIBUTORS-NOTE.md) and the Project provenance
+section below for the project's history, including the 2026-05-19 rename.
 
 ## Project provenance
 
@@ -199,7 +197,7 @@ and EU-mobile workers facing the densest concentration of friction —
 the strongest specific narrative evidence in proposals and demos) and
 two **wider-friction-class** personas (non-migrant users facing
 structurally similar friction in different forms — their presence
-demonstrates the friction-class architectural claim per Decision 21).
+demonstrates the friction-class architectural claim).
 The system serves a category of human situations, not a single
 demographic. The panel doubles as a forcing function for accessibility,
 RTL-language readiness, regulated-profession recognition flows, and EU
@@ -281,8 +279,7 @@ for the architectural reasoning.
 
 A reference integration with an open housing agent — proving the
 composition claim end-to-end — is Phase 2 work pending a partner
-agent ([Decision 20](docs/grant/04-research-and-decisions.md#decision-20-housing-agent-25-defaults-to-mock-stub-option-a)
-defaulted the §2.5 deliverable to Option A: a mock-stub client).
+agent (the housing integration currently defaults to a mock-stub client).
 The MCP composition tools (`propose_referral`, `bundle_civic_context`,
 `query_esco_skill`, `export_eures_compatible`) are wired today; the
 end-to-end demonstration arrives with the partner agent.
@@ -329,7 +326,7 @@ A quarterly roadmap with milestones for **2026 Q3 → 2028 Q2** lives at
   submitted; NLnet NGI Zero Commons Fund application submitted by
   end of Week 4.
 - **2026 Q4** — Arabic as the third UI language; first NGO pilot
-  deployment; WIP reintegration begins (per Decision 16).
+  deployment; work-in-progress modules begin reintegration.
 - **2027 Q1** — Phase 2 NLnet application; framework extraction
   begins.
 - **2027 Q2** — housing-agent integration hardened; healthcare-agent

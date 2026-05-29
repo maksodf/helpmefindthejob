@@ -1,6 +1,6 @@
 # ESCO + EURES integration
 
-**Status**: shipped in Week 2 §2.4. Curated subset under `reference/esco/`; full ESCO dataset import is post-grant scope.
+**Status**: curated subset shipped under `reference/esco/`; the full ESCO dataset import is a funded milestone.
 
 This document is the operational reference for how Helpmefindthejob uses the **ESCO** (European Skills, Competences, Qualifications and Occupations) and **EURES** (European Employment Services) standards. It complements [`docs/mcp-server.md`](mcp-server.md) (which describes the MCP tools that surface these standards) and [`STANDARDS.md`](https://github.com/maksodf/helpmefindthejob/blob/main/STANDARDS.md) (which lists the standards we cite).
 
@@ -8,7 +8,7 @@ This document is the operational reference for how Helpmefindthejob uses the **E
 
 ## Why these standards
 
-The project's mission — captured in [`docs/grant/01-project-brief.md`](grant/01-project-brief.md) — is to put bureaucratic-navigation knowledge in the hands of anyone facing structural labor-market friction across the EU, with migrants and EU-mobile workers as the most acute use case (see Decision 21 in `docs/grant/04-research-and-decisions.md`). Bureaucratic navigation in this domain depends on agreeing on what *occupations* and *skills* are. ESCO and EURES are the canonical EU vocabularies:
+The project's mission — captured in [`docs/grant/01-project-brief.md`](grant/01-project-brief.md) — is to put bureaucratic-navigation knowledge in the hands of anyone facing structural labor-market friction across the EU, with migrants and EU-mobile workers as the most acute use case. Bureaucratic navigation in this domain depends on agreeing on what *occupations* and *skills* are. ESCO and EURES are the canonical EU vocabularies:
 
 - **ESCO** is the European Commission's pan-EU classification of ~3,000 occupations and ~13,000 skills, multilingually labelled in all 24 EU official languages plus Norwegian, Icelandic, and Arabic. Maintained by the Directorate-General for Employment, Social Affairs and Inclusion. Published as CSV, RDF, and SKOS under [Creative Commons Attribution 4.0 International (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/).
 - **EURES** is the EU portal for cross-border employment services. Its [job-posting schema](https://eures.europa.eu/eures-services/eures-services-european-online-job-day_en) is the de-facto interoperability format for job listings shared between European public employment services and is closely aligned with [schema.org JobPosting](https://schema.org/JobPosting).
@@ -21,7 +21,7 @@ Adopting these standards has three concrete consequences for the project:
 
 ---
 
-## What ships in §2.4
+## What ships today
 
 | Artefact | Location | Status |
 |---|---|---|
@@ -29,7 +29,7 @@ Adopting these standards has three concrete consequences for the project:
 | Curated 50-skill reference dataset | [`reference/esco/skills.json`](https://github.com/maksodf/helpmefindthejob/blob/main/reference/esco/skills.json) | Shipped |
 | Loader + persona-panel coverage tests | [`company_discovery/mcp_tools.py:_load_esco_reference_dataset`](https://github.com/maksodf/helpmefindthejob/blob/main/company_discovery/mcp_tools.py), [`tests/test_phase12_esco_eures.py`](https://github.com/maksodf/helpmefindthejob/blob/main/tests/test_phase12_esco_eures.py) | Shipped |
 | ESCO-backed `query_esco_skill` MCP tool | [`mcp_server.py`](https://github.com/maksodf/helpmefindthejob/blob/main/mcp_server.py) (catalogue v0.2.0) | Shipped |
-| EURES-shaped `export_eures_compatible` MCP tool | same | Shipped (projection shape; end-to-end with persisted jobs lands in §2.6) |
+| EURES-shaped `export_eures_compatible` MCP tool | same | Shipped (projection shape; end-to-end with persisted jobs is a funded milestone) |
 | Full ESCO dataset import (3,000 occupations / 13,000 skills, all 27 ESCO languages) | not in this commit | **Post-grant scope** (see "Upgrade path" below) |
 
 ---
@@ -125,7 +125,7 @@ A reviewer cross-checking the project's "cost-saving doctrine mechanism 1" (lowe
 - caches the merged dataset for the process lifetime (the file is repo-tracked reference data, not user data; no need to refresh)
 - normalises both files into a single list with `type` set to `"occupation"` or `"skill"` so the `query_esco_skill` tool can filter
 - preserves all optional fields (`isco`, `category`, `cefr`, `personas`, `shortageDE2024`, `esco_uri`) on each match record
-- exposes a single `label` field set to `label_en` for back-compat with the §2.3 mini-dataset shape, while also surfacing `label_en` and `label_de` separately for locale-aware consumers
+- exposes a single `label` field set to `label_en` for back-compat with the earlier mini-dataset shape, while also surfacing `label_en` and `label_de` separately for locale-aware consumers
 - falls back to the inline `_ESCO_REFERENCE_DATASET_FALLBACK` 12-entry mini-set if either file is missing (e.g. some Python packaging configurations strip `reference/`). The `query_esco_skill` response's `datasetVersion` field is `v1-curated-2026-05-18` for the full path and `v0-mini-fallback` for the fallback so callers can branch.
 
 ## EURES projection shape
