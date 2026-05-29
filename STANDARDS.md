@@ -63,20 +63,22 @@ Helpmefindthejob is **standards-anchored on purpose**. Adopters inherit interope
 | [cosign](https://docs.sigstore.dev/cosign/overview/) signed releases | v0.1.0 source tarball cosign-signed with a long-lived ECDSA P-256 key pair (cosign 3.0.6, model b). Bundle + public key: [`docs/releases/v0.1.0-source.tar.gz.sigstore`](docs/releases/v0.1.0-source.tar.gz.sigstore) + [`docs/releases/v0.1.0-cosign.pub`](docs/releases/v0.1.0-cosign.pub). Verify with `cosign verify-blob ... --insecure-ignore-tlog`. v0.2.0+ plans to switch to keyless via GH Actions OIDC; full doc at [`docs/releases/v0.1.0-signing.md`](docs/releases/v0.1.0-signing.md). | Shipped |
 | [Conventional Commits](https://www.conventionalcommits.org/) | Commit-message convention in [`CONTRIBUTING.md`](CONTRIBUTING.md) | Shipped |
 
-## Internal protocols (work-in-progress, may become open standards)
+## Composition protocol + internal specs
 
-These are project-internal protocols today. As cross-civic-agent composition matures (Phase 2 of the post-grant arc — see [`docs/grant/03-post-grant.md`](docs/grant/03-post-grant.md)) we may propose them as open specs through a W3C Community Group or an informal cross-civic-agent working group.
+The cross-civic-agent composition contract has been promoted from internal to a published draft spec — **CACP v0.1** ([`docs/protocol/cacp-v0.1.md`](docs/protocol/cacp-v0.1.md)) — with a runnable conformance suite (`python -m conformance.cacp`; the reference server passes 14/14). Further cross-civic-agent specs may follow through a W3C Community Group or an informal working group (Phase 2 of the post-grant arc — see [`docs/grant/03-post-grant.md`](docs/grant/03-post-grant.md)).
 
 | Spec | Where | Status |
 |---|---|---|
-| Portable civic profile schema | Planned `/static/.well-known/civic-profile.schema.json` — see [`docs/grant/09-mcp-composition.md`](docs/grant/09-mcp-composition.md) §"The portable civic profile" | Internal; open-spec candidate for Phase 2 |
-| Cross-civic-agent referral protocol | `propose_referral` MCP tool (shipped) | Internal; open-spec candidate for Phase 2 |
-| Audit-log entry schema (EU AI Act Article 12 conformant) | Documented in the compliance pack; canonical shape in `data/admin_audit.log` | Shipped |
+| Civic Agent Composition Protocol (CACP) v0.1 | [`docs/protocol/cacp-v0.1.md`](docs/protocol/cacp-v0.1.md) + conformance suite `conformance/cacp/` | Published draft; reference server passes conformance 14/14 |
+| Portable civic profile schema | [`static/.well-known/civic-profile.schema.json`](static/.well-known/civic-profile.schema.json) (served; the CACP v0.1 data contract) | Shipped — pinned by `tests/test_civic_profile_schema.py` |
+| Cross-civic-agent referral protocol | `propose_referral` + lifecycle tools, formalised in CACP v0.1 §2 | Shipped |
+| Audit-log entry schema (EU AI Act Article 12 conformant) | Documented in the compliance pack; tamper-evident HMAC chain + external anchoring (`company_discovery/audit_anchor.py`) | Shipped |
 
 ## Where each claim is verifiable
 
 For a NLnet reviewer or institutional adopter doing a 10-minute deep-check of the standards claims:
 
+- **Everything, one command per dimension**: the [claims ledger](docs/claims-ledger.md) maps each headline claim to the single command that verifies it (`python -m conformance.cacp`, `python -m escolib`, `python -m biasprobe`, `./scripts/verify_reproducibility.sh`, `./scripts/sign_release_local.sh`, …), gated by [`tests/test_claims_ledger.py`](tests/test_claims_ledger.py).
 - **License + governance**: open [`LICENSE`](LICENSE), [`NOTICE`](NOTICE), [`cla.md`](cla.md), [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md). All are at repo root.
 - **MCP composition**: spawn `python3 mcp_server.py`, send the JSON-RPC `initialize` and `tools/list` calls documented in [`docs/mcp-server.md`](docs/mcp-server.md). Catalogue version + 15 tools + per-tool `inputSchema` come back.
 - **Schema enforcement**: send a deliberately-malformed `tools/call` (e.g., omit a required field) and observe the RFC 7807 Problem Details payload with `violatedRule: "required"`. The test file [`tests/test_phase11_mcp_input_validation.py`](tests/test_phase11_mcp_input_validation.py) automates this.
