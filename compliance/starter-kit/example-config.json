@@ -1,5 +1,13 @@
 {
-  "_comment": "Example deployer config for `python -m scripts.fill_template compliance/dpa-template.md --config compliance/starter-kit/example-config.json --output dpa-filled.md`. The {{NAME}}/{{TITLE}} slots fill the DPA signature table. The descriptive `[TBD: deployer to fill — …]` prompts in the FRIA + EU-DB-registration templates require deployment-specific judgement and are surfaced by fill_template as manual TODOs rather than auto-filled. Keys beginning with '_' are ignored by the filler.",
-  "NAME": "Jobcenter Musterstadt (Optionskommune)",
-  "TITLE": "Data Protection Officer"
+  "_comment": "Example deployer config for `python -m scripts.fill_template compliance/dpa-template.md --config compliance/starter-kit/example-config.json --strict --output dpa-filled.md`. Keys are the NORMALISED slot names (whitespace/hyphens/case folded to UPPER_SNAKE by fill_template), so they cover the subject-matter, sub-processor table, and signature-table {{...}} slots. The descriptive `[TBD: deployer to fill — …]` prompts in the FRIA + EU-DB-registration templates require deployment-specific judgement and are surfaced by fill_template as manual TODOs, not auto-filled. Keys beginning with '_' are ignored.",
+  "NAME": "Dr. Erika Mustermann",
+  "TITLE": "Data Protection Officer",
+  "DEPLOYER_NAME": "Jobcenter Musterstadt (Optionskommune)",
+  "DEPLOYMENT_URL": "https://jobs.musterstadt.example",
+  "CONTROLLER_NAME": "Stadt Musterstadt",
+  "SUB_PROCESSOR_REGISTRY_URL": "https://jobs.musterstadt.example/subprocessors",
+  "HOSTING_PROVIDER": "Hetzner Cloud (Falkenstein, DE)",
+  "LLM_PROVIDER_IF_BYO_KEY": "DeepSeek (BYO-key, EU endpoint)",
+  "EMAIL_PROVIDER": "Postmark (EU region)",
+  "NONE_IF_OLLAMA": "NONE — self-hosted Ollama, no third-party AI flow"
 }

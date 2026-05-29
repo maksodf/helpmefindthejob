@@ -26,26 +26,39 @@ import re
 import sys
 from pathlib import Path
 
-#: A machine-fillable named slot, e.g. {{NAME}}.
-TOKEN_RE = re.compile(r"\{\{([A-Z][A-Z0-9_]*)\}\}")
+#: A machine-fillable placeholder: ANY ``{{...}}`` (spaces, hyphens, even a line
+#: wrap inside the braces), so no real slot is ever silently skipped. The body
+#: is normalised to a config key by ``_normalise_key``.
+TOKEN_RE = re.compile(r"\{\{([^{}]+?)\}\}", re.DOTALL)
 #: A descriptive human-fill prompt, e.g. [TBD: deployer to fill — organisation name].
 TBD_RE = re.compile(r"\[TBD:[^\]]*\]")
 
 
-def fill(template_text: str, config: dict[str, object]) -> tuple[str, list[str], list[str]]:
-    """Return ``(filled_text, unfilled_tokens, tbd_prompts)``.
+def _normalise_key(raw: str) -> str:
+    """Canonical config key for a slot body: collapse runs of whitespace,
+    hyphens, and slashes to single underscores, strip, uppercase. So
+    ``{{DEPLOYER\\nNAME}}``, ``{{DEPLOYER NAME}}`` and ``{{deployer-name}}`` all
+    map to ``DEPLOYER_NAME`` — a line-wrapped or oddly-cased placeholder is still
+    seen, and ``--strict`` cannot be fooled into passing over it."""
+    return re.sub(r"[\s\-/]+", "_", raw.strip()).upper()
 
-    Every ``{{TOKEN}}`` whose name is a key in ``config`` is substituted;
-    ``unfilled_tokens`` lists the distinct ``{{TOKEN}}`` names with no config
-    value (sorted); ``tbd_prompts`` lists the verbatim ``[TBD: …]`` markers.
+
+def fill(template_text: str, config: dict[str, object]) -> tuple[str, list[str], list[str]]:
+    """Return ``(filled_text, unfilled_keys, tbd_prompts)``.
+
+    EVERY ``{{...}}`` placeholder is detected (whatever its spacing/case); its
+    body is normalised to a config key and substituted when present.
+    ``unfilled_keys`` lists the distinct normalised keys still unsubstituted
+    (sorted) — so ``--strict`` cannot pass over a placeholder it failed to fill.
+    ``tbd_prompts`` lists the verbatim ``[TBD: …]`` human-fill markers.
     """
 
     def _sub(match: re.Match[str]) -> str:
-        key = match.group(1)
+        key = _normalise_key(match.group(1))
         return str(config[key]) if key in config else match.group(0)
 
     filled = TOKEN_RE.sub(_sub, template_text)
-    unfilled = sorted(set(TOKEN_RE.findall(filled)))
+    unfilled = sorted({_normalise_key(body) for body in TOKEN_RE.findall(filled)})
     tbd = TBD_RE.findall(filled)
     return filled, unfilled, tbd
 

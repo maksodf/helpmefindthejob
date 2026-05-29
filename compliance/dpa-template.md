@@ -296,10 +296,11 @@ commercially under a separate contract.
 
 ## How to use this template
 
-1. **Replace every `{{…}}` double-brace placeholder** (the NAME and TITLE slots
-   in the signature table below) with the relevant party name or value — by
-   hand, or with `python -m scripts.fill_template` against a JSON config (see
-   `compliance/starter-kit/`).
+1. **Replace every double-brace placeholder** — the `DEPLOYER_NAME`,
+   `DEPLOYMENT_URL`, `CONTROLLER_NAME`, sub-processor, and signature-table slots —
+   with the relevant party name or value, by hand or with
+   `python -m scripts.fill_template … --strict` against a JSON config (see
+   `compliance/starter-kit/`). `--strict` fails if any slot is left unfilled.
 2. **Customise §5 sub-processors** based on your actual deploy:
    delete the LLM row if you're manual-mode-only, delete the
    email-provider row if you've configured local-only outbox.
