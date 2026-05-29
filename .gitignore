@@ -113,3 +113,10 @@ docs/compliance/
 private/
 .hypothesis/
 .gstack/
+
+# Local-only planning / strategy working files — never publish.
+/WinningPlan.MD
+/ProposedNGIFundedWork.MD
+/Finalanswers.MD
+/EXECUTION_PROMPT.md
+/docs/grant/post-submission-state-*.md
