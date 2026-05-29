@@ -256,9 +256,6 @@ audit. Items below are commit-mapped to the working branch
   (profile-shared composition via `get_user_profile_for_consent`)
   end-to-end with narrated output. +16 tests at
   `tests/test_examples_housing_stub.py`. Commit `ed90258`.
-- **NasserCheckList.md** — bureaucratic + vendor-relations
-  checklist for partner-owned items extracted from the operator-
-  dependent slice of the gap analysis. Commit `d14aca6`.
 - **Post-sprint polish** — versioned migrations substrate (#20),
   threat-model document refresh (#24), Data Processing Agreement
   template (#25). Commit `11a3377`.

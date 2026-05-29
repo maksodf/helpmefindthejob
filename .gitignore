@@ -18,6 +18,11 @@ dist/
 !.env.example
 .deploy-env.local
 
+# Local-only operator/submission docs — these carry personal email addresses and
+# internal process notes; they must never be published. Kept on disk and shared
+# with collaborators out of band, never committed.
+Hallo.md
+
 # Production data — sqlite DBs hold user accounts, hashed passwords, scan history.
 # These live on the droplet and in WAL-aware snapshots, never in git.
 data/
