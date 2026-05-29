@@ -134,7 +134,7 @@
       "title": "Right to data portability (export)",
       "status": "code-wired",
       "artifacts": ["compliance/article-20-export-proof.md", "compliance/article-20-export-sample.json"],
-      "codeRefs": ["tests/test_gdpr_article_20_export.py"]
+      "codeRefs": ["app.py", "tests/test_gdpr_article_20_export.py"]
     },
     {
       "regulation": "GDPR",
