@@ -21,6 +21,11 @@ dist/
 # Production data — sqlite DBs hold user accounts, hashed passwords, scan history.
 # These live on the droplet and in WAL-aware snapshots, never in git.
 data/
+
+# escolib/data/ is packaged library reference data (a CC-BY-4.0 ESCO subset),
+# NOT user data — it must ship with the package, so re-include it.
+!escolib/data/
+!escolib/data/**
 *.sqlite3
 *.sqlite3-wal
 *.sqlite3-shm
