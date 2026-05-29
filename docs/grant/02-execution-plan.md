@@ -268,7 +268,7 @@ If no positive response (Option A fallback):
 - [x] Test spawns the MCP server as subprocess — `_StdioMCPClient` in `tests/test_phase12_mcp_integration_e2e.py`; uses a tmp `HELPMEFINDTHEJOB_DATA_DIR` per test for isolation; bounded 10 s shutdown wait.
 - [x] Connects a mock MCP client over stdio — JSON-RPC-over-stdio writes to subprocess.stdin, reads from subprocess.stdout one line per request.
 - [x] Calls `initialize`, expects version `2024-11-05` — `test_01_initialize_returns_canonical_protocol_version`; also asserts `serverInfo.name == "helpmefindthejob"` and capabilities advertise tools.
-- [x] Calls `tools/list`, expects at least 13 tools — `test_03_tools_list_returns_thirteen_tools_with_draft7_schemas` asserts exactly 13 (the catalogue v0.2.0 surface), enumerates all expected names, and runs `jsonschema.Draft7Validator.check_schema` on every tool's `inputSchema`.
+- [x] Calls `tools/list`, expects the full catalogue — `test_03_tools_list_returns_fifteen_tools_with_draft7_schemas` asserts exactly 15 (the catalogue v0.2.0 surface after phase2-backlog #11 added `list_referrals` + `update_referral_status`), enumerates all expected names, and runs `jsonschema.Draft7Validator.check_schema` on every tool's `inputSchema`.
 - [x] Calls `find_company_career_page` and `propose_referral` with known inputs — covered by `test_06_find_company_career_page_happy_path` and `test_04_propose_referral_happy_path`. Also covers `query_esco_skill` happy path (§2.4 German-label lookup) for completeness across the catalogue's three eras (legacy 8 + §2.3 composition tools + §2.4 ESCO).
 - [x] Validates all responses against the published JSON Schemas — every `tools/list` schema is Draft-7-compiled; every happy-path response is parsed and field-checked against the documented shape; the schema-validation failure path is verified via `test_07_invalid_arguments_returns_rfc7807_problem_document` (deliberately malformed `record_user_outcome` payload returns the RFC 7807 Problem Details document with `violatedRule: "enum"`).
 - [x] Clean shutdown — `_cleanup` asserts subprocess exits 0 within 10 seconds after stdin close.
@@ -302,7 +302,7 @@ Per `10-ai-act-compliance.md`. Create the `/compliance/` directory and ship:
 ### Week 2 Definition of Done
 
 - Commons Conservancy application submitted
-- `docs/mcp-server.md` complete with 13 tools documented
+- `docs/mcp-server.md` complete with 15 tools documented
 - `STANDARDS.md` lists every standard cited
 - ESCO integration covering 30+ occupations
 - EURES schema export verified

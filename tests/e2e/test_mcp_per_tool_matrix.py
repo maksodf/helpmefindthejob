@@ -8,8 +8,8 @@
 
 Drives every published MCP tool through the real stdio transport
 (:class:`MCPHarness`). Extends the existing test_phase12 coverage from
-3 of 13 tools (propose_referral / query_esco_skill /
-find_company_career_page) to ALL 13 tools, and adds complete JSON-RPC
+3 example tools (propose_referral / query_esco_skill /
+find_company_career_page) to ALL 15 tools, and adds complete JSON-RPC
 error-envelope coverage (-32601 unknown method, -32700 parse error).
 
 The phase11 input-validation suite covers the dispatcher in-process;
@@ -18,7 +18,7 @@ correctly. Both layers are kept: dispatcher unit tests are fast feedback
 loops; this file is the "real MCP client" verification PART 7 needs.
 
 Test shape:
-- One subprocess per class (setUpClass) -- 13 tools each get three round-trips
+- One subprocess per class (setUpClass) -- 15 tools each get three round-trips
   (happy-shaped, missing required, wrong type), totalling ~40 assertions
 - Each tool's happy-shape is "schema-valid args that the round-trip
   accepts"; some tools then fail in the service layer because the
@@ -125,6 +125,16 @@ _HAPPY_INPUTS: list[tuple[str, dict[str, object], str]] = [
         {"userId": "u-matrix-12", "jobId": "job-matrix-1", "outcomeType": "applied"},
         "ok",
     ),
+    (
+        "list_referrals",
+        {"userId": "u-matrix-13"},
+        "ok",
+    ),
+    (
+        "update_referral_status",
+        {"userId": "u-matrix-14", "referralId": "ref-does-not-exist", "status": "accepted"},
+        "ok_or_tool_error",
+    ),
 ]
 
 # Per-tool missing-required: pick a representative required arg to omit.
@@ -150,6 +160,8 @@ _MISSING_REQUIRED: list[tuple[str, dict[str, object]]] = [
     ("query_esco_skill", {}),  # query missing
     ("export_eures_compatible", {"userId": "u-x"}),  # discoveredJobId missing
     ("record_user_outcome", {"userId": "u-x", "jobId": "j-x"}),  # outcomeType missing
+    ("list_referrals", {}),  # userId missing
+    ("update_referral_status", {"userId": "u-x", "referralId": "r-x"}),  # status missing
 ]
 
 # Per-tool wrong-type: pick a field with a well-defined non-object type
@@ -209,6 +221,14 @@ _WRONG_TYPE: list[tuple[str, dict[str, object]]] = [
         "record_user_outcome",
         {"userId": "u-x", "jobId": "j-x", "outcomeType": "ghosted"},  # outcomeType must be in enum
     ),
+    (
+        "list_referrals",
+        {"userId": "u-x", "status": "INVALID"},  # status must be in enum
+    ),
+    (
+        "update_referral_status",
+        {"userId": "u-x", "referralId": "r-x", "status": "INVALID"},  # status must be in enum
+    ),
 ]
 
 
@@ -230,7 +250,7 @@ class MCPPerToolMatrixE2E(unittest.TestCase):
         if exit_code != 0:
             raise AssertionError(f"MCP server exited with code {exit_code}, expected 0")
 
-    # ---------- happy-path round-trips for all 13 tools ----------
+    # ---------- happy-path round-trips for all 15 tools ----------
 
     def _assert_happy(self, tool_name: str, kwargs: dict[str, object], expected: str) -> None:
         response = self.harness.call_tool(tool_name, **kwargs)
@@ -295,7 +315,13 @@ class MCPPerToolMatrixE2E(unittest.TestCase):
     def test_13_happy_record_user_outcome(self) -> None:
         self._assert_happy(*_HAPPY_INPUTS[12])
 
-    # ---------- missing-required round-trips for all 13 tools ----------
+    def test_14_happy_list_referrals(self) -> None:
+        self._assert_happy(*_HAPPY_INPUTS[13])
+
+    def test_15_happy_update_referral_status(self) -> None:
+        self._assert_happy(*_HAPPY_INPUTS[14])
+
+    # ---------- missing-required round-trips for all 15 tools ----------
 
     def _assert_missing_required(self, tool_name: str, kwargs: dict[str, object]) -> None:
         response = self.harness.call_tool(tool_name, **kwargs)
@@ -346,7 +372,13 @@ class MCPPerToolMatrixE2E(unittest.TestCase):
     def test_32_missing_required_record_user_outcome(self) -> None:
         self._assert_missing_required(*_MISSING_REQUIRED[12])
 
-    # ---------- wrong-type round-trips for all 13 tools ----------
+    def test_33_missing_required_list_referrals(self) -> None:
+        self._assert_missing_required(*_MISSING_REQUIRED[13])
+
+    def test_34_missing_required_update_referral_status(self) -> None:
+        self._assert_missing_required(*_MISSING_REQUIRED[14])
+
+    # ---------- wrong-type round-trips for all 15 tools ----------
 
     def _assert_wrong_type(self, tool_name: str, kwargs: dict[str, object]) -> None:
         response = self.harness.call_tool(tool_name, **kwargs)
@@ -399,6 +431,12 @@ class MCPPerToolMatrixE2E(unittest.TestCase):
 
     def test_52_wrong_type_record_user_outcome(self) -> None:
         self._assert_wrong_type(*_WRONG_TYPE[12])
+
+    def test_53_wrong_type_list_referrals(self) -> None:
+        self._assert_wrong_type(*_WRONG_TYPE[13])
+
+    def test_54_wrong_type_update_referral_status(self) -> None:
+        self._assert_wrong_type(*_WRONG_TYPE[14])
 
     # ---------- per-tool docstring sanity (catalogue completeness) ----------
 

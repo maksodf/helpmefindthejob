@@ -139,6 +139,56 @@ class GetUserProfileForConsentTests(unittest.TestCase):
         for event in outcomes["events"]:
             self.assertEqual(event["userId"], "u-1")
 
+    def test_populated_profile_surfaces_real_stored_fields(self) -> None:
+        # Bug fix (2026-05-29): the tool must honour its documented
+        # contract — "a populated subset if the project has that data for
+        # the user". Seed a real stored UserProfile and confirm the
+        # consent handoff surfaces it instead of nulls.
+        from company_discovery.models import UserProfile
+
+        self.tools.service.repository.save_user_profile(
+            UserProfile(
+                user_id="u-seeded",
+                target_roles=["Registered nurse", "Krankenpfleger", "Pflegefachkraft"],
+                languages=["Arabic (native)", "German (B1)", "English (B2)"],
+                locale="de",
+                location="Berlin",
+                cv_text="Aïcha — registered nurse, §16d recognition pathway.",
+            )
+        )
+
+        result = self.tools.get_user_profile_for_consent(
+            userId="u-seeded",
+            scopes=["identity", "employment", "cv", "preferences"],
+        )
+        profile = result["profile"]
+
+        # employment scope now carries the real target roles + languages.
+        employment = profile["employment"]
+        self.assertEqual(
+            employment["targetRoleFamilies"],
+            ["Registered nurse", "Krankenpfleger", "Pflegefachkraft"],
+        )
+        self.assertIn("German (B1)", employment["languageLevels"])
+        # identity + cv + preferences reflect the stored record.
+        self.assertEqual(profile["identity"]["preferredLocale"], "de")
+        self.assertTrue(profile["cv"]["present"])
+        self.assertEqual(profile["preferences"]["locationStrings"], ["Berlin"])
+
+    def test_unknown_user_still_returns_empty_placeholders(self) -> None:
+        # Regression guard: an unknown user must behave exactly as before
+        # the bug fix — explicit empty placeholders, never an error.
+        result = self.tools.get_user_profile_for_consent(
+            userId="nobody-here",
+            scopes=["identity", "employment", "cv", "preferences"],
+        )
+        profile = result["profile"]
+        self.assertEqual(profile["employment"]["targetRoleFamilies"], [])
+        self.assertEqual(profile["employment"]["languageLevels"], {})
+        self.assertEqual(profile["identity"]["preferredLocale"], "en")
+        self.assertFalse(profile["cv"]["present"])
+        self.assertEqual(profile["preferences"]["locationStrings"], [])
+
     def test_handle_request_rejects_missing_scopes(self) -> None:
         message = {
             "jsonrpc": "2.0",

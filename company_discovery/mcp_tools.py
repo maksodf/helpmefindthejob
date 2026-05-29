@@ -513,6 +513,20 @@ class CompanyDiscoveryMCPTools:
         """
 
         summary = self.service.get_company_watchlist_summary(userId)
+
+        # Read the stored civic profile if the project holds one for this
+        # user. When it does, the scoped blocks below surface the real
+        # fields; when it does not, each falls back to an explicit empty
+        # placeholder so a calling civic agent can detect "no record yet"
+        # without inspecting field-by-field. ``record`` stays ``None`` for
+        # an unknown user, so the output is then identical to the prior
+        # placeholder-only behaviour.
+        record = None
+        try:
+            record = self.service.repository.get_user_profile(userId)
+        except Exception:
+            record = None
+
         profile: dict[str, Any] = {
             "userId": userId,
             "scopes": list(scopes),
@@ -524,19 +538,23 @@ class CompanyDiscoveryMCPTools:
                 "userId": userId,
                 "displayName": None,
                 "publicHandle": None,
-                "preferredLocale": "en",
+                "preferredLocale": getattr(record, "locale", None) or "en",
             }
         if "residence" in scopes:
+            # The civic profile store does not currently hold residence or
+            # work-authorisation data; these stay null until a consent-bound
+            # residence source populates them (post-Phase-1).
             profile["residence"] = {
                 "country": None,
                 "statusType": None,
                 "workAuthorisation": None,
             }
         if "employment" in scopes:
+            languages = list(getattr(record, "languages", None) or [])
             profile["employment"] = {
                 "currentStatus": None,
-                "targetRoleFamilies": [],
-                "languageLevels": {},
+                "targetRoleFamilies": list(getattr(record, "target_roles", None) or []),
+                "languageLevels": {lang: "self-reported" for lang in languages},
                 "escoSkillCodes": [],
                 "watchedCompanies": summary.get("watched_companies", 0)
                 if isinstance(summary, dict)
@@ -544,7 +562,7 @@ class CompanyDiscoveryMCPTools:
             }
         if "cv" in scopes:
             profile["cv"] = {
-                "present": False,
+                "present": bool(getattr(record, "cv_text", None)),
                 "lastUpdatedAt": None,
                 "note": (
                     "CV content is not surfaced through this tool; consume "
@@ -555,10 +573,11 @@ class CompanyDiscoveryMCPTools:
         if "outcomes" in scopes:
             profile["outcomes"] = _read_user_outcomes(self.service, userId)
         if "preferences" in scopes:
+            _location = getattr(record, "location", None)
             profile["preferences"] = {
                 "remote": None,
                 "salaryRange": None,
-                "locationStrings": [],
+                "locationStrings": [_location] if _location else [],
             }
         return {"status": "ok", "profile": profile}
 

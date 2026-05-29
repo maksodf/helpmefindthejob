@@ -97,6 +97,13 @@ ROOT = Path(__file__).parent
 DATA_ROOT = Path(get_env("HELPMEFINDTHEJOB_DATA_DIR", str(ROOT / "data")))
 DATA_PATH = DATA_ROOT / "company_discovery.sqlite3"
 
+# Identity of the agent currently composing with this server, captured from
+# ``clientInfo.name`` at ``initialize`` and attached to each tool call's
+# Article-12 audit record as ``composition_source`` so the audit trail shows
+# *which* civic agent drove each cross-agent call. stdio serves one client per
+# process, so a module-level value is the correct lifetime here.
+_COMPOSITION_SOURCE: str | None = None
+
 
 def jsonable(value: Any) -> Any:
     if isinstance(value, datetime):
@@ -153,6 +160,13 @@ def handle_request(
     if method == "notifications/initialized":
         return None
     if method == "initialize":
+        global _COMPOSITION_SOURCE
+        client_name = (params.get("clientInfo") or {}).get("name")
+        _COMPOSITION_SOURCE = (
+            client_name.strip()[:120]
+            if isinstance(client_name, str) and client_name.strip()
+            else None
+        )
         return rpc_response(
             message_id,
             {
@@ -285,6 +299,7 @@ def _emit_tool_call_audit(
             tool_name=name,
             arguments_hash=args_hash,
             response_size_bytes=response_size_bytes,
+            composition_source=_COMPOSITION_SOURCE,
             duration_ms=duration_ms,
             outcome=outcome,
             error_class=error_class,

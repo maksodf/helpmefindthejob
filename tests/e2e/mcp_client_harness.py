@@ -312,8 +312,14 @@ def _smoke() -> int:
         )
         print(f"  initialize ok -- protocolVersion={protocol_version!r} server={server_name!r}")
 
+        if str(REPO_ROOT) not in sys.path:
+            sys.path.insert(0, str(REPO_ROOT))
+        from company_discovery.mcp_tools import TOOL_SCHEMAS
+
         tools = harness.list_tools()
-        assert len(tools) == 13, f"expected 13 tools, got {len(tools)}"
+        assert len(tools) == len(TOOL_SCHEMAS), (
+            f"server exposed {len(tools)} tools; catalogue defines {len(TOOL_SCHEMAS)}"
+        )
         print(f"  tools/list ok -- {len(tools)} tools registered")
         for tool in sorted(tools, key=lambda t: t["name"]):
             print(f"    - {tool['name']}")

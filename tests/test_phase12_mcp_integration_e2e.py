@@ -17,7 +17,7 @@ Coverage:
 
 - ``initialize`` returns protocolVersion ``2024-11-05`` and
   serverInfo.name ``helpmefindthejob``
-- ``tools/list`` returns 13 tools (catalogue v0.2.0), each with a
+- ``tools/list`` returns 15 tools (catalogue v0.2.0), each with a
   Draft-7-valid inputSchema
 - Representative ``tools/call`` happy paths for three tools spanning
   the data flow:
@@ -151,7 +151,7 @@ class MCPIntegrationE2E(unittest.TestCase):
 
     # ----- catalogue -----
 
-    def test_03_tools_list_returns_thirteen_tools_with_draft7_schemas(self) -> None:
+    def test_03_tools_list_returns_fifteen_tools_with_draft7_schemas(self) -> None:
         self.client.call("initialize", {})
         response = self.client.call("tools/list", {})
         tools = response["result"]["tools"]

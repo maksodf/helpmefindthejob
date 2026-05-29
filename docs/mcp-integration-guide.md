@@ -40,7 +40,7 @@ Then add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 }
 ```
 
-Restart Claude Desktop. The `🔧` icon in the chat composer should show "13 tools available" for helpmefindthejob. Ask: "Find me remote frontend jobs in Berlin for someone with React and TypeScript experience."
+Restart Claude Desktop. The `🔧` icon in the chat composer should show "15 tools available" for helpmefindthejob. Ask: "Find me remote frontend jobs in Berlin for someone with React and TypeScript experience."
 
 ---
 
@@ -101,7 +101,7 @@ After saving, run `codex --list-tools` to confirm registration.
 
 ---
 
-## The 13-tool catalogue
+## The 15-tool catalogue
 
 The exhaustive list (with JSON-Schema input contracts) lives at [`docs/mcp-server.md`](mcp-server.md) and is also reachable via `tools/list` JSON-RPC against the running server. The headline tools:
 

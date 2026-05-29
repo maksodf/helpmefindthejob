@@ -88,7 +88,7 @@ Milestone-based payment, results-only, no progress reports — per NLnet's stand
 
 ### Milestone 2: MCP composition reference
 
-**Deliverable**: published MCP server documentation with versioned tool catalogue and JSON Schema for all 13 tools; one concrete reference integration with a parallel open civic agent (housing); cross-linked repositories; CI integration test demonstrating MCP composition; STANDARDS.md citing every standard implemented (MCP, schema.org JobPosting, ESCO, EURES schema, JSON Schema 2020-12, ISO 8601, ISO 639-1, RFC 7807, RFC 9116).
+**Deliverable**: published MCP server documentation with versioned tool catalogue and JSON Schema for all 15 tools; one concrete reference integration with a parallel open civic agent (housing); cross-linked repositories; CI integration test demonstrating MCP composition; STANDARDS.md citing every standard implemented (MCP, schema.org JobPosting, ESCO, EURES schema, JSON Schema 2020-12, ISO 8601, ISO 639-1, RFC 7807, RFC 9116).
 
 **Cost-saving mechanism**: every additional civic agent built on top of this MCP surface reuses our composition layer, avoiding duplicated engineering cost across the civic-tech ecosystem.
 
