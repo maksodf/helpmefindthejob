@@ -111,10 +111,12 @@ exclude = [
 ]
 
 # Strict for modules with clear, tightly-scoped contracts. CI runs:
-#     mypy company_discovery/audit_log.py company_discovery/crypto_kit.py mcp_server.py
+#     mypy company_discovery/audit_anchor.py company_discovery/audit_log.py \
+#          company_discovery/crypto_kit.py mcp_server.py
 # The list grows as more modules are brought up to the strict bar.
 [[tool.mypy.overrides]]
 module = [
+    "company_discovery.audit_anchor",
     "company_discovery.audit_log",
     "company_discovery.crypto_kit",
     "mcp_server",

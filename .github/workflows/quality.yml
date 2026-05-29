@@ -71,6 +71,7 @@ jobs:
         # modules are brought up to the strict bar.
         run: |
           mypy \
+            company_discovery/audit_anchor.py \
             company_discovery/audit_log.py \
             company_discovery/crypto_kit.py \
             mcp_server.py
