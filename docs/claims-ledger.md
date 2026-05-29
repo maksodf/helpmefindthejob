@@ -18,7 +18,7 @@ path. Run the command from a clean checkout.
 
 | Dimension | Claim | Verify with one command |
 |---|---|---|
-| Composition protocol (CACP v0.1) | The reference MCP server passes its own conformance suite, 14/14 (L1/L2/L3). | `python -m conformance.cacp` |
+| Composition protocol (CACP v0.1) | The reference server **and an independent, from-scratch second server** both pass the suite, 14/14 (L1/L2/L3). | `python -m conformance.cacp` |
 | `escolib` reusable library | Standalone ESCO/ISCO reconciliation; 100% recall, 0 false positives on committed fixtures. | `python -m escolib Krankenschwester` |
 | `biasprobe` bias harness | Reproduces the comparative per-persona bias report offline from committed caches. | `python -m biasprobe` |
 | Tamper-evident audit anchor | A record edit / deletion / non-v2 injection is detected offline against a committed fixture. | `python -m unittest tests.test_audit_anchor` |
@@ -40,7 +40,7 @@ never claimed as done — the ledger's gate fails if any is flipped to "built".
 | External security audit | not built | Needs a paid third party; internal review ≠ external audit. |
 | Co-maintainers / contributor community | not built | Code cannot manufacture a community. |
 | Signed institutional partners (MOUs) | not built | Outreach drafted but unsent. |
-| Third-party adoption of CACP | not built | Buildable proxy: the reference MCP server passes conformance + a reference consumer composes with it. |
+| Third-party adoption of CACP | not built | Buildable proxy: the reference server AND an independent 2nd server both pass conformance; a consumer composes with it. |
 
 This split — and the runnable one-commands above — is the project's integrity
 spine: claims are verifiable, and the limits are stated honestly.

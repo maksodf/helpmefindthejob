@@ -15,8 +15,12 @@ cross-agent action recorded in a tamper-evident audit trail.
 
 Helpmefindthejob's MCP server (`mcp_server.py`) is the **reference
 implementation**; it passes the conformance suite in `conformance/cacp/`
-(`python -m conformance.cacp`). This document is the normative spec; it promotes
-and formalises the design in
+(`python -m conformance.cacp`). A **second, independent implementation**
+(`examples/independent_cacp_server.py`) — written from scratch against this spec
++ the published schema, sharing none of the application's code — passes the same
+unmodified suite, demonstrating that CACP is implementable by an independent
+party (pinned by `tests/test_cacp_second_implementation.py`). This document is
+the normative spec; it promotes and formalises the design in
 [`docs/grant/09-mcp-composition.md`](https://github.com/maksodf/helpmefindthejob/blob/main/docs/grant/09-mcp-composition.md).
 
 The key words **MUST**, **MUST NOT**, **SHOULD**, and **MAY** are to be

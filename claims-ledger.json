@@ -5,9 +5,9 @@
     {
       "id": "cacp-conformance",
       "dimension": "Composition protocol (CACP v0.1)",
-      "claim": "The reference MCP server passes the published CACP v0.1 conformance suite (14/14 across L1 catalogue, L2 referral lifecycle, L3 consent+audit).",
-      "artifacts": ["docs/protocol/cacp-v0.1.md", "conformance/cacp/harness.py", "static/.well-known/civic-profile.schema.json"],
-      "assertingTests": ["tests/test_cacp_conformance.py"],
+      "claim": "The reference MCP server passes the published CACP v0.1 conformance suite (14/14 across L1 catalogue, L2 referral lifecycle, L3 consent+audit), AND a second, independent from-scratch server (examples/independent_cacp_server.py, sharing no application code) passes the same unmodified suite — proving the protocol is implementable by an independent party.",
+      "artifacts": ["docs/protocol/cacp-v0.1.md", "conformance/cacp/harness.py", "static/.well-known/civic-profile.schema.json", "examples/independent_cacp_server.py"],
+      "assertingTests": ["tests/test_cacp_conformance.py", "tests/test_cacp_second_implementation.py"],
       "oneCommand": "python -m conformance.cacp"
     },
     {
@@ -104,7 +104,7 @@
       "item": "Third-party adoption of CACP",
       "status": "not-built",
       "owner": "operator",
-      "note": "Buildable proxy shipped: the in-repo reference MCP server passes the conformance suite, and a reference consumer (examples/housing-stub-client) composes with it. Genuine external adoption by another party is a human-track outcome."
+      "note": "Buildable proxy: the reference MCP server AND an independent, from-scratch second server (examples/independent_cacp_server.py, sharing no application code) both pass the unmodified conformance suite, and a reference consumer (examples/housing-stub-client) composes with the server. Genuine external adoption by an outside party is a human-track outcome."
     }
   ]
 }
