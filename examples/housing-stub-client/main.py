@@ -58,6 +58,7 @@ from company_discovery.models import UserProfile  # noqa: E402
 from company_discovery.sqlite_repository import (  # noqa: E402
     SqliteCompanyDiscoveryRepository,
 )
+from conformance.cacp.stdio_client import StdioMCPClient  # noqa: E402
 
 # A fixed 32-byte demo salt so the audit chain is deterministic and the
 # parent process can re-derive + verify it. A real deployment supplies its
@@ -90,65 +91,9 @@ def show(label: str, payload: Any) -> None:
         print(f"     {line}")
 
 
-# ---------------------------------------------------------------------------
-# Minimal stdio MCP client
-# ---------------------------------------------------------------------------
-
-
-class StdioMCPClient:
-    """Bare-bones synchronous JSON-RPC over stdio MCP client.
-
-    A real housing agent would use a library; this implementation is
-    deliberately compact so a reader can see the entire protocol surface
-    in one file.
-    """
-
-    def __init__(self, proc: subprocess.Popen) -> None:
-        self._proc = proc
-        self._next_id = 0
-
-    def _write(self, message: dict[str, Any]) -> None:
-        payload = json.dumps(message) + "\n"
-        self._proc.stdin.write(payload.encode("utf-8"))
-        self._proc.stdin.flush()
-
-    def _read(self) -> dict[str, Any]:
-        line = self._proc.stdout.readline()
-        if not line:
-            raise RuntimeError("MCP server closed stdout unexpectedly")
-        return json.loads(line.decode("utf-8"))
-
-    def _next(self) -> int:
-        self._next_id += 1
-        return self._next_id
-
-    def call(self, method: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
-        message = {
-            "jsonrpc": "2.0",
-            "id": self._next(),
-            "method": method,
-            "params": params or {},
-        }
-        self._write(message)
-        return self._read()
-
-    def call_tool(self, name: str, arguments: dict[str, Any]) -> dict[str, Any]:
-        """Call a tool and return the parsed JSON payload the tool emitted
-        (unwrapping the MCP ``content`` envelope)."""
-
-        response = self.call("tools/call", {"name": name, "arguments": arguments})
-        result = response.get("result") or {}
-        for block in result.get("content") or []:
-            if block.get("type") == "text":
-                try:
-                    return json.loads(block.get("text", "{}"))
-                except json.JSONDecodeError:
-                    return {}
-        return {}
-
-    def notify(self, method: str, params: dict[str, Any] | None = None) -> None:
-        message = {"jsonrpc": "2.0", "method": method, "params": params or {}}
-        self._write(message)
+# The stdio MCP client is the single canonical implementation in
+# conformance/cacp/stdio_client.py (imported above), shared by this reference
+# agent and the CACP conformance harness — one client implementation, not two.
 
 
 # ---------------------------------------------------------------------------
