@@ -1,8 +1,11 @@
 # Copyright (c) 2026 Helpmefindthejob contributors
 # SPDX-License-Identifier: Apache-2.0
 """Phase 3 (CACP) — the published civic-profile JSON Schema is the data
-contract, and the live ``get_user_profile_for_consent`` output cannot drift
-from it.
+contract. These tests keep it and the live ``get_user_profile_for_consent``
+output in lockstep: the output validates against the schema, and every field the
+code emits is documented in it (additive drift fails). The schema pins the
+envelope + scope-filtering; sub-block fields stay forward-compatible
+(``additionalProperties``), so it does not forbid a server carrying extra keys.
 
 Three guarantees:
 1. ``static/.well-known/civic-profile.schema.json`` is a valid Draft 2020-12

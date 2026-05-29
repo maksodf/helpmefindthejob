@@ -2,12 +2,14 @@
 # SPDX-License-Identifier: Apache-2.0
 """Reproducible reconciliation benchmark for escolib.
 
-Measures how well the reconciler resolves the **documented colloquial
-synonyms** (the ``altLabels_en`` / ``altLabels_de`` arrays) back to their
-canonical ESCO/ISCO code. The labelled set is derived from the committed
-dataset itself, so the benchmark is fully reproducible and needs no external
-ground truth: it answers "does every synonym the dataset promises actually
-resolve to the right code?"
+Measures how well the reconciler resolves colloquial **synonym** queries back to
+their canonical ESCO/ISCO code. The labelled set combines the committed
+dataset's ``altLabels_en`` / ``altLabels_de`` arrays (today concentrated in the
+nursing codes — the entries that carry curated altLabels) with a hand-curated
+set of cross-persona colloquial queries (``CURATED_CASES``) so coverage spans
+all seven personas rather than only the altLabel-enriched entries. It is fully
+reproducible and needs no external ground truth: every labelled query must
+resolve to the right code.
 
 Metrics:
   * **recall** — fraction of synonym queries whose canonical code appears in

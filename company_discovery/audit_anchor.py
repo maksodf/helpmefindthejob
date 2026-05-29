@@ -192,11 +192,13 @@ class AnchorVerificationResult:
 def verify_anchor(log_paths: list[Path], anchor: AuditAnchor) -> AnchorVerificationResult:
     """Recompute the anchor's commitments from the current logs and confirm each
     still matches: the salt-free content digest over the v2 records, the v2
-    record count, the total non-empty line count (so an injected non-v2 / junk
-    line is caught here on its own, not only by ``verify_chain``), and the head
-    chain HMAC. Any v2-record edit, deletion, or reordering, or any line
-    insertion / removal, is reported. For the full integrity guarantee (chain
-    intact AND matching its anchor), use :func:`verify_chain_and_anchor`."""
+    record count, the total non-empty line count, and the head chain HMAC. Any
+    v2-record edit, deletion, or reordering is always reported. A non-v2 / junk
+    line insertion or removal is caught here on its own WHEN the anchor carries a
+    line count (``total_lines >= 0``); anchors written before that field existed
+    (``total_lines == -1``) skip the line-count check and rely on ``verify_chain``
+    to reject non-v2 lines. For the full integrity guarantee (chain intact AND
+    matching its anchor), use :func:`verify_chain_and_anchor`."""
     records = _ordered_v2_records(log_paths)
     actual = compute_content_digest(records)
     if actual != anchor.content_digest:

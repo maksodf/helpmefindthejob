@@ -266,13 +266,24 @@ class ConformanceHarness:
             "update_referral_status",
             {"userId": other, "referralId": referral_id, "status": "declined"},
         )
+        # Do NOT trust the attacker-call's echoed body — a leaking server could
+        # perform the write yet return a benign shape. Re-read the victim's
+        # referral AS THE OWNER and confirm the cross-tenant attempt persisted
+        # nothing. referral_id was advanced to "accepted" in CACP-L2-03.
+        owner_view = self.client.call_tool("list_referrals", {"userId": user})
+        victim = next(
+            (r for r in (owner_view.get("referrals") or []) if r.get("referralId") == referral_id),
+            None,
+        )
+        call_rejected = cross.get("status") in ("not_found", "error")
+        state_unchanged = victim is not None and victim.get("status") == "accepted"
         self._record(
             "CACP-L2-05",
             "L2",
             "cross-tenant isolation: another user cannot mutate a referral",
-            cross.get("status") in ("not_found", "error")
-            or (cross.get("referral") or {}).get("status") != "declined",
-            f"cross-tenant update leaked: {cross}",
+            call_rejected and state_unchanged,
+            f"cross-tenant update leaked: call={cross}, owner-side status="
+            f"{(victim or {}).get('status')!r} (must stay 'accepted')",
         )
 
     # -- L3: consent + audit ----------------------------------------------

@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://helpmefindthejob.org/.well-known/civic-profile.schema.json",
   "title": "Civic Agent Composition Protocol — Portable Civic Profile",
-  "description": "The consent-bound, scope-filtered portable civic profile a Helpmefindthejob-class agent returns from `get_user_profile_for_consent`, for composition by independent civic agents (housing, residency, education, healthcare). This is the published data contract for CACP v0.1; the live shape is pinned to this schema by tests/test_civic_profile_schema.py (validation + completeness), so the code cannot drift from this contract. `additionalProperties` is permitted at object levels for forward-compatible, additive evolution per the catalogue's versioning policy.",
+  "description": "The consent-bound, scope-filtered portable civic profile a Helpmefindthejob-class agent returns from `get_user_profile_for_consent`, for composition by independent civic agents (housing, residency, education, healthcare). This is the published data contract for CACP v0.1; tests/test_civic_profile_schema.py pins the live shape to it (the output validates, and every field the code emits is documented here, so additive drift fails). The schema pins the envelope — the required top-level fields and the scope enum — plus scope-filtering; sub-block fields stay forward-compatible: `additionalProperties` is permitted at object levels for additive evolution per the catalogue's versioning policy, so the schema does not lock every sub-field.",
   "type": "object",
   "required": ["userId", "scopes", "schemaVersion", "consentRecordedAt"],
   "additionalProperties": true,

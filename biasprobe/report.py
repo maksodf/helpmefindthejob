@@ -46,10 +46,11 @@ def render_markdown(
     )
     lines.append("")
     lines.append(
-        "**No competitor in this space publishes this data.** It exists because the "
-        "project's bias-methodology test harness is reproducible — anyone with "
-        "API keys can re-run via `--live`; everyone else can re-validate via "
-        "`--replay-only` against the cached responses checked into the repo."
+        "Comparative per-persona bias data like this is rarely published in the "
+        "employment-AI space. It exists here because the bias-methodology harness "
+        "is reproducible — anyone with API keys can re-run via `--live`; everyone "
+        "else can re-validate via `--replay-only` against the cached responses "
+        "checked into the repo."
     )
     lines.append("")
     lines.append("## Per-provider summary")
