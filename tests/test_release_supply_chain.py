@@ -73,7 +73,10 @@ class SbomCompleteness(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         if not SBOM_PATH.exists():
-            raise unittest.SkipTest(f"SBOM not found at {SBOM_PATH}")
+            raise AssertionError(
+                f"v0.1.0 CycloneDX SBOM MUST be committed at {SBOM_PATH} — the "
+                "supply-chain claim depends on it; its absence is a regression, not a skip."
+            )
         cls.sbom = json.loads(SBOM_PATH.read_text(encoding="utf-8"))
         cls.component_names = {c["name"].lower() for c in cls.sbom["components"]}
 
@@ -101,7 +104,10 @@ class SbomStructuralValidity(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         if not SBOM_PATH.exists():
-            raise unittest.SkipTest(f"SBOM not found at {SBOM_PATH}")
+            raise AssertionError(
+                f"v0.1.0 CycloneDX SBOM MUST be committed at {SBOM_PATH} — the "
+                "supply-chain claim depends on it; its absence is a regression, not a skip."
+            )
         cls.sbom = json.loads(SBOM_PATH.read_text(encoding="utf-8"))
 
     def test_bom_format_is_cyclonedx(self):
@@ -151,15 +157,21 @@ class CosignAndSigstoreArtifactsPresent(unittest.TestCase):
     an operator can verify the tarball without contacting us."""
 
     def test_cosign_public_key_present(self):
-        if not COSIGN_PUB.exists():
-            self.skipTest(f"cosign pub key not at {COSIGN_PUB}")
+        self.assertTrue(
+            COSIGN_PUB.exists(),
+            f"cosign public key MUST be committed at {COSIGN_PUB} — "
+            "deleting a signing artifact must fail CI, not silently skip.",
+        )
         contents = COSIGN_PUB.read_text(encoding="utf-8")
         self.assertIn("BEGIN PUBLIC KEY", contents)
         self.assertIn("END PUBLIC KEY", contents)
 
     def test_sigstore_bundle_present_and_json(self):
-        if not SIGSTORE_BUNDLE.exists():
-            self.skipTest(f"sigstore bundle not at {SIGSTORE_BUNDLE}")
+        self.assertTrue(
+            SIGSTORE_BUNDLE.exists(),
+            f"sigstore bundle MUST be committed at {SIGSTORE_BUNDLE} — "
+            "deleting a signing artifact must fail CI, not silently skip.",
+        )
         # Sigstore bundles are JSON
         try:
             json.loads(SIGSTORE_BUNDLE.read_text(encoding="utf-8"))
@@ -167,8 +179,11 @@ class CosignAndSigstoreArtifactsPresent(unittest.TestCase):
             self.fail(f"sigstore bundle is not valid JSON: {exc}")
 
     def test_signing_documentation_present(self):
-        if not SIGNING_DOC.exists():
-            self.skipTest(f"signing doc not at {SIGNING_DOC}")
+        self.assertTrue(
+            SIGNING_DOC.exists(),
+            f"signing documentation MUST be committed at {SIGNING_DOC} — "
+            "deleting a signing artifact must fail CI, not silently skip.",
+        )
         text = SIGNING_DOC.read_text(encoding="utf-8")
         # The signing doc should reference cosign + the release version
         self.assertIn("cosign", text.lower())
@@ -187,8 +202,10 @@ class SecurityTxtCompliance(unittest.TestCase):
         )
 
     def test_security_txt_has_contact_and_expires(self):
-        if not SECURITY_TXT.exists():
-            self.skipTest("security.txt absent")
+        self.assertTrue(
+            SECURITY_TXT.exists(),
+            "static/.well-known/security.txt MUST be present (RFC 9116) — absence is a regression, not a skip.",
+        )
         text = SECURITY_TXT.read_text(encoding="utf-8")
         # RFC 9116 mandates Contact and Expires fields. Fields are
         # at line-start in the body of the file; use MULTILINE so ^
@@ -201,8 +218,10 @@ class SecurityTxtCompliance(unittest.TestCase):
         researchers can't trust the contact is still monitored. We
         parse the Expires line and verify it's after today."""
 
-        if not SECURITY_TXT.exists():
-            self.skipTest("security.txt absent")
+        self.assertTrue(
+            SECURITY_TXT.exists(),
+            "static/.well-known/security.txt MUST be present (RFC 9116) — absence is a regression, not a skip.",
+        )
         text = SECURITY_TXT.read_text(encoding="utf-8")
         from datetime import datetime, timezone
 
@@ -220,8 +239,10 @@ class SecurityTxtCompliance(unittest.TestCase):
         )
 
     def test_security_md_references_security_txt(self):
-        if not SECURITY_MD.exists():
-            self.skipTest("SECURITY.md absent")
+        self.assertTrue(
+            SECURITY_MD.exists(),
+            "SECURITY.md MUST be present — absence is a regression, not a skip.",
+        )
         text = SECURITY_MD.read_text(encoding="utf-8")
         self.assertIn("security.txt", text.lower())
 
@@ -235,7 +256,9 @@ class ThreatModelDocComplete(unittest.TestCase):
     def setUpClass(cls):
         cls.path = REPO_ROOT / "docs" / "THREAT-MODEL.md"
         if not cls.path.exists():
-            raise unittest.SkipTest(f"threat model not at {cls.path}")
+            raise AssertionError(
+                f"threat model MUST be committed at {cls.path} — absence is a regression, not a skip."
+            )
         cls.text = cls.path.read_text(encoding="utf-8")
 
     def test_threat_model_covers_stride_categories(self):
@@ -280,7 +303,9 @@ class DpaTemplatePresent(unittest.TestCase):
     def setUpClass(cls):
         cls.path = REPO_ROOT / "compliance" / "dpa-template.md"
         if not cls.path.exists():
-            raise unittest.SkipTest(f"DPA template not at {cls.path}")
+            raise AssertionError(
+                f"DPA template MUST be committed at {cls.path} — absence is a regression, not a skip."
+            )
         cls.text = cls.path.read_text(encoding="utf-8")
 
     def test_dpa_covers_required_sections(self):
@@ -334,8 +359,10 @@ class NixFlakePresent(unittest.TestCase):
         self.assertTrue(FLAKE.exists())
 
     def test_flake_declares_pinned_inputs(self):
-        if not FLAKE.exists():
-            self.skipTest("flake.nix absent")
+        self.assertTrue(
+            FLAKE.exists(),
+            "flake.nix MUST be present (reproducible build) — absence is a regression, not a skip.",
+        )
         text = FLAKE.read_text(encoding="utf-8")
         # The flake MUST pin inputs (otherwise it's not reproducible)
         self.assertIn("inputs", text)
