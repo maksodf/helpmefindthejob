@@ -36,7 +36,7 @@ The Anschreiben names the §24 status plainly (so the recruiter doesn't worry ab
 
 ## 5. Application tracked
 
-Mark-applied + a parallel German-course progress tracker (the language-bottleneck is dominant friction, so closing it accelerates the job-search outcome). Optional integration with the VHS / Goethe course catalogue surface (Ceiling 2 Section 2.6).
+Mark-applied + a parallel German-course progress tracker (the language-bottleneck is dominant friction, so closing it accelerates the job-search outcome). Optional integration with the VHS / Goethe course catalogue surface (a Phase-2 item).
 
 ## 6. What felt broken (residual roughness)
 

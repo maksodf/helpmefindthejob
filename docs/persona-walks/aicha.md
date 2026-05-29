@@ -54,9 +54,9 @@ For Aïcha specifically, the application-tracker doubles as the Anerkennung-dead
 
 ## 6. What felt broken (residual roughness; honesty discipline)
 
-- **Bilingual CV export** is still a manual switch; the cv_builder doesn't yet auto-mirror the EN draft into a DE production version. Tracked for Ceiling 2 Section 2.6 (Domain intelligence per persona-friction).
+- **Bilingual CV export** is still a manual switch; the cv_builder doesn't yet auto-mirror the EN draft into a DE production version. Tracked as a Phase-2 domain-intelligence item.
 - **Anerkennungs-friendly employer dataset** is curated by hand at `company_discovery/persona_fixtures.py::aicha.saved_searches` (Vivantes / Helios / Charité). Scaling beyond Berlin requires sourcing additional Anerkennungs-friendly employer lists from IQ-Netzwerk regional networks. Tracked for Section 2.6.
-- **`SCORE_FRICTION_FIT` anchor scale** still parks at exact anchor values 18 % of the time across the bias-comparative-report (per `04-research-and-decisions.md` PART 4.1 closure note, Finding F2). Sub-3 % is the Ceiling-2 target.
+- **`SCORE_FRICTION_FIT` anchor scale** still parks at exact anchor values 18 % of the time across the bias-comparative-report (per the bias-comparative-report closure note, Finding F2). Sub-3 % is the target.
 - **AI-detected §16d phrasing** is matched against a hand-curated keyword list (`§16d`, `Anerkennungs-freundlich`, etc.). Robustness to phrasing drift across JDs is a Phase-2 ML-classification deliverable.
 - **CV photo handling** is consent-gated and encrypted-at-rest, but the upload UI does not yet honour the Aïcha-specific "DACH-norm professional photo" guidance (head-and-shoulders, neutral background). Documentation gap.
 

@@ -91,5 +91,4 @@ This file is the **maintainer's own** project-self-host runbook. It does NOT gov
 - Compliance INDEX: [`compliance/INDEX.md`](https://github.com/maksodf/helpmefindthejob/blob/main/compliance/INDEX.md)
 - v0.80.0 release notes + signing recipe: [`releases/v0.80.0.md`](releases/v0.80.0.md) + [`releases/v0.80.0-signing.md`](releases/v0.80.0-signing.md)
 - ROADMAP: [`https://github.com/maksodf/helpmefindthejob/blob/main/ROADMAP.md`](https://github.com/maksodf/helpmefindthejob/blob/main/ROADMAP.md)
-- PlanTowardPerfection (active backlog): [`https://github.com/maksodf/helpmefindthejob/blob/main/PlanTowardPerfection.MD`](https://github.com/maksodf/helpmefindthejob/blob/main/PlanTowardPerfection.MD)
 - Security disclosure channel: [`https://github.com/maksodf/helpmefindthejob/blob/main/SECURITY.md`](https://github.com/maksodf/helpmefindthejob/blob/main/SECURITY.md)

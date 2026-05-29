@@ -4,7 +4,7 @@
 # Persona walk — Tobias (Berlin, long-term unemployed career changer)
 
 **Persona slug**: `tobias`
-**Cohort**: wider friction-class (architectural demonstration per Decision 21)
+**Cohort**: wider friction-class (architectural demonstration)
 **Residency status**: EU citizen (German national); residency unproblematic
 **Friction notes**: 14 months out of work after a B2B SaaS startup folded; pivoting from commercial product / growth to public-sector civic-tech (TVöD-paid) work; the unemployment-gap is the visible CV scar, but the actual friction is the language-and-format gap between Berlin startup CV conventions and TVöD-aware civic-tech employer conventions.
 **Languages**: DE (native), EN (C1)

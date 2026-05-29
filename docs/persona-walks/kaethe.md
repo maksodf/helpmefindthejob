@@ -4,7 +4,7 @@
 # Persona walk — Käthe (Munich, returner)
 
 **Persona slug**: `kaethe`
-**Cohort**: wider friction-class (architectural demonstration per Decision 21)
+**Cohort**: wider friction-class (architectural demonstration)
 **Residency status**: EU citizen (German national); residency unproblematic
 **Friction notes**: 12-year career gap from clinical nursing for childcare; certified pre-gap but the entire German nursing landscape has moved on (DRG-rolled-up coding moved to ICD-10-GM, documentation moved from paper to KIS systems, medication-management ladders shifted, 2026-format CV conventions differ from 2014); needs Wiedereinstiegsprogramme that bridge the currency-gap without treating her as a junior.
 **Languages**: DE (native), EN (B1)

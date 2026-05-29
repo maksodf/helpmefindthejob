@@ -18,7 +18,7 @@
 
 Yusuf arrives via the apex with a clear "Blue Card before this contract expires" frame. The journey's discover phase captures role, location, experience, languages — and the persona-fit classifier recognises EU-Blue-Card-pathway-likely. Detailed transcript: [`docs/grant/journey-walks-2026-05-20/yusuf.md`](../grant/journey-walks-2026-05-20/yusuf.md).
 
-The friction-class lens for Yusuf surfaces the **lateral-engineering fallback** path that landed in 0.79.5 (per Decision 21's wider-class implementation): if a specialist-track Maschinenbauingenieur role doesn't match Yusuf's CV closely enough, the journey suggests adjacent roles (Manufacturing engineer / Process engineer / Production engineer) that satisfy the Blue Card salary threshold while broadening the matched-jobs pool.
+The friction-class lens for Yusuf surfaces the **lateral-engineering fallback** path that landed in 0.79.5 (per the wider-class implementation): if a specialist-track Maschinenbauingenieur role doesn't match Yusuf's CV closely enough, the journey suggests adjacent roles (Manufacturing engineer / Process engineer / Production engineer) that satisfy the Blue Card salary threshold while broadening the matched-jobs pool.
 
 ## 2. CV preparation
 
@@ -42,7 +42,7 @@ Mark-applied + the Blue-Card-deadline countdown shown alongside each application
 
 ## 6. What felt broken (residual roughness)
 
-- **Salary-threshold filter** is not yet integrated. The Blue Card minimum salary (€48,300 in 2025; €58,400 for shortage occupations) is not surfaced as a filter on discovered roles; Yusuf has to manually screen each role for salary alignment. Tracked for Ceiling 2 Section 2.6.
+- **Salary-threshold filter** is not yet integrated. The Blue Card minimum salary (€48,300 in 2025; €58,400 for shortage occupations) is not surfaced as a filter on discovered roles; Yusuf has to manually screen each role for salary alignment. Tracked as a Phase-2 item.
 - **Lateral fallback toggling** is a one-shot suggestion at journey-time, not a persistent filter. A future iteration should let Yusuf toggle "show me adjacent roles too" / "show me only specialist roles" across his queue.
 - **Stuttgart watchlist** is automotive-heavy (Daimler / Porsche / Bosch / ZF / Mahle); Yusuf's CV may also fit aerospace (Airbus Stuttgart, Liebherr-Aerospace Lindenberg) but those employers are not in his seed watchlist.
 - **Blue Card application timeline copy** in the Anschreiben prompt is fixed at "~6 weeks"; in practice processing time varies materially by Auslandvertretung. The copy should pull from a maintained jurisdictional lookup table, not be hard-coded.

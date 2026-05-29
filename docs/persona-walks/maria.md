@@ -4,7 +4,7 @@
 # Persona walk — Maria (Spain → Munich)
 
 **Persona slug**: `maria`
-**Cohort**: most-acute migrant (primary anchor) — note: previously described in some earlier docs as Romanian care worker; the canonical persona is now the EU-Blue-Card-downshifted-architect per Decision 21 in `04-research-and-decisions.md`. The Romanian care-worker scenario remains in the bias corpus as an extension scenario.
+**Cohort**: most-acute migrant (primary anchor) — note: previously described in some earlier docs as Romanian care worker; the canonical persona is now the EU-Blue-Card-downshifted-architect. The Romanian care-worker scenario remains in the bias corpus as an extension scenario.
 **Residency status**: EU citizen → EU Blue Card downshifted to Drafter role (Tekla / AutoCAD); architect-by-training operating below licence-level.
 **Friction notes**: under-employment friction. Licensed architect in Spain, working as drafter in Germany because (a) Architektenkammer registration takes months and (b) German firms favour Architekt-im-Praktikum entry path. Needs roles that preserve Blue Card eligibility (salary threshold) while building toward eventual licensure.
 **Languages**: ES (native), CA (native), EN (B2), DE (A2)
