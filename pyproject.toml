@@ -116,6 +116,8 @@ exclude = [
 # The list grows as more modules are brought up to the strict bar.
 [[tool.mypy.overrides]]
 module = [
+    "civic_agents.contracts",
+    "civic_agents.planner",
     "company_discovery.audit_anchor",
     "company_discovery.audit_log",
     "company_discovery.crypto_kit",
