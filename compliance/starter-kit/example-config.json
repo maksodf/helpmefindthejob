@@ -1,0 +1,5 @@
+{
+  "_comment": "Example deployer config for `python -m scripts.fill_template compliance/dpa-template.md --config compliance/starter-kit/example-config.json --output dpa-filled.md`. The {{NAME}}/{{TITLE}} slots fill the DPA signature table. The descriptive `[TBD: deployer to fill — …]` prompts in the FRIA + EU-DB-registration templates require deployment-specific judgement and are surfaced by fill_template as manual TODOs rather than auto-filled. Keys beginning with '_' are ignored by the filler.",
+  "NAME": "Jobcenter Musterstadt (Optionskommune)",
+  "TITLE": "Data Protection Officer"
+}
