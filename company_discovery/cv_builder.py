@@ -563,28 +563,35 @@ def validate_ai_format_output(user_input: str, ai_output: str) -> tuple[bool, fl
 # ---------------- Print-friendly HTML render ----------------
 
 
-def _md_inline(text: str) -> str:
-    """Convert simple inline markdown to HTML. Order matters: ``**``
-    before single ``*``. We only handle the constructs the CV
-    assembler actually emits."""
+def _safe_img(tag: str) -> str:
+    """Rebuild an <img> from an allow-list so user-supplied event handlers
+    (onerror=, onload=, ...) and non-image sources can never reach rendered
+    CV HTML. The only legitimate <img> is the assembler's data-URI profile
+    photo; anything else is dropped."""
     from html import escape
 
-    # Pre-extract HTML tags we explicitly let through (e.g., the
-    # ``<img>`` photo tag the assembler emits at the top). We swap
-    # them for a placeholder, escape the rest, then restore.
-    img_re = re.compile(r"<img\b[^>]*/?>", re.IGNORECASE)
-    placeholders: list[str] = []
+    src_m = re.search(r'\bsrc\s*=\s*"([^"]*)"', tag, re.IGNORECASE)
+    src = src_m.group(1) if src_m else ""
+    if not src.startswith(("data:image/", "https://", "http://")):
+        return ""  # not an image source -> drop the tag entirely
+    alt_m = re.search(r'\balt\s*=\s*"([^"]*)"', tag, re.IGNORECASE)
+    alt = escape(alt_m.group(1) if alt_m else "", quote=True)
+    return (
+        f'<img src="{escape(src, quote=True)}" alt="{alt}" '
+        'style="max-width:120px;border-radius:8px;" />'
+    )
 
-    def _stash(match: re.Match) -> str:
-        placeholders.append(match.group(0))
-        return f"\x00IMG{len(placeholders) - 1}\x00"
 
-    safe = img_re.sub(_stash, text)
-    safe = escape(safe)
+def _md_inline(text: str) -> str:
+    """Convert simple inline markdown to HTML. Order matters: ``**`` before
+    single ``*``. We only handle the constructs the CV assembler emits. ALL
+    HTML is escaped — an <img> in inline text is user content and is never
+    passed through (the only legitimate <img>, the data-URI profile photo, is
+    a full-line tag handled by cv_markdown_to_html via _safe_img)."""
+    from html import escape
+
+    safe = escape(text)
     safe = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", safe)
-    # Restore the stashed <img>.
-    for i, raw in enumerate(placeholders):
-        safe = safe.replace(f"\x00IMG{i}\x00", raw)
     return safe
 
 
@@ -630,7 +637,9 @@ def cv_markdown_to_html(markdown: str) -> str:
         stripped = line.strip()
         if re.match(r"^<img\b[^>]*/?>$", stripped, re.IGNORECASE):
             _close_ul()
-            out.append(stripped)
+            rebuilt = _safe_img(stripped)
+            if rebuilt:
+                out.append(rebuilt)
             continue
         # Plain paragraph.
         _close_ul()

@@ -11539,7 +11539,17 @@ class Handler(BaseHTTPRequestHandler):
                 return
 
             if parsed.path == "/api/data/import":
-                result = STATE.import_data(user_id, payload)
+                try:
+                    result = STATE.import_data(user_id, payload)
+                except (ValueError, TypeError):
+                    # Malformed import file: a 400, not a 500 leaking the raw
+                    # exception (which named missing dataclass fields).
+                    self.send_error_json(
+                        HTTPStatus.BAD_REQUEST,
+                        "invalid_import",
+                        "The import file is malformed or not a valid Helpmefindthejob export.",
+                    )
+                    return
                 self.send_json({"result": result, "bootstrap": STATE.bootstrap(user_id)})
                 return
 
