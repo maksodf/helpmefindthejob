@@ -119,14 +119,14 @@ Until that activation: `https://github.com/maksodf/helpmefindthejob`
 ## Field 10 — Prior involvement (optional)
 
 Phase 1 work already shipped and verifiable in the public
-repository at <https://github.com/maksodf/helpmefindthejob> (90+
+repository at <https://github.com/maksodf/helpmefindthejob> (400+
 commits across the 4-week grant-readiness sprint, May 2026):
 
 - **Apache 2.0 + CLA + governance pack**: LICENSE, NOTICE,
   CONTRIBUTING.md, CODE_OF_CONDUCT.md (Contributor Covenant 2.1),
   SECURITY.md, SUPPORT.md, AUTHORS.md, ACKNOWLEDGMENTS.md,
   TRADEMARK.md, cla.md.
-- **EU AI Act compliance pack**: 14 documents under `compliance/`
+- **EU AI Act compliance pack**: 23 documents under `compliance/`
   covering AI Act Articles 9, 10, 11 + Annex IV, 12, 13, 14, 15 (incl.
   15(5) resilience), 22, 26, 27, 49, 50, 73, 86 plus GDPR Articles
   5, 20, 22, 28, 30, 32, 33, 35 — see [`compliance/INDEX.md`](compliance/INDEX.md)
@@ -386,7 +386,7 @@ substantial.
 | User-sovereign data (encrypted at rest) | no | no | no | **yes** (ChaCha20-Poly1305 AEAD) |
 | BYO-AI (no vendor lock-in) | no | no | no | **yes** (OpenAI / Anthropic / Gemini / DeepSeek / Ollama-offline) |
 | MCP-composable with other civic agents | no | no | no | **yes** (15-tool v0.2.0 catalogue, JSON-Schema gated) |
-| EU AI Act compliance pack | no | partial | no | **yes** (`compliance/`, 10 artefacts) |
+| EU AI Act compliance pack | no | partial | no | **yes** (`compliance/`, 23 artefacts) |
 | WCAG 2.2 AA audit evidence | no | partial | no | **yes** (`ACCESSIBILITY.md`, 30 → 0 findings) |
 | Reproducible build (Nix flake) | no | no | no | **yes** (`flake.nix` + `flake.lock`) |
 | Signed releases + SBOM | no | no | no | **yes** (cosign + CycloneDX 1.6) |
@@ -890,7 +890,7 @@ NLnet reviewers can audit each claim against the source.
 | **Seven-persona panel: Aïcha, Yusuf, Olga, Mahmoud, Maria, Käthe, Tobias** | [`docs/grant/07-personas.md`](07-personas.md) + Decision 21 | **VERIFIED** — the panel is the project's canonical source-of-truth; Decision 21 dated 2026-05-18. |
 | **MCP catalogue v0.2.0, 15 tools** | [`docs/mcp-server.md`](../mcp-server.md) | **VERIFIED 2026-05-29** — `TOOL_SCHEMAS` in `company_discovery/mcp_tools.py` defines 15 tools; `tests/test_mcp_tool_schema_versioning.py` pins the catalogue size at 15; CI smoke test exercises the surface (the prior "13" was stale). |
 
-**Pre-submission discipline (slice-end state, post 2026-05-19 re-verify pass 2)**:
+**Pre-submission discipline (verification state, post 2026-05-19 re-verify pass 2)**:
 
 After two re-verification passes the carried-forward-numbers
 landscape is now:
