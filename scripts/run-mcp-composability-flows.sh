@@ -14,7 +14,7 @@
 set -eu
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
-PYTHON_BIN="${PYTHON_BIN:-/Users/fouad./miniconda3/bin/python3}"
+PYTHON_BIN="${PYTHON_BIN:-python3}"
 OUT_DIR="$ROOT/docs/grant/mcp-walks-2026-05-21"
 mkdir -p "$OUT_DIR"
 

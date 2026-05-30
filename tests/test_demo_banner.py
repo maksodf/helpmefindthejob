@@ -20,7 +20,7 @@ This test pins the three invariants so a future agent that edits
 any of the three files cannot silently break the demo-banner
 appearance contract. The actual runtime appearance is verified by
 the operator's pre-demo Playwright smoke test (`scripts/probe-
-ai-router.sh` adjacent; scoped for Ceiling-2 §2.5).
+ai-router.sh` adjacent; scoped for post-grant work).
 """
 
 from __future__ import annotations

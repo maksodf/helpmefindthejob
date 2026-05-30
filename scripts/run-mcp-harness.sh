@@ -13,5 +13,5 @@
 set -eu
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
-PYTHON_BIN="${PYTHON_BIN:-/Users/fouad./miniconda3/bin/python3}"
+PYTHON_BIN="${PYTHON_BIN:-python3}"
 exec "$PYTHON_BIN" tests/e2e/mcp_client_harness.py "$@"

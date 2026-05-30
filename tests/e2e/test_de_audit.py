@@ -7,7 +7,7 @@
 
 """DE-render audit + core E2E flow.
 
-Walks Naser's 6-step checklist against ``E2E_BASE_URL`` with the
+Walks the 6-step checklist against ``E2E_BASE_URL`` with the
 locale forced to DE via localStorage. Captures a screenshot per step
 and asserts that key German strings render in the visible DOM. Catches
 straggler English text that leaked past Items 1 + 17.
@@ -149,7 +149,7 @@ def main() -> int:
         print("  ✓ [locale toggle] DE → EN round-trip OK")
 
         browser.close()
-    print("\nALL CHECKS PASSED — DE coverage complete on Naser's 6-step flow.")
+    print("\nALL CHECKS PASSED — DE coverage complete on the 6-step flow.")
     return 0
 
 

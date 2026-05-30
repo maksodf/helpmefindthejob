@@ -380,7 +380,7 @@ sustainability model) at [`docs/grant/03-post-grant.md`](docs/grant/03-post-gran
   brief, execution plan, decisions log, research notes, personas,
   cost-saving doctrine, MCP composition spec, AI Act compliance plan.
 - [`docs/mcp-server.md`](docs/mcp-server.md) — public MCP server
-  documentation, 13-tool catalogue (v0.2.0).
+  documentation, 15-tool catalogue (v0.2.0).
 - [`docs/esco-integration.md`](docs/esco-integration.md) — ESCO + EURES
   integration reference.
 - [`docs/releases/`](docs/releases/) — version-controlled release

@@ -55,7 +55,7 @@ class ReadmeHeroScreenshot(unittest.TestCase):
         self.assertIn(
             canonical,
             src,
-            f"README no longer embeds {canonical} — Ceiling-1 box 1.3.1 "
+            f"README no longer embeds {canonical} — the grant submission "
             "requires the hero screenshot to be visible in the README",
         )
 
