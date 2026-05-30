@@ -244,7 +244,7 @@ without forking.
   Services portal; export endpoint in Week 2.
 - **WCAG 2.2 AA** — accessibility target. Honest audit and remediation
   shipped in [`ACCESSIBILITY.md`](ACCESSIBILITY.md) (16 fixes across
-  3 + 1 audit passes; 0/0/0/0 across all 33 audited surfaces).
+  3 + 1 audit passes; 0/0/0/0 across all 33 audited captures).
 - **RFC 9116** — `/.well-known/security.txt` shipped at
   [`static/.well-known/security.txt`](static/.well-known/security.txt).
 - **GDPR alignment** — encrypted profile-at-rest with

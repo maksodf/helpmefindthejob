@@ -83,7 +83,7 @@ Release notes: [`docs/releases/v0.80.0.md`](docs/releases/v0.80.0.md).
 Signing recipe: [`docs/releases/v0.80.0-signing.md`](docs/releases/v0.80.0-signing.md).
 CycloneDX SBOM: [`docs/releases/v0.80.0-sbom.json`](docs/releases/v0.80.0-sbom.json).
 
-The version-number jump from v0.1.0 → v0.80.0 reflects ~300 commits of NLnet-pre-submission work between 2026-05-18 and 2026-05-24 (full EU AI Act compliance pack, governance pack, repository rename + sanitisation, friction-class architecture re-anchoring, persona walks, demo subdomain prep, self-host tutorial / MCP integration guide / API client examples, 3199-test unit suite). `APP_VERSION` in `app.py` has tracked `0.80.0` internally since the pre-submission slice; this tag aligns the cryptographic + git surface with the in-code declaration. Future post-grant work follows normal SemVer cadence from this anchor.
+The version-number jump from v0.1.0 → v0.80.0 reflects ~300 commits of NLnet-pre-submission work between 2026-05-18 and 2026-05-24 (full EU AI Act compliance pack, governance pack, repository rename + sanitisation, friction-class architecture re-anchoring, persona walks, demo subdomain prep, self-host tutorial / MCP integration guide / API client examples, 3288-test unit suite). `APP_VERSION` in `app.py` has tracked `0.80.0` internally since the pre-submission slice; this tag aligns the cryptographic + git surface with the in-code declaration. Future post-grant work follows normal SemVer cadence from this anchor.
 
 Tracked in `docs/grant/02-execution-plan.md` §3.4 – §4.6 plus Phase 2 cleanup
 items in `docs/grant/03-post-grant.md`.
@@ -136,7 +136,7 @@ listed under "Maintainer follow-ups" in
 - **`ACCESSIBILITY.md`** (§3.6) — three audit passes documenting
   the first automated WCAG 2.2 AA pass + auth-surface follow-on
   via Playwright + light-mode / dynamic-state polish; cumulative
-  32 violation instances closed across 22 (later 33) audited
+  30 violation instances closed across 33 audited
   captures. Fix 15 + Fix 16 from the pre-submission slice closed
   pygments-contrast + landmark-unique regressions surfaced on
   the post-rename re-audit.
@@ -149,7 +149,7 @@ listed under "Maintainer follow-ups" in
   both green on aarch64-darwin.
 - **cosign-signed v0.1.0 + CycloneDX 1.6 SBOM + RFC 9116
   security.txt** (§4.2). Cosign key model b (long-lived ECDSA
-  P-256, `--insecure-ignore-tlog`); SBOM with 91 components;
+  P-256, `--insecure-ignore-tlog`); SBOM with 96 components;
   security.txt at [`static/.well-known/security.txt`](static/.well-known/security.txt)
   citing `helpmefindthejob.com` as the canonical reporting URL.
 - **`SUSTAINABILITY.md`** (§4.1) — post-grant story, grant arc,

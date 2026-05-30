@@ -157,7 +157,7 @@ commits across the 4-week grant-readiness sprint, May 2026):
 - **Accessibility pack**: WCAG 2.2 AA first-pass + auth-surface
   audit + light-mode + dynamic-state + compliance markdown audit
   via axe-core CLI + axe-playwright-python. 30 violation
-  instances closed across 22 audited surfaces; full audit
+  instances closed across all 33 audited captures; full audit
   evidence in `ACCESSIBILITY.md`.
 - **Reproducible build**: Nix flake at repo root pinning
   `nixos-25.05` nixpkgs commit; `nix flake check` green;
@@ -804,7 +804,7 @@ services available to grantees":
 
 1. **Accessibility audit — HAN University of Applied Sciences**.
    Phase 1 ships an axe-core automated baseline at 30 → 0
-   findings across 22 surfaces; the HAN manual review covers the
+   findings across all 33 audited captures; the HAN manual review covers the
    gaps axe-core can't (keyboard-trap discovery, focus-order,
    tab-order, screen-reader narration of dynamic states). The
    `ACCESSIBILITY.md` "Known gaps" table already names HAN
@@ -883,7 +883,7 @@ NLnet reviewers can audit each claim against the source.
 | **16 IQ-Netzwerk regional networks** | <https://www.netzwerk-iq.de/> | **STRUCTURAL** — IQ-Netzwerk is organised by Bundesland; with 16 Länder there are 16 regional networks by design. **VERIFIED structurally** (the federal-state structure of Germany is constitutionally fixed); maintainer should confirm against the IQ-Netzwerk public page that this organisational structure persists at submission time. |
 | **Optionskommunen Jobcenter (cap of 110 per §6a SGB II + Article 91e GG; BMAS list = current count)** (was: "104" → "110 total") | [§6a SGB II](https://www.gesetze-im-internet.de/sgb_2/__6a.html) verified via gesetze-im-internet.de WebFetch + [Article 91e GG](https://www.gesetze-im-internet.de/gg/art_91e.html) verified via same | **REWORDED 2026-05-19 (pass 2)**. §6a SGB II §2 sentence 4 verified: cap is "höchstens 25 Prozent der zum 31. Dezember 2010 bestehenden Aufgabenträger" — historically 110 once fully utilised. Article 91e GG verified: says "begrenzt" without a fixed numerical cap (delegates to federal legislation = §6a SGB II). The "110" Wikipedia figure was the constitutional-cap-fully-utilised total (69 from 2005 + 41 from 2012). BMAS Optionskommunen list URL returned 404 on 4 attempted variants; BMAS has likely restructured the URL. **Body reworded** (`12-application-package.md` §C) to "the autonomous Optionskommunen Jobcenter operating Bürgergeld under §6a SGB II + Article 91e Grundgesetz (the federal cap is 25% of the 2010 baseline of task carriers — historically a maximum of 110 Optionskommunen; the BMAS-published list is the source of truth for the current active count)". Cap vs current-count distinction now explicit; maintainer should confirm against BMAS at submission if a precise count is needed. |
 | €30k–€200k AI Act compliance consulting cost avoided per deployer | **INDUSTRY ESTIMATE — not measured**. | The range reflects publicly reported AI-compliance-consulting quotes during 2024–2026 (range source: aggregated quotes from German Datenschutz / KI-compliance consultancies; we don't cite a single primary source because the actual number depends on the deployer's existing compliance posture and the consultant's scope). The application body uses qualified language ("typical" / "industry-estimate") rather than asserting a single figure. **NOT a measured claim.** |
-| **30 axe-core violation instances closed across 22 audited surfaces** | [`ACCESSIBILITY.md`](../../ACCESSIBILITY.md) "Current state" table | **VERIFIED** — every violation has a documented pre/post-fix count and a file:line for the closing fix. |
+| **30 axe-core violation instances closed across all 33 audited captures** | [`ACCESSIBILITY.md`](../../ACCESSIBILITY.md) "Current state" table | **VERIFIED** — every violation has a documented pre/post-fix count and a file:line for the closing fix. |
 | **96 components in v0.1.0 CycloneDX SBOM** | [`docs/releases/v0.1.0-sbom.json`](releases/v0.1.0-sbom.json) | **VERIFIED 2026-05-29** — `jq '.components | length' docs/releases/v0.1.0-sbom.json` returns 96 (the prior "91" was stale). The current v0.80.0 SBOM at `docs/releases/v0.80.0-sbom.json` lists 8 direct dependencies. |
 | **3,288 tests / 26 skipped, all passing** | `python3 -m unittest discover -s tests` output | **VERIFIED 2026-05-30** — live run: `Ran 3288 tests in 71.542s … OK (skipped=26)`. The historical 1020/1029 figure was the v0.1.0 release-tag baseline. Operator: re-run at the submission moment and quote the live number. |
 | **6 workflows fully SHA-pinned; `grep -nE "uses:.*@v[0-9]" .github/workflows/*.yml` returns 0 lines** | commits `546f952` + `5be9f47` | **VERIFIED** — closing grep documented in `02-execution-plan.md` §3.2 entry. |
@@ -992,7 +992,7 @@ stamp (catches silent staleness on rows that were never re-dated).
 | 16 IQ-Netzwerk regional networks | STRUCTURAL | Carry forward — Bundesländer count constitutionally fixed | No change. |
 | Optionskommunen §6a SGB II + Article 91e GG (rewording) | Reword retained | Reword retained — cap-vs-current-count distinction intact | No change. |
 | €30k–€200k AI Act consulting (industry estimate) | INDUSTRY ESTIMATE | INDUSTRY ESTIMATE — qualified language in body | No change. |
-| 30 axe-core violations across 22 surfaces | VERIFIED | Re-checked against `ACCESSIBILITY.md` current state table; count unchanged | Carry forward. |
+| 30 axe-core violations across 33 audited captures | VERIFIED | Re-checked against `ACCESSIBILITY.md` current state table; count unchanged | Carry forward. |
 | 96 components in v0.1.0 SBOM | VERIFIED | Re-checked 2026-05-29 — `jq '.components | length'` returns 96 (prior "91" was stale) | Carry forward. |
 | 1020 / 1029 tests | VERIFIED (date stamp ≈ 2026-05-19) | **UPDATED 2026-05-30** — live count is **3,288 tests / 26 skipped, all passing** (`Ran 3288 tests … OK (skipped=26)`). The 1020/1029 figure was the v0.1.0 release-tag baseline; Field 10 and the deeper reference in `compliance/accuracy-and-bias-testing.md` §8 now quote the live number. | Operator: at submission moment, re-run `python3 -m unittest discover -s tests` and quote the live number in the submitted draft. |
 | 6 workflows SHA-pinned | VERIFIED | Stable — grep against `.github/workflows/*.yml` still returns 0 unpinned references | Carry forward. |

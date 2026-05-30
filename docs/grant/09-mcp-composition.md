@@ -221,7 +221,7 @@ These need resolving during Week 2 work, not before.
 
 This v2 update documents the MCP composition narrative with real-integration examples replacing the earlier architectural sketches.
 
-The earlier sections of this document describe the design intent. This v2 section anchors the intent in three real worked examples — actual MCP composition flows exercised end-to-end against the live 13-tool catalogue, captured as dated walk-throughs that any downstream auditor can replay.
+The earlier sections of this document describe the design intent. This v2 section anchors the intent in three real worked examples — actual MCP composition flows exercised end-to-end against the live catalogue, captured as dated walk-throughs that any downstream auditor can replay.
 
 ### Real example 1 — Aïcha: ESCO lookup → company suggestion → watchlist → housing referral → outcome
 
@@ -282,7 +282,7 @@ Full transcript: [`docs/grant/mcp-walks-2026-05-21/claude-desktop-walk.md`](mcp-
 |---|---|
 | Architectural sketches: tool catalogue described as input/output JSON-Schema shapes; composition shown as a UML-ish diagram | Real worked tool-call chains captured in mcp-walks transcripts (`docs/grant/mcp-walks-2026-05-21/`) |
 | Composition examples were narrative-level ("a housing agent could ...") | Composition examples are concrete: 7 tool calls in Aïcha flow, 4 in ESCO+EURES flow, full Claude Desktop session in the third |
-| Cross-agent referral shown as a planned tool | `propose_referral` shipped in the 13-tool catalogue (commit history shows it landed Week 2); the Aïcha walk exercises it |
+| Cross-agent referral shown as a planned tool | `propose_referral` shipped in the catalogue (commit history shows it landed Week 2); the Aïcha walk exercises it |
 | EURES interop framed as "we plan to" | `export_eures_compatible` shipped + the ESCO+EURES walk demonstrates it end-to-end |
 | Claude Desktop integration shown as "compatible by spec" | Concrete walk-through with exact `claude_desktop_config.json` block at `docs/mcp-integration-guide.md` |
 | Audit-log entry shape "to be decided" | Plain JSON via `record_user_outcome`; schema in [`compliance/audit-log-schema.md`](../../compliance/audit-log-schema.md) §3; HMAC-chained per the key-rotation playbook at [`audit-log-key-rotation.md`](../../compliance/audit-log-key-rotation.md) |
