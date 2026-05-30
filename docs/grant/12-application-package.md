@@ -181,6 +181,11 @@ The full register is in `05-risks-and-stakeholders.md`. The most material to NLn
 
 ## I. Submission checklist (final 24 hours)
 
+> The operator-owned items that only you can close (deadline verification,
+> maintainer-identity slots, the signed-tag step, demo smoke against the real
+> host, compliance-posture decision) are spelled out with exact commands in
+> [`OPERATOR-HANDOFF-2026-05-30.md`](OPERATOR-HANDOFF-2026-05-30.md).
+
 - [ ] Application form completed end-to-end
 - [ ] All NLnet form questions answered with content drawn from sections A–H of this document
 - [ ] Repository at submitted URL is publicly accessible
@@ -204,7 +209,7 @@ The full register is in `05-risks-and-stakeholders.md`. The most material to NLn
 
 ## J. Post-submission immediate actions
 
-- Tag a `v0.2.0` release reflecting all work
+- Confirm the signed `v0.80.0` submission tag sits at the merged HEAD (see [`OPERATOR-HANDOFF-2026-05-30.md`](OPERATOR-HANDOFF-2026-05-30.md) §A3), then continue on SemVer from that anchor (next `v0.81.0`)
 - Archive the submitted application text in `docs/grant/submitted-application-<date>.md`
 - Continue housing-agent collaboration if not yet complete
 - Continue NGO outreach (additional letters of support strengthen any future application)
