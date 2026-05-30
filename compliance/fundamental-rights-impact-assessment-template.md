@@ -195,7 +195,7 @@ I, the project maintainer, attest that:
 
 | Attestation field | Value |
 |---|---|
-| Attested by | Fouad, project maintainer (`franfreeedo@gmail.com`) |
+| Attested by | Fouad, project maintainer (`support@helpmefindthejob.org`) |
 | Role | Sole maintainer + provider of the Helpmefindthejob AI system (Apache 2.0; pending Programme of The Commons Conservancy) |
 | Attestation date | 2026-05-24 |
 | Template version | The state of this file at commit `HEAD` of the `main` branch on the attestation date; future template revisions append a new attestation row rather than overwriting this one |

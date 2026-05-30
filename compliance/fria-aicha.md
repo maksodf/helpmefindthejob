@@ -73,7 +73,7 @@ When Aïcha (or her MBE advisor) wants to appeal a specific AI output:
 
 | Field | Value |
 |---|---|
-| Attested by | Fouad, project maintainer (`franfreeedo@gmail.com`) |
+| Attested by | Fouad, project maintainer (`support@helpmefindthejob.org`) |
 | Role | Sole maintainer + provider of the Helpmefindthejob AI system |
 | Attestation date | 2026-05-24 |
 | Scope | This per-persona FRIA template + the R1–R8 modulation table above + the Top-concern + the Article-22-pathway sections. Deployment-specific slots (affected-population numbers, oversight-person identity, German-DPO involvement) are deployer-fill-ins. |

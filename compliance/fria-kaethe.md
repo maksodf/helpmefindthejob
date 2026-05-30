@@ -65,7 +65,7 @@ Bayerischer Wohlfahrtsverband returner-network coordinator OR Klinikum Wiederein
 
 | Field | Value |
 |---|---|
-| Attested by | Fouad, project maintainer (`franfreeedo@gmail.com`) |
+| Attested by | Fouad, project maintainer (`support@helpmefindthejob.org`) |
 | Role | Sole maintainer + provider |
 | Attestation date | 2026-05-24 |
 | Scope | Per-persona FRIA + R1–R8 modulation + Top-concern (Art 21 + Art 23 societal-bias surface) + Article-22 path |

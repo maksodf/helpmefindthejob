@@ -63,7 +63,7 @@ Munich Bayerische Architektenkammer advisor OR the deployer's AiP-programme-coor
 
 | Field | Value |
 |---|---|
-| Attested by | Fouad, project maintainer (`franfreeedo@gmail.com`) |
+| Attested by | Fouad, project maintainer (`support@helpmefindthejob.org`) |
 | Role | Sole maintainer + provider |
 | Attestation date | 2026-05-24 |
 | Scope | Per-persona FRIA + R1–R8 modulation + Top-concern (R4 scoring opacity) + Article-22 path |

@@ -64,7 +64,7 @@ Hamburg AWO MBE-coordinator OR Caritas Integration-Hilfe advisor receives escala
 
 | Field | Value |
 |---|---|
-| Attested by | Fouad, project maintainer (`franfreeedo@gmail.com`) |
+| Attested by | Fouad, project maintainer (`support@helpmefindthejob.org`) |
 | Role | Sole maintainer + provider |
 | Attestation date | 2026-05-24 |
 | Scope | Per-persona FRIA + R1–R8 modulation + Top-concern (R6 data-egress) + Article-22 path |

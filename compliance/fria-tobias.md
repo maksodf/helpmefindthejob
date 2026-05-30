@@ -64,7 +64,7 @@ Berlin civic-tech community moderator OR CityLAB Berlin alumni-coordinator recei
 
 | Field | Value |
 |---|---|
-| Attested by | Fouad, project maintainer (`franfreeedo@gmail.com`) |
+| Attested by | Fouad, project maintainer (`support@helpmefindthejob.org`) |
 | Role | Sole maintainer + provider |
 | Attestation date | 2026-05-24 |
 | Scope | Per-persona FRIA + R1–R8 modulation + Top-concern (Art 1 dignity + R1 long-term-unemployment-stigma) + Article-22 path |

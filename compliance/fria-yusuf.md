@@ -63,7 +63,7 @@ The TU Berlin Career Service (or equivalent) is the deployer-side advisor. Escal
 
 | Field | Value |
 |---|---|
-| Attested by | Fouad, project maintainer (`franfreeedo@gmail.com`) |
+| Attested by | Fouad, project maintainer (`support@helpmefindthejob.org`) |
 | Role | Sole maintainer + provider |
 | Attestation date | 2026-05-24 |
 | Scope | Per-persona FRIA template + R1–R8 modulation + Top-concern + Article-22 path |
