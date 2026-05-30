@@ -181,8 +181,10 @@ correctly is feature work, not a label edit:
   (not on the submission surface: the public landing page and the canonical
   fixtures at `company_discovery/persona_fixtures.py` are correct), and rushing a
   redesign of working demo code under closeout pressure is the wrong trade.
-  **Decision for you:** treat it as a post-submission task (recommended — it does
-  not affect the grant), or tell the agent to do the redesign now.
+  **Status: operator-approved deferral (2026-05-30).** The maintainer explicitly
+  approved treating the mesh canonicalisation as a post-submission task — it does
+  not affect the grant. This is a sanctioned deferral, not an open gap; pick it up
+  in Phase 2 alongside the other mesh/civic-services work.
 
 Nothing above is pushed; everything is on `claude/ceiling-sprint`. The repo is
 submission-ready except for the operator-owned items in section A.
