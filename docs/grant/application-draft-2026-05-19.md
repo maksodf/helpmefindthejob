@@ -721,7 +721,7 @@ Recommended attachments (each ≤ 50 MB; total ≤ 50 MB):
    evidence (the live HTML version is canonical, but a PDF
    snapshot at submission time anchors the claim).
 4. **`compliance/INDEX.md` rendered as PDF** — entry point to the
-   14-document EU AI Act compliance pack, with the full file ×
+   23-document EU AI Act compliance pack, with the full file ×
    article reverse-lookup table so the reviewer can navigate
    straight to the artefact addressing any Article they ask about.
    The pack itself stays in the repo; this PDF is the navigational

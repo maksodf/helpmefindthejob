@@ -56,7 +56,7 @@ strategic context.
 [`docs/releases/v0.80.0.md`](docs/releases/v0.80.0.md)); v0.1.0 was the
 first stable pre-publication tag (2026-05-18). Public demo deployment at
 [`demo.helpmefindthejob.org`](https://demo.helpmefindthejob.org/)
-serves the seven canonical personas as pre-seeded read-only accounts
+serves the seven canonical personas as pre-seeded sandbox accounts
 (Aïcha, Yusuf, Olga, Mahmoud, Maria, Käthe, Tobias — shared password
 printed on the demo landing); the live apex
 [`helpmefindthejob.org`](https://helpmefindthejob.org/) hosts the
