@@ -31,7 +31,7 @@ For each persona, the methodology constructs a **synthetic-but-realistic profile
 - Friction-class details (Anerkennung in progress / EU citizen with language barrier / Wiedereinstieg context / sector pivot / etc.)
 - Geographic context (Berlin / Munich / Leipzig / Hamburg / Stuttgart for the migrant five; Berlin / Hamburg for Käthe / Tobias)
 
-The synthetic profiles are committed to `tests/fixtures/personas/` (Week 2 task 2.8 follow-up) and re-used across test runs to make changes detectable.
+The synthetic profiles are defined in [`../company_discovery/persona_fixtures.py`](../company_discovery/persona_fixtures.py) (the `PERSONAS` cohort) and re-used across test runs to make changes detectable.
 
 ### 2.2 Test scenarios per persona
 
@@ -173,7 +173,7 @@ Cross-references [`../SECURITY.md`](../SECURITY.md) for the project's security p
 - Session management with idle timeout and 2FA support.
 - Encryption-at-rest for profile data and TOTP secrets.
 - Vulnerability disclosure via `.well-known/security.txt` (RFC 9116).
-- Dependency scanning (`pip-audit`) in CI — Week 3 expansion.
+- Dependency scanning (`pip-audit`) in CI ([`../.github/workflows/quality.yml`](../.github/workflows/quality.yml)).
 - Audit log itself protected by file-system permissions on the deployer's host; PII-hashed by default.
 
 ---
@@ -184,7 +184,7 @@ The cost-saving doctrine claims certain efficiency improvements per advisor visi
 
 | Claim | Metric | Source |
 |---|---|---|
-| 20 minutes of routine work absorbed per advisor session | Median time spent on the journey phases the agent handles (profile capture, CV format guidance, fit-scoring, application drafting) | Pilot data from Week 3 partner-NGO collaboration |
+| 20 minutes of routine work absorbed per advisor session | Median time spent on the journey phases the agent handles (profile capture, CV format guidance, fit-scoring, application drafting) | Pilot data from the post-grant partner-NGO pilot (2026 Q4) |
 | 33% advisor caseload capacity expansion | Derived from the 20-minutes-out-of-60-minutes absorption ratio | Same |
 | 30-day reduction in time-to-employment | Self-reported by pilot participants vs comparison cohort | Same |
 | €30–200k AI-Act-compliance saving for deployer | Avoidance of external consultant fees at typical EU rates for high-risk-AI compliance engineering | Industry benchmarks; tagged `plausible` in [`../docs/grant/08-cost-saving-doctrine.md`](../docs/grant/08-cost-saving-doctrine.md) §"Mechanism 5" |
@@ -232,7 +232,7 @@ A second run on 2026-05-21 layered cross-provider comparison on top of the synth
 
 ## 9. Append log
 
-- **2026-05-18**: methodology drafted as part of Week 2 task 2.8 of the NLnet NGI Zero Commons Fund grant sprint. Pre-deployment re-test framework drafted. First scheduled execution: Week 3 partner-NGO pilot.
+- **2026-05-18**: methodology drafted as part of Week 2 task 2.8 of the NLnet NGI Zero Commons Fund grant sprint. Pre-deployment re-test framework drafted. First scheduled execution: the post-grant partner-NGO pilot (2026 Q4 per `../ROADMAP.md`).
 - **2026-05-24**: §8.1 added — cross-provider comparative results from the 2026-05-21 run (7 personas × 10 scenarios × 2 providers = 140 data points; per-persona mean scores deepseek vs ollama; top-spread disagreement summary; the 13.0% OOB rate carried forward from the 2026-05-19 polished cohort run with the honest-framing paragraph distinguishing OOB-rate-as-AI-output-quality-metric from user-visible-harm-rate). Cross-references the comparative report at `docs/grant/bias-comparative-report-2026-05-21.md` and the parser-layer defence at `tests/test_prompt_injection_vectors.py::V3JdIndirectInjection` so reviewers can see the chain from measurement to safety surface.
 
 ---

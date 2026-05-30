@@ -215,7 +215,7 @@ Every MCP `tools/call` payload is **JSON-Schema-validated** against the register
 - **CV text** is AEAD-encrypted at rest with AAD = user_id.
 - **TOTP secrets** are on the same AEAD path (legacy XOR blobs decrypt for read continuity, then upgrade in place on first 2FA check — see `auth.py:_migrate_legacy_totp_if_needed`).
 - **AI provider API keys** are never persisted to the project's database; the user supplies a session-only key (sent only with the analysis request) or references a server-side environment variable.
-- **Audit log** records every admin action with actor, target, timestamp, and action kind. Designed to support EU AI Act Article 12 record-keeping; full schema documented in the Week 2 §2.8 compliance pack.
+- **Audit log** records every admin action with actor, target, timestamp, and action kind. Designed to support EU AI Act Article 12 record-keeping; full schema documented in the compliance pack (`compliance/audit-log-schema.md`).
 - **No broad crawling**: aggregator fan-out is bounded per scan; redirects are checked independently; `robots.txt` is respected.
 
 ## Deployment shapes
@@ -226,7 +226,7 @@ Every MCP `tools/call` payload is **JSON-Schema-validated** against the register
 
 ## EU AI Act compliance hooks
 
-Helpmefindthejob is high-risk under Annex III §4 of the EU AI Act, effective from 2 August 2026. The Week 2 §2.8 compliance pack ships under `compliance/` with:
+Helpmefindthejob is high-risk under Annex III §4 of the EU AI Act, effective from 2 August 2026. The EU AI Act compliance pack ships under `compliance/` with:
 
 - Risk management plan (Article 9)
 - Data governance documentation (Article 10)
