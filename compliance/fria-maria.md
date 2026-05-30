@@ -64,7 +64,7 @@ When Maria (or her Pflege-integration advisor) wants to appeal a specific AI out
 2. The audit-log entry ID is pulled to recover the exact prompt + model + provider + cost-cap context.
 3. The advisor reviews against Maria's actual clinical record and the language-integration friendliness of the target employer.
 4. The verdict + reasoning is communicated in Romanian OR Italian OR simplified German (Maria's working languages).
-5. The fact-of-review is logged via `/api/admin/oversight/review` so the Article 26(6) automatic-log obligation is honoured.
+5. The fact-of-review is recorded in the deployer's oversight log (the in-app `/api/admin/oversight/queue` surfaces the underlying audit events read-only; a dedicated review-logging endpoint is a Phase-2 item) so the Article 26(6) obligation is honoured.
 6. Aggregate quarterly review catches systemic patterns affecting Maria-class users (age + language interaction).
 
 ## 7. Maintainer attestation

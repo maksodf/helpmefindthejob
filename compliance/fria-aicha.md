@@ -66,7 +66,7 @@ When Aïcha (or her MBE advisor) wants to appeal a specific AI output:
 2. The audit-log entry ID is pulled to recover the exact prompt + model + provider + cost-cap context.
 3. The advisor reviews against the §16d context the candidate is in.
 4. The verdict + reasoning is communicated in French OR English (Aïcha's working languages); German DPO involvement is the deployer-side process.
-5. The fact-of-review is logged via `/api/admin/oversight/review` so the Article 26(6) automatic-log obligation is honoured.
+5. The fact-of-review is recorded in the deployer's oversight log (the in-app `/api/admin/oversight/queue` surfaces the underlying audit events read-only; a dedicated review-logging endpoint is a Phase-2 item) so the Article 26(6) obligation is honoured.
 6. Aggregate quarterly review catches systemic patterns affecting Aïcha-class users.
 
 ## 7. Maintainer attestation

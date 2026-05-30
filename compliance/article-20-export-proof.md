@@ -44,7 +44,7 @@ The full recipe is exactly the curl commands below. Anyone with a clone of the r
 rm -rf /tmp/export_proof_data && mkdir -p /tmp/export_proof_data
 HELPMEFINDTHEJOB_DATA_DIR=/tmp/export_proof_data \
 HELPMEFINDTHEJOB_AUDIT_SALT=$(python3 -c 'print("A"*43+"=")') \
-ALLOW_REGISTRATION=true \
+HELPMEFINDTHEJOB_ALLOW_REGISTRATION=true \
 python3 app.py --port 19602 > /tmp/export_proof_server.log 2>&1 &
 sleep 4
 curl -sS http://127.0.0.1:19602/ -o /dev/null -w 'HTTP %{http_code}\n'
@@ -81,7 +81,7 @@ done
 ```bash
 python3 -c "import json; d=json.load(open('/tmp/export-out-export')); \
             print(sorted(d.keys())); print('schemaVersion:', d['schemaVersion'])"
-# Expected: 19-key list containing _exportWarnings, aiProvider,
+# Expected: 20-key list containing _exportWarnings, aiProvider,
 # analyticsEvents, appVersion, chatHistory, companies, discoveredJobs,
 # discoveryRuns, exportedAt, importedJobs, journeyState, profile,
 # pushSubscriptions, savedSearches, scans, schemaVersion, supportTickets,
@@ -154,7 +154,7 @@ ID,Title,Company ID,Location,Confidence,Source URL,Discovered at,Imported
 _No discovered jobs._
 ```
 
-**`/api/data/export` (Article 20 bundle)** — 2463 bytes, 19 top-level keys. A sample copy of the full pretty-printed JSON is committed alongside this file at [`article-20-export-sample.json`](article-20-export-sample.json) so reviewers can inspect the schema offline. Top-level keys observed:
+**`/api/data/export` (Article 20 bundle)** — 2463 bytes, 20 top-level keys. A sample copy of the full pretty-printed JSON is committed alongside this file at [`article-20-export-sample.json`](article-20-export-sample.json) so reviewers can inspect the schema offline. Top-level keys observed:
 
 ```
 ['_exportWarnings', 'aiProvider', 'analyticsEvents', 'appVersion',
@@ -204,6 +204,6 @@ This document captures the technical correctness of the export pipeline. It does
 
 | Date | Endpoints | All HTTP 200 | Bundle keys | Bundle bytes | Runner | Notes |
 |---|---|---|---|---|---|---|
-| 2026-05-24 | 5 / 5 | ✓ | 19 | 2463 | maintainer (local repro per §3) | First run. Fresh /tmp/export_proof_data, fresh user `aicha-tester@example.com`, manual AI provider, dark theme, EN locale. App on port 19602, HEAD commit `ebd3703`. |
+| 2026-05-24 | 5 / 5 | ✓ | 20 | 2463 | maintainer (local repro per §3) | First run. Fresh /tmp/export_proof_data, fresh user `aicha-tester@example.com`, manual AI provider, dark theme, EN locale. App on port 19602, HEAD commit `ebd3703`. |
 
 Append below this row on every test. Never overwrite.

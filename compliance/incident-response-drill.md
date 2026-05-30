@@ -27,7 +27,7 @@ Run one per quarter. Rotate through these four classes so the deployer's runbook
 
 ### Scenario A — Personal-data breach (GDPR Article 33)
 
-**Premise**: a misconfigured backup target accidentally writes the SQLite database (encrypted profile + chat data) to a public S3-compatible bucket. The maintainer is notified by a researcher via security@helpmefindthejob.org.
+**Premise**: a misconfigured backup target accidentally writes the SQLite database (encrypted profile + chat data) to a public S3-compatible bucket. The maintainer is notified by a researcher via the SECURITY.md disclosure channel (GitHub Security Advisories).
 
 **Tested behaviours**:
 - 72-hour notification clock (GDPR Article 33) — does the deployer's DPO process trigger within 24 h of notification?
@@ -126,7 +126,7 @@ The drill complements those other surfaces; it doesn't replace them.
 The maintainer also runs a quarterly drill on the **upstream-project** incident path:
 
 - **Scenario M1 — `incident-ai-act` issue triage**: a deployer files an `incident-ai-act`-tagged issue. The maintainer's response within the documented 5-working-day acknowledgement target?
-- **Scenario M2 — security disclosure**: a researcher files a `SECURITY.md`-channel disclosure. The maintainer's response within the documented 5-working-day target? Does the rotation of any affected secret happen within the 30-day target?
+- **Scenario M2 — security disclosure**: a researcher files a `SECURITY.md`-channel disclosure. The maintainer's response within the documented 5-working-day target? Does the rotation of any affected secret happen within the maintainer-defined rotation window (recommended ≤30 days)?
 
 The maintainer's drill log is a separate section in the project-side `docs/incident-playbook.md` (operator-private; not the deployer-facing one).
 

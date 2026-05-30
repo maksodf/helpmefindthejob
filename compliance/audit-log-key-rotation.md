@@ -81,8 +81,10 @@ The deployer maintains a file at `${DATA_ROOT}/audit_log_keys.json` with the fol
 # On the droplet, capture the current key's era from the audit log itself.
 # These two commands run BEFORE the new secret is wired in.
 docker compose -f /opt/helpmefindthejob/docker-compose.prod.yml exec helpmefindthejob \
-  python3 -c "from company_discovery.audit_log import _audit_log_singleton; \
-              al = _audit_log_singleton(); print(al.first_entry_at, al.last_entry_at)"
+  python3 -c "import json; from company_discovery.audit_log import default_emitter; \
+              lines = default_emitter().log_path.read_text().splitlines(); \
+              print('era first:', json.loads(lines[0])['timestamp']); \
+              print('era last :', json.loads(lines[-1])['timestamp'])"
 ```
 
 Update `audit_log_keys.json` (kept under encrypted backup, NOT in git; see §6 below).
@@ -104,25 +106,31 @@ Confirm zero `FATAL` lines and zero `HELPMEFINDTHEJOB_AUDIT_SALT not set` warnin
 
 ### Step 5 — Write a single canary entry under the new key
 
-The first post-rotation entry is the canary. Trigger it via a synthetic admin action (e.g., open `/api/admin/oversight/queue` while logged in as the admin) so the audit log records an `admin_action` event. Then verify the entry HMAC-chains correctly under the new key:
+The first post-rotation entry is the canary. Trigger it by performing any AI-assisted action in the app (e.g., run a fit-score on a job, or make an MCP tool call) so a new entry is written to the chained `ai_act_audit.log`. (Note: opening `/api/admin/oversight/queue` does **not** write a chained entry — it is a read-only view, and the separate `admin_audit.log` is not part of the HMAC chain.) Then verify the post-rotation log file chains correctly under the new key:
 
 ```bash
 # From the operations engineer's workstation, with the new salt exported:
 export HELPMEFINDTHEJOB_AUDIT_SALT="<new-key-base64>"
-python3 -m company_discovery.verify_receipt_cli --tail 1 \
-  --salt-b64 "$HELPMEFINDTHEJOB_AUDIT_SALT"
-# Expected: ✓ chain valid under provided key
+python3 -c "import base64; from company_discovery.audit_log import verify_chain, default_emitter; \
+            r = verify_chain([default_emitter().log_path], base64.b64decode('$HELPMEFINDTHEJOB_AUDIT_SALT')); \
+            print(r.to_dict())"
+# Expected: {'ok': True, ...}.  `verify_chain` (company_discovery/audit_log.py) is the
+# audit-chain verifier; there is no CLI wrapper, so it is called inline. The HMAC chain
+# is salt-keyed, so each log FILE must be verified under the salt that wrote it — start a
+# fresh ai_act_audit.log at rotation time so the post-rotation file is single-salt.
 ```
 
 ### Step 6 — Verify the multi-key path
 
-Take the most recent pre-rotation entry (the second-to-last in the log) and verify it still chains correctly under the OLD key:
+Verify the pre-rotation log file still chains correctly under the OLD key (each rotated file is verified under the salt that wrote it):
 
 ```bash
 export HELPMEFINDTHEJOB_AUDIT_SALT="<old-key-base64>"
-python3 -m company_discovery.verify_receipt_cli --tail-offset 1 --count 1 \
-  --salt-b64 "$HELPMEFINDTHEJOB_AUDIT_SALT"
-# Expected: ✓ chain valid under provided key
+python3 -c "import base64, glob; from pathlib import Path; \
+            from company_discovery.audit_log import verify_chain; \
+            paths = [Path(p) for p in sorted(glob.glob('<pre-rotation ai_act_audit.log path>'))]; \
+            print(verify_chain(paths, base64.b64decode('$HELPMEFINDTHEJOB_AUDIT_SALT')).to_dict())"
+# Expected: {'ok': True, ...} for the pre-rotation (old-salt) file(s).
 ```
 
 ### Step 7 — Document the rotation

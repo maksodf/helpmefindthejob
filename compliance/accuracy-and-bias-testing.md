@@ -66,7 +66,7 @@ A single test divergence outside tolerance is investigated; a pattern of diverge
 
 ### 2.5 Documentation of the run
 
-Each bias-testing run produces a structured report committed to `docs/grant/bias-testing-<date>.md` with:
+Each bias-testing run produces a structured report (the interim dated reports were consolidated into `04-research-and-decisions.md` Part B; `bias-comparative-report-2026-05-21.md` is the surviving standalone artefact) with:
 
 - Date and AI provider
 - Per-persona, per-scenario results table
@@ -89,7 +89,7 @@ Before going live, the deployer runs the bias-testing methodology against their 
 python3 -m unittest tests.test_bias_methodology
 ```
 
-The standard test suite (`tests/test_bias_methodology.py`, lands as part of §2.8 follow-up) generates a fresh report and asserts that the divergence-from-tolerance count is below the deployment threshold.
+The standard test suite (`tests/test_bias_methodology.py`) generates a fresh report and asserts that the divergence-from-tolerance count is below the deployment threshold.
 
 If the test fails, the deployer:
 
@@ -106,8 +106,8 @@ If the test fails, the deployer:
 
 The fit-scoring algorithm has two components:
 
-1. **Structured rule-based scoring** (deterministic): expected accuracy is verified by unit test against documented rules.
-2. **AI re-ranking adjustment** (bounded ±15%): expected to track human-judgement re-ranking within ±10 fit-score points.
+1. **AI per-criterion fit-scoring**: the AI returns four sub-scores (skills, experience, location/language, friction-fit; each 0–25) summing to a 0–100 SCORE; expected to track human-judgement ranking within ±10 fit-score points.
+2. **Deterministic guardrails + ranking**: `parse_auto_fit_output` clamps the score to range and rejects malformed output (no fabricated score reaches the user); the rule-based persona-aware job ranking (`company_discovery/persona_ranking.py`) is verified by unit test.
 
 Both components are tested as described in §2.
 
@@ -195,9 +195,9 @@ Each claim is tagged `proven` / `plausible` / `aspirational` in the cost-saving 
 
 ## 8. Current results
 
-**As of 2026-05-19**: the methodology is documented and **partially executed** via synthetic-cohort interim runs (2 of 6 scenario classes; 147 data points covering 70 scoring + 70 CV-tailoring + 7 cross-industry probes). The four dated reports are in `docs/grant/bias-testing-*.md`. The standing unit-test suite (3,291 tests as of 2026-05-30) covers the deterministic-component accuracy (rule-based scoring, schema validation, locale parsing, encryption-at-rest). The remaining 4 scenario classes (onboarding, discovery, motivation-letter drafting, skill-gap brief) execute as part of the partner-NGO pilot in 2026 Q4 per [`ROADMAP.md`](../ROADMAP.md); results land in additional `docs/grant/bias-testing-<date>.md` reports.
+**As of 2026-05-19**: the methodology is documented and **partially executed** via synthetic-cohort interim runs (2 of 6 scenario classes; 147 data points covering 70 scoring + 70 CV-tailoring + 7 cross-industry probes). The dated interim reports were consolidated into [`04-research-and-decisions.md`](../docs/grant/04-research-and-decisions.md) Part B and removed from the tree in commit `e85946b`; the surviving dated report is [`bias-comparative-report-2026-05-21.md`](../docs/grant/bias-comparative-report-2026-05-21.md). The standing unit-test suite (3,291 tests as of 2026-05-30) covers the deterministic-component accuracy (rule-based scoring, schema validation, locale parsing, encryption-at-rest). The remaining 4 scenario classes (onboarding, discovery, motivation-letter drafting, skill-gap brief) execute as part of the partner-NGO pilot in 2026 Q4 per [`ROADMAP.md`](../ROADMAP.md); results will be captured in dated reports under `docs/grant/`.
 
-The honest status: this document describes a methodology that is partially executed at synthetic-cohort scale and that will complete its remaining 4 scenario classes during the partner-NGO pilot. The methodology is the contract; the synthetic-interim results are documented in the dated bias-testing reports; the partner-NGO results are pending. We disclose the partial-execution gap in the transparency notice.
+The honest status: this document describes a methodology that is partially executed at synthetic-cohort scale and that will complete its remaining 4 scenario classes during the partner-NGO pilot. The methodology is the contract; the synthetic-interim results are consolidated in `04-research-and-decisions.md` Part B; the partner-NGO results are pending. We disclose the partial-execution gap in the transparency notice.
 
 ### 8.1 Cross-provider comparative results (2026-05-21 run)
 

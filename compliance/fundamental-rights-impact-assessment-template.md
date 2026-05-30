@@ -95,7 +95,7 @@ The following Charter of Fundamental Rights of the European Union (CFR) articles
 | Art. 26 | Integration of persons with disabilities | Accessibility scope; alternative input paths | WCAG 2.2 AA target; advisor-handoff path |
 | Art. 31 | Fair and just working conditions | Tool supports access; does not affect terms unilaterally | No automated decisions; user confirmation gates |
 | Art. 38 | Consumer protection | Tool is free; no consumer-protection issues at user level | Open-source; no commercial gate |
-| Art. 41 | Right to good administration | Right to explanation in public-authority context | Per-criterion fit-score breakdown; `/api/jobs/{id}/explain` |
+| Art. 41 | Right to good administration | Right to explanation in public-authority context | Fit score surfaced with a one-line rationale + gap list; fuller explanation via the deployer's oversight person (Article 86) |
 | Art. 47 | Right to an effective remedy and to a fair trial | Remediation channels documented | Complaint channels via deployer + supervisory authority |
 
 `[TBD: deployer reviews each CFR article and adds context-specific notes where relevant. If a CFR article is not relevant to this deployment, note "Not applicable" with brief rationale.]`
@@ -108,10 +108,10 @@ This section maps the project-level risks (from [`risk-management-plan.md`](risk
 
 | Risk ID | Description | Pre-mitigation rating | Provider-level mitigation | Deployer-level additional measures | Residual rating |
 |---|---|---|---|---|---|
-| R1 | Discrimination in fit scoring | H×H | Persona-anchored bias testing; per-criterion scoring; ESCO mapping; bounded ±15% AI re-ranking | `[TBD: deployer to specify additional measures: re-test cadence, advisor-review mode for high-risk subgroups, specific oversight signals]` | M×M |
+| R1 | Discrimination in fit scoring | H×H | Persona-anchored bias testing; per-criterion AI fit-scoring (four 0–25 sub-scores, output clamped to range); ESCO mapping | `[TBD: deployer to specify additional measures: re-test cadence, advisor-review mode for high-risk subgroups, specific oversight signals]` | M×M |
 | R2 | Language-based filtering | H×H | Independent role-language and user-language fields; team-language-aware matching | `[TBD: deployer to specify any language-specific advisor training or override]` | L×M |
 | R3 | Foreign-credential bias | H×H | ESCO mapping; recognition-friendly employer cohort; no auto-rejection | `[TBD: deployer to specify partnership with Anerkennungsstellen or referral channels]` | M×M |
-| R4 | Scoring opacity | M×H | Per-criterion breakdown; explanation endpoint; transparency notice | `[TBD: deployer to specify advisor protocol for handling explanation requests]` | L×M |
+| R4 | Scoring opacity | M×H | Per-criterion AI reasoning + gap list surfaced with each score; transparency notice (a self-service explanation endpoint is a Phase-2 item) | `[TBD: deployer to specify advisor protocol for handling explanation requests]` | L×M |
 | R5 | Automation of consequential decisions | L×H | Journey-state-machine confirmation gates; no auto-submit code path; kill-switch | `[TBD: deployer to confirm no override of the structural gates]` | VL×M |
 | R6 | Data-egress beyond consent | H×H | BYO-AI; Ollama option; prompt minimisation; per-AI-call audit log | `[TBD: deployer to specify the AI provider chosen and the consent flow]` | L×M |
 | R7 | Compliance-pack misuse as a shield | M×M | Documentation makes accountability split visible | `[TBD: deployer to specify the legal-counsel review of this FRIA]` | L×L |
@@ -137,7 +137,7 @@ A user who believes their fundamental rights have been affected by a Helpmefindt
 
 | Channel | Description |
 |---|---|
-| In-application | The Settings screen's "Request explanation" and "Report a concern" buttons (Article 86 right to an explanation) |
+| In-application | The transparency notice at `/transparency` documents the Article 86 right to an explanation; the operational request is routed to the deployer's oversight person (a dedicated in-app request button is a Phase-2 item) |
 | Deployer | Direct contact with the deployer's appointed contact: `[TBD: deployer to fill]` |
 | Deployer's data-protection officer (if applicable) | `[TBD: deployer to fill]` |
 | Deployer's complaints procedure | `[TBD: deployer to specify their organisation's existing complaints procedure]` |
@@ -183,11 +183,11 @@ Article 27 of Regulation (EU) 2024/1689 places the FRIA obligation on the **depl
 
 I, the project maintainer, attest that:
 
-1. The eight parts of this template (Parts 1-8 above) collectively map to the Article 27(1) elements: (a) the deployer profile + processes describing how the system will be used (Parts 1 + 2); (b) the period and frequency of use (Part 3); (c) the categories of natural persons likely to be affected (Part 2); (d) the specific risks of harm (Part 4); (e) the human-oversight measures (Parts 5 + cross-reference to `human-oversight-guide.md`); (f) the corrective measures if those risks materialise (Parts 6 + 7); plus the supervisory-authority lodging timing (Part 7 governance row).
+1. The eight parts of this template (Parts 1-8 above) collectively map to the Article 27(1) elements: (a) the deployer profile + processes describing how the system will be used (Parts 1 + 2); (b) the period and frequency of use (Part 1 §1.3-1.4); (c) the categories of natural persons likely to be affected (Part 2); (d) the specific risks of harm (Part 4); (e) the human-oversight measures (Parts 5 + cross-reference to `human-oversight-guide.md`); (f) the corrective measures if those risks materialise (Parts 6 + 7); plus the supervisory-authority lodging timing (Part 7 governance row).
 
 2. The template is anchored to the **friction-class population** framing per Decision 21 (`docs/grant/04-research-and-decisions.md`), not the migrant-only framing. This ensures the FRIA's affected-population analysis reflects the architectural design target of the system and avoids the trap of a population scoped narrower than the system actually serves.
 
-3. The CFR (Charter of Fundamental Rights) rights table in Part 4 enumerates the rights most plausibly engaged by the system (Articles 1, 15, 21, 23, 38, 41, 47 — dignity, free choice of occupation, non-discrimination, equality between women and men, consumer protection, good administration, effective remedy). Each row has the project-side mitigation and the deployer-side context-completion slot.
+3. The CFR (Charter of Fundamental Rights) rights table in **Part 3** enumerates the rights most plausibly engaged by the system (Articles 1, 7, 8, 10, 15, 21, 22, 26, 31, 38, 41, 47 — dignity, respect for private life, protection of personal data, freedom of thought/conscience/religion, free choice of occupation, non-discrimination, cultural/religious/linguistic diversity, integration of persons with disabilities, fair and just working conditions, consumer protection, good administration, effective remedy). Each row has the project-side mitigation and the deployer-side context-completion slot.
 
 4. The sample-conclusion language in Part 8 represents a defensible **Mode B** (advisor-review queue) first-deployment posture. A deployer may adopt it verbatim, edit, or replace. The text is intentionally conservative — Mode A (passive monitoring) is reachable after a documented review track record, not at day 0.
 

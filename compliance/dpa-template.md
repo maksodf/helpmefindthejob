@@ -101,7 +101,7 @@ On termination, the Deployer SHALL:
 the software:
 
 - **Contact data**: email address, optional name
-- **Authentication data**: password hash (scrypt), TOTP secret
+- **Authentication data**: password hash (PBKDF2-HMAC-SHA256, 240,000 iterations), TOTP secret
   (AEAD-encrypted)
 - **Profile data**: CV text (AEAD-encrypted at rest), persona ID,
   friction-class classification, target roles, languages
@@ -166,7 +166,7 @@ Act-specific). The software ships:
 |---|---|---|---|
 | Access | Art. 15 GDPR | `GET /api/data/export` returns full user record as JSON | DPO emails the JSON dump |
 | Rectification | Art. 16 GDPR | User can edit profile + CV via Settings UI | DPO updates manually |
-| Erasure | Art. 17 GDPR | `/api/account/deletion` cascades to all repository tables | DPO runs deletion script |
+| Erasure | Art. 17 GDPR | `/api/account/deletion-request` cascades to all repository tables | DPO runs deletion script |
 | Restriction | Art. 18 GDPR | User can mark profile inactive; AI calls refused while inactive | Manual flag in DB |
 | Portability | Art. 20 GDPR | Same `/api/data/export` returns machine-readable JSON | DPO emails the JSON dump |
 | Object | Art. 21 GDPR | Opt-out toggles per processing type in Settings | DPO honors written objection |
@@ -196,7 +196,7 @@ Minimum:
   TOTP secrets via `crypto_kit.py`; `HELPMEFINDTHEJOB_DATA_KEY` env var
   MUST be set to a 32-byte random value (not the default
   HKDF-from-SECRET_KEY fallback)
-- **Authentication**: scrypt password hashing (N=2^15); optional
+- **Authentication**: PBKDF2-HMAC-SHA256 password hashing (240,000 iterations); optional
   TOTP 2FA
 - **Access control**: per-user data scoping at the repository
   layer; admin-only endpoints gated by `require_admin()`

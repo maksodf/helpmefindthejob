@@ -22,8 +22,8 @@ The Helpmefindthejob audit log is **append-only JSONL** stored at `${DATA_ROOT}/
 
 - **One JSON object per line**, newline-terminated. UTF-8. No leading byte-order mark.
 - **Append-only**: emitters open with `O_APPEND` semantics; rotation is a background job, not in-band.
-- **Rotation**: when the file exceeds `HELPMEFINDTHEJOB_AUDIT_ROTATE_BYTES` (default 64 MiB), it is renamed to `ai_act_audit.log.{YYYYMMDD-HHMMSS}` and a new file is opened.
-- **Retention**: files older than `HELPMEFINDTHEJOB_AUDIT_RETENTION_DAYS` (default 180) are eligible for deletion by the deployer's retention job. The provider does **not** delete; the deployer holds the retention decision per their jurisdiction.
+- **Rotation**: when the file exceeds `HELPMEFINDTHEJOB_AUDIT_ROTATE_BYTES` (default 64 MiB), it is renamed to `ai_act_audit.log.{YYYYMMDD-HHMMSS-ffffff}-{nonce}` (microsecond precision plus a 2-byte hex nonce to avoid same-second collisions) and a new file is opened.
+- **Retention**: the recommended retention is 180 days. **The application does not auto-prune the audit log at this version** — there is no code path that reads `HELPMEFINDTHEJOB_AUDIT_RETENTION_DAYS`; retention is the deployer's operational responsibility per their jurisdiction.
 
 ---
 
@@ -35,7 +35,7 @@ Every event record has these fields:
 |---|---|---|---|
 | `schema_version` | string | yes | Always `"v2"` for this schema (was `"v1"` before 2026-05-21). |
 | `sequence_no` | integer ≥ 1 | yes (v2+) | Monotonic per-deployment sequence number. Gaps reveal deletion. **Added in v2.** |
-| `chain_hmac` | string (64-char hex) | yes (v2+) | HMAC-SHA256 keyed by deployer salt over `prev_chain_hmac \|\| canonical_record_minus_chain_hmac`. Modifying any record breaks the chain from there onwards. Verified by `verify_chain()` in [`../company_discovery/audit_log.py`](../company_discovery/audit_log.py). **Added in v2.** |
+| `chain_hmac` | string (64-char hex) | yes (v2+) | HMAC-SHA256 keyed by deployer salt over `prev_chain_hmac`, a literal `\n` separator, then the canonical record (JSON, sorted keys, compact separators) with `chain_hmac` itself omitted. Modifying any record breaks the chain from there onwards. Verified by `verify_chain()` in [`../company_discovery/audit_log.py`](../company_discovery/audit_log.py). **Added in v2.** |
 | `event_id` | string (UUID v4) | yes | Unique identifier for this event. |
 | `event_type` | string (enum) | yes | One of the event types in §4. |
 | `timestamp` | string (ISO 8601, UTC, microsecond precision) | yes | When the event happened. |
@@ -49,7 +49,7 @@ Every event record has these fields:
 | `tokens_out` | integer | no | Response tokens (AI-invocation events only). |
 | `duration_ms` | integer | yes | Wall-clock duration of the event. |
 | `outcome` | string (enum) | yes | One of `"ok"`, `"declined"`, `"error"`, `"timeout"`. |
-| `error_class` | string | no | The exception class name (outcome=`"error"` only). |
+| `error_class` | string | no | Present for non-`ok` outcomes. For `error` it is the exception class name; for `declined`/`timeout` it carries the result status (e.g. `handoff_required`). |
 | `event_payload` | object | no | Event-type-specific structured fields (see §4). PII fields are hashed by default. |
 
 ---
@@ -64,12 +64,12 @@ Emitted for every call to an AI provider in [`../company_discovery/analysis.py`]
 
 | Field | Type | Description |
 |---|---|---|
-| `purpose` | string (enum) | `"fit_score"` / `"cover_letter"` / `"tailor_cv"` / `"motivation_letter"` / `"skill_gap_brief"` / `"application_outcome_analysis"` |
+| `purpose` | string (enum) | `"fit_score"` / `"cover_letter"` / `"tailor_cv"` / `"cv_query_expansion"` / `"job_decision_brief"` |
 | `job_opaque_id` | string (hashed) or `null` | The job the AI call relates to (if any). |
 | `cv_section_opaque_ids` | array of strings (hashed) | Which CV sections were included in the prompt slice. |
 | `prompt_hash` | string (16-char hex SHA-256 prefix) | Stable hash of the exact prompt sent. |
 | `response_hash` | string (16-char hex SHA-256 prefix) | Stable hash of the AI's response. |
-| `score_adjustment_factor` | float or `null` | The AI's bounded adjustment factor for fit-scoring (capped at ±0.15). |
+| `score_adjustment_factor` | float or `null` | **Reserved** for a future bounded-adjustment fit-scoring model; **not populated at this version** (the fit score is the AI's direct 0–100 output via `parse_auto_fit_output`, clamped to range). Always `null`. |
 
 ### 4.2 `mcp_tool_invocation`
 
@@ -86,7 +86,7 @@ Emitted for every MCP tool call dispatched by [`../company_discovery/mcp_tools.p
 
 ### 4.3 `persistence_confirmation`
 
-Emitted when a user explicitly confirms a database write (job applied, application withdrawn, profile field edited).
+**Planned — not yet emitted at this version.** Specified for when a user explicitly confirms a database write (job applied, application withdrawn, profile field edited).
 
 `event_payload`:
 
@@ -98,7 +98,7 @@ Emitted when a user explicitly confirms a database write (job applied, applicati
 
 ### 4.4 `consent_event`
 
-Emitted when the user grants, revokes, or modifies any consent (AI-provider consent, third-party-share consent, MCP-composition consent).
+**Planned — not yet emitted at this version.** Specified for when the user grants, revokes, or modifies any consent (AI-provider consent, third-party-share consent, MCP-composition consent).
 
 `event_payload`:
 
@@ -110,7 +110,7 @@ Emitted when the user grants, revokes, or modifies any consent (AI-provider cons
 
 ### 4.5 `export_event`
 
-Emitted on every export of personal data (GDPR Article 20 portability, profile export, audit-log extract for the user's own data).
+**Planned — not yet emitted at this version.** Specified for every export of personal data (GDPR Article 20 portability, profile export, audit-log extract for the user's own data).
 
 `event_payload`:
 
@@ -122,7 +122,7 @@ Emitted on every export of personal data (GDPR Article 20 portability, profile e
 
 ### 4.6 `override_event`
 
-Emitted when the human-oversight person edits, rejects, or annotates an AI output in advisor-review mode.
+**Planned — not yet emitted at this version.** Specified for when the human-oversight person edits, rejects, or annotates an AI output in the (planned) advisor-review mode.
 
 `event_payload`:
 
@@ -135,7 +135,7 @@ Emitted when the human-oversight person edits, rejects, or annotates an AI outpu
 
 ### 4.7 `system_event`
 
-Emitted for system-level events that do not fit the above types (config reload, AI-provider failover, kill-switch activation).
+Emitted for system-level events. Currently emitted kinds: `mcp_server_started` / `mcp_server_stopped` (MCP lifecycle) and `db_disk_full` / `db_schema_drift` (database health). The no-AI / kill-switch posture is **not** a `system_event` — it surfaces as an `ai_invocation` with `outcome="declined"` (see §7.3). Config-reload and provider-failover system events are planned, not yet emitted.
 
 `event_payload`:
 
@@ -160,9 +160,9 @@ The hash function is **SHA-256** over the canonical value + the deployment-time 
 
 ## 6. Retention
 
-The default retention is 180 days. Deployers configure via `HELPMEFINDTHEJOB_AUDIT_RETENTION_DAYS`. The minimum recommended retention is **6 months** to satisfy typical post-incident investigation windows under Article 26(6) and to allow for the 6-monthly bias-testing methodology re-run.
+The recommended retention is 180 days. **The application does not auto-prune the audit log at this version** (no code reads `HELPMEFINDTHEJOB_AUDIT_RETENTION_DAYS`); retention is the deployer's operational responsibility. The minimum recommended retention is **6 months** to satisfy typical post-incident investigation windows under Article 26(6) and to allow for the 6-monthly bias-testing methodology re-run.
 
-The deployer's retention job is **not provided** by the project (deployer responsibility). A sample cron script is included in [`../scripts/`](../scripts/) showing how to rotate and prune old log files.
+The deployer's retention job is **not provided** by the project (deployer responsibility). `../scripts/backup-retention.sh` is a sample retention job that prunes backup tarballs; adapt it for rotated `ai_act_audit.log.*` files (the project does not ship an audit-log-specific prune script).
 
 ---
 
@@ -187,14 +187,14 @@ cat ${DATA_ROOT}/ai_act_audit.log{,.*} | \
 
 ```bash
 cat ${DATA_ROOT}/ai_act_audit.log{,.*} | \
-  jq -c 'select(.event_type=="ai_invocation" and .event_payload.outcome=="declined")'
+  jq -c 'select(.event_type=="ai_invocation" and .outcome=="declined")'
 ```
 
-### 7.4 Surface fit-scoring outcomes with notable AI adjustment
+### 7.4 Surface fit-scoring invocations
 
 ```bash
 cat ${DATA_ROOT}/ai_act_audit.log{,.*} | \
-  jq -c 'select(.event_type=="ai_invocation" and .event_payload.purpose=="fit_score" and ((.event_payload.score_adjustment_factor // 0) | fabs) > 0.10)'
+  jq -c 'select(.event_type=="ai_invocation" and .event_payload.purpose=="fit_score")'
 ```
 
 ---

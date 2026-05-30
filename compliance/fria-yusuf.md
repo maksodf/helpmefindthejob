@@ -57,7 +57,7 @@ Yusuf-class users are non-EU credentialed engineers in active Blue Card applicat
 
 ## 6. Article 22 escalation pathway for Yusuf
 
-The deployer-side advisor (e.g., a university career service such as TUM, or the sponsoring Munich employer's HR onboarding) is the oversight person. Escalation flows: AI output → advisor review against Yusuf's Blue Card + salary-threshold + language context → verdict (in EN or DE per Yusuf's preference) → log via `/api/admin/oversight/review`.
+The deployer-side advisor (e.g., a university career service such as TUM, or the sponsoring Munich employer's HR onboarding) is the oversight person. Escalation flows: AI output → advisor review against Yusuf's Blue Card + salary-threshold + language context → verdict (in EN or DE per Yusuf's preference) → recorded in the deployer's oversight log (the in-app `/api/admin/oversight/queue` surfaces the underlying audit events read-only).
 
 ## 7. Maintainer attestation
 

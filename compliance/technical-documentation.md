@@ -63,7 +63,7 @@ The system runs on commodity hardware: a single VM with 2 vCPU and 4 GiB RAM is 
 Two surfaces:
 
 - **Web app** ([`../app.py`](../app.py)): browser-facing chat UI with a 12-phase journey state machine. Mobile-responsive. EN and DE i18n with locale-aware parsing.
-- **MCP server** ([`../mcp_server.py`](../mcp_server.py) + [`../company_discovery/mcp_tools.py`](../company_discovery/mcp_tools.py)): JSON-RPC over stdio. 15 tools published with JSON Schema for inputs and outputs. Public catalogue documented at [`../docs/mcp-server.md`](../docs/mcp-server.md).
+- **MCP server** ([`../mcp_server.py`](../mcp_server.py) + [`../company_discovery/mcp_tools.py`](../company_discovery/mcp_tools.py)): JSON-RPC over stdio. 15 tools published with a JSON Schema (`inputSchema`) for inputs, validated server-side via `jsonschema.Draft7Validator` before dispatch. Public catalogue documented at [`../docs/mcp-server.md`](../docs/mcp-server.md).
 
 ---
 
@@ -75,7 +75,7 @@ The project is a single-maintainer codebase with a co-maintainer being formalise
 
 - **Conventional Git workflow**: feature branches → PRs → reviewed merge to the working branch and then `main`.
 - **Test-driven development** where applicable: 3,291 tests in the suite (26 skipped); full suite runs in ~70 s on bare host.
-- **CI**: GitHub Actions matrix on Python 3.11 + 3.12; MCP integration test workflow at [`.github/workflows/mcp-integration.yml`](../.github/workflows/mcp-integration.yml).
+- **CI**: GitHub Actions matrices on Python 3.9 + 3.12 (unit tests, `test.yml`) and 3.11 + 3.12 (MCP integration + fresh-clone install); MCP integration test workflow at [`.github/workflows/mcp-integration.yml`](../.github/workflows/mcp-integration.yml).
 - **Linting and security**: ruff, mypy (strict subset), pip-audit, and codespell run in CI (`../.github/workflows/quality.yml`).
 - **Documentation co-evolves**: every architectural change updates [`../ARCHITECTURE.md`](../ARCHITECTURE.md); every standards-relevant change updates [`../STANDARDS.md`](../STANDARDS.md); every AI-Act-relevant change updates this compliance pack.
 
@@ -210,7 +210,7 @@ Release tagging follows semantic versioning. `v0.1.0` was the first stable tag (
 | schema.org JobPosting | Canonical structure for job records |
 | ESCO (Skills, Competences, Qualifications, Occupations) | Occupation and skill taxonomy; ISCO-based |
 | EURES schema | Cross-EU job-data interoperability |
-| JSON Schema (Draft 2020-12 in tool registry; Draft 7 in catalogue export per `02-execution-plan.md` §2.6) | MCP tool input/output schemas |
+| JSON Schema (Draft 7 in the MCP tool registry, enforced by `jsonschema.Draft7Validator`; Draft 2020-12 for the civic-profile schema + CACP conformance harness) | MCP tool input schemas |
 | Model Context Protocol (MCP, version `2024-11-05`) | Composition surface |
 | RFC 7807 (Problem Details for HTTP APIs) | Error payload format |
 | RFC 9116 (`.well-known/security.txt`) | Vulnerability disclosure |

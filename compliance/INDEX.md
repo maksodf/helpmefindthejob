@@ -41,7 +41,7 @@ The pack is designed to be **self-contained**: every regulatory obligation a dep
 | [`eu-database-registration-template.md`](eu-database-registration-template.md) | AI Act Article 49 (registration of high-risk AI systems) | The structured registration template for the EU AI database. Pre-filled with project-side fields; deployer fills deployer-side fields and submits before going live. | deployer |
 | [`dpa-template.md`](dpa-template.md) | GDPR Article 28 (processor obligations) | Data Processing Agreement template for the deployer-side processor relationships (the BYO-AI provider especially). Annex II controls map to the project's actual deployment surface. | deployer |
 | **User-facing** | | | |
-| [`transparency-notice.md`](transparency-notice.md) | AI Act Article 13 (adapted to user-facing) + Article 50 (transparency to natural persons) | The plain-language notice users see at first run and at `/settings/transparency`: what the system does, what data is processed, what AI providers are involved, user rights (Article 22 + Article 86), GDPR rights, complaint channels, limitations. Deployer fills the `[Deployer-managed addendum]` section. | user, deployer |
+| [`transparency-notice.md`](transparency-notice.md) | AI Act Article 13 (adapted to user-facing) + Article 50 (transparency to natural persons) | The plain-language notice users see at first run and at `/transparency`: what the system does, what data is processed, what AI providers are involved, user rights (Article 22 + Article 86), GDPR rights, complaint channels, limitations. Deployer fills the `[Deployer-managed addendum]` section. | user, deployer |
 
 ---
 
@@ -53,7 +53,7 @@ For transparency on what reviewers should NOT expect to find in `compliance/`:
 - **DPA-signed PDFs** — `dpa-template.md` is the template; signed copies will land as `compliance/dpa-signed-*.pdf` (gitignored) on the deployer's environment, never in the public repo.
 - **Per-deployer FRIA executions** — the template is project-side; each deployer's filled FRIA is private to that deployment and lives outside this repo.
 - **AI Provider Honesty Matrix** — lives at [`../docs/grant/15-ai-provider-honesty-matrix.md`](../docs/grant/15-ai-provider-honesty-matrix.md) because it's grant-application supporting material, not a compliance obligation per se.
-- **Bias-testing run reports** — methodology is here at `accuracy-and-bias-testing.md`; the dated execution reports live at `../docs/grant/bias-testing-*.md` and `../docs/grant/bias-comparative-report-*.md`.
+- **Bias-testing run reports** — methodology is here at `accuracy-and-bias-testing.md`; the surviving dated execution report is `../docs/grant/bias-comparative-report-2026-05-21.md` (the earlier interim `bias-testing-*` snapshots were consolidated into `../docs/grant/04-research-and-decisions.md` Part B in commit e85946b).
 - **Source-class hierarchy** — `../docs/grant/14-source-class-hierarchy.md` (grant-side citation discipline; not an Article-mapped obligation).
 - **Security audit (gitleaks history scan)** — `../docs/grant/SECURITY-AUDIT.md` because it's a one-off audit artefact rather than a recurring deployer artefact.
 

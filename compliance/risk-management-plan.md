@@ -103,8 +103,8 @@ Each risk is rated **Likelihood** (low / medium / high) × **Severity** (low / m
 **Description**: A fit score that the user cannot interpret is a fundamental-rights concern: the user has the right to understand the basis of any individual decision affecting them (Article 86 of the AI Act and Article 22 of GDPR).
 
 **Mitigation**:
-- Every fit score is presented with **per-criterion breakdown** (location-fit, role-seniority-fit, skill-match, language-fit, recognition-fit, sector-shortage). Each criterion has a one-sentence rationale derived from structured data, not from the AI's prose.
-- The user can request a fuller explanation via the [`/api/jobs/{id}/explain`](../app.py) endpoint, which returns a structured rationale plus the underlying ESCO mappings the score used.
+- Every fit score is presented with **per-criterion breakdown** — four sub-scores (skills-match, experience/seniority-fit, location+language-fit, friction-fit), each 0–25 and summing to the 0–100 total (`build_auto_fit_prompt` / `parse_auto_fit_output`). Each score carries a one-sentence rationale and a gap list from the model.
+- Each fit score is surfaced with a one-line AI rationale and a gap list (`parse_auto_fit_output`). A fuller explanation — including the underlying ESCO mappings — is available from the deployer's oversight person on request (Article 86); a self-service explanation endpoint is a Phase-2 roadmap item.
 - The transparency notice tells the user about this right at first run.
 
 **Residual risk**: The underlying AI model's contribution to scoring is partially opaque (it is a learned model). We mitigate by anchoring the user-visible explanation to structured rule-based criteria and using the AI only for re-ranking and free-text rationale generation, not as the score's source of truth.
