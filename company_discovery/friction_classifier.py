@@ -74,12 +74,12 @@ STRONG_MARKERS: dict[str, tuple[str, ...]] = {
         "EU Blue Card",
         "§18b",
     ),
-    # Olga (Ukraine → Berlin, §24 mass-influx temporary protection)
+    # Olga (Ukraine → Leipzig, §24 mass-influx temporary protection)
     "olga": (
         "§24",
         "Sonderaufenthalt",
     ),
-    # Mahmoud (Syria → Frankfurt, §4 AsylG subsidiary protection)
+    # Mahmoud (Syria → Hamburg, §4 AsylG subsidiary protection)
     "mahmoud": (
         "§4 AsylG",
         "subsidiärer Schutz",
@@ -87,19 +87,19 @@ STRONG_MARKERS: dict[str, tuple[str, ...]] = {
         "Asylanerkennung",
         "Ausbildungsduldung",
     ),
-    # Maria (Spain → Hamburg, EU citizen Freizügigkeitsrecht)
+    # Maria (Romania → Stuttgart, EU citizen Freizügigkeitsrecht)
     "maria": (
         "EU-Bürger",
         "EU citizen",
         "Freizügigkeitsrecht",
     ),
-    # Käthe (Germany → Leipzig, Wiedereinstieg / re-entry)
+    # Käthe (German, Berlin — Wiedereinstieg / nursing re-entry)
     "kaethe": (
         "Wiedereinstieg",
         "Berufsrückkehr",
         "Familienpause",
     ),
-    # Tobias (Germany → Frankfurt, Quereinstieg / former banker)
+    # Tobias (German, Hamburg — Quereinstieg / commercial → civic-tech)
     "tobias": (
         "TVöD",
         "Civic Tech",
@@ -154,10 +154,11 @@ SCORED_PATTERNS: dict[str, tuple[str, ...]] = {
         "Lagerarbeit",
     ),
     "maria": (
-        "Spain",
-        "Spanish",
-        "Bartender",
-        "hospitality",
+        "Romania",
+        "Romanian",
+        "Hungarian",
+        "Krankenschwester",
+        "Altenpflege",
         "Sprachpate",
     ),
     "kaethe": (
@@ -171,9 +172,8 @@ SCORED_PATTERNS: dict[str, tuple[str, ...]] = {
         # NOTE: Quereinstieg / Quereinsteiger live in STRONG_MARKERS;
         # don't duplicate here -- the strong path short-circuits
         # before scored.
-        "banker",
-        "banking",
-        "Former banker",
+        "fintech",
+        "commercial software",
         "career change",
     ),
 }

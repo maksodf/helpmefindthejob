@@ -342,12 +342,12 @@ class CrossPersonaPanelTests(unittest.TestCase):
     PERSONAS = [
         # (persona_name, role_text, visa_constrained, location)
         ("Aicha", "Krankenschwester", True, "Berlin"),
-        ("Yusuf", "Senior backend developer", True, "Munich"),
-        ("Olga", "Senior DevOps Engineer", True, "Berlin"),
-        ("Mahmoud", "Lagerhelfer", True, "Frankfurt"),
-        ("Maria", "Bartender", False, "Hamburg"),
-        ("Kaethe", "Returning Krankenschwester", False, "Leipzig"),
-        ("Tobias", "Former banker", False, "Frankfurt"),
+        ("Yusuf", "Mechanical engineer (automotive)", True, "Munich"),
+        ("Olga", "Senior DevOps Engineer", True, "Leipzig"),
+        ("Mahmoud", "Lagerhelfer", True, "Hamburg"),
+        ("Maria", "Krankenschwester (Altenpflege)", False, "Stuttgart"),
+        ("Kaethe", "Returning Krankenschwester", False, "Berlin"),
+        ("Tobias", "Senior backend developer (civic-tech)", False, "Hamburg"),
     ]
 
     def test_all_7_personas_render_final_state(self):

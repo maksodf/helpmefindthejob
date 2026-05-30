@@ -1,6 +1,6 @@
 # Copyright (c) 2026 Helpmefindthejob contributors
 # SPDX-License-Identifier: Apache-2.0
-"""Persona-smoke e2e — Yusuf (Turkey → Stuttgart, EU Blue Card pending)."""
+"""Persona-smoke e2e — Yusuf (Turkey → Munich, EU Blue Card pending)."""
 
 from __future__ import annotations
 

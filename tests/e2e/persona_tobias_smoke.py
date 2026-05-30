@@ -1,6 +1,6 @@
 # Copyright (c) 2026 Helpmefindthejob contributors
 # SPDX-License-Identifier: Apache-2.0
-"""Persona-smoke e2e — Tobias (Berlin, long-term unemployed pivot)."""
+"""Persona-smoke e2e — Tobias (Hamburg, long-term unemployed / career-change pivot)."""
 
 from __future__ import annotations
 

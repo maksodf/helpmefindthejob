@@ -71,9 +71,10 @@ class SevenPersonaPanelTests(unittest.TestCase):
 
     def test_maria_cv_classifies_strong(self):
         cv = (
-            "EU citizen from Spain, currently in Hamburg. Native Spanish "
-            "speaker. Bartender / hospitality background. Moved under "
-            "Freizügigkeitsrecht freedom of movement."
+            "EU citizen from Romania, currently in Stuttgart. Romanian- and "
+            "Hungarian-native Krankenschwester with home-elderly-care "
+            "(Altenpflege) background. Moved under Freizügigkeitsrecht "
+            "freedom of movement."
         )
         result = classify_with_telemetry(cv)
         self.assertEqual(result.slug, "maria")
@@ -91,7 +92,7 @@ class SevenPersonaPanelTests(unittest.TestCase):
 
     def test_tobias_cv_classifies_strong(self):
         cv = (
-            "Former banker exploring Quereinstieg into Civic Tech / "
+            "Former fintech developer exploring Quereinstieg into Civic Tech / "
             "Sovereign Tech. Interested in TVöD public-sector roles "
             "and GovTech."
         )
@@ -176,10 +177,10 @@ class AlphabeticalTieBreakTests(unittest.TestCase):
         # personas at the SAME count. No strong markers (otherwise
         # strong-path short-circuits). Alphabetical wins.
         # mahmoud: "Ausbildung" + "Handwerk" = 2 scored hits
-        # tobias:  "banker" + "career change" = 2 scored hits
+        # tobias:  "fintech" + "career change" = 2 scored hits
         cv = (
             "Background: looking for Ausbildung in Handwerk, "
-            "with banker experience exploring career change."
+            "with fintech experience exploring career change."
         )
         result = classify_with_telemetry(cv)
         self.assertEqual(result.slug, "mahmoud")  # m < t

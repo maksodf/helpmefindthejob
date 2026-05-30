@@ -146,6 +146,33 @@ documented posture; the matrix is the artefact a reviewer needs.
   90.727s, OK (skipped=26)**; every live test-count reference reconciled to
   3,342; all compliance-pack file/method/endpoint references verified to
   resolve; CHANGELOG updated.
+- **M5 — persona-panel residue cleared.** The panic-round bug-hunt found a
+  Spine-B persona residue cluster the earlier doc-pass missed. Most important:
+  the **public landing page** (`static/index.html` + `en/de.json`) described
+  Maria as a "Spanish architect on EU Blue Card", Yusuf as a "Syrian … §16d"
+  engineer, Mahmoud as "IT-support", and Olga as "office work" — all reconciled
+  to the canonical panel (Maria = Romanian nurse / EU citizen; Yusuf = Turkish
+  automotive engineer / EU Blue Card; Mahmoud = trades / Handwerk; Olga = senior
+  tech / §24). The production `friction_classifier.py` SCORED_PATTERNS for Maria
+  (Spain/Spanish/Bartender) and Tobias (banker) and their dependent tests, plus
+  five `tests/e2e/persona_*_smoke.py` docstrings and the quarterly-impact
+  template, were all reconciled to canonical and re-verified green.
+
+## D. Known residue requiring a scoped follow-up (not a submission blocker)
+
+One persona inconsistency is **documented rather than fixed**, because fixing it
+correctly is feature work, not a label edit:
+
+- **The `mesh/` demo models Olga as a Ukrainian general-medicine MD in Hamburg
+  with a family**, wired to a `hamburg_paragraph_24_ukraine` housing cohort and
+  three `tests/test_mesh_agents.py` cases. Canonical Olga is a Ukrainian **tech**
+  worker (senior frontend / DevOps) in **Leipzig**. Reconciling the mesh demo
+  would mean rewriting its medical-Anerkennung flow and building a Leipzig
+  housing-cohort data fixture (the housing data is city-specific) — a scoped task
+  with its own tests, deliberately left out of the closeout to avoid rushing a
+  coupled production-demo change. It does not touch the submission surface (the
+  mesh demo is internal; the public landing page and the canonical fixtures at
+  `company_discovery/persona_fixtures.py` are correct). Schedule as Phase-2.
 
 Nothing above is pushed; everything is on `claude/ceiling-sprint`. The repo is
 submission-ready except for the operator-owned items in section A.

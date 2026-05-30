@@ -1,6 +1,6 @@
 # Copyright (c) 2026 Helpmefindthejob contributors
 # SPDX-License-Identifier: Apache-2.0
-"""Persona-smoke e2e — Olga (Ukraine → Hamburg, §24 protection)."""
+"""Persona-smoke e2e — Olga (Ukraine → Leipzig, §24 protection)."""
 
 from __future__ import annotations
 

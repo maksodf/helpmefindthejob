@@ -63,7 +63,7 @@ For each of the seven canonical personas, surface the cohort-aware aggregates. A
 | Yusuf-class (Blue Card pending, engineering) | | | | | |
 | Olga-class (§24 protection, English-team tech) | | | | | |
 | Mahmoud-class (§4 Subsidiärer Schutz, trade Ausbildung) | | | | | |
-| Maria-class (EU Blue Card, underemployed architect) | | | | | |
+| Maria-class (EU citizen Freizügigkeit, care/nursing — language barrier) | | | | | |
 | Käthe-class (Wiedereinsteigerin, returner) | | | | | |
 | Tobias-class (long-term unemployed, career changer) | | | | | |
 

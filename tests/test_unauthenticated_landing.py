@@ -137,10 +137,10 @@ class I18nLandingKeysParity(unittest.TestCase):
         preservation rule, 'Blue Card' stays verbatim in DE
         translations. After the AUDIT-32 + 33 landing rewrite
         (2026-05-23) the term moved from landing.lead into
-        landing.personas.maria (the EU Blue Card persona card);
+        landing.personas.yusuf (the EU Blue Card persona card);
         the preservation rule applies wherever the term lives."""
 
-        carrier_keys = ("landing.lead", "landing.personas.maria")
+        carrier_keys = ("landing.lead", "landing.personas.yusuf")
         appears = any("Blue Card" in self.de.get(k, "") for k in carrier_keys)
         self.assertTrue(
             appears,
