@@ -3040,37 +3040,9 @@ class AppState:
         target = self.auth_store.get_user(target_id)
         if target.role == "admin" and target.active and self.auth_store.count_active_admins() <= 1:
             raise ValueError("last_admin_required")
-        for company in list(self.repository.list_companies(target_id)):
-            self.repository.delete_company(target_id, company.id)
-        for kind in (
-            "imported_jobs",
-            "discovered_jobs",
-            "scans",
-            "discovery_runs",
-            "saved_searches",
-            "support_tickets",
-            "analytics_events",
-        ):
-            store = getattr(self.repository, kind, {})
-            for record_id in [
-                k for k, item in list(store.items()) if getattr(item, "user_id", None) == target_id
-            ]:
-                store.pop(record_id, None)
-        if hasattr(self.repository, "_connection"):
-            for table in (
-                "companies",
-                "discovery_runs",
-                "scans",
-                "discovered_jobs",
-                "imported_jobs",
-                "saved_searches",
-                "analytics_events",
-                "support_tickets",
-            ):
-                self.repository._connection.execute(
-                    f"DELETE FROM {table} WHERE user_id = ?", (target_id,)
-                )
-            self.repository._connection.commit()
+        # Full Article 17 erasure across every user-scoped table, dialect-correct
+        # for whichever backend is active (SQLite/Postgres/in-memory).
+        self.repository.delete_all_user_data(target_id)
         self.auth_store.delete_user_sessions(target_id)
         self.auth_store.connection.execute("DELETE FROM users WHERE id = ?", (target_id,))
         self.auth_store.connection.commit()
