@@ -164,11 +164,11 @@ Act-specific). The software ships:
 
 | Right | Article | Software surface | Manual fallback |
 |---|---|---|---|
-| Access | Art. 15 GDPR | `GET /api/user/export` returns full user record as JSON | DPO emails the JSON dump |
+| Access | Art. 15 GDPR | `GET /api/data/export` returns full user record as JSON | DPO emails the JSON dump |
 | Rectification | Art. 16 GDPR | User can edit profile + CV via Settings UI | DPO updates manually |
-| Erasure | Art. 17 GDPR | `DELETE /api/account` cascades to all repository tables | DPO runs deletion script |
+| Erasure | Art. 17 GDPR | `/api/account/deletion` cascades to all repository tables | DPO runs deletion script |
 | Restriction | Art. 18 GDPR | User can mark profile inactive; AI calls refused while inactive | Manual flag in DB |
-| Portability | Art. 20 GDPR | Same `/api/user/export` returns machine-readable JSON | DPO emails the JSON dump |
+| Portability | Art. 20 GDPR | Same `/api/data/export` returns machine-readable JSON | DPO emails the JSON dump |
 | Object | Art. 21 GDPR | Opt-out toggles per processing type in Settings | DPO honors written objection |
 | No automated decision | Art. 22 GDPR | AI Act Article 13 transparency notice; no decision affects legal rights without human review; cost-cap refusals are not solely-automated for legal purposes | Deployer's human-oversight queue per `compliance/human-oversight-guide.md` |
 | Trust Receipt | Art. 86 AI Act + transparency doctrine | Every AI decision auto-emits a downloadable Trust Receipt | CLI: `python -m company_discovery.verify_receipt_cli` |
