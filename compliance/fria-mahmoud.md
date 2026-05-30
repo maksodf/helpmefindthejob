@@ -18,7 +18,7 @@
 | Origin → destination | Syria → Hamburg |
 | Profession | Pre-flight HVAC + plumbing background; targeting trade-apprenticeship pathway (Ausbildung) |
 | Residency status | §4 AsylG Subsidiärer Schutz (subsidiary protection holder) |
-| Languages | AR native; DE B2 in trades-context, B1 in admin-form-context; EN B1 |
+| Languages | AR native; DE B2 in trades-context, B1 in admin-form-context |
 | Friction context | Ausbildung pathway (NOT direct hire); HVAC/plumbing employers + Berufsschule alignment + IHK-recognised programme constraints |
 | Source-of-truth | `company_discovery/persona_fixtures.py::PERSONAS[3]` + `docs/persona-walks/mahmoud.md` |
 

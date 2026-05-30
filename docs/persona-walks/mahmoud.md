@@ -7,7 +7,7 @@
 **Cohort**: most-acute migrant (primary anchor)
 **Residency status**: §4 AsylG Subsidiärer Schutz (subsidiary protection holder)
 **Friction notes**: trade apprenticeship pathway (Ausbildung) rather than direct hire; HVAC + plumbing background pre-flight; technical German is conversational (workshop-floor B2) but admin-form German remains the recurring blocker.
-**Languages**: AR (native), DE (B2 trades-context; B1 admin-form-context), EN (B1)
+**Languages**: AR (native), DE (B2 trades-context; B1 admin-form-context)
 **Profession + target roles**: Pre-flight HVAC/plumbing background; targets `Sanitär-Heizung-Klima Auszubildender / Anlagenmechaniker SHK Ausbildung / Quereinsteiger SHK` in Hamburg.
 
 **Source-of-truth**: `company_discovery.persona_fixtures.PERSONAS[3]`. Date: 2026-05-24. Version: HEAD of `main`.
@@ -31,7 +31,7 @@ Hamburg HVAC + plumbing Ausbildung positions are pre-seeded. The search prioriti
 - Roles within Berufsschule-commutable distance (Hamburg has 3 SHK Berufsschulen)
 - IHK-recognised Ausbildung-providers (eliminates roles that wouldn't lead to a recognised certificate)
 
-The bias-comparative-report verified `mahmoud + ausbildung_shk_hamburg` at SCORE 90 (deepseek) / 73 (ollama) — top-spread cell but both above the 75 verification gate when deepseek is used.
+The bias-comparative-report verified `mahmoud + ausbildung_shk_hamburg` at SCORE 90 (deepseek) / 73 (ollama), a 17-point cross-provider spread: deepseek clears the 75 verification gate, ollama falls just below it.
 
 ## 4. Cover-letter drafting
 
