@@ -183,11 +183,11 @@ cat ${DATA_ROOT}/ai_act_audit.log{,.*} | \
   jq -c --arg uid "${USER_OPAQUE_ID}" 'select(.user_opaque_id==$uid)'
 ```
 
-### 7.3 Surface kill-switch activations
+### 7.3 Surface the no-AI (kill-switch) posture
 
 ```bash
 cat ${DATA_ROOT}/ai_act_audit.log{,.*} | \
-  jq -c 'select(.event_type=="system_event" and .event_payload.system_event_kind=="kill_switch_activated")'
+  jq -c 'select(.event_type=="ai_invocation" and .event_payload.outcome=="declined")'
 ```
 
 ### 7.4 Surface fit-scoring outcomes with notable AI adjustment

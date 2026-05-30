@@ -88,7 +88,7 @@ The complete list lives in [`.env.example`](https://github.com/maksodf/helpmefin
 | `HELPMEFINDTHEJOB_AUDIT_PLAINTEXT_PII` | `false` | Set to `true` only with documented legal justification. Logs `consent_event` on each config reload to make policy change auditable. |
 | `HELPMEFINDTHEJOB_HUMAN_OVERSIGHT_MODE` | `disabled` | `enabled` activates the advisor-review queue at `/api/admin/oversight/queue`. |
 | `HELPMEFINDTHEJOB_AI_PROVIDER` | `manual` | Which AI provider is the default (`openai` / `anthropic` / `gemini` / `deepseek` / `openrouter` / `ollama` / `manual` / `claude-code` / `none`). Users can override per-request. |
-| `HELPMEFINDTHEJOB_DETERMINISTIC_ONLY` | `false` | Kill-switch. When `true`, disables every AI-assisted code path and falls back to deterministic templates everywhere. |
+| `HELPMEFINDTHEJOB_DETERMINISTIC_ONLY` | `false` | Kill-switch. When `true`, the app invokes no AI provider on any code path; AI-assisted features fall back to BYO-AI manual handoff (the ready-to-run prompt is surfaced for the user to run with their own AI). |
 
 ### 4.2 Deployment files
 

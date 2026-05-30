@@ -167,7 +167,7 @@ See [`human-oversight-guide.md`](human-oversight-guide.md) for the full guide. S
 
 - Default-off advisor-review mode (config flag `HELPMEFINDTHEJOB_HUMAN_OVERSIGHT_MODE`)
 - When enabled, AI outputs queue for advisor review at `/api/admin/oversight/queue`
-- Kill-switch: any deployer can disable AI features and fall back to deterministic templates
+- Kill-switch (`HELPMEFINDTHEJOB_DETERMINISTIC_ONLY`): any deployer can disable all app-initiated AI; AI-assisted features fall back to BYO-AI manual handoff
 - No auto-decision paths in the codebase
 
 ---

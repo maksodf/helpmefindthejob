@@ -70,7 +70,7 @@ The oversight person verifies during commissioning that the per-action gates are
 
 `HELPMEFINDTHEJOB_DETERMINISTIC_ONLY=true`
 
-Every AI-assisted code path is disabled. The system continues to function with deterministic templates: fit-scoring falls back to structured rule-based scoring; CV-tailoring falls back to the template library; motivation-letter drafting falls back to the persona-aware skeleton; application-outcome analysis falls back to deterministic pattern reports.
+Every AI-assisted code path is disabled — the app invokes no AI provider. The AI-assisted features (fit-scoring, CV-tailoring, motivation-letter drafting) fall back to the BYO-AI manual-handoff path: the app surfaces the ready-to-run prompt for the user to run with their own AI subscription. Deterministic, rule-based features (persona-aware job ranking, application-outcome aggregation) continue to operate unchanged. No app-initiated AI call occurs while the switch is active.
 
 **When to activate**:
 
@@ -80,7 +80,7 @@ Every AI-assisted code path is disabled. The system continues to function with d
 - Regulatory or supervisory-authority order
 - Discretionary call by the oversight person whenever the deterministic posture is preferable
 
-**How to activate**: set the env var and restart the application. The action is logged in the audit log as a `system_event` with `system_event_kind="kill_switch_activated"`. Deactivation is logged the same way.
+**How to activate**: set the env var and restart the application. Its effect is recorded in the audit log: while the switch is active, every attempted AI invocation logs as an `ai_invocation` event with `outcome="declined"` (the handoff result), giving a continuous record of the no-AI posture. A dedicated `kill_switch_activated` system event is a Phase-2 observability item.
 
 ---
 
