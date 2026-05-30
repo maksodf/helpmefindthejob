@@ -298,6 +298,20 @@ class AuthStore:
         # the grace window which clears both columns.
         self._add_column_if_missing("users", "deletion_token_hash", "TEXT")
         self._add_column_if_missing("users", "deletion_scheduled_at", "TEXT")
+        # Pending-2FA challenge table — created eagerly so consume_2fa_challenge
+        # never hits a missing table on a fresh instance. It was created lazily
+        # only inside issue_2fa_challenge, so a 2fa-verify before any enrollment
+        # crashed with db_schema_drift (500). issue_2fa_challenge still has its
+        # idempotent CREATE TABLE IF NOT EXISTS, which is now a no-op.
+        self.connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS pending_2fa(
+                token_hash TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                expires_at TEXT NOT NULL
+            )
+            """
+        )
         # DSGVO consent capture (#30). When a user signs up via the
         # public form they must tick "I have read the Terms" and "…
         # the Privacy policy". We persist the timestamp of agreement
@@ -473,7 +487,12 @@ class AuthStore:
             "SELECT id, email, password_hash, role, active, created_at FROM users WHERE email = ?",
             (normalized,),
         ).fetchone()
-        if row is None or not row[4] or not verify_password(password, row[2]):
+        if row is None:
+            # Decoy hash so response time doesn't reveal whether the account
+            # exists (enumeration oracle). Same PBKDF2 cost as a real check.
+            hash_password(password)
+            return None
+        if not row[4] or not verify_password(password, row[2]):
             return None
         login_at = now_utc()
         self.connection.execute(

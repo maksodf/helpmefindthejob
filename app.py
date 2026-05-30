@@ -20,7 +20,7 @@ import time
 from dataclasses import asdict, fields, is_dataclass
 from datetime import datetime, timezone
 from http import HTTPStatus
-from http.cookies import SimpleCookie
+from http.cookies import CookieError, SimpleCookie
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from threading import Lock, Thread
@@ -3990,20 +3990,11 @@ class AppState:
         except ValueError as error:
             if str(error) != "email_already_exists":
                 raise
-            # Password reset semantics for an already-existing email
-            existing = self.auth_store.authenticate(record.email, password)
-            if existing is None:
-                # Force-reset the password to the new one (admin path)
-                target_id = self.auth_store.connection.execute(
-                    "SELECT id FROM users WHERE email = ?",
-                    (record.email,),
-                ).fetchone()[0]
-                self.auth_store.update_user(
-                    target_id, password=password, role=record.role, active=True
-                )
-                user = self.auth_store.get_user(target_id)
-            else:
-                user = existing
+            # An invitation must NEVER silently overwrite an existing account's
+            # password / role / active state — that would be a token-leak account
+            # takeover and a surprising privilege mutation. The address already has
+            # an account; the invitee should sign in or use password reset.
+            raise ValueError("account_exists") from error
         return user
 
     def request_password_reset(self, email: str) -> str | None:
@@ -7280,7 +7271,11 @@ class Handler(BaseHTTPRequestHandler):
     def current_session(self) -> AuthSession | None:
         cookie_header = self.headers.get("Cookie", "")
         cookie = SimpleCookie()
-        cookie.load(cookie_header)
+        try:
+            cookie.load(cookie_header)
+        except CookieError:
+            # A malformed Cookie header must read as "no session", not 500.
+            return STATE.auth_store.get_session(None)
         morsel = cookie.get(SESSION_COOKIE_NAME)
         return STATE.auth_store.get_session(morsel.value if morsel else None)
 
@@ -9301,9 +9296,10 @@ class Handler(BaseHTTPRequestHandler):
                         HTTPStatus.UNAUTHORIZED, "invalid_login", "Invalid email or password"
                     )
                     return
-                STATE.refund_login_slot(client_id)
-                STATE.clear_login_failures(client_id)
                 if REQUIRE_EMAIL_VERIFICATION and not STATE.auth_store.is_email_verified(user.id):
+                    # Correct password but a config gate — not a brute-force attempt.
+                    STATE.refund_login_slot(client_id)
+                    STATE.clear_login_failures(client_id)
                     self.send_error_json(
                         HTTPStatus.FORBIDDEN,
                         "email_unverified",
@@ -9311,9 +9307,15 @@ class Handler(BaseHTTPRequestHandler):
                     )
                     return
                 if STATE.auth_store.has_totp_enabled(user.id):
+                    # Do NOT refund the slot here: the login is not complete until
+                    # 2FA succeeds. Refunding would let an attacker who has the
+                    # password loop login -> fresh-challenge to brute-force the TOTP.
+                    # The slot is refunded in /api/auth/2fa-verify on success.
                     challenge = STATE.auth_store.issue_2fa_challenge(user.id)
                     self.send_json({"requires2fa": True, "challengeToken": challenge})
                     return
+                STATE.refund_login_slot(client_id)
+                STATE.clear_login_failures(client_id)
                 session = STATE.auth_store.create_session(user)
                 max_age = int((session.expires_at - now_utc()).total_seconds())
                 self.send_json(
@@ -9326,6 +9328,15 @@ class Handler(BaseHTTPRequestHandler):
                 return
 
             if parsed.path == "/api/auth/2fa-verify":
+                client_id = self.client_address[0] if self.client_address else "unknown"
+                # Meter 2FA attempts on the same per-IP failure budget as login so a
+                # password-holder cannot brute-force the TOTP. Refunded only on full
+                # success; wrong codes / bad challenges leave the slot consumed.
+                if not STATE.claim_login_slot(client_id):
+                    self.send_error_json(
+                        HTTPStatus.TOO_MANY_REQUESTS, "rate_limited", "Too many failed attempts"
+                    )
+                    return
                 challenge_token = str(payload.get("challengeToken") or "").strip()
                 code = str(payload.get("code") or "").strip()
                 user_id = STATE.auth_store.consume_2fa_challenge(challenge_token)
@@ -9343,6 +9354,8 @@ class Handler(BaseHTTPRequestHandler):
                         HTTPStatus.UNAUTHORIZED, "invalid_2fa_code", "Invalid 2FA code"
                     )
                     return
+                STATE.refund_login_slot(client_id)
+                STATE.clear_login_failures(client_id)
                 user = STATE.auth_store.get_user(user_id)
                 session = STATE.auth_store.create_session(user)
                 max_age = int((session.expires_at - now_utc()).total_seconds())
@@ -9356,44 +9369,45 @@ class Handler(BaseHTTPRequestHandler):
                 return
 
             if parsed.path == "/api/auth/register":
-                if not STATE.registration_open():
-                    self.send_error_json(
-                        HTTPStatus.FORBIDDEN, "registration_closed", "Registration is closed"
+                with STATE._register_request_lock:
+                    if not STATE.registration_open():
+                        self.send_error_json(
+                            HTTPStatus.FORBIDDEN, "registration_closed", "Registration is closed"
+                        )
+                        return
+                    # Rate-limit registration except for the first-account
+                    # bootstrap path (no users yet → admin gets created). Without
+                    # this an attacker could spam-create accounts and pump the
+                    # outbound email transport.
+                    is_bootstrap = not STATE.auth_store.has_users()
+                    if not is_bootstrap:
+                        client_id = self.client_address[0] if self.client_address else "unknown"
+                        # Atomic claim — strict cap under burst.
+                        if not STATE.claim_register_slot(client_id):
+                            self.send_error_json(
+                                HTTPStatus.TOO_MANY_REQUESTS,
+                                "rate_limited",
+                                "Too many registration attempts. Try again later.",
+                            )
+                            return
+                        # DSGVO consent (#30). Public sign-ups must tick
+                        # both the Terms and the Privacy boxes — otherwise
+                        # the account creation is refused. The bootstrap
+                        # admin path is exempt because the operator IS the
+                        # one writing the policy.
+                        tos_ok = bool(payload.get("tosAccepted"))
+                        privacy_ok = bool(payload.get("privacyAccepted"))
+                        if not tos_ok or not privacy_ok:
+                            self.send_error_json(
+                                HTTPStatus.BAD_REQUEST,
+                                "consent_required",
+                                "Accept the Terms and the Privacy policy to create an account.",
+                            )
+                            return
+                    role = "admin" if is_bootstrap else "member"
+                    user = STATE.auth_store.create_user(
+                        payload.get("email", ""), payload.get("password", ""), role=role
                     )
-                    return
-                # Rate-limit registration except for the first-account
-                # bootstrap path (no users yet → admin gets created). Without
-                # this an attacker could spam-create accounts and pump the
-                # outbound email transport.
-                is_bootstrap = not STATE.auth_store.has_users()
-                if not is_bootstrap:
-                    client_id = self.client_address[0] if self.client_address else "unknown"
-                    # Atomic claim — strict cap under burst.
-                    if not STATE.claim_register_slot(client_id):
-                        self.send_error_json(
-                            HTTPStatus.TOO_MANY_REQUESTS,
-                            "rate_limited",
-                            "Too many registration attempts. Try again later.",
-                        )
-                        return
-                    # DSGVO consent (#30). Public sign-ups must tick
-                    # both the Terms and the Privacy boxes — otherwise
-                    # the account creation is refused. The bootstrap
-                    # admin path is exempt because the operator IS the
-                    # one writing the policy.
-                    tos_ok = bool(payload.get("tosAccepted"))
-                    privacy_ok = bool(payload.get("privacyAccepted"))
-                    if not tos_ok or not privacy_ok:
-                        self.send_error_json(
-                            HTTPStatus.BAD_REQUEST,
-                            "consent_required",
-                            "Accept the Terms and the Privacy policy to create an account.",
-                        )
-                        return
-                role = "admin" if is_bootstrap else "member"
-                user = STATE.auth_store.create_user(
-                    payload.get("email", ""), payload.get("password", ""), role=role
-                )
                 # Stamp the very first sign-in (register doesn't go through authenticate()).
                 login_at = now_utc()
                 STATE.auth_store.connection.execute(
