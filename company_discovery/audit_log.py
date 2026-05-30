@@ -569,6 +569,15 @@ def verify_chain(log_paths: list[Path], salt: bytes) -> ChainVerificationResult:
     Returns ``ok=False`` with diagnostic fields when any of the
     above fails. Designed to be called by an external auditor
     over the rotated + current log files of a deployment.
+
+    AUDITOR NOTE: an empty / zero-record log returns ``ok=True`` with
+    ``records_checked == 0``. This is intentional — a brand-new deployment
+    that has emitted no events yet has a trivially-intact chain. It is NOT a
+    positive assertion that records were never deleted: ``verify_chain`` cannot
+    distinguish a fresh log from a fully-wiped one without an external
+    high-water-mark. Auditors MUST treat ``records_checked == 0`` as "no
+    evidence either way" and corroborate against an expected minimum
+    sequence/anchor (an external-anchor parameter is a Phase-2 item).
     """
 
     all_records: list[tuple[int, dict[str, Any]]] = []
