@@ -146,6 +146,20 @@ class AppWiringTests(unittest.TestCase):
         self.assertEqual(recs[0]["event_payload"]["format"], "application/json")
         self.assertEqual(recs[0]["event_payload"]["export_kind"], "profile_full")
 
+    def test_overlong_provider_id_is_capped_in_consent_record(self) -> None:
+        # A provider id is a short slug; an over-long value is capped at the
+        # source so it cannot bloat the profile field, analytics, or the
+        # consent_event audit record that all read from it.
+        self.state.update_profile(
+            self.uid, {"aiConsent": {"granted": True, "providerId": "x" * 200}}
+        )
+        recs = [r for r in _records(self._log) if r["event_type"] == "consent_event"]
+        self.assertEqual(len(recs), 1)
+        self.assertEqual(
+            len(recs[0]["event_payload"]["consent_scope"]), 64,
+            "over-long provider_id must be capped at the source",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

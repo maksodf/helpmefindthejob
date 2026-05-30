@@ -2082,8 +2082,13 @@ class AppState:
             from company_discovery import audit_log as _audit_log_mod
             if consent.get("granted"):
                 existing.ai_consent_at = now_utc()
+                # Provider IDs are short slugs (openai/gemini/ollama/…); cap at
+                # the source so an over-long value can't bloat the profile
+                # field, the analytics event, OR the consent_event audit record
+                # that all read from here. Truncated garbage still fails the
+                # _ai_consent_satisfied provider match, so consent stays unmet.
                 existing.ai_consent_provider_id = (
-                    str(consent.get("providerId") or consent.get("provider_id") or "").strip()
+                    str(consent.get("providerId") or consent.get("provider_id") or "").strip()[:64]
                     or None
                 )
                 self.log_analytics(
