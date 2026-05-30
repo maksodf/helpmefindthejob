@@ -15,9 +15,11 @@ Fixed · Security**.
 
 ## [Unreleased]
 
-Work landed 2026-05-29: elevating the
+Work landed 2026-05-29–30: elevating the
 project from "app with an MCP wrapper" toward a reusable civic-agent
-interoperability primitive. Every headline claim is verifiable one command at a
+interoperability primitive, followed by a pre-submission hardening +
+compliance record-keeping pass (security/data-integrity bug hunt and the
+Article-12 consent/export audit emissions below). Every headline claim is verifiable one command at a
 time via the [claims ledger](claims-ledger.json)
 (`python -m unittest tests.test_claims_ledger`), which also enforces the honest
 buildable-vs-human-track split.
@@ -52,6 +54,17 @@ buildable-vs-human-track split.
   Act / GDPR article→artefact matrix with a build-breaking traceability gate,
   plus `scripts/fill_template.py` to fork the templates.
 - **Claims ledger** (`claims-ledger.json` + `docs/claims-ledger.md`).
+- **Article-12 record-keeping for consent + export** — AI-provider consent
+  changes (`consent_event`, GDPR Art. 7) and full personal-data exports
+  (`export_event`, GDPR Art. 12/15/20 — both the user self-export and an admin
+  exporting a user's data, recorded in the subject's own audit slice) now emit
+  tamper-evident, hash-chained audit records (`company_discovery/audit_log.py`
+  helpers + `app.py` `update_profile` / `export_data_audited`), returning the
+  `audit-log-schema.md` §4.4/§4.5 and `deployer-operating-manual.md` §6.5 claims
+  from "specified, not yet emitted" to "emitted." A consolidated **Runtime
+  mechanism status** matrix in `compliance/INDEX.md` now gives the code-wired vs
+  deployer-operated vs manual vs planned picture in one place. Guarded by
+  `tests/test_audit_consent_export_events.py`.
 
 ### Changed
 
@@ -74,6 +87,47 @@ buildable-vs-human-track split.
   of trusting the attacker-call's response shape.
 - `scripts/fill_template.py` now detects every `{{...}}` slot (spaces and line
   wraps included), so `--strict` can no longer pass a half-filled template.
+- **GDPR erasure completeness** — account deletion now removes ALL user-scoped
+  data via a schema-driven `delete_all_user_data`; the prior version missed
+  several tables, leaving orphaned personal data behind.
+- **Postgres profile crash** — the AEAD additional-data was passed as `str`
+  rather than `bytes`, so every encrypted profile write under the Postgres
+  backend raised; it is now encoded to UTF-8 bytes (with a `TypeError` guard in
+  `crypto_kit`).
+- **Aggregator fan-out isolation** — a provider returning a non-job element or
+  a null/empty `source_url` no longer crashes the whole search merge, and
+  distinct URL-less jobs no longer collapse into a single entry.
+- **Journey review input** — a blank, zero-width, or single-stray-character
+  message no longer silently drills into the wrong job category (it re-asks).
+- **AI streaming-dispatch robustness** — the final result is captured before
+  the generator yields, `GeneratorExit` is re-raised cleanly, and the provider
+  adapters guard malformed response shapes (no crash on a junk completion).
+- **CV self-XSS** — user-supplied `<img onerror=…>` in CV markdown is now
+  escaped (inline) or rebuilt from a `src`/`alt` allow-list (full-line).
+- **Audit-log + 2FA hardening** — the audit salt is base64-validated to exactly
+  32 bytes; the `pending_2fa` table is created eagerly (was a lazy-creation
+  500); over-long AI-provider ids are capped at the source so they cannot bloat
+  the profile field, analytics, or the consent record.
+- **Data import** — `POST /api/data/import` returns 400 on a malformed payload
+  instead of a 500.
+
+### Security
+
+- **SSO account-takeover vector** — `find_or_create_sso_user` no longer
+  auto-links an IdP identity to an existing local account on a bare email match
+  unless the IdP asserts the email is verified, closing a takeover path via a
+  non-verifying OIDC provider.
+- **2FA login-slot bypass** — the per-IP login slot is refunded only on full
+  authentication success (not on the 2FA-required interstitial), and
+  `/api/auth/2fa-verify` itself claims a slot, closing a rate-limit bypass.
+- **Quota TOCTOU** — AI-run and scan quotas are now reserved atomically
+  (`reserve_ai_run` / `reserve_scan`), so concurrent requests at the daily limit
+  can no longer all pass the check before any of them increments.
+- **MCP server hardening** — `run_stdio` validates message framing and wraps
+  dispatch (malformed input → JSON-RPC error, not a crash); all 15 tool input
+  schemas now set `additionalProperties: false`.
+- **Bootstrap registration race** — first-account creation is serialised under a
+  dedicated lock, closing a TOCTOU on the "is this the first user?" check.
 
 ---
 

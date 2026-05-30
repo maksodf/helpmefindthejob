@@ -99,7 +99,7 @@ Article 10(3) requires that data sets be "relevant, representative, free of erro
 - **Free of errors**: the persistence layer rejects malformed input (input-schema validation; see `tests/test_phase11_mcp_input_validation.py`). User-edited fields go through the chat-router confirmation gate before any AI invocation.
 - **Complete**: missing fields in a profile slice are filled with explicit `null` rather than guessed; the AI prompt is constructed to handle missing fields without hallucinating them.
 
-The data-quality controls are tested in the standing 3,301-test suite, including:
+The data-quality controls are tested in the standing 3,342-test suite, including:
 - `tests/test_phase11_mcp_input_validation.py` — schema enforcement on MCP tool inputs
 - `tests/test_phase12_esco_eures.py` — ESCO mapping correctness
 - `tests/test_journey.py` — journey state-machine integrity

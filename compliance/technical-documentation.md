@@ -74,7 +74,7 @@ Two surfaces:
 The project is a single-maintainer codebase with a co-maintainer being formalised (see Decision 17). Development follows:
 
 - **Conventional Git workflow**: feature branches → PRs → reviewed merge to the working branch and then `main`.
-- **Test-driven development** where applicable: 3,301 tests in the suite (26 skipped); full suite runs in ~70 s on bare host.
+- **Test-driven development** where applicable: 3,342 tests in the suite (26 skipped); full suite runs in ~90 s on bare host.
 - **CI**: GitHub Actions matrices on Python 3.9 + 3.12 (unit tests, `test.yml`) and 3.11 + 3.12 (MCP integration + fresh-clone install); MCP integration test workflow at [`.github/workflows/mcp-integration.yml`](../.github/workflows/mcp-integration.yml).
 - **Linting and security**: ruff, mypy (strict subset), pip-audit, and codespell run in CI (`../.github/workflows/quality.yml`).
 - **Documentation co-evolves**: every architectural change updates [`../ARCHITECTURE.md`](../ARCHITECTURE.md); every standards-relevant change updates [`../STANDARDS.md`](../STANDARDS.md); every AI-Act-relevant change updates this compliance pack.
@@ -259,4 +259,4 @@ Where an incident requires notification under Article 73, the deployer notifies 
 ## Append log
 
 - **2026-05-18**: initial technical documentation drafted as part of Week 2 task 2.8 of the NLnet NGI Zero Commons Fund grant sprint.
-- **2026-05-30**: refreshed for the v0.80.0 submission state — §2.4 algorithm spec corrected to match the implemented four-sub-score scorer; test count (3,301), MCP tool count (15), provider list (incl. Codex CLI), and shipped CI/Nix/accessibility/release status updated.
+- **2026-05-30**: refreshed for the v0.80.0 submission state — §2.4 algorithm spec corrected to match the implemented four-sub-score scorer; test count (3,342), MCP tool count (15), provider list (incl. Codex CLI), and shipped CI/Nix/accessibility/release status updated.

@@ -178,7 +178,7 @@ Run the test suite directly on a fresh clone:
 python3 -m unittest discover -s tests
 ```
 
-The 3,301-test suite passes natively on Python 3.11 and 3.12 across
+The 3,342-test suite passes natively on Python 3.11 and 3.12 across
 macOS, Linux, and the `python:3.11-slim` / `python:3.12-slim` Docker
 containers — verified on every push by the `fresh-clone-install`
 workflow at `.github/workflows/fresh-clone-install.yml`. Docker is
