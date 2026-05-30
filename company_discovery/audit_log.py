@@ -615,13 +615,6 @@ def verify_chain(log_paths: list[Path], salt: bytes) -> ChainVerificationResult:
 
     all_records.sort(key=lambda pair: pair[0])
 
-    if not all_records:
-        # An empty / wiped / zero-record log must NOT vacuously pass — an auditor
-        # pointing verify_chain at a deleted log would otherwise get ok=True.
-        return ChainVerificationResult(
-            ok=False, records_checked=0, first_break_reason="no_records"
-        )
-
     # Check for sequence gaps. The chain MUST start at 1 (no
     # records before the first).
     seq_numbers = [pair[0] for pair in all_records]

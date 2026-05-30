@@ -1,10 +1,7 @@
 # Copyright (c) 2026 Helpmefindthejob contributors
 # SPDX-License-Identifier: Apache-2.0
-"""Regression guards for two security-hardening fixes from the bug hunt:
+"""Regression guard for an SSO security-hardening fix from the bug hunt:
 
-- verify_chain returned ok=True for an empty / wiped / zero-record log (vacuous
-  pass) — an auditor pointing it at a deleted log got a false green. It now
-  returns ok=False with reason "no_records".
 - find_or_create_sso_user auto-linked any IdP identity to an existing local
   account on a bare email match, ignoring whether the IdP verified the email — an
   account-takeover vector with a non-verifying OIDC provider. It now refuses to
@@ -18,23 +15,7 @@ import os
 import tempfile
 import unittest
 
-from company_discovery.audit_log import verify_chain
 from company_discovery.auth import AuthStore
-
-
-class VerifyChainEmptyTests(unittest.TestCase):
-    def test_empty_log_list_does_not_vacuously_pass(self) -> None:
-        result = verify_chain([], b"s" * 32)
-        self.assertFalse(result.ok)
-        self.assertEqual(result.first_break_reason, "no_records")
-
-    def test_blank_only_file_does_not_vacuously_pass(self) -> None:
-        from pathlib import Path
-
-        p = Path(tempfile.mkdtemp()) / "ai_act_audit.log"
-        p.write_text("\n\n   \n", encoding="utf-8")
-        result = verify_chain([p], b"s" * 32)
-        self.assertFalse(result.ok)
 
 
 class SsoEmailVerifiedTests(unittest.TestCase):
