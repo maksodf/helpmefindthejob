@@ -1436,6 +1436,11 @@ class AppState:
         self._reset_request_lock = Lock()
         self._reset_requests: dict[str, list[float]] = {}
         self._register_request_lock = Lock()
+        # Distinct from the rate-limit lock above: serialises the first-account
+        # bootstrap decision (has_users -> create_user) so concurrent first
+        # registrations can't all become admins. Must NOT be _register_request_lock
+        # (claim_register_slot takes that one inside the critical section -> deadlock).
+        self._register_bootstrap_lock = Lock()
         self._register_requests: dict[str, list[float]] = {}
         # AUDIT-37: per-IP rate-limit for CSP violation reports posted
         # to /csp-report. Bucket dict + lock, same shape as the
@@ -9369,7 +9374,7 @@ class Handler(BaseHTTPRequestHandler):
                 return
 
             if parsed.path == "/api/auth/register":
-                with STATE._register_request_lock:
+                with STATE._register_bootstrap_lock:
                     if not STATE.registration_open():
                         self.send_error_json(
                             HTTPStatus.FORBIDDEN, "registration_closed", "Registration is closed"
