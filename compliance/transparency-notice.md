@@ -154,9 +154,9 @@ You can disable AI-assisted features entirely at any time from the Settings scre
 
 You retain all your GDPR rights:
 
-- **Access** — `/api/profile/export` returns your full profile in structured JSON.
+- **Access** — `/api/data/export` returns your full profile in structured JSON.
 - **Rectification** — edit any profile field from the chat or the Settings screen.
-- **Erasure** — request deletion from `/api/profile/delete`. Your profile, CV facts, and application history are deleted; audit-log entries are unlinked from your identifier.
+- **Erasure** — request deletion from `/api/account/deletion`. Your profile, CV facts, and application history are deleted; audit-log entries are unlinked from your identifier.
 - **Portability** — your profile export uses open standard formats (schema.org, ESCO).
 - **Objection / withdrawal of consent** — revoke AI-provider consent at any time.
 

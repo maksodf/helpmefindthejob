@@ -88,7 +88,7 @@ The complete list lives in [`.env.example`](https://github.com/maksodf/helpmefin
 | `HELPMEFINDTHEJOB_AUDIT_PLAINTEXT_PII` | `false` | Set to `true` only with documented legal justification. Logs `consent_event` on each config reload to make policy change auditable. |
 | `HELPMEFINDTHEJOB_HUMAN_OVERSIGHT_MODE` | `disabled` | `enabled` activates the advisor-review queue at `/api/admin/oversight/queue`. |
 | `HELPMEFINDTHEJOB_AI_PROVIDER` | `manual` | Which AI provider is the default (`openai` / `anthropic` / `gemini` / `deepseek` / `openrouter` / `ollama` / `manual` / `claude-code` / `none`). Users can override per-request. |
-| `HELPMEFINDTHEJOB_DETERMINISTIC_ONLY` | `false` | Kill-switch. When `true`, the app invokes no AI provider on any code path; AI-assisted features fall back to BYO-AI manual handoff (the ready-to-run prompt is surfaced for the user to run with their own AI). |
+| `HELPMEFINDTHEJOB_DETERMINISTIC_ONLY` | `false` | Kill-switch. When `true`, the app invokes no AI provider on any code path; each AI-assisted feature falls back to its no-AI path (letter drafting → a deterministic templated skeleton; fit-scoring / CV-tailoring → a BYO-AI handoff prompt). |
 
 ### 4.2 Deployment files
 
@@ -158,7 +158,7 @@ In addition to the on-screen notice, consider:
 
 ## 8. Data subject rights
 
-Users have the GDPR rights enumerated in `transparency-notice.md` §"Your rights". As the deployer, you operationally handle data-subject requests. The system provides the technical primitives (`/api/profile/export`, `/api/profile/delete`, audit-log self-export); your team handles the process around them (verifying the requester's identity, responding within the GDPR window, documenting the response).
+Users have the GDPR rights enumerated in `transparency-notice.md` §"Your rights". As the deployer, you operationally handle data-subject requests. The system provides the technical primitives (`/api/data/export`, `/api/account/deletion`, audit-log self-export); your team handles the process around them (verifying the requester's identity, responding within the GDPR window, documenting the response).
 
 A request log lives separately from the audit log (it is itself a record of the request, not the technical event); your data-protection officer typically owns this log.
 

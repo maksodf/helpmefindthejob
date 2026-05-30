@@ -70,7 +70,7 @@ The oversight person verifies during commissioning that the per-action gates are
 
 `HELPMEFINDTHEJOB_DETERMINISTIC_ONLY=true`
 
-Every AI-assisted code path is disabled — the app invokes no AI provider. The AI-assisted features (fit-scoring, CV-tailoring, motivation-letter drafting) fall back to the BYO-AI manual-handoff path: the app surfaces the ready-to-run prompt for the user to run with their own AI subscription. Deterministic, rule-based features (persona-aware job ranking, application-outcome aggregation) continue to operate unchanged. No app-initiated AI call occurs while the switch is active.
+Every AI-assisted code path is disabled — the app invokes no AI provider. Each AI-assisted feature falls back to its no-AI path: motivation/cover-letter drafting falls back to a deterministic templated skeleton (`company_discovery/motivation_letter.py`'s `templated_fallback`, with an honest no-AI banner); fit-scoring and CV-tailoring surface a BYO-AI handoff prompt for the user to run with their own AI; deterministic, rule-based features (persona-aware job ranking, application-outcome aggregation) continue to operate unchanged. No app-initiated AI call occurs while the switch is active.
 
 **When to activate**:
 
