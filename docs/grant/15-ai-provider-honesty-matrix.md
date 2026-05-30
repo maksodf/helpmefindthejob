@@ -106,7 +106,7 @@ here are tradeoffs by use case:
 
 ### Slash-command intent routing (chat router)
 
-- **Recommend deterministic templates**: this surface is best served
+- **Recommend the deterministic intent router**: this surface is best served
   by the project's deterministic parser + keyword router. The AI
   router is the third layer behind slash + keyword. None of the AI
   providers significantly improves on the deterministic layer for

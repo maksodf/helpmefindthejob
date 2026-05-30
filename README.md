@@ -326,9 +326,10 @@ flake for reproducible builds is shipped at [`flake.nix`](flake.nix)
 
 For sensitive deployments, the BYO-AI abstraction
 ([`company_discovery/ai_providers.py`](company_discovery/ai_providers.py))
-supports fully-offline operation via Ollama; the chat router falls back
-to deterministic templated responses when no provider is configured,
-so the user-facing flow still works.
+supports fully-offline operation via Ollama; with no AI provider configured the user-facing flow still works —
+letter drafting falls back to a deterministic templated skeleton, and
+fit-scoring and CV-tailoring surface a BYO-AI handoff prompt you run with
+your own AI.
 
 ## Hosted by
 

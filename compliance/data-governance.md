@@ -115,7 +115,7 @@ Article 26(11) requires the deployer to enable data subjects to exercise GDPR ri
 - **Right to rectification** (Art. 16): the user can edit any profile field via the chat router or the web UI.
 - **Right to erasure** (Art. 17): the user can request deletion via `/api/account/deletion`. Deletion cascades to profile, CV facts, job-history, and discovered-jobs scoped to the user; the audit-log entries are retained for the legally-required retention period but with the user_opaque_id mapping deleted from the deployer's salt store, rendering the audit-log entries unlinkable to the natural person while preserving the compliance audit trail.
 - **Right to data portability** (Art. 20): the profile export uses structured JSON Schema-defined formats. The portable civic profile is the cross-civic-agent format documented in the [MCP server docs](../docs/mcp-server.md).
-- **Right to object / withdraw consent**: the user can revoke AI-provider consent at any time via `/api/ai-provider`; subsequent flows fall back to deterministic templated mode.
+- **Right to object / withdraw consent**: the user can revoke AI-provider consent at any time via `/api/ai-provider`; subsequent flows fall back to the no-AI path (a deterministic templated skeleton for letter drafting; a BYO-AI handoff prompt for fit-scoring and CV-tailoring).
 
 ---
 

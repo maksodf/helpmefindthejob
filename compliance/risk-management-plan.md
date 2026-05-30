@@ -123,7 +123,7 @@ Each risk is rated **Likelihood** (low / medium / high) × **Severity** (low / m
 **Mitigation**:
 - The system **never** auto-submits an application. Every external action — sending an application to a recruiter, accepting an interview slot, signing an agreement — requires explicit user confirmation, mediated by the 12-phase journey state machine ([`company_discovery/journey.py`](../company_discovery/journey.py)).
 - The MCP server's `record_user_outcome` tool requires user-confirmed input and is logged in the audit log.
-- The kill-switch (Article 14, see [`human-oversight-guide.md`](human-oversight-guide.md)) lets the deployer disable AI features and fall back to deterministic templates if needed.
+- The kill-switch (Article 14, see [`human-oversight-guide.md`](human-oversight-guide.md)) lets the deployer disable all app-initiated AI; each AI-assisted feature then falls back to its no-AI path (a deterministic templated skeleton for letter drafting; a BYO-AI handoff prompt for fit-scoring and CV-tailoring).
 
 **Residual risk**: A deployer mis-configuring the system could theoretically introduce auto-submit behaviour. We prevent this by removing the code path entirely; the journey state machine cannot transition to "submitted" without a user-confirmation event in the audit log.
 
