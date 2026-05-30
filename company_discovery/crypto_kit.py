@@ -124,11 +124,15 @@ class EncryptionAtRest:
         return cls(resolve_data_key(secret_key))
 
     def encrypt(self, plaintext: str, *, aad: bytes = b"") -> str:
+        if not isinstance(aad, (bytes, bytearray)):
+            raise TypeError("aad must be bytes")
         nonce = secrets.token_bytes(_NONCE_BYTES)
         ciphertext = self._aead.encrypt(nonce, plaintext.encode("utf-8"), aad)
         return _FORMAT_PREFIX + base64.urlsafe_b64encode(nonce + ciphertext).decode("ascii")
 
     def decrypt(self, blob: str, *, aad: bytes = b"") -> str:
+        if not isinstance(aad, (bytes, bytearray)):
+            raise TypeError("aad must be bytes")
         if not is_aead_blob(blob):
             raise ValueError("not_aead_format")
         raw = base64.urlsafe_b64decode(blob[len(_FORMAT_PREFIX) :])

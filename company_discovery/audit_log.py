@@ -44,7 +44,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from company_discovery.env_compat import get_env
+from company_discovery.env_compat import get_env, get_env_int
 
 # Phase 2 #13 (2026-05-21): schema bumped v1 → v2. The new
 # version adds required tamper-evidence fields (sequence_no +
@@ -389,11 +389,8 @@ def default_emitter() -> AuditLogEmitter:
             "yes",
             "on",
         }
-        rotate_bytes = int(
-            get_env(
-                "HELPMEFINDTHEJOB_AUDIT_ROTATE_BYTES",
-                str(64 * 1024 * 1024),
-            )
+        rotate_bytes = get_env_int(
+            "HELPMEFINDTHEJOB_AUDIT_ROTATE_BYTES", 64 * 1024 * 1024
         )
         _default_emitter = AuditLogEmitter(
             log_path=log_path,
@@ -459,8 +456,8 @@ def _resolve_salt(raw: str) -> bytes:
     """
     if raw:
         try:
-            decoded = base64.b64decode(raw, validate=False)
-            if len(decoded) >= 16:
+            decoded = base64.b64decode(raw, validate=True)
+            if len(decoded) == 32:
                 return decoded
         except Exception:  # noqa: BLE001, S110 - invalid base64 falls through to raw-bytes path on purpose
             pass

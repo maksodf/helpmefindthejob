@@ -419,10 +419,10 @@ class PostgresCompanyDiscoveryRepository(InMemoryCompanyDiscoveryRepository):
             # repo). When `crypto` is set, cv_text + cv_photo_data_uri
             # are AEAD-encrypted with user_id as AAD before storage.
             if self._crypto is not None and payload.get("cv_text"):
-                payload["cv_text"] = self._crypto.encrypt(payload["cv_text"], aad=profile.user_id)
+                payload["cv_text"] = self._crypto.encrypt(payload["cv_text"], aad=profile.user_id.encode("utf-8"))
             if self._crypto is not None and payload.get("cv_photo_data_uri"):
                 payload["cv_photo_data_uri"] = self._crypto.encrypt(
-                    payload["cv_photo_data_uri"], aad=profile.user_id
+                    payload["cv_photo_data_uri"], aad=profile.user_id.encode("utf-8")
                 )
             result = super().save_user_profile(profile)
             self._upsert(
@@ -541,7 +541,7 @@ class PostgresCompanyDiscoveryRepository(InMemoryCompanyDiscoveryRepository):
             ):
                 try:
                     payload["cv_text"] = self._crypto.decrypt(
-                        payload["cv_text"], aad=payload.get("user_id", "")
+                        payload["cv_text"], aad=(payload.get("user_id") or "").encode("utf-8")
                     )
                 except Exception:  # noqa: BLE001 - bad ciphertext shouldn't break boot
                     payload["cv_text"] = ""
@@ -552,7 +552,7 @@ class PostgresCompanyDiscoveryRepository(InMemoryCompanyDiscoveryRepository):
             ):
                 try:
                     payload["cv_photo_data_uri"] = self._crypto.decrypt(
-                        payload["cv_photo_data_uri"], aad=payload.get("user_id", "")
+                        payload["cv_photo_data_uri"], aad=(payload.get("user_id") or "").encode("utf-8")
                     )
                 except Exception:  # noqa: BLE001
                     payload["cv_photo_data_uri"] = None
