@@ -100,7 +100,7 @@ Until that activation: `https://github.com/maksodf/helpmefindthejob`
 > residency, education) to form a coherent multi-domain civic
 > assistant. The codebase is Apache-2.0-licensed, self-hostable,
 > encrypted at rest (ChaCha20-Poly1305), runs on the user's
-> choice of AI provider (BYO-AI abstraction across seven
+> choice of AI provider (BYO-AI abstraction across eight AI
 > providers, including a fully offline path via Ollama), and ships
 > an EU AI Act compliance pack
 > designed for the 2 August 2026 high-risk-AI enforcement date.
@@ -204,7 +204,7 @@ existing obligations.
 
 The kernel already exists and is the evidence base (see Field 9 and the
 public repository): an Apache-2.0 MCP server with a 15-tool catalogue, a
-BYO-AI abstraction across seven providers, encryption-at-rest
+BYO-AI abstraction across eight AI providers, encryption-at-rest
 (ChaCha20-Poly1305) with an HMAC-SHA256 audit chain, a compliance scaffold,
 reproducible Nix builds with signed releases, a curated ESCO subset, and
 EN+DE localisation. The milestones below take that kernel from a working
@@ -384,7 +384,7 @@ substantial.
 | Open-source (Apache 2.0) | no | no | no | **yes** |
 | Self-hostable on commodity hardware | no | no | mixed | **yes** (deployment-recipe.md + flake.nix) |
 | User-sovereign data (encrypted at rest) | no | no | no | **yes** (ChaCha20-Poly1305 AEAD) |
-| BYO-AI (no vendor lock-in) | no | no | no | **yes** (OpenAI / Anthropic / Gemini / DeepSeek / Ollama-offline) |
+| BYO-AI (no vendor lock-in) | no | no | no | **yes** (8: OpenAI / Anthropic / Gemini / DeepSeek / OpenRouter / Ollama-offline / Codex CLI / Claude Code) |
 | MCP-composable with other civic agents | no | no | no | **yes** (15-tool v0.2.0 catalogue, JSON-Schema gated) |
 | EU AI Act compliance pack | no | partial | no | **yes** (`compliance/`, 23 artefacts) |
 | WCAG 2.2 AA audit evidence | no | partial | no | **yes** (`ACCESSIBILITY.md`, 30 → 0 findings) |
@@ -446,12 +446,12 @@ seniority, skill, language, recognition, sector); reducing the cross-provider
 spread without hand-tuning is the open question.
 
 **(3) One workflow over heterogeneous, replaceable AI.** The same journey
-must run across seven provider integrations — OpenAI, Anthropic, Gemini,
-DeepSeek, OpenRouter and local Ollama — plus a deterministic no-AI fallback,
+must run across eight AI provider integrations — OpenAI, Anthropic, Gemini,
+DeepSeek, OpenRouter, local Ollama, Codex CLI and Claude Code — plus a deterministic no-AI fallback,
 behind a single contract, with per-user cost caps and graceful degradation,
 so users keep data sovereignty and are never locked to a vendor. Ollama is
-exercised live today; the cloud providers are covered by mocked dispatcher
-tests pending live-key verification. Hiding very different APIs, latencies and
+exercised live today; the other six providers are covered by mocked dispatcher
+tests pending live verification (Phase 2). Hiding very different APIs, latencies and
 output quality behind one stable contract is the engineering challenge.
 
 **(4) European standards interoperability at scale.** Mapping messy,

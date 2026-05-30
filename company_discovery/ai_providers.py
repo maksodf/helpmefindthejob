@@ -88,14 +88,14 @@ PROVIDER_OPTIONS: list[AIProviderOption] = [
         label="Codex CLI",
         invocation_modes=["cli"],
         secret_hint="Uses the user's local Codex authentication.",
-        notes="Future adapter can call the user's authenticated local Codex CLI.",
+        notes="Calls the user's authenticated local Codex CLI (single-shot; per-token streaming is a Phase 2 follow-on).",
     ),
     AIProviderOption(
         id="claude_code",
         label="Claude Code",
         invocation_modes=["cli"],
         secret_hint="Uses the user's local Claude Code authentication.",
-        notes="Future adapter can call the user's authenticated local Claude Code setup.",
+        notes="Calls the user's authenticated local Claude Code setup (single-shot; per-token streaming is a Phase 2 follow-on).",
     ),
     AIProviderOption(
         id="custom",
