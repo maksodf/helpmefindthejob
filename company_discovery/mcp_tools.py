@@ -85,6 +85,7 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
         "version": "0.2.0",
         "inputSchema": {
             "type": "object",
+            "additionalProperties": False,
             "properties": {
                 "targetRoles": {"type": "array", "items": {"type": "string"}},
                 "industry": {"type": "string"},
@@ -99,6 +100,7 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
         "version": "0.2.0",
         "inputSchema": {
             "type": "object",
+            "additionalProperties": False,
             "properties": {
                 "userId": {"type": "string"},
                 "name": {"type": "string"},
@@ -117,6 +119,7 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
         "version": "0.2.0",
         "inputSchema": {
             "type": "object",
+            "additionalProperties": False,
             "properties": {"userId": {"type": "string"}, "companyId": {"type": "string"}},
             "required": ["userId", "companyId"],
         },
@@ -127,6 +130,7 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
         "version": "0.2.0",
         "inputSchema": {
             "type": "object",
+            "additionalProperties": False,
             "properties": {
                 "userId": {"type": "string"},
                 "companyId": {"type": "string"},
@@ -141,6 +145,7 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
         "version": "0.2.0",
         "inputSchema": {
             "type": "object",
+            "additionalProperties": False,
             "properties": {
                 "userId": {"type": "string"},
                 "companyId": {"type": "string"},
@@ -156,6 +161,7 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
         "version": "0.2.0",
         "inputSchema": {
             "type": "object",
+            "additionalProperties": False,
             "properties": {"userId": {"type": "string"}, "discoveredJobId": {"type": "string"}},
             "required": ["userId", "discoveredJobId"],
         },
@@ -166,6 +172,7 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
         "version": "0.2.0",
         "inputSchema": {
             "type": "object",
+            "additionalProperties": False,
             "properties": {"userId": {"type": "string"}},
             "required": ["userId"],
         },
@@ -176,6 +183,7 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
         "version": "0.2.0",
         "inputSchema": {
             "type": "object",
+            "additionalProperties": False,
             "properties": {"userId": {"type": "string"}},
             "required": ["userId"],
         },
@@ -192,6 +200,7 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
         "version": "0.2.0",
         "inputSchema": {
             "type": "object",
+            "additionalProperties": False,
             "properties": {
                 "userId": {"type": "string"},
                 "scopes": {
@@ -224,6 +233,7 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
         "version": "0.2.0",
         "inputSchema": {
             "type": "object",
+            "additionalProperties": False,
             "properties": {
                 "userId": {"type": "string"},
                 "targetAgent": {"type": "string"},
@@ -248,6 +258,7 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
         "version": "0.2.0",
         "inputSchema": {
             "type": "object",
+            "additionalProperties": False,
             "properties": {
                 "query": {"type": "string", "minLength": 1},
                 "type": {"type": "string", "enum": ["occupation", "skill", "any"]},
@@ -267,6 +278,7 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
         "version": "0.2.0",
         "inputSchema": {
             "type": "object",
+            "additionalProperties": False,
             "properties": {
                 "userId": {"type": "string"},
                 "discoveredJobId": {"type": "string"},
@@ -286,6 +298,7 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
         "version": "0.2.0",
         "inputSchema": {
             "type": "object",
+            "additionalProperties": False,
             "properties": {
                 "userId": {"type": "string"},
                 "jobId": {"type": "string"},
@@ -311,6 +324,7 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
         "version": "0.2.0",
         "inputSchema": {
             "type": "object",
+            "additionalProperties": False,
             "properties": {
                 "userId": {"type": "string"},
                 "status": {
@@ -338,6 +352,7 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
         "version": "0.2.0",
         "inputSchema": {
             "type": "object",
+            "additionalProperties": False,
             "properties": {
                 "userId": {"type": "string"},
                 "referralId": {"type": "string"},

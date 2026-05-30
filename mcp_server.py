@@ -155,13 +155,16 @@ def handle_request(
 ) -> dict[str, Any] | None:
     message_id = message.get("id")
     method = message.get("method")
-    params = message.get("params") or {}
+    params = message.get("params")
+    if not isinstance(params, dict):  # JSON-RPC positional (array) params, or junk
+        params = {}
 
     if method == "notifications/initialized":
         return None
     if method == "initialize":
         global _COMPOSITION_SOURCE
-        client_name = (params.get("clientInfo") or {}).get("name")
+        client_info = params.get("clientInfo")
+        client_name = client_info.get("name") if isinstance(client_info, dict) else None
         _COMPOSITION_SOURCE = (
             client_name.strip()[:120]
             if isinstance(client_name, str) and client_name.strip()
@@ -355,7 +358,17 @@ def run_stdio(tools: CompanyDiscoveryMCPTools | None = None) -> None:
             except json.JSONDecodeError as error:
                 response = rpc_error(None, -32700, str(error))
             else:
-                response = handle_request(message, active_tools)
+                if not isinstance(message, dict):
+                    response = rpc_error(
+                        None, -32600, "Invalid Request: message must be a JSON object"
+                    )
+                else:
+                    try:
+                        response = handle_request(message, active_tools)
+                    except Exception as error:  # noqa: BLE001 - one bad frame must never kill the loop
+                        response = rpc_error(
+                            message.get("id"), -32603, f"Internal error: {error}"
+                        )
             if response is not None:
                 sys.stdout.write(json.dumps(jsonable(response), ensure_ascii=False) + "\n")
                 sys.stdout.flush()
