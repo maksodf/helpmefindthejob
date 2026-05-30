@@ -82,6 +82,7 @@ Cost-saving doctrine: every milestone is evaluated against "does it reduce insti
 ## 4. Cross-references
 
 - Application body: `docs/grant/application-draft-2026-05-19.md` (22 of 22 fields filled)
+- Detailed budget rationale (per-milestone what / specific benefit / why, hours, timing): `docs/grant/18-budget-mcp-composition.md`
 - Verification table: same file, "Per-numerical-claim verification table" section
 - Decisions log: `docs/grant/04-research-and-decisions.md` Part B
 - Compliance INDEX: `compliance/INDEX.md`

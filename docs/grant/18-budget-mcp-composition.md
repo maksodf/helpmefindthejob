@@ -1,9 +1,9 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 <!-- Copyright (c) 2026 Helpmefindthejob contributors -->
 
-# Budget Draft: Pilot-Ready Civic Employment Commons
+# Budget: Pilot-Ready Civic Employment Commons
 
-## Definition Of Objectives
+## Definition of objectives
 
 The key objective of this action is maturing Helpmefindthejob into a
 self-hostable, institution-ready civic employment assistant for a
@@ -29,26 +29,26 @@ deliverable without relying on unrealistic full-time availability.
 
 | Milestone | Amount | Hours | Target Timing |
 |---|---:|---:|---|
-| M1 Legal, governance, and compliance trust package | EUR 5,000 | 83.3h | Months 1-2 |
-| M2 MCP composition layer for employment workflows | EUR 8,000 | 133.3h | Months 1-3 |
-| M3 Guided chat workflow for core user actions | EUR 6,000 | 100h | Months 3-4 |
-| M4 Employment-friction intelligence and matching quality | EUR 7,000 | 116.7h | Months 4-6 |
-| M5 Search quality, accessibility, and persona proof | EUR 6,000 | 100h | Months 6-8 |
-| M6 Operator readiness and first-pilot package | EUR 5,000 | 83.3h | Months 8-9 |
-| **Total** | **EUR 37,000** | **~616.7h** | **9 months** |
+| M1 Legal, governance, and compliance trust package | €5,000 | 83.3h | Months 1-2 |
+| M2 MCP composition and agent handoff | €8,000 | 133.3h | Months 1-3 |
+| M3 Guided chat workflow and priority commands | €6,000 | 100h | Months 3-4 |
+| M4 Employment-friction intelligence and matching quality | €7,000 | 116.7h | Months 4-6 |
+| M5 Search quality, accessibility, and persona proof | €6,000 | 100h | Months 6-8 |
+| M6 Operator readiness and first-pilot package | €5,000 | 83.3h | Months 8-9 |
+| **Total** | **€37,000** | **~616.7h** | **9 months** |
 
-## Budget Formula
+## Budget formula
 
-Cost = hours x EUR 60/hour.
+Cost = hours × €60/hour.
 
 The budget funds one solo maintainer-developer at a frugal blended
-rate of EUR 60/hour. It does not include employees, overhead/F&A,
+rate of €60/hour. It does not include employees, overhead/F&A,
 hardware, travel, per-seat software, license fees, or external legal
 counsel.
 
-## Budget Building Steps
+## Budget building steps
 
-### M1: Legal, Governance, And Compliance Readiness - EUR 5,000 / 83.3h
+### M1: Legal, governance, and compliance trust package — €5,000 / 83.3h
 
 **What this milestone is:**
 
@@ -75,7 +75,7 @@ Helpmefindthejob works with employment-related personal data and
 AI-assisted recommendations. Without a clear legal/compliance package,
 institutions will not responsibly pilot or self-host it.
 
-### M2: MCP Composition And Agent Handoff - EUR 8,000 / 133.3h
+### M2: MCP composition and agent handoff — €8,000 / 133.3h
 
 **What this milestone is:**
 
@@ -98,7 +98,7 @@ of an isolated app. It proves the project's MCP promise while keeping
 the budget focused on the employment assistant, not on building full
 external housing, healthcare, or education agents.
 
-### M3: Guided Chat Workflow And Priority Commands - EUR 6,000 / 100h
+### M3: Guided chat workflow and priority commands — €6,000 / 100h
 
 **What this milestone is:**
 
@@ -126,7 +126,7 @@ across screens or unavailable in chat, users get stuck. This milestone
 makes the product feel like a guided assistant rather than a loose
 chatbot.
 
-### M4: Employment-Friction Intelligence - EUR 7,000 / 116.7h
+### M4: Employment-friction intelligence and matching quality — €7,000 / 116.7h
 
 **What this milestone is:**
 
@@ -151,7 +151,7 @@ This is the core product value. Generic job boards already list
 vacancies. Helpmefindthejob must help users understand realistic
 opportunity and reduce the need for repeated advisor explanations.
 
-### M5: Search Quality, Accessibility, And Persona Proof - EUR 6,000 / 100h
+### M5: Search quality, accessibility, and persona proof — €6,000 / 100h
 
 **What this milestone is:**
 
@@ -172,7 +172,7 @@ The target users already face language, bureaucratic, confidence, or
 accessibility barriers. The product must reduce friction, not create
 more.
 
-### M6: Operator Readiness And Institutional Pilot Package - EUR 5,000 / 83.3h
+### M6: Operator readiness and first-pilot package — €5,000 / 83.3h
 
 **What this milestone is:**
 
@@ -189,11 +189,11 @@ report outcomes.
 
 **Why this is important:**
 
-Ceiling Two is not only product polish. The project must become usable
+Operational readiness is not only product polish. The project must become usable
 by real NGOs or civic institutions, and that requires operational
 readiness, not just code.
 
 ## Total
 
-**Total requested**: EUR 37,000 / approximately 616.7 hours.
+**Total requested**: €37,000 / approximately 616.7 hours.
 
