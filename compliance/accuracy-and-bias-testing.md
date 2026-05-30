@@ -149,7 +149,7 @@ Robustness is the property of the system maintaining accuracy under perturbation
 
 ### 5.1 AI-provider failover
 
-When the configured AI provider is unavailable, the system falls back to deterministic templates and logs a `system_event` with `system_event_kind="ai_provider_unavailable"`. Tested in `tests/test_phase11_mcp_tools_v2.py` and in the existing `ai_providers` test surface.
+When the configured AI provider is unavailable or errors, AI-assisted features fall back to their no-AI path: motivation/cover-letter drafting returns a deterministic templated skeleton (`company_discovery/motivation_letter.py`), while fit-scoring and CV-tailoring return a BYO-AI handoff prompt. The failure is recorded as an `ai_invocation` audit event with a non-`ok` outcome (`declined` for a handoff, `error` for a provider error). Covered by `tests/test_mcp_no_ai_fallback.py` and `tests/test_motivation_letter.py`.
 
 ### 5.2 Malformed input handling
 

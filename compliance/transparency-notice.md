@@ -111,9 +111,9 @@ Helpmefindthejob does not force a single AI provider on you. The deployment can 
 - **Ollama** (fully offline, your own machine, no data leaves)
 - **Manual handoff** (the system constructs the prompt, you copy-paste it into your AI of choice)
 - **Claude Code** (if you have a Claude Code subscription)
-- **Deterministic templates** (no AI at all — every AI-assisted action falls back to a clear, deterministic template)
+- **Codex CLI** (if you have a local Codex CLI setup)
 
-If you are not comfortable sending your CV slice to a third-party AI provider, choose Ollama (your own machine, no egress) or manual handoff (you control exactly what is sent and where) or deterministic templates (no AI).
+If you are not comfortable sending your CV slice to a third-party AI provider, choose Ollama (your own machine, no egress) or manual handoff (you control exactly what is sent and where; the app invokes no AI — letter drafts use a deterministic template and other AI-assisted actions give you the prompt to run yourself).
 
 The honest tradeoffs between local AI (Ollama) and cloud AI (OpenAI, Anthropic, Google, DeepSeek, etc.) are documented in the [AI provider honesty matrix](https://github.com/maksodf/helpmefindthejob/blob/main/docs/grant/15-ai-provider-honesty-matrix.md) — quality, latency, privacy, cost, EU AI Act surface, per-use-case recommendations. The project explicitly does not pick a "best" provider for you; the matrix lets you weigh the tradeoffs against your own priorities. Switch provider any time in Settings; the system never silently reroutes to a different provider than the one you picked.
 
@@ -148,7 +148,7 @@ If an AI-assisted output affects your situation in a way you want to understand,
 
 ### Right to opt out of AI features
 
-You can disable AI-assisted features entirely at any time from the Settings screen. The system continues to function with deterministic templates. You can re-enable later if you change your mind.
+You can disable AI-assisted features entirely at any time from the Settings screen. The app then invokes no AI: letter drafts use a deterministic template, and other AI-assisted actions give you the ready-to-run prompt to run with your own AI. You can re-enable later if you change your mind.
 
 ### GDPR rights
 
