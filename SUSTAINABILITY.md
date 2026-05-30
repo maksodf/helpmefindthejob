@@ -59,7 +59,7 @@ full breakdown in
   pack
 - Repository hygiene: SPDX headers, signed releases (cosign), SBOM
   (CycloneDX), reproducible build (Nix flake)
-- MCP composition proof: 13-tool catalogue (v0.2.0) with stdio
+- MCP composition proof: 15-tool catalogue (v0.2.0) with stdio
   JSON-RPC + schema-validated input
 - EU AI Act compliance pack: transparency notice, risk-management
   plan, FRIA template, technical documentation, accuracy + bias

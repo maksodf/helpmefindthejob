@@ -1,7 +1,7 @@
 # MCP integration smoke test.
 #
 # Spawns the MCP server as a real subprocess, performs the JSON-RPC
-# handshake, lists the 13-tool catalogue (v0.2.0), calls a
+# handshake, lists the 15-tool catalogue (v0.2.0), calls a
 # representative set of tools/call happy paths spanning the legacy
 # catalogue + the §2.3 composition tools + the §2.4 ESCO-backed
 # lookup, exercises the schema-validation failure path, and verifies
