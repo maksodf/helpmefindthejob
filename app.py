@@ -8176,6 +8176,7 @@ class Handler(BaseHTTPRequestHandler):
                         email=claims.email,
                         provider_kind="oidc",
                         attributes=claims.raw_claims,
+                        email_verified=claims.email_verified,
                     )
                 except ValueError as err:
                     self.send_error_json(
@@ -9668,6 +9669,7 @@ class Handler(BaseHTTPRequestHandler):
                         email=claims.email,
                         provider_kind="saml",
                         attributes=claims.attributes,
+                        email_verified=True,
                     )
                 except ValueError as err:
                     self.send_error_json(

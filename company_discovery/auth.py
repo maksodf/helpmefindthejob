@@ -518,6 +518,7 @@ class AuthStore:
         email: str,
         provider_kind: str = "oidc",
         attributes: dict | None = None,
+        email_verified: bool = True,
     ) -> AuthUser:
         """JIT-provision a user from SSO.
 
@@ -571,6 +572,12 @@ class AuthStore:
             "SELECT id FROM users WHERE email = ?", (normalized_email,)
         ).fetchone()
         if existing_email_row:
+            if not email_verified:
+                # Do NOT auto-link an unverified IdP email to an EXISTING local
+                # account — an account-takeover vector if the IdP doesn't verify
+                # emails. The IdP must assert email_verified=true to auto-link.
+                # (New-account creation below is unaffected.)
+                raise ValueError("sso_email_unverified")
             user_id = existing_email_row[0]
             self.connection.execute(
                 """
