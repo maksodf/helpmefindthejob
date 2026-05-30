@@ -205,6 +205,47 @@ class QuotaStore:
         with self._lock:
             self._bump_user(user_id, "ai", _today_key())
 
+    def reserve_ai_run(self, user_id: str) -> None:
+        """Atomic check-AND-consume of the daily AI limit (raises QuotaError if
+        at the limit). Use this on the request path instead of
+        can_run_ai()+record_ai_run() — those were two separate locked sections
+        with the multi-second AI call between them, so concurrent requests at the
+        limit both passed the check before either incremented (TOCTOU)."""
+        with self._lock:
+            day = _today_key()
+            if self._user_count(user_id, "ai", day) >= self.limits.ai_per_day:
+                raise QuotaError(
+                    "ai_quota_exhausted", "Daily AI analysis limit reached. Try again tomorrow."
+                )
+            self._bump_user(user_id, "ai", day)
+
+    def reserve_scan(self, user_id: str, *, target_url: str | None = None) -> None:
+        """Atomic check-AND-consume of can_start_scan + record_scan_started, so
+        concurrent scans can't both pass the limit check before incrementing."""
+        with self._lock:
+            day = _today_key()
+            if self._user_count(user_id, "scans", day) >= self.limits.scans_per_day:
+                raise QuotaError(
+                    "scan_quota_exhausted", "Daily scan limit reached. Try again tomorrow."
+                )
+            if self._active_per_user.get(user_id, 0) >= self.limits.active_scans:
+                raise QuotaError(
+                    "scan_concurrency_limit",
+                    f"You can run at most {self.limits.active_scans} scans at once.",
+                )
+            domain = ""
+            if target_url:
+                domain = (urlparse(target_url).netloc or "").casefold()
+                if domain and self._domain_count(domain, _hour_key()) >= self.limits.domain_per_hour:
+                    raise QuotaError(
+                        "domain_rate_limited",
+                        "This domain is being scanned a lot right now. Try again later.",
+                    )
+            self._bump_user(user_id, "scans", day)
+            self._active_per_user[user_id] = self._active_per_user.get(user_id, 0) + 1
+            if domain:
+                self._bump_domain(domain, _hour_key())
+
     def admin_metrics(self) -> dict[str, int]:
         cutoff_day = (_now() - timedelta(days=1)).strftime("%Y-%m-%d")
         with self._lock:

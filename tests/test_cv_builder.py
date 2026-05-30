@@ -330,10 +330,13 @@ class PrintHtmlRenderTests(unittest.TestCase):
         self.assertIn("&lt;script&gt;", html)
 
     def test_img_passes_through(self):
-        """The assembler's <img …> photo line is allowed through verbatim."""
+        """The assembler's data-URI <img …> photo is rendered (rebuilt from a
+        safe allow-list — src + escaped alt + the canonical sizing style — so
+        user-supplied event handlers can never survive; see _safe_img)."""
         md = '<img src="data:image/png;base64,AAAA" alt="x" />\n# Anna Müller'
         html = cv_markdown_to_html(md)
-        self.assertIn('<img src="data:image/png;base64,AAAA" alt="x" />', html)
+        self.assertIn('src="data:image/png;base64,AAAA"', html)
+        self.assertIn('alt="x"', html)
         self.assertIn("<h1>Anna Müller</h1>", html)
 
     def test_lists_close_on_blank_line(self):

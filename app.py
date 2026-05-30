@@ -3711,7 +3711,6 @@ class AppState:
         self, user_id: str, company_id: str, career_page_url: str | None
     ) -> CompanyDiscoveryRun:
         self.repository.get_company(user_id, company_id)
-        self.quota_store.can_start_scan(user_id, target_url=career_page_url)
         active_key = (user_id, company_id)
         with self._active_lock:
             if active_key in self._active_company_scans:
@@ -3727,7 +3726,7 @@ class AppState:
                 return self.repository.save_discovery_run(run)
             self._active_company_scans.add(active_key)
 
-        self.quota_store.record_scan_started(user_id, target_url=career_page_url)
+        self.quota_store.reserve_scan(user_id, target_url=career_page_url)
         run = self.repository.save_discovery_run(
             CompanyDiscoveryRun(
                 user_id=user_id,
@@ -11690,7 +11689,7 @@ class Handler(BaseHTTPRequestHandler):
                         HTTPStatus.BAD_REQUEST, "bad_request", "Credential value is too long"
                     )
                     return
-                STATE.quota_store.can_run_ai(user_id)
+                STATE.quota_store.reserve_ai_run(user_id)
                 profile = STATE.profile_for(user_id)
                 provider = STATE.ai_provider_for(user_id)
                 if not _ai_consent_satisfied(profile, provider):
@@ -11718,7 +11717,6 @@ class Handler(BaseHTTPRequestHandler):
                         str(cap_err),
                     )
                     return
-                STATE.quota_store.record_ai_run(user_id)
                 imported.analysis_status = result.status
                 imported.analysis_output = result.output or None
                 imported.analysis_error = result.error or None
@@ -11755,7 +11753,7 @@ class Handler(BaseHTTPRequestHandler):
                         HTTPStatus.BAD_REQUEST, "bad_request", "Credential value is too long"
                     )
                     return
-                STATE.quota_store.can_run_ai(user_id)
+                STATE.quota_store.reserve_ai_run(user_id)
                 profile = STATE.profile_for(user_id)
                 provider = STATE.ai_provider_for(user_id)
                 if not _ai_consent_satisfied(profile, provider):
@@ -11783,7 +11781,6 @@ class Handler(BaseHTTPRequestHandler):
                         str(cap_err),
                     )
                     return
-                STATE.quota_store.record_ai_run(user_id)
                 if result.status == "completed" and result.output:
                     imported.cover_letter_draft = result.output
                     STATE.repository.save_imported_job(imported)
@@ -11811,7 +11808,7 @@ class Handler(BaseHTTPRequestHandler):
                         HTTPStatus.BAD_REQUEST, "bad_request", "Credential value is too long"
                     )
                     return
-                STATE.quota_store.can_run_ai(user_id)
+                STATE.quota_store.reserve_ai_run(user_id)
                 profile = STATE.profile_for(user_id)
                 if not (profile.cv_text or "").strip():
                     self.send_error_json(
@@ -11848,7 +11845,6 @@ class Handler(BaseHTTPRequestHandler):
                         str(cap_err),
                     )
                     return
-                STATE.quota_store.record_ai_run(user_id)
                 # CV variant attribution (#44): persist a small record
                 # of every successful tailoring run so we can correlate
                 # variants with replies later. Excerpt is bounded so the
@@ -11896,7 +11892,7 @@ class Handler(BaseHTTPRequestHandler):
                 runtime_credential = str(
                     payload.get("credentialValue") or payload.get("runtimeCredential") or ""
                 )
-                STATE.quota_store.can_run_ai(user_id)
+                STATE.quota_store.reserve_ai_run(user_id)
                 profile = STATE.profile_for(user_id)
                 provider = STATE.ai_provider_for(user_id)
                 if not _ai_consent_satisfied(profile, provider):
@@ -11927,7 +11923,6 @@ class Handler(BaseHTTPRequestHandler):
                         str(cap_err),
                     )
                     return
-                STATE.quota_store.record_ai_run(user_id)
                 if result.status == "completed":
                     score, reason, gaps = parse_auto_fit_output(result.output)
                     if score is not None:
@@ -11990,7 +11985,7 @@ class Handler(BaseHTTPRequestHandler):
                 batch_cap_ctx = STATE.cost_cap_context_for(user_id)
                 for job in jobs:
                     try:
-                        STATE.quota_store.can_run_ai(user_id)
+                        STATE.quota_store.reserve_ai_run(user_id)
                     except QuotaError as error:
                         outcomes.append(
                             {
@@ -12024,7 +12019,6 @@ class Handler(BaseHTTPRequestHandler):
                         # Halt the batch — every subsequent call
                         # would just hit the same cap.
                         break
-                    STATE.quota_store.record_ai_run(user_id)
                     if res.status == "completed":
                         score, reason, gaps = parse_auto_fit_output(res.output)
                         if score is not None:
