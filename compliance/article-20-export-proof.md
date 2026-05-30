@@ -184,7 +184,7 @@ A first reading might worry that "the user had no data" makes this proof weak. T
 
 3. **Populated accounts cannot have a defect empty accounts lack**. Add data and you can only introduce serialisation bugs specific to that data (a NULL field, a UTF-8 byte sequence, an oversized blob). The empty case is the base case; the populated cases extend it.
 
-4. **The standing unit suite covers populated-account export edge cases**. See `tests/test_phase1_export_endpoints.py`, `tests/test_phase4_data_export_complete.py`, and 12 other `tests/test_*_export*.py` files (124 tests in total). Those test the schema correctness under data; this document tests the HTTP-level round-trip.
+4. **The standing unit suite covers populated-account export edge cases**. See `tests/test_gdpr_article_20_export.py` (the Article 20 bundle + export-endpoint tests), plus export coverage in `tests/test_http_phase2.py` and `tests/test_company_discovery.py`. Those test the schema correctness under data; this document tests the HTTP-level round-trip.
 
 A deployer who wants to repeat this proof against a populated account follows the same recipe and adds a `POST /api/companies` / `POST /api/jobs/import` step before Step 3. The output shapes will be larger; the assertions stay the same (HTTP 200, content-type, schema version).
 

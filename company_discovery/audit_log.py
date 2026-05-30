@@ -425,10 +425,9 @@ _DEV_ENV_TOKENS = frozenset({"", "development", "dev", "test", "testing"})
 
 
 def _resolve_app_env() -> str:
-    """Read the application environment label, accepting both the
-    Helpmefindthejob-era prefix and the legacy company-discovery prefix.
+    """Read the application environment label from ``HELPMEFINDTHEJOB_ENV``.
 
-    Returns the casefolded value; empty string when neither is set.
+    Returns the casefolded value; empty string when it is unset.
     """
     raw = get_env("HELPMEFINDTHEJOB_ENV", "")
     return (raw or "").strip().casefold()
@@ -455,7 +454,7 @@ def _resolve_salt(raw: str) -> bytes:
       production path stays fail-fast.
 
     Tests that need the development-fallback behaviour can rely on
-    the default empty ``HELPMEFINDTHEJOB_ENV`` / ``HELPMEFINDTHEJOB_ENV``,
+    the default empty ``HELPMEFINDTHEJOB_ENV``,
     which classifies as ``development``.
     """
     if raw:
@@ -469,8 +468,7 @@ def _resolve_salt(raw: str) -> bytes:
     env = _resolve_app_env()
     if env not in _DEV_ENV_TOKENS:
         print(  # noqa: T201 - fatal-fast stderr output before sys.exit(1); warnings.warn is not appropriate for a terminal failure
-            "[audit_log] FATAL: env=" + env + " requires HELPMEFINDTHEJOB_AUDIT_SALT (or legacy "
-            "HELPMEFINDTHEJOB_AUDIT_SALT) to be set to 32 random bytes "
+            "[audit_log] FATAL: env=" + env + " requires HELPMEFINDTHEJOB_AUDIT_SALT to be set to 32 random bytes "
             "(base64). Refusing to start because audit-log integrity "
             "cannot be guaranteed across process restarts without a "
             "stable salt.\n"

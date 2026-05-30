@@ -516,7 +516,7 @@ class SaltFailFastTests(unittest.TestCase):
 
     def test_production_env_with_no_salt_exits_one(self) -> None:
         # env=production + no salt → SystemExit(1) with a stderr
-        # message naming both env vars.
+        # message naming the salt env var.
         import io
         from contextlib import redirect_stderr
 
@@ -527,7 +527,6 @@ class SaltFailFastTests(unittest.TestCase):
         self.assertEqual(ctx.exception.code, 1)
         message = stderr.getvalue()
         self.assertIn("FATAL", message)
-        self.assertIn("HELPMEFINDTHEJOB_AUDIT_SALT", message)
         self.assertIn("HELPMEFINDTHEJOB_AUDIT_SALT", message)
         self.assertIn("production", message)
 
