@@ -35,7 +35,7 @@ maintainer. Do NOT silently fall back to a cloud provider."
 Skip-policy
 -----------
 The test is **opt-in** by default (network-aware + slow). The full
-``python -m unittest discover -s tests`` (3,288 tests) keeps running fast. To run the bias methodology explicitly::
+``python -m unittest discover -s tests`` (3,291 tests) keeps running fast. To run the bias methodology explicitly::
 
     python -m unittest tests.test_bias_methodology -v
 
