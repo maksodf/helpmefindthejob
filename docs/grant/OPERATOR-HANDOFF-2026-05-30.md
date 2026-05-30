@@ -163,16 +163,26 @@ documented posture; the matrix is the artefact a reviewer needs.
 One persona inconsistency is **documented rather than fixed**, because fixing it
 correctly is feature work, not a label edit:
 
-- **The `mesh/` demo models Olga as a Ukrainian general-medicine MD in Hamburg
-  with a family**, wired to a `hamburg_paragraph_24_ukraine` housing cohort and
-  three `tests/test_mesh_agents.py` cases. Canonical Olga is a Ukrainian **tech**
-  worker (senior frontend / DevOps) in **Leipzig**. Reconciling the mesh demo
-  would mean rewriting its medical-Anerkennung flow and building a Leipzig
-  housing-cohort data fixture (the housing data is city-specific) — a scoped task
-  with its own tests, deliberately left out of the closeout to avoid rushing a
-  coupled production-demo change. It does not touch the submission surface (the
-  mesh demo is internal; the public landing page and the canonical fixtures at
-  `company_discovery/persona_fixtures.py` are correct). Schedule as Phase-2.
+- **The `mesh/` civic-services demo subsystem carries scrambled Spine-B persona
+  attributes throughout** — not a single label slip. Concretely: Olga is modelled
+  as a Ukrainian general-medicine MD in Hamburg (canonical: tech, Leipzig);
+  `demo_yusuf_walk.py`'s profile says `countryOfOrigin: "Syria"` (canonical:
+  Turkey) and `test_yusuf_blue_card_walk` feeds a Syrian/§4-AsylG/electrical
+  profile under Yusuf's name to exercise the engineering pathway; the
+  `anerkennung_agent` matches on **qualification field** and `housing_agent` on
+  **city**, so the canonical personas don't fit its hardcoded pathways
+  (nursing / §4-AsylG-engineering / Ukraine-medicine) or cohorts (Berlin /
+  Munich / Hamburg). Fully canonicalising it is a **subsystem redesign**, not a
+  label fix: it needs new recognition pathways (Blue-Card engineering for Yusuf,
+  trades for Mahmoud, unregulated-IT for Olga, EU-citizen nursing for Maria),
+  new housing cohorts with illustrative rent data for Leipzig + Stuttgart, and
+  rewrites of the three `demo_*_walk.py` scripts and ~6 `tests/test_mesh_agents.py`
+  cases. It was left out of the closeout deliberately — it is **internal only**
+  (not on the submission surface: the public landing page and the canonical
+  fixtures at `company_discovery/persona_fixtures.py` are correct), and rushing a
+  redesign of working demo code under closeout pressure is the wrong trade.
+  **Decision for you:** treat it as a post-submission task (recommended — it does
+  not affect the grant), or tell the agent to do the redesign now.
 
 Nothing above is pushed; everything is on `claude/ceiling-sprint`. The repo is
 submission-ready except for the operator-owned items in section A.
