@@ -58,4 +58,4 @@ Mark-applied + the Ausbildung-start-date calendar (most Ausbildung positions sta
 - Anschreiben quality walk: [`docs/grant/anschreiben-quality-walks-2026-05-20/mahmoud.md`](../grant/anschreiben-quality-walks-2026-05-20/mahmoud.md)
 - Bias-comparative-report (Mahmoud row): [`docs/grant/bias-comparative-report-2026-05-21.md`](../grant/bias-comparative-report-2026-05-21.md)
 - Persona fixture: [`company_discovery/persona_fixtures.py::PERSONAS[3]`](https://github.com/maksodf/helpmefindthejob/blob/main/company_discovery/persona_fixtures.py)
-- Demo account: `persona-mahmoud@demo.helpmefindthejob.org`
+- Demo account: `mahmoud@demo.helpmefindthejob.org`

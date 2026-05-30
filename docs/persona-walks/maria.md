@@ -58,4 +58,4 @@ Mark-applied + a parallel German-course progress tracker (the language gate is t
 - Anschreiben quality walk: [`docs/grant/anschreiben-quality-walks-2026-05-20/maria.md`](../grant/anschreiben-quality-walks-2026-05-20/maria.md)
 - Bias-comparative-report (Maria row): [`docs/grant/bias-comparative-report-2026-05-21.md`](../grant/bias-comparative-report-2026-05-21.md)
 - Persona fixture: [`company_discovery/persona_fixtures.py::PERSONAS[4]`](https://github.com/maksodf/helpmefindthejob/blob/main/company_discovery/persona_fixtures.py)
-- Demo account: `persona-maria@demo.helpmefindthejob.org`
+- Demo account: `maria@demo.helpmefindthejob.org`

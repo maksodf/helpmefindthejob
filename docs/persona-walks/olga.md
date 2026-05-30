@@ -53,4 +53,4 @@ Mark-applied + a parallel German-course progress tracker (the language-bottlenec
 - Anschreiben quality walk: [`docs/grant/anschreiben-quality-walks-2026-05-20/olga.md`](../grant/anschreiben-quality-walks-2026-05-20/olga.md)
 - Bias-comparative-report (Olga row): [`docs/grant/bias-comparative-report-2026-05-21.md`](../grant/bias-comparative-report-2026-05-21.md)
 - Persona fixture: [`company_discovery/persona_fixtures.py::PERSONAS[2]`](https://github.com/maksodf/helpmefindthejob/blob/main/company_discovery/persona_fixtures.py)
-- Demo account: `persona-olga@demo.helpmefindthejob.org`
+- Demo account: `olga@demo.helpmefindthejob.org`

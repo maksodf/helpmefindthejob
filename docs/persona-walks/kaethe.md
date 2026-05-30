@@ -63,4 +63,4 @@ Mark-applied + the Auffrischungskurs completion-date countdown shown alongside e
 - Anschreiben quality walk: [`docs/grant/anschreiben-quality-walks-2026-05-20/kaethe.md`](../grant/anschreiben-quality-walks-2026-05-20/kaethe.md)
 - Bias-comparative-report (Käthe row): [`docs/grant/bias-comparative-report-2026-05-21.md`](../grant/bias-comparative-report-2026-05-21.md)
 - Persona fixture: [`company_discovery/persona_fixtures.py::PERSONAS[5]`](https://github.com/maksodf/helpmefindthejob/blob/main/company_discovery/persona_fixtures.py)
-- Demo account: `persona-kaethe@demo.helpmefindthejob.org`
+- Demo account: `kaethe@demo.helpmefindthejob.org`

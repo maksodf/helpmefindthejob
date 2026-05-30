@@ -66,4 +66,4 @@ Mark-applied + a parallel civic-tech-volunteer-project tracker (the volunteer pr
 - Anschreiben quality walk: [`docs/grant/anschreiben-quality-walks-2026-05-20/tobias.md`](../grant/anschreiben-quality-walks-2026-05-20/tobias.md)
 - Bias-comparative-report (Tobias row): [`docs/grant/bias-comparative-report-2026-05-21.md`](../grant/bias-comparative-report-2026-05-21.md)
 - Persona fixture: [`company_discovery/persona_fixtures.py::PERSONAS[6]`](https://github.com/maksodf/helpmefindthejob/blob/main/company_discovery/persona_fixtures.py)
-- Demo account: `persona-tobias@demo.helpmefindthejob.org`
+- Demo account: `tobias@demo.helpmefindthejob.org`

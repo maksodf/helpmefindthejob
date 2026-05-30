@@ -67,6 +67,7 @@ Before going live, complete each of these in order. None is optional.
 - [ ] Set the deployment-time secrets: `HELPMEFINDTHEJOB_SECRET_KEY` (32 random bytes), `HELPMEFINDTHEJOB_AUDIT_SALT` (32 random bytes), `HELPMEFINDTHEJOB_PUBLIC_URL`, admin credentials, SMTP for outbound notifications.
 - [ ] Run the bias-testing methodology against your chosen AI provider (`accuracy-and-bias-testing.md` §"Pre-deployment re-test").
 - [ ] Verify backup and restore drills against your data infrastructure (`scripts/backup-*` and `scripts/restore-*` are provided).
+- [ ] If you publish demo accounts for reviewers: seed them with `scripts/seed-personas.py --password '<demo-pw>'` (run on the server against the deployment's data dir), then verify every demo persona can actually log in with `python3 scripts/demo-login-smoke.py --base-url <your-public-url> --password '<demo-pw>'` — it must report all personas PASS before the demo is reviewer-ready.
 - [ ] Brief your advisors and oversight person on the system's capabilities and limitations (`transparency-notice.md` §"Limitations").
 - [ ] Decide which user populations you serve and tailor the chat-router's persona-friendly greetings accordingly (see §4.3 below).
 - [ ] Document your **Article 22 right-to-human-review procedure** (see §8.1 below) — who receives escalation requests, the response-time SLA, the artefact retention policy, and how the verdict is communicated back to the user.

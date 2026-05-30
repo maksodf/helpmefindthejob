@@ -16,7 +16,7 @@
 
 ## 1. Sign-up + onboarding
 
-Aïcha arrives via the apex (or the demo subdomain with the seeded `persona-aicha@demo.helpmefindthejob.org` account, per `scripts/seed-personas.py`). The landing page shows the seven-persona panel; Aïcha's card names her concrete situation in plain language so she recognises herself immediately.
+Aïcha arrives via the apex (or the demo subdomain with the seeded `aicha@demo.helpmefindthejob.org` account, per `scripts/seed-personas.py`). The landing page shows the seven-persona panel; Aïcha's card names her concrete situation in plain language so she recognises herself immediately.
 
 After registration, the chat journey opens with `/start`. The chat-router (`company_discovery/chat_router.py`) walks her through the 12-phase journey: greet → discover → cv_check → search_setup → search_run → discover_review → import → analyze → letter → apply → track → done. The discover phase asks four questions: role, location, experience, languages. Aïcha's input shape is documented turn-by-turn in [`docs/grant/journey-walks-2026-05-20/aicha.md`](../grant/journey-walks-2026-05-20/aicha.md).
 
@@ -69,4 +69,4 @@ For Aïcha specifically, the application-tracker doubles as the Anerkennung-dead
 - Pass-3 smoke harness output: [`docs/grant/product-quality-walks/aicha-pass3-smoke-2026-05-20.json`](../grant/product-quality-walks/aicha-pass3-smoke-2026-05-20.json)
 - Bias-comparative-report (Aïcha row): [`docs/grant/bias-comparative-report-2026-05-21.md`](../grant/bias-comparative-report-2026-05-21.md)
 - Persona fixture: [`company_discovery/persona_fixtures.py::PERSONAS[0]`](https://github.com/maksodf/helpmefindthejob/blob/main/company_discovery/persona_fixtures.py)
-- Demo account: `persona-aicha@demo.helpmefindthejob.org` (via `scripts/seed-personas.py`)
+- Demo account: `aicha@demo.helpmefindthejob.org` (via `scripts/seed-personas.py`)
