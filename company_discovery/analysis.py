@@ -975,11 +975,37 @@ def _emit_dispatch_audit(
         pass
 
 
+def _deterministic_only() -> bool:
+    """True when the deployer-wide AI kill-switch is engaged.
+
+    ``HELPMEFINDTHEJOB_DETERMINISTIC_ONLY=true`` (the Article 14
+    kill-switch documented in ``compliance/human-oversight-guide.md``
+    and the deployer operating manual) forces every AI invocation onto
+    the deterministic / no-AI handoff path regardless of the configured
+    provider — the emergency control a deployer activates during an
+    AI-class incident.
+    """
+    return (get_env("HELPMEFINDTHEJOB_DETERMINISTIC_ONLY", "") or "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
+
+
 def _dispatch_provider_impl(
     prompt: str,
     provider: AIProviderConfig,
     runtime_credential: str,
 ) -> AnalysisExecutionResult:
+    if _deterministic_only():
+        return AnalysisExecutionResult(
+            status="handoff_required",
+            provider_id=provider.provider_id,
+            invocation_mode=provider.invocation_mode,
+            prompt=prompt,
+            error="AI disabled deployment-wide via HELPMEFINDTHEJOB_DETERMINISTIC_ONLY; deterministic/no-AI path used.",
+        )
     if provider.invocation_mode == "manual" or provider.provider_id == "manual":
         return AnalysisExecutionResult(
             status="handoff_required",
@@ -1384,6 +1410,18 @@ def _dispatch_provider_streaming_impl(
     Yields ``("token", str)`` events then a final ``("final",
     AnalysisExecutionResult)`` event."""
 
+    if _deterministic_only():
+        yield (
+            "final",
+            AnalysisExecutionResult(
+                status="handoff_required",
+                provider_id=provider.provider_id,
+                invocation_mode=provider.invocation_mode,
+                prompt=prompt,
+                error="AI disabled deployment-wide via HELPMEFINDTHEJOB_DETERMINISTIC_ONLY; deterministic/no-AI path used.",
+            ),
+        )
+        return
     if provider.invocation_mode == "manual" or provider.provider_id == "manual":
         yield (
             "final",
