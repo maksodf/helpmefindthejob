@@ -5,7 +5,7 @@
 
 **Purpose**: single-page map of every artefact in the `compliance/` directory, the AI Act / GDPR article each one addresses, and a one-line summary of what's inside. Use this as the entry point when (a) a reviewer asks "where does the project address Article X?", (b) a deployer reads the pack end-to-end, or (c) you are linking the application narrative to specific artefacts.
 
-**Last updated**: 2026-05-24. Append a dated note when adding, retiring, or restructuring an artefact below.
+**Last updated**: 2026-05-30. Append a dated note when adding, retiring, or restructuring an artefact below.
 
 ---
 
@@ -42,6 +42,34 @@ The pack is designed to be **self-contained**: every regulatory obligation a dep
 | [`dpa-template.md`](dpa-template.md) | GDPR Article 28 (processor obligations) | Data Processing Agreement template for the deployer-side processor relationships (the BYO-AI provider especially). Annex II controls map to the project's actual deployment surface. | deployer |
 | **User-facing** | | | |
 | [`transparency-notice.md`](transparency-notice.md) | AI Act Article 13 (adapted to user-facing) + Article 50 (transparency to natural persons) | The plain-language notice users see at first run and at `/transparency`: what the system does, what data is processed, what AI providers are involved, user rights (Article 22 + Article 86), GDPR rights, complaint channels, limitations. Deployer fills the `[Deployer-managed addendum]` section. | user, deployer |
+
+---
+
+## Runtime mechanism status — code-wired vs deployer-operated vs planned
+
+The pack above maps *documents* to articles. This section maps the *runtime mechanisms* to their honest implementation state, so a reviewer or deployer sees at a glance what the product enforces in code versus what is a deployer operational step, a manual procedure, or a specified-but-unbuilt Phase-2 item. This is the single consolidated "true picture" — the per-file caveats (`audit-log-schema.md` §4.4–4.6, `deployer-operating-manual.md` §6.5, `human-oversight-guide.md`) all roll up here.
+
+**Legend**: ✅ **Code-wired** — implemented in the product and covered by automated tests · ⚙️ **Deployer-operated** — the app exposes the surface/flag; the deployer performs the step (shared obligation per Article 26) · 📋 **Manual procedure** — a written procedure exists, executed by a human (DPO/operator), not yet an automated endpoint · 🔭 **Planned** — specified in the schema/docs, not built at this version (honest alpha state).
+
+| Mechanism | Article(s) | Status | Where it lives / what is missing |
+|---|---|---|---|
+| Structured audit log — JSONL, HMAC hash-chained, salted, rotating | AI Act 12 | ✅ Code-wired | `company_discovery/audit_log.py`; `tests/test_audit_log_tamper_evidence_13.py` |
+| Core events — `ai_invocation`, `mcp_tool_invocation`, `system_event` | AI Act 12 | ✅ Code-wired | emitted from `analysis.py`, `mcp_server.py`, `db_errors.py` |
+| `consent_event` — AI-provider consent grant/revoke (provider named in scope) | AI Act 12 / GDPR 7 | ✅ Code-wired | `app.py` `update_profile`; `tests/test_audit_consent_export_events.py` |
+| `export_event` — full data export (`profile_full`), user self-export **and** admin export, recorded in the subject's slice | AI Act 12 / GDPR 15, 20 | ✅ Code-wired | `app.py` `export_data_audited`; same test |
+| `consent_event` — `third_party_share` / `mcp_composition` / `audit_log_plaintext_pii` topics | AI Act 12 | 🔭 Planned | schema §4.4 reserves them; those consent surfaces are not built (a deployer enabling plaintext-PII records the justification out-of-band per DPIA) |
+| `export_event` — `audit_log_self` (a user's slice of the chained log itself) | AI Act 12 / 86 | 📋 Manual procedure | DPO extracts per request; the automated extraction endpoint is not built (§4.5) |
+| `override_event` — an advisor edits/rejects an AI output | AI Act 12 / 14 | 🔭 Planned | the oversight queue is review-only; the intercept/edit/reject workflow that would emit it is not built (§4.6) |
+| Audit-log retention auto-prune (`HELPMEFINDTHEJOB_AUDIT_RETENTION_DAYS`) | AI Act 12 | ⚙️ Deployer-operated | flag is documented but **not read by the app**; the deployer prunes per jurisdiction |
+| Human-oversight kill-switch (`HELPMEFINDTHEJOB_DETERMINISTIC_ONLY`) | AI Act 14 | ✅ Code-wired | `company_discovery/analysis.py` — forces the deterministic / no-AI path deployment-wide |
+| Human-oversight review queue (env-gated) | AI Act 14 | ✅ Code-wired (MVP) | `/api/admin/oversight/queue`, in-memory; an SQLite-backed variant is Phase 2 |
+| Right to human review / explanation | AI Act 22, 86 / GDPR 22 | 📋 Manual procedure | `deployer-operating-manual.md` §8.1 procedure + the user activity view at `/api/audit-log`; a per-decision "explain this score" endpoint is 🔭 planned |
+| Accuracy + bias testing (persona-anchored) | AI Act 15 | ✅ Code-wired | `accuracy-and-bias-testing.md`; bias-methodology tests |
+| Prompt-injection resilience | AI Act 15(5) | ✅ Code-wired | `tests/test_prompt_injection_vectors.py` |
+| Right to erasure — full account + all user-scoped data | GDPR 17 | ✅ Code-wired | `repository.delete_all_user_data`; `app.py` `delete_user_account`; `tests/test_account_erasure.py` |
+| Data portability — 19-key export bundle | GDPR 20 | ✅ Code-wired | `app.py` `export_data`; `article-20-export-proof.md` |
+
+The supplementary job-list downloads at `/api/exports/*.csv` / `*.md` are operational exports of non-identity job data already covered by the logged `profile_full` export, so they deliberately do not emit their own `export_event`.
 
 ---
 
@@ -93,3 +121,4 @@ For reviewers who think in articles rather than file names:
 ## Append log
 
 - **2026-05-24**: INDEX created. Includes the 11 pre-existing artefacts plus the 2 new ones from box 1.4.3 (audit-log-key-rotation) and box 1.4.4 (prompt-injection-testing). Article-reverse-lookup table reconciles every Article-cited obligation across the pack to its file. Maintainer reviewed for completeness against AI Act Chapter III (Articles 8-29) and the GDPR articles invoked by the data-flow.
+- **2026-05-30**: Added the "Runtime mechanism status" matrix — the single consolidated code-wired vs deployer-operated vs manual vs planned picture, rolling up the per-file caveats. Reflects the M4 record-keeping work: `consent_event` (AI-provider consent) and `export_event` (`profile_full`, user + admin) are now code-wired in `app.py` (`update_profile` / `export_data_audited`) with `tests/test_audit_consent_export_events.py`, returning the `audit-log-schema.md` §4.4/§4.5 and `deployer-operating-manual.md` §6.5 claims from "specified, not yet emitted" to "emitted." `override_event` (advisor-review), `audit_log_self` extraction, the other `consent_topic` values, and retention auto-prune are documented at their honest status (planned / manual / deployer-operated). Does not touch the article-to-file reverse-lookup table, so the manifest↔INDEX drift guard (`tests/test_compliance_traceability.py`) is unaffected.

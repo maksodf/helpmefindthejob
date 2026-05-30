@@ -86,7 +86,7 @@ The complete list lives in [`.env.example`](https://github.com/maksodf/helpmefin
 | `HELPMEFINDTHEJOB_AUDIT_SALT` | (required) | The per-deployment salt for the user_opaque_id hashing in the audit log. 32 random bytes, base64-encoded. |
 | `HELPMEFINDTHEJOB_AUDIT_RETENTION_DAYS` | `180` (recommended) | Recommended retention window for audit-log files. **Not read by the application at this version** — the app does not auto-prune the audit log; the deployer runs retention per jurisdiction. |
 | `HELPMEFINDTHEJOB_AUDIT_ROTATE_BYTES` | `67108864` (64 MiB) | Rotation threshold. |
-| `HELPMEFINDTHEJOB_AUDIT_PLAINTEXT_PII` | `false` | Set to `true` only with documented legal justification. (A `consent_event` audit type is specified for such policy changes in `audit-log-schema.md` §4.4 but is not yet emitted at this version.) |
+| `HELPMEFINDTHEJOB_AUDIT_PLAINTEXT_PII` | `false` | Set to `true` only with documented legal justification. (The `consent_event` audit type is now emitted for user AI-provider consent changes — see `audit-log-schema.md` §4.4; the `audit_log_plaintext_pii` policy-change variant is not auto-emitted, so a deployer enabling this flag records the legal justification out-of-band per their DPIA.) |
 | `HELPMEFINDTHEJOB_HUMAN_OVERSIGHT_MODE` | `disabled` | `enabled` activates the advisor-review queue at `/api/admin/oversight/queue`. |
 | `HELPMEFINDTHEJOB_AI_PROVIDER` | `manual` | Which AI provider is the default (`openai` / `anthropic` / `gemini` / `deepseek` / `openrouter` / `ollama` / `manual` / `claude-code` / `none`). Users can override per-request. |
 | `HELPMEFINDTHEJOB_DETERMINISTIC_ONLY` | `false` | Kill-switch. When `true`, the app invokes no AI provider on any code path; each AI-assisted feature falls back to its no-AI path (letter drafting → a deterministic templated skeleton; fit-scoring / CV-tailoring → a BYO-AI handoff prompt). |
@@ -141,7 +141,7 @@ See [`audit-log-schema.md`](https://github.com/maksodf/helpmefindthejob/blob/mai
 
 ### 6.5 Export for users (GDPR Article 20)
 
-When a user requests their audit-log slice (Article 86 explanation right or GDPR right of access), the system constructs a per-user export filtered on the user's opaque ID. An `export_event` audit type is specified for this in `audit-log-schema.md` §4.5 but is not yet emitted at this version.
+The full Article 20 data export (`GET /api/data/export`, and the admin-performed `GET /api/admin/users/<id>/export`) now emits an `export_event` (`export_kind="profile_full"`, see `audit-log-schema.md` §4.5) into the data subject's own audit slice, so every personal-data export is itself recorded. Extracting a user's slice of the hash-chained AI-Act audit log (the Article 86 explanation right / right of access over the audit records themselves) remains a manual DPO process at this version; an `export_event` with `export_kind="audit_log_self"` is specified for when that extraction becomes an automated endpoint.
 
 ---
 

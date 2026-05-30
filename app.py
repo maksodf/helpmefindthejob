@@ -2079,6 +2079,7 @@ class AppState:
             consent = payload.get("aiConsent") or {}
             if not isinstance(consent, dict):
                 raise ValueError("invalid_ai_consent")
+            from company_discovery import audit_log as _audit_log_mod
             if consent.get("granted"):
                 existing.ai_consent_at = now_utc()
                 existing.ai_consent_provider_id = (
@@ -2088,10 +2089,24 @@ class AppState:
                 self.log_analytics(
                     user_id, "ai_consent_granted", {"providerId": existing.ai_consent_provider_id}
                 )
+                # Article 7 consent record (audit-log-schema.md §4.4). The
+                # analytics event above is product telemetry; this is the
+                # tamper-evident, hash-chained legal record of the consent.
+                _audit_log_mod.emit_consent_event(
+                    consent_topic="ai_provider",
+                    consent_state="granted",
+                    consent_scope=existing.ai_consent_provider_id,
+                    user_opaque_id=user_id,
+                )
             else:
                 existing.ai_consent_at = None
                 existing.ai_consent_provider_id = None
                 self.log_analytics(user_id, "ai_consent_revoked", {})
+                _audit_log_mod.emit_consent_event(
+                    consent_topic="ai_provider",
+                    consent_state="revoked",
+                    user_opaque_id=user_id,
+                )
 
         return self.repository.save_user_profile(existing)
 
@@ -3335,6 +3350,34 @@ class AppState:
             # "category failed to load".
             "_exportWarnings": export_warnings,
         }
+
+    def export_data_audited(
+        self, subject_id: str, *, caller: str = "user", export_kind: str = "profile_full"
+    ) -> dict[str, Any]:
+        """Assemble the Article 20 export AND emit the §4.5 ``export_event``.
+
+        The single seam both the user self-export and the admin export
+        endpoints call, so every personal-data export is recorded in the
+        SUBJECT's own audit slice (``user_opaque_id = subject_id``) with the
+        actor type in ``caller`` (``user`` / ``admin``). Size is measured with
+        the same serialiser :meth:`send_json` uses, so the byte count is
+        faithful to what leaves the server. A failed audit write is contained
+        inside the emitter (logged to stderr, never raised), so it can never
+        block the data subject from receiving their data.
+        """
+        payload = self.export_data(subject_id)
+        from company_discovery import audit_log as _audit_log_mod
+
+        _audit_log_mod.emit_export_event(
+            export_kind=export_kind,
+            export_size_bytes=len(
+                json.dumps(jsonable(payload), ensure_ascii=False).encode("utf-8")
+            ),
+            export_format="application/json",
+            user_opaque_id=subject_id,
+            caller=caller,
+        )
+        return payload
 
     def import_data(self, user_id: str, payload: dict[str, Any]) -> dict[str, Any]:
         if int(payload.get("schemaVersion") or 0) != EXPORT_SCHEMA_VERSION:
@@ -8942,7 +8985,9 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_text(md_body, content_type="text/markdown", filename="discovered-jobs.md")
                 return
             if parsed.path == "/api/data/export":
-                self.send_json(STATE.export_data(user_id))
+                # export_data_audited emits the Article 12/15/20 export_event
+                # (audit-log-schema.md §4.5) into the subject's own audit slice.
+                self.send_json(STATE.export_data_audited(user_id))
                 return
             # 4-week plan Invariant 2 (2026-05-21): Trust Receipts.
             # Three endpoints:
@@ -9014,7 +9059,13 @@ class Handler(BaseHTTPRequestHandler):
                 except KeyError:
                     self.send_error_json(HTTPStatus.NOT_FOUND, "not_found", "User not found")
                     return
-                payload = STATE.export_data(target_id)
+                # export_data_audited emits the §4.5 export_event into the
+                # SUBJECT's audit slice with caller="admin" — privileged
+                # access to a user's data is recorded where the subject (and a
+                # regulator) can see it. targetUser is admin-only response
+                # metadata added after the audited export, so it is not counted
+                # in the recorded export size (only the subject's data is).
+                payload = STATE.export_data_audited(target_id, caller="admin")
                 payload["targetUser"] = {
                     "id": target.id,
                     "email": target.email,

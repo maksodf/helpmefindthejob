@@ -768,3 +768,71 @@ def emit_system_event(
         event_payload=payload,
         caller="system",
     )
+
+
+def emit_consent_event(
+    *,
+    consent_topic: str,
+    consent_state: str,
+    consent_scope: str | None = None,
+    user_opaque_id: str | None = None,
+    outcome: str = "ok",
+    caller: str = "user",
+    emitter: AuditLogEmitter | None = None,
+) -> None:
+    """Convenience: emit a ``consent_event`` (audit-log-schema.md §4.4).
+
+    GDPR Article 7 consent record. ``consent_topic`` is one of
+    ``ai_provider`` / ``third_party_share`` / ``mcp_composition`` /
+    ``audit_log_plaintext_pii``; ``consent_state`` is ``granted`` /
+    ``revoked`` / ``modified``. ``consent_scope`` carries free-text scope
+    (for ``ai_provider`` consent, the provider the user consented to; for
+    ``modified`` events, the changed scope) or ``None``. The provider
+    identifier is a vendor name (e.g. ``openai``), not PII or a secret, so
+    it is recorded in clear so the consent record names its recipient.
+    """
+    emitter = emitter or default_emitter()
+    emitter.emit(
+        "consent_event",
+        outcome=outcome,
+        event_payload={
+            "consent_topic": consent_topic,
+            "consent_state": consent_state,
+            "consent_scope": consent_scope,
+        },
+        user_opaque_id=user_opaque_id,
+        caller=caller,
+    )
+
+
+def emit_export_event(
+    *,
+    export_kind: str,
+    export_size_bytes: int,
+    export_format: str,
+    user_opaque_id: str | None = None,
+    outcome: str = "ok",
+    caller: str = "user",
+    emitter: AuditLogEmitter | None = None,
+) -> None:
+    """Convenience: emit an ``export_event`` (audit-log-schema.md §4.5).
+
+    Record of a personal-data export (GDPR Article 20 portability / Article
+    15 access). ``export_kind`` is one of ``profile_full`` /
+    ``profile_partial`` / ``audit_log_self`` / ``eures_export``.
+    ``user_opaque_id`` is the data SUBJECT (so the export lands in that
+    user's own audit slice even when an admin performs it); ``caller``
+    records the actor type (``user`` / ``admin``).
+    """
+    emitter = emitter or default_emitter()
+    emitter.emit(
+        "export_event",
+        outcome=outcome,
+        event_payload={
+            "export_kind": export_kind,
+            "export_size_bytes": int(export_size_bytes),
+            "format": export_format,
+        },
+        user_opaque_id=user_opaque_id,
+        caller=caller,
+    )

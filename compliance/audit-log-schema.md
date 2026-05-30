@@ -98,7 +98,7 @@ Emitted for every MCP tool call dispatched by [`../company_discovery/mcp_tools.p
 
 ### 4.4 `consent_event`
 
-**Planned — not yet emitted at this version.** Specified for when the user grants, revokes, or modifies any consent (AI-provider consent, third-party-share consent, MCP-composition consent).
+**Emitted** for AI-provider consent (grant / revoke) — see `app.py` `update_profile`, which records a `consent_event` alongside the product-analytics event so the consent carries a tamper-evident, hash-chained legal record (GDPR Art. 7). For `ai_provider` consent the `consent_scope` field names the provider the user consented to (a vendor name such as `openai`, not PII or a secret). The `consent_topic` values `third_party_share`, `mcp_composition`, and `audit_log_plaintext_pii` are reserved for consent surfaces not yet built (a deployer enabling `HELPMEFINDTHEJOB_AUDIT_PLAINTEXT_PII` records the legal justification out-of-band per their DPIA at this version).
 
 `event_payload`:
 
@@ -110,7 +110,7 @@ Emitted for every MCP tool call dispatched by [`../company_discovery/mcp_tools.p
 
 ### 4.5 `export_event`
 
-**Planned — not yet emitted at this version.** Specified for every export of personal data (GDPR Article 20 portability, profile export, audit-log extract for the user's own data).
+**Emitted** for the GDPR Article 20 full data export (`export_kind="profile_full"`) — see `app.py` `export_data_audited`, the single seam both the user self-export (`GET /api/data/export`) and the admin export (`GET /api/admin/users/<id>/export`) call. An admin-performed export is recorded in the data SUBJECT's own audit slice (`user_opaque_id` = the target) with `caller="admin"`, so the subject and a regulator can see the privileged access; the size is measured with the same serialiser the response uses. The `export_kind` values `profile_partial`, `audit_log_self`, and `eures_export` are reserved for export paths not yet built — in particular, extracting a user's slice of the hash-chained audit log itself remains a manual DPO process at this version. (The supplementary job-list downloads at `/api/exports/*.csv|.md` are operational exports of non-identity job data already covered by the logged `profile_full` export, so they deliberately do not emit a separate `export_event`.)
 
 `event_payload`:
 
