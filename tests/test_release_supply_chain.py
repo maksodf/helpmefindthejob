@@ -254,7 +254,7 @@ class ThreatModelDocComplete(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.path = REPO_ROOT / "docs" / "THREAT-MODEL.md"
+        cls.path = REPO_ROOT / "docs" / "threat-model.md"
         if not cls.path.exists():
             raise AssertionError(
                 f"threat model MUST be committed at {cls.path} — absence is a regression, not a skip."

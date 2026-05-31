@@ -75,7 +75,7 @@ The project is a single-maintainer codebase with a co-maintainer being formalise
 
 - **Conventional Git workflow**: feature branches → PRs → reviewed merge to the working branch and then `main`.
 - **Test-driven development** where applicable: 3,342 tests in the suite (26 skipped); full suite runs in ~90 s on bare host.
-- **CI**: GitHub Actions matrices on Python 3.9 + 3.12 (unit tests, `test.yml`) and 3.11 + 3.12 (MCP integration + fresh-clone install); MCP integration test workflow at [`.github/workflows/mcp-integration.yml`](../.github/workflows/mcp-integration.yml).
+- **CI**: GitHub Actions matrices on Python 3.11 + 3.12 (unit tests, `test.yml`) and 3.11 + 3.12 (MCP integration + fresh-clone install); MCP integration test workflow at [`.github/workflows/mcp-integration.yml`](../.github/workflows/mcp-integration.yml).
 - **Linting and security**: ruff, mypy (strict subset), pip-audit, and codespell run in CI (`../.github/workflows/quality.yml`).
 - **Documentation co-evolves**: every architectural change updates [`../ARCHITECTURE.md`](../ARCHITECTURE.md); every standards-relevant change updates [`../STANDARDS.md`](../STANDARDS.md); every AI-Act-relevant change updates this compliance pack.
 

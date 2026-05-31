@@ -184,7 +184,7 @@ first 30) per Article 12(3) GDPR.
 The Deployer SHALL implement at minimum the technical and
 organisational measures (TOMs) shipped with the software AND
 maintained by the operator. Reference:
-[`THREAT-MODEL.md`](../docs/THREAT-MODEL.md),
+[`threat-model.md`](../docs/threat-model.md),
 [`SECURITY.md`](../SECURITY.md), and
 [`compliance/deployer-operating-manual.md`](deployer-operating-manual.md).
 
