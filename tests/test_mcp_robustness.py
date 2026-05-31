@@ -47,11 +47,14 @@ class StdioLoopSurvivalTests(unittest.TestCase):
             '{"jsonrpc":"2.0","id":5,"method":"ping"}',
         ]
         out = io.StringIO()
-        with patch.object(mcp_server.sys, "stdin", io.StringIO("\n".join(lines) + "\n")), patch.object(
-            mcp_server.sys, "stdout", out
+        with (
+            patch.object(mcp_server.sys, "stdin", io.StringIO("\n".join(lines) + "\n")),
+            patch.object(mcp_server.sys, "stdout", out),
         ):
             mcp_server.run_stdio()
-        answered = {json.loads(line).get("id") for line in out.getvalue().splitlines() if line.strip()}
+        answered = {
+            json.loads(line).get("id") for line in out.getvalue().splitlines() if line.strip()
+        }
         # The well-formed requests (1, 3, 4, 5) must all be answered — proving the
         # loop survived the non-object frame instead of dying on it.
         self.assertTrue({1, 3, 4, 5}.issubset(answered), f"loop died early; answered={answered}")

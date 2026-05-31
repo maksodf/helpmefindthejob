@@ -143,9 +143,7 @@ class SqliteCompanyDiscoveryRepository(InMemoryCompanyDiscoveryRepository):
         with self._lock:
             removed = super().delete_all_user_data(user_id)
             for table in self._USER_SCOPED_TABLES:
-                self._connection.execute(
-                    f"DELETE FROM {table} WHERE user_id = ?", (user_id,)
-                )
+                self._connection.execute(f"DELETE FROM {table} WHERE user_id = ?", (user_id,))
             self._connection.commit()
             return removed
 

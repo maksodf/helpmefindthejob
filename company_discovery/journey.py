@@ -3472,7 +3472,9 @@ def _advance_review(journey: UserJourney, msg: str, *, engine: Any = None) -> Ad
             for c in categories
             # NOT a bare substring: "" (always-true) or a single stray char must
             # not silently drill into a category — they fall through to the re-ask.
-            if c.lower() == lc or c.lower().split(" /")[0] == lc or (len(lc) >= 3 and lc in c.lower())
+            if c.lower() == lc
+            or c.lower().split(" /")[0] == lc
+            or (len(lc) >= 3 and lc in c.lower())
         ),
         None,
     )

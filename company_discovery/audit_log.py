@@ -389,9 +389,7 @@ def default_emitter() -> AuditLogEmitter:
             "yes",
             "on",
         }
-        rotate_bytes = get_env_int(
-            "HELPMEFINDTHEJOB_AUDIT_ROTATE_BYTES", 64 * 1024 * 1024
-        )
+        rotate_bytes = get_env_int("HELPMEFINDTHEJOB_AUDIT_ROTATE_BYTES", 64 * 1024 * 1024)
         _default_emitter = AuditLogEmitter(
             log_path=log_path,
             salt=salt,
@@ -465,7 +463,9 @@ def _resolve_salt(raw: str) -> bytes:
     env = _resolve_app_env()
     if env not in _DEV_ENV_TOKENS:
         print(  # noqa: T201 - fatal-fast stderr output before sys.exit(1); warnings.warn is not appropriate for a terminal failure
-            "[audit_log] FATAL: env=" + env + " requires HELPMEFINDTHEJOB_AUDIT_SALT to be set to 32 random bytes "
+            "[audit_log] FATAL: env="
+            + env
+            + " requires HELPMEFINDTHEJOB_AUDIT_SALT to be set to 32 random bytes "
             "(base64). Refusing to start because audit-log integrity "
             "cannot be guaranteed across process restarts without a "
             "stable salt.\n"

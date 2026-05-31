@@ -135,7 +135,9 @@ class FreshRoundTrip(unittest.TestCase):
 
             # append a forged record (no valid chain_hmac) → both layers reject
             with log.open("a", encoding="utf-8") as fh:
-                fh.write(json.dumps({"schema_version": "v2", "sequence_no": 6, "forged": True}) + "\n")
+                fh.write(
+                    json.dumps({"schema_version": "v2", "sequence_no": 6, "forged": True}) + "\n"
+                )
             self.assertFalse(verify_anchor([log], anchor).ok)
             self.assertFalse(verify_chain([log], salt).ok)
 
@@ -143,9 +145,7 @@ class FreshRoundTrip(unittest.TestCase):
 class ExternalAnchorPayload(unittest.TestCase):
     def test_rekor_digest_shape(self):
         anchor = load_anchor(_FIXTURE_ANCHOR)
-        self.assertEqual(
-            rekor_hashedrekord_digest(anchor), f"sha256:{anchor.content_digest}"
-        )
+        self.assertEqual(rekor_hashedrekord_digest(anchor), f"sha256:{anchor.content_digest}")
 
     def test_anchor_dict_roundtrips(self):
         anchor = load_anchor(_FIXTURE_ANCHOR)

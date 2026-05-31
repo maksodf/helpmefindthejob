@@ -183,7 +183,10 @@ class HousingReferenceAgent:
 
         ranked = sorted(
             self.LISTINGS,
-            key=lambda listing: (0 if (clinical and listing["near_clinics"]) else 1, listing["rent_eur"]),
+            key=lambda listing: (
+                0 if (clinical and listing["near_clinics"]) else 1,
+                listing["rent_eur"],
+            ),
         )
         return ranked
 
@@ -378,7 +381,8 @@ def run_demo() -> int:
             assert chain["ok"] is True, f"audit chain verification failed: {chain}"
             assert len(invocations) >= 4, "expected audit records for every composed tool call"
             assert all(
-                (e.get("event_payload") or {}).get("composition_source") == "housing-reference-agent"
+                (e.get("event_payload") or {}).get("composition_source")
+                == "housing-reference-agent"
                 for e in invocations
             ), "audit records must attribute the composing agent (composition_source)"
 

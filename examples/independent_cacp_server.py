@@ -38,8 +38,12 @@ from typing import Any, Callable
 import jsonschema
 
 _DATA_DIR = Path(os.environ.get("HELPMEFINDTHEJOB_DATA_DIR", "."))
-_AUDIT_SALT = base64.b64decode(os.environ.get("HELPMEFINDTHEJOB_AUDIT_SALT", "")) or b"local-dev-salt"
-_SCHEMA_PATH = Path(__file__).resolve().parent.parent / "static" / ".well-known" / "civic-profile.schema.json"
+_AUDIT_SALT = (
+    base64.b64decode(os.environ.get("HELPMEFINDTHEJOB_AUDIT_SALT", "")) or b"local-dev-salt"
+)
+_SCHEMA_PATH = (
+    Path(__file__).resolve().parent.parent / "static" / ".well-known" / "civic-profile.schema.json"
+)
 
 # Deliberate, env-gated conformance violations — OFF by default (the server is
 # fully conformant). tests/test_cacp_conformance_teeth.py sets one of these to
@@ -115,7 +119,9 @@ class CacpServer:
     # -- tool catalogue ----------------------------------------------------
 
     def catalogue(self) -> list[dict[str, Any]]:
-        def tool(name: str, desc: str, props: dict[str, Any], required: list[str]) -> dict[str, Any]:
+        def tool(
+            name: str, desc: str, props: dict[str, Any], required: list[str]
+        ) -> dict[str, Any]:
             return {
                 "name": name,
                 "description": desc,
@@ -129,19 +135,43 @@ class CacpServer:
             }
 
         tools = [
-            tool("get_user_profile_for_consent", "Scope-filtered portable civic profile.",
-                 {"userId": _STR, "scopes": {"type": "array", "items": _STR}}, ["userId", "scopes"]),
-            tool("propose_referral", "Propose a cross-agent referral.",
-                 {"userId": _STR, "targetAgent": _STR, "reason": _STR}, ["userId", "targetAgent"]),
+            tool(
+                "get_user_profile_for_consent",
+                "Scope-filtered portable civic profile.",
+                {"userId": _STR, "scopes": {"type": "array", "items": _STR}},
+                ["userId", "scopes"],
+            ),
+            tool(
+                "propose_referral",
+                "Propose a cross-agent referral.",
+                {"userId": _STR, "targetAgent": _STR, "reason": _STR},
+                ["userId", "targetAgent"],
+            ),
             tool("list_referrals", "List a user's referrals.", {"userId": _STR}, ["userId"]),
-            tool("update_referral_status", "Advance a referral's lifecycle status.",
-                 {"userId": _STR, "referralId": _STR, "status": _STR}, ["userId", "referralId", "status"]),
-            tool("query_esco_skill", "Reconcile an occupation/skill term to ESCO/ISCO.",
-                 {"query": _STR, "type": _STR, "limit": {"type": "integer"}}, ["query"]),
-            tool("export_eures_compatible", "Export a discovered job as EURES-compatible.",
-                 {"userId": _STR, "discoveredJobId": _STR}, ["userId", "discoveredJobId"]),
-            tool("record_user_outcome", "Record a measured user outcome.",
-                 {"userId": _STR, "outcome": _STR}, ["userId", "outcome"]),
+            tool(
+                "update_referral_status",
+                "Advance a referral's lifecycle status.",
+                {"userId": _STR, "referralId": _STR, "status": _STR},
+                ["userId", "referralId", "status"],
+            ),
+            tool(
+                "query_esco_skill",
+                "Reconcile an occupation/skill term to ESCO/ISCO.",
+                {"query": _STR, "type": _STR, "limit": {"type": "integer"}},
+                ["query"],
+            ),
+            tool(
+                "export_eures_compatible",
+                "Export a discovered job as EURES-compatible.",
+                {"userId": _STR, "discoveredJobId": _STR},
+                ["userId", "discoveredJobId"],
+            ),
+            tool(
+                "record_user_outcome",
+                "Record a measured user outcome.",
+                {"userId": _STR, "outcome": _STR},
+                ["userId", "outcome"],
+            ),
         ]
         if _BREAK == "drop_tool":  # violate CACP-L1-04 (a required tool is absent)
             tools = [t for t in tools if t["name"] != "record_user_outcome"]
@@ -247,7 +277,12 @@ class CacpServer:
         ref = self._find(user_id, referral_id)
         if ref is None and _BREAK == "leak_tenant":  # leak_tenant violates CACP-L2-05
             ref = next(
-                (r for refs in self._referrals.values() for r in refs if r["referralId"] == referral_id),
+                (
+                    r
+                    for refs in self._referrals.values()
+                    for r in refs
+                    if r["referralId"] == referral_id
+                ),
                 None,
             )
         if ref is None:
@@ -262,7 +297,11 @@ class CacpServer:
         return {"referral": dict(ref)}
 
     def _esco(self, args: dict[str, Any]) -> dict[str, Any]:
-        return {"query": str(args.get("query", "")), "matches": [], "datasetVersion": "independent-stub"}
+        return {
+            "query": str(args.get("query", "")),
+            "matches": [],
+            "datasetVersion": "independent-stub",
+        }
 
     def _eures(self, args: dict[str, Any]) -> dict[str, Any]:
         return {"status": "ok", "userId": str(args.get("userId", "")), "euresPayload": {}}
@@ -297,21 +336,29 @@ def main() -> int:
 
         if method == "initialize":
             server.composition_source = (params.get("clientInfo") or {}).get("name", "unknown")
-            _reply(msg_id, {
-                "protocolVersion": params.get("protocolVersion", "2024-11-05"),
-                "serverInfo": {"name": "independent-cacp-server", "version": _TOOL_VERSION},
-                "capabilities": {"tools": {}},
-            })
+            _reply(
+                msg_id,
+                {
+                    "protocolVersion": params.get("protocolVersion", "2024-11-05"),
+                    "serverInfo": {"name": "independent-cacp-server", "version": _TOOL_VERSION},
+                    "capabilities": {"tools": {}},
+                },
+            )
         elif method == "notifications/initialized":
             continue  # notification — no response
         elif method == "tools/list":
             _reply(msg_id, {"tools": server.catalogue()})
         elif method == "tools/call":
-            payload, is_error = server.call_tool(params.get("name", ""), params.get("arguments") or {})
-            _reply(msg_id, {
-                "content": [{"type": "text", "text": json.dumps(payload)}],
-                "isError": is_error,
-            })
+            payload, is_error = server.call_tool(
+                params.get("name", ""), params.get("arguments") or {}
+            )
+            _reply(
+                msg_id,
+                {
+                    "content": [{"type": "text", "text": json.dumps(payload)}],
+                    "isError": is_error,
+                },
+            )
         elif msg_id is not None:
             _reply(msg_id, {"error": "method_not_found", "method": method})
     return 0

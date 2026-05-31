@@ -60,8 +60,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 try:
     from company_discovery.persona_fixtures import PERSONAS, demo_email
 except Exception as exc:  # pragma: no cover - import guard for odd checkouts
-    print(f"FATAL: cannot import persona fixtures ({exc}). "
-          f"Run this from the repository root.", file=sys.stderr)
+    print(
+        f"FATAL: cannot import persona fixtures ({exc}). Run this from the repository root.",
+        file=sys.stderr,
+    )
     sys.exit(2)
 
 GREEN, RED, YELLOW, RESET = "\033[32m", "\033[31m", "\033[33m", "\033[0m"
@@ -73,7 +75,9 @@ def _post_login(base_url: str, email: str, password: str, *, timeout: float) -> 
     url = base_url.rstrip("/") + "/api/auth/login"
     body = json.dumps({"email": email, "password": password}).encode("utf-8")
     req = urllib.request.Request(
-        url, data=body, method="POST",
+        url,
+        data=body,
+        method="POST",
         headers={"Content-Type": "application/json", "Accept": "application/json"},
     )
     try:
@@ -85,7 +89,10 @@ def _post_login(base_url: str, email: str, password: str, *, timeout: float) -> 
             except json.JSONDecodeError:
                 return "fail", f"HTTP 200 but non-JSON body ({raw[:60]!r})"
             if data.get("requires2fa"):
-                return "warn", "credentials valid but 2FA is enabled — demo account cannot be smoke-logged-in non-interactively (disable TOTP on demo accounts)"
+                return (
+                    "warn",
+                    "credentials valid but 2FA is enabled — demo account cannot be smoke-logged-in non-interactively (disable TOTP on demo accounts)",
+                )
             if "user" in data and set_cookie:
                 return "pass", "session established"
             if "user" in data and not set_cookie:
@@ -98,11 +105,20 @@ def _post_login(base_url: str, email: str, password: str, *, timeout: float) -> 
         except json.JSONDecodeError:
             err = raw[:80]
         if e.code == 401:
-            return "fail", "401 invalid_login — account not seeded, or wrong --password / --email-domain"
+            return (
+                "fail",
+                "401 invalid_login — account not seeded, or wrong --password / --email-domain",
+            )
         if e.code == 403 and "unverified" in raw:
-            return "fail", "403 email_unverified — verify the demo accounts, or set HELPMEFINDTHEJOB_REQUIRE_EMAIL_VERIFICATION=false for the demo deployment"
+            return (
+                "fail",
+                "403 email_unverified — verify the demo accounts, or set HELPMEFINDTHEJOB_REQUIRE_EMAIL_VERIFICATION=false for the demo deployment",
+            )
         if e.code == 429:
-            return "fail", "429 rate_limited — per-IP failed-login cap hit; wait and retry, or whitelist your IP"
+            return (
+                "fail",
+                "429 rate_limited — per-IP failed-login cap hit; wait and retry, or whitelist your IP",
+            )
         return "fail", f"HTTP {e.code} {err}".strip()
     except urllib.error.URLError as e:
         return "fail", f"cannot reach {url} ({e.reason})"
@@ -112,21 +128,34 @@ def _post_login(base_url: str, email: str, password: str, *, timeout: float) -> 
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="Demo-login smoke check (per-persona pass/fail).")
-    ap.add_argument("--base-url", required=True, help="Base URL of the running instance, e.g. https://demo.example.org")
-    ap.add_argument("--password", required=True, help="The demo password the personas were seeded with")
-    ap.add_argument("--email-domain", default="demo.helpmefindthejob.org",
-                    help="Demo-account email domain (must match seed-personas --email-domain)")
+    ap.add_argument(
+        "--base-url",
+        required=True,
+        help="Base URL of the running instance, e.g. https://demo.example.org",
+    )
+    ap.add_argument(
+        "--password", required=True, help="The demo password the personas were seeded with"
+    )
+    ap.add_argument(
+        "--email-domain",
+        default="demo.helpmefindthejob.org",
+        help="Demo-account email domain (must match seed-personas --email-domain)",
+    )
     ap.add_argument("--timeout", type=float, default=15.0, help="Per-request timeout in seconds")
     args = ap.parse_args()
 
-    print(f"Demo-login smoke → {args.base_url}  ({len(PERSONAS)} personas, domain @{args.email_domain})\n")
+    print(
+        f"Demo-login smoke → {args.base_url}  ({len(PERSONAS)} personas, domain @{args.email_domain})\n"
+    )
     results: list[tuple[str, str, str]] = []
     for persona in PERSONAS:
         email = demo_email(persona.slug, args.email_domain)
-        status, detail = _post_login(args.base_url, email, args.password,
-                                     timeout=args.timeout)
-        mark = {"pass": f"{GREEN}✓ PASS{RESET}", "fail": f"{RED}✗ FAIL{RESET}",
-                "warn": f"{YELLOW}⚠ WARN{RESET}"}[status]
+        status, detail = _post_login(args.base_url, email, args.password, timeout=args.timeout)
+        mark = {
+            "pass": f"{GREEN}✓ PASS{RESET}",
+            "fail": f"{RED}✗ FAIL{RESET}",
+            "warn": f"{YELLOW}⚠ WARN{RESET}",
+        }[status]
         print(f"  {mark}  {persona.slug:9} {email:42} {detail}")
         results.append((persona.slug, status, detail))
 

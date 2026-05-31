@@ -28,7 +28,9 @@ class PopulatedReviewInputTests(unittest.TestCase):
             j = _fresh_review()
             advance(j, msg)
             self.assertEqual(
-                j.phase, PHASE_REVIEW, f"{msg!r} must re-ask (stay in review), not drill into a category"
+                j.phase,
+                PHASE_REVIEW,
+                f"{msg!r} must re-ask (stay in review), not drill into a category",
             )
 
     def test_real_category_fragment_still_drills(self) -> None:

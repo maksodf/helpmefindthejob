@@ -163,9 +163,7 @@ def load_anchor(path: Path) -> AuditAnchor:
 
 
 def write_anchor(path: Path, anchor: AuditAnchor) -> None:
-    path.write_text(
-        json.dumps(anchor.to_dict(), indent=2, sort_keys=True) + "\n", encoding="utf-8"
-    )
+    path.write_text(json.dumps(anchor.to_dict(), indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
 # ---------------------------------------------------------------------------
@@ -232,7 +230,9 @@ def verify_anchor(log_paths: list[Path], anchor: AuditAnchor) -> AnchorVerificat
             expected_digest=anchor.content_digest,
             actual_digest=actual,
         )
-    return AnchorVerificationResult(ok=True, expected_digest=anchor.content_digest, actual_digest=actual)
+    return AnchorVerificationResult(
+        ok=True, expected_digest=anchor.content_digest, actual_digest=actual
+    )
 
 
 @dataclass

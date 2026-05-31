@@ -2080,6 +2080,7 @@ class AppState:
             if not isinstance(consent, dict):
                 raise ValueError("invalid_ai_consent")
             from company_discovery import audit_log as _audit_log_mod
+
             if consent.get("granted"):
                 existing.ai_consent_at = now_utc()
                 # Provider IDs are short slugs (openai/gemini/ollama/…); cap at

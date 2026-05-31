@@ -366,9 +366,7 @@ def run_stdio(tools: CompanyDiscoveryMCPTools | None = None) -> None:
                     try:
                         response = handle_request(message, active_tools)
                     except Exception as error:  # noqa: BLE001 - one bad frame must never kill the loop
-                        response = rpc_error(
-                            message.get("id"), -32603, f"Internal error: {error}"
-                        )
+                        response = rpc_error(message.get("id"), -32603, f"Internal error: {error}")
             if response is not None:
                 sys.stdout.write(json.dumps(jsonable(response), ensure_ascii=False) + "\n")
                 sys.stdout.flush()

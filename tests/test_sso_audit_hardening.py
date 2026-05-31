@@ -27,8 +27,10 @@ class SsoEmailVerifiedTests(unittest.TestCase):
         store.create_user("victim@x.test", "VictimPass123456")
         with self.assertRaises(ValueError) as cm:
             store.find_or_create_sso_user(
-                provider_id="evil-idp", subject="attacker",
-                email="victim@x.test", email_verified=False,
+                provider_id="evil-idp",
+                subject="attacker",
+                email="victim@x.test",
+                email_verified=False,
             )
         self.assertEqual(str(cm.exception), "sso_email_unverified")
         # the victim's local login is untouched

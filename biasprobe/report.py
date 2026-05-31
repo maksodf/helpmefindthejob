@@ -32,8 +32,7 @@ def render_markdown(
     lines.append("# Bias-methodology comparative report")
     lines.append("")
     lines.append(
-        f"Generated {datetime.now(timezone.utc).isoformat(timespec='seconds')} "
-        f"by {generated_by}."
+        f"Generated {datetime.now(timezone.utc).isoformat(timespec='seconds')} by {generated_by}."
     )
     lines.append("")
     lines.append("## What this report measures")

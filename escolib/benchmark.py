@@ -107,7 +107,9 @@ def _synonym_cases(dataset: EscoDataset) -> list[tuple[str, str]]:
     return cases
 
 
-def run_benchmark(dataset: EscoDataset | None = None, base: Path | str | None = None) -> BenchmarkResult:
+def run_benchmark(
+    dataset: EscoDataset | None = None, base: Path | str | None = None
+) -> BenchmarkResult:
     data = dataset if dataset is not None else load_dataset(base)
     reconciler = EscoReconciler(dataset=data)
 

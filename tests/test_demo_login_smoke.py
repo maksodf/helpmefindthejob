@@ -58,7 +58,9 @@ class _MockLoginHandler(BaseHTTPRequestHandler):
         email = data.get("email", "")
         password = data.get("password", "")
         if email == "good@x" and password == "right":
-            self._send(200, {"user": {"id": "u1", "email": email}, "bootstrap": {}}, set_cookie=True)
+            self._send(
+                200, {"user": {"id": "u1", "email": email}, "bootstrap": {}}, set_cookie=True
+            )
         elif email == "nocookie@x":
             self._send(200, {"user": {"id": "u2"}, "bootstrap": {}})  # 200+user but no Set-Cookie
         elif email == "twofa@x":

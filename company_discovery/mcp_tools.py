@@ -605,7 +605,9 @@ class CompanyDiscoveryMCPTools:
         ``escolib`` so other civic-tech projects can reuse it without this app.
         """
 
-        return EscoReconciler(dataset=_esco_dataset()).query(query, kind=type, limit=limit).to_dict()
+        return (
+            EscoReconciler(dataset=_esco_dataset()).query(query, kind=type, limit=limit).to_dict()
+        )
 
     def export_eures_compatible(self, userId: str, discoveredJobId: str) -> dict[str, Any]:
         """Project a stored discovered job into EURES-compatible fields.

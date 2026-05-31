@@ -140,9 +140,7 @@ class InMemoryCompanyDiscoveryRepository:
             self.referrals,
         ):
             for record_id in [
-                k
-                for k, item in list(store.items())
-                if getattr(item, "user_id", None) == user_id
+                k for k, item in list(store.items()) if getattr(item, "user_id", None) == user_id
             ]:
                 store.pop(record_id, None)
                 removed += 1

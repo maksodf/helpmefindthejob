@@ -236,7 +236,10 @@ class QuotaStore:
             domain = ""
             if target_url:
                 domain = (urlparse(target_url).netloc or "").casefold()
-                if domain and self._domain_count(domain, _hour_key()) >= self.limits.domain_per_hour:
+                if (
+                    domain
+                    and self._domain_count(domain, _hour_key()) >= self.limits.domain_per_hour
+                ):
                     raise QuotaError(
                         "domain_rate_limited",
                         "This domain is being scanned a lot right now. Try again later.",

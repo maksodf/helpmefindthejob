@@ -292,9 +292,7 @@ class PostgresCompanyDiscoveryRepository(InMemoryCompanyDiscoveryRepository):
 
     def _persist_discovered_job_deletion(self, job_id: str, user_id: str) -> None:
         cur = self._connection.cursor()
-        cur.execute(
-            "DELETE FROM discovered_jobs WHERE id = %s AND user_id = %s", (job_id, user_id)
-        )
+        cur.execute("DELETE FROM discovered_jobs WHERE id = %s AND user_id = %s", (job_id, user_id))
 
     def purge_discovered_jobs_older_than(
         self, user_id: str, *, cutoff: datetime, keep_imported: bool = True
@@ -419,7 +417,9 @@ class PostgresCompanyDiscoveryRepository(InMemoryCompanyDiscoveryRepository):
             # repo). When `crypto` is set, cv_text + cv_photo_data_uri
             # are AEAD-encrypted with user_id as AAD before storage.
             if self._crypto is not None and payload.get("cv_text"):
-                payload["cv_text"] = self._crypto.encrypt(payload["cv_text"], aad=profile.user_id.encode("utf-8"))
+                payload["cv_text"] = self._crypto.encrypt(
+                    payload["cv_text"], aad=profile.user_id.encode("utf-8")
+                )
             if self._crypto is not None and payload.get("cv_photo_data_uri"):
                 payload["cv_photo_data_uri"] = self._crypto.encrypt(
                     payload["cv_photo_data_uri"], aad=profile.user_id.encode("utf-8")
@@ -552,7 +552,8 @@ class PostgresCompanyDiscoveryRepository(InMemoryCompanyDiscoveryRepository):
             ):
                 try:
                     payload["cv_photo_data_uri"] = self._crypto.decrypt(
-                        payload["cv_photo_data_uri"], aad=(payload.get("user_id") or "").encode("utf-8")
+                        payload["cv_photo_data_uri"],
+                        aad=(payload.get("user_id") or "").encode("utf-8"),
                     )
                 except Exception:  # noqa: BLE001
                     payload["cv_photo_data_uri"] = None

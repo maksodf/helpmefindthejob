@@ -25,10 +25,10 @@ _ENV = "HELPMEFINDTHEJOB_CACP_BREAK"
 
 #: violation mode -> the single CACP check it must trip.
 _CASES = {
-    "drop_tool": "CACP-L1-04",        # a required composition tool is absent
-    "bad_semver": "CACP-L1-03",       # a tool version is not SemVer
+    "drop_tool": "CACP-L1-04",  # a required composition tool is absent
+    "bad_semver": "CACP-L1-03",  # a tool version is not SemVer
     "accept_bad_scope": "CACP-L3-02",  # an unknown consent scope is NOT rejected
-    "leak_tenant": "CACP-L2-05",      # cross-tenant referral mutation succeeds
+    "leak_tenant": "CACP-L2-05",  # cross-tenant referral mutation succeeds
 }
 
 
@@ -61,7 +61,9 @@ class ConformanceSuiteRejectsViolations(unittest.TestCase):
                 report = run_conformance(server_path=_SERVER)
                 failed = {c.id for c in report.checks if not c.passed}
                 self.assertFalse(report.ok, f"{mode}: suite PASSED a non-conformant server")
-                self.assertIn(expected, failed, f"{mode}: expected {expected}; failed={sorted(failed)}")
+                self.assertIn(
+                    expected, failed, f"{mode}: expected {expected}; failed={sorted(failed)}"
+                )
                 # discrimination: it trips the targeted check and not unrelated ones
                 self.assertEqual(
                     failed, {expected}, f"{mode}: should trip only {expected}; got {sorted(failed)}"

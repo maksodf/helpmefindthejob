@@ -27,7 +27,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 # Subprocess probe: block every ``company_discovery`` import, then drive the full
 # biasprobe replay/metrics/report surface. A moved-but-coupled module would pull
 # the application package in transitively and fail loudly here.
-_ISOLATION_PROBE = '''
+_ISOLATION_PROBE = """
 import sys
 import importlib.abc
 
@@ -65,7 +65,7 @@ assert means, "per_persona_mean produced nothing without the application"
 disagreement = biasprobe.cross_provider_disagreement(by_provider)
 assert isinstance(disagreement, list)
 print("OK")
-'''
+"""
 
 
 class BiasprobeIsStandalone(unittest.TestCase):

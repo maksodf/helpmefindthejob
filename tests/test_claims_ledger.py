@@ -121,9 +121,7 @@ class LedgerDocInSync(unittest.TestCase):
             self.skipTest("docs/claims-ledger.md not present")
         text = doc.read_text(encoding="utf-8")
         missing = [
-            c["oneCommand"]
-            for c in _ledger()["buildableClaims"]
-            if c["oneCommand"] not in text
+            c["oneCommand"] for c in _ledger()["buildableClaims"] if c["oneCommand"] not in text
         ]
         self.assertEqual(missing, [], f"claims-ledger.md is missing one-commands: {missing}")
 

@@ -118,7 +118,9 @@ class SchemaDocumentsEveryEmittedField(unittest.TestCase):
 
     def test_outcomes_block_documented(self):
         outcomes_schema = self.schema["properties"]["outcomes"]["properties"]
-        self._assert_documented(self.profile["outcomes"].keys(), outcomes_schema, "profile.outcomes")
+        self._assert_documented(
+            self.profile["outcomes"].keys(), outcomes_schema, "profile.outcomes"
+        )
         event_props = outcomes_schema["events"]["items"]["properties"]
         for event in self.profile["outcomes"]["events"]:
             self._assert_documented(event.keys(), event_props, "profile.outcomes.events[]")

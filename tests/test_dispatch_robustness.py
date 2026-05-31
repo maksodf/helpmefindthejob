@@ -31,7 +31,9 @@ from company_discovery.analysis import (
 )
 
 
-def _provider(provider_id: str, *, base_url: str = "", invocation_mode: str = "api") -> AIProviderConfig:
+def _provider(
+    provider_id: str, *, base_url: str = "", invocation_mode: str = "api"
+) -> AIProviderConfig:
     return AIProviderConfig(
         provider_id=provider_id,
         invocation_mode=invocation_mode,
@@ -72,8 +74,9 @@ class StreamingFinallyTests(unittest.TestCase):
             captured["result"] = kw.get("result")
             captured["error_class"] = kw.get("error_class")
 
-        with patch.object(analysis, "_dispatch_provider_streaming_impl", fake_impl), patch.object(
-            analysis, "_emit_dispatch_audit", fake_audit
+        with (
+            patch.object(analysis, "_dispatch_provider_streaming_impl", fake_impl),
+            patch.object(analysis, "_emit_dispatch_audit", fake_audit),
         ):
             gen = _dispatch_provider_streaming("p", prov, runtime_credential="", purpose="t")
             for event in gen:
@@ -83,7 +86,9 @@ class StreamingFinallyTests(unittest.TestCase):
 
         self.assertIsNotNone(captured.get("result"), "audit ran with result=None (the bug)")
         self.assertEqual(captured["result"].status, "completed")
-        self.assertIsNone(captured.get("error_class"), "GeneratorExit must not be recorded as an error")
+        self.assertIsNone(
+            captured.get("error_class"), "GeneratorExit must not be recorded as an error"
+        )
 
 
 class AdapterRobustnessTests(unittest.TestCase):
@@ -107,7 +112,9 @@ class AdapterRobustnessTests(unittest.TestCase):
             return_value=_FakeResp(json.dumps({"candidates": ["str"]}).encode("utf-8")),
         ):
             r = _execute_google_gemini(
-                "p", _provider("google_gemini", base_url="https://g.test"), runtime_credential="sk-test"
+                "p",
+                _provider("google_gemini", base_url="https://g.test"),
+                runtime_credential="sk-test",
             )
         self.assertEqual(r.status, "provider_error")
 

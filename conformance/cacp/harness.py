@@ -295,16 +295,16 @@ class ConformanceHarness:
             {"userId": "cacp-probe-user", "scopes": requested},
         )
         profile = result.get("profile") or {}
-        only_requested = set(profile.get("scopes", [])) == set(requested) and all(
-            scope in profile for scope in requested
-        ) and not any(s in profile for s in CONSENT_SCOPES if s not in requested)
+        only_requested = (
+            set(profile.get("scopes", [])) == set(requested)
+            and all(scope in profile for scope in requested)
+            and not any(s in profile for s in CONSENT_SCOPES if s not in requested)
+        )
         self._record(
             "CACP-L3-01",
             "L3",
             "consent profile returns exactly the requested scopes + provenance fields",
-            only_requested
-            and "schemaVersion" in profile
-            and "consentRecordedAt" in profile,
+            only_requested and "schemaVersion" in profile and "consentRecordedAt" in profile,
             f"profile keys={sorted(profile.keys())}",
         )
 
@@ -320,10 +320,13 @@ class ConformanceHarness:
             f"status={_tool_error_status(bad_scope)}",
         )
 
-        full = self.client.call_tool(
-            "get_user_profile_for_consent",
-            {"userId": "cacp-probe-user", "scopes": list(CONSENT_SCOPES)},
-        ).get("profile") or {}
+        full = (
+            self.client.call_tool(
+                "get_user_profile_for_consent",
+                {"userId": "cacp-probe-user", "scopes": list(CONSENT_SCOPES)},
+            ).get("profile")
+            or {}
+        )
         schema_ok, schema_detail = True, ""
         try:
             schema = json.loads(_CIVIC_PROFILE_SCHEMA.read_text(encoding="utf-8"))

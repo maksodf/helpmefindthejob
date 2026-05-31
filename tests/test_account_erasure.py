@@ -32,9 +32,15 @@ from company_discovery.sqlite_repository import SqliteCompanyDiscoveryRepository
 def _seed(repo: SqliteCompanyDiscoveryRepository, uid: str) -> None:
     repo.save_company(models.Company(user_id=uid, name="ACME", website_url="https://acme.test"))
     repo.save_saved_search(models.SavedSearch(user_id=uid, name="nurse berlin"))
-    repo.save_discovered_job(models.DiscoveredJob(user_id=uid, source_url=f"https://j/{uid}", title="T"))
-    repo.save_user_profile(models.UserProfile(user_id=uid, cv_text="secret CV", notes="health", location="Berlin"))
-    repo.save_push_subscription(models.PushSubscription(user_id=uid, endpoint="https://e", p256dh="k", auth="a"))
+    repo.save_discovered_job(
+        models.DiscoveredJob(user_id=uid, source_url=f"https://j/{uid}", title="T")
+    )
+    repo.save_user_profile(
+        models.UserProfile(user_id=uid, cv_text="secret CV", notes="health", location="Berlin")
+    )
+    repo.save_push_subscription(
+        models.PushSubscription(user_id=uid, endpoint="https://e", p256dh="k", auth="a")
+    )
     repo.save_workspace_membership(
         models.WorkspaceMembership(user_id=uid, workspace_id="ws", workspace_owner_id=uid)
     )

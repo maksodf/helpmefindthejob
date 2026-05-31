@@ -23,7 +23,10 @@ def _state() -> tuple[AppState, str]:
     tmp = TemporaryDirectory()
     root = Path(tmp.name)
     state = AppState(
-        root / "c.sqlite3", root / "a.sqlite3", root / "ai.json", root / "s.json",
+        root / "c.sqlite3",
+        root / "a.sqlite3",
+        root / "ai.json",
+        root / "s.json",
         start_scheduler=False,
     )
     state._test_tmp = tmp  # noqa: SLF001 - keep tempdir alive
@@ -49,7 +52,9 @@ class ChatJourneyPathTests(unittest.TestCase):
             )
             phase = result.get("journeyPhase")
             self.assertEqual(
-                phase, expected_phase, f"after {msg!r}: phase={phase!r}, expected {expected_phase!r}"
+                phase,
+                expected_phase,
+                f"after {msg!r}: phase={phase!r}, expected {expected_phase!r}",
             )
         # the discover answers were persisted to the profile (role captured)
         journey = state._journey_load(uid)  # noqa: SLF001

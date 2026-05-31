@@ -47,9 +47,7 @@ class InvitationOverwriteTests(unittest.TestCase):
         state = _make_state()
         self.addCleanup(state.auth_store.close)
         state.auth_store.create_user("victim@x.test", "VictimPassword123")
-        issued = state.token_store.issue(
-            kind="invitation", email="victim@x.test", role="member"
-        )
+        issued = state.token_store.issue(kind="invitation", email="victim@x.test", role="member")
         with self.assertRaises(ValueError) as cm:
             state.accept_invitation(raw_token=issued.raw_token, password="AttackerPassword123")
         self.assertEqual(str(cm.exception), "account_exists")
@@ -91,9 +89,7 @@ class LoginSlotMeteringTests(unittest.TestCase):
         state = _make_state()
         self.addCleanup(state.auth_store.close)
         results = [state.claim_login_slot("203.0.113.7") for _ in range(15)]
-        self.assertIn(
-            False, results, "the per-IP login slot must cap repeated unrefunded claims"
-        )
+        self.assertIn(False, results, "the per-IP login slot must cap repeated unrefunded claims")
 
 
 if __name__ == "__main__":

@@ -158,8 +158,12 @@ class GoldenTraceReplay(unittest.TestCase):
 
     def test_trace_is_byte_stable_across_replays(self):
         with TemporaryDirectory() as tmp:
-            first = run(_CANONICAL_GOAL, _mock_handlers(), AuditLogEmitter(Path(tmp) / "a.jsonl", _SALT))
-            second = run(_CANONICAL_GOAL, _mock_handlers(), AuditLogEmitter(Path(tmp) / "b.jsonl", _SALT))
+            first = run(
+                _CANONICAL_GOAL, _mock_handlers(), AuditLogEmitter(Path(tmp) / "a.jsonl", _SALT)
+            )
+            second = run(
+                _CANONICAL_GOAL, _mock_handlers(), AuditLogEmitter(Path(tmp) / "b.jsonl", _SALT)
+            )
         self.assertEqual(first.to_dict(), second.to_dict())
 
 

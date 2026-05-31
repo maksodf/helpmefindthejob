@@ -15,13 +15,15 @@ def main(argv: list[str] | None = None) -> int:
         prog="conformance.cacp",
         description="Run the CACP v0.1 conformance suite against the reference MCP server.",
     )
-    parser.add_argument(
-        "--json", action="store_true", help="emit the machine-readable JSON report"
-    )
+    parser.add_argument("--json", action="store_true", help="emit the machine-readable JSON report")
     args = parser.parse_args(argv)
 
     report = run_conformance()
-    print(json.dumps(report.to_dict(), indent=2, ensure_ascii=False) if args.json else report.summary())
+    print(
+        json.dumps(report.to_dict(), indent=2, ensure_ascii=False)
+        if args.json
+        else report.summary()
+    )
     return 0 if report.ok else 1
 
 

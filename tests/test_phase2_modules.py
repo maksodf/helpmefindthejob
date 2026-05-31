@@ -352,7 +352,5 @@ class DigestsTests(unittest.TestCase):
         self.assertIn("No new direct-company roles", text)
 
 
-
-
 if __name__ == "__main__":
     unittest.main()

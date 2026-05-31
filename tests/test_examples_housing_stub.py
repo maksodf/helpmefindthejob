@@ -124,7 +124,9 @@ class HousingReferenceAgentRecommendLogic(unittest.TestCase):
 
     def test_non_clinical_profile_falls_back_to_rent_order(self):
         profile = {
-            "profile": {"employment": {"targetRoleFamilies": ["Frontend developer"], "languageLevels": {}}}
+            "profile": {
+                "employment": {"targetRoleFamilies": ["Frontend developer"], "languageLevels": {}}
+            }
         }
         ranked = self.agent.recommend_using(profile)
         self.assertEqual(len(ranked), 3)

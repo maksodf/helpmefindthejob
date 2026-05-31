@@ -66,9 +66,7 @@ def main(argv: list[str] | None = None) -> int:
         by_provider[provider_id] = outcomes
         summaries.append(summarize(provider_id, outcomes))
 
-    md = render_markdown(
-        by_provider, summaries, generated_by="biasprobe (`python -m biasprobe`)"
-    )
+    md = render_markdown(by_provider, summaries, generated_by="biasprobe (`python -m biasprobe`)")
     if args.output:
         args.output.write_text(md, encoding="utf-8")
         print(f"Wrote {args.output}")

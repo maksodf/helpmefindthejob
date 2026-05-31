@@ -57,18 +57,27 @@ class HelperContractTests(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             em, log_path = _emitter(tmp)
             emit_consent_event(
-                consent_topic="ai_provider", consent_state="granted",
-                consent_scope="openai", user_opaque_id="u1", emitter=em,
+                consent_topic="ai_provider",
+                consent_state="granted",
+                consent_scope="openai",
+                user_opaque_id="u1",
+                emitter=em,
             )
             emit_consent_event(
-                consent_topic="ai_provider", consent_state="revoked",
-                user_opaque_id="u1", emitter=em,
+                consent_topic="ai_provider",
+                consent_state="revoked",
+                user_opaque_id="u1",
+                emitter=em,
             )
             recs = _records(log_path)
             self.assertEqual([r["event_type"] for r in recs], ["consent_event", "consent_event"])
             self.assertEqual(
                 recs[0]["event_payload"],
-                {"consent_topic": "ai_provider", "consent_state": "granted", "consent_scope": "openai"},
+                {
+                    "consent_topic": "ai_provider",
+                    "consent_state": "granted",
+                    "consent_scope": "openai",
+                },
             )
             self.assertIsNone(recs[1]["event_payload"]["consent_scope"])
             # subject is hashed (not plaintext); same subject → same hash
@@ -80,18 +89,28 @@ class HelperContractTests(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             em, log_path = _emitter(tmp)
             emit_export_event(
-                export_kind="profile_full", export_size_bytes=10,
-                export_format="application/json", user_opaque_id="subject", emitter=em,
+                export_kind="profile_full",
+                export_size_bytes=10,
+                export_format="application/json",
+                user_opaque_id="subject",
+                emitter=em,
             )
             emit_export_event(
-                export_kind="profile_full", export_size_bytes=20,
-                export_format="application/json", user_opaque_id="other",
-                caller="admin", emitter=em,
+                export_kind="profile_full",
+                export_size_bytes=20,
+                export_format="application/json",
+                user_opaque_id="other",
+                caller="admin",
+                emitter=em,
             )
             recs = _records(log_path)
             self.assertEqual(
                 recs[0]["event_payload"],
-                {"export_kind": "profile_full", "export_size_bytes": 10, "format": "application/json"},
+                {
+                    "export_kind": "profile_full",
+                    "export_size_bytes": 10,
+                    "format": "application/json",
+                },
             )
             self.assertEqual(recs[0]["caller"], "user")
             self.assertEqual(recs[1]["caller"], "admin")
@@ -115,7 +134,10 @@ class AppWiringTests(unittest.TestCase):
         from app import AppState
 
         self.state = AppState(
-            root / "c.sqlite3", root / "a.sqlite3", root / "ai.json", root / "s.json",
+            root / "c.sqlite3",
+            root / "a.sqlite3",
+            root / "ai.json",
+            root / "s.json",
             start_scheduler=False,
         )
         self.uid = self.state.auth_store.create_user("m4@x.test", "M4TestPass123456").id
@@ -126,7 +148,9 @@ class AppWiringTests(unittest.TestCase):
         self._tmp.cleanup()
 
     def test_update_profile_emits_consent_event(self) -> None:
-        self.state.update_profile(self.uid, {"aiConsent": {"granted": True, "providerId": "gemini"}})
+        self.state.update_profile(
+            self.uid, {"aiConsent": {"granted": True, "providerId": "gemini"}}
+        )
         self.state.update_profile(self.uid, {"aiConsent": {"granted": False}})
         recs = [r for r in _records(self._log) if r["event_type"] == "consent_event"]
         self.assertEqual(len(recs), 2, "consent grant + revoke must each emit a consent_event")
@@ -156,7 +180,8 @@ class AppWiringTests(unittest.TestCase):
         recs = [r for r in _records(self._log) if r["event_type"] == "consent_event"]
         self.assertEqual(len(recs), 1)
         self.assertEqual(
-            len(recs[0]["event_payload"]["consent_scope"]), 64,
+            len(recs[0]["event_payload"]["consent_scope"]),
+            64,
             "over-long provider_id must be capped at the source",
         )
 

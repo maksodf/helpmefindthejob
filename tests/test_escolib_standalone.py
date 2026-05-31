@@ -26,7 +26,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 # transitive application import would fail loudly. escolib must still import +
 # work. This is the real test of decoupling (a moved-but-coupled module would
 # import company_discovery transitively and blow up here).
-_ISOLATION_PROBE = '''
+_ISOLATION_PROBE = """
 import sys
 import importlib.abc
 
@@ -46,7 +46,7 @@ result = escolib.EscoReconciler().query("Krankenschwester", limit=1)
 assert result.matches[0]["code"] == "2221.1", result.matches
 assert result.datasetVersion == "v1-curated-2026-05-18", result.datasetVersion
 print("OK")
-'''
+"""
 
 
 class EscolibIsStandalone(unittest.TestCase):
