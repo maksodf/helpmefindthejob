@@ -67,8 +67,8 @@ two wider-friction-class).
 
 ## License + governance
 
-Apache 2.0 with a Contributor License Agreement. Programme of
-**The Commons Conservancy** (Dutch stichting co-founded by NLnet).
+Apache 2.0 with a Contributor License Agreement. Application submitted to become a Programme of
+**The Commons Conservancy** (response pending; Dutch stichting co-founded by NLnet).
 Read **[CONTRIBUTING.md](https://github.com/maksodf/helpmefindthejob/blob/main/CONTRIBUTING.md)**
 before opening a pull request.
 

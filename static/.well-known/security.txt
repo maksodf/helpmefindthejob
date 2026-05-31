@@ -2,7 +2,8 @@
 # security.txt per RFC 9116 — https://www.rfc-editor.org/rfc/rfc9116
 #
 # Helpmefindthejob — civic employment commons for the European labour
-# market. Programme of The Commons Conservancy. Apache 2.0 + CLA.
+# market. Apache 2.0 + CLA. Application submitted to The Commons
+# Conservancy for adoption as a Programme (response pending).
 #
 # Per Decision 22 (2026-05-19), the canonical project domain is
 # helpmefindthejob.org (acquired by the maintainer; supersedes the

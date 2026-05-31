@@ -22,7 +22,7 @@ Helpmefindthejob is squarely inside this definition. We score job-to-CV fit, we 
 
 The full set of obligations becomes enforceable on **2 August 2026** — roughly 2.5 months from the writing of this document. Public-sector deployers (Jobcenter, Beratungsstellen, Agentur für Arbeit) will be looking for tools that already meet the obligations on day one of enforcement.
 
-**This is our moat.** Most commercial AI job tools are still scrambling. We ship compliant by design.
+**This is our moat.** Most commercial AI job tools are still scrambling. We ship compliance-supporting controls, templates, audit logging, transparency surfaces, and deployer guidance by default; each deployer retains its own context-specific legal review.
 
 ---
 

@@ -273,7 +273,7 @@ A deployer can dispatch on `status` for programmatic handling and surface `detai
 
 ## Where the schemas live
 
-`TOOL_SCHEMAS` in [`company_discovery/mcp_tools.py`](https://github.com/maksodf/helpmefindthejob/blob/main/company_discovery/mcp_tools.py) is the canonical source. The schemas are JSON Schema Draft 7 documents. The [`/mcp/schemas.json`](https://demo.helpmefindthejob.org/mcp/schemas.json) HTTP endpoint exposes the full catalogue and [`/mcp/version`](https://demo.helpmefindthejob.org/mcp/version) reports the catalogue version; the stdio `tools/list` call returns the same schemas.
+`TOOL_SCHEMAS` in [`company_discovery/mcp_tools.py`](https://github.com/maksodf/helpmefindthejob/blob/main/company_discovery/mcp_tools.py) is the canonical source. The schemas are JSON Schema Draft 7 documents. When a deployment serves them over HTTP, the `/mcp/schemas.json` endpoint exposes the full catalogue and `/mcp/version` reports the catalogue version (the `demo.helpmefindthejob.org` host shown in the curl examples above is optional reviewer evidence and not guaranteed live at submission time); the stdio `tools/list` call returns the same schemas without any HTTP endpoint.
 
 The schemas are also exported as individual files under `mcp_server/schemas/<tool-name>.json`, so external tooling (linting, code generation) can read them without spawning the Python process. The canonical definitions stay in `mcp_tools.py`; the filesystem export is a build artefact.
 

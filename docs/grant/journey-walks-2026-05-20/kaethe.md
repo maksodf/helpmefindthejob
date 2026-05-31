@@ -1,30 +1,23 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 
-# Aïcha Loop 10.3 re-walk — Bug F Option B substrate live-validation (NO env-hook workaround)
+# Journey walk — Käthe (German, nursing re-entrant)
 
-**Walked**: 2026-05-20T20:49:14+00:00 (UTC)  |  **Persona**: Käthe (German, nursing re-entrant) (kaethe)  |  **Cohort**: wider-friction
-**Server**: http://127.0.0.1:55422  |  **Provider**: Ollama llama3.1:8b
+> Raw test transcript: this document is a verbatim capture from an internal QA walk (local test server, Ollama provider). It is kept as evidence of a live end-to-end run; internal loop/debug bookkeeping has been removed from the narrative.
+
+**Walked**: 2026-05-20 (UTC)  |  **Persona**: Käthe (German, nursing re-entrant) (kaethe)  |  **Cohort**: wider-friction
+**Provider**: Ollama llama3.1:8b (local test server)
 **Residency status**: German citizen (Freizügigkeit not applicable)
 **Friction notes**: 12-year clinical absence: digital patient-record systems, electronic medication management, infection-control protocols, mandatory CE hours all changed since 2013. Hospitals expect a Wiedereinstiegsprogramm or Auffrischung course; her old CV reads as obsolete for 2026 conventions.
 
 ## Purpose
 
-Loop 10.3 of PART 6 — Aïcha live re-walk validating Bug F
-Option B substrate end-to-end. NO env-hook workaround used.
-The persona-fixture resolution comes from REAL classification
-of the pasted CV via friction_classifier (Loop 10.1) writing
-profile.friction_class (Loop 10.2) which the empty-state
-dispatcher reads via the rewired _persona_fixture_for call
-(this loop, app.py:3869 + analysis.py:147).
+A live end-to-end walk of the guided job-search journey for the
+Käthe persona, with the persona profile resolved from a real
+classification of the pasted CV (rather than a hard-coded fixture).
+The walk records each turn, the journey phase, and the assistant
+reply so the empty-state and widening behaviour can be reviewed.
 
-**Validation contract** (per operator directive): all 6
-Bug-C signals must fire identically to Loop 9.3's workaround
-run. If they don't, the substrate has a wiring issue and
-Loop 10.3 is NOT closed. Compare against
-`aicha-loop-9-3-rewalk.md` (workaround-based) — signals
-should match exactly.
-
-## Bug-C signal summary
+## Empty-state behaviour summary
 
 | Signal | Observed |
 |---|---|
@@ -466,7 +459,7 @@ The original shape-test surfaced 7 surprises that became Bugs A/B/C:
 6. **No consented auto-relax** — fix Bug C piece 4 (`d951045`)
 7. **No adjacent-criterion counts / no final-state exit** — fix Bug C pieces 5 + 6 (`bdcf38f` + `1af9de8`)
 
-Walk this transcript to verify the smoothness improvements live for Aïcha:
+Walk this transcript to verify the journey smoothness live for Käthe:
 
 - Did the inspire phase accept her decline cleanly?
 - Did the preferences phase guard against empty input?

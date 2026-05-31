@@ -900,7 +900,7 @@ First stable pre-publication release. Closes the four-week
 **NLnet NGI Zero Commons Fund grant-readiness sprint** that ran from
 **2026-05-17** through this tag. The release deliberately frames the
 project as a **civic commons** under Apache 2.0 + CLA, application
-to The Commons Conservancy pending, EU AI Act compliant by design.
+to The Commons Conservancy pending, built with EU AI Act compliance-supporting controls.
 
 ### Added
 

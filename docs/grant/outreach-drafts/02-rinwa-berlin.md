@@ -1,5 +1,7 @@
 # Outreach draft 02 — RINWA Berlin (La Red — Vernetzung und Integration e.V.)
 
+> Internal working material — not linked from the final application. Remove private-contact notes, fill sender fields, and keep the cautious compliance/privacy wording below before any external use.
+
 **STATUS**: DRAFTED — NOT YET SENT — TARGET SEND: WEEK 4 START
 
 **Contact details last verified**: 2026-05-18 via La Red RINWA project page. Re-checked 2026-05-19 — no public change to the named-contact surface; programme remains in early-2026 operation. Re-verify on the day of sending: RINWA staffing may shift, and the published team page should be the last-touched ground-truth before send.
@@ -34,7 +36,7 @@ Picked La Red over Arbeit und Leben Berlin-Brandenburg because La Red has explic
 
 Sehr geehrte Frau [RINWA adviser],
 
-mein Name ist [Maintainer]. Ich bin Student an der TU Berlin und entwickle **Helpmefindthejob** — ein Open-Source-Tool, das internationale Fachkräfte durch den Anerkennungs- und Bewerbungsprozess in Deutschland führt. Mehrsprachig, datenschutzkonform (lokal selbst hostbar, verschlüsselt), Apache-2.0-lizenziert und im Vorgriff auf den EU AI Act bereits dokumentiert.
+mein Name ist [Maintainer]. Ich bin Student an der TU Berlin und entwickle **Helpmefindthejob** — ein Open-Source-Tool, das internationale Fachkräfte durch den Anerkennungs- und Bewerbungsprozess in Deutschland führt. Mehrsprachig, datenschutzfreundlich (lokal selbst hostbar, verschlüsselt; in den lokalen Modi — Ollama, manuell, deterministisch — verlassen keine Daten die Instanz, bei Cloud-KI nur der minimal nötige Prompt-Ausschnitt nach Einwilligung), Apache-2.0-lizenziert und mit Compliance-unterstützenden Kontrollen und Dokumentation im Hinblick auf den EU AI Act (die rechtliche Bewertung bleibt Sache der einsetzenden Stelle).
 
 Das Projekt deckt sich strukturell mit den drei Servicelinien von RINWA auf eine Weise, die mir auffällig genau erscheint:
 

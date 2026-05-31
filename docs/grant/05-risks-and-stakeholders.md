@@ -25,6 +25,8 @@ A risk is **Critical** if it can sink the application or the project entirely.
 
 **Mitigation**: verify the actual target NLnet call deadline within the first 24 hours of execution. If call 13, drop Week 4 scope, compress Weeks 1–3 into ~14 days, accept a less polished application. If call 14, follow the full 4-week plan.
 
+**Resolution (superseded)**: the target is confirmed as the **NGI Zero Commons Fund, 13th call, submission deadline 1 June 2026, 12:00 CEST**. Earlier references to an August 2026 / call-14 target are retained above only as the historical record of the deadline-mismatch risk; they are not the live target.
+
 **Owner**: maintainer.
 
 ### R2 — Single-author sustainability concern (Likelihood: High, Impact: High)
@@ -162,8 +164,8 @@ For each stakeholder: their role, what we need from them, what they need from us
 - **Role**: institutional wrapper for the project.
 - **What we need from them**: acceptance as a Programme; the legal-entity wrapper; governance scaffolding; access to the NLnet thematic-fund automatic-creation mechanism.
 - **What they need from us**: signed Pledge; agreement to their Code of Conduct (IEEE-ethics-based); alignment with their mission; clear commitment to free/open software.
-- **Engagement status**: not yet contacted.
-- **Next step**: Week 2 — submit application to join. See `02-execution-plan.md`.
+- **Engagement status**: Helpmefindthejob has applied to The Commons Conservancy; the application/request has been submitted and a response is pending. Admission has not yet been granted, so Commons Conservancy is not currently the project's legal host, provider, or fiscal sponsor.
+- **Next step**: await the case-officer assignment and response. See `commons-conservancy-application-2026-05-18.md`.
 
 ### S3 — Maintainer's partner (refined 2026-05-17 — see Decision 17 in `04-research-and-decisions.md`)
 
@@ -190,10 +192,10 @@ For each stakeholder: their role, what we need from them, what they need from us
 
 ### S5 — One partner Beratungsstelle (MBE / IQ-Netzwerk / university career service)
 
-- **Role**: institutional pilot partner and letter-of-support author.
+- **Role**: prospective institutional pilot partner and letter-of-support author.
 - **What we need from them**: letter of support for the application; optionally, willingness to pilot a deployment after the grant.
 - **What they need from us**: low-effort engagement (template letter, demo video, no procurement obligations); honest scoping (we are early-stage); follow-through if they sign on.
-- **Engagement status**: not yet contacted. Templates ready in `11-institutional-outreach.md`.
+- **Engagement status**: no partner support letter has been received yet and no institutional pilot partner is confirmed. Outreach has been prepared and/or sent where applicable; templates ready in `11-institutional-outreach.md`. The first pilot remains a planned post-grant activity.
 - **Next step**: Week 1 — maintainer identifies one specific named contact per top-ranked target and sends the first three cold contacts. Follow-up at day 7.
 
 ### S6 — German Native Speaker — Translation Reviewer

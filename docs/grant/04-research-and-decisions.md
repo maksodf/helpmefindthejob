@@ -1,3 +1,5 @@
+> Archive note: internal planning/history document, not the final NLnet submission text. The canonical reviewer entry points are the repository README and `docs/grant/application-draft-2026-05-19.md`.
+
 # Research Findings and Decisions Log
 
 **Status**: living record. Append when new research lands or a strategic decision is made.
@@ -20,7 +22,8 @@ If a number, claim, or decision in `01-project-brief.md` ever seems off, the sou
 | Total programme budget | €21.6 million | NLnet, EU CORDIS |
 | Deadline cadence | Every 2 months (rolling) | NLnet Commons Fund page |
 | Recent open call | 13th call: 1 April 2026 – 1 June 2026 12:00 CEST | NLnet announcement |
-| Next call deadline (approximate) | 1 August 2026 (call 14, dates inferred from cadence) | inferred from 2-month rolling pattern |
+| Target call | NGI Zero Commons Fund 13th call — deadline 1 June 2026 12:00 CEST | NLnet announcement |
+| Next call deadline (approximate, superseded/historical) | ~1 August 2026 (call 14, dates inferred from cadence) — NOT the submission target; retained only as historical record | inferred from 2-month rolling pattern |
 | Payment model | Milestone-based, results-only — no progress reports | Guide for Applicants |
 | Geographic priority | EU + Horizon-associated; non-EU eligible with European dimension | Guide for Applicants |
 | Open-source requirement | Recognised free/open licence, full source published | Guide for Applicants |
@@ -208,7 +211,7 @@ Each decision is dated. Each can be reopened — but reopening means changing th
 **Reasoning**:
 - Enforcement date is 2 August 2026 — within the project's funding window
 - Most commercial competitors are not compliant; this is a durable moat
-- Every institutional adopter inherits a compliant configuration, lowering their adoption friction
+- Every institutional adopter starts from a compliance-supporting configuration (controls, templates, audit logging, transparency surfaces, deployer guidance), lowering their adoption friction; the project does not self-certify compliance and the deployer retains their own legal review
 - Cost: ~3–4 days of documentation + UI work + audit logging integration; payoff is the single largest cost-saving mechanism the project offers
 
 Documented in `10-ai-act-compliance.md`.
@@ -220,7 +223,7 @@ Documented in `10-ai-act-compliance.md`.
 **Reasoning**:
 - Real Jobcenter / BA / federal-level adoption cycles are 18–36 months — outside any reasonable grant window
 - Reviewers familiar with German public-sector procurement will see through "will be adopted by BA in 2027" as naive
-- The honest claim is: designed for institutional adoption, standards-anchored (ESCO, EURES schema, schema.org, MCP), AI-Act-compliant by design, with realistic Phase 1 pilots at Beratungsstellen / Optionskommunen / university career services
+- The honest claim is: designed for institutional adoption, standards-anchored (ESCO, EURES schema, schema.org, MCP), shipping AI Act compliance-supporting controls (deployer retains own legal review), with realistic Phase 1 pilots at Beratungsstellen / Optionskommunen / university career services
 - One letter of support from one of those is enough to make the readiness claim concrete
 
 #### Decision 10: Grant ask — frugal default, max only if scope justifies

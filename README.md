@@ -44,7 +44,7 @@ after extended absence, the long-term unemployed, and others. Germany
 is the first reference deployment because that is where the maintainer
 is; the architecture is country-neutral.
 
-The project is being prepared as a Programme of **The Commons
+The project has applied to become a Programme of **The Commons
 Conservancy** (the NLnet-co-founded Dutch stichting whose Programmes
 include Redwax, FileSender, eduVPN, and others). License is **Apache 2.0
 with a Contributor License Agreement** so that public-sector and
@@ -77,7 +77,7 @@ We are transparent about where this project came from — the git history
 shows it, and honesty is the stronger signal than concealment. Helpmefindthejob
 was originally developed in private as a self-hosted prototype that explored a
 hosted, paid model. In May 2026 the direction was **deliberately changed to an
-open civic commons**: relicensed **Apache-2.0** (with a CLA), prepared as a
+open civic commons**: relicensed **Apache-2.0** (with a CLA), with an application opened to become a
 Programme of **The Commons Conservancy**, the paid model removed, and the
 project centred on being free to run and self-host — bring-your-own-AI
 (including a fully offline path), encrypted user data, exportable records,
@@ -333,8 +333,7 @@ your own AI.
 
 ## Hosted by
 
-**Hosted by The Commons Conservancy** *(application pending — Week 2 of
-the grant sprint).* Once admission lands, this section is updated with
+**Applied for hosting by The Commons Conservancy** *(application submitted; response pending).* Once admission lands, this section is updated with
 the Programme page link and any required acknowledgment language.
 
 Project **governance, decision-making, and succession** are described in [GOVERNANCE.md](GOVERNANCE.md) — including how the Apache-2.0 + CLA model and the Commons Conservancy track keep the project stewardable beyond any single maintainer.

@@ -1,5 +1,7 @@
 # What Comes After the 4-Week Sprint
 
+> Archive note: internal planning/history document, not the final NLnet submission text. The canonical reviewer entry points are the repository README and `docs/grant/application-draft-2026-05-19.md`.
+
 **Last updated**: 2026-05-17
 
 This document covers what happens after the application is submitted — both success paths (we win) and failure paths (we don't) — and the longer-term multi-phase vision for the project past Phase 1.
@@ -176,7 +178,7 @@ A rejection is one round, not the project's end. NLnet runs rolling 2-month dead
 
 1. **Framework extraction** — the work explicitly deferred during Phase 1. Once Helpmefindthejob and the housing agent have both been running for several months, the shared abstractions become obvious. The 11-week refactor scoped earlier (chat router, journey state machine, MCP server packaging, encrypted-profile SDK, i18n loader) becomes the Phase 2 grant.
 2. **Second NLnet application** — leveraging Phase 1 completion as evidence of delivery capability. NLnet's program rewards multi-round arcs (Redwax precedent).
-3. **First institutional pilot deployment** — at the partner Beratungsstelle / IQ-Netzwerk office / Optionskommune that signed the letter of support.
+3. **First institutional pilot deployment** — at a partner Beratungsstelle / IQ-Netzwerk office / Optionskommune, should one come on board. No partner support letter has been received yet and no institutional pilot partner is confirmed; the first pilot remains a planned post-grant activity.
 4. **Security audit through NLnet support services** if not already done.
 5. **WCAG 2.2 AA full conformance** with HAN University audit support.
 6. **FOSDEM 2027 talk delivered** — credibility multiplier.

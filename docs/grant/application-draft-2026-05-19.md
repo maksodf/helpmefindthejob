@@ -6,6 +6,7 @@
 **Status**: working draft for the §4.4 execution-plan slice; not
 yet submitted. The maintainer reviews + an external reader does
 a clarity pass + the maintainer submits via nlnet.nl/propose.
+Target call: NGI Zero Commons Fund 13th call, deadline 1 June 2026 12:00 CEST.
 
 **Source-of-truth materials**:
 - Per-field structure: [`nlnet-form-fields-2026-05-19.md`](nlnet-form-fields-2026-05-19.md)
@@ -34,11 +35,14 @@ Optional. Skip unless the maintainer wants a phone fallback.
 
 ## Field 4 — Organisation (optional)
 
-> Project hosted as a Programme of The Commons Conservancy
-> (application pending; Conservancy is a Dutch stichting
-> co-founded by NLnet). No commercial legal entity. Lead applicant
-> is the individual maintainer; the Conservancy provides
-> governance + fiscal channel post-admission per Decision 2.
+> The project has applied to The Commons Conservancy; the
+> application has been submitted and a response is pending.
+> Admission is not yet granted, so The Commons Conservancy is not
+> currently the legal host, provider, or fiscal sponsor.
+> (The Conservancy is a Dutch stichting co-founded by NLnet.) No
+> commercial legal entity. Lead applicant is the individual
+> maintainer; on admission the Conservancy would provide
+> governance + fiscal channel per Decision 2.
 
 ## Field 5 — Country (optional)
 
@@ -72,9 +76,8 @@ will activate when the working branch merges to `main`).
 Until that activation: `https://github.com/maksodf/helpmefindthejob`
 (canonical source repository).
 
-**Live deployments**:
-- Public apex: [`https://helpmefindthejob.org`](https://helpmefindthejob.org/) — the same code reviewers see in the repository. Public registration is closed on this hosted instance (pre-launch); the full sign-up flow is exercised by self-hosting.
-- Demo subdomain: [`https://demo.helpmefindthejob.org`](https://demo.helpmefindthejob.org/) — live, seeded with the seven canonical personas as writable sandbox accounts (Aïcha, Yusuf, Olga, Mahmoud, Maria, Käthe, Tobias). Registration is closed; reviewers log in with any persona, e.g. `aicha@demo.helpmefindthejob.org` / `ExploreDemo2026` (shared demo password, also shown on the demo landing). Shared sandbox — the maintainer may reset accounts at any time.
+**Deployments**:
+- A hosted demo (apex `helpmefindthejob.org` and `demo.helpmefindthejob.org`, seeded with the seven canonical personas as sandbox accounts — Aïcha, Yusuf, Olga, Mahmoud, Maria, Käthe, Tobias) is prepared but not guaranteed live at submission time. If it is reachable, it is optional reviewer evidence: reviewers may log in with any persona, e.g. `aicha@demo.helpmefindthejob.org` / `ExploreDemo2026` (shared demo password, also shown on the demo landing). If it is not reachable, reviewers should use the repository, documentation, and self-hosting recipe instead. The hosted demo runs the same code reviewers see in the repository.
 - Seed-personas recipe: [`scripts/seed-personas.py`](https://github.com/maksodf/helpmefindthejob/blob/main/scripts/seed-personas.py) reproduces the demo state on any self-hosted instance.
 
 ---
@@ -95,24 +98,33 @@ Until that activation: `https://github.com/maksodf/helpmefindthejob`
 > specialist HR and bureaucratic-navigation knowledge into a
 > small, well-documented set of MCP-composable modular tools.
 > The first reference implementation is a conversational
-> jobseeker copilot deployed in Germany; the same modules
-> compose with parallel open civic agents (housing, healthcare,
-> residency, education) to form a coherent multi-domain civic
-> assistant. The codebase is Apache-2.0-licensed, self-hostable,
-> encrypted at rest (ChaCha20-Poly1305), runs on the user's
-> choice of AI provider (BYO-AI abstraction across eight AI
-> providers, including a fully offline path via Ollama), and ships
-> an EU AI Act compliance pack
-> designed for the 2 August 2026 high-risk-AI enforcement date.
+> jobseeker copilot deployed in Germany; the same modules are
+> designed for future interoperability with parallel open civic
+> agents (housing, healthcare, residency, education) via
+> consent-bound contracts, toward a coherent multi-domain civic
+> assistant (current evidence is a reference/stub integration,
+> not a live external civic-agent ecosystem). The codebase is
+> Apache-2.0-licensed, self-hostable, encrypted at rest
+> (ChaCha20-Poly1305), runs on the user's choice of AI provider
+> (a BYO-AI abstraction with multiple provider modes — local,
+> cloud, CLI, managed, manual, and a deterministic no-AI mode —
+> including a fully offline path via Ollama; exact counts are in
+> the technical reference), and ships an EU AI Act
+> compliance-supporting pack of controls, templates, audit
+> logging, transparency materials, and deployer guidance for the
+> 2 August 2026 high-risk-AI enforcement date — it does not
+> self-certify conformity, and each deployer remains responsible
+> for its own legal review.
 > Articles 12 (audit log) and 14 (human-oversight admin endpoint)
 > are wired in code; Articles 9, 10, 11 + Annex IV, 13, 15, 27
 > and 49 are deployer-doctrine artefacts and templates in
 > `compliance/`.
 >
-> Hosted as a Programme of The Commons Conservancy. Every
-> feature is evaluated against a dual measure: improve outcomes
-> for the people served AND reduce operational cost for the
-> institutions that serve them.
+> The project has applied to The Commons Conservancy (application
+> submitted, response pending; not yet the legal host or fiscal
+> sponsor). Every feature is evaluated against a dual measure:
+> improve outcomes for the people served AND reduce operational
+> cost for the institutions that serve them.
 
 ---
 
@@ -193,18 +205,21 @@ the deliverables rather than maximising what the fund permits.
 
 ## Field 12 — Budget usage explanation
 
-Six milestones, results-only, no progress reports — per NLnet's standard
-model. Each milestone is a verifiable public deliverable; payment is
-requested upon delivery (artefact reachable from the public repository). All
-work is performed by the maintainer; the budget funds maintainer time only —
-no third-party fees, no per-seat or hardware costs. Blended rate €60/hour;
-€37,000 ≈ 617 developer-hours across a 9-month execution window measured from
-the grant/MoU signature (not the application date), part-time alongside
-existing obligations.
+Total grant ask: €37,000, across six milestones, results-only, no progress
+reports — per NLnet's standard model. Each milestone is a verifiable public
+deliverable; payment is requested upon delivery (artefact reachable from the
+public repository). The budget funds two roles — a software developer and a
+project manager/documentation lead — paid hourly. No travel is requested; the
+only non-labour cost is the project domain. The project has no other funding.
+Blended rate €60/hour; €37,000 ≈ 617 hours across a 9-month execution window
+measured from the grant/MoU signature (not the application date), part-time
+alongside existing obligations.
 
 The kernel already exists and is the evidence base (see Field 9 and the
 public repository): an Apache-2.0 MCP server with a 15-tool catalogue, a
-BYO-AI abstraction across eight AI providers, encryption-at-rest
+BYO-AI abstraction with multiple provider modes (local, cloud, CLI, managed,
+manual, deterministic no-AI; exact counts in the technical reference),
+encryption-at-rest
 (ChaCha20-Poly1305) with an HMAC-SHA256 audit chain, a compliance scaffold,
 reproducible Nix builds with signed releases, a curated ESCO subset, and
 EN+DE localisation. The milestones below take that kernel from a working
@@ -328,14 +343,15 @@ template are present.
 | 6 — Operator readiness and first-pilot package | €5,000 | ~83h |
 | **Total** | **€37,000** | **~617h** |
 
-**Rate basis (explicit)**: one solo maintainer-developer — no employees, no
-overhead/F&A, no per-seat or hardware costs, no third-party fees. Blended
-labour rate **€60/hour**, well below EU commercial senior-developer rates.
-€37,000 ≈ **617 developer-hours** (€37,000 ÷ €60/h) across a **9-month**
-execution window measured from grant/MoU signature, part-time alongside
-existing obligations. No hardware purchase (existing equipment plus an
-existing low-cost VM); no travel budgeted. €37k is below the €50k
-first-proposal cap and is frugal-by-default per Decision 10.
+**Rate basis (explicit)**: two roles — a software developer and a project
+manager/documentation lead — paid hourly, with no overhead/F&A and no
+per-seat or hardware costs. Blended labour rate **€60/hour**, well below EU
+commercial senior-developer rates. €37,000 ≈ **617 hours** (€37,000 ÷ €60/h)
+across a **9-month** execution window measured from grant/MoU signature,
+part-time alongside existing obligations. No hardware purchase (existing
+equipment plus an existing low-cost VM); no travel budgeted; the only
+non-labour cost is the project domain. The project has no other funding. €37k
+is below the €50k first-proposal cap and is frugal-by-default per Decision 10.
 
 ---
 
@@ -384,7 +400,7 @@ substantial.
 | Open-source (Apache 2.0) | no | no | no | **yes** |
 | Self-hostable on commodity hardware | no | no | mixed | **yes** (deployment-recipe.md + flake.nix) |
 | User-sovereign data (encrypted at rest) | no | no | no | **yes** (ChaCha20-Poly1305 AEAD) |
-| BYO-AI (no vendor lock-in) | no | no | no | **yes** (8: OpenAI / Anthropic / Gemini / DeepSeek / OpenRouter / Ollama-offline / Codex CLI / Claude Code) |
+| BYO-AI (no vendor lock-in) | no | no | no | **yes** (multiple provider modes — local, cloud, CLI, managed, manual, deterministic no-AI; offline path via Ollama; exact counts in the technical reference) |
 | MCP-composable with other civic agents | no | no | no | **yes** (15-tool v0.2.0 catalogue, JSON-Schema gated) |
 | EU AI Act compliance pack | no | partial | no | **yes** (`compliance/`, 23 artefacts) |
 | WCAG 2.2 AA audit evidence | no | partial | no | **yes** (`ACCESSIBILITY.md`, 30 → 0 findings) |
@@ -446,13 +462,14 @@ seniority, skill, language, recognition, sector); reducing the cross-provider
 spread without hand-tuning is the open question.
 
 **(3) One workflow over heterogeneous, replaceable AI.** The same journey
-must run across eight AI provider integrations — OpenAI, Anthropic, Gemini,
-DeepSeek, OpenRouter, local Ollama, Codex CLI and Claude Code — plus a deterministic no-AI fallback,
+must run across multiple provider modes — local, cloud, CLI, managed, manual,
+and a deterministic no-AI fallback (exact counts in the technical reference) —
 behind a single contract, with per-user cost caps and graceful degradation,
-so users keep data sovereignty and are never locked to a vendor. Ollama is
-exercised live today; the other six providers are covered by mocked dispatcher
-tests pending live verification (Phase 2). Hiding very different APIs, latencies and
-output quality behind one stable contract is the engineering challenge.
+so users keep data sovereignty and are never locked to a vendor. The local
+Ollama path is exercised live today; the cloud/CLI/managed paths are covered
+by mocked dispatcher tests pending live verification (Phase 2). Hiding very
+different APIs, latencies and output quality behind one stable contract is the
+engineering challenge.
 
 **(4) European standards interoperability at scale.** Mapping messy,
 multi-source job data onto ESCO (~3,000 occupations and ~13,500 skills,
@@ -465,14 +482,16 @@ tool.
 
 **(5) Composable, consent-bound civic infrastructure — the project's central
 commons contribution.** We expose employment functions as versioned MCP tools
-that independent civic agents (housing, residency, education, healthcare) can
-compose with, where every cross-agent profile share is consent-bound and
-audit-logged and the tool contract versions cleanly so older clients degrade
-gracefully. We have demonstrated this end-to-end: a reference housing agent
-composes over the real MCP transport, receives a real consent-scoped profile,
-drives the full referral lifecycle, and every cross-agent call is attributed
-to the composing agent in a tamper-evident audit log whose HMAC chain the
-demo verifies (`examples/housing-stub-client/`). The open challenges are
+that independent civic agents (housing, residency, education, healthcare) are
+designed to compose with via consent-bound contracts, where every cross-agent
+profile share is consent-bound and audit-logged and the tool contract
+versions cleanly so older clients degrade gracefully. The current evidence is
+a reference/stub integration, not a live external civic-agent ecosystem: a
+reference housing-agent stub composes over the real MCP transport, receives a
+real consent-scoped profile, drives the full referral lifecycle, and every
+cross-agent call is attributed to the composing agent in a tamper-evident
+audit log whose HMAC chain the demo verifies (`examples/housing-stub-client/`).
+The open challenges are
 generalising the composition-latency budget across many agents — sequential
 handoff vs shared-profile vs orchestrated invocation each change the UX of a
 multi-domain civic journey — and hardening the cross-agent contract into a

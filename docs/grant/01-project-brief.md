@@ -1,8 +1,10 @@
+> Archive note: internal planning/history document, not the final NLnet submission text. The canonical reviewer entry points are the repository README and `docs/grant/application-draft-2026-05-19.md`.
+
 # Helpmefindthejob — Project Brief
 
 **Last updated**: 2026-05-24 (v2 revision)
 **Status**: pre-submission, planning phase complete, execution in progress
-**Working branch**: `claude/project-analysis-bpHCo`
+**Canonical reference**: `main` (and the `v0.80.0` tag)
 
 This is the strategic source-of-truth document. Read end-to-end before working on anything. If anything else in the workspace contradicts this document, this document wins — and the contradiction is a bug to fix.
 
@@ -42,7 +44,7 @@ Helpmefindthejob exists to **capture specialist HR and bureaucratic-navigation k
 
 The friction is universal across the EU labor markets; its acuity varies by user situation. Migrants and EU-mobile workers face it most acutely — language barriers, foreign-credential opacity through Anerkennung, residency-status complexities, bureaucratic fragmentation — and are the strongest single use case for the project. The same structural friction also affects career changers, workers returning after caregiving or extended absence, the long-term unemployed re-entering the system, returning expats, older workers facing implicit-bias filtering, and first-generation graduates without family-networked guidance through professional conventions. The architecture is friction-driven, not demographic-driven. Per Decision 21 in `04-research-and-decisions.md`, the migrant use case remains the strongest specific evidence and primary narrative anchor; it is not the project's hard-coded identity.
 
-We exist as a **digital commons**: open-source under Apache 2.0, hosted by The Commons Conservancy, multilingual, privacy-preserving, EU AI Act compliant by design, self-hostable by anyone — from an individual at home to a Beratungsstelle to a Jobcenter. No vendor lock-in. No commercial gate. Free for the people who need it most; sustainable through institutional support contracts and the multi-grant arc.
+We exist as a **digital commons**: open-source under Apache 2.0, multilingual, privacy-preserving, providing EU AI Act compliance-supporting controls, self-hostable by anyone — from an individual at home to a Beratungsstelle to a Jobcenter. The project has applied to The Commons Conservancy for adoption as a Programme; the application is submitted and a response is pending, so The Commons Conservancy is not currently the project's legal host, provider, or fiscal sponsor. No vendor lock-in. No commercial gate. Free for the people who need it most; sustainable through institutional support contracts and the multi-grant arc.
 
 The pattern is the **Redwax model applied to civic life**: small, well-documented, standards-anchored, composable modules combined into larger services. Our first reference implementation is the conversational jobseeker copilot deployed in Germany. The same modules compose with parallel open civic agents — housing, healthcare, residency, education — to form a coherent multi-domain civic assistant. The MCP server is the commons interface. The reference implementations are proof.
 
@@ -73,10 +75,10 @@ Helpmefindthejob is **EU-wide civic-employment infrastructure** with Germany as 
 ### What we explicitly are
 
 - Open-source under Apache 2.0 with a Contributor License Agreement
-- Hosted as a Programme of The Commons Conservancy (institutional wrapper)
+- Applied to The Commons Conservancy for adoption as a Programme (application submitted, response pending; admission not yet granted, so The Commons Conservancy is not currently the legal host/provider/fiscal sponsor)
 - Multilingual (English + German shipped; Arabic, Ukrainian, Turkish, Romanian on the roadmap)
-- Privacy-preserving (encrypted at rest with ChaCha20-Poly1305, BYO-AI provider including fully offline via Ollama, no data egress beyond what the user explicitly consents to)
-- EU AI Act compliant by design for the 2 August 2026 enforcement date
+- Privacy-preserving (encrypted at rest with ChaCha20-Poly1305, BYO-AI provider; in local Ollama, manual, and deterministic no-AI modes no data leaves the instance, while cloud provider modes egress the minimum necessary prompt slice to the selected provider only after consent)
+- Providing EU AI Act compliance-supporting controls — transparency notices, audit logging, human-oversight surfaces, and deployer guidance — for the 2 August 2026 enforcement date; deployment still requires the deployer's own legal review
 - Self-hostable on commodity hardware (Docker + Compose; Nix flake for reproducible builds)
 - Standards-anchored (MCP, schema.org JobPosting, ESCO, EURES schema, JSON Schema, WCAG 2.2 AA, RFC 9116, GDPR-aligned)
 - MCP-composable with other open civic agents
@@ -99,7 +101,7 @@ The primary target is the **NLnet NGI Zero Commons Fund**, a competitive grant p
 
 Our ask: **€37,000 across 6 milestones**, frugal-by-default, sized to actual deliverable costs rather than to the €50k ceiling. The detailed milestone budget is in `12-application-package.md`.
 
-The deadline target is verified at execution start (Open Research Question R1 in `04-research-and-decisions.md`). Calls run on a rolling 2-month cadence; call 13 closed 1 June 2026; call 14 expected ~1 August 2026.
+The target is the **NGI Zero Commons Fund 13th call, deadline 1 June 2026 12:00 CEST**. (Earlier notes referencing an August 2026 / call-14 target are superseded and retained only as historical record.) Calls run on a rolling 2-month cadence.
 
 Follow-on grants are anticipated in a multi-grant arc — the Redwax precedent demonstrates this is a known NLnet pattern. Phase 2 work (framework extraction, multi-agent orchestrator, second institutional pilot) is scoped for the next call cycle once Phase 1 milestones are delivered.
 
@@ -148,7 +150,7 @@ The project has **never been publicly launched**. A single private-instance depl
 - Backup/restore is documented with restore-drill
 - Privacy page exists, encryption is documented
 - i18n EN/DE is well-implemented
-- 8 MCP tools have JSON schemas (just need formal documentation)
+- The MCP tools have JSON schemas (just need formal documentation). The current catalogue is 15 tools; earlier references to 8 or 13 tools are historical.
 
 ---
 
@@ -165,7 +167,7 @@ Full reasoning in `04-research-and-decisions.md` Part B. Summary below; each is 
 | 5 | Personas: **panel of seven** (five most-acute migrant + two wider friction-class per Decision 21), not single anchor | 2026-05-17 / 2026-05-18 | Soft (real testers replace fictional over time) |
 | 6 | Languages: **EN + DE shipped, others post-grant** with translator pathway | 2026-05-17 | Soft (add as native speakers join) |
 | 7 | Cost-saving doctrine: **project-level design principle** | 2026-05-17 | Strategic |
-| 8 | AI Act compliance: **build in as deliverable** for 2 August 2026 enforcement | 2026-05-17 | Hard — this is the moat |
+| 8 | AI Act: **build in compliance-supporting controls as a deliverable** for the 2 August 2026 enforcement date (deployer retains own legal review) | 2026-05-17 | Hard — this is the moat |
 
 Additional capture from planning (not strategic-level but operational):
 - Housing-agent integration via maintainer's friend (Option B; Option A as fallback)
@@ -187,10 +189,12 @@ Eight built-in cost-saving mechanisms documented in `08-cost-saving-doctrine.md`
 2. **Shorter time-to-employment** — Bürgergeld avoidance, plausibly significant per case (~€1,000+/month direct + indirect)
 3. **Zero per-seat licensing fees** — self-hosted; €15k–€19k/month avoided per Beratungsstelle-scale deployment vs commercial alternatives
 4. **No vendor lock-in** — Apache 2.0, open standards, exportable user data
-5. **AI Act compliance inherited** — deployers avoid €30–€200k of compliance consulting from 2 August 2026
+5. **AI Act compliance-supporting configuration** — reduces deployers' AI Act consulting effort (modelled at €30–€200k) toward the 2 August 2026 enforcement date
 6. **Reproducible builds via Nix flake** — reduces public-sector IT maintenance burden, addresses EU IT-workforce shortage
 7. **Multilingual built in** — eliminates €15k–€30k/year per service point in translator-service costs
 8. **Faster Anerkennung pipeline** — months of welfare expense avoided per case
+
+The euro figures above (advisor-time savings, Bürgergeld avoidance, licensing, translation, and AI Act consulting savings) are **modelled cost-saving hypotheses, not measured deployment outcomes**. They are to be tested in a first pilot and replaced with measured results once data exists.
 
 This doctrine is not pitch language; it is a **design principle**. When a feature decision is ambiguous, the cost-saving frame breaks the tie. Features that improve outcomes without reducing cost are deferred or redesigned.
 
@@ -229,13 +233,13 @@ Four distinguishing design choices:
 
 1. **Structured, gated conversation** — 12-phase deterministic journey state machine, every AI invocation constrained to a phase, every database write user-confirmed. Auditable, debuggable, safe. Directly aligned with AI Act human-oversight and transparency obligations.
 
-2. **User-sovereign data and AI** — encrypted at rest (ChaCha20-Poly1305), BYO-AI provider abstraction (including Ollama for fully-offline mode), no data egress beyond explicit consent.
+2. **User-sovereign data and AI** — encrypted at rest (ChaCha20-Poly1305), BYO-AI provider abstraction (including Ollama for fully-offline mode). In local Ollama, manual, and deterministic no-AI modes no data leaves the instance; cloud provider modes egress the minimum necessary prompt slice to the selected provider only after consent.
 
 3. **MCP-exposed as open civic infrastructure** — the Model Context Protocol server is the commons interface. Versioned tool catalogue with JSON Schemas, documented composition pattern (sequential handoff, profile-shared, orchestrated). Other open civic agents — housing, healthcare, residency, education — compose with Helpmefindthejob without forking. Full spec in `09-mcp-composition.md`.
 
 4. **Multilingual and locale-aware by design** — EN + DE shipped; translator-contributor pathway documented; locale rules baked in (German yes/no synonyms, Impressum, city aliases).
 
-The MCP composition story is **proven in Week 2** with a concrete reference integration with the maintainer's friend's housing agent. This is non-negotiable. The central pitch claim must be verifiable by a reviewer reading the repo for 5 minutes.
+The MCP layer is **designed for future interoperability** with other civic agents — housing, healthcare, residency, education — through stable, consent-bound contracts. Current evidence is a reference/stub integration (demonstrated against the maintainer's friend's housing agent), not a live external civic-agent ecosystem. The central pitch claim — that the architecture composes — must be verifiable by a reviewer reading the repo for 5 minutes.
 
 ---
 
@@ -243,15 +247,15 @@ The MCP composition story is **proven in Week 2** with a concrete reference inte
 
 Helpmefindthejob is squarely **high-risk AI under EU AI Act Annex III §4(a) and §4(b)** — employment-related AI. Obligations are enforceable from **2 August 2026**.
 
-We build in compliance by design — risk management plan, data governance documentation, technical documentation aligned with Annex IV, audit logging, transparency notices, human-oversight UI, accuracy + bias testing. The full compliance pack is documented in `10-ai-act-compliance.md`.
+We provide compliance-supporting controls — a risk management plan, data governance documentation, technical documentation aligned with Annex IV, audit logging, transparency notices, human-oversight surfaces, accuracy + bias testing, and deployer guidance. The full compliance pack is documented in `10-ai-act-compliance.md`. The project does not self-certify compliance; each deployer remains responsible for their own legal review and conformity assessment.
 
-The institutional consequence: **every institution deploying our agent inherits a compliant configuration**. They avoid the €30–€200k of external consulting otherwise needed to bring an employment-AI deployment into AI Act compliance. This is the single largest cost-saving mechanism in the project and the most durable moat against commercial competitors who are still scrambling.
+The institutional consequence: **every institution deploying our agent starts from a compliance-supporting configuration**, reducing the external-consulting effort (modelled at €30–€200k) otherwise needed to bring an employment-AI deployment toward AI Act compliance. This is among the largest cost-saving mechanisms in the project and a durable differentiator against commercial competitors who are still scrambling.
 
 ---
 
 ## 10. The institutional wrapper — Commons Conservancy (parallel track)
 
-Helpmefindthejob has applied (intake submitted) for admission as a Programme of **The Commons Conservancy** (Dutch stichting, founded 2016 by NLnet, multi-tenant legal-entity wrapper for open-source projects, free). **Admission is a parallel long-term governance track — NOT a prerequisite for the NLnet submission.** Per WinningPlan.MD v3 (re-verified against primary sources on 2026-05-23): NLnet's eligibility page explicitly states "no categorical exclusions"; only one of the 44 projects funded in the February 2026 NGI0 Commons round was an existing Conservancy programme; the Conservancy hosts only 20 programmes (vs ~371 NLnet-funded projects across 9 rounds); intake is a 12–24-month bespoke-DRACC-statutes process not designed for grant-routing speed. The sustainability story is therefore anchored on what is definitively owned by the project today (Apache 2.0 + CLA + governance pack + 7-pillar SUSTAINABILITY.md + drafted institutional outreach + multi-grant arc) and mentions the Conservancy intake as parallel evidence of long-term governance commitment.
+Helpmefindthejob has applied (intake submitted) for admission as a Programme of **The Commons Conservancy** (Dutch stichting, founded 2016 by NLnet, multi-tenant legal-entity wrapper for open-source projects, free). The application is submitted and a response is pending; admission has not yet been granted, so The Commons Conservancy is not currently the project's legal host, provider, or fiscal sponsor. **Admission is a parallel long-term governance track — NOT a prerequisite for the NLnet submission.** Per WinningPlan.MD v3 (re-verified against primary sources on 2026-05-23): NLnet's eligibility page explicitly states "no categorical exclusions"; only one of the 44 projects funded in the February 2026 NGI0 Commons round was an existing Conservancy programme; the Conservancy hosts only 20 programmes (vs ~371 NLnet-funded projects across 9 rounds); intake is a 12–24-month bespoke-DRACC-statutes process not designed for grant-routing speed. The sustainability story is therefore anchored on what is definitively owned by the project today (Apache 2.0 + CLA + governance pack + 7-pillar SUSTAINABILITY.md + drafted institutional outreach + multi-grant arc) and mentions the Conservancy intake as parallel evidence of long-term governance commitment.
 
 What this solves:
 

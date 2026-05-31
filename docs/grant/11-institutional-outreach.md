@@ -1,5 +1,9 @@
 # Institutional Outreach
 
+> Archive note: internal planning/history document, not the final NLnet submission text. The canonical reviewer entry points are the repository README and `docs/grant/application-draft-2026-05-19.md`.
+
+> Internal working material — not linked from the final application. This document and the outreach drafts it references contain draft status, private-contact redactions, and working notes; clean them before any external use.
+
 **Status**: tactical document. Tracks every outreach attempt and provides templates for cold contact.
 
 This document is for: securing **one** letter of support from a credible institutional partner before the NLnet application submission, plus optional secondary outreach (TU Berlin email, housing-agent collaborator). One credible letter beats five vague ones; do not pad.
@@ -29,7 +33,7 @@ This list is ranked by the realistic probability of getting a positive response 
 
 ### 1. MBE service point (Migrationsberatung für Erwachsene Zuwanderer)
 
-**Why first**: ~700 service points across Germany, BAMF-funded, under-resourced, see migrant jobseekers daily. The pitch — "we save you 20 minutes per client visit by handling routine CV-format questions" — is directly aligned with their pain point. They have no procurement bureaucracy for endorsing an open-source tool.
+**Why first**: ~700 service points across Germany, BAMF-funded, under-resourced, see migrant jobseekers daily. The pitch — "the tool aims to save advisor time by handling routine CV-format questions" (a modelled hypothesis, not yet a measured deployment outcome) — is directly aligned with their pain point. They have no procurement bureaucracy for endorsing an open-source tool.
 
 **Operators of MBE service points** (any of the following local offices qualify; pick one geographically close to you or with a known digital-friendly leadership):
 - **Diakonisches Werk** local offices
@@ -141,7 +145,7 @@ These are starting templates. Personalise before sending — generic mail is wor
 >
 > Sehr geehrte/r Frau/Herr [Name],
 >
-> mein Name ist [Maintainer-Name]. Ich entwickle gemeinsam mit einem kleinen Team ein Open-Source-Tool namens **Helpmefindthejob**, das speziell dafür entworfen wurde, Beratungsstellen wie Ihrer im Migrationsberatungsalltag zu entlasten — ohne Lizenzkosten, ohne Datenabfluss an kommerzielle Anbieter, vollständig EU-AI-Act-konform und mehrsprachig.
+> mein Name ist [Maintainer-Name]. Ich entwickle gemeinsam mit einem kleinen Team ein Open-Source-Tool namens **Helpmefindthejob**, das speziell dafür entworfen wurde, Beratungsstellen wie Ihrer im Migrationsberatungsalltag zu entlasten — ohne Lizenzkosten, mehrsprachig, mit Compliance-unterstützenden Kontrollen, Vorlagen und Dokumentation im Hinblick auf den EU AI Act (Stichtag 2. August 2026; die rechtliche Bewertung bleibt Sache der einsetzenden Stelle). In den lokalen Modi (Ollama, manuell, deterministisch) verlassen keine Daten die Instanz; bei Auswahl eines Cloud-KI-Anbieters wird nach Einwilligung nur der minimal nötige Prompt-Ausschnitt an diesen Anbieter gesendet.
 >
 > Das Tool übernimmt routinemäßige Fragen, die Klient:innen täglich an Ihre Berater:innen richten — Lebenslauf-Format, Anerkennungs-Pfade, Bewerbungsschreiben in deutscher Geschäftssprache, Stellensuche bei anerkennungsbereiten Arbeitgebern — sodass Ihre Berater:innen sich auf jene Fälle konzentrieren können, die echtes menschliches Urteilsvermögen erfordern.
 >
@@ -190,7 +194,7 @@ These are starting templates. Personalise before sending — generic mail is wor
 >
 > Dear [Career Service Director],
 >
-> I am a student at TU Berlin developing an open-source civic-employment agent — **Helpmefindthejob** — that supports international students and recent graduates navigating the German job market after their studies. The tool is multilingual, privacy-preserving, EU AI Act compliant by design, and free for institutional adoption.
+> I am a student at TU Berlin developing an open-source civic-employment agent — **Helpmefindthejob** — that supports international students and recent graduates navigating the German job market after their studies. The tool is multilingual, privacy-preserving (in local Ollama, manual, or deterministic no-AI modes no data leaves the instance; if a cloud AI provider is selected, only the minimum necessary prompt slice is sent after consent), and free for institutional adoption. It provides compliance-supporting controls, templates, and documentation for the EU AI Act (2 August 2026 enforcement date); deployment still requires the deployer's own legal review.
 >
 > Many international graduates of [University Name] face the same recurring challenges: translating their CV into the German format, identifying employers willing to engage with foreign credentials, drafting motivation letters that speak to German hiring conventions. Our tool addresses each of these directly.
 >
@@ -213,7 +217,7 @@ This is the *content* template a partner organisation can either sign verbatim, 
 >
 > To the NLnet Foundation:
 >
-> [Partner organisation name] supports the development of **Helpmefindthejob**, an open-source civic-employment agent for the European labor-shortage gap, as a Programme of The Commons Conservancy.
+> [Partner organisation name] supports the development of **Helpmefindthejob**, an open-source civic-employment agent for the European labor-shortage gap. (Helpmefindthejob has applied to The Commons Conservancy; that application has been submitted and a response is pending — admission has not yet been granted.)
 >
 > Our daily work in [migration counselling / qualification recognition / university career services / public employment] brings us into contact with the population this project is designed to serve: skilled and semi-skilled migrants and international workers who face employment-market friction not because of capability but because of language barriers, foreign-credential opacity, bureaucratic fragmentation, and the absence of tools designed for their situation.
 >
@@ -251,7 +255,7 @@ This is drafted *with the maintainer*, since the friend is their personal contac
 > 1. Wir publizieren beide Projekte unter Apache 2.0 (falls deins noch nicht so lizenziert ist).
 > 2. Ich baue in den nächsten 2 Wochen eine kleine, reale Integration: dein Housing-Agent ruft einen Endpunkt meines MCP-Servers auf, oder umgekehrt; beide Seiten teilen ein kleines portables Nutzerprofil mit ausdrücklicher Einwilligung.
 > 3. Wir cross-linken die Repositories.
-> 4. Falls die Förderung kommt, ist dein Projekt im erweiterten Plan als komponierender Reference-Agent benannt — was mittelfristig auch deinem Projekt sichtbarkeit, ein institutionelles Zuhause (The Commons Conservancy) und potenzielle eigene Anschlussförderung bringt.
+> 4. Falls die Förderung kommt, ist dein Projekt im erweiterten Plan als komponierender Reference-Agent benannt — was mittelfristig auch deinem Projekt Sichtbarkeit, ein potenzielles institutionelles Zuhause (The Commons Conservancy, sofern dort aufgenommen) und mögliche eigene Anschlussförderung bringt.
 >
 > Was ich von dir konkret bräuchte:
 > - Eine kurze Bestätigung, ob du grundsätzlich offen bist
@@ -271,7 +275,7 @@ This is drafted *with the maintainer*, since the friend is their personal contac
 >
 > Dear Prof. [Name] / Dear [Office],
 >
-> I am a student at TU Berlin developing an open-source civic-employment agent — **Helpmefindthejob** — that supports migrant and international jobseekers navigating the German and EU labor market. The project is being prepared as a Programme of The Commons Conservancy and is applying to the NLnet NGI Zero Commons Fund.
+> I am a student at TU Berlin developing an open-source civic-employment agent — **Helpmefindthejob** — that supports migrant and international jobseekers navigating the German and EU labor market. The project has applied to The Commons Conservancy (application submitted, response pending; admission not yet granted) and is applying to the NLnet NGI Zero Commons Fund.
 >
 > The technical core sits at the intersection of conversational AI (structured journey state machines, EU AI Act compliance, the Model Context Protocol), civic informatics, and accessibility-first multilingual interfaces. The first reference deployment serves migrant jobseekers in Germany — a measurable, underserved population.
 >
@@ -307,7 +311,7 @@ This template is for developer friends who could build a housing-search agent fr
 >
 > — Lizenz: Apache 2.0. Das ist auch die Lizenz von Helpmefindthejob — sorgt für maximale institutionelle Adoption (NGOs, Beratungsstellen, Jobcenter) und passt zur zivilgesellschaftlichen Ausrichtung.
 >
-> — Anerkennung: du wirst als Co-Autor:in deines Schwester-Projekts namentlich genannt. Das Projekt kann selbst als Programme bei der Commons Conservancy (NLnet-Stiftung) gehostet werden, was eigene Förderschienen eröffnet.
+> — Anerkennung: du wirst als Co-Autor:in deines Schwester-Projekts namentlich genannt. Das Projekt könnte sich selbst als Programme bei der Commons Conservancy (NLnet-Umfeld) bewerben, was eigene Förderschienen eröffnet.
 >
 > — Mögliche eigene Förderung: falls die NLnet-Förderung für Helpmefindthejob klappt, ist ein eigener Folge-Antrag für dein Projekt der natürliche nächste Schritt. Die Architektur und das institutionelle Framing sind gleich genug, dass der Antrag relativ schnell geht — die Pionier-Arbeit ist bereits geleistet.
 >
@@ -328,7 +332,7 @@ This template is for developer friends who could build a housing-search agent fr
 >
 > [Maintainer]
 > [Kontakt]
-> [Link zum Helpmefindthejob README: https://github.com/maksodf/helpmefindthejob/blob/claude/project-analysis-bpHCo/README.md]
+> [Link zum Helpmefindthejob README: https://github.com/maksodf/helpmefindthejob/blob/main/README.md]
 
 ---
 
@@ -350,7 +354,9 @@ This template is for developer friends who could build a housing-search agent fr
 
 ## What success looks like
 
-Minimum: **one credible letter of support** in hand by submission day.
+Current status: **no partner support letter has been received yet**, and **no institutional pilot partner is confirmed**. Outreach has been prepared and/or sent where applicable; the first pilot remains a planned post-grant activity.
+
+Minimum target: **one credible letter of support** by submission day.
 
 Better: **two letters** + the **housing-agent collaboration confirmed** + **one optional academic affiliation pending**.
 

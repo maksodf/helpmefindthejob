@@ -1,5 +1,7 @@
 # Outreach draft 01 — AWO Charlottenburg-Wilmersdorf MBE (Pangea-Haus)
 
+> Internal working material — not linked from the final application. Remove private-contact notes, fill sender fields, and keep the cautious compliance/privacy wording below before any external use.
+
 **STATUS**: DRAFTED — NOT YET SENT — TARGET SEND: WEEK 4 START
 
 **Contact details last verified**: 2026-05-18 via Berlin.de Charlottenburg-Wilmersdorf integration listing + AWO Berlin migration-services page. Re-checked 2026-05-19 against the same sources — no public change to the FIM-CW contact surface. Re-verify name, email, and any change of role on the day of sending; the AWO Berlin web surface is occasionally republished.
@@ -40,7 +42,7 @@ Konkret übernimmt das Tool routinemäßige Fragen, die Klient:innen täglich an
 Zwei Aspekte erscheinen mir bei Ihrer Stelle besonders passend:
 
 1. Das mehrsprachige Beratungsangebot des Pangea-Hauses (Arabisch, Deutsch, Englisch, Französisch, Russisch, Spanisch, Türkisch) entspricht fast vollständig der Sprachpalette, die unser Tool perspektivisch abdecken soll — Deutsch und Englisch sind bereits live, Arabisch und Türkisch stehen auf unserer Post-Förderungs-Roadmap.
-2. Das Tool ist vollständig DSGVO-konform (lokal selbst hostbar, ChaCha20-Poly1305-verschlüsselt, keine Datenabflüsse an Dritte), vendor-lock-in-frei (Apache-2.0-Lizenz) und im Vorgriff auf den EU AI Act ab dem 2. August 2026 vollständig dokumentiert. Für Ihre Stelle entstünden keinerlei Lizenzkosten.
+2. Das Tool ist datenschutzfreundlich gestaltet (lokal selbst hostbar, ChaCha20-Poly1305-verschlüsselt): in den lokalen Modi — Ollama, manuell, deterministisch ohne KI — verlassen keine Daten die Instanz; wird ein Cloud-KI-Anbieter ausgewählt, wird nach Einwilligung nur der minimal nötige Prompt-Ausschnitt an diesen Anbieter gesendet. Es ist vendor-lock-in-frei (Apache-2.0-Lizenz) und bietet Compliance-unterstützende Kontrollen, Vorlagen und Dokumentation im Hinblick auf den EU AI Act (Stichtag 2. August 2026); die rechtliche Bewertung bleibt Sache der einsetzenden Stelle. Für Ihre Stelle entstünden keinerlei Lizenzkosten.
 
 Wir bewerben uns in den nächsten Wochen um eine Förderung beim niederländischen NLnet-Stiftungsprogramm (NGI Zero Commons Fund, EU-finanziert). Ein Empfehlungsschreiben einer Berliner Migrationsberatungsstelle würde die zivilgesellschaftliche Relevanz unseres Projekts gegenüber dem Geldgeber sichtbar machen.
 

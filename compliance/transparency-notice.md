@@ -182,7 +182,7 @@ We list these here because honesty about limitations matters more than marketing
 
 ## Where the system lives
 
-Helpmefindthejob is open-source under Apache License 2.0. The source code is at `https://github.com/maksodf/helpmefindthejob`. The project is being prepared as a Programme of The Commons Conservancy (a Dutch foundation co-founded by NLnet). You can fork, self-host, audit, or contribute. No vendor lock-in. No commercial gate.
+Helpmefindthejob is open-source under Apache License 2.0. The source code is at `https://github.com/maksodf/helpmefindthejob`. The project has applied to become a Programme of The Commons Conservancy (a Dutch foundation co-founded by NLnet); the application is submitted and a response is pending, and admission has not yet been granted. You can fork, self-host, audit, or contribute. No vendor lock-in. No commercial gate.
 
 ---
 
