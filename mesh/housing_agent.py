@@ -17,7 +17,7 @@ end-to-end demo can walk the three primary scenarios:
 2. Yusuf Blue Card — Munich, single occupant, Tech salary (€1400
    cold rent ceiling), needs furnished short-term (3-6 mo) while
    he looks for a permanent flat.
-3. Olga §24 Ukraine protection — Hamburg, family of 3 (mother +
+3. Olga §24 Ukraine protection — Leipzig, family of 3 (mother +
    2 children under 12), needs family-sized + close to a Kita.
 
 For each scenario the agent returns a structured intake-decision
@@ -103,14 +103,16 @@ COHORTS: list[dict[str, Any]] = [
         "subsidy_eligible": False,
     },
     {
-        "cohort_id": "hamburg_paragraph_24_ukraine",
-        "label": "Hamburg §24 Ukraine protection, family",
+        "cohort_id": "leipzig_paragraph_24_ukraine",
+        "label": "Leipzig §24 Ukraine protection, family",
         "matches": {
-            "city": ["hamburg"],
+            "city": ["leipzig"],
             "residency_status_in": ["§24", "24", "ukraine"],
         },
         "estimated_wait_weeks": [3, 8],
-        "monthly_rent_band_eur": [780, 1200],
+        # Leipzig is markedly cheaper than the larger cities; illustrative
+        # family KdU band (cold rent) for a §24 Bedarfsgemeinschaft.
+        "monthly_rent_band_eur": [520, 900],
         "tags": [
             "family-sized",
             "kita-proximity",

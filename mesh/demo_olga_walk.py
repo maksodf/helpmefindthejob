@@ -1,16 +1,18 @@
 # Copyright (c) 2026 Helpmefindthejob contributors
 # SPDX-License-Identifier: Apache-2.0
-"""End-to-end mesh demo: Olga (§24 Ukraine, Hamburg, family).
+"""End-to-end mesh demo: Olga (§24 Ukraine, Leipzig, family).
 
-Companion to demo_aicha_walk.py and demo_yusuf_walk.py — covers
-the most-complex cohort:
+Companion to demo_aicha_walk.py and demo_yusuf_walk.py — covers a
+software-professional cohort and a deliberately valuable legal case:
 
-1. Verify Olga's Ukrainian General Medicine MD →
-   anerkennung-agent → medicine_paragraph_24_ukraine pathway →
-   expedited_recognition_supervised_practice.
-2. Hamburg family housing → housing-agent →
-   hamburg_paragraph_24_ukraine cohort (€780-1200/mo,
-   family-sized, Kita-proximity).
+1. Verify Olga's Ukrainian software / senior-frontend background →
+   anerkennung-agent → it_unregulated_no_recognition pathway →
+   the agent correctly reports that NO formal recognition
+   (Anerkennung) is required, because IT / software is an
+   unregulated profession in Germany. She can work immediately.
+2. Leipzig family housing → housing-agent →
+   leipzig_paragraph_24_ukraine cohort (markedly cheaper than the
+   larger cities, family-sized, Kita-proximity).
 3. Social-services with family → social-services-agent →
    olga_paragraph_24_family cohort (Bürgergeld + Kinderzuschlag,
    Kita-Gutschein, Sprachkurs DSH B1, Schulpaket).
@@ -44,10 +46,10 @@ OLGA_PROFILE: dict[str, Any] = {
     "frictionClass": "olga",
     "residencyStatus": "§24 Ukraine",
     "countryOfOrigin": "Ukraine",
-    "qualificationField": "General Medicine",
-    "city": "Hamburg",
-    "languageProficiency": {"de": "A2", "uk": "native", "ru": "native", "en": "B1"},
-    "yearsExperience": 12,
+    "qualificationField": "Software engineering (senior frontend / React)",
+    "city": "Leipzig",
+    "languageProficiency": {"de": "A2", "uk": "native", "ru": "native", "en": "C1"},
+    "yearsExperience": 9,
     "consentedScopes": ["identity", "residence", "employment", "family"],
     "userConsentReceivedAt": "2026-05-21T12:00:00+00:00",
     "hasChildren": True,
@@ -133,8 +135,10 @@ def main() -> int:
 
     # Step 1
     _section(
-        "Step 1 — Verify Olga's Ukrainian General Medicine MD",
-        "Expected pathway: medicine_paragraph_24_ukraine.",
+        "Step 1 — Verify Olga's Ukrainian software / frontend background",
+        "Expected pathway: it_unregulated_no_recognition.\n"
+        "IT / software is an unregulated profession in Germany — the agent\n"
+        "should report that NO formal recognition is required.",
     )
     decision = _post_json(
         f"{ANERKENNUNG_URL}/v1/verify-credential",
@@ -149,19 +153,20 @@ def main() -> int:
     print(f"  ✓ pathway = {decision['pathway']}")
     print(f"  ✓ decision = {decision['decision']}")
     print(f"  ✓ legalBasis = {decision['legalBasis']}")
-    print(f"  ✓ supervised practice required: {decision['estimatedCompletionMonths']} months")
+    print(f"  ✓ issuingAuthority = {decision['issuingAuthority']}")
+    print(f"  ✓ estimated months to start = {decision['estimatedCompletionMonths']}")
 
-    # Step 2 — Hamburg family housing
+    # Step 2 — Leipzig family housing
     _section(
         "Step 2 — Refer Olga + 2 children to housing-agent",
-        "Expected cohort: hamburg_paragraph_24_ukraine (family-sized, Kita-proximity).",
+        "Expected cohort: leipzig_paragraph_24_ukraine (family-sized, Kita-proximity).",
     )
     intake = _post_json(
         f"{HOUSING_URL}/v1/intake",
         {
             "referral": _build_referral(
                 "housing-agent",
-                "needs_housing_hamburg_family",
+                "needs_housing_leipzig_family",
                 {
                     "city": OLGA_PROFILE["city"],
                     "residency_status": OLGA_PROFILE["residencyStatus"],
@@ -205,8 +210,8 @@ def main() -> int:
 
     _section("Demo complete")
     print("  Olga demo walk passed:")
-    print("    • MD recognized under §24 — supervised practice path")
-    print("    • Family-sized Hamburg housing intake")
+    print("    • Software/IT correctly identified as unregulated — no Anerkennung needed")
+    print("    • Family-sized Leipzig housing intake")
     print("    • Bürgergeld + Kinderzuschlag + Kita-Gutschein recommended")
     return 0
 

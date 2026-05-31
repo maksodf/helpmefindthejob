@@ -88,7 +88,7 @@ RECOMMENDATION_COHORTS: list[dict[str, Any]] = [
         },
         "primary_benefit": "Bürgergeld (SGB II) + Kinderzuschlag",
         "supporting_benefits": [
-            "Kita-Gutschein Hamburg (24/30/45h pro Woche)",
+            "Kita-Gutschein Leipzig (24/30/45h pro Woche)",
             "Schulpaket (BuT — Bildung und Teilhabe)",
             "Sprachkurs DSH B1 (Volkshochschule, kostenfrei)",
             "Familienkasse — Kindergeld",
@@ -96,11 +96,11 @@ RECOMMENDATION_COHORTS: list[dict[str, Any]] = [
         "estimated_monthly_eur": [1450, 1880],
         "next_steps": [
             "Antrag Bürgergeld + Kinderzuschlag (eine Antragstelle)",
-            "Kita-Gutschein-Antrag bei Sozialbehörde Hamburg",
+            "Kita-Gutschein-Antrag bei Sozialamt Leipzig",
             "Schulanmeldung Bezirksamt — Termin in <14 Tagen",
         ],
         "duration_months": 12,
-        "responsible_authority": "Jobcenter Hamburg + Sozialbehörde Hamburg",
+        "responsible_authority": "Jobcenter Leipzig + Sozialamt Leipzig",
     },
     {
         "cohort_id": "tobias_quereinstieg_bildungsgutschein",

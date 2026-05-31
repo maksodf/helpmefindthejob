@@ -16,11 +16,14 @@ pathway scenarios:
 1. Aïcha — Tunisian nursing diploma (Pflegekräfte aus
    Drittstaaten Anerkennung pathway). Output: partial
    recognition + 6-month Anpassungslehrgang requirement.
-2. Mahmoud — Syrian electrical engineering BSc under §4 AsylG.
-   Output: full recognition pending Sprachnachweis (B2 DSH).
-3. Olga — Ukrainian general medicine MD under §24 Ukraine
-   protection. Output: expedited recognition + 12-month
-   supervised practice (Approbation) pathway.
+2. Yusuf — Turkish mechanical-engineering degree, EU Blue
+   Card skilled worker (BQFG engineering-recognition route).
+   Output: ZAB Statement-of-Comparability route; Blue Card
+   employment does not require the protected Ingenieur title.
+3. Olga — Ukrainian software / senior-frontend developer
+   under §24 temporary protection. Output: NO formal
+   recognition required — IT / software is an unregulated
+   profession in Germany, so she may start work immediately.
 
 Endpoints:
 
@@ -82,42 +85,44 @@ PATHWAYS: list[dict[str, Any]] = [
         "legal_basis": "§ 25 KrPflG i.V.m. § 2 PflBRefG",
     },
     {
-        "pathway_id": "engineering_paragraph_4_asylg",
-        "label": "Engineering BSc/MSc under § 4 AsylG",
+        "pathway_id": "engineering_bluecard_bqfg",
+        "label": "Engineering recognition (BQFG) — EU Blue Card skilled worker",
         "matches": {
             "qualification_field_in": [
-                "electrical engineering",
-                "elektrotechnik",
                 "mechanical engineering",
                 "maschinenbau",
+                "electrical engineering",
+                "elektrotechnik",
                 "civil engineering",
                 "bauingenieurwesen",
             ],
-            "residency_status_in": ["§ 4 asylg", "§4 asylg", "4 asylg", "asylg"],
+            "residency_status_in": ["blue card", "blaue karte", "blue-card", "blue_card", "§18b"],
         },
-        "decision": "full_recognition_pending_language",
-        "missing": ["Sprachnachweis B2 DSH (German for academic context)"],
-        "estimated_completion_months": 12,
+        "decision": "comparability_statement_blue_card",
+        "missing": ["ZAB Statement of Comparability (Zeugnisbewertung) for the foreign degree"],
+        "estimated_completion_months": 3,
         "issuing_authority": "Zentralstelle für ausländisches Bildungswesen (ZAB)",
-        "legal_basis": "§ 9 BQFG",
+        "legal_basis": "§ 9 BQFG + EU Blue Card route",
     },
     {
-        "pathway_id": "medicine_paragraph_24_ukraine",
-        "label": "Approbation (medicine) under § 24 Ukraine protection",
+        "pathway_id": "it_unregulated_no_recognition",
+        "label": "IT / software — unregulated profession, no formal recognition required",
         "matches": {
             "qualification_field_in": [
-                "general medicine",
-                "internal medicine",
-                "medizin",
-                "humanmedizin",
+                "software",
+                "computer science",
+                "informatics",
+                "informatik",
+                "frontend",
+                "software engineering",
             ],
-            "country_origin_in": ["ukraine", "ua"],
+            "residency_status_in": ["§24", "§ 24", "24 aufenthg", "ukraine"],
         },
-        "decision": "expedited_recognition_supervised_practice",
-        "missing": ["12-month supervised clinical practice (Approbation)"],
-        "estimated_completion_months": 12,
-        "issuing_authority": "Landesprüfungsamt für Gesundheitsberufe",
-        "legal_basis": "§ 10 BÄO + EU/UA bilateral agreement 2026",
+        "decision": "no_recognition_required_unregulated_profession",
+        "missing": [],
+        "estimated_completion_months": 0,
+        "issuing_authority": "No recognition authority — profession is unregulated",
+        "legal_basis": "No Anerkennung required (IT / software is not a regulated profession in Germany)",
     },
 ]
 

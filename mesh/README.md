@@ -49,9 +49,9 @@ to read instead of a spec.
    │  3 demo cohorts:   │      │                    │       │  POST /v1/profile- │
    │   - berlin §16d    │      │  3 pathways:       │       │   consume          │
    │   - munich blue    │      │   - pflege Drittst.│       │                    │
-   │     card           │      │   - eng §4 AsylG   │       │  3 cohorts:        │
-   │   - hamburg §24    │      │   - medicine §24   │       │   - aicha §16d     │
-   │     family         │      │     ukraine        │       │   - olga §24 family│
+   │     card           │      │   - eng BQFG       │       │  3 cohorts:        │
+   │   - leipzig §24    │      │     blue card      │       │   - aicha §16d     │
+   │     family         │      │   - IT unregulated │       │   - olga §24 family│
    │                    │      │                    │       │   - tobias Querein-│
    │  audit log →       │      │  audit log →       │       │     stieg          │
    │  data/mesh/        │      │  data/mesh/        │       │                    │
