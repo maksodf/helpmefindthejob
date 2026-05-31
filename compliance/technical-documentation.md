@@ -49,21 +49,21 @@ The intended deployer-users are: civic-employment institutions (Migrationsberatu
 The system is distributed as **open-source software under Apache 2.0** (with a Contributor License Agreement; see [`../cla.md`](../cla.md)). Distribution channels:
 
 - **Primary**: public Git repository at `https://github.com/maksodf/helpmefindthejob` (mirrored to Codeberg for European-sovereignty resilience starting Phase 2).
-- **Deployment artefacts**: Dockerfile, `docker-compose.prod.yml`, Caddy HTTPS configuration, backup/restore scripts. Nix flake for reproducible builds lands Week 3.
+- **Deployment artefacts**: Dockerfile, `docker-compose.prod.yml`, Caddy HTTPS configuration, backup/restore scripts, and a Nix flake (`flake.nix` + `flake.lock`; `nix flake check` green) for reproducible builds.
 - **MCP server**: stdio-spawned subprocess; composable with other open civic agents over JSON-RPC.
 
 No hosted SaaS distribution is operated by the provider. A future hosted-support offering is anticipated post-Phase-1 (see [`../docs/grant/03-post-grant.md`](../docs/grant/03-post-grant.md)) but is not part of the provider's current obligations.
 
 ### 1.4 Computing infrastructure
 
-The system runs on commodity hardware: a single VM with 2 vCPU and 4 GiB RAM is sufficient for a Beratungsstelle-scale deployment. AI inference is delegated to a third-party provider chosen by the user (or by the deployer in an institutional configuration), via the BYO-AI abstraction at [`../company_discovery/ai_providers.py`](../company_discovery/ai_providers.py). Supported providers: OpenAI, Anthropic, Gemini, DeepSeek, OpenRouter, Ollama (fully offline), manual handoff, Claude Code.
+The system runs on commodity hardware: a single VM with 2 vCPU and 4 GiB RAM is sufficient for a Beratungsstelle-scale deployment. AI inference is delegated to a third-party provider chosen by the user (or by the deployer in an institutional configuration), via the BYO-AI abstraction at [`../company_discovery/ai_providers.py`](../company_discovery/ai_providers.py). Supported providers: OpenAI, Anthropic, Gemini, DeepSeek, OpenRouter, Ollama (fully offline), Codex CLI, Claude Code, plus a no-AI manual handoff.
 
 ### 1.5 Description of the user interface
 
 Two surfaces:
 
 - **Web app** ([`../app.py`](../app.py)): browser-facing chat UI with a 12-phase journey state machine. Mobile-responsive. EN and DE i18n with locale-aware parsing.
-- **MCP server** ([`../mcp_server.py`](../mcp_server.py) + [`../company_discovery/mcp_tools.py`](../company_discovery/mcp_tools.py)): JSON-RPC over stdio. 13 tools published with JSON Schema for inputs and outputs. Public catalogue documented at [`../docs/mcp-server.md`](../docs/mcp-server.md).
+- **MCP server** ([`../mcp_server.py`](../mcp_server.py) + [`../company_discovery/mcp_tools.py`](../company_discovery/mcp_tools.py)): JSON-RPC over stdio. 15 tools published with a JSON Schema (`inputSchema`) for inputs, validated server-side via `jsonschema.Draft7Validator` before dispatch. Public catalogue documented at [`../docs/mcp-server.md`](../docs/mcp-server.md).
 
 ---
 
@@ -73,10 +73,10 @@ Two surfaces:
 
 The project is a single-maintainer codebase with a co-maintainer being formalised (see Decision 17). Development follows:
 
-- **Conventional Git workflow**: feature branches → PRs → reviewed merge to `claude/project-analysis-bpHCo` (the active working branch during the grant sprint) or `main`.
-- **Test-driven development** where applicable: 994+ tests across 76+ test files; full suite runs in ~20 s on bare host.
-- **CI**: GitHub Actions matrix on Python 3.11 + 3.12; MCP integration test workflow at [`.github/workflows/mcp-integration.yml`](../.github/workflows/mcp-integration.yml).
-- **Linting and security**: planned Week 3 (CI expansion in `02-execution-plan.md` §3.2): ruff, mypy, pip-audit, codespell.
+- **Conventional Git workflow**: feature branches → PRs → reviewed merge to the working branch and then `main`.
+- **Test-driven development** where applicable: 3,359 tests in the suite (26 skipped); full suite runs in ~90 s on bare host.
+- **CI**: GitHub Actions matrices on Python 3.11 + 3.12 (unit tests, `test.yml`) and 3.11 + 3.12 (MCP integration + fresh-clone install); MCP integration test workflow at [`.github/workflows/mcp-integration.yml`](../.github/workflows/mcp-integration.yml).
+- **Linting and security**: ruff, mypy (strict subset), pip-audit, and codespell run in CI (`../.github/workflows/quality.yml`).
 - **Documentation co-evolves**: every architectural change updates [`../ARCHITECTURE.md`](../ARCHITECTURE.md); every standards-relevant change updates [`../STANDARDS.md`](../STANDARDS.md); every AI-Act-relevant change updates this compliance pack.
 
 ### 2.2 Design specifications
@@ -104,14 +104,14 @@ See [`../ARCHITECTURE.md`](../ARCHITECTURE.md) for the full Mermaid diagram and 
 
 ### 2.4 Algorithm specification
 
-The fit-scoring algorithm is the only AI-driven scoring component. It is composed of:
+The fit-scoring component is the system's only AI-driven scoring surface ([`../company_discovery/analysis.py`](../company_discovery/analysis.py)). It works as follows:
 
-1. **Rule-based pre-filter**: ESCO occupation-code match (binary), location-fit (binary), work-rights-fit (binary). Excludes jobs that fail any hard criterion.
-2. **Structured criterion scoring**: per-criterion numerical scores (0–100) for skill-overlap, seniority-overlap, language-fit, recognition-fit, sector-shortage-fit. Each criterion has a published rule (e.g., language-fit is `min(role_language_required, user_language_actual) * 100`).
-3. **AI re-ranking**: the structured-criterion scores are passed to the AI provider as context alongside the job and CV slice; the AI returns a re-ranking rationale and a possible adjustment factor (bounded to ±15% of the structured score).
-4. **User-visible breakdown**: the per-criterion scores plus the AI rationale are displayed; the user can dispute or override.
+1. **Rule-based persona ranking** ([`../company_discovery/persona_ranking.py`](../company_discovery/persona_ranking.py)): discovered jobs are ordered by a deterministic persona-fit signal (role-keyword overlap, location, persona keyword boosts). This sorts the discovery queue; it does not hard-exclude jobs.
+2. **AI sub-score fit-scoring**: for a job and the user's CV slice, the AI provider is prompted to return four sub-scores — skills, experience, location+language, and friction-fit (each `0–25`) — that must sum to a `0–100` total, plus a one-sentence reason and a short gap list. The prompt carries explicit anchor scales (notably a friction-fit decision rule) to force granular reasoning rather than round-number anchoring.
+3. **Parser-layer clamp**: `parse_auto_fit_output` validates and parses the output; an out-of-range or malformed score is clamped or rejected at the parser layer (regression-tested by `tests/test_prompt_injection_vectors.py::V3JdIndirectInjection`), so a malformed or prompt-injected score never reaches the user as a misleading number — the user sees a defensible score or "no fit score available".
+4. **User-visible breakdown**: the four sub-scores, the reason, and the gaps are displayed; the user can dispute or override.
 
-The bounded-adjustment design means the AI cannot fundamentally override the structured scoring; it can only re-rank within a documented tolerance. This is a deliberate constraint to keep the system interpretable for Article 14 oversight purposes.
+The system makes **no automated final employment decision**: the fit score is advisory, every consequential action requires explicit user confirmation, and the per-criterion breakdown keeps the score interpretable for Article 14 human-oversight purposes.
 
 ### 2.5 Validation and testing
 
@@ -126,7 +126,7 @@ See [`../SECURITY.md`](../SECURITY.md) for the project's security policy. Key co
 - Session management with idle timeout and explicit logout
 - Two-factor authentication (TOTP) for admin and optional for users
 - Vulnerability disclosure via `.well-known/security.txt` per [RFC 9116](https://www.rfc-editor.org/rfc/rfc9116)
-- Dependency scanning via pip-audit (CI expansion in Week 3)
+- Dependency scanning via pip-audit in CI (`../.github/workflows/quality.yml`)
 
 ---
 
@@ -167,7 +167,7 @@ See [`human-oversight-guide.md`](human-oversight-guide.md) for the full guide. S
 
 - Default-off advisor-review mode (config flag `HELPMEFINDTHEJOB_HUMAN_OVERSIGHT_MODE`)
 - When enabled, AI outputs queue for advisor review at `/api/admin/oversight/queue`
-- Kill-switch: any deployer can disable AI features and fall back to deterministic templates
+- Kill-switch (`HELPMEFINDTHEJOB_DETERMINISTIC_ONLY`): any deployer can disable all app-initiated AI; each AI-assisted feature falls back to its no-AI path (templated letter drafts; BYO-AI handoff for fit-scoring / CV-tailoring)
 - No auto-decision paths in the codebase
 
 ---
@@ -194,7 +194,7 @@ The Git history of the public repository is the canonical change record. Substan
 - New AI invocation surfaces: documented in §1.1 of this file and in [`../company_discovery/analysis.py`](../company_discovery/analysis.py).
 - Compliance-relevant changes: appended to the change log of the relevant compliance file.
 
-Release tagging follows semantic versioning. The first public release is `v0.1.0` (target: Week 4 of the grant sprint).
+Release tagging follows semantic versioning. `v0.1.0` was the first stable tag (2026-05-18, cosign-signed + CycloneDX SBOM); `v0.80.0` is the current submission tag.
 
 ---
 
@@ -210,11 +210,11 @@ Release tagging follows semantic versioning. The first public release is `v0.1.0
 | schema.org JobPosting | Canonical structure for job records |
 | ESCO (Skills, Competences, Qualifications, Occupations) | Occupation and skill taxonomy; ISCO-based |
 | EURES schema | Cross-EU job-data interoperability |
-| JSON Schema (Draft 2020-12 in tool registry; Draft 7 in catalogue export per `02-execution-plan.md` §2.6) | MCP tool input/output schemas |
+| JSON Schema (Draft 7 in the MCP tool registry, enforced by `jsonschema.Draft7Validator`; Draft 2020-12 for the civic-profile schema + CACP conformance harness) | MCP tool input schemas |
 | Model Context Protocol (MCP, version `2024-11-05`) | Composition surface |
 | RFC 7807 (Problem Details for HTTP APIs) | Error payload format |
 | RFC 9116 (`.well-known/security.txt`) | Vulnerability disclosure |
-| WCAG 2.2 AA | Accessibility target — audit in Week 3 (`02-execution-plan.md` §3.6) |
+| WCAG 2.2 AA | Accessibility audit shipped ([`../ACCESSIBILITY.md`](../ACCESSIBILITY.md); 30 violation instances closed, 0/0/0/0 across 33 captures) |
 
 Full list and rationale: [`../STANDARDS.md`](../STANDARDS.md).
 
@@ -234,7 +234,7 @@ Article 72 of the AI Act requires a documented post-market monitoring plan. Our 
 
 - **Audit log**: every AI invocation, MCP tool call, and persistence-confirmation event is logged in JSONL format with a stable schema (see [`audit-log-schema.md`](audit-log-schema.md)). Deployers retain logs per their retention policy (default 6 months).
 - **Bias-testing methodology re-run**: deployers are expected to re-run the bias-testing methodology against their chosen AI provider at deployment, on every AI-provider switch, and at least every 12 months.
-- **Pilot-deployment feedback**: Week-3 partner-NGO pilots collect structured feedback on output quality and bias; results feed `accuracy-and-bias-testing.md`.
+- **Pilot-deployment feedback**: the post-grant partner-NGO pilot (2026 Q4 per [`../ROADMAP.md`](../ROADMAP.md)) collects structured feedback on output quality and bias; results feed `accuracy-and-bias-testing.md`.
 
 ### 9.2 Passive monitoring
 
@@ -258,4 +258,5 @@ Where an incident requires notification under Article 73, the deployer notifies 
 
 ## Append log
 
-- **2026-05-18**: initial technical documentation drafted as part of Week 2 task 2.8 of the NLnet NGI Zero Commons Fund grant sprint. Next major release scheduled v0.1.0 in Week 4.
+- **2026-05-18**: initial technical documentation drafted as part of Week 2 task 2.8 of the NLnet NGI Zero Commons Fund grant sprint.
+- **2026-05-30**: refreshed for the v0.80.0 submission state — §2.4 algorithm spec corrected to match the implemented four-sub-score scorer; test count (3,359), MCP tool count (15), provider list (incl. Codex CLI), and shipped CI/Nix/accessibility/release status updated.

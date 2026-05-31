@@ -3,7 +3,7 @@
 
 /* Helpmefindthejob — accessibility overrides for mkdocs-material.
  *
- * The §3.6 first-pass accessibility audit (axe-core CLI 4.11.4, 2026-05-19)
+ * The first-pass accessibility audit (axe-core CLI 4.11.4, 2026-05-19)
  * found that inline body links in the default mkdocs-material theme rely
  * on color alone to distinguish themselves from surrounding text, which
  * fails WCAG 1.4.1 (Use of Color) as the `link-in-text-block` axe rule.

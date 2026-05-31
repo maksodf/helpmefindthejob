@@ -14,133 +14,45 @@ from datetime import timezone
 from pathlib import Path
 from typing import Any
 
+from escolib import FALLBACK_DATASET, EscoReconciler, load_dataset
+
 from .service import CompanyDiscoveryService
 
-# ---------------------------------------------------------------------------
-# Reference ESCO dataset.
-#
-# The query_esco_skill tool returns matches loaded from the curated dataset
-# under reference/esco/ (occupations.json + skills.json). The current
-# v1-curated-2026-05-18 release carries ~30 occupations + ~50 skills covering
-# the seven-persona panel per Decision 21 (Aïcha = nurse, Yusuf = mechanical
-# engineer, Olga = frontend developer, Mahmoud = trade apprentice, Maria =
-# home-based care worker, Käthe = returning Wiedereinstieg, Tobias = trade
-# Quereinstieg) plus Bundesagentur-für-Arbeit 2025 shortage-occupation
-# coverage. Entries optionally carry altLabels_de / altLabels_en arrays so
-# colloquial synonyms (e.g. "Krankenschwester" -> 2221.1 Krankenpfleger/in)
-# resolve to canonical codes; the PART 7 Loop 22 composability flow added
-# this enrichment for the nurse entries. Codes derive from ISCO-08 / ESCO
-# 1.1 (CC BY 4.0). See docs/esco-integration.md for the upgrade path to the
-# full ESCO dataset.
-#
-# Source-class hierarchy (docs/grant/14-source-class-hierarchy.md): ESCO
-# codes are class B (authoritative standardised taxonomy). The shortageDE2024
-# flag is class C (BfA 2025 list). The tool surface carries both
-# datasetVersion (the project's curated-version pin) and esco_uri (the
-# upstream authoritative URI) so external consumers can verify provenance.
-#
-# The legacy 12-entry inline mini-dataset below is kept as a fallback for
-# environments where the reference/ tree is unavailable (e.g. some Python
-# packaging configurations). It is also used by tests that want to exercise
-# the loader's fallback path.
-# ---------------------------------------------------------------------------
+# ESCO reconciliation logic + the curated dataset now live in the standalone,
+# stdlib-only ``escolib`` package (zero application coupling) — see
+# escolib/README.md. This module is a thin adapter over it. The curated data
+# is canonical at ``reference/esco/`` and mirrored into ``escolib/data/esco/``
+# for standalone library users; tests/test_escolib_standalone.py guards the two
+# copies against drift AND that ``escolib`` never imports application code.
+_ESCO_REFERENCE_DIR = Path(__file__).resolve().parent.parent / "reference" / "esco"
 
-_ESCO_REFERENCE_DATASET_FALLBACK: list[dict[str, str]] = [
-    {"code": "2221.1", "label": "Registered nurse (general)", "type": "occupation", "isco": "2221"},
-    {
-        "code": "2221.2",
-        "label": "Specialist nurse (clinical / Pflege)",
-        "type": "occupation",
-        "isco": "2221",
-    },
-    {
-        "code": "5321.1",
-        "label": "Healthcare assistant / Pflegehelfer",
-        "type": "occupation",
-        "isco": "5321",
-    },
-    {"code": "2144.1", "label": "Mechanical engineer", "type": "occupation", "isco": "2144"},
-    {"code": "2512.1", "label": "Software developer", "type": "occupation", "isco": "2512"},
-    {
-        "code": "2513.1",
-        "label": "Frontend developer / Web developer",
-        "type": "occupation",
-        "isco": "2513",
-    },
-    {
-        "code": "7126.1",
-        "label": "Plumbing trade apprentice / Anlagenmechaniker SHK",
-        "type": "occupation",
-        "isco": "7126",
-    },
-    {
-        "code": "5322.1",
-        "label": "Home-based personal-care worker / Häusliche Pflegehilfe",
-        "type": "occupation",
-        "isco": "5322",
-    },
-    {"code": "S1.0.1", "label": "Clinical-German communication", "type": "skill"},
-    {"code": "S1.0.2", "label": "Patient documentation", "type": "skill"},
-    {"code": "S5.0.1", "label": "TypeScript / React frontend development", "type": "skill"},
-    {"code": "S2.0.1", "label": "Mechanical CAD (Solidworks / CATIA)", "type": "skill"},
-]
+# Back-compat alias: the embedded mini-dataset now lives in escolib. Retained
+# because in-repo callers + tests reference this symbol.
+_ESCO_REFERENCE_DATASET_FALLBACK = FALLBACK_DATASET
+
+# Cache of the loaded escolib ``EscoDataset`` (records + version + is_fallback).
+# Tests reset this to ``None`` to force a reload; the attribute name is part of
+# that long-standing test contract.
+_ESCO_DATASET_CACHE: Any = None
 
 
-# Module-level cache for the loaded dataset. Populated lazily on first call
-# to :func:`_load_esco_reference_dataset` and not refreshed during a process
-# lifetime — the file is repo-tracked reference data, not user data.
-_ESCO_DATASET_CACHE: list[dict[str, Any]] | None = None
+def _esco_dataset() -> Any:
+    """Return the cached curated ESCO dataset, loading it once via ``escolib``
+    from ``reference/esco/`` (escolib's embedded fallback applies if absent)."""
+    global _ESCO_DATASET_CACHE
+    if _ESCO_DATASET_CACHE is None:
+        _ESCO_DATASET_CACHE = load_dataset(_ESCO_REFERENCE_DIR)
+    return _ESCO_DATASET_CACHE
 
 
 def _load_esco_reference_dataset() -> list[dict[str, Any]]:
-    """Load the curated ESCO dataset from `reference/esco/*.json`.
+    """Return the curated ESCO match records (back-compat wrapper).
 
-    Falls back to :data:`_ESCO_REFERENCE_DATASET_FALLBACK` if the files are
-    not present. Cached for the process lifetime.
+    The reconciliation logic + dataset live in the standalone ``escolib``
+    package; this wrapper is retained because in-repo callers and tests import
+    this symbol directly. Delegates to :func:`_esco_dataset`.
     """
-
-    global _ESCO_DATASET_CACHE
-    if _ESCO_DATASET_CACHE is not None:
-        return _ESCO_DATASET_CACHE
-
-    base = Path(__file__).resolve().parent.parent / "reference" / "esco"
-    occupations_path = base / "occupations.json"
-    skills_path = base / "skills.json"
-    if not occupations_path.exists() or not skills_path.exists():
-        _ESCO_DATASET_CACHE = list(_ESCO_REFERENCE_DATASET_FALLBACK)
-        return _ESCO_DATASET_CACHE
-
-    combined: list[dict[str, Any]] = []
-    for path, kind in ((occupations_path, "occupation"), (skills_path, "skill")):
-        with path.open("r", encoding="utf-8") as handle:
-            data = json.load(handle)
-        for entry in data.get("entries", []):
-            # Normalised match record. `label` is the EN label by default
-            # (compat with the legacy mini-dataset shape); both EN + DE
-            # remain available for callers that want locale-aware display.
-            record: dict[str, Any] = {
-                "code": entry["code"],
-                "label": entry.get("label_en") or entry.get("label") or "",
-                "label_en": entry.get("label_en") or entry.get("label") or "",
-                "label_de": entry.get("label_de") or "",
-                "type": kind,
-            }
-            for optional_key in (
-                "isco",
-                "category",
-                "cefr",
-                "personas",
-                "shortageDE2024",
-                "esco_uri",
-                "altLabels_en",
-                "altLabels_de",
-            ):
-                if optional_key in entry:
-                    record[optional_key] = entry[optional_key]
-            combined.append(record)
-
-    _ESCO_DATASET_CACHE = combined
-    return combined
+    return _esco_dataset().records
 
 
 # ---------------------------------------------------------------------------
@@ -173,6 +85,7 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
         "version": "0.2.0",
         "inputSchema": {
             "type": "object",
+            "additionalProperties": False,
             "properties": {
                 "targetRoles": {"type": "array", "items": {"type": "string"}},
                 "industry": {"type": "string"},
@@ -187,6 +100,7 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
         "version": "0.2.0",
         "inputSchema": {
             "type": "object",
+            "additionalProperties": False,
             "properties": {
                 "userId": {"type": "string"},
                 "name": {"type": "string"},
@@ -205,6 +119,7 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
         "version": "0.2.0",
         "inputSchema": {
             "type": "object",
+            "additionalProperties": False,
             "properties": {"userId": {"type": "string"}, "companyId": {"type": "string"}},
             "required": ["userId", "companyId"],
         },
@@ -215,6 +130,7 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
         "version": "0.2.0",
         "inputSchema": {
             "type": "object",
+            "additionalProperties": False,
             "properties": {
                 "userId": {"type": "string"},
                 "companyId": {"type": "string"},
@@ -229,6 +145,7 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
         "version": "0.2.0",
         "inputSchema": {
             "type": "object",
+            "additionalProperties": False,
             "properties": {
                 "userId": {"type": "string"},
                 "companyId": {"type": "string"},
@@ -244,6 +161,7 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
         "version": "0.2.0",
         "inputSchema": {
             "type": "object",
+            "additionalProperties": False,
             "properties": {"userId": {"type": "string"}, "discoveredJobId": {"type": "string"}},
             "required": ["userId", "discoveredJobId"],
         },
@@ -254,6 +172,7 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
         "version": "0.2.0",
         "inputSchema": {
             "type": "object",
+            "additionalProperties": False,
             "properties": {"userId": {"type": "string"}},
             "required": ["userId"],
         },
@@ -264,6 +183,7 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
         "version": "0.2.0",
         "inputSchema": {
             "type": "object",
+            "additionalProperties": False,
             "properties": {"userId": {"type": "string"}},
             "required": ["userId"],
         },
@@ -280,6 +200,7 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
         "version": "0.2.0",
         "inputSchema": {
             "type": "object",
+            "additionalProperties": False,
             "properties": {
                 "userId": {"type": "string"},
                 "scopes": {
@@ -312,6 +233,7 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
         "version": "0.2.0",
         "inputSchema": {
             "type": "object",
+            "additionalProperties": False,
             "properties": {
                 "userId": {"type": "string"},
                 "targetAgent": {"type": "string"},
@@ -336,6 +258,7 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
         "version": "0.2.0",
         "inputSchema": {
             "type": "object",
+            "additionalProperties": False,
             "properties": {
                 "query": {"type": "string", "minLength": 1},
                 "type": {"type": "string", "enum": ["occupation", "skill", "any"]},
@@ -355,6 +278,7 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
         "version": "0.2.0",
         "inputSchema": {
             "type": "object",
+            "additionalProperties": False,
             "properties": {
                 "userId": {"type": "string"},
                 "discoveredJobId": {"type": "string"},
@@ -374,6 +298,7 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
         "version": "0.2.0",
         "inputSchema": {
             "type": "object",
+            "additionalProperties": False,
             "properties": {
                 "userId": {"type": "string"},
                 "jobId": {"type": "string"},
@@ -399,6 +324,7 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
         "version": "0.2.0",
         "inputSchema": {
             "type": "object",
+            "additionalProperties": False,
             "properties": {
                 "userId": {"type": "string"},
                 "status": {
@@ -426,6 +352,7 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
         "version": "0.2.0",
         "inputSchema": {
             "type": "object",
+            "additionalProperties": False,
             "properties": {
                 "userId": {"type": "string"},
                 "referralId": {"type": "string"},
@@ -513,6 +440,20 @@ class CompanyDiscoveryMCPTools:
         """
 
         summary = self.service.get_company_watchlist_summary(userId)
+
+        # Read the stored civic profile if the project holds one for this
+        # user. When it does, the scoped blocks below surface the real
+        # fields; when it does not, each falls back to an explicit empty
+        # placeholder so a calling civic agent can detect "no record yet"
+        # without inspecting field-by-field. ``record`` stays ``None`` for
+        # an unknown user, so the output is then identical to the prior
+        # placeholder-only behaviour.
+        record = None
+        try:
+            record = self.service.repository.get_user_profile(userId)
+        except Exception:
+            record = None
+
         profile: dict[str, Any] = {
             "userId": userId,
             "scopes": list(scopes),
@@ -524,19 +465,23 @@ class CompanyDiscoveryMCPTools:
                 "userId": userId,
                 "displayName": None,
                 "publicHandle": None,
-                "preferredLocale": "en",
+                "preferredLocale": getattr(record, "locale", None) or "en",
             }
         if "residence" in scopes:
+            # The civic profile store does not currently hold residence or
+            # work-authorisation data; these stay null until a consent-bound
+            # residence source populates them (post-Phase-1).
             profile["residence"] = {
                 "country": None,
                 "statusType": None,
                 "workAuthorisation": None,
             }
         if "employment" in scopes:
+            languages = list(getattr(record, "languages", None) or [])
             profile["employment"] = {
                 "currentStatus": None,
-                "targetRoleFamilies": [],
-                "languageLevels": {},
+                "targetRoleFamilies": list(getattr(record, "target_roles", None) or []),
+                "languageLevels": {lang: "self-reported" for lang in languages},
                 "escoSkillCodes": [],
                 "watchedCompanies": summary.get("watched_companies", 0)
                 if isinstance(summary, dict)
@@ -544,7 +489,7 @@ class CompanyDiscoveryMCPTools:
             }
         if "cv" in scopes:
             profile["cv"] = {
-                "present": False,
+                "present": bool(getattr(record, "cv_text", None)),
                 "lastUpdatedAt": None,
                 "note": (
                     "CV content is not surfaced through this tool; consume "
@@ -555,10 +500,11 @@ class CompanyDiscoveryMCPTools:
         if "outcomes" in scopes:
             profile["outcomes"] = _read_user_outcomes(self.service, userId)
         if "preferences" in scopes:
+            _location = getattr(record, "location", None)
             profile["preferences"] = {
                 "remote": None,
                 "salaryRange": None,
-                "locationStrings": [],
+                "locationStrings": [_location] if _location else [],
             }
         return {"status": "ok", "profile": profile}
 
@@ -652,46 +598,16 @@ class CompanyDiscoveryMCPTools:
     ) -> dict[str, Any]:
         """Substring-match the curated ESCO reference dataset.
 
-        Matches against both the English and German labels so a German-
-        language query against a record with an English `label_en` still
-        resolves. The output shape is stable across the v0-mini fallback
-        and the v1-curated dataset; consumers can switch dataset versions
-        without code changes.
+        Thin adapter over the standalone ``escolib`` reconciler: matches against
+        EN + DE labels and altLabels (so a German colloquial query resolves to
+        the canonical code), with a stable output shape across the v0-mini
+        fallback and the v1-curated dataset. The reconciliation logic lives in
+        ``escolib`` so other civic-tech projects can reuse it without this app.
         """
 
-        dataset = _load_esco_reference_dataset()
-        lowered = (query or "").strip().lower()
-        kind = (type or "any").lower()
-        candidates = (entry for entry in dataset if kind in ("any", entry["type"]))
-
-        def _matches(entry: dict[str, Any]) -> bool:
-            if not lowered:
-                return False
-            if lowered in entry.get("label_en", entry.get("label", "")).lower():
-                return True
-            if lowered in entry.get("label_de", "").lower():
-                return True
-            for alt in entry.get("altLabels_en", []) or []:
-                if lowered in str(alt).lower():
-                    return True
-            for alt in entry.get("altLabels_de", []) or []:
-                if lowered in str(alt).lower():
-                    return True
-            return False
-
-        matches = [entry for entry in candidates if _matches(entry)]
-        if limit is not None:
-            matches = matches[: max(0, int(limit))]
-        return {
-            "status": "ok",
-            "datasetVersion": (
-                "v1-curated-2026-05-18"
-                if dataset is not _ESCO_REFERENCE_DATASET_FALLBACK
-                else "v0-mini-fallback"
-            ),
-            "totalCandidates": len(dataset),
-            "matches": matches,
-        }
+        return (
+            EscoReconciler(dataset=_esco_dataset()).query(query, kind=type, limit=limit).to_dict()
+        )
 
     def export_eures_compatible(self, userId: str, discoveredJobId: str) -> dict[str, Any]:
         """Project a stored discovered job into EURES-compatible fields.

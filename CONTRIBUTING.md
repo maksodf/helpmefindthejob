@@ -4,8 +4,7 @@ Thank you for considering a contribution. Helpmefindthejob is an open
 civic-employment commons — a small focused codebase that aims to put
 specialist HR and bureaucratic-navigation knowledge directly into the
 hands of anyone facing structural labor-market friction in Europe, with
-migrants and EU-mobile workers as the most acute use case (see
-Decision 21 in `docs/grant/04-research-and-decisions.md`). Contributors
+migrants and EU-mobile workers as the most acute use case. Contributors
 are welcome from any background, and especially from people with direct
 lived experience of the problems the project tries to address.
 
@@ -30,8 +29,7 @@ buildable but may include unfinished work. The fresh-clone install
 is verified on every push by the `fresh-clone-install` CI workflow
 (`.github/workflows/fresh-clone-install.yml`) on `python:3.11-slim`
 and `python:3.12-slim` containers. The historical
-`cryptography` / `cffi` build issue is closed (see Week 3 task 3.1
-in `docs/grant/02-execution-plan.md`). If you still hit setup
+`cryptography` / `cffi` build issue is closed. If you still hit setup
 friction on a specific platform, please open an issue — fixing
 onboarding paper-cuts is itself a valuable contribution.
 
@@ -62,7 +60,7 @@ cd helpmefindthejob
 pip install -r requirements.txt
 
 # 2. Install development dependencies (pre-commit and friends; ruff /
-#    mypy / coverage land alongside Week 3 task 3.2).
+#    mypy / coverage).
 pip install -r requirements-dev.txt
 
 # 3. Activate the git pre-commit hook.
@@ -74,9 +72,8 @@ python3 app.py
 ```
 
 The pre-commit hook currently runs the SPDX-header check on every Python
-file you stage. It is intentionally minimal during the Week 1 phase of
-the grant sprint; lint, format, and type-check hooks (ruff, black, mypy)
-will be added in Week 3 (`docs/grant/02-execution-plan.md` §3.2).
+file you stage. It is intentionally minimal; lint, format, and
+type-check (ruff, mypy) run as CI gates — see `.github/workflows/quality.yml`.
 
 ### Nix workflow (optional, reproducible)
 
@@ -108,7 +105,7 @@ The suite passes natively on Python 3.11 + 3.12 across macOS, Linux,
 and minimal slim Docker containers — the `fresh-clone-install` CI
 workflow (`.github/workflows/fresh-clone-install.yml`) verifies this
 on every push. If your specific environment still has issues with
-cryptography wheels (extremely rare with the pinning landed in §3.1),
+cryptography wheels (extremely rare with the current pinning),
 run inside Docker as a fallback:
 
 ```bash
@@ -158,7 +155,7 @@ Use conventional commits with a clear scope:
 
 <optional body that explains the why, the trade-offs, and any non-
 obvious consequence. Wrap at 72 columns. Reference issues or planning
-docs by relative path, e.g. docs/grant/02-execution-plan.md §1.2.>
+docs by relative path, e.g. docs/grant/01-project-brief.md.>
 ```
 
 Types we use:
@@ -184,8 +181,7 @@ body is optional but encouraged for anything non-trivial.
 
 Helpmefindthejob ships English + German today and grows by locale as
 native-speaker contributors join. If you'd like to add a locale —
-Arabic, Ukrainian, Turkish, Romanian are the post-grant targets per
-[Decision 6](docs/grant/04-research-and-decisions.md) — see
+Arabic, Ukrainian, Turkish, Romanian are the post-grant targets — see
 [`docs/translating.md`](docs/translating.md) for the full pathway:
 
 - Locale-bundle structure (`static/i18n/<locale>.json`)
@@ -195,8 +191,8 @@ Arabic, Ukrainian, Turkish, Romanian are the post-grant targets per
   (terms like `Anerkennung`, `§16d`, `TVöD`, `Wiedereinstieg`,
   `Ausbildung` stay German in every locale because they have
   legal-specific meaning that doesn't translate)
-- Translation-review process (native-speaker review per Decision 18
-  consent-first authorship; credit in `AUTHORS.md`)
+- Translation-review process (native-speaker review, consent-first
+  authorship; credit in `AUTHORS.md`)
 
 The CI parity test (`tests/test_phase0_i18n_parity.py`) gates
 locale-bundle PRs.
@@ -342,10 +338,9 @@ Beyond the obvious (code correctness, tests pass, contract preserved):
 - **Honest about what didn't get tested**. If you couldn't verify a
   surface (e.g., a manual screen-reader walkthrough you didn't have
   time for), say so. Honest gaps land; hidden gaps don't.
-- **No new features inside a NLnet grant-window slice**. Look at
-  [`PlanTowardPerfection.MD`](PlanTowardPerfection.MD) — if there's an
-  active Ceiling-1 sprint, the "no new features" hard rule applies to
-  all contributors not just the maintainer.
+- **No new features inside a NLnet grant-window slice**. During an active
+  grant-window sprint, the "no new features" hard rule applies to all
+  contributors, not just the maintainer.
 
 ### What the maintainer will NEVER do
 

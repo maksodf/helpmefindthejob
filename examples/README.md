@@ -18,20 +18,22 @@ exist for two reasons:
 
 ## What's here
 
-### `housing-stub-client/`
+### `housing-stub-client/` — housing reference agent (real composition)
 
-A mock "housing agent" that demonstrates the **sequential handoff**
-(Mode 1) and **profile-shared composition** (Mode 2) patterns
-end-to-end against a real Helpmefindthejob MCP server subprocess.
+An independent housing agent that composes with Helpmefindthejob over
+MCP, demonstrating the **sequential handoff** (Mode 1, full referral
+lifecycle) and **consent-bound profile-shared composition** (Mode 2)
+end-to-end against a real MCP server subprocess. The composition is
+real: it carries real consent-scoped profile data, and the run proves
+the EU-AI-Act Article-12 audit chain (`verify_chain`). Only the housing
+listings themselves are illustrative.
 
-**Why a stub?** Per
-[Decision 20](../docs/grant/04-research-and-decisions.md) the
-maintainer does not self-build a Phase 1 housing agent. The
-default is **Option A (mock stub)**; Option B (a real housing
-agent built collaboratively) only activates if a confirmed
-collaborator opts in. The stub demonstrates the architecture is
-real and the protocol surface composes — without committing the
-project to building an out-of-scope housing product itself.
+**Scope note (Decision 20):** the maintainer does not self-build a
+production Phase-1 housing *product*. A production integration with an
+external housing-agent collaborator is Option B, pending a confirmed
+collaborator. This reference agent makes the composition *mechanics* —
+consent, lifecycle, audit — real and replayable today, without
+committing the project to an out-of-scope housing product.
 
 Run it:
 

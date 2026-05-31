@@ -275,6 +275,43 @@ class PostgresCompanyDiscoveryRepository(InMemoryCompanyDiscoveryRepository):
                     (company_id, user_id),
                 )
             self._connection.commit()
+
+    _USER_SCOPED_TABLES = (
+        "companies",
+        "discovery_runs",
+        "scans",
+        "discovered_jobs",
+        "imported_jobs",
+        "saved_searches",
+        "analytics_events",
+        "support_tickets",
+        "user_profiles",
+        "workspace_memberships",
+        "push_subscriptions",
+    )
+
+    def _persist_discovered_job_deletion(self, job_id: str, user_id: str) -> None:
+        cur = self._connection.cursor()
+        cur.execute("DELETE FROM discovered_jobs WHERE id = %s AND user_id = %s", (job_id, user_id))
+
+    def purge_discovered_jobs_older_than(
+        self, user_id: str, *, cutoff: datetime, keep_imported: bool = True
+    ) -> int:
+        with self._lock:
+            removed = super().purge_discovered_jobs_older_than(
+                user_id, cutoff=cutoff, keep_imported=keep_imported
+            )
+            self._connection.commit()
+            return removed
+
+    def delete_all_user_data(self, user_id: str) -> int:
+        with self._lock:
+            removed = super().delete_all_user_data(user_id)
+            cur = self._connection.cursor()
+            for table in self._USER_SCOPED_TABLES:
+                cur.execute(f"DELETE FROM {table} WHERE user_id = %s", (user_id,))
+            self._connection.commit()
+            return removed
             cur.close()
 
     @retry_on_lock()
@@ -380,10 +417,12 @@ class PostgresCompanyDiscoveryRepository(InMemoryCompanyDiscoveryRepository):
             # repo). When `crypto` is set, cv_text + cv_photo_data_uri
             # are AEAD-encrypted with user_id as AAD before storage.
             if self._crypto is not None and payload.get("cv_text"):
-                payload["cv_text"] = self._crypto.encrypt(payload["cv_text"], aad=profile.user_id)
+                payload["cv_text"] = self._crypto.encrypt(
+                    payload["cv_text"], aad=profile.user_id.encode("utf-8")
+                )
             if self._crypto is not None and payload.get("cv_photo_data_uri"):
                 payload["cv_photo_data_uri"] = self._crypto.encrypt(
-                    payload["cv_photo_data_uri"], aad=profile.user_id
+                    payload["cv_photo_data_uri"], aad=profile.user_id.encode("utf-8")
                 )
             result = super().save_user_profile(profile)
             self._upsert(
@@ -502,7 +541,7 @@ class PostgresCompanyDiscoveryRepository(InMemoryCompanyDiscoveryRepository):
             ):
                 try:
                     payload["cv_text"] = self._crypto.decrypt(
-                        payload["cv_text"], aad=payload.get("user_id", "")
+                        payload["cv_text"], aad=(payload.get("user_id") or "").encode("utf-8")
                     )
                 except Exception:  # noqa: BLE001 - bad ciphertext shouldn't break boot
                     payload["cv_text"] = ""
@@ -513,7 +552,8 @@ class PostgresCompanyDiscoveryRepository(InMemoryCompanyDiscoveryRepository):
             ):
                 try:
                     payload["cv_photo_data_uri"] = self._crypto.decrypt(
-                        payload["cv_photo_data_uri"], aad=payload.get("user_id", "")
+                        payload["cv_photo_data_uri"],
+                        aad=(payload.get("user_id") or "").encode("utf-8"),
                     )
                 except Exception:  # noqa: BLE001
                     payload["cv_photo_data_uri"] = None

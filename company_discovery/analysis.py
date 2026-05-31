@@ -599,8 +599,9 @@ def build_cv_tailoring_prompt(
     testing finding: criterion (d) friction-context-keyword check
     failed 27/70 because the prompt did not ask the model to
     acknowledge the candidate's friction situation. See
-    ``docs/grant/bias-testing-2026-05-18-polish.md`` §"CV-tailoring
-    results" for the source finding.
+    ``docs/grant/04-research-and-decisions.md`` Part B (2026-05-19) for
+    the source finding (the dated bias-testing snapshots were consolidated
+    into the decision log in the e85946b docs-hygiene cleanup).
     """
 
     persona_label, profile_block = _candidate_profile_block(profile)
@@ -974,11 +975,37 @@ def _emit_dispatch_audit(
         pass
 
 
+def _deterministic_only() -> bool:
+    """True when the deployer-wide AI kill-switch is engaged.
+
+    ``HELPMEFINDTHEJOB_DETERMINISTIC_ONLY=true`` (the Article 14
+    kill-switch documented in ``compliance/human-oversight-guide.md``
+    and the deployer operating manual) forces every AI invocation onto
+    the deterministic / no-AI handoff path regardless of the configured
+    provider — the emergency control a deployer activates during an
+    AI-class incident.
+    """
+    return (get_env("HELPMEFINDTHEJOB_DETERMINISTIC_ONLY", "") or "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
+
+
 def _dispatch_provider_impl(
     prompt: str,
     provider: AIProviderConfig,
     runtime_credential: str,
 ) -> AnalysisExecutionResult:
+    if _deterministic_only():
+        return AnalysisExecutionResult(
+            status="handoff_required",
+            provider_id=provider.provider_id,
+            invocation_mode=provider.invocation_mode,
+            prompt=prompt,
+            error="AI disabled deployment-wide via HELPMEFINDTHEJOB_DETERMINISTIC_ONLY; deterministic/no-AI path used.",
+        )
     if provider.invocation_mode == "manual" or provider.provider_id == "manual":
         return AnalysisExecutionResult(
             status="handoff_required",
@@ -1125,7 +1152,7 @@ def _execute_openai_compatible(
             prompt=prompt,
             error=f"Provider HTTP {error.code}",
         )
-    except (OSError, URLError, json.JSONDecodeError) as error:
+    except (OSError, URLError, ValueError) as error:
         return AnalysisExecutionResult(
             "provider_error",
             provider.provider_id,
@@ -1136,7 +1163,7 @@ def _execute_openai_compatible(
 
     output = ""
     choices = body.get("choices") or []
-    if choices:
+    if choices and isinstance(choices[0], dict):
         output = choices[0].get("message", {}).get("content", "") or choices[0].get("text", "")
     return AnalysisExecutionResult(
         "completed" if output else "provider_error",
@@ -1179,7 +1206,7 @@ def _execute_google_gemini(
             prompt=prompt,
             error=f"Provider HTTP {error.code}",
         )
-    except (OSError, URLError, json.JSONDecodeError) as error:
+    except (OSError, URLError, ValueError) as error:
         return AnalysisExecutionResult(
             "provider_error",
             provider.provider_id,
@@ -1189,8 +1216,14 @@ def _execute_google_gemini(
         )
 
     candidates = body.get("candidates") or []
-    parts = candidates[0].get("content", {}).get("parts", []) if candidates else []
-    output = "\n".join(part.get("text", "") for part in parts if part.get("text"))
+    parts = (
+        candidates[0].get("content", {}).get("parts", [])
+        if candidates and isinstance(candidates[0], dict)
+        else []
+    )
+    output = "\n".join(
+        part.get("text", "") for part in parts if isinstance(part, dict) and part.get("text")
+    )
     return AnalysisExecutionResult(
         "completed" if output else "provider_error",
         provider.provider_id,
@@ -1298,10 +1331,21 @@ def _dispatch_provider_streaming(
     error_class: str | None = None
     try:
         for event in _dispatch_provider_streaming_impl(prompt, provider, runtime_credential):
-            yield event
+            # Capture the final result BEFORE yielding it: production consumers
+            # break their own loop the instant they receive the "final" event,
+            # which suspends this generator at the yield. Setting final_result
+            # first ensures the finally (cost-recording + audit + receipt) records
+            # the real result instead of None.
             if isinstance(event, tuple) and event[0] == "final":
                 final_result = event[1]
+                yield event
                 break
+            yield event
+    except GeneratorExit:
+        # Normal cleanup when a consumer breaks after the final event — not an
+        # error. final_result was already captured before that yield, so the
+        # finally records the real completed result.
+        raise
     except BaseException as exc:
         error_class = type(exc).__name__
         raise
@@ -1383,6 +1427,18 @@ def _dispatch_provider_streaming_impl(
     Yields ``("token", str)`` events then a final ``("final",
     AnalysisExecutionResult)`` event."""
 
+    if _deterministic_only():
+        yield (
+            "final",
+            AnalysisExecutionResult(
+                status="handoff_required",
+                provider_id=provider.provider_id,
+                invocation_mode=provider.invocation_mode,
+                prompt=prompt,
+                error="AI disabled deployment-wide via HELPMEFINDTHEJOB_DETERMINISTIC_ONLY; deterministic/no-AI path used.",
+            ),
+        )
+        return
     if provider.invocation_mode == "manual" or provider.provider_id == "manual":
         yield (
             "final",
@@ -1727,7 +1783,7 @@ def _execute_ollama(prompt: str, provider: AIProviderConfig) -> AnalysisExecutio
     try:
         with urlopen(request, timeout=90) as response:
             body = json.loads(response.read().decode("utf-8"))
-    except (HTTPError, OSError, URLError, json.JSONDecodeError) as error:
+    except (HTTPError, OSError, URLError, ValueError) as error:
         return AnalysisExecutionResult(
             "provider_error",
             provider.provider_id,

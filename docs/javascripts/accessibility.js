@@ -3,7 +3,7 @@
 
 /* Helpmefindthejob — accessibility workarounds for mkdocs-material.
  *
- * The §3.6 first-pass accessibility audit (axe-core CLI 4.11.4,
+ * The first-pass accessibility audit (axe-core CLI 4.11.4,
  * 2026-05-19) found that mkdocs-material renders its search dialog
  * with `role="dialog"` but no accessible name (no aria-label /
  * aria-labelledby / title), failing axe's `aria-dialog-name` rule

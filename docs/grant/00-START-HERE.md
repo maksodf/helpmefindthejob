@@ -22,6 +22,7 @@
 | `11-institutional-outreach.md` | Outreach tracker, partner-targeting strategy, cold-contact templates, letter-of-support template. |
 | `12-application-package.md` | The actual application draft, milestone budget breakdown, submission checklist. |
 | `13-lessons-learned.md` | Behavioural rules captured from prior planning sessions. **Read before generating any agent prompt, recommending a scope change, or editing planning docs.** |
+| `OPERATOR-HANDOFF-2026-05-30.md` | **The submission handoff: exactly what only the operator can close (deadline verification, maintainer-identity slots, the signed-tag step, demo smoke against the real host, the compliance-posture decision). Read this when you are ready to submit.** |
 
 ---
 

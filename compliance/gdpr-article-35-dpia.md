@@ -6,7 +6,7 @@
 **Article**: GDPR Article 35 (Data Protection Impact Assessment for high-risk processing). Pairs with AI Act Article 27 (Fundamental Rights Impact Assessment) — see [`fundamental-rights-impact-assessment-template.md`](fundamental-rights-impact-assessment-template.md). Where the two assessments overlap, you can satisfy both via a combined GDPR-Art-35 + AI-Act-Art-27 instrument (the European Data Protection Board recommends this convergence — see EDPB Guidelines 04/2024 on Article 35).
 **Audience**: deployer's Data Protection Officer (DPO); provider's maintainer for the project-side reference assessment.
 **Status**: living document. Updated alongside every major release that changes a processing operation.
-**PlanTowardPerfection box**: 2.14.4 — "GDPR Article 35 DPIA completed for the production deployment with real numbers (currently template only)." The text below is BOTH the project-side reference DPIA (anchored to the maintainer's own self-host as a worked example) AND a template the institutional deployer instantiates for their deployment context.
+**Scope**: GDPR Article 35 DPIA for the production deployment with real numbers (a tracked post-grant deliverable; currently a reference/template). The text below is BOTH the project-side reference DPIA (anchored to the maintainer's own self-host as a worked example) AND a template the institutional deployer instantiates for their deployment context.
 
 ---
 
@@ -51,7 +51,7 @@ To support the user's job-search journey with knowledge that is otherwise locked
 | Data controller | The deployer (NOT the project) — see `deployer-operating-manual.md` |
 | Data processor | (a) The deployer (host-side processing); (b) the BYO-AI provider chosen by the deployer (if any); (c) the maintainer for issue-reporting only via consented support data |
 | Storage location | Deployer-controlled (default: SQLite file in the deployer's data directory; PostgreSQL also supported per `compliance/data-governance.md`) |
-| Retention | 180 days default for audit log; user-controlled for profile data (right of erasure via `/api/profile/delete`); deployer-controlled per their organisational retention policy |
+| Retention | 180 days default for audit log; user-controlled for profile data (right of erasure via `/api/account/deletion-request`); deployer-controlled per their organisational retention policy |
 | Cross-border transfers | Deployer-side decision. Default deployment carries no cross-border element; BYO-AI providers may introduce one (e.g., OpenAI API → US transfer). The `transparency-notice.md` discloses this; the deployer's DPA template (`dpa-template.md`) handles processor-side compliance. |
 | Special categories | CV text can include health information (declared illness in employment-gap explanation); residency status field may carry asylum-stage information. Both are user-entered; the user is informed at entry that these fields will be processed. |
 
@@ -89,7 +89,7 @@ Can the purpose be achieved with less data? Analysis per processing operation:
 | CV text (full) | Yes — needed for tailored CV editing + cover-letter drafting | A skills-only mode exists (manual entry, no free text) |
 | Audit log | Yes — AI Act Article 12 mandatory | n/a |
 | AI call logging | Yes — Article 22 right-to-human-review + Article 26(6) deployer obligation | n/a |
-| Cross-session memory | Optional — opt-out via `/forget`-class chat verbs | "Cross-session memory" deferred to Ceiling 2 §2.1 |
+| Cross-session memory | Optional — opt-out via `/forget`-class chat verbs | "Cross-session memory" deferred to a post-grant release |
 
 ---
 
@@ -100,10 +100,10 @@ Can the purpose be achieved with less data? Analysis per processing operation:
 | Unauthorised access to CV text (data breach) | Low (2) | High (4) | 8 | ChaCha20-Poly1305 AEAD at rest; key in env var; no plaintext on disk; per-deployment HMAC-salted user IDs in audit log |
 | AI provider exfiltrates data sent for fit-scoring | Medium (3) — BYO-AI providers are third parties | Medium (3) | 9 | BYO-AI architecture means the deployer chooses; manual + Ollama paths require zero data egress; `transparency-notice.md` lists each provider's data-flow disclosure |
 | Bias-against-friction-class user produces harmful AI output | Medium (3) | High (4) | 12 | `accuracy-and-bias-testing.md` methodology + the 10-vector prompt-injection guard (`prompt-injection-testing.md`) + Article 22 right-to-human-review surface (`deployer-operating-manual.md` §8.1) |
-| User cannot exercise Art. 15/16/17/20 rights | Low (2) | Medium (3) | 6 | `/api/data/export` (Art. 20), `/api/profile/delete` (Art. 17), `/api/profile` POST (Art. 16); validated end-to-end in `compliance/article-20-export-proof.md` |
+| User cannot exercise Art. 15/16/17/20 rights | Low (2) | Medium (3) | 6 | `/api/data/export` (Art. 20), `/api/account/deletion-request` (Art. 17), `/api/profile` POST (Art. 16); validated end-to-end in `compliance/article-20-export-proof.md` |
 | Audit-log key compromise enables linkage attack | Low (1) | High (4) | 4 | Key rotation playbook at `compliance/audit-log-key-rotation.md` + annual schedule + 6 incident-triggered rotation classes |
-| Stale CV data persists beyond retention | Low (2) | Low (2) | 4 | Default 180-day retention; deployer-configurable; explicit `/api/profile/delete` |
-| Migrant-status field discloses asylum stage to a non-EU AI provider | Medium (3) | High (5) — could affect asylum proceedings | 15 — **CRITICAL** | (a) `transparency-notice.md` warns user at the residency-status field; (b) deployer's BYO-AI choice can be restricted to EU-hosted Ollama; (c) deployer can disable the residency-status field via env-var override (Ceiling 2 §2.10.2 scope) |
+| Stale CV data persists beyond retention | Low (2) | Low (2) | 4 | Default 180-day retention; deployer-configurable; explicit `/api/account/deletion-request` |
+| Migrant-status field discloses asylum stage to a non-EU AI provider | Medium (3) | High (5) — could affect asylum proceedings | 15 — **CRITICAL** | (a) `transparency-notice.md` warns user at the residency-status field; (b) deployer's BYO-AI choice can be restricted to EU-hosted Ollama; (c) deployer can disable the residency-status field via env-var override (a post-grant enhancement) |
 | Deployer's operator account becomes admin-only without redundancy | Low (1) | High (4) | 4 | The role system supports multiple admins per workspace; deployer's onboarding flow recommends ≥2 admins |
 | AI hallucination causes user to pursue wrong-fit role | Medium (3) | Medium (3) | 9 | Per-criterion scoring + the score-clamp parser layer + the "AI outputs are suggestions, not decisions" framing in `transparency-notice.md` §"Limitations" |
 
@@ -146,7 +146,7 @@ Can the purpose be achieved with less data? Analysis per processing operation:
 - The residency-status field carries an explicit warning in the SPA UI before entry.
 - The deployer can restrict BYO-AI providers to EU-hosted options (Ollama at the deployer's own EU datacentre; future EU-only managed options).
 - The `transparency-notice.md` `[Deployer-managed addendum]` slot is where the deployer specifies which provider(s) the user's data may reach.
-- A future enhancement (Ceiling 2 §2.10.2 Article 22 in-app surface) will let the user toggle "do NOT send my residency-status field to AI" — currently this is an all-or-nothing AI-disable choice.
+- A future enhancement (a post-grant Article 22 in-app surface) will let the user toggle "do NOT send my residency-status field to AI" — currently this is an all-or-nothing AI-disable choice.
 
 ---
 
@@ -187,7 +187,7 @@ This DPIA is the project-side reference. The institutional deployer's supervisor
 
 | Date | Trigger | Assessor | Highest residual risk | Notes |
 |---|---|---|---|---|
-| 2026-05-24 | Initial DPIA (PlanTowardPerfection box 2.14.4) | Maintainer (project-side reference) | 15 (migrant-status disclosure to non-EU AI provider) | First substantive version; replaces the prior "template-only" state. Deployer-side instantiation is the next step at each institutional adoption. |
+| 2026-05-24 | Initial DPIA | Maintainer (project-side reference) | 15 (migrant-status disclosure to non-EU AI provider) | First substantive version; replaces the prior "template-only" state. Deployer-side instantiation is the next step at each institutional adoption. |
 
 Future assessments append below this row. Never overwrite a prior row; the audit trail is part of the deployer's accountability evidence under Art. 5(2).
 

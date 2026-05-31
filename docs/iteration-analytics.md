@@ -182,28 +182,6 @@ ORDER BY DATE(u.created_at);
 
 ---
 
-## 7. Pricing — Free → Pro conversion
-
-```sql
-SELECT
-  s.plan_id,
-  COUNT(DISTINCT s.id) AS users_on_plan,
-  COUNT(DISTINCT CASE WHEN i.id IS NOT NULL THEN s.id END) AS users_with_imports,
-  ROUND(
-    100.0 * COUNT(DISTINCT CASE WHEN i.id IS NOT NULL THEN s.id END)
-    / NULLIF(COUNT(DISTINCT s.id), 0),
-    1
-  ) AS active_pct
-FROM subscriptions s
-LEFT JOIN imported_jobs i ON i.user_id = s.id
-GROUP BY s.plan_id
-ORDER BY users_on_plan DESC;
-```
-
-**Read it as:** free→pro conversion below 3% means the free tier is too generous (or pro isn't differentiated enough). Above 10% means we're under-pricing pro. Sweet spot: 5–8% historically for SaaS at this price point.
-
----
-
 ## When to run
 
 - **Weekly**, every Monday morning, for the first 90 days post-launch.

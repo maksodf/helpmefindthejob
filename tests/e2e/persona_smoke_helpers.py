@@ -2,13 +2,11 @@
 # SPDX-License-Identifier: Apache-2.0
 """Shared helpers for the persona-smoke e2e suite.
 
-PlanTowardPerfection Ceiling-2 box 2.5.9: "Run the 7 walks as
-`tests/e2e/persona_*_smoke.py` suites that fail if the journey
-regresses."
+Runs the 7 walks as `tests/e2e/persona_*_smoke.py` suites that fail
+if the journey regresses.
 
-The plan-box wording says Playwright; we use the UserJourney
-in-process API instead. Rationale documented in the box's
-closure note: Playwright e2e tests would boot a full browser +
+The original spec said Playwright; we use the UserJourney
+in-process API instead. Rationale: Playwright e2e tests would boot a full browser +
 app stack per persona, are flaky in CI, and largely cover the
 same regression-guard surface as the in-process journey tests
 already do at finer granularity. The in-process smoke pattern

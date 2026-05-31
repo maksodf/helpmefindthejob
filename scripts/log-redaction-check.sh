@@ -20,9 +20,7 @@
 #
 # Patterns we look for:
 #   - HELPMEFINDTHEJOB_SMTP_PASSWORD value
-#   - HELPMEFINDTHEJOB_STRIPE_API_KEY value
 #   - PBKDF2 password hashes ("pbkdf2_sha256$")
-#   - Stripe live keys ("sk_live_", "rk_live_")
 #   - Common bearer-token prefixes ("Authorization: Bearer ")
 #   - Invitation / reset-token raw values are 32-byte url-safe; we
 #     match the exact substring "?token=" because that's how the app
@@ -73,18 +71,11 @@ failed=0
 
 scan_text 'pbkdf2_sha256\$[0-9]+\$[0-9a-f]+\$[0-9a-f]+' \
   "PBKDF2 password hash present in logs" || failed=1
-scan_text 'sk_live_[A-Za-z0-9]{16,}' \
-  "Stripe live secret key prefix found" || failed=1
-scan_text 'rk_live_[A-Za-z0-9]{16,}' \
-  "Stripe live restricted key prefix found" || failed=1
 scan_text 'Authorization:[[:space:]]*Bearer[[:space:]]+[A-Za-z0-9._-]+' \
   "Authorization header logged with bearer token" || failed=1
 
 if [ -n "${HELPMEFINDTHEJOB_SMTP_PASSWORD:-}" ]; then
   scan_text "$HELPMEFINDTHEJOB_SMTP_PASSWORD" "HELPMEFINDTHEJOB_SMTP_PASSWORD literal value" || failed=1
-fi
-if [ -n "${HELPMEFINDTHEJOB_STRIPE_API_KEY:-}" ]; then
-  scan_text "$HELPMEFINDTHEJOB_STRIPE_API_KEY" "HELPMEFINDTHEJOB_STRIPE_API_KEY literal value" || failed=1
 fi
 
 # Email-outbox tokens are expected; don't flag them when scanning the

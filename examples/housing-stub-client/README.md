@@ -1,49 +1,63 @@
-# Housing-stub-client — composing with Helpmefindthejob
+# Housing reference agent — a real MCP composition with Helpmefindthejob
 
-A self-contained example showing how a parallel civic agent (a
-housing-search agent, in this case) composes with Helpmefindthejob
-through the MCP protocol.
+> The directory name `housing-stub-client/` is **legacy**. What runs here
+> is a *real* composition, not a stub: an independent civic agent (a
+> housing-search agent) composes with Helpmefindthejob entirely over the
+> Model Context Protocol, receives **real consent-scoped profile data**,
+> drives the **full referral lifecycle**, and the run **proves the audit
+> chain**. Only the housing-search listings themselves are illustrative.
 
-This is the **mock stub** referenced in
-[Decision 20](../../docs/grant/04-research-and-decisions.md) and
-the Week 2 §2.5 task in
-[`02-execution-plan.md`](../../docs/grant/02-execution-plan.md).
-It is intentionally not a real housing agent; it is a working
-demonstration of the composition pattern so the architectural claim
-("the MCP server is composable with parallel civic agents") is
-backed by runnable code, not just specification.
-
-If a real housing-agent collaborator confirms (Option B per Decision
-20), the stub gets replaced with a real integration in a separate
-directory (`housing-agent-integration/`).
+This is the runnable proof behind the architectural claim that "the MCP
+server is composable with parallel civic agents"
+([`09-mcp-composition.md`](../../docs/grant/09-mcp-composition.md)). A
+production integration with an external housing-agent collaborator is a
+separate, partner-dependent track (Decision 20 Option B); this reference
+agent makes the *composition mechanics* — consent, lifecycle, audit —
+real and replayable today.
 
 ---
 
-## What this demonstrates
+## What is real (replay it and check)
 
-The two composition modes from
-[`09-mcp-composition.md`](../../docs/grant/09-mcp-composition.md):
+- **Transport** — JSON-RPC over stdio against the actual `mcp_server.py`,
+  the same wire Claude Desktop / Cursor / Cline use.
+- **Consent-bound profile handoff** — `get_user_profile_for_consent`
+  returns the seeded user's **real stored civic profile** (target roles,
+  languages, locale, location), scope-filtered to least privilege — not
+  null placeholders.
+- **Full referral lifecycle** — `propose_referral` → `list_referrals` →
+  `update_referral_status` (proposed → accepted), persisted server-side.
+- **Tamper-evident audit trail** — every tool call emits an EU-AI-Act
+  Article-12 `mcp_tool_invocation` record attributed to the composing
+  agent (`composition_source`); the demo reads the log back and runs
+  `verify_chain()` to prove the HMAC chain is intact.
 
-### Mode 1 — Sequential handoff
+## What is illustrative (stated honestly)
 
-The housing agent receives a user query about housing. It detects
-the user mentions an employment-context concern that the housing
-agent itself cannot resolve. It calls `propose_referral` on the
-Helpmefindthejob MCP server, gets back a structured referral
-descriptor, and presents it to the user with a "would you like to
-follow this referral?" prompt. The user retains the choice.
+The housing-search recommendation logic (three hard-coded listings). The
+point of this example is the *composition* — consent + lifecycle + audit
+— not a housing-search algorithm. The agent does, however, demonstrably
+consume the real consented data (e.g. clinical target roles prioritise
+clinic-proximate listings).
 
-### Mode 2 — Profile-shared composition
+---
 
-With explicit user consent, the housing agent calls
-`get_user_profile_for_consent` on the Helpmefindthejob MCP server
-to retrieve the user's employment status. It then uses that
-context to filter its own listings (e.g., it excludes listings
-that require proof of full-time employment if the user is in a
-trial-period role).
+## The two composition modes
 
-The user remains in control: the housing agent must obtain
-consent before each fetch, and only requests the scopes it needs.
+### Mode 1 — Sequential handoff (full referral lifecycle)
+
+The housing agent detects an employment-context concern it can't resolve,
+calls `propose_referral` on Helpmefindthejob, lists the persisted
+referral, and — on user opt-in — advances it with
+`update_referral_status`. The user retains the choice
+(`userConsentRequired`).
+
+### Mode 2 — Consent-bound profile-shared composition
+
+With explicit, least-privilege consent, the housing agent calls
+`get_user_profile_for_consent` and tailors its recommendations using the
+real employment context returned. The agent requests only the scopes it
+needs.
 
 ---
 
@@ -53,33 +67,12 @@ From the repository root:
 
     python examples/housing-stub-client/main.py
 
-You'll see:
-
-- The MCP server starting up as a stdio subprocess
-- The MCP handshake (initialize + initialized)
-- `tools/list` returning the 13-tool catalogue
-- Mode 1 demo: housing agent calling `propose_referral`, printing
-  the structured referral, and simulating user consent
-- Mode 2 demo: housing agent calling `get_user_profile_for_consent`
-  with the `employment` scope, printing the response, and
-  simulating filtering against a mock housing-listing set
-
-Total runtime: a few seconds. No external services needed.
-
----
-
-## What it doesn't do
-
-- It doesn't include a real housing agent. The housing-side logic
-  is a one-file stub that prints what it would do.
-- It doesn't persist anything. The Helpmefindthejob MCP server uses
-  a tmp data directory for the duration of the demo and cleans up.
-- It doesn't run any AI provider. The demo uses the deterministic
-  fallback paths of the Helpmefindthejob tools so it's reproducible
-  without network access or API keys.
-
-Each of these is intentional — the demo's job is to prove the
-**composition surface works**, not to ship a housing product.
+You'll see the MCP handshake, `tools/list` returning the **15-tool**
+catalogue, the full Mode 1 referral lifecycle, the Mode 2 consent handoff
+carrying real data, and a final audit-trail section ending in
+`verify_chain() → ok=True`. The demo asserts each of these, so a
+non-zero exit means the composition contract drifted. No external
+services or API keys are needed; total runtime is a few seconds.
 
 ---
 

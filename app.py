@@ -20,7 +20,7 @@ import time
 from dataclasses import asdict, fields, is_dataclass
 from datetime import datetime, timezone
 from http import HTTPStatus
-from http.cookies import SimpleCookie
+from http.cookies import CookieError, SimpleCookie
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from threading import Lock, Thread
@@ -48,18 +48,6 @@ from company_discovery.analysis import (
     parse_auto_fit_output,
 )
 from company_discovery.auth import AuthSession, AuthStore, AuthUser
-from company_discovery.billing import (
-    Plan,
-    StripeBillingBackend,
-    Subscription,
-    apply_stripe_event,
-    find_plan,
-    plans_payload,
-    verify_stripe_webhook_signature,
-)
-from company_discovery.billing import (
-    build_backend as build_billing_backend,
-)
 from company_discovery.chat_router import (
     REGISTRY as CHAT_REGISTRY,
 )
@@ -425,7 +413,7 @@ def _build_site_footer(lang: str) -> bytes:
   <div class="site-footer-grid">
     <section class="site-footer-col">
       <p class="site-footer-tagline"><strong>Helpmefindthejob</strong> &mdash; quelloffener EU-Commons f&uuml;r die Arbeitssuche.</p>
-      <p class="muted small">Programm von <a href="https://commonsconservancy.org" rel="external noopener">The Commons Conservancy</a>. Apache 2.0 + CLA.</p>
+      <p class="muted small">Programm von <a href="https://commonsconservancy.org" rel="external noopener">The Commons Conservancy</a> (Aufnahme beantragt). Apache 2.0 + CLA.</p>
     </section>
     <section class="site-footer-col" aria-labelledby="siteFooterContact">
       <h2 id="siteFooterContact" class="site-footer-heading">Kontakt</h2>
@@ -471,7 +459,7 @@ def _build_site_footer(lang: str) -> bytes:
   <div class="site-footer-grid">
     <section class="site-footer-col">
       <p class="site-footer-tagline"><strong>Helpmefindthejob</strong> &mdash; open-source EU civic employment commons.</p>
-      <p class="muted small">A Programme of <a href="https://commonsconservancy.org" rel="external noopener">The Commons Conservancy</a>. Apache 2.0 + CLA.</p>
+      <p class="muted small">A Programme of <a href="https://commonsconservancy.org" rel="external noopener">The Commons Conservancy</a> (admission pending). Apache 2.0 + CLA.</p>
     </section>
     <section class="site-footer-col" aria-labelledby="siteFooterContact">
       <h2 id="siteFooterContact" class="site-footer-heading">Contact</h2>
@@ -1448,6 +1436,11 @@ class AppState:
         self._reset_request_lock = Lock()
         self._reset_requests: dict[str, list[float]] = {}
         self._register_request_lock = Lock()
+        # Distinct from the rate-limit lock above: serialises the first-account
+        # bootstrap decision (has_users -> create_user) so concurrent first
+        # registrations can't all become admins. Must NOT be _register_request_lock
+        # (claim_register_slot takes that one inside the critical section -> deadlock).
+        self._register_bootstrap_lock = Lock()
         self._register_requests: dict[str, list[float]] = {}
         # AUDIT-37: per-IP rate-limit for CSP violation reports posted
         # to /csp-report. Bucket dict + lock, same shape as the
@@ -1480,7 +1473,6 @@ class AppState:
             self.scheduler_path,
             handler=lambda user_id, trigger: self.run_user_daily(user_id, trigger=trigger),
         )
-        self.billing_backend = build_billing_backend(data_dir=self.data_path.parent)
         providers: list = [CuratedSearchProvider()]
         if get_env("HELPMEFINDTHEJOB_DUCKDUCKGO_DISABLED", "").strip().lower() not in (
             "1",
@@ -1598,7 +1590,6 @@ class AppState:
             "quotas": self.quota_store.usage(user_id),
             "savedSearches": self._saved_searches_with_alerts(data_user_id),
             "watchlistTemplates": list_templates(profile.persona_id),
-            "billingPlans": plans_payload(),
             "personas": list_personas_summary(),
             "profile": self._profile_payload(profile),
             "workspaces": self.list_user_workspaces(user_id),
@@ -2088,19 +2079,40 @@ class AppState:
             consent = payload.get("aiConsent") or {}
             if not isinstance(consent, dict):
                 raise ValueError("invalid_ai_consent")
+            from company_discovery import audit_log as _audit_log_mod
+
             if consent.get("granted"):
                 existing.ai_consent_at = now_utc()
+                # Provider IDs are short slugs (openai/gemini/ollama/…); cap at
+                # the source so an over-long value can't bloat the profile
+                # field, the analytics event, OR the consent_event audit record
+                # that all read from here. Truncated garbage still fails the
+                # _ai_consent_satisfied provider match, so consent stays unmet.
                 existing.ai_consent_provider_id = (
-                    str(consent.get("providerId") or consent.get("provider_id") or "").strip()
+                    str(consent.get("providerId") or consent.get("provider_id") or "").strip()[:64]
                     or None
                 )
                 self.log_analytics(
                     user_id, "ai_consent_granted", {"providerId": existing.ai_consent_provider_id}
                 )
+                # Article 7 consent record (audit-log-schema.md §4.4). The
+                # analytics event above is product telemetry; this is the
+                # tamper-evident, hash-chained legal record of the consent.
+                _audit_log_mod.emit_consent_event(
+                    consent_topic="ai_provider",
+                    consent_state="granted",
+                    consent_scope=existing.ai_consent_provider_id,
+                    user_opaque_id=user_id,
+                )
             else:
                 existing.ai_consent_at = None
                 existing.ai_consent_provider_id = None
                 self.log_analytics(user_id, "ai_consent_revoked", {})
+                _audit_log_mod.emit_consent_event(
+                    consent_topic="ai_provider",
+                    consent_state="revoked",
+                    user_opaque_id=user_id,
+                )
 
         return self.repository.save_user_profile(existing)
 
@@ -2559,11 +2571,7 @@ class AppState:
         backup_backend = get_env("HELPMEFINDTHEJOB_BACKUP_BACKEND", "").strip() or "local"
         push_configured = is_push_configured()
         brave_configured = bool(get_env("HELPMEFINDTHEJOB_BRAVE_API_KEY", "").strip())
-        stripe_active = os.environ.get(
-            "HELPMEFINDTHEJOB_BILLING_BACKEND", ""
-        ).strip() == "stripe" and bool(get_env("HELPMEFINDTHEJOB_STRIPE_API_KEY", "").strip())
-        webhook_configured = bool(get_env("HELPMEFINDTHEJOB_STRIPE_WEBHOOK_SECRET", "").strip())
-        # Subscription / membership counts (cheap; in-memory).
+        # Membership counts (cheap; in-memory).
         push_subs = sum(1 for _ in self.repository.push_subscriptions.values())
         memberships = sum(1 for _ in self.repository.workspace_memberships.values())
         # Latest backup file mtime (best-effort; backups dir may not exist).
@@ -2583,13 +2591,6 @@ class AppState:
                 "duckduckgo": True,  # always-on, no key
                 "brave": brave_configured,
                 "curated": True,
-            },
-            "billing": {
-                "backend": backup_backend
-                if False
-                else (get_env("HELPMEFINDTHEJOB_BILLING_BACKEND") or "manual"),
-                "stripeActive": stripe_active,
-                "webhookConfigured": webhook_configured,
             },
             "backup": {
                 "backend": backup_backend,
@@ -3065,37 +3066,9 @@ class AppState:
         target = self.auth_store.get_user(target_id)
         if target.role == "admin" and target.active and self.auth_store.count_active_admins() <= 1:
             raise ValueError("last_admin_required")
-        for company in list(self.repository.list_companies(target_id)):
-            self.repository.delete_company(target_id, company.id)
-        for kind in (
-            "imported_jobs",
-            "discovered_jobs",
-            "scans",
-            "discovery_runs",
-            "saved_searches",
-            "support_tickets",
-            "analytics_events",
-        ):
-            store = getattr(self.repository, kind, {})
-            for record_id in [
-                k for k, item in list(store.items()) if getattr(item, "user_id", None) == target_id
-            ]:
-                store.pop(record_id, None)
-        if hasattr(self.repository, "_connection"):
-            for table in (
-                "companies",
-                "discovery_runs",
-                "scans",
-                "discovered_jobs",
-                "imported_jobs",
-                "saved_searches",
-                "analytics_events",
-                "support_tickets",
-            ):
-                self.repository._connection.execute(
-                    f"DELETE FROM {table} WHERE user_id = ?", (target_id,)
-                )
-            self.repository._connection.commit()
+        # Full Article 17 erasure across every user-scoped table, dialect-correct
+        # for whichever backend is active (SQLite/Postgres/in-memory).
+        self.repository.delete_all_user_data(target_id)
         self.auth_store.delete_user_sessions(target_id)
         self.auth_store.connection.execute("DELETE FROM users WHERE id = ?", (target_id,))
         self.auth_store.connection.commit()
@@ -3383,6 +3356,34 @@ class AppState:
             # "category failed to load".
             "_exportWarnings": export_warnings,
         }
+
+    def export_data_audited(
+        self, subject_id: str, *, caller: str = "user", export_kind: str = "profile_full"
+    ) -> dict[str, Any]:
+        """Assemble the Article 20 export AND emit the §4.5 ``export_event``.
+
+        The single seam both the user self-export and the admin export
+        endpoints call, so every personal-data export is recorded in the
+        SUBJECT's own audit slice (``user_opaque_id = subject_id``) with the
+        actor type in ``caller`` (``user`` / ``admin``). Size is measured with
+        the same serialiser :meth:`send_json` uses, so the byte count is
+        faithful to what leaves the server. A failed audit write is contained
+        inside the emitter (logged to stderr, never raised), so it can never
+        block the data subject from receiving their data.
+        """
+        payload = self.export_data(subject_id)
+        from company_discovery import audit_log as _audit_log_mod
+
+        _audit_log_mod.emit_export_event(
+            export_kind=export_kind,
+            export_size_bytes=len(
+                json.dumps(jsonable(payload), ensure_ascii=False).encode("utf-8")
+            ),
+            export_format="application/json",
+            user_opaque_id=subject_id,
+            caller=caller,
+        )
+        return payload
 
     def import_data(self, user_id: str, payload: dict[str, Any]) -> dict[str, Any]:
         if int(payload.get("schemaVersion") or 0) != EXPORT_SCHEMA_VERSION:
@@ -3759,7 +3760,6 @@ class AppState:
         self, user_id: str, company_id: str, career_page_url: str | None
     ) -> CompanyDiscoveryRun:
         self.repository.get_company(user_id, company_id)
-        self.quota_store.can_start_scan(user_id, target_url=career_page_url)
         active_key = (user_id, company_id)
         with self._active_lock:
             if active_key in self._active_company_scans:
@@ -3775,7 +3775,7 @@ class AppState:
                 return self.repository.save_discovery_run(run)
             self._active_company_scans.add(active_key)
 
-        self.quota_store.record_scan_started(user_id, target_url=career_page_url)
+        self.quota_store.reserve_scan(user_id, target_url=career_page_url)
         run = self.repository.save_discovery_run(
             CompanyDiscoveryRun(
                 user_id=user_id,
@@ -4043,20 +4043,11 @@ class AppState:
         except ValueError as error:
             if str(error) != "email_already_exists":
                 raise
-            # Password reset semantics for an already-existing email
-            existing = self.auth_store.authenticate(record.email, password)
-            if existing is None:
-                # Force-reset the password to the new one (admin path)
-                target_id = self.auth_store.connection.execute(
-                    "SELECT id FROM users WHERE email = ?",
-                    (record.email,),
-                ).fetchone()[0]
-                self.auth_store.update_user(
-                    target_id, password=password, role=record.role, active=True
-                )
-                user = self.auth_store.get_user(target_id)
-            else:
-                user = existing
+            # An invitation must NEVER silently overwrite an existing account's
+            # password / role / active state — that would be a token-leak account
+            # takeover and a surprising privilege mutation. The address already has
+            # an account; the invitee should sign in or use password reset.
+            raise ValueError("account_exists") from error
         return user
 
     def request_password_reset(self, email: str) -> str | None:
@@ -4186,37 +4177,17 @@ class AppState:
             results["__drip_day7"] = drip["day7"]
         return results
 
-    def current_plan(self) -> Plan | None:
-        """Return the workspace's active plan as a Plan object, or None
-        when ``Subscription.plan_id`` doesn't match any plan in the
-        ``PLANS`` tuple (e.g. operator misconfigured, or a legacy
-        plan id that's been removed). Callers must guard accordingly."""
-
-        sub = self.get_subscription()
-        return find_plan(sub.plan_id)
-
     def plan_limits(self) -> dict[str, Any]:
-        """Snapshot of the active plan's tier limits — exactly the
-        attributes ``Plan`` carries beyond label / price. ``None`` for
-        ``savedSearchLimit`` means unlimited; the empty tuple for
-        ``aiModesAllowed`` is currently never produced by any shipped
-        plan but the enforcer treats it as "no AI at all" defensively."""
+        """Usage limits, applied uniformly to every account. This is a
+        civic-commons deployment with no paid tiers, so all accounts
+        receive the same permissive limits. ``None`` for
+        ``savedSearchLimit`` means unlimited."""
 
-        plan = self.current_plan()
-        if plan is None:
-            # Fall through to the most permissive shape so a misconfig
-            # doesn't accidentally lock a paying user out.
-            return {
-                "savedSearchLimit": None,
-                "aiModesAllowed": ("manual", "byok", "managed"),
-                "retentionDaysMax": 365,
-                "dailyDigestEnabled": True,
-            }
         return {
-            "savedSearchLimit": plan.saved_search_limit,
-            "aiModesAllowed": tuple(plan.ai_modes_allowed),
-            "retentionDaysMax": plan.retention_days_max,
-            "dailyDigestEnabled": plan.daily_digest_enabled,
+            "savedSearchLimit": None,
+            "aiModesAllowed": ("manual", "byok", "managed"),
+            "retentionDaysMax": 365,
+            "dailyDigestEnabled": True,
         }
 
     def assert_can_add_saved_search(self, user_id: str) -> None:
@@ -7208,46 +7179,6 @@ class AppState:
         )
         return text
 
-    def get_subscription(self) -> Subscription:
-        return self.billing_backend.load()
-
-    def update_subscription(
-        self,
-        *,
-        actor: AuthUser,
-        plan_id: str | None = None,
-        status: str | None = None,
-        seats: int | None = None,
-        notes: str | None = None,
-        customer_email: str | None = None,
-    ) -> Subscription:
-        sub = self.billing_backend.load()
-        if plan_id and not any(p["id"] == plan_id for p in plans_payload()):
-            raise ValueError("unknown_plan")
-        if status and status not in {"active", "trialing", "past_due", "cancelled"}:
-            raise ValueError("invalid_status")
-        if plan_id:
-            sub.plan_id = plan_id
-        if status:
-            sub.status = status
-            if status == "cancelled" and not sub.cancelled_at:
-                sub.cancelled_at = now_utc().isoformat()
-        if seats is not None:
-            sub.seats = max(1, int(seats))
-        if notes is not None:
-            sub.notes = notes
-        if customer_email is not None:
-            sub.customer_email = customer_email
-        sub.last_event = now_utc().isoformat()
-        result = self.billing_backend.save(sub)
-        self.record_admin_action(
-            actor=actor,
-            target=None,
-            action="update_billing",
-            details={"plan": result.plan_id, "status": result.status, "seats": result.seats},
-        )
-        return result
-
     def log_analytics(
         self, user_id: str, kind: str, payload: dict[str, Any] | None = None
     ) -> AnalyticsEvent:
@@ -7393,7 +7324,11 @@ class Handler(BaseHTTPRequestHandler):
     def current_session(self) -> AuthSession | None:
         cookie_header = self.headers.get("Cookie", "")
         cookie = SimpleCookie()
-        cookie.load(cookie_header)
+        try:
+            cookie.load(cookie_header)
+        except CookieError:
+            # A malformed Cookie header must read as "no session", not 500.
+            return STATE.auth_store.get_session(None)
         morsel = cookie.get(SESSION_COOKIE_NAME)
         return STATE.auth_store.get_session(morsel.value if morsel else None)
 
@@ -8290,6 +8225,7 @@ class Handler(BaseHTTPRequestHandler):
                         email=claims.email,
                         provider_kind="oidc",
                         attributes=claims.raw_claims,
+                        email_verified=claims.email_verified,
                     )
                 except ValueError as err:
                     self.send_error_json(
@@ -8656,9 +8592,9 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json({"events": events})
                 return
             if parsed.path == "/api/managed-ai/waitlist":
-                # Express interest in the operator-side managed AI tier.
+                # Express interest in the operator-hosted managed AI option.
                 # We log it via analytics_event so admin can read the list
-                # later. Real Stripe billing wiring is operator-pending.
+                # later.
                 already = [
                     e
                     for e in STATE.repository.list_analytics_events(user_id=user_id, limit=20)
@@ -8841,11 +8777,6 @@ class Handler(BaseHTTPRequestHandler):
                     )
                     return
                 self.send_json(payload)
-                return
-            if parsed.path == "/api/billing":
-                self.send_json(
-                    {"subscription": STATE.get_subscription().to_dict(), "plans": plans_payload()}
-                )
                 return
             if parsed.path == "/api/watchlist-templates":
                 profile = STATE.profile_for(user_id)
@@ -9060,7 +8991,9 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_text(md_body, content_type="text/markdown", filename="discovered-jobs.md")
                 return
             if parsed.path == "/api/data/export":
-                self.send_json(STATE.export_data(user_id))
+                # export_data_audited emits the Article 12/15/20 export_event
+                # (audit-log-schema.md §4.5) into the subject's own audit slice.
+                self.send_json(STATE.export_data_audited(user_id))
                 return
             # 4-week plan Invariant 2 (2026-05-21): Trust Receipts.
             # Three endpoints:
@@ -9132,7 +9065,13 @@ class Handler(BaseHTTPRequestHandler):
                 except KeyError:
                     self.send_error_json(HTTPStatus.NOT_FOUND, "not_found", "User not found")
                     return
-                payload = STATE.export_data(target_id)
+                # export_data_audited emits the §4.5 export_event into the
+                # SUBJECT's audit slice with caller="admin" — privileged
+                # access to a user's data is recorded where the subject (and a
+                # regulator) can see it. targetUser is admin-only response
+                # metadata added after the audited export, so it is not counted
+                # in the recorded export size (only the subject's data is).
+                payload = STATE.export_data_audited(target_id, caller="admin")
                 payload["targetUser"] = {
                     "id": target.id,
                     "email": target.email,
@@ -9270,8 +9209,8 @@ class Handler(BaseHTTPRequestHandler):
                 self.end_headers()
                 return
 
-            # Stripe webhook needs raw bytes for signature verification, so it
-            # must run before we json.loads the body.
+            # The inbound-email webhook needs raw bytes for signature
+            # verification, so it must run before we json.loads the body.
             if parsed.path == "/api/inbound/email":
                 # Inbound webhook from Resend / Postmark / Mailgun for
                 # email-forward ingest. The webhook secret + per-user
@@ -9395,73 +9334,6 @@ class Handler(BaseHTTPRequestHandler):
                 )
                 return
 
-            if parsed.path == "/api/billing/webhook":
-                length = int(self.headers.get("Content-Length", "0"))
-                if length <= 0 or length > MAX_JSON_BODY_BYTES:
-                    self.send_error_json(
-                        HTTPStatus.BAD_REQUEST, "bad_body", "Webhook body required"
-                    )
-                    return
-                raw = self.rfile.read(length)
-                signature_header = self.headers.get("Stripe-Signature", "")
-                secret = get_env("HELPMEFINDTHEJOB_STRIPE_WEBHOOK_SECRET", "").strip()
-                if not secret:
-                    self.send_error_json(
-                        HTTPStatus.SERVICE_UNAVAILABLE,
-                        "webhook_unconfigured",
-                        "HELPMEFINDTHEJOB_STRIPE_WEBHOOK_SECRET not set.",
-                    )
-                    return
-                if not verify_stripe_webhook_signature(raw, signature_header, secret):
-                    self.send_error_json(
-                        HTTPStatus.BAD_REQUEST,
-                        "bad_signature",
-                        "Webhook signature verification failed.",
-                    )
-                    return
-                try:
-                    event = json.loads(raw.decode("utf-8"))
-                except (UnicodeDecodeError, json.JSONDecodeError):
-                    self.send_error_json(
-                        HTTPStatus.BAD_REQUEST, "bad_json", "Webhook body is not valid JSON."
-                    )
-                    return
-                # Idempotency dedup (PART I.4 of the deep audit). Stripe
-                # retries on non-2xx for up to ~3 days; if a previous
-                # delivery succeeded but our 200-OK response was lost,
-                # the same event.id arrives again. Short-circuit on a
-                # second arrival to avoid double-applying subscription
-                # state + analytics side-effects.
-                event_id = str(event.get("id") or "")
-                event_type = str(event.get("type") or "")
-                is_first_delivery = STATE.auth_store.mark_stripe_event_processed(
-                    event_id, event_type
-                )
-                if not is_first_delivery:
-                    self.send_json(
-                        {"status": "ok", "appliedType": event_type, "deduplicated": True}
-                    )
-                    return
-                price_to_plan = {
-                    get_env("HELPMEFINDTHEJOB_STRIPE_PRICE_TEAM", ""): "team",
-                    get_env("HELPMEFINDTHEJOB_STRIPE_PRICE_ORG", ""): "org",
-                    get_env(
-                        "HELPMEFINDTHEJOB_STRIPE_PRICE_PRO_MONTHLY",
-                        "",
-                    ): "pro_monthly",
-                    get_env(
-                        "HELPMEFINDTHEJOB_STRIPE_PRICE_PRO_ANNUAL",
-                        "",
-                    ): "pro_annual",
-                }
-                resolver = lambda price_id: price_to_plan.get(price_id) or ""
-                current = STATE.get_subscription()
-                next_state = apply_stripe_event(event, current, plan_resolver=resolver)
-                if next_state is not current:
-                    STATE.billing_backend.save(next_state)
-                self.send_json({"status": "ok", "appliedType": event.get("type")})
-                return
-
             payload = self.read_json_body()
 
             if parsed.path == "/api/auth/login":
@@ -9486,9 +9358,10 @@ class Handler(BaseHTTPRequestHandler):
                         HTTPStatus.UNAUTHORIZED, "invalid_login", "Invalid email or password"
                     )
                     return
-                STATE.refund_login_slot(client_id)
-                STATE.clear_login_failures(client_id)
                 if REQUIRE_EMAIL_VERIFICATION and not STATE.auth_store.is_email_verified(user.id):
+                    # Correct password but a config gate — not a brute-force attempt.
+                    STATE.refund_login_slot(client_id)
+                    STATE.clear_login_failures(client_id)
                     self.send_error_json(
                         HTTPStatus.FORBIDDEN,
                         "email_unverified",
@@ -9496,9 +9369,15 @@ class Handler(BaseHTTPRequestHandler):
                     )
                     return
                 if STATE.auth_store.has_totp_enabled(user.id):
+                    # Do NOT refund the slot here: the login is not complete until
+                    # 2FA succeeds. Refunding would let an attacker who has the
+                    # password loop login -> fresh-challenge to brute-force the TOTP.
+                    # The slot is refunded in /api/auth/2fa-verify on success.
                     challenge = STATE.auth_store.issue_2fa_challenge(user.id)
                     self.send_json({"requires2fa": True, "challengeToken": challenge})
                     return
+                STATE.refund_login_slot(client_id)
+                STATE.clear_login_failures(client_id)
                 session = STATE.auth_store.create_session(user)
                 max_age = int((session.expires_at - now_utc()).total_seconds())
                 self.send_json(
@@ -9511,6 +9390,15 @@ class Handler(BaseHTTPRequestHandler):
                 return
 
             if parsed.path == "/api/auth/2fa-verify":
+                client_id = self.client_address[0] if self.client_address else "unknown"
+                # Meter 2FA attempts on the same per-IP failure budget as login so a
+                # password-holder cannot brute-force the TOTP. Refunded only on full
+                # success; wrong codes / bad challenges leave the slot consumed.
+                if not STATE.claim_login_slot(client_id):
+                    self.send_error_json(
+                        HTTPStatus.TOO_MANY_REQUESTS, "rate_limited", "Too many failed attempts"
+                    )
+                    return
                 challenge_token = str(payload.get("challengeToken") or "").strip()
                 code = str(payload.get("code") or "").strip()
                 user_id = STATE.auth_store.consume_2fa_challenge(challenge_token)
@@ -9528,6 +9416,8 @@ class Handler(BaseHTTPRequestHandler):
                         HTTPStatus.UNAUTHORIZED, "invalid_2fa_code", "Invalid 2FA code"
                     )
                     return
+                STATE.refund_login_slot(client_id)
+                STATE.clear_login_failures(client_id)
                 user = STATE.auth_store.get_user(user_id)
                 session = STATE.auth_store.create_session(user)
                 max_age = int((session.expires_at - now_utc()).total_seconds())
@@ -9541,44 +9431,45 @@ class Handler(BaseHTTPRequestHandler):
                 return
 
             if parsed.path == "/api/auth/register":
-                if not STATE.registration_open():
-                    self.send_error_json(
-                        HTTPStatus.FORBIDDEN, "registration_closed", "Registration is closed"
+                with STATE._register_bootstrap_lock:
+                    if not STATE.registration_open():
+                        self.send_error_json(
+                            HTTPStatus.FORBIDDEN, "registration_closed", "Registration is closed"
+                        )
+                        return
+                    # Rate-limit registration except for the first-account
+                    # bootstrap path (no users yet → admin gets created). Without
+                    # this an attacker could spam-create accounts and pump the
+                    # outbound email transport.
+                    is_bootstrap = not STATE.auth_store.has_users()
+                    if not is_bootstrap:
+                        client_id = self.client_address[0] if self.client_address else "unknown"
+                        # Atomic claim — strict cap under burst.
+                        if not STATE.claim_register_slot(client_id):
+                            self.send_error_json(
+                                HTTPStatus.TOO_MANY_REQUESTS,
+                                "rate_limited",
+                                "Too many registration attempts. Try again later.",
+                            )
+                            return
+                        # DSGVO consent (#30). Public sign-ups must tick
+                        # both the Terms and the Privacy boxes — otherwise
+                        # the account creation is refused. The bootstrap
+                        # admin path is exempt because the operator IS the
+                        # one writing the policy.
+                        tos_ok = bool(payload.get("tosAccepted"))
+                        privacy_ok = bool(payload.get("privacyAccepted"))
+                        if not tos_ok or not privacy_ok:
+                            self.send_error_json(
+                                HTTPStatus.BAD_REQUEST,
+                                "consent_required",
+                                "Accept the Terms and the Privacy policy to create an account.",
+                            )
+                            return
+                    role = "admin" if is_bootstrap else "member"
+                    user = STATE.auth_store.create_user(
+                        payload.get("email", ""), payload.get("password", ""), role=role
                     )
-                    return
-                # Rate-limit registration except for the first-account
-                # bootstrap path (no users yet → admin gets created). Without
-                # this an attacker could spam-create accounts and pump the
-                # outbound email transport.
-                is_bootstrap = not STATE.auth_store.has_users()
-                if not is_bootstrap:
-                    client_id = self.client_address[0] if self.client_address else "unknown"
-                    # Atomic claim — strict cap under burst.
-                    if not STATE.claim_register_slot(client_id):
-                        self.send_error_json(
-                            HTTPStatus.TOO_MANY_REQUESTS,
-                            "rate_limited",
-                            "Too many registration attempts. Try again later.",
-                        )
-                        return
-                    # DSGVO consent (#30). Public sign-ups must tick
-                    # both the Terms and the Privacy boxes — otherwise
-                    # the account creation is refused. The bootstrap
-                    # admin path is exempt because the operator IS the
-                    # one writing the policy.
-                    tos_ok = bool(payload.get("tosAccepted"))
-                    privacy_ok = bool(payload.get("privacyAccepted"))
-                    if not tos_ok or not privacy_ok:
-                        self.send_error_json(
-                            HTTPStatus.BAD_REQUEST,
-                            "consent_required",
-                            "Accept the Terms and the Privacy policy to create an account.",
-                        )
-                        return
-                role = "admin" if is_bootstrap else "member"
-                user = STATE.auth_store.create_user(
-                    payload.get("email", ""), payload.get("password", ""), role=role
-                )
                 # Stamp the very first sign-in (register doesn't go through authenticate()).
                 login_at = now_utc()
                 STATE.auth_store.connection.execute(
@@ -9835,6 +9726,7 @@ class Handler(BaseHTTPRequestHandler):
                         email=claims.email,
                         provider_kind="saml",
                         attributes=claims.attributes,
+                        email_verified=True,
                     )
                 except ValueError as err:
                     self.send_error_json(
@@ -11536,23 +11428,6 @@ class Handler(BaseHTTPRequestHandler):
                 text = STATE.send_user_digest(user=session.user)
                 self.send_json({"status": "sent", "preview": text})
                 return
-            if parsed.path == "/api/admin/billing":
-                if not self.require_admin(session):
-                    return
-                try:
-                    sub = STATE.update_subscription(
-                        actor=session.user,
-                        plan_id=payload.get("planId"),
-                        status=payload.get("status"),
-                        seats=payload.get("seats"),
-                        notes=payload.get("notes"),
-                        customer_email=payload.get("customerEmail"),
-                    )
-                except ValueError as error:
-                    self.send_error_json(HTTPStatus.BAD_REQUEST, str(error), str(error))
-                    return
-                self.send_json({"subscription": sub.to_dict()})
-                return
             if parsed.path == "/api/admin/email/test":
                 if not self.require_admin(session):
                     return
@@ -11563,49 +11438,6 @@ class Handler(BaseHTTPRequestHandler):
                     self.send_error_json(HTTPStatus.BAD_REQUEST, str(error), str(error))
                     return
                 self.send_json(result)
-                return
-            if parsed.path == "/api/admin/billing/checkout":
-                if not self.require_admin(session):
-                    return
-                if not isinstance(STATE.billing_backend, StripeBillingBackend):
-                    self.send_error_json(
-                        HTTPStatus.BAD_REQUEST,
-                        "stripe_disabled",
-                        "Stripe backend not active. Set HELPMEFINDTHEJOB_BILLING_BACKEND=stripe and credentials.",
-                    )
-                    return
-                plan_id = str(payload.get("planId") or "")
-                if not plan_id:
-                    self.send_error_json(
-                        HTTPStatus.BAD_REQUEST, "missing_plan", "planId is required"
-                    )
-                    return
-                try:
-                    result = STATE.billing_backend.create_checkout_session(
-                        plan_id=plan_id,
-                        customer_email=payload.get("customerEmail") or session.user.email,
-                    )
-                except ValueError as error:
-                    code = str(error)
-                    self.send_error_json(HTTPStatus.BAD_REQUEST, code, code)
-                    return
-                except RuntimeError as error:
-                    # Strip raw Stripe error detail before surfacing it to the admin —
-                    # the upstream message can include verbose request/response context.
-                    raw_code = str(error).split(":", 1)[0].strip() or "billing_backend_error"
-                    self.send_error_json(
-                        HTTPStatus.SERVICE_UNAVAILABLE,
-                        raw_code,
-                        "Stripe call failed. Check the configured Stripe credentials and product/price IDs.",
-                    )
-                    return
-                STATE.record_admin_action(
-                    actor=session.user,
-                    target=None,
-                    action="create_checkout_session",
-                    details={"planId": plan_id, "sessionId": result.get("id")},
-                )
-                self.send_json({"checkout": result})
                 return
             if parsed.path == "/api/account/deletion-request":
                 ticket = STATE.request_account_deletion(
@@ -11622,46 +11454,6 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json(
                     {"seeded": created, "bootstrap": STATE.bootstrap(user_id)}, HTTPStatus.CREATED
                 )
-                return
-            if parsed.path == "/api/billing/portal":
-                if not isinstance(STATE.billing_backend, StripeBillingBackend):
-                    self.send_error_json(
-                        HTTPStatus.BAD_REQUEST,
-                        "stripe_disabled",
-                        "Stripe backend not active. Self-managed billing is unavailable on the manual backend.",
-                    )
-                    return
-                subscription = STATE.get_subscription()
-                customer_id = subscription.customer_id or ""
-                if not customer_id:
-                    self.send_error_json(
-                        HTTPStatus.BAD_REQUEST,
-                        "no_customer",
-                        "No Stripe customer linked yet. Complete a checkout first.",
-                    )
-                    return
-                return_url = STATE.public_url_for("/?billing=portal-return")
-                try:
-                    result = STATE.billing_backend.create_portal_session(
-                        customer_id=customer_id,
-                        return_url=return_url,
-                    )
-                except ValueError as error:
-                    code = str(error)
-                    self.send_error_json(HTTPStatus.BAD_REQUEST, code, code)
-                    return
-                except RuntimeError as error:
-                    raw_code = str(error).split(":", 1)[0].strip() or "billing_backend_error"
-                    self.send_error_json(
-                        HTTPStatus.SERVICE_UNAVAILABLE,
-                        raw_code,
-                        "Stripe portal call failed. Operator has been notified.",
-                    )
-                    return
-                STATE.log_analytics(
-                    user_id, "billing_portal_opened", {"sessionId": result.get("id")}
-                )
-                self.send_json({"portal": result})
                 return
             # POST /api/v1/tools/<name> — dispatch a tool call.
             # 13-plan item 7/13. The MCP tool catalogue is the
@@ -11805,7 +11597,17 @@ class Handler(BaseHTTPRequestHandler):
                 return
 
             if parsed.path == "/api/data/import":
-                result = STATE.import_data(user_id, payload)
+                try:
+                    result = STATE.import_data(user_id, payload)
+                except (ValueError, TypeError):
+                    # Malformed import file: a 400, not a 500 leaking the raw
+                    # exception (which named missing dataclass fields).
+                    self.send_error_json(
+                        HTTPStatus.BAD_REQUEST,
+                        "invalid_import",
+                        "The import file is malformed or not a valid Helpmefindthejob export.",
+                    )
+                    return
                 self.send_json({"result": result, "bootstrap": STATE.bootstrap(user_id)})
                 return
 
@@ -11946,7 +11748,7 @@ class Handler(BaseHTTPRequestHandler):
                         HTTPStatus.BAD_REQUEST, "bad_request", "Credential value is too long"
                     )
                     return
-                STATE.quota_store.can_run_ai(user_id)
+                STATE.quota_store.reserve_ai_run(user_id)
                 profile = STATE.profile_for(user_id)
                 provider = STATE.ai_provider_for(user_id)
                 if not _ai_consent_satisfied(profile, provider):
@@ -11974,7 +11776,6 @@ class Handler(BaseHTTPRequestHandler):
                         str(cap_err),
                     )
                     return
-                STATE.quota_store.record_ai_run(user_id)
                 imported.analysis_status = result.status
                 imported.analysis_output = result.output or None
                 imported.analysis_error = result.error or None
@@ -12011,7 +11812,7 @@ class Handler(BaseHTTPRequestHandler):
                         HTTPStatus.BAD_REQUEST, "bad_request", "Credential value is too long"
                     )
                     return
-                STATE.quota_store.can_run_ai(user_id)
+                STATE.quota_store.reserve_ai_run(user_id)
                 profile = STATE.profile_for(user_id)
                 provider = STATE.ai_provider_for(user_id)
                 if not _ai_consent_satisfied(profile, provider):
@@ -12039,7 +11840,6 @@ class Handler(BaseHTTPRequestHandler):
                         str(cap_err),
                     )
                     return
-                STATE.quota_store.record_ai_run(user_id)
                 if result.status == "completed" and result.output:
                     imported.cover_letter_draft = result.output
                     STATE.repository.save_imported_job(imported)
@@ -12067,7 +11867,7 @@ class Handler(BaseHTTPRequestHandler):
                         HTTPStatus.BAD_REQUEST, "bad_request", "Credential value is too long"
                     )
                     return
-                STATE.quota_store.can_run_ai(user_id)
+                STATE.quota_store.reserve_ai_run(user_id)
                 profile = STATE.profile_for(user_id)
                 if not (profile.cv_text or "").strip():
                     self.send_error_json(
@@ -12104,7 +11904,6 @@ class Handler(BaseHTTPRequestHandler):
                         str(cap_err),
                     )
                     return
-                STATE.quota_store.record_ai_run(user_id)
                 # CV variant attribution (#44): persist a small record
                 # of every successful tailoring run so we can correlate
                 # variants with replies later. Excerpt is bounded so the
@@ -12152,7 +11951,7 @@ class Handler(BaseHTTPRequestHandler):
                 runtime_credential = str(
                     payload.get("credentialValue") or payload.get("runtimeCredential") or ""
                 )
-                STATE.quota_store.can_run_ai(user_id)
+                STATE.quota_store.reserve_ai_run(user_id)
                 profile = STATE.profile_for(user_id)
                 provider = STATE.ai_provider_for(user_id)
                 if not _ai_consent_satisfied(profile, provider):
@@ -12183,7 +11982,6 @@ class Handler(BaseHTTPRequestHandler):
                         str(cap_err),
                     )
                     return
-                STATE.quota_store.record_ai_run(user_id)
                 if result.status == "completed":
                     score, reason, gaps = parse_auto_fit_output(result.output)
                     if score is not None:
@@ -12246,7 +12044,7 @@ class Handler(BaseHTTPRequestHandler):
                 batch_cap_ctx = STATE.cost_cap_context_for(user_id)
                 for job in jobs:
                     try:
-                        STATE.quota_store.can_run_ai(user_id)
+                        STATE.quota_store.reserve_ai_run(user_id)
                     except QuotaError as error:
                         outcomes.append(
                             {
@@ -12280,7 +12078,6 @@ class Handler(BaseHTTPRequestHandler):
                         # Halt the batch — every subsequent call
                         # would just hit the same cap.
                         break
-                    STATE.quota_store.record_ai_run(user_id)
                     if res.status == "completed":
                         score, reason, gaps = parse_auto_fit_output(res.output)
                         if score is not None:

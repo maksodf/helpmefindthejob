@@ -2,9 +2,9 @@
 # SPDX-License-Identifier: Apache-2.0
 """PWA install-eligibility contract test.
 
-PlanTowardPerfection Ceiling-2 box 2.12.11: "PWA install banner
+PWA install banner
 verified — beforeinstallprompt works on Chrome Android + iOS
-Safari (Add to Home Screen)."
+Safari (Add to Home Screen).
 
 The actual `beforeinstallprompt` event fires only in Chromium-
 based browsers when ALL of the W3C-published install criteria

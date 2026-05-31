@@ -4,11 +4,12 @@
 
 Companion to ``demo_aicha_walk.py`` — exercises a different cohort
 across all 3 agents so the demo isn't a single happy path. Yusuf
-is a Syrian electrical engineer on an EU Blue Card; he needs:
+is a Turkish mechanical engineer who came directly on an EU Blue
+Card (never an asylum seeker); he needs:
 
-1. Verification of his BSc Electrical Engineering (Damascus) →
-   anerkennung-agent → § 4 AsylG engineering pathway →
-   full_recognition_pending_language (Sprachnachweis B2 DSH).
+1. Verification of his mechanical-engineering degree (ITÜ Istanbul) →
+   anerkennung-agent → BQFG engineering-recognition pathway for an
+   EU Blue Card skilled worker (engineering_bluecard_bqfg).
 2. Munich short-term furnished housing → housing-agent →
    munich_blue_card cohort (€1100-1650/mo, 3-6 month
    furnished, 2-5 week wait).
@@ -45,11 +46,11 @@ YUSUF_PROFILE: dict[str, Any] = {
     "displayNameOpaque": "Yusuf A.",
     "frictionClass": "yusuf",
     "residencyStatus": "EU Blue Card",
-    "countryOfOrigin": "Syria",
-    "qualificationField": "Electrical Engineering",
+    "countryOfOrigin": "Turkey",
+    "qualificationField": "Mechanical Engineering",
     "city": "Munich",
-    "languageProficiency": {"de": "A2", "ar": "native", "en": "C1"},
-    "yearsExperience": 9,
+    "languageProficiency": {"de": "A2", "tr": "native", "en": "B2"},
+    "yearsExperience": 13,
     "consentedScopes": ["identity", "residence", "employment"],
     "userConsentReceivedAt": "2026-05-21T12:00:00+00:00",
     "hasChildren": False,
@@ -131,11 +132,12 @@ def main() -> int:
             if not _wait_for_health(url, label):
                 return 2
 
-    # Step 1 — verify electrical engineering BSc
+    # Step 1 — verify mechanical engineering degree
     _section(
-        "Step 1 — Verify Yusuf's Syrian Electrical Engineering BSc",
-        "Expected pathway: engineering_paragraph_4_asylg.\n"
-        "Note: Yusuf is on Blue Card now, but his original recognition was under §4 AsylG.",
+        "Step 1 — Verify Yusuf's Turkish Mechanical Engineering degree",
+        "Expected pathway: engineering_bluecard_bqfg.\n"
+        "Yusuf came directly on an EU Blue Card, so recognition runs the BQFG "
+        "engineering route — not §4 AsylG, which never applied to him.",
     )
     decision_resp = _post_json(
         f"{ANERKENNUNG_URL}/v1/verify-credential",
@@ -143,7 +145,7 @@ def main() -> int:
             "userId": YUSUF_USER_ID,
             "qualificationField": YUSUF_PROFILE["qualificationField"],
             "countryOfOrigin": YUSUF_PROFILE["countryOfOrigin"],
-            "residencyStatus": "§ 4 AsylG",  # historic recognition status
+            "residencyStatus": YUSUF_PROFILE["residencyStatus"],
             "userConsentReceivedAt": YUSUF_PROFILE["userConsentReceivedAt"],
         },
     )
@@ -208,7 +210,7 @@ def main() -> int:
 
     _section("Demo complete")
     print("  Yusuf demo walk passed:")
-    print("    • Engineering credential recognized + Sprachnachweis flagged")
+    print("    • Mechanical-engineering credential recognized via the BQFG Blue-Card route")
     print("    • Munich Blue Card short-term housing intake")
     print("    • Social-services correctly declined to over-recommend benefits")
     return 0

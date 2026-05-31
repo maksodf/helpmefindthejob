@@ -5,7 +5,7 @@
 Closes phase2-backlog item #70: "Help-surface for clarifying
 questions in journey phases".
 
-Before this slice, help-seeking inputs ("?" / "huh" / "what" /
+Previously, help-seeking inputs ("?" / "huh" / "what" /
 "help" / "hilfe" / etc.) landed in the generic help branch which
 just re-shows a "you're mid-journey, cancel/back/answer" reminder.
 Now each interactive journey phase emits a phase-tailored

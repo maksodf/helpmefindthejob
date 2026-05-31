@@ -132,7 +132,7 @@ Talk soon,
 
 ## When to skip the external read
 
-Per the slice's PART 7 "what is NOT in this slice" + the application-
+Per the PART 7 "what is NOT in scope" note + the application-
 draft adversarial-self-review #2 in the §4.4 closeout: the external
 read is **strongly recommended but not strictly required**. If the
 maintainer cannot recruit a reader within ~5 days of submission, the

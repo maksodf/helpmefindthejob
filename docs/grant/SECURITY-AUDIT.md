@@ -11,10 +11,9 @@ commit through `f225896` (UX-F1 follow-up).
 **Result**: **17 hits, all triaged as false positives** (test-fixture
 stubs in `tests/`). **No real secrets found in history.**
 
-This document satisfies Ceiling-1 box 1.3.7 of
-`PlanTowardPerfection.MD` ("Run `gitleaks` over the full git history +
-commit a summary into `docs/grant/14-source-class-hierarchy.md` or new
-`docs/grant/SECURITY-AUDIT.md`") and is referenced from the NLnet
+This document records running `gitleaks` over the full git history,
+with a summary committed into `docs/grant/14-source-class-hierarchy.md`
+or this `docs/grant/SECURITY-AUDIT.md`, and is referenced from the NLnet
 application package (Field 17 supporting material).
 
 ---
@@ -47,19 +46,17 @@ Per-file breakdown:
 | File | Hits | Lines | Nature |
 |---|---|---|---|
 | `tests/test_sso_oidc.py` | 1 | 701 | `self.secret = "a-secret-at-least-32-bytes-padding-for-tests"` — explicitly documented padding for the JWT-sized-secret OIDC test |
-| `tests/test_phase2_stripe_portal.py` | 1 | 150 | `secret_key="test-secret-key-for-idempotency-fixture-1234"` — Stripe-webhook idempotency unit test |
 | `tests/test_phase3_email_verification.py` | 6 | 148, 155, 165, 173, 179, 194 | `"password": "very-secret-pass-1234"` literals in HTTP-handler signup/login fixtures |
 | `tests/test_phase3_signup_consent.py` | 5 | 125, 134, 139, 147, 153 | same pattern: registration consent flow fixtures |
 | `tests/test_http_invitations.py` | 1 | 249 | invitation accept-flow fixture password |
 | `tests/test_modules.py` | 1 | 24 | module-loader fixture credential |
 | `tests/test_company_discovery.py` | 2 | 509, 526 | company-discovery HTTP test fixtures |
 
-Total: **17 / 17 hits accounted for as test fixtures**. None of these
+Total: **16 / 16 hits accounted for as test fixtures**. None of these
 values exist outside the `tests/` directory; none are referenced from
 production code; none would be honored as credentials by any deployed
 instance (the production `AuthStore` rejects unverified default
-secrets, and Stripe rejects `test-secret-key-for-idempotency-fixture-1234`
-as a malformed key).
+secrets).
 
 ---
 
@@ -83,11 +80,11 @@ otherwise noted). None are submission blockers:
 
 - **Add `.gitleaks.toml` allowlist** so a CI run of gitleaks would
   produce zero hits without manual triage. Scope deferred to
-  `PlanTowardPerfection.MD` Ceiling 2 (Section 2.14 — privacy /
+  a future release (privacy /
   security / incident readiness).
 - **Wire gitleaks into the existing OpenSSF Scorecard workflow** so
   every push to `main` gets a fresh secrets scan. Scope deferred to
-  Ceiling 2 Section 2.14 alongside the bug-bounty program work.
+  a post-grant security milestone alongside the bug-bounty program work.
 - **Quarterly cadence**: re-run this scan once per quarter and append
   a dated section below. Maintainer-owned task.
 
@@ -102,8 +99,6 @@ sufficient*. Other layers of the project's secret-management posture:
   Article 12) is set via `.env` on the droplet and never appears in
   the repo. Fail-fast at startup if absent in non-test environments
   (`tests/test_phase13_audit_log.py::SaltFailFastTests`).
-- Stripe webhook signing secret is read from `STRIPE_WEBHOOK_SECRET`
-  env var; absent → idempotency layer rejects all events.
 - OIDC client secrets are environment-variable-driven; the test fixture
   in `tests/test_sso_oidc.py` is unrelated to any real SSO deployment.
 - Caddy auto-issued TLS keys live in the Caddy container volume on

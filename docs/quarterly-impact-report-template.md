@@ -7,7 +7,6 @@
 
 **Article anchor**: pairs with the cost-saving doctrine at [`docs/grant/08-cost-saving-doctrine.md`](grant/08-cost-saving-doctrine.md) (the metric framework) and with the persona-friction-class architecture (the cohort framework). The aim is reviewer-readable evidence that the project's claims about institutional cost-reduction + user-outcome-improvement are measured, not asserted.
 
-**PlanTowardPerfection box**: 2.11.9 — "Quarterly impact report template + first issue (Q1 2027)".
 
 **Cadence**: every 3 calendar months. The maintainer authors; the deployer-side data flows from each pilot deployment's audit-log aggregates (HMAC-salted opaque user ids only — never identifying).
 
@@ -64,7 +63,7 @@ For each of the seven canonical personas, surface the cohort-aware aggregates. A
 | Yusuf-class (Blue Card pending, engineering) | | | | | |
 | Olga-class (§24 protection, English-team tech) | | | | | |
 | Mahmoud-class (§4 Subsidiärer Schutz, trade Ausbildung) | | | | | |
-| Maria-class (EU Blue Card, underemployed architect) | | | | | |
+| Maria-class (EU citizen Freizügigkeit, care/nursing — language barrier) | | | | | |
 | Käthe-class (Wiedereinsteigerin, returner) | | | | | |
 | Tobias-class (long-term unemployed, career changer) | | | | | |
 
@@ -145,7 +144,7 @@ Snapshot what shipped vs what was scoped against the `ROADMAP.md` quarter-row. H
 | New deployers onboarded | | | |
 | Active contributors (committers in the quarter) | | | |
 | External translators (Weblate or PR) | | | |
-| GitHub Sponsors (€) | | | per Decision 17 — activated only post-launch |
+| GitHub Sponsors (€) | | | activated only post-launch |
 | Open Collective (€) | | | same |
 | Paid support contracts signed | | | |
 | Grant applications filed | | | |
@@ -210,4 +209,4 @@ For the inaugural report, append a dated row to `docs/impact-reports/INDEX.md` a
 
 | Date | Quarter | Author | Notes |
 |---|---|---|---|
-| 2026-05-24 | (template — not a real report) | maintainer (Fouad) | Initial template authored as part of PlanTowardPerfection box 2.11.9. First filled instance at `docs/impact-reports/2027-Q1.md` when Q1 2027 closes (the project's first NGO pilot deployment is anticipated 2026 Q4 per ROADMAP.md, so Q1 2027 is the earliest defensible reporting quarter). |
+| 2026-05-24 | (template — not a real report) | maintainer (Fouad) | Initial template authored for the project's reporting cadence. First filled instance at `docs/impact-reports/2027-Q1.md` when Q1 2027 closes (the project's first NGO pilot deployment is anticipated 2026 Q4 per ROADMAP.md, so Q1 2027 is the earliest defensible reporting quarter). |

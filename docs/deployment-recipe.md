@@ -5,10 +5,9 @@
 
 **Audience**: a contributor or institutional deployer who wants a public demo
 of Helpmefindthejob running against any Docker Compose + Caddy host.
-**Companion to**: [`production-deployment.md`](production-deployment.md) (the
-general production guide) and `docs/grant/02-execution-plan.md` §3.4 (the
-grant-sprint planning context).
-**Status**: living document; reviewed alongside every §3.4 / §3.5 ship.
+**Companion to**: [`production-deployment.md`](production-deployment.md), the
+general production guide.
+**Status**: living document.
 
 This recipe is **host-agnostic**. It does not commit the project to a
 specific hosting provider, registrar, monitoring vendor, or domain
@@ -21,14 +20,14 @@ choices.
 ## 1. Why "parallel public instance" rather than "expose the existing
 instance"?
 
-Per Decision 17 in `docs/grant/04-research-and-decisions.md`, the
+The
 project has an **existing private deployment** that serves a single
 tester (the maintainer's partner). That deployment carries real
 session data, real CV facts, and a real admin account; it is **not**
 the right surface to point NLnet reviewers, partner NGOs, or curious
 contributors at.
 
-The §3.4 public demo (Maintainer decision 2026-05-18 — Finding A
+The public demo (Maintainer decision 2026-05-18 — Finding A
 posture (b)) is a **parallel public instance** that:
 
 - Runs from the same Git checkout and the same Docker image.
@@ -322,7 +321,7 @@ sudo swapon /swapfile
 echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
 ```
 
-This is **optional** and not a §3.4 requirement.
+This is **optional**.
 
 ---
 
@@ -436,7 +435,7 @@ retention policy (see `compliance/audit-log-schema.md` §6).
 Helpmefindthejob's canonical env-var prefix is `HELPMEFINDTHEJOB_*`. The two
 legacy prefixes (`HELPMEFINDTHEJOB_*` from the pre-Week-1 codebase,
 `DIRECTJOB_*` from the pre-Decision-22 codebase) were removed in
-Phase 3 (2026-05-22 per Decision 22 closeout). Operators upgrading from
+Phase 3 (2026-05-22). Operators upgrading from
 a pre-Decision-22 deployment must rename all `DIRECTJOB_*` env vars to
 `HELPMEFINDTHEJOB_*` before the new image boots; the new code does not
 read the legacy prefixes.
@@ -487,10 +486,10 @@ a per-process random salt with an `ERROR`-level stderr warning.
 
 ## Append log
 
-- **2026-05-18**: initial recipe drafted as part of the §3.4 deployment
+- **2026-05-18**: initial recipe drafted as part of the deployment
   artefacts slice (Step 2 of `docs/grant/next-steps-2026-05-18.md`).
   Parallel-public-instance posture per Finding A maintainer decision.
 - **2026-05-19**: env-var migration path documented above; `env_compat`
-  shim landed in the pre-submission scope-tightening slice (PART 3),
+  shim landed in the pre-submission scope-tightening slice,
   closing inventory items #6 + #7 (HELPMEFINDTHEJOB_/HELPMEFINDTHEJOB_
   prefix drift).

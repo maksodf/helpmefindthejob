@@ -5,8 +5,6 @@
 
 **Audience**: the project maintainer running the canonical `helpmefindthejob.org` deployment + the `demo.helpmefindthejob.org` subdomain. For **deployer-side** operating procedures (Beratungsstellen / IQ-Netzwerk / Optionskommunen Jobcenter / NGO / university career service), the load-bearing doc is `compliance/deployer-operating-manual.md` (AI Act Article 26 obligations + the full operational chain).
 
-**PlanTowardPerfection box**: 2.10.5 — "Operator runbook updated quarterly (`docs/operator-launch-runbook.md`) with actual incident reports + lessons." The Week-1 sanitisation pass moved the prior commercial-product `operator-launch-runbook.md` to `private/`; this file is the recreated **public, civic-commons-positioned** equivalent.
-
 **Status**: living document. Append a dated quarterly review row to §3 on every cadence checkpoint.
 
 ---
@@ -26,7 +24,7 @@ This is the consolidated maintenance cadence the maintainer runs against the pro
 | Article 22 quarterly aggregate review | Quarterly | [`compliance/deployer-operating-manual.md`](https://github.com/maksodf/helpmefindthejob/blob/main/compliance/deployer-operating-manual.md) §8.1 step 8 | 2026-Q3 (no requests received yet — review is "zero requests this quarter") |
 | DPIA review | Annual + on triggers | [`compliance/gdpr-article-35-dpia.md`](https://github.com/maksodf/helpmefindthejob/blob/main/compliance/gdpr-article-35-dpia.md) §6 | 2027-Q2 |
 | Source-class hierarchy re-verification | 30-day freshness window | [`docs/grant/14-source-class-hierarchy.md`](grant/14-source-class-hierarchy.md) append log | 2026-06-23 (30 days after last pass) |
-| Quality dashboard re-run | Pre-release on `v*.X.0` | (the standing 3199-test unit suite + the dated `bias-testing-*.md` reports) | 2026-Q4 |
+| Quality dashboard re-run | Pre-release on `v*.X.0` | (the standing 3359-test unit suite + `docs/grant/bias-comparative-report-2026-05-21.md`) | 2026-Q4 |
 
 If the deployer has a tracked-issue board (GitHub Projects / Linear / Jira), each cadence item lives on the board with the next-due date pinned.
 
@@ -60,7 +58,7 @@ This is the checklist the maintainer ran before the v0.80.0 NLnet-submission tag
 | MCP integration guide | ✅ 2026-05-24 | `docs/mcp-integration-guide.md` |
 | API client examples | ✅ 2026-05-24 | `docs/api-client-examples.md` |
 | Public roadmap page | ✅ 2026-05-24 | `static/roadmap.html` |
-| OpenGraph card audit | ✅ 2026-05-24 | `docs/og-card-audit.md` |
+| OpenGraph card audit | ✅ 2026-05-24 | internal QA log |
 
 ---
 
@@ -93,5 +91,4 @@ This file is the **maintainer's own** project-self-host runbook. It does NOT gov
 - Compliance INDEX: [`compliance/INDEX.md`](https://github.com/maksodf/helpmefindthejob/blob/main/compliance/INDEX.md)
 - v0.80.0 release notes + signing recipe: [`releases/v0.80.0.md`](releases/v0.80.0.md) + [`releases/v0.80.0-signing.md`](releases/v0.80.0-signing.md)
 - ROADMAP: [`https://github.com/maksodf/helpmefindthejob/blob/main/ROADMAP.md`](https://github.com/maksodf/helpmefindthejob/blob/main/ROADMAP.md)
-- PlanTowardPerfection (active backlog): [`https://github.com/maksodf/helpmefindthejob/blob/main/PlanTowardPerfection.MD`](https://github.com/maksodf/helpmefindthejob/blob/main/PlanTowardPerfection.MD)
 - Security disclosure channel: [`https://github.com/maksodf/helpmefindthejob/blob/main/SECURITY.md`](https://github.com/maksodf/helpmefindthejob/blob/main/SECURITY.md)

@@ -67,6 +67,7 @@ Before going live, complete each of these in order. None is optional.
 - [ ] Set the deployment-time secrets: `HELPMEFINDTHEJOB_SECRET_KEY` (32 random bytes), `HELPMEFINDTHEJOB_AUDIT_SALT` (32 random bytes), `HELPMEFINDTHEJOB_PUBLIC_URL`, admin credentials, SMTP for outbound notifications.
 - [ ] Run the bias-testing methodology against your chosen AI provider (`accuracy-and-bias-testing.md` §"Pre-deployment re-test").
 - [ ] Verify backup and restore drills against your data infrastructure (`scripts/backup-*` and `scripts/restore-*` are provided).
+- [ ] If you publish demo accounts for reviewers: seed them with `scripts/seed-personas.py --password '<demo-pw>'` (run on the server against the deployment's data dir), then verify every demo persona can actually log in with `python3 scripts/demo-login-smoke.py --base-url <your-public-url> --password '<demo-pw>'` — it must report all personas PASS before the demo is reviewer-ready.
 - [ ] Brief your advisors and oversight person on the system's capabilities and limitations (`transparency-notice.md` §"Limitations").
 - [ ] Decide which user populations you serve and tailor the chat-router's persona-friendly greetings accordingly (see §4.3 below).
 - [ ] Document your **Article 22 right-to-human-review procedure** (see §8.1 below) — who receives escalation requests, the response-time SLA, the artefact retention policy, and how the verdict is communicated back to the user.
@@ -83,12 +84,12 @@ The complete list lives in [`.env.example`](https://github.com/maksodf/helpmefin
 |---|---|---|
 | `HELPMEFINDTHEJOB_SECRET_KEY` | (required) | The ChaCha20-Poly1305 AEAD key for profile-at-rest encryption. 32 random bytes, base64-encoded. |
 | `HELPMEFINDTHEJOB_AUDIT_SALT` | (required) | The per-deployment salt for the user_opaque_id hashing in the audit log. 32 random bytes, base64-encoded. |
-| `HELPMEFINDTHEJOB_AUDIT_RETENTION_DAYS` | `180` | Retention window for audit-log files. Deployer-set per jurisdiction. |
+| `HELPMEFINDTHEJOB_AUDIT_RETENTION_DAYS` | `180` (recommended) | Recommended retention window for audit-log files. **Not read by the application at this version** — the app does not auto-prune the audit log; the deployer runs retention per jurisdiction. |
 | `HELPMEFINDTHEJOB_AUDIT_ROTATE_BYTES` | `67108864` (64 MiB) | Rotation threshold. |
-| `HELPMEFINDTHEJOB_AUDIT_PLAINTEXT_PII` | `false` | Set to `true` only with documented legal justification. Logs `consent_event` on each config reload to make policy change auditable. |
+| `HELPMEFINDTHEJOB_AUDIT_PLAINTEXT_PII` | `false` | Set to `true` only with documented legal justification. (The `consent_event` audit type is now emitted for user AI-provider consent changes — see `audit-log-schema.md` §4.4; the `audit_log_plaintext_pii` policy-change variant is not auto-emitted, so a deployer enabling this flag records the legal justification out-of-band per their DPIA.) |
 | `HELPMEFINDTHEJOB_HUMAN_OVERSIGHT_MODE` | `disabled` | `enabled` activates the advisor-review queue at `/api/admin/oversight/queue`. |
 | `HELPMEFINDTHEJOB_AI_PROVIDER` | `manual` | Which AI provider is the default (`openai` / `anthropic` / `gemini` / `deepseek` / `openrouter` / `ollama` / `manual` / `claude-code` / `none`). Users can override per-request. |
-| `HELPMEFINDTHEJOB_DETERMINISTIC_ONLY` | `false` | Kill-switch. When `true`, disables every AI-assisted code path and falls back to deterministic templates everywhere. |
+| `HELPMEFINDTHEJOB_DETERMINISTIC_ONLY` | `false` | Kill-switch. When `true`, the app invokes no AI provider on any code path; each AI-assisted feature falls back to its no-AI path (letter drafting → a deterministic templated skeleton; fit-scoring / CV-tailoring → a BYO-AI handoff prompt). |
 
 ### 4.2 Deployment files
 
@@ -140,13 +141,13 @@ See [`audit-log-schema.md`](https://github.com/maksodf/helpmefindthejob/blob/mai
 
 ### 6.5 Export for users (GDPR Article 20)
 
-When a user requests their audit-log slice (Article 86 explanation right or GDPR right of access), the system constructs a per-user export filtered on the user's opaque ID. The export is logged as an `export_event` for completeness.
+The full Article 20 data export (`GET /api/data/export`, and the admin-performed `GET /api/admin/users/<id>/export`) now emits an `export_event` (`export_kind="profile_full"`, see `audit-log-schema.md` §4.5) into the data subject's own audit slice, so every personal-data export is itself recorded. Extracting a user's slice of the hash-chained AI-Act audit log (the Article 86 explanation right / right of access over the audit records themselves) remains a manual DPO process at this version; an `export_event` with `export_kind="audit_log_self"` is specified for when that extraction becomes an automated endpoint.
 
 ---
 
 ## 7. User-facing transparency
 
-You are responsible for ensuring that users of your deployment see the transparency notice at first run and any time substantive system behaviour changes. The notice at [`transparency-notice.md`](transparency-notice.md) is the source of truth; you complete the `[Deployer-managed addendum]` section before going live. The rendered version is served at `/settings/transparency` in the application.
+You are responsible for ensuring that users of your deployment see the transparency notice at first run and any time substantive system behaviour changes. The notice at [`transparency-notice.md`](transparency-notice.md) is the source of truth; you complete the `[Deployer-managed addendum]` section before going live. The rendered version is served at `/transparency` in the application.
 
 In addition to the on-screen notice, consider:
 
@@ -158,7 +159,7 @@ In addition to the on-screen notice, consider:
 
 ## 8. Data subject rights
 
-Users have the GDPR rights enumerated in `transparency-notice.md` §"Your rights". As the deployer, you operationally handle data-subject requests. The system provides the technical primitives (`/api/profile/export`, `/api/profile/delete`, audit-log self-export); your team handles the process around them (verifying the requester's identity, responding within the GDPR window, documenting the response).
+Users have the GDPR rights enumerated in `transparency-notice.md` §"Your rights". As the deployer, you operationally handle data-subject requests. The system provides the technical primitives (`/api/data/export`, `/api/account/deletion-request`, audit-log self-export); your team handles the process around them (verifying the requester's identity, responding within the GDPR window, documenting the response).
 
 A request log lives separately from the audit log (it is itself a record of the request, not the technical event); your data-protection officer typically owns this log.
 
@@ -189,7 +190,7 @@ The user-facing notice at [`transparency-notice.md` §"Right to an explanation (
 
 6. **Retention**: keep the intake artefact, the reviewer's notes, the verdict, and any corrected output for **the longer of**: (a) your audit-log retention window (§6.2 above; default 180 days), (b) your jurisdiction's data-protection-request retention requirement (typically 3 years for the request log under GDPR accountability obligations), (c) any pending investigation or supervisory authority engagement period. The retention is separate from the audit log because the request itself is a record-of-request, not an AI-output event.
 
-7. **Log the review action itself**: invoke `/api/admin/oversight/review` (or your equivalent operational endpoint) so the **fact that a human review took place** is itself an audit-log entry. The entry records reviewer identity (opaque ID), referenced audit-log entry ID, verdict, and timestamp — never the AI output verbatim, which would defeat the encrypted-at-rest pseudonymisation discipline. This closes the Article 26(6) automatic-log obligation around the review event.
+7. **Log the review action itself**: record the **fact that a human review took place** in your operational log / ticketing system. The in-app `/api/admin/oversight/queue` surfaces the underlying AI-invocation audit events read-only; a dedicated review-logging endpoint is a Phase-2 item. The record should capture reviewer identity (opaque ID), referenced audit-log entry ID, verdict, and timestamp — never the AI output verbatim, which would defeat the encrypted-at-rest pseudonymisation discipline. This supports the Article 26(6) record-keeping obligation around the review event.
 
 8. **Aggregate review**: at least quarterly, the oversight person produces a short anonymised summary of the requests received, the verdicts, and any patterns. Patterns that recur (e.g., "fit-score for nursing roles consistently challenged by §16d applicants and consistently corrected") feed your next bias-testing run (§9.2) and may merit a `incident-ai-act`-tagged issue to the upstream project.
 
@@ -215,7 +216,7 @@ The project ships `scripts/backup-*.sh` and `scripts/restore-*.sh`. Run a restor
 
 ### 9.4 TLS renewal
 
-Caddy auto-renews certificates. Verify via the `scripts/check-tls-expiry.sh` monitoring script.
+Caddy auto-renews certificates. Verify via the `scripts/tls-expiry-check.sh` monitoring script.
 
 ### 9.5 Health checks
 
@@ -267,4 +268,4 @@ If something in your context is not covered here, raise an issue on the project 
 ## 13. Append log
 
 - **2026-05-18**: initial deployer operating manual drafted as part of Week 2 task 2.8 of the NLnet NGI Zero Commons Fund grant sprint.
-- **2026-05-24** (PlanTowardPerfection box 1.4.1): finalised with §8.1 "Article 22 / Article 86 right to human review of an AI decision" — an 8-step operational procedure (receiver, intake artefact, SLA, review depth, verdict communication, retention, log-the-review-action, aggregate review) plus the layering note distinguishing Article 14 (provider) / Article 26 (deployer) / Article 22 (user right). Pre-deployment checklist updated with the corresponding documentation item. Closes the gap that prior versions covered Article 26 obligations table at §2 + provider-side human-oversight at §5, but never spelt out the operational procedure for handling the per-user appeal — leaving deployers to invent the workflow at first request.
+- **2026-05-24**: finalised with §8.1 "Article 22 / Article 86 right to human review of an AI decision" — an 8-step operational procedure (receiver, intake artefact, SLA, review depth, verdict communication, retention, log-the-review-action, aggregate review) plus the layering note distinguishing Article 14 (provider) / Article 26 (deployer) / Article 22 (user right). Pre-deployment checklist updated with the corresponding documentation item. Closes the gap that prior versions covered Article 26 obligations table at §2 + provider-side human-oversight at §5, but never spelt out the operational procedure for handling the per-user appeal — leaving deployers to invent the workflow at first request.

@@ -1,0 +1,196 @@
+{
+  "kitVersion": "0.1",
+  "description": "Machine-readable EU AI Act / GDPR article-to-artefact matrix for the Helpmefindthejob compliance pack, usable as a forkable conformance starter kit. Each entry names the regulation + article, the compliance artefact(s) that address it, an honest status (code-wired = backed by running code + tests; template = a fill-in template a deployer completes; doc = a documentation artefact), and the code references that wire it where applicable. tests/test_compliance_traceability.py asserts every cited path exists and that this matrix does not drift from compliance/INDEX.md's reverse lookup — so a deleted or renamed artefact breaks the build instead of leaving a dangling compliance claim.",
+  "statusLegend": {
+    "code-wired": "backed by running code + tests in this repo (the strongest evidence class)",
+    "template": "a fill-in template the deployer completes for their deployment",
+    "doc": "a documentation artefact (assessment, schema, guide, or playbook)"
+  },
+  "articles": [
+    {
+      "regulation": "AI Act",
+      "article": "9",
+      "title": "Risk management",
+      "status": "doc",
+      "artifacts": ["compliance/risk-management-plan.md"],
+      "codeRefs": []
+    },
+    {
+      "regulation": "AI Act",
+      "article": "10",
+      "title": "Data governance",
+      "status": "doc",
+      "artifacts": ["compliance/data-governance.md"],
+      "codeRefs": []
+    },
+    {
+      "regulation": "AI Act",
+      "article": "11",
+      "title": "Technical documentation (Annex IV)",
+      "status": "doc",
+      "artifacts": ["compliance/technical-documentation.md"],
+      "codeRefs": []
+    },
+    {
+      "regulation": "AI Act",
+      "article": "12",
+      "title": "Record-keeping (tamper-evident audit log)",
+      "status": "code-wired",
+      "artifacts": ["compliance/audit-log-schema.md", "compliance/audit-log-key-rotation.md"],
+      "codeRefs": ["company_discovery/audit_log.py", "company_discovery/audit_anchor.py"]
+    },
+    {
+      "regulation": "AI Act",
+      "article": "13",
+      "title": "Transparency to deployers / users",
+      "status": "doc",
+      "artifacts": ["compliance/deployer-operating-manual.md", "compliance/transparency-notice.md"],
+      "codeRefs": []
+    },
+    {
+      "regulation": "AI Act",
+      "article": "14",
+      "title": "Human oversight",
+      "status": "doc",
+      "artifacts": ["compliance/human-oversight-guide.md"],
+      "codeRefs": []
+    },
+    {
+      "regulation": "AI Act",
+      "article": "15",
+      "title": "Accuracy, robustness + cybersecurity",
+      "status": "code-wired",
+      "artifacts": ["compliance/accuracy-and-bias-testing.md", "compliance/prompt-injection-testing.md"],
+      "codeRefs": ["biasprobe/__init__.py", "scripts/bias_comparative_report.py", "tests/test_prompt_injection_vectors.py"]
+    },
+    {
+      "regulation": "AI Act",
+      "article": "22",
+      "title": "User right to human review of automated decisions",
+      "status": "doc",
+      "artifacts": ["compliance/deployer-operating-manual.md", "compliance/transparency-notice.md"],
+      "codeRefs": []
+    },
+    {
+      "regulation": "AI Act",
+      "article": "26",
+      "title": "Deployer obligations",
+      "status": "doc",
+      "artifacts": ["compliance/deployer-operating-manual.md", "compliance/audit-log-key-rotation.md"],
+      "codeRefs": []
+    },
+    {
+      "regulation": "AI Act",
+      "article": "27",
+      "title": "Fundamental Rights Impact Assessment",
+      "status": "template",
+      "artifacts": [
+        "compliance/fundamental-rights-impact-assessment-template.md",
+        "compliance/fria-aicha.md",
+        "compliance/fria-yusuf.md",
+        "compliance/fria-olga.md",
+        "compliance/fria-mahmoud.md",
+        "compliance/fria-maria.md",
+        "compliance/fria-kaethe.md",
+        "compliance/fria-tobias.md"
+      ],
+      "codeRefs": []
+    },
+    {
+      "regulation": "AI Act",
+      "article": "49",
+      "title": "EU database registration of high-risk AI systems",
+      "status": "template",
+      "artifacts": ["compliance/eu-database-registration-template.md"],
+      "codeRefs": []
+    },
+    {
+      "regulation": "AI Act",
+      "article": "50",
+      "title": "Transparency to natural persons",
+      "status": "doc",
+      "artifacts": ["compliance/transparency-notice.md"],
+      "codeRefs": []
+    },
+    {
+      "regulation": "AI Act",
+      "article": "73",
+      "title": "Serious-incident reporting",
+      "status": "doc",
+      "artifacts": ["compliance/incident-response-drill.md", "compliance/deployer-operating-manual.md"],
+      "codeRefs": []
+    },
+    {
+      "regulation": "AI Act",
+      "article": "86",
+      "title": "Right to explanation of individual decision-making",
+      "status": "doc",
+      "artifacts": ["compliance/transparency-notice.md", "compliance/deployer-operating-manual.md"],
+      "codeRefs": []
+    },
+    {
+      "regulation": "GDPR",
+      "article": "20",
+      "title": "Right to data portability (export)",
+      "status": "code-wired",
+      "artifacts": ["compliance/article-20-export-proof.md", "compliance/article-20-export-sample.json"],
+      "codeRefs": ["app.py", "tests/test_gdpr_article_20_export.py"]
+    },
+    {
+      "regulation": "GDPR",
+      "article": "28",
+      "title": "Processor obligations (DPA)",
+      "status": "template",
+      "artifacts": ["compliance/dpa-template.md"],
+      "codeRefs": []
+    },
+    {
+      "regulation": "GDPR",
+      "article": "35",
+      "title": "Data Protection Impact Assessment",
+      "status": "doc",
+      "artifacts": ["compliance/gdpr-article-35-dpia.md"],
+      "codeRefs": []
+    },
+    {
+      "regulation": "GDPR",
+      "article": "5",
+      "title": "Principles of processing (incl. integrity)",
+      "status": "doc",
+      "artifacts": ["compliance/data-governance.md", "compliance/audit-log-key-rotation.md"],
+      "codeRefs": []
+    },
+    {
+      "regulation": "GDPR",
+      "article": "22",
+      "title": "Automated individual decision-making",
+      "status": "doc",
+      "artifacts": ["compliance/transparency-notice.md", "compliance/deployer-operating-manual.md"],
+      "codeRefs": []
+    },
+    {
+      "regulation": "GDPR",
+      "article": "30",
+      "title": "Records of processing activities",
+      "status": "doc",
+      "artifacts": ["compliance/data-governance.md"],
+      "codeRefs": []
+    },
+    {
+      "regulation": "GDPR",
+      "article": "32",
+      "title": "Security of processing",
+      "status": "doc",
+      "artifacts": ["compliance/audit-log-key-rotation.md", "compliance/data-governance.md"],
+      "codeRefs": []
+    },
+    {
+      "regulation": "GDPR",
+      "article": "33",
+      "title": "Personal-data breach notification",
+      "status": "doc",
+      "artifacts": ["compliance/deployer-operating-manual.md"],
+      "codeRefs": []
+    }
+  ]
+}

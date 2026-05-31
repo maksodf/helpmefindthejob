@@ -12,9 +12,7 @@ rule, and how the translation-review process works.
 
 ## Goal
 
-The shipped locales are **English (`en`) and German (`de`)** per
-the project's
-[Decision 6](https://github.com/maksodf/helpmefindthejob/blob/main/docs/grant/04-research-and-decisions.md#decision-6).
+The shipped locales are **English (`en`) and German (`de`)**.
 The post-grant target locales — **Arabic, Ukrainian, Turkish,
 Romanian** — map to the seven-persona panel's friction
 geography:
@@ -25,7 +23,7 @@ geography:
 - **Romanian** → Maria (Romania → Stuttgart care worker, EU
   citizen)
 
-The friction-class architecture (Decision 21) means these locales
+The friction-class architecture means these locales
 serve their named personas as the most-acute use case AND any
 user from the same language community who faces the same
 friction. They land as native-speaker contributors join — Phase 2
@@ -186,7 +184,7 @@ signal that connects her to her actual administrative situation.
 
 ## Translation review process
 
-Per **Decision 18** (consent-first authorship), every translation
+Under the consent-first authorship policy, every translation
 review goes through this flow:
 
 1. **Native-speaker review** — the maintainer recruits a native
@@ -204,7 +202,7 @@ review goes through this flow:
    the reviewer's name/handle in the commit message.
 
 3. **Credit in `AUTHORS.md`** — once the reviewer explicitly
-   consents (Decision 18: consent-first authorship), the
+   consents (consent-first authorship), the
    maintainer adds them to `AUTHORS.md` in a separate dated
    commit. Reviewer name appears as they wish to be credited;
    pseudonymous and "anonymous reviewer" entries are valid.

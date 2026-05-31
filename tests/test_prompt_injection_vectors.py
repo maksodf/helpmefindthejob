@@ -1,6 +1,6 @@
 # Copyright (c) 2026 Helpmefindthejob contributors
 # SPDX-License-Identifier: Apache-2.0
-"""Prompt-injection vector unit tests (PlanTowardPerfection box 1.4.5).
+"""Prompt-injection vector unit tests.
 
 Methodology + the 10 canonical vector table lives at
 ``compliance/prompt-injection-testing.md``. This file pins the

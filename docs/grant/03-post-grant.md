@@ -118,16 +118,16 @@ By the end of Phase 2 (~6–12 months after grant submission):
 
 ### Milestones during the grant (6–9 month execution window)
 
-The exact milestones submitted in the application become the binding deliverable list. The grant calls for ~6 milestones based on `12-application-package.md`:
+The exact milestones submitted in the application become the binding deliverable list. The grant calls for 6 milestones based on `12-application-package.md`:
 
-1. **M1 — Legal and narrative foundations** (delivered before submission for the application itself)
-2. **M2 — MCP composition reference** (delivered before submission)
-3. **M3 — EU AI Act compliance pack** (delivered before submission, refined during grant)
-4. **M4 — Public demo deployment and accessibility** (refined during grant; full WCAG 2.2 AA conformance attempted)
-5. **M5 — Reproducible builds and quality signalling** (delivered before submission, refined during grant)
-6. **M6 — Institutional readiness and standards interop** (Commons Conservancy admission completed; ESCO/EURES expanded; first institutional pilot scoped)
+1. **M1 — Legal, governance, and compliance trust package** (€5,000)
+2. **M2 — MCP composition and agent handoff** (€8,000)
+3. **M3 — Guided chat workflow and priority commands** (€6,000)
+4. **M4 — Employment-friction intelligence and matching quality** (€7,000)
+5. **M5 — Search quality, accessibility, and persona proof** (€6,000)
+6. **M6 — Operator readiness and first-pilot package** (€5,000)
 
-Most of the Phase 1 deliverables are shipped *before* submission as evidence of execution capability. The grant funds the *refinement, documentation, audits, and institutional pilots* during the 6–9 month period.
+The kernel (MCP server, BYO-AI abstraction, encryption-at-rest, compliance scaffold, reproducible builds, curated ESCO subset, EN+DE localisation) ships *before* submission as evidence of execution capability. The grant funds the forward milestones above — taking that kernel from working prototype to an institution-ready, pilot-deployable assistant over the 9-month window.
 
 ### Sustainability work during the grant
 

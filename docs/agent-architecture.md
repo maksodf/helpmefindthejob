@@ -3,11 +3,9 @@
 
 # Agent architecture
 
-**PlanTowardPerfection box**: 2.1.1 — "Define the agent-architecture diagram: which agent owns which capability (search, fit-scoring, cover-letter, CV-build, Anerkennung tracking, housing handoff, etc.). Today everything is in the chat-router monolith."
-
 **Audience**: maintainer planning the post-v0.80.0 multi-agent refactor; integrators understanding the boundary between in-process subsystems vs. external MCP-composable civic agents.
 
-**Status**: design doc — describes the present (chat-router monolith) AND the Phase-2 target (specialist agents behind a planner). The actual refactor is `PlanTowardPerfection.MD` §2.1 (10 boxes, all features per the "no new product features in the NLnet window" hard rule — so the diagram below is the design contract, not yet the implementation).
+**Status**: design doc — describes the present (chat-router monolith) AND the Phase-2 target (specialist agents behind a planner). The multi-agent refactor is Phase-2 work; no new product features ship during the NLnet window, so the diagram below is the design contract, not yet the implementation.
 
 ---
 
@@ -56,13 +54,15 @@ Every AI-touching capability lives behind `company_discovery/chat_router.py` (th
             └────────────────────────┘
 ```
 
-The monolith is justified at v0.80.0 because the chat-router's REGISTRY layer already enforces the contract every command must satisfy (input shape, output shape, audit-log entry, cost-cap context). The "everything in chat_router" framing in the PlanTowardPerfection.MD box overstates the coupling — capability is already split across the modules above, with chat_router as the dispatcher front-end. What HASN'T happened yet is the explicit **agent boundary**: each helper module today is a function-call away from chat_router, not a process-isolated or stable-interface-isolated agent.
+The monolith is justified at v0.80.0 because the chat-router's REGISTRY layer already enforces the contract every command must satisfy (input shape, output shape, audit-log entry, cost-cap context). The "everything in chat_router" framing overstates the coupling — capability is already split across the modules above, with chat_router as the dispatcher front-end. What HASN'T happened yet is the explicit **agent boundary**: each helper module today is a function-call away from chat_router, not a process-isolated or stable-interface-isolated agent.
 
 ---
 
 ## 2. Phase-2 target — specialist agents behind a planner
 
-The multi-agent refactor scoped in PlanTowardPerfection §2.1 introduces a **planner agent** that decomposes user goals into sub-goals and routes each to a **specialist agent** with a typed contract.
+The multi-agent refactor introduces a **planner agent** that decomposes user goals into sub-goals and routes each to a **specialist agent** with a typed contract.
+
+> **Implemented as of 2026-05.** The planner and the six typed contracts below now ship in the `civic_agents/` package (`civic_agents/contracts.py`, `civic_agents/planner.py`): deterministic rule-based routing (the no-AI fallback), JSON-Schema-validated handoffs, and a trust receipt emitted into the Article-12 audit chain per step. `tests/test_civic_agents.py` carries the golden-trace replay that verifies the receipts land in the HMAC chain and are externally anchorable. The §2 design below is the specification it implements; §2.3 (“Why this isn’t shipped at v0.80.0”) is retained as the historical rationale for why it post-dates that release.
 
 ```text
 ┌─────────────────────────────────────────────────────────────────┐
@@ -71,7 +71,7 @@ The multi-agent refactor scoped in PlanTowardPerfection §2.1 introduces a **pla
                                    │
                                    ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                  PLANNER AGENT (new in §2.1.2)                   │
+│                  PLANNER AGENT (new, planned)                    │
 │                                                                  │
 │  Receives high-level goal: "help me get a healthcare job in     │
 │  Berlin with my Tunisian credentials"                            │
@@ -125,7 +125,7 @@ The multi-agent refactor scoped in PlanTowardPerfection §2.1 introduces a **pla
 | `search_agent` | Aggregator fan-out, dedup, persona-aware ranking | `{role, location, persona, friction_class}` | `{discovered_jobs: DiscoveredJob[], dedup_groups, source_attribution}` |
 | `anerkennung_agent` | §16d/§18/§4/Blue-Card status, recognition-decision tracking, document checklist, Senatsverwaltung URL routing | `{persona_slug, current_status, target_profession}` | `{recognition_steps, missing_documents, target_deadline, senatsverwaltung_url}` |
 | `letter_agent` | DACH-norm Anschreiben drafting; friction-context proactive framing | `{job, profile, friction_context}` | `{letter_text, paragraph_edits, regenerate_handles}` |
-| `housing_agent` | Handoff to partner housing-search civic agent (Option B per Decision 20) | `{user_consent_scope, target_city, employment_status}` | `{referral_payload, partner_agent_uri}` |
+| `housing_agent` | Handoff to partner housing-search civic agent (Option B) | `{user_consent_scope, target_city, employment_status}` | `{referral_payload, partner_agent_uri}` |
 | `compliance_agent` | Article 22 right-to-human-review surface, audit-log emission, consent enforcement | `{event_class, user_opaque_id, AI_output_ref}` | `{audit_log_entry_id, escalation_path, retention_clock}` |
 
 Each contract is JSON-Schema validated. A specialist agent is a function (today; Phase 2 may upgrade to subprocess or HTTP for process-isolation, but the contract stays the same).
@@ -139,7 +139,7 @@ Each contract is JSON-Schema validated. A specialist agent is a function (today;
 
 **Phase 2** (specialist agents):
 - Each agent has its own test fixture set + its own JSON-Schema contract + its own deprecation cycle.
-- A new capability lands as a new agent OR as an extension of an existing agent's contract (versioned per the §2.7.6 schema-versioning rules).
+- A new capability lands as a new agent OR as an extension of an existing agent's contract (versioned per the per-tool schema-versioning rules).
 - The MCP server becomes the SAME planner-agent surface — internal callers get the agent via function-call; external MCP clients get the agent via `tools/list` + `tools/call`. One interface, two transports.
 
 ### Why this isn't shipped at v0.80.0
@@ -159,4 +159,3 @@ What IS shipped at v0.80.0:
 - Journey state machine: [`company_discovery/journey.py`](https://github.com/maksodf/helpmefindthejob/blob/main/company_discovery/journey.py)
 - MCP composition spec: [`grant/09-mcp-composition.md`](grant/09-mcp-composition.md) + v2 section with real worked examples
 - Post-grant Phase 2 roadmap: [`grant/03-post-grant.md`](grant/03-post-grant.md)
-- PlanTowardPerfection §2.1 (the 10 specialist-agent boxes): [`../PlanTowardPerfection.MD`](https://github.com/maksodf/helpmefindthejob/blob/main/PlanTowardPerfection.MD)

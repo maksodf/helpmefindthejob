@@ -15,7 +15,134 @@ Fixed · Security**.
 
 ## [Unreleased]
 
-(empty — open a new entry here when the first post-v0.80.0 commit lands.)
+Work landed 2026-05-29–30: elevating the
+project from "app with an MCP wrapper" toward a reusable civic-agent
+interoperability primitive, followed by a pre-submission hardening +
+compliance record-keeping pass (security/data-integrity bug hunt and the
+Article-12 consent/export audit emissions below). Every headline claim is verifiable one command at a
+time via the [claims ledger](claims-ledger.json)
+(`python -m unittest tests.test_claims_ledger`), which also enforces the honest
+buildable-vs-human-track split.
+
+### Added
+
+- **CACP v0.1 — the Civic Agent Composition Protocol**: a normative spec
+  ([`docs/protocol/cacp-v0.1.md`](docs/protocol/cacp-v0.1.md)), a published
+  machine-readable civic-profile schema
+  (`static/.well-known/civic-profile.schema.json`), and a runnable conformance
+  suite (`python -m conformance.cacp`). The reference MCP server **and** a
+  second, independent from-scratch server
+  (`examples/independent_cacp_server.py`) both pass it 14/14; a negative-case
+  test proves the suite rejects non-conformant servers.
+- **`escolib`** — standalone, import-isolated ESCO/ISCO reconciliation library
+  with a CLI (`python -m escolib`) and a 100%-recall / 0-false-positive benchmark
+  on committed fixtures.
+- **`biasprobe`** — standalone, offline-replayable comparative bias-evaluation
+  harness (`python -m biasprobe`); the live runner delegates to it.
+- **`civic_agents`** — typed specialist-agent contracts + a deterministic
+  (no-AI) planner that emits a trust receipt into the Article-12 audit chain per
+  handoff; a golden-trace test verifies the receipts are chain-verified and
+  externally anchorable.
+- **Tamper-evident audit anchoring** (`company_discovery/audit_anchor.py`) — a
+  salt-free content digest + line count over the audit chain, offline-verifiable
+  against a committed fixture; detects record edit / deletion / non-v2 injection.
+- **Reproducible source build** (`scripts/build_reproducible_source_dist.py` +
+  `scripts/verify_reproducibility.sh`) — a deterministic, HEAD-commit-bound
+  source tarball.
+- **Local cosign signing dry-run** (`scripts/sign_release_local.sh`).
+- **Compliance starter kit** (`compliance/starter-kit/`) — a machine-readable AI
+  Act / GDPR article→artefact matrix with a build-breaking traceability gate,
+  plus `scripts/fill_template.py` to fork the templates.
+- **Claims ledger** (`claims-ledger.json` + `docs/claims-ledger.md`).
+- **Article-12 record-keeping for consent + export** — AI-provider consent
+  changes (`consent_event`, GDPR Art. 7) and full personal-data exports
+  (`export_event`, GDPR Art. 12/15/20 — both the user self-export and an admin
+  exporting a user's data, recorded in the subject's own audit slice) now emit
+  tamper-evident, hash-chained audit records (`company_discovery/audit_log.py`
+  helpers + `app.py` `update_profile` / `export_data_audited`), returning the
+  `audit-log-schema.md` §4.4/§4.5 and `deployer-operating-manual.md` §6.5 claims
+  from "specified, not yet emitted" to "emitted." A consolidated **Runtime
+  mechanism status** matrix in `compliance/INDEX.md` now gives the code-wired vs
+  deployer-operated vs manual vs planned picture in one place. Guarded by
+  `tests/test_audit_consent_export_events.py`.
+
+### Changed
+
+- `scripts/bias_comparative_report.py` is now a thin adapter over `biasprobe`
+  (byte-identical report output); `mcp_tools.query_esco_skill` delegates to
+  `escolib`.
+- `STANDARDS.md` + `docs/agent-architecture.md` updated to reflect CACP v0.1 and
+  the implemented planner.
+- mypy strict subset expanded to 6 modules (added `audit_anchor`,
+  `civic_agents.contracts`, `civic_agents.planner`).
+- **Minimum supported Python raised 3.9 → 3.11** (`requires-python`). The
+  security pin `requests>=2.33.0` (GHSA-gc5v-m9x4-r6x2) needs Python ≥3.10, so
+  3.9 could only resolve the vulnerable `requests` 2.32.x that `pip-audit
+  --strict` rejects; 3.9 is also security-EOL (Oct 2025). The CI `tests` matrix
+  is now Ubuntu × Python 3.11 + 3.12. Source stays 3.9-portable — the
+  `ruff`/`mypy` targets remain py39.
+
+### Fixed
+
+- Bias replay caches were present but un-tracked, so a fresh clone silently
+  skipped the replay tests (a skip-backed claim); now force-tracked + guarded.
+- Supply-chain tests no longer silently skip when artefacts are absent (hard-fail).
+- The reproducible build reads HEAD git objects, not the working tree (a dirty
+  file previously changed the digest).
+- The CACP-L2-05 conformance check re-reads the victim's persisted state instead
+  of trusting the attacker-call's response shape.
+- `scripts/fill_template.py` now detects every `{{...}}` slot (spaces and line
+  wraps included), so `--strict` can no longer pass a half-filled template.
+- **GDPR erasure completeness** — account deletion now removes ALL user-scoped
+  data via a schema-driven `delete_all_user_data`; the prior version missed
+  several tables, leaving orphaned personal data behind.
+- **Postgres profile crash** — the AEAD additional-data was passed as `str`
+  rather than `bytes`, so every encrypted profile write under the Postgres
+  backend raised; it is now encoded to UTF-8 bytes (with a `TypeError` guard in
+  `crypto_kit`).
+- **Aggregator fan-out isolation** — a provider returning a non-job element or
+  a null/empty `source_url` no longer crashes the whole search merge, and
+  distinct URL-less jobs no longer collapse into a single entry.
+- **Journey review input** — a blank, zero-width, or single-stray-character
+  message no longer silently drills into the wrong job category (it re-asks).
+- **AI streaming-dispatch robustness** — the final result is captured before
+  the generator yields, `GeneratorExit` is re-raised cleanly, and the provider
+  adapters guard malformed response shapes (no crash on a junk completion).
+- **CV self-XSS** — user-supplied `<img onerror=…>` in CV markdown is now
+  escaped (inline) or rebuilt from a `src`/`alt` allow-list (full-line).
+- **Audit-log + 2FA hardening** — the audit salt is base64-validated to exactly
+  32 bytes; the `pending_2fa` table is created eagerly (was a lazy-creation
+  500); over-long AI-provider ids are capped at the source so they cannot bloat
+  the profile field, analytics, or the consent record.
+- **Data import** — `POST /api/data/import` returns 400 on a malformed payload
+  instead of a 500.
+- **CI `tests` + `quality` workflows green again** — beyond the Python-floor
+  change above: the macOS leg of the `tests` matrix (timing out on subprocess
+  HTTP smoke tests, already Phase-2 scoped) is dropped to Ubuntu-only;
+  `ThreatModelDocComplete` and `compliance/dpa-template.md` pointed at
+  `docs/THREAT-MODEL.md` with the wrong case (tracked file is
+  `docs/threat-model.md`) — passing on case-insensitive macOS but failing on
+  case-sensitive Linux; and `ruff` is pinned to one version across
+  `requirements-dev.txt` + `.pre-commit-config.yaml` so local `pre-commit` and
+  CI `ruff format --check` agree.
+
+### Security
+
+- **SSO account-takeover vector** — `find_or_create_sso_user` no longer
+  auto-links an IdP identity to an existing local account on a bare email match
+  unless the IdP asserts the email is verified, closing a takeover path via a
+  non-verifying OIDC provider.
+- **2FA login-slot bypass** — the per-IP login slot is refunded only on full
+  authentication success (not on the 2FA-required interstitial), and
+  `/api/auth/2fa-verify` itself claims a slot, closing a rate-limit bypass.
+- **Quota TOCTOU** — AI-run and scan quotas are now reserved atomically
+  (`reserve_ai_run` / `reserve_scan`), so concurrent requests at the daily limit
+  can no longer all pass the check before any of them increments.
+- **MCP server hardening** — `run_stdio` validates message framing and wraps
+  dispatch (malformed input → JSON-RPC error, not a crash); all 15 tool input
+  schemas now set `additionalProperties: false`.
+- **Bootstrap registration race** — first-account creation is serialised under a
+  dedicated lock, closing a TOCTOU on the "is this the first user?" check.
 
 ---
 
@@ -25,7 +152,7 @@ Release notes: [`docs/releases/v0.80.0.md`](docs/releases/v0.80.0.md).
 Signing recipe: [`docs/releases/v0.80.0-signing.md`](docs/releases/v0.80.0-signing.md).
 CycloneDX SBOM: [`docs/releases/v0.80.0-sbom.json`](docs/releases/v0.80.0-sbom.json).
 
-The version-number jump from v0.1.0 → v0.80.0 reflects ~300 commits of NLnet-pre-submission work between 2026-05-18 and 2026-05-24 (full EU AI Act compliance pack, governance pack, repository rename + sanitisation, friction-class architecture re-anchoring, persona walks, demo subdomain prep, self-host tutorial / MCP integration guide / API client examples, 3199-test unit suite). `APP_VERSION` in `app.py` has tracked `0.80.0` internally since the pre-submission slice; this tag aligns the cryptographic + git surface with the in-code declaration. Future post-grant work follows normal SemVer cadence from this anchor.
+The version-number jump from v0.1.0 → v0.80.0 reflects ~300 commits of NLnet-pre-submission work between 2026-05-18 and 2026-05-24 (full EU AI Act compliance pack, governance pack, repository rename + sanitisation, friction-class architecture re-anchoring, persona walks, demo subdomain prep, self-host tutorial / MCP integration guide / API client examples, 3301-test unit suite). `APP_VERSION` in `app.py` has tracked `0.80.0` internally since the pre-submission slice; this tag aligns the cryptographic + git surface with the in-code declaration. Future post-grant work follows normal SemVer cadence from this anchor.
 
 Tracked in `docs/grant/02-execution-plan.md` §3.4 – §4.6 plus Phase 2 cleanup
 items in `docs/grant/03-post-grant.md`.
@@ -78,7 +205,7 @@ listed under "Maintainer follow-ups" in
 - **`ACCESSIBILITY.md`** (§3.6) — three audit passes documenting
   the first automated WCAG 2.2 AA pass + auth-surface follow-on
   via Playwright + light-mode / dynamic-state polish; cumulative
-  32 violation instances closed across 22 (later 33) audited
+  30 violation instances closed across 33 audited
   captures. Fix 15 + Fix 16 from the pre-submission slice closed
   pygments-contrast + landmark-unique regressions surfaced on
   the post-rename re-audit.
@@ -91,7 +218,7 @@ listed under "Maintainer follow-ups" in
   both green on aarch64-darwin.
 - **cosign-signed v0.1.0 + CycloneDX 1.6 SBOM + RFC 9116
   security.txt** (§4.2). Cosign key model b (long-lived ECDSA
-  P-256, `--insecure-ignore-tlog`); SBOM with 91 components;
+  P-256, `--insecure-ignore-tlog`); SBOM with 96 components;
   security.txt at [`static/.well-known/security.txt`](static/.well-known/security.txt)
   citing `helpmefindthejob.com` as the canonical reporting URL.
 - **`SUSTAINABILITY.md`** (§4.1) — post-grant story, grant arc,
@@ -198,9 +325,6 @@ audit. Items below are commit-mapped to the working branch
   (profile-shared composition via `get_user_profile_for_consent`)
   end-to-end with narrated output. +16 tests at
   `tests/test_examples_housing_stub.py`. Commit `ed90258`.
-- **NasserCheckList.md** — bureaucratic + vendor-relations
-  checklist for partner-owned items extracted from the operator-
-  dependent slice of the gap analysis. Commit `d14aca6`.
 - **Post-sprint polish** — versioned migrations substrate (#20),
   threat-model document refresh (#24), Data Processing Agreement
   template (#25). Commit `11a3377`.
@@ -1053,14 +1177,13 @@ to The Commons Conservancy pending, EU AI Act compliant by design.
 
 ---
 
-## [0.0.x] — pre-2026-05-17 (pre-sprint, commercial product)
+## [0.0.x] — pre-2026-05-17 (pre-sprint)
 
-The codebase pre-dates the grant-readiness sprint as a self-hosted
-commercial product with a Pro/Free tier (see Round 1–21 in the
-Git log). The active project direction shifted to a **civic-employment
-commons** at the start of the four-week sprint; the sanitisation pass
-in Week 1 task 1.4 cleared the commercial-vision residue from the
-working tree.
+The codebase pre-dates the grant-readiness sprint as an earlier
+self-hosted prototype. The project direction was set to an open-source
+**civic-employment commons** at the start of the four-week sprint, and
+the Week 1 sanitisation pass aligned the working tree with that
+positioning.
 
 The full pre-sprint history is preserved in the Git log (no
 history rewrite was performed — see Decision 12 in

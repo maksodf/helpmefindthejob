@@ -72,7 +72,7 @@ These already follow the voice — preserve them when refactoring:
 
 - Queue empty subhead: lists the actual aggregators we watch, not "we look everywhere".
 - Privacy page section "Privacy-first by default": six concrete bullets, no abstract claims.
-- Help → AI modes: literally "your choice, your billing".
+- Help → AI modes: literally "your choice, your AI" — bring your own provider or run locally.
 - Status pill: hides on "Ready"; only surfaces on degradation.
 
 ## When in doubt

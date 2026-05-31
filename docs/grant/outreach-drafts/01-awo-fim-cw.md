@@ -10,17 +10,17 @@
 
 | Field | Value |
 |---|---|
-| Name | Irina Alles |
+| Name | [MBE adviser — contact in maintainer's private notes] |
 | Role | Beraterin, Fachstelle für Integration & Migration Charlottenburg-Wilmersdorf (FIM-CW); operates the MBE (Migrationsberatung für erwachsene Zuwanderer) service in the same office |
 | Organisation | AWO Landesverband Berlin e.V. — Pangea-Haus |
 | Address | Trautenaustraße 5, 10717 Berlin |
-| Direct email | `fim-cw@awoberlin.de` |
+| Direct email | `[email in maintainer's private notes]` |
 | Phone | 030 88472161 |
 | Counselling languages | Arabisch, Deutsch, Englisch, Französisch, Russisch, Spanisch, Türkisch |
 
 ## Selection rationale
 
-Chosen over Diakonisches Werk Berlin Stadtmitte (whose parent org went through an insolvency process widely reported in 2024–2025; outreach during institutional stress would be tone-deaf and the MBE web presence is mid-host-redirect) and over Caritas Erzbistum Berlin MBE Mitte (surfaces only a generic group inbox `mbe-mitte@caritas-berlin.de`, no named individual for personalised opening).
+Chosen over Diakonisches Werk Berlin Stadtmitte (whose parent org went through an insolvency process widely reported in 2024–2025; outreach during institutional stress would be tone-deaf and the MBE web presence is mid-host-redirect) and over Caritas Erzbistum Berlin MBE Mitte (surfaces only a generic group inbox `[email in maintainer's private notes]`, no named individual for personalised opening).
 
 ## Fit reasons for personalisation
 

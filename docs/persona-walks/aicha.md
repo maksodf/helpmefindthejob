@@ -16,7 +16,7 @@
 
 ## 1. Sign-up + onboarding
 
-Aïcha arrives via the apex (or the demo subdomain with the seeded `persona-aicha@demo.helpmefindthejob.org` account, per `scripts/seed-personas.py`). The landing page shows the seven-persona panel; Aïcha's card names her concrete situation in plain language so she recognises herself immediately.
+Aïcha arrives via the apex (or the demo subdomain with the seeded `aicha@demo.helpmefindthejob.org` account, per `scripts/seed-personas.py`). The landing page shows the seven-persona panel; Aïcha's card names her concrete situation in plain language so she recognises herself immediately.
 
 After registration, the chat journey opens with `/start`. The chat-router (`company_discovery/chat_router.py`) walks her through the 12-phase journey: greet → discover → cv_check → search_setup → search_run → discover_review → import → analyze → letter → apply → track → done. The discover phase asks four questions: role, location, experience, languages. Aïcha's input shape is documented turn-by-turn in [`docs/grant/journey-walks-2026-05-20/aicha.md`](../grant/journey-walks-2026-05-20/aicha.md).
 
@@ -36,7 +36,7 @@ For Aïcha specifically, the `cv_summary` field carries the §16d context explic
 
 `/find` triggers the aggregator fan-out (Adzuna + Indeed + LinkedIn public + EURES + the per-company watchlist scans). Results are normalised into `DiscoveredJob` records and queued for `auto-fit` scoring.
 
-The `build_auto_fit_prompt` (per-criterion decomposition added in commit `cd3aa52`, see `04-research-and-decisions.md` PART 4.1) scores each role across four axes: skills + experience + location/language + friction-fit. For Aïcha + an Anerkennungs-friendly clinical role, the friction-fit anchor scale awards 22+ when the JD names "§16d" / "Anerkennungs-freundlich" / "supports Anerkennung process" — verified at SCORE 85 in the smoke test (the canonical regression run in `docs/grant/product-quality-walks/aicha-pass3-smoke-2026-05-20.json`).
+The `build_auto_fit_prompt` (per-criterion decomposition added in commit `cd3aa52`, see `04-research-and-decisions.md` PART 4.1) scores each role across four axes: skills + experience + location/language + friction-fit. For Aïcha + an Anerkennungs-friendly clinical role, the friction-fit decision rule awards 22+ when the JD names "§16d" / "Anerkennungs-freundlich" / "supports Anerkennung process" and the candidate's friction matches (per `build_auto_fit_prompt`'s anchor scale). The canonical smoke run (`docs/grant/product-quality-walks/aicha-pass3-smoke-2026-05-20.json`) produced a granular SCORE of 66 (per-criterion 18+13+20+15; friction-fit 15/25) — a non-round-anchor result demonstrating the per-criterion decomposition.
 
 The top-5 matched roles surface on the discover_review screen with the friction-fit chip badge visible alongside the overall score. Aïcha can drill into any role and see the per-criterion breakdown.
 
@@ -54,9 +54,9 @@ For Aïcha specifically, the application-tracker doubles as the Anerkennung-dead
 
 ## 6. What felt broken (residual roughness; honesty discipline)
 
-- **Bilingual CV export** is still a manual switch; the cv_builder doesn't yet auto-mirror the EN draft into a DE production version. Tracked for Ceiling 2 Section 2.6 (Domain intelligence per persona-friction).
+- **Bilingual CV export** is still a manual switch; the cv_builder doesn't yet auto-mirror the EN draft into a DE production version. Tracked as a Phase-2 domain-intelligence item.
 - **Anerkennungs-friendly employer dataset** is curated by hand at `company_discovery/persona_fixtures.py::aicha.saved_searches` (Vivantes / Helios / Charité). Scaling beyond Berlin requires sourcing additional Anerkennungs-friendly employer lists from IQ-Netzwerk regional networks. Tracked for Section 2.6.
-- **`SCORE_FRICTION_FIT` anchor scale** still parks at exact anchor values 18 % of the time across the bias-comparative-report (per `04-research-and-decisions.md` PART 4.1 closure note, Finding F2). Sub-3 % is the Ceiling-2 target.
+- **`SCORE_FRICTION_FIT` anchor scale** still parks at exact anchor values 18 % of the time across the bias-comparative-report (per the bias-comparative-report closure note, Finding F2). Sub-3 % is the target.
 - **AI-detected §16d phrasing** is matched against a hand-curated keyword list (`§16d`, `Anerkennungs-freundlich`, etc.). Robustness to phrasing drift across JDs is a Phase-2 ML-classification deliverable.
 - **CV photo handling** is consent-gated and encrypted-at-rest, but the upload UI does not yet honour the Aïcha-specific "DACH-norm professional photo" guidance (head-and-shoulders, neutral background). Documentation gap.
 
@@ -69,4 +69,4 @@ For Aïcha specifically, the application-tracker doubles as the Anerkennung-dead
 - Pass-3 smoke harness output: [`docs/grant/product-quality-walks/aicha-pass3-smoke-2026-05-20.json`](../grant/product-quality-walks/aicha-pass3-smoke-2026-05-20.json)
 - Bias-comparative-report (Aïcha row): [`docs/grant/bias-comparative-report-2026-05-21.md`](../grant/bias-comparative-report-2026-05-21.md)
 - Persona fixture: [`company_discovery/persona_fixtures.py::PERSONAS[0]`](https://github.com/maksodf/helpmefindthejob/blob/main/company_discovery/persona_fixtures.py)
-- Demo account: `persona-aicha@demo.helpmefindthejob.org` (via `scripts/seed-personas.py`)
+- Demo account: `aicha@demo.helpmefindthejob.org` (via `scripts/seed-personas.py`)

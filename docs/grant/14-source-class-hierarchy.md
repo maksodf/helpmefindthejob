@@ -78,7 +78,7 @@ in classes A–F via in-context evidence, never as standalone authority.
 
 ## What PART 8 adds on top
 
-PART 8 (this slice) ships:
+This pass ships:
 
 - **Loop 24 (this commit)**: the doctrine document; transparency-notice
   extension cross-referencing the hierarchy; code-level provenance
@@ -133,7 +133,7 @@ for them.
   (Accuracy + citation discipline). Hierarchy A–G defined; per-prompt
   and per-authoritative-claim audits documented; Loops 25–27 in-flight
   for citation markers, golden tests, and closure.
-- **2026-05-24** (PlanTowardPerfection box 2.10.6): pre-submission re-verification anchor. Method: drift-check every Class-A through Class-D source named in the hierarchy table above + the verification table in `docs/grant/application-draft-2026-05-19.md` (which has its own 4-pass dated audit trail through 2026-05-22). Result:
+- **2026-05-24**: pre-submission re-verification anchor. Method: drift-check every Class-A through Class-D source named in the hierarchy table above + the verification table in `docs/grant/application-draft-2026-05-19.md` (which has its own 4-pass dated audit trail through 2026-05-22). Result:
   - **Class A (Legal / regulatory)**: All citations resolve. EU AI Act Regulation (EU) 2024/1689 at `eur-lex.europa.eu/eli/reg/2024/1689/oj` — verified active; Article 6 + Annex III §4 + Article 113 transition timeline confirmed unchanged. §16d AufenthG at `gesetze-im-internet.de/aufenthg/__16d.html`, §4 AsylG at `gesetze-im-internet.de/asylvfg_1992/__4.html`, §6a SGB II at `gesetze-im-internet.de/sgb_2/__6a.html`, Article 91e GG at `gesetze-im-internet.de/gg/art_91e.html`, EU Blue Card Directive 2021/1883 at `eur-lex.europa.eu/eli/dir/2021/1883/oj` — all four primary-source URLs WebFetch-resolvable. GDPR Regulation (EU) 2016/679 at `eur-lex.europa.eu/eli/reg/2016/679/oj` — stable.
   - **Class B (Authoritative standardised taxonomy)**: All citations resolve. ESCO 1.1 at `esco.ec.europa.eu` (DG Employment-hosted), EURES at `eures.ec.europa.eu`, schema.org JobPosting at `schema.org/JobPosting`, CEFR at `coe.int/en/web/common-european-framework-reference-languages`, ISCO-08 at `ilo.org/public/english/bureau/stat/isco/isco08/`, JSON Schema 2020-12 at `json-schema.org/draft/2020-12/schema` — all verified active.
   - **Class C (Authoritative organisation-level data)**: 1 of 4 verified primary-source citable, 3 of 4 carry the reword-with-citation per the application-draft pass-3 audit trail (2026-05-22; 8-route WebFetch exhaustion documented for BMAS, BAMF, OECD). The reword approach holds — the underlying sources (OECD Economic Surveys Germany 2025; BAMF-NAvI directory; BMAS Optionskommunen list) remain the documented authority but the headline numerical claim is not led with in the application body. See pass-3 entry + pass-4 entry in `application-draft-2026-05-19.md`.

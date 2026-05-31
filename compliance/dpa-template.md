@@ -101,7 +101,7 @@ On termination, the Deployer SHALL:
 the software:
 
 - **Contact data**: email address, optional name
-- **Authentication data**: password hash (scrypt), TOTP secret
+- **Authentication data**: password hash (PBKDF2-HMAC-SHA256, 240,000 iterations), TOTP secret
   (AEAD-encrypted)
 - **Profile data**: CV text (AEAD-encrypted at rest), persona ID,
   friction-class classification, target roles, languages
@@ -164,11 +164,11 @@ Act-specific). The software ships:
 
 | Right | Article | Software surface | Manual fallback |
 |---|---|---|---|
-| Access | Art. 15 GDPR | `GET /api/user/export` returns full user record as JSON | DPO emails the JSON dump |
+| Access | Art. 15 GDPR | `GET /api/data/export` returns full user record as JSON | DPO emails the JSON dump |
 | Rectification | Art. 16 GDPR | User can edit profile + CV via Settings UI | DPO updates manually |
-| Erasure | Art. 17 GDPR | `DELETE /api/account` cascades to all repository tables | DPO runs deletion script |
+| Erasure | Art. 17 GDPR | `/api/account/deletion-request` cascades to all repository tables | DPO runs deletion script |
 | Restriction | Art. 18 GDPR | User can mark profile inactive; AI calls refused while inactive | Manual flag in DB |
-| Portability | Art. 20 GDPR | Same `/api/user/export` returns machine-readable JSON | DPO emails the JSON dump |
+| Portability | Art. 20 GDPR | Same `/api/data/export` returns machine-readable JSON | DPO emails the JSON dump |
 | Object | Art. 21 GDPR | Opt-out toggles per processing type in Settings | DPO honors written objection |
 | No automated decision | Art. 22 GDPR | AI Act Article 13 transparency notice; no decision affects legal rights without human review; cost-cap refusals are not solely-automated for legal purposes | Deployer's human-oversight queue per `compliance/human-oversight-guide.md` |
 | Trust Receipt | Art. 86 AI Act + transparency doctrine | Every AI decision auto-emits a downloadable Trust Receipt | CLI: `python -m company_discovery.verify_receipt_cli` |
@@ -184,7 +184,7 @@ first 30) per Article 12(3) GDPR.
 The Deployer SHALL implement at minimum the technical and
 organisational measures (TOMs) shipped with the software AND
 maintained by the operator. Reference:
-[`THREAT-MODEL.md`](../docs/THREAT-MODEL.md),
+[`threat-model.md`](../docs/threat-model.md),
 [`SECURITY.md`](../SECURITY.md), and
 [`compliance/deployer-operating-manual.md`](deployer-operating-manual.md).
 
@@ -196,7 +196,7 @@ Minimum:
   TOTP secrets via `crypto_kit.py`; `HELPMEFINDTHEJOB_DATA_KEY` env var
   MUST be set to a 32-byte random value (not the default
   HKDF-from-SECRET_KEY fallback)
-- **Authentication**: scrypt password hashing (N=2^15); optional
+- **Authentication**: PBKDF2-HMAC-SHA256 password hashing (240,000 iterations); optional
   TOTP 2FA
 - **Access control**: per-user data scoping at the repository
   layer; admin-only endpoints gated by `require_admin()`
@@ -296,8 +296,11 @@ commercially under a separate contract.
 
 ## How to use this template
 
-1. **Replace every `{{PLACEHOLDER}}`** with the relevant party
-   name, URL, or value.
+1. **Replace every double-brace placeholder** — the `DEPLOYER_NAME`,
+   `DEPLOYMENT_URL`, `CONTROLLER_NAME`, sub-processor, and signature-table slots —
+   with the relevant party name or value, by hand or with
+   `python -m scripts.fill_template … --strict` against a JSON config (see
+   `compliance/starter-kit/`). `--strict` fails if any slot is left unfilled.
 2. **Customise §5 sub-processors** based on your actual deploy:
    delete the LLM row if you're manual-mode-only, delete the
    email-provider row if you've configured local-only outbox.

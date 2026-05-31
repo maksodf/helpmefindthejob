@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 """Regression guards for the demo-deployment banner.
 
-PlanTowardPerfection box 1.6.5 ships a small banner that appears
+A small banner appears
 when a reviewer lands on `demo.helpmefindthejob.org` (or with
 `?demo=1` for QA). The banner explains accounts are reset nightly
 so reviewers do not worry about mutating shared data.
@@ -20,7 +20,7 @@ This test pins the three invariants so a future agent that edits
 any of the three files cannot silently break the demo-banner
 appearance contract. The actual runtime appearance is verified by
 the operator's pre-demo Playwright smoke test (`scripts/probe-
-ai-router.sh` adjacent; scoped for Ceiling-2 §2.5).
+ai-router.sh` adjacent; scoped for post-grant work).
 """
 
 from __future__ import annotations

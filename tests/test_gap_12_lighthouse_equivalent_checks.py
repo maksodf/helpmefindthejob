@@ -312,7 +312,7 @@ class PageQualityChecks(unittest.TestCase):
                 f"GAP-12: Permissions-Policy must lock down {forbidden}",
             )
 
-    # ─── Performance latency budgets (PlanTowardPerfection box 2.13.7) ───
+    # ─── Performance latency budgets ───
     #
     # In addition to the per-page size budgets above, we enforce a p95
     # response-time budget per endpoint. Each endpoint is measured
@@ -354,7 +354,7 @@ class PageQualityChecks(unittest.TestCase):
         return d0 + d1
 
     def test_p95_latency_within_budget_per_endpoint(self) -> None:
-        """PlanTowardPerfection box 2.13.7: enforce p95 latency
+        """Enforce p95 latency
         budget per endpoint. Fires if a regression makes the 95th-
         percentile response time exceed the budget."""
 

@@ -44,7 +44,7 @@ The full recipe is exactly the curl commands below. Anyone with a clone of the r
 rm -rf /tmp/export_proof_data && mkdir -p /tmp/export_proof_data
 HELPMEFINDTHEJOB_DATA_DIR=/tmp/export_proof_data \
 HELPMEFINDTHEJOB_AUDIT_SALT=$(python3 -c 'print("A"*43+"=")') \
-ALLOW_REGISTRATION=true \
+HELPMEFINDTHEJOB_ALLOW_REGISTRATION=true \
 python3 app.py --port 19602 > /tmp/export_proof_server.log 2>&1 &
 sleep 4
 curl -sS http://127.0.0.1:19602/ -o /dev/null -w 'HTTP %{http_code}\n'
@@ -81,7 +81,7 @@ done
 ```bash
 python3 -c "import json; d=json.load(open('/tmp/export-out-export')); \
             print(sorted(d.keys())); print('schemaVersion:', d['schemaVersion'])"
-# Expected: 19-key list containing _exportWarnings, aiProvider,
+# Expected: 20-key list containing _exportWarnings, aiProvider,
 # analyticsEvents, appVersion, chatHistory, companies, discoveredJobs,
 # discoveryRuns, exportedAt, importedJobs, journeyState, profile,
 # pushSubscriptions, savedSearches, scans, schemaVersion, supportTickets,
@@ -154,7 +154,7 @@ ID,Title,Company ID,Location,Confidence,Source URL,Discovered at,Imported
 _No discovered jobs._
 ```
 
-**`/api/data/export` (Article 20 bundle)** — 2463 bytes, 19 top-level keys. A sample copy of the full pretty-printed JSON is committed alongside this file at [`article-20-export-sample.json`](article-20-export-sample.json) so reviewers can inspect the schema offline. Top-level keys observed:
+**`/api/data/export` (Article 20 bundle)** — 2463 bytes, 20 top-level keys. A sample copy of the full pretty-printed JSON is committed alongside this file at [`article-20-export-sample.json`](article-20-export-sample.json) so reviewers can inspect the schema offline. Top-level keys observed:
 
 ```
 ['_exportWarnings', 'aiProvider', 'analyticsEvents', 'appVersion',
@@ -184,7 +184,7 @@ A first reading might worry that "the user had no data" makes this proof weak. T
 
 3. **Populated accounts cannot have a defect empty accounts lack**. Add data and you can only introduce serialisation bugs specific to that data (a NULL field, a UTF-8 byte sequence, an oversized blob). The empty case is the base case; the populated cases extend it.
 
-4. **The standing unit suite covers populated-account export edge cases**. See `tests/test_phase1_export_endpoints.py`, `tests/test_phase4_data_export_complete.py`, and 12 other `tests/test_*_export*.py` files (124 tests in total). Those test the schema correctness under data; this document tests the HTTP-level round-trip.
+4. **The standing unit suite covers populated-account export edge cases**. See `tests/test_gdpr_article_20_export.py` (the Article 20 bundle + export-endpoint tests), plus export coverage in `tests/test_http_phase2.py` and `tests/test_company_discovery.py`. Those test the schema correctness under data; this document tests the HTTP-level round-trip.
 
 A deployer who wants to repeat this proof against a populated account follows the same recipe and adds a `POST /api/companies` / `POST /api/jobs/import` step before Step 3. The output shapes will be larger; the assertions stay the same (HTTP 200, content-type, schema version).
 
@@ -204,6 +204,6 @@ This document captures the technical correctness of the export pipeline. It does
 
 | Date | Endpoints | All HTTP 200 | Bundle keys | Bundle bytes | Runner | Notes |
 |---|---|---|---|---|---|---|
-| 2026-05-24 | 5 / 5 | ✓ | 19 | 2463 | maintainer (local repro per §3) | First run for PlanTowardPerfection box 1.4.6. Fresh /tmp/export_proof_data, fresh user `aicha-tester@example.com`, manual AI provider, dark theme, EN locale. App on port 19602, HEAD commit `ebd3703`. |
+| 2026-05-24 | 5 / 5 | ✓ | 20 | 2463 | maintainer (local repro per §3) | First run. Fresh /tmp/export_proof_data, fresh user `aicha-tester@example.com`, manual AI provider, dark theme, EN locale. App on port 19602, HEAD commit `ebd3703`. |
 
 Append below this row on every test. Never overwrite.

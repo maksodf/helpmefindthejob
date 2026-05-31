@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright (c) 2026 Helpmefindthejob contributors
 //
-// PlanTowardPerfection box 1.6.5: the "demo deployment" banner.
+// The "demo deployment" banner.
 //
 // When the user is on `demo.helpmefindthejob.org` (or has the
 // `?demo=1` query param for QA), reveal a small banner explaining

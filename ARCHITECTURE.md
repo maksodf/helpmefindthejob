@@ -64,10 +64,9 @@ flowchart TB
 
     %% Cross-cutting
     subgraph "Cross-cutting"
-        I18n["i18n bundles<br/><code>static/i18n/en.json</code><br/><code>static/i18n/de.json</code><br/><em>EN + DE shipped, 519-key parity</em>"]
-        MCPTools["MCP tool catalogue<br/><code>company_discovery/mcp_tools.py</code><br/><em>8 tools today, 13 after Week 2 §2.3 · JSON Schema enforced</em>"]
+        I18n["i18n bundles<br/><code>static/i18n/en.json</code><br/><code>static/i18n/de.json</code><br/><em>EN + DE shipped, 598-key parity</em>"]
+        MCPTools["MCP tool catalogue<br/><code>company_discovery/mcp_tools.py</code><br/><em>15 tools · JSON Schema enforced · per-tool versioning</em>"]
         Transports["Email + push transports<br/><code>company_discovery/email_transport.py</code><br/><code>company_discovery/push_transport.py</code>"]
-        Billing["Billing — Phase 2<br/><code>company_discovery/billing.py</code><br/><em>currently dormant; civic-commons positioning</em>"]
         SEO["SEO pages<br/><em>generated at <code>/jobs/&lt;slug&gt;</code></em>"]
     end
 
@@ -151,7 +150,7 @@ Organised by layer, with the file or module that implements each.
 | **Persona engine** | `company_discovery/personas.py`, `company_discovery/persona_ranking.py` | Five personas with sector weights and role suggestions; auto-selected from the user's job-type choice; drives the ranking used in `review` and `drill` phases. |
 | **Aggregator fan-out** | `company_discovery/aggregators.py`, `company_discovery/aggregator_providers.py` | Parallel job-board fan-out across Adzuna, Indeed public, LinkedIn public, and country-specific career-page patterns. Provider attribution preserved per result. |
 | **Discovery + scan service** | `company_discovery/service.py`, `company_discovery/discovery_providers.py` | Watchlist scan orchestration. Bounded by pages, response size, redirects, request delay. `robots.txt`-aware. |
-| **AI provider abstraction** | `company_discovery/ai_providers.py` | 11 BYO-AI options (OpenAI, Anthropic, Gemini, DeepSeek, OpenRouter, Ollama, manual, Codex CLI, Claude Code, custom, managed). Deterministic templated fallback when no provider is configured. |
+| **AI provider abstraction** | `company_discovery/ai_providers.py` | 11 BYO-AI options (OpenAI, Anthropic, Gemini, DeepSeek, OpenRouter, Ollama, manual, Codex CLI, Claude Code, custom, managed). No-AI fallback when no provider is configured: a deterministic templated skeleton for letter drafting, and a BYO-AI handoff prompt for fit-scoring and CV-tailoring. |
 | **Analysis** | `company_discovery/analysis.py` | AI calls: fit-score, CV tailor, motivation letter, decision brief. Each call is gated by the journey state machine's confirmation prompt. |
 | **CV builder** | `company_discovery/cv_builder.py`, `company_discovery/cv_consult.py`, `company_discovery/cv_photo.py` | Sectional CV interview (5 questions: header → summary → experience → education → skills). AI reformats raw text with fact-grounding to avoid hallucination. CV text stored under AEAD encryption (`cv_text` column, AAD = user_id). |
 | **Skill-gap atlas** | inline in `analysis.py` | "JD wants Kubernetes, your CV doesn't mention it"; aggregates into a `Top 3 skills holding you back` dashboard card. |
@@ -173,9 +172,8 @@ Organised by layer, with the file or module that implements each.
 | Component | Path | Role |
 |---|---|---|
 | **i18n bundles** | `static/i18n/en.json`, `static/i18n/de.json` | English and German UI; 519-key parity enforced by `tests/test_round5_i18n.py`. Served publicly at `/i18n/<lang>.json`. |
-| **MCP tool catalogue** | `company_discovery/mcp_tools.py` | 8 tools today (`suggest_relevant_companies`, `add_company_to_watchlist`, `find_company_career_page`, `scan_company_career_page`, `extract_direct_jobs_from_company_site`, `import_discovered_job`, `deduplicate_discovered_jobs`, `get_company_watchlist_summary`). Each carries a `Draft 7` JSON `inputSchema`. Week 2 §2.3 adds five more (`get_user_profile_for_consent`, `propose_referral`, `query_esco_skill`, `export_eures_compatible`, `record_user_outcome`) bringing the catalogue to 13. |
+| **MCP tool catalogue** | `company_discovery/mcp_tools.py` | 15 tools, each carrying a `Draft 7` JSON `inputSchema` and a per-tool `version` field: `suggest_relevant_companies`, `add_company_to_watchlist`, `find_company_career_page`, `scan_company_career_page`, `extract_direct_jobs_from_company_site`, `import_discovered_job`, `deduplicate_discovered_jobs`, `get_company_watchlist_summary`, `query_esco_skill`, `export_eures_compatible`, `get_user_profile_for_consent`, `propose_referral`, `list_referrals`, `update_referral_status`, `record_user_outcome`. |
 | **Email + push transports** | `company_discovery/email_transport.py`, `company_discovery/push_transport.py` | SMTP (with a `ConsoleTransport` default for dev / no-config), Web Push (VAPID). |
-| **Billing** | `company_discovery/billing.py` | Module preserved but **dormant** under the civic-commons positioning. Pro/Free framing removed from the public README; the Stripe integration sits behind a feature flag and is not part of the v0.1.0 release-line. |
 | **SEO pages** | static-route handler in `app.py` | Auto-generated `/jobs/<slug>` landing pages for organic discovery, configured via `data/seo-pages.json`. |
 
 ### External
@@ -201,13 +199,13 @@ A worked example tying the components together. Aïcha is the Tunisian-trained r
 9. **Drill + tailor** → `PHASE_DRILL` → `PHASE_TAILOR` calls `analysis.py:tailor_cv` which routes through `ai_providers.py` to whatever provider the user has configured (Ollama for fully offline, OpenAI for managed, etc.). Output gated by a confirmation prompt before any write.
 10. **Letter** → `PHASE_LETTER` generates a motivation letter grounded in CV facts.
 11. **CV coaching** → `PHASE_CV_CONSULT` (`cv_consult.py`) suggests improvements; user can accept/decline per item, again gated.
-12. **Done** → `PHASE_DONE`; outcome recorded for analytics via `record_user_outcome` (post-§2.3).
+12. **Done** → `PHASE_DONE`; outcome recorded for analytics via `record_user_outcome`.
 
 Every persisting step at every phase records an audit-log entry; every AI invocation is gated by a confirmation prompt; every user-data column at rest is encrypted with the AEAD primitive.
 
 ## Composition surface
 
-The MCP server in `mcp_server.py` is the project's composition surface. The current catalogue (8 tools) is documented in `docs/grant/09-mcp-composition.md`; the post-Week-2 expansion to 13 tools is documented there too, alongside the three composition patterns (sequential handoff, profile-shared, orchestrated). A reference integration with an open housing agent lands in `examples/housing-agent-integration/` in Week 2 §2.5 as proof-of-pattern.
+The MCP server in `mcp_server.py` is the project's composition surface. The 15-tool catalogue is documented in `docs/grant/09-mcp-composition.md`, alongside the three composition patterns (sequential handoff, profile-shared, orchestrated). A reference integration with an open housing agent ships in `examples/housing-stub-client/` as proof-of-pattern.
 
 Every MCP `tools/call` payload is **JSON-Schema-validated** against the registered tool's `inputSchema` before dispatch (`mcp_server.validate_tool_arguments`). Validation failures return an RFC 7807 Problem Details payload via the standard MCP `isError=True` channel. This makes the published catalogue a real contract: a deployer can write a client against `tools/list` and trust the server to enforce the shape.
 
@@ -217,18 +215,18 @@ Every MCP `tools/call` payload is **JSON-Schema-validated** against the register
 - **CV text** is AEAD-encrypted at rest with AAD = user_id.
 - **TOTP secrets** are on the same AEAD path (legacy XOR blobs decrypt for read continuity, then upgrade in place on first 2FA check — see `auth.py:_migrate_legacy_totp_if_needed`).
 - **AI provider API keys** are never persisted to the project's database; the user supplies a session-only key (sent only with the analysis request) or references a server-side environment variable.
-- **Audit log** records every admin action with actor, target, timestamp, and action kind. Designed to support EU AI Act Article 12 record-keeping; full schema documented in the Week 2 §2.8 compliance pack.
+- **Audit log** records every admin action with actor, target, timestamp, and action kind. Designed to support EU AI Act Article 12 record-keeping; full schema documented in the compliance pack (`compliance/audit-log-schema.md`).
 - **No broad crawling**: aggregator fan-out is bounded per scan; redirects are checked independently; `robots.txt` is respected.
 
 ## Deployment shapes
 
 - **Single Docker container**, single SQLite database, single volume (`./data`). `docker-compose.yml` for dev; `docker-compose.prod.yml` with Caddy HTTPS for production-grade.
-- **Reproducible builds via Nix flake** (lands Week 3 §3.8).
+- **Reproducible builds via Nix flake.**
 - **Self-hostable on commodity hardware**: a Beratungsstelle-scale deployment runs comfortably on a 2-vCPU / 4-GB VM.
 
 ## EU AI Act compliance hooks
 
-Helpmefindthejob is high-risk under Annex III §4 of the EU AI Act, effective from 2 August 2026. The Week 2 §2.8 compliance pack ships under `compliance/` with:
+Helpmefindthejob is high-risk under Annex III §4 of the EU AI Act, effective from 2 August 2026. The EU AI Act compliance pack ships under `compliance/` with:
 
 - Risk management plan (Article 9)
 - Data governance documentation (Article 10)

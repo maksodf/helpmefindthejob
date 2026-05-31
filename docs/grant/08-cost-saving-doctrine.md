@@ -2,7 +2,9 @@
 
 **Status**: project-level design principle. Applies to every feature decision, every milestone, every public artifact.
 
-**Why this exists**: To win institutional funding (NLnet, Sovereign Tech Fund, government budgets), and to win institutional adoption (Beratungsstellen, Jobcenter, university career services), the project must offer *value creation*, not *charity*. We do not ask funders or institutions to choose between helping people and saving money. We claim — and prove — that this project does both simultaneously. Every feature is evaluated against that claim.
+**Why this exists**: To win institutional funding (NLnet, Sovereign Tech Fund, government budgets), and to win institutional adoption (Beratungsstellen, Jobcenter, university career services), the project must offer *value creation*, not *charity*. We do not ask funders or institutions to choose between helping people and saving money. We claim that this project does both simultaneously, and every feature is evaluated against that claim.
+
+> **Measurement status (important)**: the euro figures and percentages in this document are *modelled projections* — built from per-instance mechanisms and publicly reported reference costs — not measured results from a live deployment. No institution has yet deployed the tool at caseload scale, so none of the savings below has been observed in production. They are stated as design intent and testable hypotheses so a reviewer can audit the *reasoning*; they will be replaced with measured numbers after the first partner-NGO pilot (Phase 2, per `ROADMAP.md`).
 
 ## Addressable population
 
@@ -47,7 +49,7 @@ The migrant subset is the densest concentration of cases per advisor visit and i
 
 **Per-instance saving**: An MBE advisor session averages 60 minutes per visit and is fully booked. If the agent absorbs 20 minutes of routine work per visit, the advisor can serve 33% more clients with the same FTE allocation.
 
-**At scale**: Across the ~700 MBE service points alone, even a 15% caseload reduction translates to thousands of additional clients served per year without hiring; the same mechanism applied across the ~104 Optionskommunen Jobcenter (serving all Bürgergeld recipients, of which the migrant subset is one significant share) and the university career-service network materially compounds the addressable saving.
+**At scale**: Across the nationwide network of Migrationsberatungsstellen (MBE) service points alone, even a 15% caseload reduction translates to thousands of additional clients served per year without hiring; the same mechanism applied across the autonomous Optionskommunen Jobcenter (operating Bürgergeld under §6a SGB II — a federal cap historically up to 110 — serving all Bürgergeld recipients, of which the migrant subset is one significant share) and the university career-service network materially compounds the addressable saving.
 
 **Caveat**: This claim depends on the agent's outputs being *good enough* that advisors trust them. We measure this via the Week-3 partner-NGO pilot and refine accordingly.
 

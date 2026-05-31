@@ -44,7 +44,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from company_discovery.env_compat import get_env
+from company_discovery.env_compat import get_env, get_env_int
 
 # Phase 2 #13 (2026-05-21): schema bumped v1 → v2. The new
 # version adds required tamper-evidence fields (sequence_no +
@@ -389,12 +389,7 @@ def default_emitter() -> AuditLogEmitter:
             "yes",
             "on",
         }
-        rotate_bytes = int(
-            get_env(
-                "HELPMEFINDTHEJOB_AUDIT_ROTATE_BYTES",
-                str(64 * 1024 * 1024),
-            )
-        )
+        rotate_bytes = get_env_int("HELPMEFINDTHEJOB_AUDIT_ROTATE_BYTES", 64 * 1024 * 1024)
         _default_emitter = AuditLogEmitter(
             log_path=log_path,
             salt=salt,
@@ -425,10 +420,9 @@ _DEV_ENV_TOKENS = frozenset({"", "development", "dev", "test", "testing"})
 
 
 def _resolve_app_env() -> str:
-    """Read the application environment label, accepting both the
-    Helpmefindthejob-era prefix and the legacy company-discovery prefix.
+    """Read the application environment label from ``HELPMEFINDTHEJOB_ENV``.
 
-    Returns the casefolded value; empty string when neither is set.
+    Returns the casefolded value; empty string when it is unset.
     """
     raw = get_env("HELPMEFINDTHEJOB_ENV", "")
     return (raw or "").strip().casefold()
@@ -455,13 +449,13 @@ def _resolve_salt(raw: str) -> bytes:
       production path stays fail-fast.
 
     Tests that need the development-fallback behaviour can rely on
-    the default empty ``HELPMEFINDTHEJOB_ENV`` / ``HELPMEFINDTHEJOB_ENV``,
+    the default empty ``HELPMEFINDTHEJOB_ENV``,
     which classifies as ``development``.
     """
     if raw:
         try:
-            decoded = base64.b64decode(raw, validate=False)
-            if len(decoded) >= 16:
+            decoded = base64.b64decode(raw, validate=True)
+            if len(decoded) == 32:
                 return decoded
         except Exception:  # noqa: BLE001, S110 - invalid base64 falls through to raw-bytes path on purpose
             pass
@@ -469,8 +463,9 @@ def _resolve_salt(raw: str) -> bytes:
     env = _resolve_app_env()
     if env not in _DEV_ENV_TOKENS:
         print(  # noqa: T201 - fatal-fast stderr output before sys.exit(1); warnings.warn is not appropriate for a terminal failure
-            "[audit_log] FATAL: env=" + env + " requires HELPMEFINDTHEJOB_AUDIT_SALT (or legacy "
-            "HELPMEFINDTHEJOB_AUDIT_SALT) to be set to 32 random bytes "
+            "[audit_log] FATAL: env="
+            + env
+            + " requires HELPMEFINDTHEJOB_AUDIT_SALT to be set to 32 random bytes "
             "(base64). Refusing to start because audit-log integrity "
             "cannot be guaranteed across process restarts without a "
             "stable salt.\n"
@@ -574,6 +569,15 @@ def verify_chain(log_paths: list[Path], salt: bytes) -> ChainVerificationResult:
     Returns ``ok=False`` with diagnostic fields when any of the
     above fails. Designed to be called by an external auditor
     over the rotated + current log files of a deployment.
+
+    AUDITOR NOTE: an empty / zero-record log returns ``ok=True`` with
+    ``records_checked == 0``. This is intentional — a brand-new deployment
+    that has emitted no events yet has a trivially-intact chain. It is NOT a
+    positive assertion that records were never deleted: ``verify_chain`` cannot
+    distinguish a fresh log from a fully-wiped one without an external
+    high-water-mark. Auditors MUST treat ``records_checked == 0`` as "no
+    evidence either way" and corroborate against an expected minimum
+    sequence/anchor (an external-anchor parameter is a Phase-2 item).
     """
 
     all_records: list[tuple[int, dict[str, Any]]] = []
@@ -763,4 +767,72 @@ def emit_system_event(
         duration_ms=duration_ms,
         event_payload=payload,
         caller="system",
+    )
+
+
+def emit_consent_event(
+    *,
+    consent_topic: str,
+    consent_state: str,
+    consent_scope: str | None = None,
+    user_opaque_id: str | None = None,
+    outcome: str = "ok",
+    caller: str = "user",
+    emitter: AuditLogEmitter | None = None,
+) -> None:
+    """Convenience: emit a ``consent_event`` (audit-log-schema.md §4.4).
+
+    GDPR Article 7 consent record. ``consent_topic`` is one of
+    ``ai_provider`` / ``third_party_share`` / ``mcp_composition`` /
+    ``audit_log_plaintext_pii``; ``consent_state`` is ``granted`` /
+    ``revoked`` / ``modified``. ``consent_scope`` carries free-text scope
+    (for ``ai_provider`` consent, the provider the user consented to; for
+    ``modified`` events, the changed scope) or ``None``. The provider
+    identifier is a vendor name (e.g. ``openai``), not PII or a secret, so
+    it is recorded in clear so the consent record names its recipient.
+    """
+    emitter = emitter or default_emitter()
+    emitter.emit(
+        "consent_event",
+        outcome=outcome,
+        event_payload={
+            "consent_topic": consent_topic,
+            "consent_state": consent_state,
+            "consent_scope": consent_scope,
+        },
+        user_opaque_id=user_opaque_id,
+        caller=caller,
+    )
+
+
+def emit_export_event(
+    *,
+    export_kind: str,
+    export_size_bytes: int,
+    export_format: str,
+    user_opaque_id: str | None = None,
+    outcome: str = "ok",
+    caller: str = "user",
+    emitter: AuditLogEmitter | None = None,
+) -> None:
+    """Convenience: emit an ``export_event`` (audit-log-schema.md §4.5).
+
+    Record of a personal-data export (GDPR Article 20 portability / Article
+    15 access). ``export_kind`` is one of ``profile_full`` /
+    ``profile_partial`` / ``audit_log_self`` / ``eures_export``.
+    ``user_opaque_id`` is the data SUBJECT (so the export lands in that
+    user's own audit slice even when an admin performs it); ``caller``
+    records the actor type (``user`` / ``admin``).
+    """
+    emitter = emitter or default_emitter()
+    emitter.emit(
+        "export_event",
+        outcome=outcome,
+        event_payload={
+            "export_kind": export_kind,
+            "export_size_bytes": int(export_size_bytes),
+            "format": export_format,
+        },
+        user_opaque_id=user_opaque_id,
+        caller=caller,
     )

@@ -81,7 +81,7 @@ This is **alpha software**. We hold ourselves to the project's
 gets a live runtime probe before it's declared done. We are honest
 about what's executed (the bias-testing surface, the deployment
 recipe, the persona seed script) and what's deferred (the four
-remaining methodology scenario classes, the §3.6 accessibility audit,
+remaining methodology scenario classes, the accessibility audit,
 the translator contributor pathway). See the
 [grant workspace](https://github.com/maksodf/helpmefindthejob/tree/main/docs/grant)
 for the maintained planning record.

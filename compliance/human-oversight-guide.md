@@ -70,7 +70,7 @@ The oversight person verifies during commissioning that the per-action gates are
 
 `HELPMEFINDTHEJOB_DETERMINISTIC_ONLY=true`
 
-Every AI-assisted code path is disabled. The system continues to function with deterministic templates: fit-scoring falls back to structured rule-based scoring; CV-tailoring falls back to the template library; motivation-letter drafting falls back to the persona-aware skeleton; application-outcome analysis falls back to deterministic pattern reports.
+Every AI-assisted code path is disabled — the app invokes no AI provider. Each AI-assisted feature falls back to its no-AI path: motivation/cover-letter drafting falls back to a deterministic templated skeleton (`company_discovery/motivation_letter.py`'s `templated_fallback`, with an honest no-AI banner); fit-scoring and CV-tailoring surface a BYO-AI handoff prompt for the user to run with their own AI; deterministic, rule-based features (persona-aware job ranking, application-outcome aggregation) continue to operate unchanged. No app-initiated AI call occurs while the switch is active.
 
 **When to activate**:
 
@@ -80,7 +80,7 @@ Every AI-assisted code path is disabled. The system continues to function with d
 - Regulatory or supervisory-authority order
 - Discretionary call by the oversight person whenever the deterministic posture is preferable
 
-**How to activate**: set the env var and restart the application. The action is logged in the audit log as a `system_event` with `system_event_kind="kill_switch_activated"`. Deactivation is logged the same way.
+**How to activate**: set the env var and restart the application. Its effect is recorded in the audit log: while the switch is active, every attempted AI invocation logs as an `ai_invocation` event with `outcome="declined"` (the handoff result), giving a continuous record of the no-AI posture. A dedicated `kill_switch_activated` system event is a Phase-2 observability item.
 
 ---
 
@@ -101,16 +101,18 @@ Every AI invocation is queued, with the following metadata:
 
 ### 3.2 What actions the reviewer can take
 
+**Implementation status**: the shipped `/api/admin/oversight/queue` is a **read-only** surface that lists recent AI-invocation audit events for after-the-fact review. The approve/edit/reject/annotate intercept-before-delivery workflow, the `override_event` audit type, and the queue timeout described in this section are the **planned** advisor-review design (Phase-2); they are not wired at this version.
+
 - **Approve**: the output goes to the user as-is.
 - **Edit**: the output is modified by the reviewer before reaching the user. The original and edited versions are both retained in the audit log as an `override_event`.
 - **Reject**: the output is suppressed; the user sees a deterministic fallback for that action.
 - **Annotate**: the output goes to the user, but with a free-text reviewer annotation appended.
 
-Every action is logged as an `override_event` in the audit log (see [`audit-log-schema.md`](audit-log-schema.md) §4.6).
+In that planned workflow every action is logged as an `override_event` (a planned audit type — see [`audit-log-schema.md`](audit-log-schema.md) §4.6; not yet emitted at this version).
 
 ### 3.3 Time-out behaviour
 
-If the reviewer does not act within `HELPMEFINDTHEJOB_OVERSIGHT_QUEUE_TIMEOUT_SECONDS` (default 3600), the user receives a deterministic fallback for the requested action and is informed that AI suggestions are temporarily delayed. The timed-out item remains in the queue marked `time_out`; the reviewer can still review-after-the-fact for learning purposes.
+In the planned advisor-review workflow, if the reviewer does not act within `HELPMEFINDTHEJOB_OVERSIGHT_QUEUE_TIMEOUT_SECONDS` (intended default 3600) the user receives a deterministic fallback and is informed that AI suggestions are temporarily delayed, and the timed-out item remains in the queue marked `time_out`. This timeout env var is **not read by the application at this version** (Phase-2 item).
 
 This timeout exists to keep the user-facing experience usable in environments where review depth is high but availability fluctuates. Public-authority deployers may shorten the timeout to accept a higher fallback rate in exchange for tighter oversight; commercial-context deployers may lengthen it if their oversight schedule supports it.
 

@@ -35,8 +35,7 @@ maintainer. Do NOT silently fall back to a cloud provider."
 Skip-policy
 -----------
 The test is **opt-in** by default (network-aware + slow). The full
-``python -m unittest discover -s tests`` keeps running fast at 994 +
-the new seed-personas tests. To run the bias methodology explicitly::
+``python -m unittest discover -s tests`` (3,359 tests) keeps running fast. To run the bias methodology explicitly::
 
     python -m unittest tests.test_bias_methodology -v
 
@@ -53,7 +52,7 @@ maintainer's slice instruction requires surfacing the divergence
 honestly. The test does NOT widen tolerances to make divergence
 pass.
 
-The bias-testing report at ``docs/grant/bias-testing-2026-05-18.md``
+The bias-methodology run narrative at ``docs/grant/04-research-and-decisions.md`` Part B
 captures the per-persona score, the divergence (if any), and the
 methodology + provider context. The report is regenerated on every
 run; older dated reports remain in the directory as the audit trail.
@@ -351,7 +350,7 @@ class BiasMethodologyFitScoring(unittest.TestCase):
 
         Per methodology §2.2 the curated set is 10 jobs per persona. The
         first scenario is the manually-curated strong-fit from
-        bias-testing-2026-05-18.md (preserved for comparability). The
+        the original 2026-05-18 baseline run (preserved for comparability). The
         remaining nine per persona are added by the R12-broadening slice
         via ``_build_scoring_extension`` in persona_fixtures.
         """

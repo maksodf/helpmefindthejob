@@ -160,7 +160,7 @@ class BrowserFlowTests(unittest.TestCase):
         "CI timing. TODO: prepend explicit page.locator('#nav .companies').click() "
         "+ wait_for(state='visible') before the fill chain. Passes locally; "
         "fails consistently on ubuntu-latest Playwright runner. Tracked "
-        "as a Ceiling-2 e2e-stabilisation follow-on."
+        "as a post-grant e2e-stabilisation follow-on."
     )
     def test_03_tester_add_company_seed_demo_import_brief(self) -> None:
         context, page = self._page()
@@ -266,7 +266,7 @@ class BrowserFlowTests(unittest.TestCase):
         "collapsed dialog/section that needs an explicit reveal click "
         "before fill works. TODO: prepend `page.click('button[data-action=\"request-deletion\"]')` "
         "+ wait_for the dialog to be visible. Passes locally; fails on "
-        "ubuntu-latest CI runner. Tracked as a Ceiling-2 e2e-stabilisation "
+        "ubuntu-latest CI runner. Tracked as a post-grant e2e-stabilisation "
         "follow-on."
     )
     def test_06c_request_account_deletion(self) -> None:

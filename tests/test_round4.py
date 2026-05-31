@@ -140,7 +140,7 @@ class CvTailoringPromptTests(unittest.TestCase):
         acknowledgment instruction must appear in every CV-tailoring
         prompt regardless of whether ``friction_keywords`` is supplied.
         The bias-testing polish report's criterion-(d) finding drove
-        this contract. See ``docs/grant/bias-testing-2026-05-18-polish.md``.
+        this contract. See ``docs/grant/04-research-and-decisions.md`` Part B.
         """
         result = build_cv_tailoring_prompt(self.job, self.provider, profile=None)
         self.assertIn("Friction-context acknowledgment", result["prompt"])
@@ -205,7 +205,7 @@ class FrictionKeywordsLookupTests(unittest.TestCase):
     chat-router → CV-tailoring production wiring helper added 2026-05-19.
 
     The bias-test path verified at 92.9% criterion-(d) pass-rate
-    (`docs/grant/bias-testing-2026-05-19.md`) uses
+    (`docs/grant/04-research-and-decisions.md` Part B) uses
     `persona.friction_keywords` from the seven-panel fixtures.
     `friction_keywords_for(persona_id)` is the production wrapper the
     chat-router uses so real users get the same persona-specific

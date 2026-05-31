@@ -66,3 +66,9 @@ psycopg[binary]>=3.1,<4.0
 # always land in a known phase). Pure-Python, MIT-licensed,
 # zero native deps; minimal install footprint.
 hypothesis>=6.100,<7.0
+
+# Security: pin patched versions of transitive HTTP deps flagged by
+# pip-audit on 2026-05-29 (requests GHSA-gc5v-m9x4-r6x2; urllib3
+# PYSEC-2026-141 / PYSEC-2026-142). Pure-Python, universal wheels.
+requests>=2.33.0
+urllib3>=2.7.0

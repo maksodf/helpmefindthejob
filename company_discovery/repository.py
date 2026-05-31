@@ -110,7 +110,43 @@ class InMemoryCompanyDiscoveryRepository:
             freshness = effective_freshness_at(job) or job.discovered_at
             if freshness and freshness < cutoff:
                 del self.discovered_jobs[job_id]
+                self._persist_discovered_job_deletion(job_id, user_id)
                 removed += 1
+        return removed
+
+    def _persist_discovered_job_deletion(self, job_id: str, user_id: str) -> None:
+        """Hook: persistent backends delete the purged discovered-job row here.
+        No-op in the in-memory base; SQLite/Postgres repos override it so a
+        purge survives a restart (was RAM-only before)."""
+
+    def delete_all_user_data(self, user_id: str) -> int:
+        """Remove every record owned by ``user_id`` from all user-scoped
+        stores (GDPR Article 17 erasure). Returns the count removed.
+        Persistent backends override to delete the rows too, then call
+        super(). The store list is the single source of truth so a newly
+        added user-scoped store cannot silently escape erasure."""
+        removed = 0
+        for store in (
+            self.companies,
+            self.discovery_runs,
+            self.scans,
+            self.discovered_jobs,
+            self.imported_jobs,
+            self.saved_searches,
+            self.analytics_events,
+            self.support_tickets,
+            self.workspace_memberships,
+            self.push_subscriptions,
+            self.referrals,
+        ):
+            for record_id in [
+                k for k, item in list(store.items()) if getattr(item, "user_id", None) == user_id
+            ]:
+                store.pop(record_id, None)
+                removed += 1
+        if user_id in self.user_profiles:  # keyed by user_id directly
+            self.user_profiles.pop(user_id, None)
+            removed += 1
         return removed
 
     def get_discovered_job(self, user_id: str, discovered_job_id: str) -> DiscoveredJob | None:

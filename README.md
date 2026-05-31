@@ -7,7 +7,7 @@
 [![Fresh-clone install](https://github.com/maksodf/helpmefindthejob/actions/workflows/fresh-clone-install.yml/badge.svg?branch=main)](https://github.com/maksodf/helpmefindthejob/actions/workflows/fresh-clone-install.yml)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/maksodf/helpmefindthejob/badge)](https://securityscorecards.dev/viewer/?uri=github.com/maksodf/helpmefindthejob)
 [![codecov](https://codecov.io/gh/maksodf/helpmefindthejob/branch/main/graph/badge.svg)](https://codecov.io/gh/maksodf/helpmefindthejob)
-[![Release](https://img.shields.io/badge/release-v0.1.0-blue.svg)](https://github.com/maksodf/helpmefindthejob/releases)
+[![Release](https://img.shields.io/badge/release-v0.80.0-blue.svg)](https://github.com/maksodf/helpmefindthejob/releases)
 [![Languages](https://img.shields.io/badge/languages-EN%20%2B%20DE-informational.svg)](static/i18n/)
 [![MCP](https://img.shields.io/badge/MCP-2024--11--05-blueviolet.svg)](https://modelcontextprotocol.io)
 [![Docs](https://github.com/maksodf/helpmefindthejob/actions/workflows/docs-publish.yml/badge.svg?branch=main)](https://maksodf.github.io/helpmefindthejob/)
@@ -52,11 +52,11 @@ non-profit institutions across the EU can adopt, fork, and self-host
 without licence friction. See [`docs/grant/`](docs/grant/) for the full
 strategic context.
 
-**Status**: v0.1.0 — first stable pre-publication tag shipped 2026-05-18
-([`docs/releases/v0.1.0.md`](docs/releases/v0.1.0.md), cosign-signed
-+ CycloneDX SBOM). Public demo deployment at
+**Status**: v0.80.0 — current release (cosign-signed + CycloneDX SBOM,
+[`docs/releases/v0.80.0.md`](docs/releases/v0.80.0.md)); v0.1.0 was the
+first stable pre-publication tag (2026-05-18). Public demo deployment at
 [`demo.helpmefindthejob.org`](https://demo.helpmefindthejob.org/)
-serves the seven canonical personas as pre-seeded read-only accounts
+serves the seven canonical personas as pre-seeded sandbox accounts
 (Aïcha, Yusuf, Olga, Mahmoud, Maria, Käthe, Tobias — shared password
 printed on the demo landing); the live apex
 [`helpmefindthejob.org`](https://helpmefindthejob.org/) hosts the
@@ -68,10 +68,25 @@ fresh account. Seed-personas recipe at
 the demo state on any self-hosted instance. The
 main branch is intended to stay buildable but may contain unfinished
 work between tags. Honest about instability — see
-[`CONTRIBUTORS-NOTE.md`](CONTRIBUTORS-NOTE.md) for the project's history
-including the 2026-05-19 project rename ([Decision 22](docs/grant/04-research-and-decisions.md#decision-22-project-rename--helpmefindthejob--helpmefindthejob))
-and the deprecated commercial phase that preceded the civic-commons
-direction.
+[`CONTRIBUTORS-NOTE.md`](CONTRIBUTORS-NOTE.md) and the Project provenance
+section below for the project's history, including the 2026-05-19 rename.
+
+## Project provenance
+
+We are transparent about where this project came from — the git history
+shows it, and honesty is the stronger signal than concealment. Helpmefindthejob
+was originally developed in private as a self-hosted prototype that explored a
+hosted, paid model. In May 2026 the direction was **deliberately changed to an
+open civic commons**: relicensed **Apache-2.0** (with a CLA), prepared as a
+Programme of **The Commons Conservancy**, the paid model removed, and the
+project centred on being free to run and self-host — bring-your-own-AI
+(including a fully offline path), encrypted user data, exportable records,
+**no paywall, no per-seat licensing, no vendor lock-in**.
+
+We deliberately did **not** rewrite git history to disguise that earlier phase.
+Preserving it lets anyone trace exactly when and why the direction changed, and
+[`CONTRIBUTORS-NOTE.md`](CONTRIBUTORS-NOTE.md) documents the transition in full.
+What you are evaluating today is a civic-employment commons, end to end.
 
 ## Brand wordmark
 
@@ -163,7 +178,7 @@ Run the test suite directly on a fresh clone:
 python3 -m unittest discover -s tests
 ```
 
-The 994-test suite passes natively on Python 3.11 and 3.12 across
+The 3,359-test suite passes natively on Python 3.11 and 3.12 across
 macOS, Linux, and the `python:3.11-slim` / `python:3.12-slim` Docker
 containers — verified on every push by the `fresh-clone-install`
 workflow at `.github/workflows/fresh-clone-install.yml`. Docker is
@@ -182,7 +197,7 @@ and EU-mobile workers facing the densest concentration of friction —
 the strongest specific narrative evidence in proposals and demos) and
 two **wider-friction-class** personas (non-migrant users facing
 structurally similar friction in different forms — their presence
-demonstrates the friction-class architectural claim per Decision 21).
+demonstrates the friction-class architectural claim).
 The system serves a category of human situations, not a single
 demographic. The panel doubles as a forcing function for accessibility,
 RTL-language readiness, regulated-profession recognition flows, and EU
@@ -229,7 +244,7 @@ without forking.
   Services portal; export endpoint in Week 2.
 - **WCAG 2.2 AA** — accessibility target. Honest audit and remediation
   shipped in [`ACCESSIBILITY.md`](ACCESSIBILITY.md) (16 fixes across
-  3 + 1 audit passes; 0/0/0/0 across all 33 audited surfaces).
+  3 + 1 audit passes; 0/0/0/0 across all 33 audited captures).
 - **RFC 9116** — `/.well-known/security.txt` shipped at
   [`static/.well-known/security.txt`](static/.well-known/security.txt).
 - **GDPR alignment** — encrypted profile-at-rest with
@@ -264,11 +279,30 @@ for the architectural reasoning.
 
 A reference integration with an open housing agent — proving the
 composition claim end-to-end — is Phase 2 work pending a partner
-agent ([Decision 20](docs/grant/04-research-and-decisions.md#decision-20-housing-agent-25-defaults-to-mock-stub-option-a)
-defaulted the §2.5 deliverable to Option A: a mock-stub client).
+agent (the housing integration currently defaults to a mock-stub client).
 The MCP composition tools (`propose_referral`, `bundle_civic_context`,
 `query_esco_skill`, `export_eures_compatible`) are wired today; the
 end-to-end demonstration arrives with the partner agent.
+
+## Verify it yourself
+
+You should not have to trust this README. Every headline claim has a single
+command that verifies it from a clean checkout — see the
+[claims ledger](docs/claims-ledger.md)
+([machine-readable source](claims-ledger.json), gated by
+`tests/test_claims_ledger.py`). A few:
+
+```bash
+python -m conformance.cacp              # CACP v0.1 conformance: reference server 14/14
+python -m escolib Krankenschwester       # standalone ESCO reconciliation -> 2221.1
+python -m biasprobe                      # comparative bias report, offline from committed caches
+./scripts/verify_reproducibility.sh      # deterministic, commit-bound source tarball
+./scripts/sign_release_local.sh          # offline cosign sign -> verify dry-run
+```
+
+The ledger is honest about its limits too: the human dimensions (real users,
+external audit, co-maintainers, partners, third-party adoption) are listed as
+**not built** — code cannot produce them, and the ledger's gate enforces that.
 
 ## Self-hosting
 
@@ -292,9 +326,10 @@ flake for reproducible builds is shipped at [`flake.nix`](flake.nix)
 
 For sensitive deployments, the BYO-AI abstraction
 ([`company_discovery/ai_providers.py`](company_discovery/ai_providers.py))
-supports fully-offline operation via Ollama; the chat router falls back
-to deterministic templated responses when no provider is configured,
-so the user-facing flow still works.
+supports fully-offline operation via Ollama; with no AI provider configured the user-facing flow still works —
+letter drafting falls back to a deterministic templated skeleton, and
+fit-scoring and CV-tailoring surface a BYO-AI handoff prompt you run with
+your own AI.
 
 ## Hosted by
 
@@ -308,11 +343,11 @@ A quarterly roadmap with milestones for **2026 Q3 → 2028 Q2** lives at
 [`ROADMAP.md`](ROADMAP.md). At a glance:
 
 - **2026 Q3** — grant-sprint completion + first stable release
-  (v0.1.0 shipped 2026-05-18). Commons Conservancy application
+  (v0.80.0 current; v0.1.0 first stable tag 2026-05-18). Commons Conservancy application
   submitted; NLnet NGI Zero Commons Fund application submitted by
   end of Week 4.
 - **2026 Q4** — Arabic as the third UI language; first NGO pilot
-  deployment; WIP reintegration begins (per Decision 16).
+  deployment; work-in-progress modules begin reintegration.
 - **2027 Q1** — Phase 2 NLnet application; framework extraction
   begins.
 - **2027 Q2** — housing-agent integration hardened; healthcare-agent
@@ -346,11 +381,11 @@ sustainability model) at [`docs/grant/03-post-grant.md`](docs/grant/03-post-gran
   brief, execution plan, decisions log, research notes, personas,
   cost-saving doctrine, MCP composition spec, AI Act compliance plan.
 - [`docs/mcp-server.md`](docs/mcp-server.md) — public MCP server
-  documentation, 13-tool catalogue (v0.2.0).
+  documentation, 15-tool catalogue (v0.2.0).
 - [`docs/esco-integration.md`](docs/esco-integration.md) — ESCO + EURES
   integration reference.
 - [`docs/releases/`](docs/releases/) — version-controlled release
-  notes (`docs/releases/v0.1.0.md` for the current release).
+  notes (`docs/releases/v0.80.0.md` for the current release).
 - [`CONTRIBUTING.md`](CONTRIBUTING.md) — how to contribute.
 - [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) — Contributor Covenant 2.1.
 - [`SECURITY.md`](SECURITY.md) — private vulnerability disclosure.

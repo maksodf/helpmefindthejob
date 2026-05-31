@@ -22,7 +22,7 @@ from company_discovery.email_ingest import parse_email_to_jobs
 _LINKEDIN_HTML = """
 <html><body>
 <table><tr><td>
-  Hi Naser, here are 3 new matches for "Healthcare Policy Consultant":
+  Hi Yusuf, here are 3 new matches for "Healthcare Policy Consultant":
 </td></tr><tr><td>
   <a href="https://www.linkedin.com/jobs/view/9876543210?refId=abc&trk=public_jobs">
     Senior Healthcare Policy Consultant at PPH Consulting
@@ -37,7 +37,7 @@ _LINKEDIN_HTML = """
 
 
 _INDEED_TEXT = """
-Hi Naser,
+Hi Yusuf,
 
 We have 2 new jobs for you:
 

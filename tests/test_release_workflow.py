@@ -2,8 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 """Contract tests for `.github/workflows/release.yml`.
 
-PlanTowardPerfection boxes 2.14.8 (cosign signing automated in CI
-on tag-push) + 2.14.9 (SLSA Level 2 build provenance). The
+Covers cosign signing automated in CI
+on tag-push + SLSA Level 2 build provenance. The
 workflow itself runs only on tag-push (operator-gated cadence);
 these tests verify its structural invariants so a future agent
 that edits the workflow can't silently break (a) the trigger

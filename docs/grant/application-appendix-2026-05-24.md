@@ -14,7 +14,7 @@ linkcolor: blue
 
 # Helpmefindthejob — Application appendix (one page)
 
-PlanTowardPerfection box 1.4.9 + 1.2.5. Optional Field 17 attachment.
+Optional Field 17 attachment.
 
 ## 1. Persona panel (Decision 21, seven personas)
 
@@ -44,7 +44,7 @@ Source-of-truth: `docs/grant/07-personas.md` + Decision 21 in `docs/grant/04-res
                   │             HELPMEFINDTHEJOB (this project)              │
                   │   chat_router · journey · cv_builder · analysis ·        │
                   │   aggregators (Adzuna · Indeed · LinkedIn public ·       │
-                  │   EURES) · MCP server v0.2.0 (13-tool catalogue)         │
+                  │   EURES) · MCP server v0.2.0 (15-tool catalogue)         │
                   └─────────────────────────────────────────────────────────┘
                           │ MCP 2024-11-05    │ MCP 2024-11-05
                           ▼ (Option B)        ▼ (post-grant)
@@ -67,21 +67,22 @@ Standards anchored: ESCO (occupations + skills), EURES (schema), schema.org/JobP
 
 ## 3. Budget breakdown (€37,000 across 6 milestones)
 
-| # | Milestone | Cost | Article(s) addressed | Status |
+| # | Milestone | Cost | Standards / basis | Status |
 |---|---|---|---|---|
-| 1 | Legal + governance pack (Apache 2.0, CLA, NOTICE, TRADEMARK, governance files) | €4,000 | Apache 2.0 + DCO + CC compliance | Shipped |
-| 2 | MCP composition reference (13-tool catalogue + JSON schemas + CI test) | €8,000 | MCP 2024-11-05 | Shipped |
-| 3 | EU AI Act compliance pack (14 documents in `compliance/`) | €10,000 | Art. 9 · 10 · 11+Annex IV · 12 · 13 · 14 · 15 · 22 · 26 · 27 · 49 · 50 · 73 · 86 + GDPR Art. 5 · 20 · 22 · 28 · 30 · 32 · 33 · 35 | Shipped (this slice 2026-05-24) |
-| 4 | Public demo + accessibility (mkdocs site + WCAG 2.2 AA evidence + persona-seeded demo) | €6,000 | WCAG 2.2 AA + Article 49 EU AI database | Demo deployment in flight (DNS gated); accessibility evidence shipped |
-| 5 | Reproducible builds + supply-chain (Nix flake + cosign + SBOM + Scorecard) | €5,000 | SLSA Level 2 (planned) + RFC 9116 | Shipped |
-| 6 | Institutional readiness + standards interop (ESCO 30-occupation / 50-skill reference + EURES projection + ≥1 letter of support + Commons Conservancy admission) | €4,000 | Cross-references all of the above | Conservancy intake submitted (parallel track); outreach drafted, send-gate at submission window |
-| **TOTAL** | | **€37,000** | (≤ €50,000 first-proposal cap; frugal-by-default per Decision 10) | |
+| 1 | Legal, governance & compliance trust package (license/CLA/NOTICE/TRADEMARK consistency, security.txt, DPA template, human-review pathway, compliance index) | €5,000 | Apache 2.0 + CLA + RFC 9116 + EU AI Act Art. 9–15 · 27 · 49 | Kernel shipped (license, CLA, governance, security.txt, compliance scaffold); packaging + DPA template + index = funded |
+| 2 | MCP composition & agent handoff (15-tool catalogue + JSON schemas + `mcp/discover` + consent-bound handoff + conformance tests) | €8,000 | MCP 2024-11-05 + JSON Schema 2020-12 + RFC 7807 | Catalogue + reference composition shipped; discovery + handoff payloads + conformance suite = funded |
+| 3 | Guided chat workflow & priority commands (`/export`, `/scan now`, `/schedule`, `/quota`, `/provider`, `/undo` + in-chat sub-goals) | €6,000 | Usability / operator-cost doctrine | Chat router + 12-phase journey shipped; guided sub-goals + 6 commands = funded |
+| 4 | Employment-friction intelligence & matching quality (language/recognition/§24·§16d·§18·Blue-Card flags, credential-equivalence, friction-aware re-ranking, fit regression) | €7,000 | ESCO + EURES + EU AI Act Art. 10 · 15 (bias) | Persona system + fit-scoring + ESCO subset shipped; friction-intelligence layer = funded |
+| 5 | Search quality, accessibility & persona proof (7-persona journey proof + manual screen-reader/keyboard pass + a11y regression) | €6,000 | WCAG 2.2 AA | Automated axe-core audits (30 closed) + ACCESSIBILITY.md shipped; manual pass + persona proof = funded |
+| 6 | Operator readiness & first-pilot package (operator dashboard, monitoring, audit-log export, self-hosting package, onboarding guide, impact-report template) | €5,000 | EU AI Act Art. 12 audit-log + self-hosting | docker-compose + Nix + audit log + signed releases shipped; operator tooling + pilot package = funded |
+| **TOTAL** | | **€37,000** | (≤ €50,000 first-proposal cap; frugal-by-default per Decision 10) | 9-month execution from grant/MoU signature |
 
-Cost-saving doctrine: every milestone is evaluated against "does it reduce institutional operational cost while improving end-user outcomes?". The Milestone-3 compliance pack alone is documented to avoid €30,000–€200,000 of AI-Act-consulting cost per deployer (industry estimate; see verification table in the application body for the honest framing).
+Cost-saving doctrine: every milestone is evaluated against "does it reduce institutional operational cost while improving end-user outcomes?". The Milestone-1 legal/compliance package and the Milestone-4 friction intelligence each target the AI-Act-consulting and advisor-caseload costs an institutional deployer would otherwise carry (industry estimate €30,000–€200,000 of AI-Act consulting per deployer; see the verification table in the application body for the honest framing).
 
 ## 4. Cross-references
 
 - Application body: `docs/grant/application-draft-2026-05-19.md` (22 of 22 fields filled)
+- Detailed budget rationale (per-milestone what / specific benefit / why, hours, timing): `docs/grant/18-budget-mcp-composition.md`
 - Verification table: same file, "Per-numerical-claim verification table" section
 - Decisions log: `docs/grant/04-research-and-decisions.md` Part B
 - Compliance INDEX: `compliance/INDEX.md`

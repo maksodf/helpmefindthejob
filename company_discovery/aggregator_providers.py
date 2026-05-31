@@ -906,7 +906,7 @@ def default_no_auth_providers() -> list:
 
     Includes EURES and Bundesagentur because both are public, no-key,
     and dramatically expand EU coverage — especially for the
-    healthcare-management persona (Naser's pain point) where the federal
+    healthcare-management persona (an early tester's pain point) where the federal
     agency carries a long tail of public-sector + consulting roles.
 
     Adzuna is registered automatically when the operator sets

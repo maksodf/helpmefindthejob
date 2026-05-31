@@ -10,16 +10,16 @@
 
 | Field | Value |
 |---|---|
-| Name | Cristina Faraco Blanco |
+| Name | [RINWA adviser — contact in maintainer's private notes] |
 | Role | RINWA Koordination (project coordinator) |
 | Organisation | La Red — Vernetzung und Integration e.V. |
-| Direct email | `faraco@la-red.eu` |
+| Direct email | `[email in maintainer's private notes]` |
 | Phone | +49 30 457989 550 |
 | RINWA service tracks | WA Service (service/climate/environment), WA MINT+ (IT/tech), WA Cura (care/healthcare) |
 
 ## Selection rationale
 
-The IQ-Netzwerk programme structurally morphed into the **Regionale Integrationsnetzwerke Willkommens- und Anerkennungskultur (RINWA)** in 2026; the prior IQ Berlin coordination at VIA-in-Berlin (Petersburger Straße 92) closed at end-2025. The two 2026 successor coordinators are La Red and Arbeit und Leben Berlin-Brandenburg gGmbH. La Red is the named project lead for RINWA Berlin and has Cristina Faraco Blanco as the project coordinator (verified on la-red.eu).
+The IQ-Netzwerk programme structurally morphed into the **Regionale Integrationsnetzwerke Willkommens- und Anerkennungskultur (RINWA)** in 2026; the prior IQ Berlin coordination at VIA-in-Berlin (Petersburger Straße 92) closed at end-2025. The two 2026 successor coordinators are La Red and Arbeit und Leben Berlin-Brandenburg gGmbH. La Red is the named project lead for RINWA Berlin and has [RINWA adviser — contact in maintainer's private notes] as the project coordinator (verified on la-red.eu).
 
 Picked La Red over Arbeit und Leben Berlin-Brandenburg because La Red has explicit RINWA project ownership and a long-standing Anerkennungsberatung service track. Arbeit und Leben remains a credible alternative if La Red declines or doesn't respond.
 
@@ -32,7 +32,7 @@ Picked La Red over Arbeit und Leben Berlin-Brandenburg because La Red has explic
 
 **Betreff**: Anfrage — Open-Source-Tool für die Anerkennungs- und Bewerbungsbegleitung internationaler Fachkräfte
 
-Sehr geehrte Frau Faraco Blanco,
+Sehr geehrte Frau [RINWA adviser],
 
 mein Name ist [Maintainer]. Ich bin Student an der TU Berlin und entwickle **Helpmefindthejob** — ein Open-Source-Tool, das internationale Fachkräfte durch den Anerkennungs- und Bewerbungsprozess in Deutschland führt. Mehrsprachig, datenschutzkonform (lokal selbst hostbar, verschlüsselt), Apache-2.0-lizenziert und im Vorgriff auf den EU AI Act bereits dokumentiert.
 

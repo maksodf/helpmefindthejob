@@ -287,5 +287,126 @@ class ConfiguredProviderIdsMatchCostCaps(unittest.TestCase):
             )
 
 
+class BiasPromptUsesProductionBuilder(unittest.TestCase):
+    """Regression guard (obs 22994; fix 2026-05-20): the bias harness MUST
+    build its fit-score prompt via the production
+    ``company_discovery.analysis.build_auto_fit_prompt`` — the same prompt
+    ``/auto-fit`` ships (``execute_auto_fit``) — not a test-local copy. If
+    this regresses, the committed bias report would measure a prompt no real
+    user ever sees. The four per-criterion markers are unique to the
+    production per-criterion builder (commit cd3aa52); a test-local
+    ``FIT_SCORE``-only prompt would lack them.
+    """
+
+    _PRODUCTION_MARKERS = (
+        "SCORE_SKILLS",
+        "SCORE_EXPERIENCE",
+        "SCORE_LOCATION_LANGUAGE",
+        "SCORE_FRICTION_FIT",
+    )
+
+    def _assert_production_prompt(self, prompt: str, source: str) -> None:
+        for marker in self._PRODUCTION_MARKERS:
+            self.assertIn(
+                marker,
+                prompt,
+                f"{source}: production marker {marker!r} missing — the bias "
+                "prompt path may have regressed to a test-local copy (obs 22994).",
+            )
+
+    def test_comparative_runner_uses_production_prompt(self):
+        from company_discovery.persona_fixtures import PERSONAS
+        from scripts.bias_comparative_report import _build_fit_prompt
+
+        persona = PERSONAS[0]
+        self._assert_production_prompt(
+            _build_fit_prompt(persona, persona.scenarios[0]),
+            "scripts.bias_comparative_report._build_fit_prompt",
+        )
+
+    def test_methodology_harness_uses_production_prompt(self):
+        from company_discovery.persona_fixtures import PERSONAS
+        from tests.test_bias_methodology import _build_fit_score_prompt
+
+        persona = PERSONAS[0]
+        self._assert_production_prompt(
+            _build_fit_score_prompt(persona, persona.scenarios[0]),
+            "tests.test_bias_methodology._build_fit_score_prompt",
+        )
+
+
+class BiasReportReferencesResolve(unittest.TestCase):
+    """Traceability guard (obs 28834): every ``docs/grant/bias-*.md`` path
+    referenced from shipped code, compliance docs, or test files MUST resolve
+    to a file that exists. The pre-fix dated snapshots were consolidated into
+    the decision log (``04-research-and-decisions.md``) in the e85946b docs
+    cleanup; their stale pointers were repointed there. This guard stops the
+    'docs reference deleted reports' rot from recurring. Append-only
+    historical records (CHANGELOG, the decision log itself, dated JSON walk
+    snapshots) are intentionally out of scope.
+    """
+
+    def test_referenced_bias_reports_exist(self):
+        import re as _re
+
+        pattern = _re.compile(r"docs/grant/(bias-[A-Za-z0-9._-]+[.]md)")
+        scanned = 0
+        missing: list[str] = []
+        for root in ("company_discovery", "compliance", "tests"):
+            base = REPO_ROOT / root
+            for path in list(base.rglob("*.py")) + list(base.rglob("*.md")):
+                text = path.read_text(encoding="utf-8", errors="ignore")
+                for name in pattern.findall(text):
+                    scanned += 1
+                    if not (REPO_ROOT / "docs" / "grant" / name).exists():
+                        missing.append(f"{path.relative_to(REPO_ROOT)} -> docs/grant/{name}")
+        self.assertEqual(missing, [], f"dangling bias-report references: {missing}")
+        self.assertGreater(scanned, 0, "guard scanned no references — the pattern may be broken")
+
+
+class CachesAreCommittedNotJustPresent(unittest.TestCase):
+    """Regression guard for the 2026-05-29 bug: the bias caches existed in the
+    working tree but were NOT git-tracked (matched by the any-depth ``data/``
+    ignore rule), so a fresh clone / CI had no caches and every replay test
+    above silently hit ``raise unittest.SkipTest`` — making the "anyone can
+    reproduce the published bias numbers from committed caches" claim
+    skip-backed. Presence in the working tree is NOT enough; the files must be
+    COMMITTED. This asserts git actually tracks them, so a gitignore regression
+    or accidental deletion goes red here instead of degrading to a silent skip.
+    """
+
+    CACHES = ("deepseek.jsonl", "ollama.jsonl")
+
+    def test_caches_are_git_tracked_not_just_present(self):
+        import subprocess
+
+        if not (REPO_ROOT / ".git").exists():
+            # Installed sdist with no git metadata: tracking is unverifiable here,
+            # but the *presence* tests above already cover "shipped". Never fires
+            # in a dev/CI checkout, so it does not add to the observed skip count.
+            self.skipTest("not a git checkout (e.g. installed sdist) — cannot verify tracking")
+        result = subprocess.run(
+            ["git", "ls-files", "data/bias_comparative_cache/"],
+            cwd=REPO_ROOT,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        tracked = {line.strip() for line in result.stdout.splitlines() if line.strip()}
+        for name in self.CACHES:
+            rel = f"data/bias_comparative_cache/{name}"
+            self.assertTrue(
+                (REPO_ROOT / rel).exists(),
+                f"{rel} missing from the working tree — regenerate or restore it.",
+            )
+            self.assertIn(
+                rel,
+                tracked,
+                f"{rel} is present locally but NOT git-tracked — it will be absent on a "
+                f"fresh clone and the replay tests will silently skip. Force-add it with "
+                f"`git add -f {rel}` (the any-depth data/ rule ignores it by default).",
+            )
+
+
 if __name__ == "__main__":
     unittest.main()

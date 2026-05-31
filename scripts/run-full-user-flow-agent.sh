@@ -22,7 +22,7 @@ set -eu
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
-PYTHON_BIN="${PYTHON_BIN:-/Users/fouad./miniconda3/bin/python3}"
+PYTHON_BIN="${PYTHON_BIN:-python3}"
 
 PORT="${E2E_PORT:-}"
 if [ -z "$PORT" ]; then

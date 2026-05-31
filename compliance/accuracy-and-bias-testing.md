@@ -31,7 +31,7 @@ For each persona, the methodology constructs a **synthetic-but-realistic profile
 - Friction-class details (Anerkennung in progress / EU citizen with language barrier / Wiedereinstieg context / sector pivot / etc.)
 - Geographic context (Berlin / Munich / Leipzig / Hamburg / Stuttgart for the migrant five; Berlin / Hamburg for Käthe / Tobias)
 
-The synthetic profiles are committed to `tests/fixtures/personas/` (Week 2 task 2.8 follow-up) and re-used across test runs to make changes detectable.
+The synthetic profiles are defined in [`../company_discovery/persona_fixtures.py`](../company_discovery/persona_fixtures.py) (the `PERSONAS` cohort) and re-used across test runs to make changes detectable.
 
 ### 2.2 Test scenarios per persona
 
@@ -66,7 +66,7 @@ A single test divergence outside tolerance is investigated; a pattern of diverge
 
 ### 2.5 Documentation of the run
 
-Each bias-testing run produces a structured report committed to `docs/grant/bias-testing-<date>.md` with:
+Each bias-testing run produces a structured report (the interim dated reports were consolidated into `04-research-and-decisions.md` Part B; `bias-comparative-report-2026-05-21.md` is the surviving standalone artefact) with:
 
 - Date and AI provider
 - Per-persona, per-scenario results table
@@ -89,7 +89,7 @@ Before going live, the deployer runs the bias-testing methodology against their 
 python3 -m unittest tests.test_bias_methodology
 ```
 
-The standard test suite (`tests/test_bias_methodology.py`, lands as part of §2.8 follow-up) generates a fresh report and asserts that the divergence-from-tolerance count is below the deployment threshold.
+The standard test suite (`tests/test_bias_methodology.py`) generates a fresh report and asserts that the divergence-from-tolerance count is below the deployment threshold.
 
 If the test fails, the deployer:
 
@@ -106,8 +106,8 @@ If the test fails, the deployer:
 
 The fit-scoring algorithm has two components:
 
-1. **Structured rule-based scoring** (deterministic): expected accuracy is verified by unit test against documented rules.
-2. **AI re-ranking adjustment** (bounded ±15%): expected to track human-judgement re-ranking within ±10 fit-score points.
+1. **AI per-criterion fit-scoring**: the AI returns four sub-scores (skills, experience, location/language, friction-fit; each 0–25) summing to a 0–100 SCORE; expected to track human-judgement ranking within ±10 fit-score points.
+2. **Deterministic guardrails + ranking**: `parse_auto_fit_output` clamps the score to range and rejects malformed output (no fabricated score reaches the user); the rule-based persona-aware job ranking (`company_discovery/persona_ranking.py`) is verified by unit test.
 
 Both components are tested as described in §2.
 
@@ -149,7 +149,7 @@ Robustness is the property of the system maintaining accuracy under perturbation
 
 ### 5.1 AI-provider failover
 
-When the configured AI provider is unavailable, the system falls back to deterministic templates and logs a `system_event` with `system_event_kind="ai_provider_unavailable"`. Tested in `tests/test_phase11_mcp_tools_v2.py` and in the existing `ai_providers` test surface.
+When the configured AI provider is unavailable or errors, AI-assisted features fall back to their no-AI path: motivation/cover-letter drafting returns a deterministic templated skeleton (`company_discovery/motivation_letter.py`), while fit-scoring and CV-tailoring return a BYO-AI handoff prompt. The failure is recorded as an `ai_invocation` audit event with a non-`ok` outcome (`declined` for a handoff, `error` for a provider error). Covered by `tests/test_mcp_no_ai_fallback.py` and `tests/test_motivation_letter.py`.
 
 ### 5.2 Malformed input handling
 
@@ -173,7 +173,7 @@ Cross-references [`../SECURITY.md`](../SECURITY.md) for the project's security p
 - Session management with idle timeout and 2FA support.
 - Encryption-at-rest for profile data and TOTP secrets.
 - Vulnerability disclosure via `.well-known/security.txt` (RFC 9116).
-- Dependency scanning (`pip-audit`) in CI — Week 3 expansion.
+- Dependency scanning (`pip-audit`) in CI ([`../.github/workflows/quality.yml`](../.github/workflows/quality.yml)).
 - Audit log itself protected by file-system permissions on the deployer's host; PII-hashed by default.
 
 ---
@@ -184,7 +184,7 @@ The cost-saving doctrine claims certain efficiency improvements per advisor visi
 
 | Claim | Metric | Source |
 |---|---|---|
-| 20 minutes of routine work absorbed per advisor session | Median time spent on the journey phases the agent handles (profile capture, CV format guidance, fit-scoring, application drafting) | Pilot data from Week 3 partner-NGO collaboration |
+| 20 minutes of routine work absorbed per advisor session | Median time spent on the journey phases the agent handles (profile capture, CV format guidance, fit-scoring, application drafting) | Pilot data from the post-grant partner-NGO pilot (2026 Q4) |
 | 33% advisor caseload capacity expansion | Derived from the 20-minutes-out-of-60-minutes absorption ratio | Same |
 | 30-day reduction in time-to-employment | Self-reported by pilot participants vs comparison cohort | Same |
 | €30–200k AI-Act-compliance saving for deployer | Avoidance of external consultant fees at typical EU rates for high-risk-AI compliance engineering | Industry benchmarks; tagged `plausible` in [`../docs/grant/08-cost-saving-doctrine.md`](../docs/grant/08-cost-saving-doctrine.md) §"Mechanism 5" |
@@ -195,9 +195,9 @@ Each claim is tagged `proven` / `plausible` / `aspirational` in the cost-saving 
 
 ## 8. Current results
 
-**As of 2026-05-19**: the methodology is documented and **partially executed** via synthetic-cohort interim runs (2 of 6 scenario classes; 147 data points covering 70 scoring + 70 CV-tailoring + 7 cross-industry probes). The four dated reports are in `docs/grant/bias-testing-*.md`. The standing 1020-test suite covers the deterministic-component accuracy (rule-based scoring, schema validation, locale parsing, encryption-at-rest). The remaining 4 scenario classes (onboarding, discovery, motivation-letter drafting, skill-gap brief) execute as part of the partner-NGO pilot in 2026 Q4 per [`ROADMAP.md`](../ROADMAP.md); results land in additional `docs/grant/bias-testing-<date>.md` reports.
+**As of 2026-05-19**: the methodology is documented and **partially executed** via synthetic-cohort interim runs (2 of 6 scenario classes; 147 data points covering 70 scoring + 70 CV-tailoring + 7 cross-industry probes). The dated interim reports were consolidated into [`04-research-and-decisions.md`](../docs/grant/04-research-and-decisions.md) Part B and removed from the tree in commit `e85946b`; the surviving dated report is [`bias-comparative-report-2026-05-21.md`](../docs/grant/bias-comparative-report-2026-05-21.md). The standing unit-test suite (3,359 tests as of 2026-05-30) covers the deterministic-component accuracy (rule-based scoring, schema validation, locale parsing, encryption-at-rest). The remaining 4 scenario classes (onboarding, discovery, motivation-letter drafting, skill-gap brief) execute as part of the partner-NGO pilot in 2026 Q4 per [`ROADMAP.md`](../ROADMAP.md); results will be captured in dated reports under `docs/grant/`.
 
-The honest status: this document describes a methodology that is partially executed at synthetic-cohort scale and that will complete its remaining 4 scenario classes during the partner-NGO pilot. The methodology is the contract; the synthetic-interim results are documented in the dated bias-testing reports; the partner-NGO results are pending. We disclose the partial-execution gap in the transparency notice.
+The honest status: this document describes a methodology that is partially executed at synthetic-cohort scale and that will complete its remaining 4 scenario classes during the partner-NGO pilot. The methodology is the contract; the synthetic-interim results are consolidated in `04-research-and-decisions.md` Part B; the partner-NGO results are pending. We disclose the partial-execution gap in the transparency notice.
 
 ### 8.1 Cross-provider comparative results (2026-05-21 run)
 
@@ -219,7 +219,7 @@ A second run on 2026-05-21 layered cross-provider comparison on top of the synth
 
 **Top cross-provider disagreements** (the cells where providers scored a single scenario most differently): the largest spread was 30 points on `olga_mixed_distant_city` (deepseek=70, ollama=40), followed by 29 points on `olga_weak_wrong_industry_c` (34 vs 5), 22 points on `olga_weak_wrong_industry_b` and `tobias_weak_wrong_industry_a`. Full top-20 disagreement table in the report. The pattern is consistent: ollama scores the wrong-industry / distant-city scenarios harshly while deepseek scores them moderate-low. Both behaviours are defensible — they reflect different priors on transferability — but the spread is large enough that a single-provider deployment will bias the user-visible score in the provider's direction.
 
-**Out-of-bounds (OOB) hit rate**: the prior 2026-05-19 polished cohort run (`docs/grant/bias-testing-2026-05-18-polish.md`, summarised in `04-research-and-decisions.md` Part B 2026-05-19 entry) measured **10 / 77 = 13.0%** scoring out-of-bounds (where the model's per-criterion sub-scores don't sum to the SCORE total, or where SCORE is outside the 0-100 range, or where the reason / gaps fields are malformed in a way the parser rejects). The 2026-05-21 comparative run did not re-measure this metric — it focused on cross-provider mean drift — so the **13.0% OOB rate stands as the most recent honest measurement** and is the figure cited in the transparency notice. PlanTowardPerfection Section 2.8 (search-quality + provider coverage) tracks driving this below 3% as a Ceiling-2 deliverable.
+**Out-of-bounds (OOB) hit rate**: the prior 2026-05-19 polished cohort run (narrated in `04-research-and-decisions.md` Part B 2026-05-19 entry; the dated snapshot itself was consolidated there in the e85946b docs cleanup) measured **10 / 77 = 13.0%** scoring out-of-bounds (where the model's per-criterion sub-scores don't sum to the SCORE total, or where SCORE is outside the 0-100 range, or where the reason / gaps fields are malformed in a way the parser rejects). The 2026-05-21 comparative run did not re-measure this metric — it focused on cross-provider mean drift — so the **13.0% OOB rate stands as the most recent honest measurement** and is the figure cited in the transparency notice. Driving this below 3% (search-quality + provider coverage) is a tracked post-grant deliverable (see `03-post-grant.md`).
 
 **Honest framing for reviewers and deployers**:
 
@@ -232,14 +232,14 @@ A second run on 2026-05-21 layered cross-provider comparison on top of the synth
 
 ## 9. Append log
 
-- **2026-05-18**: methodology drafted as part of Week 2 task 2.8 of the NLnet NGI Zero Commons Fund grant sprint. Pre-deployment re-test framework drafted. First scheduled execution: Week 3 partner-NGO pilot.
-- **2026-05-24** (PlanTowardPerfection box 1.4.7): §8.1 added — cross-provider comparative results from the 2026-05-21 run (7 personas × 10 scenarios × 2 providers = 140 data points; per-persona mean scores deepseek vs ollama; top-spread disagreement summary; the 13.0% OOB rate carried forward from the 2026-05-19 polished cohort run with the honest-framing paragraph distinguishing OOB-rate-as-AI-output-quality-metric from user-visible-harm-rate). Cross-references the comparative report at `docs/grant/bias-comparative-report-2026-05-21.md` and the parser-layer defence at `tests/test_prompt_injection_vectors.py::V3JdIndirectInjection` so reviewers can see the chain from measurement to safety surface.
+- **2026-05-18**: methodology drafted as part of Week 2 task 2.8 of the NLnet NGI Zero Commons Fund grant sprint. Pre-deployment re-test framework drafted. First scheduled execution: the post-grant partner-NGO pilot (2026 Q4 per `../ROADMAP.md`).
+- **2026-05-24**: §8.1 added — cross-provider comparative results from the 2026-05-21 run (7 personas × 10 scenarios × 2 providers = 140 data points; per-persona mean scores deepseek vs ollama; top-spread disagreement summary; the 13.0% OOB rate carried forward from the 2026-05-19 polished cohort run with the honest-framing paragraph distinguishing OOB-rate-as-AI-output-quality-metric from user-visible-harm-rate). Cross-references the comparative report at `docs/grant/bias-comparative-report-2026-05-21.md` and the parser-layer defence at `tests/test_prompt_injection_vectors.py::V3JdIndirectInjection` so reviewers can see the chain from measurement to safety surface.
 
 ---
 
-## 10. Bias-comparative-report v2 — methodology scaffold (PlanTowardPerfection box 2.10.1)
+## 10. Bias-comparative-report v2 — methodology scaffold
 
-The v2 re-run is gated on the search-quality fixes in Ceiling 2 §2.8 of `PlanTowardPerfection.MD` landing first (EURES real API integration, full ESCO taxonomy, multi-language ESCO lookup, smart provider routing, friction-aware result re-ranking). This section scaffolds the v2 methodology so a future agent re-running the bias panel knows the contract.
+The v2 re-run is gated on the post-grant search-quality fixes (see `03-post-grant.md`) landing first (EURES real API integration, full ESCO taxonomy, multi-language ESCO lookup, smart provider routing, friction-aware result re-ranking). This section scaffolds the v2 methodology so a future agent re-running the bias panel knows the contract.
 
 ### 10.1 What changes between v1 (current) and v2
 
@@ -253,7 +253,7 @@ The v2 re-run is gated on the search-quality fixes in Ceiling 2 §2.8 of `PlanTo
 **v2 expansion target**:
 
 - 7 personas × **30** scenarios × **6** providers (`deepseek`, `ollama`, `openai`, `anthropic`, `gemini`, `openrouter`) = **1260 data points** (~9× v1 coverage)
-- Per-persona scenario set expanded from 10 to 30 to include the friction-class edge cases that the search-quality fixes are designed to handle (e.g., `aicha_anerkennungs_friendly_employer_specialty_match`, `yusuf_blue_card_lateral_engineering_with_relocation`, `olga_english_team_remote_eu_with_vhs_pairing`, `mahmoud_eq_pre_ausbildung_with_berufsschule`, `maria_aip_with_architektenkammer_in_flight`, `kaethe_wiedereinstieg_with_paired_mentor`, `tobias_civic_tech_with_volunteer_portfolio`)
+- Per-persona scenario set expanded from 10 to 30 to include the friction-class edge cases that the search-quality fixes are designed to handle (e.g., `aicha_anerkennungs_friendly_employer_specialty_match`, `yusuf_blue_card_lateral_engineering_with_relocation`, `olga_english_team_remote_eu_with_vhs_pairing`, `mahmoud_eq_pre_ausbildung_with_berufsschule`, `maria_language_friendly_pflegedienst_with_course_pairing`, `kaethe_wiedereinstieg_with_paired_mentor`, `tobias_civic_tech_with_volunteer_portfolio`)
 - OOB-rate target: **below 3 %** (down from 13.0 %). Achieved by: (a) per-criterion sub-score validation in the prompt builder, (b) score-clamp regex tightening to reject out-of-range integers earlier, (c) JD-friction-keyword corpus expansion so anchor-scale recognition rate goes up
 - Friction-aware result re-ranking (§2.8 deliverable) is exercised explicitly: for each persona, the top-5 surfaced scores after re-ranking should weight `SCORE_FRICTION_FIT` more heavily; v2 measures the delta vs v1
 

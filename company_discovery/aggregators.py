@@ -1087,14 +1087,27 @@ class JobAggregationEngine:
         # all dedupe to the same canonical key.
         seen: dict[str, AggregatedJob] = {}
         host_pattern = re.compile(r"^https?://([^/]+)/(.+?)(?:\?|#|$)")
+        nourl_counter = 0
         for job in accumulated_jobs:
-            match = host_pattern.match(job.source_url)
+            url = getattr(job, "source_url", None)
+            if not isinstance(url, str):
+                # A misbehaving provider returned a non-AggregatedJob or a
+                # None/non-string source_url. The isolation boundary must extend
+                # past provider.search() into the merge — skip it, never crash
+                # the whole fan-out (the module's core contract).
+                continue
+            match = host_pattern.match(url)
             if match:
                 host = match.group(1).lower().removeprefix("www.")
                 path = match.group(2).lower().rstrip("/")
                 host_path = f"{host}/{path}"
+            elif url:
+                host_path = url
             else:
-                host_path = job.source_url
+                # Empty URL: give each URL-less job a unique key so distinct
+                # postings don't all collapse into one under the "" key.
+                host_path = f"\x00nourl-{nourl_counter}"
+                nourl_counter += 1
             existing = seen.get(host_path)
             if existing is None or len(job.description or "") > len(existing.description or ""):
                 seen[host_path] = job

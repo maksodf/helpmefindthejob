@@ -16,6 +16,7 @@ These tests prove:
 from __future__ import annotations
 
 import json
+import sys
 import threading
 import time
 import unittest
@@ -162,14 +163,16 @@ class HousingCohorts(unittest.TestCase):
         cohort = _housing_match_cohort(ref)
         self.assertEqual(cohort["cohort_id"], "munich_blue_card")
 
-    def test_hamburg_paragraph_24_matches(self):
+    def test_leipzig_paragraph_24_matches(self):
         ref = _aicha_referral(
             "housing-agent",
-            "needs_housing_hamburg",
-            {"city": "hamburg", "residency_status": "§24"},
+            "needs_housing_leipzig",
+            {"city": "leipzig", "residency_status": "§24"},
         )
         cohort = _housing_match_cohort(ref)
-        self.assertEqual(cohort["cohort_id"], "hamburg_paragraph_24_ukraine")
+        self.assertEqual(cohort["cohort_id"], "leipzig_paragraph_24_ukraine")
+        # Leipzig is markedly cheaper than the larger cities.
+        self.assertLess(cohort["monthly_rent_band_eur"][1], 1000)
 
     def test_unmatched_falls_through_to_default(self):
         ref = _aicha_referral(
@@ -218,29 +221,41 @@ class AnerkennungPathways(unittest.TestCase):
         self.assertEqual(decision["decision"], "partial_recognition")
         self.assertIn("Anpassungslehrgang", " ".join(decision["missingRequirements"]))
 
-    def test_syria_engineering_paragraph_4_pathway(self):
+    def test_turkey_engineering_bluecard_pathway(self):
+        # Yusuf came DIRECTLY on an EU Blue Card and was never an asylum
+        # seeker, so recognition runs the BQFG Blue-Card engineering route,
+        # not §4 AsylG.
         decision = _make_verification_decision(
             {
                 "userId": "u",
-                "qualificationField": "Electrical Engineering",
-                "countryOfOrigin": "Syria",
-                "residencyStatus": "§ 4 AsylG",
+                "qualificationField": "Mechanical Engineering",
+                "countryOfOrigin": "Turkey",
+                "residencyStatus": "EU Blue Card",
             }
         )
-        self.assertEqual(decision["pathway"], "engineering_paragraph_4_asylg")
-        self.assertEqual(decision["decision"], "full_recognition_pending_language")
+        self.assertEqual(decision["pathway"], "engineering_bluecard_bqfg")
+        self.assertEqual(decision["decision"], "comparability_statement_blue_card")
+        self.assertIn("BQFG", decision["legalBasis"])
+        self.assertNotIn("AsylG", decision["legalBasis"])
 
-    def test_ukraine_medicine_paragraph_24_pathway(self):
+    def test_ukraine_software_unregulated_no_recognition_pathway(self):
+        # IT / software is an UNREGULATED profession in Germany: no formal
+        # recognition (Anerkennung) is required and the candidate may start
+        # work immediately. This is correct German law.
         decision = _make_verification_decision(
             {
                 "userId": "u",
-                "qualificationField": "General Medicine",
+                "qualificationField": "Software engineering (senior frontend / React)",
                 "countryOfOrigin": "Ukraine",
                 "residencyStatus": "§24 Ukraine",
             }
         )
-        self.assertEqual(decision["pathway"], "medicine_paragraph_24_ukraine")
-        self.assertEqual(decision["decision"], "expedited_recognition_supervised_practice")
+        self.assertEqual(decision["pathway"], "it_unregulated_no_recognition")
+        self.assertEqual(decision["decision"], "no_recognition_required_unregulated_profession")
+        self.assertIn("No Anerkennung required", decision["legalBasis"])
+        self.assertIn("unregulated", decision["issuingAuthority"].lower())
+        self.assertEqual(decision["estimatedCompletionMonths"], 0)
+        self.assertEqual(decision["missingRequirements"], [])
 
     def test_pii_fields_only_appear_as_opaque_hashes(self):
         """Quality bar: the decision payload must NOT carry plaintext
@@ -428,20 +443,22 @@ class EndToEndMeshWalk(unittest.TestCase):
             )
 
     def test_yusuf_blue_card_walk(self):
-        """Yusuf scenario: §4 AsylG engineering pathway + Munich
-        Blue Card housing + social-services NOT matched (above
-        Bürgergeld threshold)."""
-        # Anerkennung
+        """Yusuf scenario: Turkish mechanical engineer on a direct EU Blue
+        Card → BQFG engineering recognition pathway + Munich Blue Card
+        housing + social-services NOT matched (above Bürgergeld
+        threshold). §4 AsylG never applied to him."""
+        # Anerkennung — BQFG Blue-Card engineering route
         decision = _post_json(
             f"http://127.0.0.1:{self.anerkennung_port}/v1/verify-credential",
             {
                 "userId": "test-yusuf",
-                "qualificationField": "Electrical Engineering",
-                "countryOfOrigin": "Syria",
-                "residencyStatus": "§ 4 AsylG",
+                "qualificationField": "Mechanical Engineering",
+                "countryOfOrigin": "Turkey",
+                "residencyStatus": "EU Blue Card",
             },
         )["decision"]
-        self.assertEqual(decision["pathway"], "engineering_paragraph_4_asylg")
+        self.assertEqual(decision["pathway"], "engineering_bluecard_bqfg")
+        self.assertNotIn("AsylG", decision["legalBasis"])
         # Housing — Munich Blue Card cohort
         intake = _post_json(
             f"http://127.0.0.1:{self.housing_port}/v1/intake",
@@ -470,31 +487,33 @@ class EndToEndMeshWalk(unittest.TestCase):
         self.assertEqual(rec["cohort"], "default_unmatched")
 
     def test_olga_family_walk(self):
-        """Olga scenario: §24 Ukraine medicine + Hamburg family
-        housing + Bürgergeld + Kinderzuschlag."""
-        # Anerkennung
+        """Olga scenario: §24 Ukraine software developer in Leipzig →
+        IT-unregulated (no formal recognition) + Leipzig family housing
+        + Bürgergeld + Kinderzuschlag."""
+        # Anerkennung — IT/software is unregulated, no Anerkennung required
         decision = _post_json(
             f"http://127.0.0.1:{self.anerkennung_port}/v1/verify-credential",
             {
                 "userId": "test-olga",
-                "qualificationField": "General Medicine",
+                "qualificationField": "Software engineering (senior frontend / React)",
                 "countryOfOrigin": "Ukraine",
                 "residencyStatus": "§24 Ukraine",
             },
         )["decision"]
-        self.assertEqual(decision["pathway"], "medicine_paragraph_24_ukraine")
+        self.assertEqual(decision["pathway"], "it_unregulated_no_recognition")
+        self.assertIn("No Anerkennung required", decision["legalBasis"])
         # Housing
         intake = _post_json(
             f"http://127.0.0.1:{self.housing_port}/v1/intake",
             {
                 "referral": _aicha_referral(
                     "housing-agent",
-                    "needs_housing_hamburg_family",
-                    {"city": "hamburg", "residency_status": "§24", "family_size": 3},
+                    "needs_housing_leipzig_family",
+                    {"city": "leipzig", "residency_status": "§24", "family_size": 3},
                 )
             },
         )["intake"]
-        self.assertEqual(intake["cohort"], "hamburg_paragraph_24_ukraine")
+        self.assertEqual(intake["cohort"], "leipzig_paragraph_24_ukraine")
         # Social with family
         rec = _post_json(
             f"http://127.0.0.1:{self.social_port}/v1/eligibility-check",
@@ -517,6 +536,148 @@ class EndToEndMeshWalk(unittest.TestCase):
         resp = _post_json(f"http://127.0.0.1:{self.housing_port}/v1/intake", {"referral": bad_ref})
         self.assertEqual(resp["status"], "rejected")
         self.assertEqual(resp["code"], "invalid_referral")
+
+
+# ---------------------------------------------------------------------------
+# Persona-spine consistency: the mesh demo walks must match the canonical
+# persona spine in company_discovery/persona_fixtures.py. This guard would
+# have caught the "Spine-B" scramble (Yusuf modelled as a Syrian §4-AsylG
+# electrical engineer; Olga as a Ukrainian MD in Hamburg) at commit time.
+# ---------------------------------------------------------------------------
+
+
+class DemoWalkPersonaSpine(unittest.TestCase):
+    def _fixtures_by_first_name(self):
+        from company_discovery.persona_fixtures import PERSONAS
+
+        # Fixture display_name is e.g. "Yusuf (Turkey → Munich)"; key on the
+        # leading first name so we can match the walk PROFILE name.
+        return {p.display_name.split(" ")[0]: p for p in PERSONAS}
+
+    def test_yusuf_walk_matches_canonical_spine(self):
+        from mesh import demo_yusuf_walk
+
+        profile = demo_yusuf_walk.YUSUF_PROFILE
+        fixture = self._fixtures_by_first_name()["Yusuf"]
+        self.assertEqual(profile["countryOfOrigin"], "Turkey")
+        self.assertEqual(profile["city"], fixture.location)  # Munich
+        self.assertEqual(fixture.industry, "Engineering")
+        self.assertIn("Mechanical", profile["qualificationField"])
+        self.assertEqual(profile["residencyStatus"], "EU Blue Card")
+        # The old scramble must never return.
+        blob = json.dumps(profile).lower()
+        for stale in ("syria", "syrian", "electrical", "asylg", "subsidiary"):
+            self.assertNotIn(stale, blob)
+
+    def test_olga_walk_matches_canonical_spine(self):
+        from mesh import demo_olga_walk
+
+        profile = demo_olga_walk.OLGA_PROFILE
+        fixture = self._fixtures_by_first_name()["Olga"]
+        self.assertEqual(profile["countryOfOrigin"], "Ukraine")
+        self.assertEqual(profile["city"], fixture.location)  # Leipzig
+        self.assertEqual(fixture.industry, "Software")
+        self.assertIn("software", profile["qualificationField"].lower())
+        self.assertIn("§24", profile["residencyStatus"])
+        # The old scramble must never return.
+        blob = json.dumps(profile).lower()
+        for stale in ("hamburg", "medicine", "physician", "approbation"):
+            self.assertNotIn(stale, blob)
+
+    def test_aicha_walk_matches_canonical_spine(self):
+        from mesh import demo_aicha_walk
+
+        profile = demo_aicha_walk.AICHA_PROFILE
+        fixture = self._fixtures_by_first_name()["Aïcha"]
+        self.assertEqual(profile["countryOfOrigin"], "Tunisia")
+        self.assertEqual(profile["city"], fixture.location)  # Berlin
+        self.assertEqual(fixture.industry, "Healthcare")
+        self.assertIn("§16d", profile["residencyStatus"])
+
+
+# ---------------------------------------------------------------------------
+# Demo-walk smoke test: actually run each walk's main() end-to-end against
+# live in-process agents. The per-agent integration tests above call the
+# agents directly and therefore never execute the walk scripts' own
+# payload-construction code — which is exactly where a stale PROFILE-key
+# reference (e.g. PROFILE["residency"] vs PROFILE["residencyStatus"]) can
+# hide and crash the operator-facing demo while every other test stays
+# green. This class closes that gap: it asserts each walk's main() exits 0.
+# ---------------------------------------------------------------------------
+
+
+class DemoWalkSmokeTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.tmp = TemporaryDirectory()
+        tmp_path = Path(cls.tmp.name)
+        cls.housing_port = _free_port()
+        cls.anerkennung_port = _free_port()
+        cls.social_port = _free_port()
+        cls.housing_server = serve_until_stopped(
+            make_housing_handler(AgentAuditLog(tmp_path / "h.log")),
+            "127.0.0.1",
+            cls.housing_port,
+        )
+        cls.anerkennung_server = serve_until_stopped(
+            make_anerkennung_handler(AgentAuditLog(tmp_path / "a.log")),
+            "127.0.0.1",
+            cls.anerkennung_port,
+        )
+        cls.social_server = serve_until_stopped(
+            make_social_handler(AgentAuditLog(tmp_path / "s.log")),
+            "127.0.0.1",
+            cls.social_port,
+        )
+        for port in (cls.housing_port, cls.anerkennung_port, cls.social_port):
+            for _ in range(30):
+                try:
+                    if _get_json(f"http://127.0.0.1:{port}/v1/health").get("status") == "ok":
+                        break
+                except (urllib.error.URLError, ConnectionError):
+                    time.sleep(0.1)
+            else:
+                raise RuntimeError(f"agent on port {port} never became healthy")
+
+    @classmethod
+    def tearDownClass(cls):
+        for server in (cls.housing_server, cls.anerkennung_server, cls.social_server):
+            server.shutdown()
+            server.server_close()
+        cls.tmp.cleanup()
+
+    def _run_walk(self, module):
+        """Point a walk module at this class's in-process agents and run
+        its ``main()`` with ``--skip-health``; assert a clean exit. This
+        executes the walk's own payload construction, so a stale PROFILE
+        key crashes the test rather than only the operator."""
+        orig_urls = (module.HOUSING_URL, module.ANERKENNUNG_URL, module.SOCIAL_URL)
+        orig_argv = sys.argv
+        module.HOUSING_URL = f"http://127.0.0.1:{self.housing_port}"
+        module.ANERKENNUNG_URL = f"http://127.0.0.1:{self.anerkennung_port}"
+        module.SOCIAL_URL = f"http://127.0.0.1:{self.social_port}"
+        sys.argv = [module.__name__, "--skip-health"]
+        try:
+            rc = module.main()
+        finally:
+            module.HOUSING_URL, module.ANERKENNUNG_URL, module.SOCIAL_URL = orig_urls
+            sys.argv = orig_argv
+        self.assertEqual(rc, 0, f"{module.__name__}.main() returned {rc}, expected 0")
+
+    def test_aicha_walk_main_runs_clean(self):
+        from mesh import demo_aicha_walk
+
+        self._run_walk(demo_aicha_walk)
+
+    def test_yusuf_walk_main_runs_clean(self):
+        from mesh import demo_yusuf_walk
+
+        self._run_walk(demo_yusuf_walk)
+
+    def test_olga_walk_main_runs_clean(self):
+        from mesh import demo_olga_walk
+
+        self._run_walk(demo_olga_walk)
 
 
 if __name__ == "__main__":

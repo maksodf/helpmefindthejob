@@ -60,7 +60,7 @@ Helpmefindthejob addresses this gap as a digital commons. The technical and inst
 
 **Structured, gated conversation, not GPT-wrapper roulette.** A 12-phase deterministic journey state machine drives the user from discovery to drafted application. Every AI invocation is constrained to a specific phase with a specific output shape. Every database write is confirmed by the user. Every missing parameter triggers multi-turn elicitation. The agent is auditable, debuggable, and safe — properties no freeform LLM job-chatbot can offer, and properties directly required by the EU AI Act's transparency and human-oversight obligations.
 
-**User-sovereign data and AI.** The user's CV, profile, and history are encrypted at rest with ChaCha20-Poly1305 and never leave the self-hosted instance. AI inference is bring-your-own-provider — OpenAI, Anthropic, Gemini, DeepSeek, Ollama (fully offline), or manual handoff for users with no AI subscription. The architectural choice removes the structural dependency on commercial AI that disqualifies most users in the target community.
+**User-sovereign data and AI.** The user's CV, profile, and history are encrypted at rest with ChaCha20-Poly1305 and never leave the self-hosted instance. AI inference is bring-your-own-provider — OpenAI, Anthropic, Gemini, DeepSeek, OpenRouter, Ollama (fully offline), or manual handoff for users with no AI subscription. The architectural choice removes the structural dependency on commercial AI that disqualifies most users in the target community.
 
 **MCP-exposed as open civic infrastructure.** The agent exposes its capabilities through a Model Context Protocol server with a versioned tool catalogue, JSON Schema-defined inputs and outputs, and a documented composition pattern. Any other open civic agent — including a separately developed open-source housing-search agent operated by a partner team — can compose with Helpmefindthejob inside a single conversation or as a sequential handoff. Healthcare, residency-permit, Anerkennung, and integration-course agents can attach later without forking. The MCP server is the commons interface; the modular composition pattern is the Redwax model applied to civic agents.
 
@@ -76,55 +76,67 @@ The reference implementation deploys in Germany first because that is where the 
 
 ## E. Milestones and budget
 
-Milestone-based payment, results-only, no progress reports — per NLnet's standard model. Each milestone is a verifiable deliverable; payment requested upon delivery.
+Milestone-based payment, results-only, no progress reports — per NLnet's standard model. Each milestone is a verifiable deliverable; payment requested upon delivery. Blended rate €60/hour; €37,000 ≈ 617 developer-hours across a 9-month execution window measured from grant/MoU signature, part-time alongside existing obligations. The kernel already exists (see §A–§D and the public repository); the milestones take it from working prototype to institution-ready, pilot-deployable assistant.
 
-### Milestone 1: Legal and narrative foundations
+### Milestone 1: Legal, governance, and compliance trust package
 
-**Deliverable**: Apache 2.0 LICENSE file at repo root, Contributor License Agreement, full governance pack (CONTRIBUTING.md, CODE_OF_CONDUCT.md, SECURITY.md, SUPPORT.md, AUTHORS.md, ACKNOWLEDGMENTS.md, TRADEMARK.md), `.well-known/security.txt` per RFC 9116, GitHub repository housekeeping (description, topics, Discussions enabled), zero `khalo.org` or other internal residue in code, README rewritten with civic-commons positioning.
+**Deliverable**: license / NOTICE / CLA consistency; security-disclosure process (RFC 9116 `security.txt` + SECURITY.md); privacy and support documentation; a Data Processing Agreement template; a documented human-review pathway; and a compliance index tying each artefact to its legal basis.
 
-**Cost-saving mechanism**: provides the institutional-readiness signal that deployers require to even consider adoption; eliminates the licensing-ambiguity blocker that prevents public-sector procurement engagement.
+**Current state**: Apache-2.0 LICENSE, CLA, governance pack, and security.txt already ship; the funded work is verifying, aligning, and packaging the legal/compliance layer for institutional review without external counsel.
 
-**Budget**: €4,000.
-
-### Milestone 2: MCP composition reference
-
-**Deliverable**: published MCP server documentation with versioned tool catalogue and JSON Schema for all 13 tools; one concrete reference integration with a parallel open civic agent (housing); cross-linked repositories; CI integration test demonstrating MCP composition; STANDARDS.md citing every standard implemented (MCP, schema.org JobPosting, ESCO, EURES schema, JSON Schema 2020-12, ISO 8601, ISO 639-1, RFC 7807, RFC 9116).
-
-**Cost-saving mechanism**: every additional civic agent built on top of this MCP surface reuses our composition layer, avoiding duplicated engineering cost across the civic-tech ecosystem.
-
-**Budget**: €8,000.
-
-### Milestone 3: EU AI Act compliance pack
-
-**Deliverable**: complete `/compliance/` directory shipping: risk management plan (Article 9), data governance documentation (Article 10), technical documentation aligned with Annex IV (Article 11), audit-log infrastructure with documented schema (Article 12), transparency notice for users and deployer operating manual (Article 13), human-oversight UI and guide (Article 14), accuracy and bias testing methodology with reproducible results (Article 15), pre-filled templates for EU AI database registration (Article 49) and Fundamental Rights Impact Assessment (Article 27).
-
-**Cost-saving mechanism**: institutions deploying the agent inherit a compliant configuration, avoiding the €30–€200k of external consulting otherwise required to bring an employment-AI deployment into AI Act compliance for 2 August 2026.
-
-**Budget**: €10,000.
-
-### Milestone 4: Public demo deployment and accessibility
-
-**Deliverable**: live public demo at stable URL (`demo.<domain>`) running the canonical reference implementation, with persona-panel pre-seeded examples covering all seven personas (Aïcha, Yusuf, Olga, Mahmoud, Maria — the five most-acute migrant cases — plus Käthe and Tobias — the two wider-friction-class cases — per Decision 21); WCAG 2.2 Level AA accessibility audit completed with results published in ACCESSIBILITY.md; documentation site (mkdocs-material) deployed at `docs.<domain>` covering architecture, deployment, MCP API, contributing.
-
-**Cost-saving mechanism**: reduces the discovery and evaluation cost for any potential institutional adopter; the demo replaces the need for sales calls or vendor presentations entirely.
-
-**Budget**: €6,000.
-
-### Milestone 5: Reproducible builds and quality signalling
-
-**Deliverable**: Nix flake (`flake.nix`) at repo root producing a reproducible build; comprehensive CI matrix with linting (ruff), type checking (mypy), test coverage upload (Codecov), CVE scanning (pip-audit), dependency automation (Renovate), codespell, locale-parity check; OpenSSF Scorecard workflow and badge; cosign-signed v0.1.0 release with CycloneDX SBOM attached.
-
-**Cost-saving mechanism**: reproducible builds and automated supply-chain signals reduce per-deployment maintenance burden, directly addressing the EU public-sector IT-workforce shortage; signed releases with SBOM eliminate one entire category of compliance work for institutional adopters.
+**Cost-saving mechanism**: provides the institutional-readiness signal deployers require even to consider adoption; eliminates the licensing-ambiguity blocker that stalls public-sector procurement.
 
 **Budget**: €5,000.
 
-### Milestone 6: Institutional readiness and standards interop
+### Milestone 2: MCP composition and agent handoff
 
-**Deliverable**: at minimum one letter of support from a credible institutional partner (MBE service point, IQ-Netzwerk regional office, university career service, or Optionskommune Jobcenter) included in the application; an **ESCO-aligned curated reference dataset** (30 occupations + 50 skills covering the persona panel + the Bundesagentur 2025 shortage list) consumed by the `query_esco_skill` MCP tool — full ESCO taxonomy integration remains Phase 2; an **EURES-compatible projection contract** (JSON shape matching the EURES schema) — live EURES API transport remains Phase 2; admission as a Programme of The Commons Conservancy completed; documented FOSDEM 2027 talk submission plan.
+**Deliverable**: the Helpmefindthejob-side MCP composition layer — versioned tool catalogue, JSON Schemas for every tool input, an `mcp/discover` capability listing, consent-aware profile and handoff payloads, sequential-handoff tests, and documented MCP-client examples calling Helpmefindthejob employment tools.
 
-**Cost-saving mechanism**: the institutional wrapper plus standards alignment opens the door to institutional adoption channels without per-deployment custom integration work; FOSDEM presence multiplies the ecosystem awareness of the project at near-zero direct cost.
+**Current state**: a 15-tool stdio JSON-RPC catalogue (SemVer v0.2.0) with JSON-Schema-validated input and a reference housing-agent composition already ship; the funded work is the discovery capability, consent-bound handoff payloads, and the conformance/handoff test surface.
 
-**Budget**: €4,000.
+**Cost-saving mechanism**: every additional civic agent built on this MCP surface reuses the composition layer, avoiding duplicated engineering cost across the civic-tech ecosystem.
+
+**Budget**: €8,000.
+
+### Milestone 3: Guided chat workflow and priority commands
+
+**Deliverable**: turn the chat into a guided workflow surface for the highest-value user actions — visible in-chat sub-goals plus the priority commands `/export`, `/scan now`, `/schedule`, `/quota`, `/provider`, `/undo`.
+
+**Current state**: the multi-turn chat router and the 12-phase journey state machine already ship; the funded work is the guided sub-goal surface and the six priority commands wired end-to-end.
+
+**Cost-saving mechanism**: a user who can export data, trigger a scan, manage cadence, check quota, switch provider, and undo mistakes directly from chat needs no advisor hand-holding for routine actions.
+
+**Budget**: €6,000.
+
+### Milestone 4: Employment-friction intelligence and matching quality
+
+**Deliverable**: German-language-requirement warnings, recognition-status checklist, informational §24 / §16d / §18 / Blue-Card work-status flags, credential-equivalence hints, Wiedereinstieg support, long-term-unemployment cover-letter framing, ESCO-lookup improvements, a EURES-compatible export/import shape, friction-aware re-ranking, and fit-scoring regression tests.
+
+**Current state**: the persona system, AI fit-scoring, and a curated ESCO subset ship; the funded work is the friction-class intelligence layer and the matching-quality regression suite.
+
+**Cost-saving mechanism**: users see which jobs are realistically reachable for their language level, documents, recognition status, and work status — reducing repeated advisor explanations.
+
+**Budget**: €7,000.
+
+### Milestone 5: Search quality, accessibility, and persona proof
+
+**Deliverable**: verify the core journeys (sign-up, chat, job brief, CV builder, cover-letter generation, data export) across the seven-persona panel; plus keyboard-only checks, screen-reader review, reduced-motion support, mobile-flow fixes, and accessibility regression tests.
+
+**Current state**: automated axe-core audits (30 violation instances closed) and ACCESSIBILITY.md ship, with manual screen-reader testing deferred; the funded work is the manual screen-reader/keyboard pass and the seven-persona end-to-end journey proof.
+
+**Cost-saving mechanism**: reviewers and pilot partners see evidence the app works for realistic users — reducing discovery and evaluation cost for institutional adopters.
+
+**Budget**: €6,000.
+
+### Milestone 6: Operator readiness and first-pilot package
+
+**Deliverable**: backup/restore verification, basic uptime/error monitoring, audit-log search/export, a simple operator dashboard, a Docker / self-hosting package, a partner onboarding guide, and an impact-report template.
+
+**Current state**: docker-compose, reproducible Nix builds, an HMAC-chained audit log, and cosign-signed releases ship; the funded work is the operator dashboard, monitoring, onboarding guide, and pilot package.
+
+**Cost-saving mechanism**: a pilot partner can deploy, monitor, recover, review actions, and report outcomes without a dedicated DevOps team — the operational readiness an NGO needs to adopt.
+
+**Budget**: €5,000.
 
 ### Total budget
 
@@ -169,6 +181,11 @@ The full register is in `05-risks-and-stakeholders.md`. The most material to NLn
 
 ## I. Submission checklist (final 24 hours)
 
+> The operator-owned items that only you can close (deadline verification,
+> maintainer-identity slots, the signed-tag step, demo smoke against the real
+> host, compliance-posture decision) are spelled out with exact commands in
+> [`OPERATOR-HANDOFF-2026-05-30.md`](OPERATOR-HANDOFF-2026-05-30.md).
+
 - [ ] Application form completed end-to-end
 - [ ] All NLnet form questions answered with content drawn from sections A–H of this document
 - [ ] Repository at submitted URL is publicly accessible
@@ -192,7 +209,7 @@ The full register is in `05-risks-and-stakeholders.md`. The most material to NLn
 
 ## J. Post-submission immediate actions
 
-- Tag a `v0.2.0` release reflecting all work
+- Confirm the signed `v0.80.0` submission tag sits at the merged HEAD (see [`OPERATOR-HANDOFF-2026-05-30.md`](OPERATOR-HANDOFF-2026-05-30.md) §A3), then continue on SemVer from that anchor (next `v0.81.0`)
 - Archive the submitted application text in `docs/grant/submitted-application-<date>.md`
 - Continue housing-agent collaboration if not yet complete
 - Continue NGO outreach (additional letters of support strengthen any future application)

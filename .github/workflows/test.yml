@@ -1,8 +1,20 @@
-# Unit-test workflow — Ubuntu × Python 3.9 + 3.12 matrix.
+# Unit-test workflow — Ubuntu × Python 3.11 + 3.12 matrix.
+#
+# Supported-runtime floor is Python 3.11 (see pyproject.toml
+# `requires-python` and the README "Run it" section). Python 3.9 was
+# dropped from the matrix on 2026-05-31 for two compounding reasons:
+#
+#   * Security: requirements.txt pins requests>=2.33.0 (patched for
+#     GHSA-gc5v-m9x4-r6x2). requests 2.33.0+ declares Requires-Python
+#     >=3.10, so on 3.9 pip can only resolve the *vulnerable* 2.32.x —
+#     which pip-audit --strict (quality.yml) then rejects. Supporting
+#     3.9 and shipping the security pin are mutually exclusive.
+#   * Lifecycle: CPython 3.9 reached upstream security-EOL in
+#     October 2025.
 #
 # Cross-platform coverage (macOS + Windows) was attempted on the
-# §3.2 push (commit 95c0ab7). Both platforms surfaced pre-existing
-# Linux-isms across the test suite that require systematic
+# §3.2 push (commit 95c0ab7) and reverted. Both platforms surfaced
+# pre-existing Linux-isms across the test suite that require systematic
 # remediation before the matrix can broaden:
 #
 #   * Windows: many tests open files without an explicit
@@ -13,12 +25,12 @@
 #   * macOS: subprocess-based HTTP smoke tests (``test_app_smoke``,
 #     ``test_http_admin_extras``, ``test_http_phase2``) time out in
 #     ``setUpClass`` with ``RuntimeError: server did not start``
-#     due to a slower TCP-bind cycle on macOS GitHub runners.
+#     due to a slower TCP-bind cycle on macOS GitHub runners, blowing
+#     the 15-minute job budget.
 #
 # Both issues are tracked as Phase 2 cleanup work (see
-# ``docs/grant/03-post-grant.md``). The current matrix matches the
-# pre-§3.2 scope (Ubuntu only) while the cross-platform debt is
-# being paid down incrementally.
+# ``docs/grant/03-post-grant.md``). The current matrix is Ubuntu-only
+# while the cross-platform debt is paid down incrementally.
 #
 # Security note: no untrusted GitHub event payload fields (issue
 # titles, PR bodies, commit messages, head refs, etc.) flow into any
@@ -54,7 +66,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        python-version: ["3.9", "3.12"]
+        python-version: ["3.11", "3.12"]
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4.3.1
 
@@ -65,8 +77,7 @@ jobs:
           cache: pip
 
       - name: Install runtime dependencies
-        # Cross-platform install command — pip handles per-OS wheel
-        # selection automatically.
+        # pip handles per-OS wheel selection automatically.
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt

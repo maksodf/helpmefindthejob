@@ -516,7 +516,7 @@ class SaltFailFastTests(unittest.TestCase):
 
     def test_production_env_with_no_salt_exits_one(self) -> None:
         # env=production + no salt → SystemExit(1) with a stderr
-        # message naming both env vars.
+        # message naming the salt env var.
         import io
         from contextlib import redirect_stderr
 
@@ -527,7 +527,6 @@ class SaltFailFastTests(unittest.TestCase):
         self.assertEqual(ctx.exception.code, 1)
         message = stderr.getvalue()
         self.assertIn("FATAL", message)
-        self.assertIn("HELPMEFINDTHEJOB_AUDIT_SALT", message)
         self.assertIn("HELPMEFINDTHEJOB_AUDIT_SALT", message)
         self.assertIn("production", message)
 
@@ -553,7 +552,7 @@ class SaltFailFastTests(unittest.TestCase):
         self.assertEqual(salt, b"x" * 32)
 
     def test_production_env_with_configured_salt_emits_no_warning(self) -> None:
-        # PlanTowardPerfection box 1.4.2 verification: when env is
+        # Verification: when env is
         # production AND HELPMEFINDTHEJOB_AUDIT_SALT is set, the
         # `[audit_log] HELPMEFINDTHEJOB_AUDIT_SALT not set; generated
         # a per-process salt` UserWarning must NOT be emitted. Prior

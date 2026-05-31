@@ -21,7 +21,7 @@ documented honestly here even when a fix is deferred.
 This document is the project's running record of automated
 accessibility audits. Three passes have run so far (all 2026-05-19):
 
-1. **First pass — public unauthenticated surfaces** (§3.6 ce48ba5):
+1. **First pass — public unauthenticated surfaces** (commit ce48ba5):
    axe-core CLI 4.11 against 8 web-app HTML pages on local
    `python3 app.py` and 5 mkdocs-material docs pages on local
    `mkdocs serve`. 8 violations / 17 nodes pre-fix → 0 / 0 post-fix.
@@ -30,7 +30,7 @@ accessibility audits. Three passes have run so far (all 2026-05-19):
    axe-core 4.10) against 8 authenticated UI states reached by
    logging in as the seeded Aïcha persona. 14 violations pre-fix
    → 0 post-fix.
-3. **Third pass — polish trio** (this slice): closes the three
+3. **Third pass — polish trio**: closes the three
    known gaps the second pass left open.
    - **Sub-slice A: light-mode auth-surface re-run** — runner now
      accepts `--color-scheme {dark,light,both}`; 8 light-mode auth
@@ -66,7 +66,7 @@ establishes the floor + a remediation surface for incremental work.
 
 | Field | Value |
 |---|---|
-| Date | 2026-05-19 (§3.6 / ce48ba5) |
+| Date | 2026-05-19 (commit ce48ba5) |
 | Tool | [axe-core CLI](https://github.com/dequelabs/axe-core-npm) v4.11.4 (axe-core 4.11) |
 | Browser | Chrome headless (via axe-core CLI's bundled Chromium driver) |
 | Rules | axe-core's default `wcag2a, wcag2aa, wcag21a, wcag21aa, best-practice` set |
@@ -77,7 +77,7 @@ establishes the floor + a remediation surface for incremental work.
 
 | Field | Value |
 |---|---|
-| Date | 2026-05-19 (auth-surface slice, follow-on to §3.6) |
+| Date | 2026-05-19 (auth-surface slice) |
 | Tool | [axe-playwright-python](https://pypi.org/project/axe-playwright-python/) v0.1.7 + [Playwright](https://playwright.dev/python/) v1.60.0 |
 | Browser | Chromium (Playwright's bundled chrome-headless-shell) |
 | axe-core version | 4.10 (bundled inside axe-playwright-python 0.1.7) |
@@ -194,7 +194,7 @@ mirror; canonical source remains `compliance/*.md` at repo root):**
 | **Second-pass totals** | **0** | **8** | **6** | **0** |
 
 Combined across both passes: **22 violation instances pre-fix → 0
-post-fix** in the §3.6 + auth-surface slices. Thresholds NOT
+post-fix** in the first-pass + auth-surface slices. Thresholds NOT
 manipulated. axe-core's default rule set preserved.
 
 ### Third-pass surfaces — polish trio
@@ -288,7 +288,7 @@ parts of the app are covered?" → 25. The changelog row uses
 "captures" deliberately to signal it's the larger of the two
 counts.
 
-## Fixes shipped in the §3.6 first-pass slice
+## Fixes shipped in the first-pass slice
 
 ### Fix 1 — App landing page `<main>` landmark
 
@@ -634,7 +634,7 @@ cleared (moderate=0).
 | Screen-reader testing (VoiceOver, NVDA, Orca) | medium | Full app | Requires manual testing; not automatable | NLnet HAN University audit (post-Commons-Conservancy admission) |
 | Mobile / responsive accessibility (touch targets, zoom) | low | Full app | axe-core CLI tests desktop viewport only; the Playwright runner also tested 1280×800 only | Phase 2 |
 | Light-mode dynamic-state coverage | low | Dynamic states under light scheme | Sub-slice C ran dynamic states in dark mode only; the light-mode fixes from sub-slice A propagate to the same code paths but the explicit verification deferred to keep the runner's wall-clock budget reasonable | Phase 2 (extend runner to run dynamic states in both schemes) |
-| Other compliance/*.md files not in mkdocs site | low | `compliance/{risk-management-plan,data-governance,technical-documentation,audit-log-schema,human-oversight-guide,accuracy-and-bias-testing,fundamental-rights-impact-assessment-template,eu-database-registration-template,README}.md` | Technical compliance artefacts, not user-facing surfaces; GitHub-rendered. Sub-slice B intentionally scoped to the two user-facing files per the maintainer's §3.6 framing. Adding more would require rewriting their cross-tree links (compliance/technical-documentation alone has 8) | Phase 2 (if any becomes user-facing) |
+| Other compliance/*.md files not in mkdocs site | low | `compliance/{risk-management-plan,data-governance,technical-documentation,audit-log-schema,human-oversight-guide,accuracy-and-bias-testing,fundamental-rights-impact-assessment-template,eu-database-registration-template,README}.md` | Technical compliance artefacts, not user-facing surfaces; GitHub-rendered. Sub-slice B intentionally scoped to the two user-facing files per the maintainer's accessibility-audit framing. Adding more would require rewriting their cross-tree links (compliance/technical-documentation alone has 8) | Phase 2 (if any becomes user-facing) |
 
 ## NLnet support services (post-Commons-Conservancy admission)
 
@@ -780,8 +780,7 @@ scheme:
 - `transparency-notice.json`
 - `deployer-operating-manual.json`
 
-The two slice commit messages — §3.6 (`§3.6 accessibility audit +
-ACCESSIBILITY.md (first automated pass + remediation plan)`) and
+The two slice commit messages — the first-pass accessibility audit and
 the auth-surface follow-on — capture the violation counts at
 commit time. Each subsequent dated audit appends its own counts
 to the "Current state" tables.

@@ -11,7 +11,7 @@
 #   * Locale bundles, outreach drafts, glossary, German legal pages —
 #     German content is intentional and triggers codespell's
 #     English-only dictionary.
-#   * private/ — gitignored commercial-vision docs (German content).
+#   * private/ — gitignored internal-only docs (German content).
 #   * PDF binary files — extraction noise produces false positives.
 #   * Lock files, JSON fixtures, SVG/CSS/minified assets, data —
 #     no contributor-written text.

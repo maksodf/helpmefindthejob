@@ -103,8 +103,8 @@ Each risk is rated **Likelihood** (low / medium / high) × **Severity** (low / m
 **Description**: A fit score that the user cannot interpret is a fundamental-rights concern: the user has the right to understand the basis of any individual decision affecting them (Article 86 of the AI Act and Article 22 of GDPR).
 
 **Mitigation**:
-- Every fit score is presented with **per-criterion breakdown** (location-fit, role-seniority-fit, skill-match, language-fit, recognition-fit, sector-shortage). Each criterion has a one-sentence rationale derived from structured data, not from the AI's prose.
-- The user can request a fuller explanation via the [`/api/jobs/{id}/explain`](../app.py) endpoint, which returns a structured rationale plus the underlying ESCO mappings the score used.
+- Every fit score is presented with **per-criterion breakdown** — four sub-scores (skills-match, experience/seniority-fit, location+language-fit, friction-fit), each 0–25 and summing to the 0–100 total (`build_auto_fit_prompt` / `parse_auto_fit_output`). Each score carries a one-sentence rationale and a gap list from the model.
+- Each fit score is surfaced with a one-line AI rationale and a gap list (`parse_auto_fit_output`). A fuller explanation — including the underlying ESCO mappings — is available from the deployer's oversight person on request (Article 86); a self-service explanation endpoint is a Phase-2 roadmap item.
 - The transparency notice tells the user about this right at first run.
 
 **Residual risk**: The underlying AI model's contribution to scoring is partially opaque (it is a learned model). We mitigate by anchoring the user-visible explanation to structured rule-based criteria and using the AI only for re-ranking and free-text rationale generation, not as the score's source of truth.
@@ -123,7 +123,7 @@ Each risk is rated **Likelihood** (low / medium / high) × **Severity** (low / m
 **Mitigation**:
 - The system **never** auto-submits an application. Every external action — sending an application to a recruiter, accepting an interview slot, signing an agreement — requires explicit user confirmation, mediated by the 12-phase journey state machine ([`company_discovery/journey.py`](../company_discovery/journey.py)).
 - The MCP server's `record_user_outcome` tool requires user-confirmed input and is logged in the audit log.
-- The kill-switch (Article 14, see [`human-oversight-guide.md`](human-oversight-guide.md)) lets the deployer disable AI features and fall back to deterministic templates if needed.
+- The kill-switch (Article 14, see [`human-oversight-guide.md`](human-oversight-guide.md)) lets the deployer disable all app-initiated AI; each AI-assisted feature then falls back to its no-AI path (a deterministic templated skeleton for letter drafting; a BYO-AI handoff prompt for fit-scoring and CV-tailoring).
 
 **Residual risk**: A deployer mis-configuring the system could theoretically introduce auto-submit behaviour. We prevent this by removing the code path entirely; the journey state machine cannot transition to "submitted" without a user-confirmation event in the audit log.
 

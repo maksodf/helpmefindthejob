@@ -66,8 +66,7 @@ The five-persona most-acute-use-case panel (Aïcha, Yusuf, Olga, Mahmoud,
 Maria) referenced across the project narrative is a composite informed
 by maintainer-known testers and by general published research on
 EU-mobile and refugee labor-market experience. Two additional
-wider-friction-class personas (Käthe, Tobias) joined the panel per
-Decision 21 in `docs/grant/04-research-and-decisions.md`; their
+wider-friction-class personas (Käthe, Tobias) joined the panel; their
 composites are informed by published research on returning-after-
 caregiving workforce re-entry and on commercial-to-civic-tech career
 changes, and they demonstrate that the project's architecture serves

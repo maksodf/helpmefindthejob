@@ -6,7 +6,7 @@
 The two user-facing compliance artefacts (transparency-notice +
 deployer-operating-manual) live canonically at the repo root under
 ``compliance/`` so they're discoverable from GitHub UI. The mkdocs
-site wants them as native pages so the §3.6 WCAG 2.2 AA audit can
+site wants them as native pages so the WCAG 2.2 AA audit can
 exercise them. This hook copies them into ``docs/compliance/`` at
 the ``on_pre_build`` event so the rendered site has up-to-date
 content without any file-system symlinks (which behave inconsistently

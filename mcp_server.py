@@ -97,6 +97,13 @@ ROOT = Path(__file__).parent
 DATA_ROOT = Path(get_env("HELPMEFINDTHEJOB_DATA_DIR", str(ROOT / "data")))
 DATA_PATH = DATA_ROOT / "company_discovery.sqlite3"
 
+# Identity of the agent currently composing with this server, captured from
+# ``clientInfo.name`` at ``initialize`` and attached to each tool call's
+# Article-12 audit record as ``composition_source`` so the audit trail shows
+# *which* civic agent drove each cross-agent call. stdio serves one client per
+# process, so a module-level value is the correct lifetime here.
+_COMPOSITION_SOURCE: str | None = None
+
 
 def jsonable(value: Any) -> Any:
     if isinstance(value, datetime):
@@ -148,11 +155,21 @@ def handle_request(
 ) -> dict[str, Any] | None:
     message_id = message.get("id")
     method = message.get("method")
-    params = message.get("params") or {}
+    params = message.get("params")
+    if not isinstance(params, dict):  # JSON-RPC positional (array) params, or junk
+        params = {}
 
     if method == "notifications/initialized":
         return None
     if method == "initialize":
+        global _COMPOSITION_SOURCE
+        client_info = params.get("clientInfo")
+        client_name = client_info.get("name") if isinstance(client_info, dict) else None
+        _COMPOSITION_SOURCE = (
+            client_name.strip()[:120]
+            if isinstance(client_name, str) and client_name.strip()
+            else None
+        )
         return rpc_response(
             message_id,
             {
@@ -285,6 +302,7 @@ def _emit_tool_call_audit(
             tool_name=name,
             arguments_hash=args_hash,
             response_size_bytes=response_size_bytes,
+            composition_source=_COMPOSITION_SOURCE,
             duration_ms=duration_ms,
             outcome=outcome,
             error_class=error_class,
@@ -340,7 +358,15 @@ def run_stdio(tools: CompanyDiscoveryMCPTools | None = None) -> None:
             except json.JSONDecodeError as error:
                 response = rpc_error(None, -32700, str(error))
             else:
-                response = handle_request(message, active_tools)
+                if not isinstance(message, dict):
+                    response = rpc_error(
+                        None, -32600, "Invalid Request: message must be a JSON object"
+                    )
+                else:
+                    try:
+                        response = handle_request(message, active_tools)
+                    except Exception as error:  # noqa: BLE001 - one bad frame must never kill the loop
+                        response = rpc_error(message.get("id"), -32603, f"Internal error: {error}")
             if response is not None:
                 sys.stdout.write(json.dumps(jsonable(response), ensure_ascii=False) + "\n")
                 sys.stdout.flush()

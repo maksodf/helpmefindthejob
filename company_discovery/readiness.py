@@ -14,7 +14,7 @@ cares about for a sellable launch.
 Each signal returns a status of:
 
 - ``ok`` — configured and active
-- ``partial`` — usable but not production-grade (e.g. console email, manual billing)
+- ``partial`` — usable but not production-grade (e.g. console email)
 - ``missing`` — unconfigured or external blocker
 - ``unknown`` — unable to determine without running side effects
 
@@ -222,36 +222,6 @@ def _monitoring_signal() -> ReadinessSignal:
     )
 
 
-def _billing_signal() -> ReadinessSignal:
-    backend = (get_env("HELPMEFINDTHEJOB_BILLING_BACKEND") or "manual").strip().casefold()
-    if backend == "stripe":
-        api_key = bool(get_env("HELPMEFINDTHEJOB_STRIPE_API_KEY"))
-        price_team = bool(get_env("HELPMEFINDTHEJOB_STRIPE_PRICE_TEAM"))
-        price_org = bool(get_env("HELPMEFINDTHEJOB_STRIPE_PRICE_ORG"))
-        if api_key and (price_team or price_org):
-            return ReadinessSignal(
-                id="billing",
-                label="Billing (Stripe)",
-                status="ok",
-                summary="Stripe credentials configured.",
-                detail={"hasApiKey": True, "hasPriceTeam": price_team, "hasPriceOrg": price_org},
-            )
-        return ReadinessSignal(
-            id="billing",
-            label="Billing (Stripe)",
-            status="partial",
-            summary="Stripe backend selected; some env vars missing.",
-            detail={"hasApiKey": api_key, "hasPriceTeam": price_team, "hasPriceOrg": price_org},
-        )
-    return ReadinessSignal(
-        id="billing",
-        label="Billing (Manual)",
-        status="partial",
-        summary="Manual billing is fine for a pilot. Switch to Stripe before charging customers.",
-        detail={"backend": "manual"},
-    )
-
-
 def _legal_signal() -> ReadinessSignal:
     reviewed = (get_env("HELPMEFINDTHEJOB_LEGAL_REVIEWED") or "").strip().casefold()
     if reviewed in TRUE_VALUES:
@@ -383,7 +353,6 @@ def build_report(
         _redact_email_backend(),
         _backup_signal(data_dir=data_dir),
         _monitoring_signal(),
-        _billing_signal(),
         _legal_signal(),
         _scheduler_signal(scheduler_path=scheduler_path, active_jobs=active_scheduler_jobs),
         _quota_signal(),

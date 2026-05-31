@@ -186,9 +186,6 @@ day; the per-domain bucket is per UTC hour.
 - Email invite + forgot/reset password flows are wired (see Email
   section above). They run on whichever transport you configure
   (`console` or `smtp`).
-- Billing has a working manual backend and a Stripe Checkout backend
-  (`/api/admin/billing/checkout`). Real Stripe charges still require
-  a Stripe account and the env vars listed above.
 - The watchlist scheduler runs inside the app process but persists
   state in `data/scheduler.sqlite3` and is crash-safe via WAL +
   orphan recovery. Replace with a dedicated worker if scan volume

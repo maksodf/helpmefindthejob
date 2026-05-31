@@ -85,10 +85,10 @@ Until that activation: `https://github.com/maksodf/helpmefindthejob`
 > with capable people who cannot get hired — blocked not by
 > capability but by friction between what they can do and what
 > the labour-market system recognises. The friction is most acute
-> for migrants and EU-mobile workers but also affects career
-> changers, returning workers, the long-term unemployed, and
-> anyone navigating an employment system outside their familiar
-> bureaucratic context.
+> for migrants and EU-mobile workers — among the labour market's
+> most under-represented groups — but also affects career changers,
+> returning workers, the long-term unemployed, and anyone
+> navigating an unfamiliar bureaucratic system.
 >
 > **Helpmefindthejob** is an open-source, multilingual,
 > privacy-preserving civic employment agent that captures
@@ -100,18 +100,14 @@ Until that activation: `https://github.com/maksodf/helpmefindthejob`
 > residency, education) to form a coherent multi-domain civic
 > assistant. The codebase is Apache-2.0-licensed, self-hostable,
 > encrypted at rest (ChaCha20-Poly1305), runs on the user's
-> choice of AI provider (BYO-AI abstraction with seven provider
-> implementations — Ollama exercised live in Phase 1; cloud
-> providers covered by mocked dispatcher tests pending live-key
-> verification in Phase 2), and ships an EU AI Act compliance pack
+> choice of AI provider (BYO-AI abstraction across eight AI
+> providers, including a fully offline path via Ollama), and ships
+> an EU AI Act compliance pack
 > designed for the 2 August 2026 high-risk-AI enforcement date.
 > Articles 12 (audit log) and 14 (human-oversight admin endpoint)
 > are wired in code; Articles 9, 10, 11 + Annex IV, 13, 15, 27
 > and 49 are deployer-doctrine artefacts and templates in
-> `compliance/` (the methodology under Article 15 is at 33%
-> execution — 2 of 6 scenario classes shipped in four dated
-> reports; the remaining four classes execute during the
-> partner-NGO pilot in Phase 2 per `ROADMAP.md`).
+> `compliance/`.
 >
 > Hosted as a Programme of The Commons Conservancy. Every
 > feature is evaluated against a dual measure: improve outcomes
@@ -123,14 +119,14 @@ Until that activation: `https://github.com/maksodf/helpmefindthejob`
 ## Field 10 — Prior involvement (optional)
 
 Phase 1 work already shipped and verifiable in the public
-repository at <https://github.com/maksodf/helpmefindthejob> (90+
+repository at <https://github.com/maksodf/helpmefindthejob> (400+
 commits across the 4-week grant-readiness sprint, May 2026):
 
 - **Apache 2.0 + CLA + governance pack**: LICENSE, NOTICE,
   CONTRIBUTING.md, CODE_OF_CONDUCT.md (Contributor Covenant 2.1),
   SECURITY.md, SUPPORT.md, AUTHORS.md, ACKNOWLEDGMENTS.md,
   TRADEMARK.md, cla.md.
-- **EU AI Act compliance pack**: 14 documents under `compliance/`
+- **EU AI Act compliance pack**: 23 documents under `compliance/`
   covering AI Act Articles 9, 10, 11 + Annex IV, 12, 13, 14, 15 (incl.
   15(5) resilience), 22, 26, 27, 49, 50, 73, 86 plus GDPR Articles
   5, 20, 22, 28, 30, 32, 33, 35 — see [`compliance/INDEX.md`](compliance/INDEX.md)
@@ -155,22 +151,27 @@ commits across the 4-week grant-readiness sprint, May 2026):
   [`compliance/audit-log-key-rotation.md`](compliance/audit-log-key-rotation.md)
   (9 sections; active / sealed / destroyed key lifecycle; dated
   rotation log).
-- **MCP server v0.2.0** with 13-tool catalogue, JSON-Schema
-  validated input, stdio JSON-RPC transport — `docs/mcp-server.md`
-  documents the contract.
+- **MCP server** with a 15-tool catalogue (catalogue SemVer
+  v0.2.0), JSON-Schema validated input, stdio JSON-RPC transport —
+  `docs/mcp-server.md` documents the contract.
 - **Accessibility pack**: WCAG 2.2 AA first-pass + auth-surface
   audit + light-mode + dynamic-state + compliance markdown audit
   via axe-core CLI + axe-playwright-python. 30 violation
-  instances closed across 22 audited surfaces; full audit
+  instances closed across all 33 audited captures; full audit
   evidence in `ACCESSIBILITY.md`.
 - **Reproducible build**: Nix flake at repo root pinning
   `nixos-25.05` nixpkgs commit; `nix flake check` green;
   `nix develop --command python3 -m unittest discover -s tests`
-  runs the full 1029-test suite under Python 3.12.
-- **Signed releases + SBOM**: v0.1.0 source tarball cosign-signed
-  (long-lived ECDSA P-256, model b — keyless via GH Actions OIDC
-  planned for v0.2.0+); CycloneDX 1.6 SBOM (91 components)
-  attached to the GitHub Release.
+  runs the full 3,359-test suite (26 skipped; live count
+  2026-05-30) under Python 3.12.
+- **Signed releases + SBOM**: the v0.1.0 source tarball is
+  cosign-signed (long-lived ECDSA P-256; the `.sigstore` bundle and
+  public key are committed under `docs/releases/`) with a CycloneDX
+  1.6 SBOM (96 components) attached to the GitHub Release. The
+  current v0.80.0 submission tag ships an updated CycloneDX SBOM
+  (8 direct dependencies) and a documented signing recipe
+  (`docs/releases/v0.80.0-signing.md`); keyless GH Actions OIDC
+  signing is the v0.80.0+ target.
 - **RFC 9116 security.txt** at `/.well-known/security.txt`
   served by `app.py`'s static handler; curl-probe verified.
 - **OpenSSF Scorecard workflow** with all six workflow files
@@ -192,171 +193,149 @@ the deliverables rather than maximising what the fund permits.
 
 ## Field 12 — Budget usage explanation
 
-Six milestones, results-only, no progress reports — per NLnet's
-standard model. Each milestone is a verifiable public deliverable;
-payment requested upon delivery (artefact reachable from the
-public repository or the Conservancy account).
+Six milestones, results-only, no progress reports — per NLnet's standard
+model. Each milestone is a verifiable public deliverable; payment is
+requested upon delivery (artefact reachable from the public repository). All
+work is performed by the maintainer; the budget funds maintainer time only —
+no third-party fees, no per-seat or hardware costs. Blended rate €60/hour;
+€37,000 ≈ 617 developer-hours across a 9-month execution window measured from
+the grant/MoU signature (not the application date), part-time alongside
+existing obligations.
 
-### Milestone 1 — Legal + narrative foundations (€4,000)
+The kernel already exists and is the evidence base (see Field 9 and the
+public repository): an Apache-2.0 MCP server with a 15-tool catalogue, a
+BYO-AI abstraction across eight AI providers, encryption-at-rest
+(ChaCha20-Poly1305) with an HMAC-SHA256 audit chain, a compliance scaffold,
+reproducible Nix builds with signed releases, a curated ESCO subset, and
+EN+DE localisation. The milestones below take that kernel from a working
+prototype to an institution-ready, pilot-deployable civic employment
+assistant.
 
-**Deliverable**: complete governance pack already shipped (Apache
-2.0 LICENSE, CLA at `cla.md`, CODE_OF_CONDUCT.md, CONTRIBUTING.md,
-SECURITY.md, SUPPORT.md, AUTHORS.md, ACKNOWLEDGMENTS.md,
-TRADEMARK.md, NOTICE), RFC 9116 `/.well-known/security.txt` served
-by the app, GitHub repository housekeeping (description, topics,
-Discussions enabled, branch-protection rules — last item
-maintainer-applied per the `scorecard-status-2026-05-19.md`
-finding), README rewritten with civic-commons positioning (per
-Decision 21: friction-class architecture + seven-persona panel
-anchor).
-**Cost-saving mechanism**: provides the institutional-readiness
-signal that deployers require to even consider adoption;
-eliminates the licensing-ambiguity blocker that prevents
-public-sector procurement engagement.
-**Acceptance**: reviewer browses the public repository and
-confirms every named artefact present, well-formed, and
-cross-referenced.
+### Milestone 1 — Legal, governance, and compliance trust package (€5,000 / ~83h)
 
-### Milestone 2 — MCP composition reference (€8,000)
+**Deliverable**: license / NOTICE / CLA consistency; a security-disclosure
+process (RFC 9116 `security.txt` + `SECURITY.md`); privacy and support
+documentation; a Data Processing Agreement template; a documented
+human-review pathway; and a compliance index tying each artefact to its legal
+basis.
+**Current state**: the Apache-2.0 LICENSE, CLA, governance pack, and
+`security.txt` already ship; the funded work is verifying, aligning, and
+packaging the legal/compliance layer so an institution can review it without
+external counsel.
+**Cost-saving mechanism**: provides the institutional-readiness signal
+deployers require even to consider adoption, and removes the
+licensing-ambiguity blocker that stalls public-sector procurement.
+**Acceptance**: reviewer browses the public repository and confirms each named
+artefact is present, well-formed, and cross-referenced from the compliance
+index.
 
-**Deliverable**: published MCP server documentation
-(`docs/mcp-server.md`) with versioned 13-tool catalogue (v0.2.0)
-+ JSON Schema for every tool's input; one concrete reference
-integration with a parallel open civic agent (housing — Option A
-mock stub default per Decision 20, with Option B real-integration
-path documented in the same MCP doc for the maintainer's friend's
-agent if collaboration confirms); MCP-integration CI test in
-`.github/workflows/mcp-integration.yml` exercising the
-composition surface; `STANDARDS.md` citing MCP 2024-11-05,
-schema.org JobPosting, ESCO occupations + skills, EURES schema,
-JSON Schema 2020-12, ISO 8601, ISO 639-1, RFC 7807, RFC 9116.
-**Cost-saving mechanism**: every additional civic agent built on
-top of this MCP surface reuses our composition layer, avoiding
-duplicated engineering cost across the civic-tech ecosystem.
-**Acceptance**: reviewer runs `python3 -m unittest tests.test_phase11_mcp` (or
-the MCP-integration workflow) against the public repository and
-observes the composition test green.
+### Milestone 2 — MCP composition and agent handoff (€8,000 / ~133h)
 
-### Milestone 3 — EU AI Act compliance pack (€10,000)
+**Deliverable**: the Helpmefindthejob-side MCP composition layer — a versioned
+tool catalogue, JSON Schemas for every tool input, an `mcp/discover`
+capability listing, consent-aware profile and handoff payloads,
+sequential-handoff tests, and documented examples of an MCP client calling
+Helpmefindthejob employment tools.
+**Current state**: a 15-tool stdio JSON-RPC catalogue (SemVer v0.2.0) with
+JSON-Schema-validated input and a runnable reference housing-agent composition
+already ship; the funded work is the discovery capability, the consent-bound
+handoff payloads, and the conformance/handoff test surface.
+**Cost-saving mechanism**: every additional civic agent built on this MCP
+surface reuses the composition layer instead of duplicating it across the
+civic-tech ecosystem.
+**Acceptance**: reviewer runs the MCP-integration test
+(`python3 -m unittest tests.test_phase11_mcp`, or the MCP-integration
+workflow) against the public repository and observes the composition +
+handoff tests green.
 
-**Deliverable**: complete `compliance/` directory shipping risk
-management plan (Article 9), data governance (Article 10),
-technical documentation aligned with Annex IV (Article 11), audit
-log infrastructure with documented schema (Article 12),
-transparency notice + deployer operating manual (Article 13),
-human-oversight guide (Article 14), accuracy + bias testing
-methodology with reproducible result reports (Article 15),
-pre-filled FRIA template (Article 27) + EU AI database
-registration template (Article 49).
-**Cost-saving mechanism**: institutions deploying the agent
-inherit a compliant configuration, avoiding the consulting cost
-otherwise required to bring an employment-AI deployment into AI
-Act compliance for the 2 August 2026 enforcement date. (Specific
-consulting-cost ranges are industry estimates — see verification
-table below.)
-**Acceptance**: reviewer browses the `compliance/` directory and
-confirms all 10 files present with substantive content; reviewer
-runs the opt-in bias-methodology test `DIRECTJOB_RUN_BIAS_METHODOLOGY=1
-python3 -m unittest tests.test_bias_methodology` and observes
-the published reports' numbers reproduce within model
-non-determinism tolerance.
+### Milestone 3 — Guided chat workflow and priority commands (€6,000 / ~100h)
 
-### Milestone 4 — Public demo deployment + accessibility (€6,000)
+**Deliverable**: turn the chat into a guided workflow surface for the
+highest-value user actions — visible in-chat sub-goals plus the priority
+commands `/export`, `/scan now`, `/schedule`, `/quota`, `/provider`, `/undo`.
+**Current state**: the multi-turn chat router and the 12-phase job-search
+journey state machine already ship; the funded work is the guided sub-goal
+surface and the six priority commands wired end-to-end.
+**Cost-saving mechanism**: a user who can export data, trigger a scan, manage
+cadence, check quota, switch provider, and undo mistakes directly from chat
+needs no advisor hand-holding for routine actions.
+**Acceptance**: reviewer signs in to the demo, issues each priority command in
+chat, and observes the documented result; the command set is covered by
+tests.
 
-**Deliverable**: live public demo at a stable URL running the
-canonical reference implementation, with the seven-persona panel
-pre-seeded (Aïcha, Yusuf, Olga, Mahmoud, Maria — most-acute
-migrant; Käthe + Tobias — wider-friction-class per Decision 21);
-mkdocs-material documentation site at
-<https://maksodf.github.io/helpmefindthejob/>; `ACCESSIBILITY.md`
-with a **WCAG 2.2 AA target** + automated audit evidence across
-4 dated passes (unauthenticated surfaces axe-core CLI + authenticated
-surfaces Playwright + axe-playwright-python + light-mode +
-dynamic-state + compliance markdown + post-rename re-audit;
-32 violation instances closed; 0/0/0/0 across 33 audited captures).
-**Honesty note**: axe-core documentation itself states automated
-tooling catches ~20–50 % of WCAG issues; full WCAG 2.2 AA
-conformance requires manual screen-reader + keyboard + cognitive
-review (HAN University manual review is the planned next pathway
-post-Commons-Conservancy admission).
-**Cost-saving mechanism**: reduces the discovery + evaluation
-cost for any institutional adopter; the demo replaces the need
-for vendor-style sales calls or presentations.
-**Acceptance**: reviewer visits the demo URL, signs in as Aïcha
-(seeded credentials in `scripts/seed-personas.py`), exercises the
-chat surface end-to-end.
+### Milestone 4 — Employment-friction intelligence and matching quality (€7,000 / ~117h)
 
-### Milestone 5 — Reproducible builds + supply-chain (€5,000)
+**Deliverable**: employment-specific intelligence in matching and application
+support — German-language-requirement warnings, a recognition-status
+checklist, informational §24 / §16d / §18 / Blue-Card work-status flags,
+credential-equivalence hints, Wiedereinstieg support, long-term-unemployment
+cover-letter framing, ESCO-lookup improvements, a EURES-compatible
+export/import shape, friction-aware job re-ranking, and fit-scoring regression
+tests.
+**Current state**: the persona system, AI fit-scoring, and a curated ESCO
+subset ship; the funded work is the friction-class intelligence layer and the
+matching-quality regression suite.
+**Cost-saving mechanism**: users see which jobs are realistically reachable for
+their language level, documents, recognition status, qualifications, and work
+status — reducing the repeated advisor explanations a Beratungsstelle would
+otherwise carry.
+**Acceptance**: reviewer runs the fit-scoring + friction-flag test modules
+green and inspects a worked persona example showing realistic-reachability
+signals.
 
-**Deliverable**: `flake.nix` + `flake.lock` at repo root pinning
-`nixos-25.05` nixpkgs commit; `.github/workflows/quality.yml` with
-ruff lint + format + mypy strict subset + coverage upload +
-pip-audit; `.github/workflows/scorecard.yml` with all six workflow
-files SHA-pinned per OpenSSF "pinned-dependencies"; cosign-signed
-`v0.1.0` source tarball + CycloneDX 1.6 SBOM (`v0.1.0-sbom.json`,
-91 components) attached to the GitHub Release;
-`docs/releases/v0.1.0-signing.md` with the full verification
-recipe + key-rotation policy.
-**Cost-saving mechanism**: reproducible builds + supply-chain
-signals reduce per-deployment maintenance burden; signed releases
-with SBOM eliminate one entire category of compliance work for
-institutional adopters.
-**Acceptance**: reviewer runs `nix develop --command python3 -m
-unittest discover -s tests` from a fresh clone + the documented
-`cosign verify-blob ... --insecure-ignore-tlog` command and
-observes both green.
+### Milestone 5 — Search quality, accessibility, and persona proof (€6,000 / ~100h)
 
-### Milestone 6 — Institutional readiness + standards interop (€4,000)
+**Deliverable**: verify the core journeys (sign-up, chat, job brief, CV
+builder, cover-letter generation, data export) across the seven-persona panel;
+plus keyboard-only checks, a screen-reader review, `prefers-reduced-motion`
+support, mobile-flow fixes, and accessibility regression tests.
+**Current state**: automated axe-core audits (30 violation instances closed
+across audited surfaces) and `ACCESSIBILITY.md` ship, with manual
+screen-reader testing explicitly deferred; the funded work is the manual
+screen-reader/keyboard pass and the seven-persona end-to-end journey proof.
+**Cost-saving mechanism**: reviewers and pilot partners see evidence the app
+works for realistic users, not only in technical demos — reducing the
+discovery and evaluation cost for any institutional adopter.
+**Acceptance**: reviewer visits the demo, signs in as a seeded persona, and
+exercises the journey end-to-end; the accessibility regression tests are
+green.
 
-**Deliverable**: at minimum one letter of support from a credible
-institutional partner (target: AWO Charlottenburg-Wilmersdorf
-FIM Pangea-Haus, RINWA Berlin / La Red, or TU Berlin Career
-Service — drafts at `docs/grant/outreach-drafts/`, send-gate
-readiness in `outreach-readiness-2026-05-19.md`); the curated
-ESCO 30-occupation + 50-skill reference dataset
-(`reference/esco/`) consumed by the MCP `query_esco_skill` tool;
-EURES schema projection contract documented in
-`docs/esco-integration.md`; admission as a Programme of The
-Commons Conservancy in active application.
-**Cost-saving mechanism**: institutional wrapper + standards
-alignment opens institutional adoption channels without
-per-deployment custom integration work.
-**Acceptance**: reviewer inspects `letters-of-support/` (or, if
-no letter received by submission, the outreach-tracker entry in
-`11-institutional-outreach.md` showing the active discussion);
-reviewer inspects the ESCO reference dataset + the EURES export
-contract.
+### Milestone 6 — Operator readiness and first-pilot package (€5,000 / ~83h)
+
+**Deliverable**: prepare the app for a first institutional pilot —
+backup/restore verification, basic uptime/error monitoring, audit-log
+search/export, a simple operator dashboard, a Docker / self-hosting package, a
+partner onboarding guide, and an impact-report template.
+**Current state**: docker-compose, reproducible Nix builds, an HMAC-chained
+audit log, and cosign-signed releases ship; the funded work is the
+operator-facing dashboard, monitoring, onboarding guide, and pilot package.
+**Cost-saving mechanism**: a pilot partner can deploy, monitor, recover, review
+actions, and report outcomes without a dedicated DevOps team — the operational
+readiness an NGO needs to adopt.
+**Acceptance**: reviewer follows the self-hosting package to a running instance
+and confirms the operator dashboard, audit-log export, and impact-report
+template are present.
 
 ### Total: €37,000
 
-| Milestone | Cost | Duration |
-|---|---|---|
-| 1 — Legal + governance | €4,000 | shipped |
-| 2 — MCP composition | €8,000 | shipped |
-| 3 — AI Act compliance pack | €10,000 | shipped |
-| 4 — Demo + accessibility | €6,000 | shipped (live deploy pending merge-to-main) |
-| 5 — Reproducible builds | €5,000 | shipped |
-| 6 — Institutional readiness | €4,000 | partially shipped (letter outreach pending Week 4 send) |
-| **Total** | **€37,000** | grant covers retrospective sprint work + outstanding institutional readiness |
+| Milestone | Cost | Hours |
+|---|---:|---:|
+| 1 — Legal, governance, and compliance trust package | €5,000 | ~83h |
+| 2 — MCP composition and agent handoff | €8,000 | ~133h |
+| 3 — Guided chat workflow and priority commands | €6,000 | ~100h |
+| 4 — Employment-friction intelligence and matching quality | €7,000 | ~117h |
+| 5 — Search quality, accessibility, and persona proof | €6,000 | ~100h |
+| 6 — Operator readiness and first-pilot package | €5,000 | ~83h |
+| **Total** | **€37,000** | **~617h** |
 
-The honest framing: the bulk of the engineering work has been
-delivered during the 4-week pre-submission sprint. The grant
-covers maintainer time spent on that work + the remaining
-institutional readiness (letters of support, Conservancy
-admission, post-merge Pages activation, outreach send). This is
-the **frugal-by-default** posture per Decision 10 — €37k is
-below the €50k first-proposal cap and reflects the genuine cost
-of the delivered work.
-
-**Rate basis (explicit)**: one solo maintainer-developer — no
-employees, no overhead/F&A, no per-seat or hardware costs.
-Blended labour rate **€60/hour**, well below EU commercial
-senior-developer rates. €37,000 ≈ **617 developer-hours**,
-distributed across the six milestones in proportion to the
-amounts above: M1 ~67h, M2 ~133h, M3 ~167h, M4 ~100h, M5 ~83h,
-M6 ~67h. No hardware purchase (existing equipment + an existing
-low-cost VM); no travel budgeted (any NGI/standards-meeting
-travel requested separately only if relevant).
+**Rate basis (explicit)**: one solo maintainer-developer — no employees, no
+overhead/F&A, no per-seat or hardware costs, no third-party fees. Blended
+labour rate **€60/hour**, well below EU commercial senior-developer rates.
+€37,000 ≈ **617 developer-hours** (€37,000 ÷ €60/h) across a **9-month**
+execution window measured from grant/MoU signature, part-time alongside
+existing obligations. No hardware purchase (existing equipment plus an
+existing low-cost VM); no travel budgeted. €37k is below the €50k
+first-proposal cap and is frugal-by-default per Decision 10.
 
 ---
 
@@ -405,9 +384,9 @@ substantial.
 | Open-source (Apache 2.0) | no | no | no | **yes** |
 | Self-hostable on commodity hardware | no | no | mixed | **yes** (deployment-recipe.md + flake.nix) |
 | User-sovereign data (encrypted at rest) | no | no | no | **yes** (ChaCha20-Poly1305 AEAD) |
-| BYO-AI (no vendor lock-in) | no | no | no | **yes** (OpenAI / Anthropic / Gemini / DeepSeek / Ollama-offline) |
-| MCP-composable with other civic agents | no | no | no | **yes** (13-tool v0.2.0 catalogue, JSON-Schema gated) |
-| EU AI Act compliance pack | no | partial | no | **yes** (`compliance/`, 10 artefacts) |
+| BYO-AI (no vendor lock-in) | no | no | no | **yes** (8: OpenAI / Anthropic / Gemini / DeepSeek / OpenRouter / Ollama-offline / Codex CLI / Claude Code) |
+| MCP-composable with other civic agents | no | no | no | **yes** (15-tool v0.2.0 catalogue, JSON-Schema gated) |
+| EU AI Act compliance pack | no | partial | no | **yes** (`compliance/`, 23 artefacts) |
 | WCAG 2.2 AA audit evidence | no | partial | no | **yes** (`ACCESSIBILITY.md`, 30 → 0 findings) |
 | Reproducible build (Nix flake) | no | no | no | **yes** (`flake.nix` + `flake.lock`) |
 | Signed releases + SBOM | no | no | no | **yes** (cosign + CycloneDX 1.6) |
@@ -436,75 +415,85 @@ CV-tailoring, or institutional-deployer compliance.
 
 ## Field 15 — Technical challenges (optional)
 
-We expect significant technical challenges in seven areas across
-remaining Phase 1 and early Phase 2. Most are partially solved;
-the honest framing below is which parts remain.
+We expect significant technical challenges in seven areas. Most are partly
+solved; the honest framing below is which parts remain and why each is hard.
 
-**(1) AI safety on untrusted content.** Job descriptions, CVs and
-scraped career-page HTML are untrusted input fed to an LLM, so
-prompt injection and data exfiltration are real risks. We defend
-the pipeline with strict delimiting, output validation, and a
-documented 10-vector prompt-injection test suite
-(`compliance/prompt-injection-testing.md`,
-`tests/test_prompt_injection_*`). Hardening the remaining vectors
-and keeping the defence current across providers is ongoing.
+**(1) AI safety on untrusted content.** Job descriptions, CVs and scraped
+career-page HTML are untrusted input fed to an LLM, so prompt injection and
+data exfiltration are real risks. We defend the pipeline with strict input
+delimiting, output schema validation, and a documented prompt-injection test
+suite (`compliance/prompt-injection-testing.md`,
+`tests/test_prompt_injection_vectors.py`). Keeping that defence current as
+providers and attack techniques evolve is ongoing work; the hardened
+patterns are reusable by any LLM-backed civic tool.
 
-**(2) Fairness and accuracy of fit-scoring across friction
-classes.** The hardest correctness problem: an AI fit-score must
-not disadvantage a migrant nurse, a returning parent, or a career
-changer, and no automated final employment decision is ever made
-(AI Act high-risk concern). The cross-provider panel currently
-shows a ~10–13% out-of-band/disagreement rate. The bias-testing
-methodology covers 2 of 6 scenario classes (scoring +
-CV-tailoring, ~33%); the remaining four (onboarding, discovery,
-motivation-letter, skill-gap brief) are sequenced for dated
-post-grant reports — the challenge is executing them at the same
-honesty discipline (no tolerance manipulation). A known
-prompt-phrasing sensitivity (e.g. Maria → Logistics Coordinator
-scoring 5/100 with industry jargon vs 80/100 with generic
-phrasing) was reclassified as prompt-sensitive, not systematic
-bias; Phase 2 likely needs per-criterion rather than holistic
-scoring (R4 in `compliance/risk-management-plan.md`).
+**(2) Fairness and accuracy of AI fit-scoring across friction classes — our
+hardest correctness problem.** A fit-score must not disadvantage a migrant
+nurse, a returning parent or a career changer, and the system never makes an
+automated final employment decision (a high-risk use under EU AI Act Annex
+III point 4). We run a documented bias methodology over a seven-persona panel
+and multiple AI providers. Two findings frame the remaining work: a 13.0%
+out-of-band rate (an AI-output-quality metric — how often a provider returns
+a score outside the expected band — not a measured user-harm rate); and large
+cross-provider score spreads on specific scenarios (e.g. a 30-point gap on
+one Ukrainian-refugee case: DeepSeek 70 vs local Ollama 40), so a
+single-provider deployment can tilt the visible score. The methodology is 33%
+executed (2 of 6 scenario classes; 147 data points across four dated
+reports); completing the remaining four — onboarding, discovery,
+motivation-letter, skill-gap — at the same honesty discipline is the funded
+challenge. Scores already carry a per-criterion breakdown (location,
+seniority, skill, language, recognition, sector); reducing the cross-provider
+spread without hand-tuning is the open question.
 
-**(3) One workflow over heterogeneous, replaceable AI.** BYO-AI
-must work across OpenAI, Anthropic, Gemini, DeepSeek, OpenRouter
-and local Ollama, plus a deterministic no-AI fallback, with
-per-user cost caps and graceful degradation — abstracting very
-different APIs, latencies and quality behind one contract without
-locking users to a vendor.
+**(3) One workflow over heterogeneous, replaceable AI.** The same journey
+must run across eight AI provider integrations — OpenAI, Anthropic, Gemini,
+DeepSeek, OpenRouter, local Ollama, Codex CLI and Claude Code — plus a deterministic no-AI fallback,
+behind a single contract, with per-user cost caps and graceful degradation,
+so users keep data sovereignty and are never locked to a vendor. Ollama is
+exercised live today; the other six providers are covered by mocked dispatcher
+tests pending live verification (Phase 2). Hiding very different APIs, latencies and
+output quality behind one stable contract is the engineering challenge.
 
-**(4) European standards interop at scale.** Full ESCO (~3,000
-occupations, ~13,500 skills, 27 languages, ~80 MB) with fast
-multilingual lookup, plus EURES-compatible export and schema.org
-JobPosting mapping over heterogeneous sources. Phase 1 ships a
-curated subset; the full build-time ingest + indexing is the
-Phase 2 scaling challenge.
+**(4) European standards interoperability at scale.** Mapping messy,
+multi-source job data onto ESCO (~3,000 occupations and ~13,500 skills,
+multilingual) with fast lookup, plus a EURES-compatible export shape and
+schema.org JobPosting mapping. Phase 1 ships a curated ESCO subset; the full
+build-time ingest and indexing of the ~80 MB taxonomy, and reconciling
+free-text postings to controlled vocabularies across languages, is the
+scaling challenge — and the result is reusable by any European labour-market
+tool.
 
-**(5) Composable, consent-bound civic infrastructure.** Exposing
-employment functions as versioned MCP tools that other civic
-agents (housing, residency, education) can compose with — every
-cross-agent profile share consent-bound and audit-logged, the
-tool contract versioning cleanly so clients degrade gracefully.
-The housing-agent integration is a mock stub today (Decision
-20/11); when a real partner agent comes online (Option B), the
-composition-latency budget needs measurement — sequential
-handoff vs profile-shared vs orchestrated invocation each have
-different UX consequences for a multi-domain civic journey
-(Phase 2).
+**(5) Composable, consent-bound civic infrastructure — the project's central
+commons contribution.** We expose employment functions as versioned MCP tools
+that independent civic agents (housing, residency, education, healthcare) can
+compose with, where every cross-agent profile share is consent-bound and
+audit-logged and the tool contract versions cleanly so older clients degrade
+gracefully. We have demonstrated this end-to-end: a reference housing agent
+composes over the real MCP transport, receives a real consent-scoped profile,
+drives the full referral lifecycle, and every cross-agent call is attributed
+to the composing agent in a tamper-evident audit log whose HMAC chain the
+demo verifies (`examples/housing-stub-client/`). The open challenges are
+generalising the composition-latency budget across many agents — sequential
+handoff vs shared-profile vs orchestrated invocation each change the UX of a
+multi-domain civic journey — and hardening the cross-agent contract into a
+reusable pattern other civic projects adopt. The design goal is composition
+with no central authority, only stable contracts.
 
-**(6) Verifiable trust + self-hosting for non-technical
-operators.** Tamper-evident (HMAC-chained) audit logs that
-survive restarts, encryption-at-rest with key rotation, and GDPR
-data-subject flows (export/delete/Article 22) — built in, not
-bolted on. Plus a deployment a Beratungsstelle can run without a
-dev team: reproducible Nix build, broad-platform install (the
-cryptography-wheel problem), fresh-clone CI.
+**(6) Verifiable trust and self-hosting for non-technical operators.** A
+tamper-evident, HMAC-SHA256-chained audit log that survives file rotation and
+restarts; encryption-at-rest (ChaCha20-Poly1305 AEAD) with key rotation; and
+GDPR data-subject flows — data export (Article 20), erasure, and the Article
+22 safeguard that no automated final decision is made. All designed in, not
+bolted on, and runnable by a local advice centre (Beratungsstelle) without a
+developer: reproducible Nix build, broad-platform install, fresh-clone CI.
 
-**(7) Accessibility on a dynamic, multilingual, chat-first UI.**
-WCAG 2.2 AA on a conversational SPA, screen-reader support for
-the dock/journey flow, and RTL for Arabic — harder than
-static-page a11y — while preserving German bureaucratic terms
-(Anerkennung, §16d) untranslated across locales.
+**(7) Accessibility on a dynamic, multilingual, chat-first UI.** Meeting WCAG
+2.2 AA (the harmonised standard underpinning the European Accessibility Act,
+Directive (EU) 2019/882) on a conversational single-page app — screen-reader
+support for a live journey/chat flow and right-to-left rendering for Arabic —
+is materially harder than static-page accessibility, while keeping German
+bureaucratic terms (Anerkennung, §16d) intact rather than mistranslated
+across locales.
 
 ---
 
@@ -512,6 +501,29 @@ static-page a11y — while preserving German bureaucratic terms
 
 **Where Helpmefindthejob fits in the NGI / civic-tech / labour-
 market ecosystem**:
+
+**Alignment with the NGI mission**: the project advances a more
+**trustworthy, resilient, and sustainable** internet in the public
+interest. *Trustworthy* — user-sovereign data (encryption at rest,
+no telemetry, GDPR data-subject flows) plus an EU-AI-Act-aligned
+audit trail let a person rely on the tool without surrendering
+control of their data. *Resilient* — a BYO-AI abstraction with a
+fully offline Ollama path and a deterministic no-AI fallback removes
+single-vendor and single-point-of-failure dependence. *Sustainable*
+— Apache-2.0 plus a Commons Conservancy programme home keep the
+commons durable beyond any one maintainer. At its core the work is
+**standardisation** work: it reconciles fragmented labour-market
+data onto shared European vocabularies (ESCO, EURES, schema.org)
+and publishes a versioned MCP tool contract any civic agent can
+reuse. It serves people **under-represented in the labour market**,
+and because access to employment is a recognised economic and social
+right, the design treats the **fundamental-rights** dimension
+(non-discrimination in AI fit-scoring, human oversight of every
+high-risk decision) as a first-class requirement, not an
+afterthought. The open governance pack (CLA, CODEOWNERS, public
+roadmap) and the Conservancy path are deliberately built to invite
+**societal dialogue** with deployers, advocacy networks, and
+contributors rather than develop the tool in isolation.
 
 **Upstream (we depend on)**:
 - [Model Context Protocol](https://modelcontextprotocol.io)
@@ -524,6 +536,11 @@ market ecosystem**:
 - [schema.org JobPosting](https://schema.org/JobPosting) — public
   job-posting schema
 - [WCAG 2.2 AA](https://www.w3.org/TR/WCAG22/) — W3C accessibility
+- [European Accessibility Act (Directive (EU) 2019/882)](https://eur-lex.europa.eu/eli/dir/2019/882/oj)
+  + [Web Accessibility Directive (Directive (EU) 2016/2102)](https://eur-lex.europa.eu/eli/dir/2016/2102/oj)
+  — the EU accessibility regime our WCAG 2.2 AA conformance helps
+  deployers meet (public-sector bodies, and private-sector services
+  from 28 June 2025)
 - [EU AI Act (Regulation (EU) 2024/1689)](https://eur-lex.europa.eu/eli/reg/2024/1689/oj)
   — Articles 9, 10, 11, 12, 13, 14, 15, 27, 49, Annex III §4
 - [The Commons Conservancy](https://commonsconservancy.org/) —
@@ -594,8 +611,7 @@ caseload scale, the cost-saving math is unverified and the impact
 story is bounded by what a single-maintainer civic-tech tool can
 reach via word-of-mouth. Mitigations: the three institutional
 outreach letters at `docs/grant/11-institutional-outreach.md` are
-sequenced for sending in the submission window (see Section 1.1 of
-`PlanTowardPerfection.MD`); the friction-class architecture means
+sent during the submission window; the friction-class architecture means
 even non-migrant-focused institutions can adopt without scope
 mismatch (a Jobcenter serves all Bürgergeld recipients, not only
 the migrant subset); the Commons Conservancy programme path
@@ -606,19 +622,31 @@ Medium); R6 (cost-saving claims viewed as unverified marketing —
 Medium / Medium).
 
 **Sustainability risk** — *single-maintainer + grant-dependent
-funding is the dominant project-continuity exposure*. The maintainer
-plus one partner-contributor (co-resident; see `04-research-and-decisions.md`
-Decision 17) does not constitute a recruitment pipeline; if either
-steps away, the project enters survival mode. Mitigations: the
-Commons Conservancy wrapper guarantees continuity of governance
-even on maintainer transition (Programme is the legal home, not the
-maintainer's GitHub account); the multi-grant arc
-(`SUSTAINABILITY.md` 7-pillar model, post-NLnet Sovereign Tech Fund
-+ Prototype Fund + FOSS contributor fund applications) reduces
-single-funder dependence; the Phase-2 framework-extraction work
-opens the project to commoditisation by other civic-tech projects,
-which broadens the contributor base. Cross-refs: R2 (single-author
-sustainability concern — High / High); R12 (maintainer burnout —
+funding is the dominant project-continuity exposure (R2, rated
+High / High in the register — we do not understate it)*. The bus
+factor today is effectively one maintainer plus one co-resident
+partner-contributor (Decision 17); that is not a recruitment
+pipeline, and if either steps away the project enters survival mode.
+What makes the exposure *bounded* rather than fatal is the substrate
+already shipped, none of which depends on the maintainer's continued
+presence: the code is Apache-2.0, so any party can fork and continue
+it; the Contributor License Agreement consolidates the rights a
+successor — or the hosting foundation — needs to relicense and carry
+the project forward; the governance pack (CODEOWNERS, Code of
+Conduct, SECURITY policy, public ROADMAP, documented release and
+onboarding procedures) means a new maintainer inherits a navigable
+project rather than tacit knowledge; and the `SUSTAINABILITY.md`
+seven-pillar model lays out a multi-source funding arc (post-NLnet
+Sovereign Tech Fund, Prototype Fund, and FOSS contributor-fund
+applications) so the project is not single-funder-dependent. The
+Commons Conservancy programme path is one further layer — a legal
+home that holds the project's assets and governance independent of
+any GitHub account — not the whole answer. The honest position: the
+bus factor is real, the mitigations are concrete and already in
+place, and broadening the contributor base is itself a funded
+Phase-2 objective via the framework-extraction work that lets other
+civic-tech projects reuse the substrate. Cross-refs: R2 (single-
+author sustainability — High / High); R12 (maintainer burnout —
 Medium / High).
 
 **AI-vendor-lock-in risk** — *the BYO-AI architecture is the
@@ -686,12 +714,14 @@ Recommended attachments (each ≤ 50 MB; total ≤ 50 MB):
    (1–2 pages) — for reviewers who download for offline reading.
 2. **Cosign-signed `v0.1.0-source.tar.gz.sigstore` bundle + the
    `v0.1.0-sbom.json` CycloneDX SBOM** — supply-chain evidence
-   citable in Article 11 technical documentation.
+   citable in Article 11 technical documentation. (v0.1.0 is the
+   fully-signed reference tag; the current v0.80.0 SBOM is also
+   in-repo at `docs/releases/v0.80.0-sbom.json`.)
 3. **`ACCESSIBILITY.md` rendered as PDF** — accessibility audit
    evidence (the live HTML version is canonical, but a PDF
    snapshot at submission time anchors the claim).
 4. **`compliance/INDEX.md` rendered as PDF** — entry point to the
-   14-document EU AI Act compliance pack, with the full file ×
+   23-document EU AI Act compliance pack, with the full file ×
    article reverse-lookup table so the reviewer can navigate
    straight to the artefact addressing any Article they ask about.
    The pack itself stays in the repo; this PDF is the navigational
@@ -710,8 +740,8 @@ Recommended attachments (each ≤ 50 MB; total ≤ 50 MB):
    strong as the in-repo file.
 
 Optional (skip if it adds bulk without adding evidence):
-- Letter of support PDF once a partner signs — see
-  Milestone 6.
+- Letter of support PDF once a partner signs — institutional
+  outreach is tracked in `11-institutional-outreach.md`.
 - Individual compliance-pack files as PDFs (the INDEX above points
   at every one in the repo; attaching each as a separate PDF is
   bulk without adding evidence unless the reviewer specifically
@@ -774,7 +804,7 @@ services available to grantees":
 
 1. **Accessibility audit — HAN University of Applied Sciences**.
    Phase 1 ships an axe-core automated baseline at 30 → 0
-   findings across 22 surfaces; the HAN manual review covers the
+   findings across all 33 audited captures; the HAN manual review covers the
    gaps axe-core can't (keyboard-trap discovery, focus-order,
    tab-order, screen-reader narration of dynamic states). The
    `ACCESSIBILITY.md` "Known gaps" table already names HAN
@@ -851,16 +881,16 @@ NLnet reviewers can audit each claim against the source.
 | **Tens of thousands of unfilled healthcare positions in DE** (was: "~46,000") | [OECD Economic Surveys: Germany 2025](https://www.oecd.org/en/publications/oecd-economic-surveys-germany-2025_2c91e1d4-en.html) — citation preserved; precise figure NOT led with in the body | **REWORDED 2026-05-19 (pass 2)**. 5 alternative WebFetch routes exhausted (Destatis press releases / Deutscher Pflegerat / DKG press / IW Köln Arbeitsmarkt / BMG Pflegekräfte); none surfaced a single primary-source URL with the 46,000 figure published at headline level (403/404/401 across the candidate routes). The application body (`12-application-package.md` §C) is reworded to "tens of thousands of unfilled healthcare positions" with the OECD citation preserved as the documented anchor + the BA labour-market reports as a corroborating source. The 46,000 figure remains a defensible OECD-sourced estimate but the body no longer leads with a precise number the maintainer cannot independently re-verify in <1 hour. |
 | **Migrationsberatungsstellen (MBE) operated nationwide** (was: "~700 service points") | [BAMF-NAvI](https://bamf-navi.bamf.de/de/) (canonical service-point directory; no aggregate count published) | **REWORDED 2026-05-19 (pass 2)**. 4 alternative WebFetch routes exhausted (BAMF press releases / Bundesregierung Migration page / BAGFW homepage / Wikipedia MBE article); none yielded an aggregate count. The application body (`12-application-package.md` §C) is reworded to "Migrationsberatungsstellen (MBE) operated nationwide by the six Wohlfahrtsverbände (Caritas, Diakonie, AWO, Paritätischer, DRK, ZWST) under BAMF coordination and located via the BAMF-NAvI directory" — drops the "~700" entirely + names the operational architecture (Wohlfahrtsverbände + BAMF coordination + BAMF-NAvI). The institutional-readiness rhetorical force is preserved by the operational specificity (six named Wohlfahrtsverbände); the count claim is no longer a drift risk. |
 | **16 IQ-Netzwerk regional networks** | <https://www.netzwerk-iq.de/> | **STRUCTURAL** — IQ-Netzwerk is organised by Bundesland; with 16 Länder there are 16 regional networks by design. **VERIFIED structurally** (the federal-state structure of Germany is constitutionally fixed); maintainer should confirm against the IQ-Netzwerk public page that this organisational structure persists at submission time. |
-| **Optionskommunen Jobcenter (cap of 110 per §6a SGB II + Article 91e GG; BMAS list = current count)** (was: "104" → "110 total") | [§6a SGB II](https://www.gesetze-im-internet.de/sgb_2/__6a.html) verified via gesetze-im-internet.de WebFetch + [Article 91e GG](https://www.gesetze-im-internet.de/gg/art_91e.html) verified via same | **REWORDED 2026-05-19 (pass 2)**. §6a SGB II §2 sentence 4 verified: cap is "höchstens 25 Prozent der zum 31. Dezember 2010 bestehenden Aufgabenträger" — historically 110 once fully utilised. Article 91e GG verified: says "begrenzt" without a fixed numerical cap (delegates to federal legislation = §6a SGB II). The "110" Wikipedia figure was the constitutional-cap-fully-utilised total (69 from 2005 + 41 from 2012). BMAS Optionskommunen list URL returned 404 on 4 attempted variants this slice; BMAS has likely restructured the URL. **Body reworded** (`12-application-package.md` §C) to "the autonomous Optionskommunen Jobcenter operating Bürgergeld under §6a SGB II + Article 91e Grundgesetz (the federal cap is 25% of the 2010 baseline of task carriers — historically a maximum of 110 Optionskommunen; the BMAS-published list is the source of truth for the current active count)". Cap vs current-count distinction now explicit; maintainer should confirm against BMAS at submission if a precise count is needed. |
+| **Optionskommunen Jobcenter (cap of 110 per §6a SGB II + Article 91e GG; BMAS list = current count)** (was: "104" → "110 total") | [§6a SGB II](https://www.gesetze-im-internet.de/sgb_2/__6a.html) verified via gesetze-im-internet.de WebFetch + [Article 91e GG](https://www.gesetze-im-internet.de/gg/art_91e.html) verified via same | **REWORDED 2026-05-19 (pass 2)**. §6a SGB II §2 sentence 4 verified: cap is "höchstens 25 Prozent der zum 31. Dezember 2010 bestehenden Aufgabenträger" — historically 110 once fully utilised. Article 91e GG verified: says "begrenzt" without a fixed numerical cap (delegates to federal legislation = §6a SGB II). The "110" Wikipedia figure was the constitutional-cap-fully-utilised total (69 from 2005 + 41 from 2012). BMAS Optionskommunen list URL returned 404 on 4 attempted variants; BMAS has likely restructured the URL. **Body reworded** (`12-application-package.md` §C) to "the autonomous Optionskommunen Jobcenter operating Bürgergeld under §6a SGB II + Article 91e Grundgesetz (the federal cap is 25% of the 2010 baseline of task carriers — historically a maximum of 110 Optionskommunen; the BMAS-published list is the source of truth for the current active count)". Cap vs current-count distinction now explicit; maintainer should confirm against BMAS at submission if a precise count is needed. |
 | €30k–€200k AI Act compliance consulting cost avoided per deployer | **INDUSTRY ESTIMATE — not measured**. | The range reflects publicly reported AI-compliance-consulting quotes during 2024–2026 (range source: aggregated quotes from German Datenschutz / KI-compliance consultancies; we don't cite a single primary source because the actual number depends on the deployer's existing compliance posture and the consultant's scope). The application body uses qualified language ("typical" / "industry-estimate") rather than asserting a single figure. **NOT a measured claim.** |
-| **30 axe-core violation instances closed across 22 audited surfaces** | [`ACCESSIBILITY.md`](../../ACCESSIBILITY.md) "Current state" table | **VERIFIED** — every violation has a documented pre/post-fix count and a file:line for the closing fix. |
-| **91 components in v0.1.0 CycloneDX SBOM** | [`docs/releases/v0.1.0-sbom.json`](releases/v0.1.0-sbom.json) | **VERIFIED** — the SBOM is committed; component count derivable via `jq '.components | length'`. |
-| **1020 tests / 4 skipped (Python 3.9) and 1029 tests / 12 skipped (Python 3.12)** | `python3 -m unittest discover -s tests` output | **VERIFIED** — runtime evidence in commit `f8393dd` closeout + `02-execution-plan.md` §3.8 entry. |
+| **30 axe-core violation instances closed across all 33 audited captures** | [`ACCESSIBILITY.md`](../../ACCESSIBILITY.md) "Current state" table | **VERIFIED** — every violation has a documented pre/post-fix count and a file:line for the closing fix. |
+| **96 components in v0.1.0 CycloneDX SBOM** | [`docs/releases/v0.1.0-sbom.json`](../releases/v0.1.0-sbom.json) | **VERIFIED 2026-05-29** — `jq '.components | length' docs/releases/v0.1.0-sbom.json` returns 96 (the prior "91" was stale). The current v0.80.0 SBOM at `docs/releases/v0.80.0-sbom.json` lists 8 direct dependencies. |
+| **3,359 tests / 26 skipped, all passing** | `python3 -m unittest discover -s tests` output | **VERIFIED 2026-05-30** — live run: `Ran 3359 tests in 90.727s … OK (skipped=26)`. The historical 1020/1029 figure was the v0.1.0 release-tag baseline. Operator: re-run at the submission moment and quote the live number. |
 | **6 workflows fully SHA-pinned; `grep -nE "uses:.*@v[0-9]" .github/workflows/*.yml` returns 0 lines** | commits `546f952` + `5be9f47` | **VERIFIED** — closing grep documented in `02-execution-plan.md` §3.2 entry. |
 | **Seven-persona panel: Aïcha, Yusuf, Olga, Mahmoud, Maria, Käthe, Tobias** | [`docs/grant/07-personas.md`](07-personas.md) + Decision 21 | **VERIFIED** — the panel is the project's canonical source-of-truth; Decision 21 dated 2026-05-18. |
-| **MCP catalogue v0.2.0, 13 tools** | [`docs/mcp-server.md`](../mcp-server.md) | **VERIFIED** — the catalogue + per-tool input schemas committed; CI smoke test exercises the surface. |
+| **MCP catalogue v0.2.0, 15 tools** | [`docs/mcp-server.md`](../mcp-server.md) | **VERIFIED 2026-05-29** — `TOOL_SCHEMAS` in `company_discovery/mcp_tools.py` defines 15 tools; `tests/test_mcp_tool_schema_versioning.py` pins the catalogue size at 15; CI smoke test exercises the surface (the prior "13" was stale). |
 
-**Pre-submission discipline (slice-end state, post 2026-05-19 re-verify pass 2)**:
+**Pre-submission discipline (verification state, post 2026-05-19 re-verify pass 2)**:
 
 After two re-verification passes the carried-forward-numbers
 landscape is now:
@@ -885,8 +915,8 @@ landscape is now:
     source of truth for the current active count.
 - **Structural verifications carry forward** (16 IQ-Netzwerk
   regional networks tied to 16 Bundesländer; seven-persona panel;
-  MCP catalogue + tool count; 1020/1029 tests; 30 axe violations
-  closed; cosign Verified OK; etc.) — these are anchored in the
+  MCP catalogue + 15-tool count; 3,359 tests (live 2026-05-30);
+  30 axe violations closed; cosign Verified OK; etc.) — these are anchored in the
   project's own source-of-truth files or in constitutional
   structure.
 
@@ -935,9 +965,9 @@ canonical paths) rather than during ongoing development.
 
 ### Re-verification pass 4 — 2026-05-24 (pre-submission anchor)
 
-Closes PlanTowardPerfection box 1.2.2 ("Re-verify every numerical
-claim in the draft via primary source links; update the inline
-verification table to the date of submission"). The submission
+This pass re-verifies every numerical claim in the draft via primary
+source links and updates the inline verification table to the date of
+submission. The submission
 date is operator-controlled but expected in the 2026-05-31 to
 2026-06-01 window; this entry anchors the verification state
 to 2026-05-24 so the operator can re-run the same checks at the
@@ -962,13 +992,13 @@ stamp (catches silent staleness on rows that were never re-dated).
 | 16 IQ-Netzwerk regional networks | STRUCTURAL | Carry forward — Bundesländer count constitutionally fixed | No change. |
 | Optionskommunen §6a SGB II + Article 91e GG (rewording) | Reword retained | Reword retained — cap-vs-current-count distinction intact | No change. |
 | €30k–€200k AI Act consulting (industry estimate) | INDUSTRY ESTIMATE | INDUSTRY ESTIMATE — qualified language in body | No change. |
-| 30 axe-core violations across 22 surfaces | VERIFIED | Re-checked against `ACCESSIBILITY.md` current state table; count unchanged | Carry forward. |
-| 91 components in v0.1.0 SBOM | VERIFIED | Stable — `docs/releases/v0.1.0-sbom.json` unchanged | Carry forward. |
-| 1020 / 1029 tests | VERIFIED (date stamp ≈ 2026-05-19) | **UPDATED** — current test count is **3199** (post-1.6 batch). The 1020/1029 figure was the v0.1.0 release-tag baseline; the application body's deeper "the 1020-test suite" reference (compliance/accuracy-and-bias-testing.md §8) is contextually accurate for the v0.1.0 reference; the headline "test count" in Field 10 should refer to the post-grant-sprint figure. | Operator: at submission moment, re-run `python3 -m unittest discover -s tests` and quote the live number in the submitted draft. |
+| 30 axe-core violations across 33 audited captures | VERIFIED | Re-checked against `ACCESSIBILITY.md` current state table; count unchanged | Carry forward. |
+| 96 components in v0.1.0 SBOM | VERIFIED | Re-checked 2026-05-29 — `jq '.components | length'` returns 96 (prior "91" was stale) | Carry forward. |
+| 1020 / 1029 tests | VERIFIED (date stamp ≈ 2026-05-19) | **UPDATED 2026-05-30** — live count is **3,359 tests / 26 skipped, all passing** (`Ran 3359 tests … OK (skipped=26)`). The 1020/1029 figure was the v0.1.0 release-tag baseline; Field 10 and the deeper reference in `compliance/accuracy-and-bias-testing.md` §8 now quote the live number. | Operator: at submission moment, re-run `python3 -m unittest discover -s tests` and quote the live number in the submitted draft. |
 | 6 workflows SHA-pinned | VERIFIED | Stable — grep against `.github/workflows/*.yml` still returns 0 unpinned references | Carry forward. |
 | Seven-persona panel | VERIFIED | Stable — Decision 21 unchanged; persona fixtures unchanged | Carry forward. |
-| MCP catalogue v0.2.0, 13 tools | VERIFIED | Stable — `docs/mcp-server.md` unchanged | Carry forward. |
+| MCP catalogue v0.2.0, 15 tools | VERIFIED | Re-checked 2026-05-29 — 15 tools in `mcp_tools.py`, pinned by `test_mcp_tool_schema_versioning.py` (prior "13" was stale) | Carry forward. |
 
-**Net effect at 2026-05-24**: every prior-verified row carries forward unchanged; one row (test count) updated from 1020/1029 → 3199 with an operator-action note for the literal submission moment; no new claims introduced since pass 3 require new verification work.
+**Net effect at 2026-05-24** (with a 2026-05-29 refresh): every prior-verified row carries forward; three rows were corrected for staleness on 2026-05-29 — test count (1020/1029 → live **3,359 / 26 skipped**, re-confirmed 2026-05-30), v0.1.0 SBOM component count (91 → **96**, `jq`-derivable), and MCP catalogue tool count (13 → **15**, pinned by test). No new claims introduced since pass 3 require new verification work.
 
 **Operator action at submission moment** (per the "next-day re-verify" discipline at line 16 of this draft): run the 4-line drift-check loop documented at the bottom of `docs/grant/13-lessons-learned.md` Rule 2 against the rows tagged "re-verify within 48h" and the live test count. If any drift, update both this draft and `12-application-package.md` in the same commit before submitting.

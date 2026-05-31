@@ -13,11 +13,13 @@ name = "helpmefindthejob"
 description = "Open-source EU-wide civic employment commons — MCP-composable copilot for users facing structural labor-market friction in Europe."
 license = { text = "Apache-2.0" }
 readme = "README.md"
-# CI matrix covers Python 3.9 + 3.12; 3.10 + 3.11 work by implication.
-# Python 3.9's EOL is October 2025 — when the maintainer's local environment
-# upgrades to 3.11+, this floor moves and the UP017 (datetime.UTC) ruff rule
-# can re-enable.
-requires-python = ">=3.9"
+# Supported-runtime floor is Python 3.11 (CI matrix: 3.11 + 3.12). The 3.9
+# floor was retired on 2026-05-31: requirements.txt pins requests>=2.33.0
+# (patched for GHSA-gc5v-m9x4-r6x2), which declares Requires-Python >=3.10,
+# so 3.9 could only resolve the vulnerable requests 2.32.x that pip-audit
+# --strict rejects — the security pin and 3.9 support are mutually exclusive.
+# CPython 3.9 also reached security-EOL in October 2025.
+requires-python = ">=3.11"
 keywords = ["civic-tech", "employment", "mcp", "ai-act", "anerkennung", "commons"]
 
 # ---------------------------------------------------------------------------
@@ -30,9 +32,12 @@ keywords = ["civic-tech", "employment", "mcp", "ai-act", "anerkennung", "commons
 # ---------------------------------------------------------------------------
 [tool.ruff]
 line-length = 100
-# Target the project's minimum supported Python (matches requires-python
-# above). This prevents UP017 (datetime.UTC) and other version-conditional
-# pyupgrade rules from breaking Python 3.9 compatibility.
+# Ruff's target stays at py39 even though the runtime floor is now 3.11.
+# 50 modules use datetime.timezone.utc; raising the target to py311 would
+# make UP017 (datetime.UTC) demand a 50-file rewrite for zero behavioural
+# gain, and the py39 target keeps the source portable for downstream
+# packagers on older interpreters. Revisit when a deliberate datetime.UTC
+# migration is scheduled — not as a side effect of the runtime-floor bump.
 target-version = "py39"
 extend-exclude = [
     "private/",
@@ -111,10 +116,14 @@ exclude = [
 ]
 
 # Strict for modules with clear, tightly-scoped contracts. CI runs:
-#     mypy company_discovery/audit_log.py company_discovery/crypto_kit.py mcp_server.py
+#     mypy company_discovery/audit_anchor.py company_discovery/audit_log.py \
+#          company_discovery/crypto_kit.py mcp_server.py
 # The list grows as more modules are brought up to the strict bar.
 [[tool.mypy.overrides]]
 module = [
+    "civic_agents.contracts",
+    "civic_agents.planner",
+    "company_discovery.audit_anchor",
     "company_discovery.audit_log",
     "company_discovery.crypto_kit",
     "mcp_server",

@@ -61,14 +61,14 @@ def _aicha_cv() -> str:
 def _maria_cv() -> str:
     """Maria — EU citizen, NOT visa-constrained."""
     return (
-        "Maria (Spain → Hamburg)\n"
+        "Maria (Romania → Stuttgart)\n"
         "Email: maria@example.test\n"
-        "Phone: +49 40 1234-5678\n"
+        "Phone: +49 711 1234-5678\n"
         "Residency status: EU citizen, Freizügigkeitsrecht\n\n"
-        "Profile: Native Spanish speaker, EU-Bürger from Spain. "
-        "Hospitality / bartender background.\n\n"
+        "Profile: Romanian- and Hungarian-native Krankenschwester, EU-Bürger "
+        "from Romania. Home-elderly-care (Altenpflege) background.\n\n"
         "Experience:\n"
-        "  - 2020 - 2025 — Bar Reina, Madrid\n"
+        "  - 2020 - 2025 — County Hospital, Cluj\n"
     )
 
 

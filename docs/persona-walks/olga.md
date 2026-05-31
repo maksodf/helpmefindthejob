@@ -1,24 +1,24 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 <!-- Copyright (c) 2026 Helpmefindthejob contributors -->
 
-# Persona walk — Olga (Ukraine → Hamburg)
+# Persona walk — Olga (Ukraine → Leipzig)
 
 **Persona slug**: `olga`
 **Cohort**: most-acute migrant (primary anchor)
 **Residency status**: §24 AufenthG (temporary protection, Ukraine displaced-persons directive)
 **Friction notes**: clean residency + work-permit but the host-language gate is the dominant friction; senior frontend developer career trajectory; needs English-team or hybrid-remote tech employers that pair with a Goethe / VHS German-course track.
-**Languages**: UK (native), RU (native), EN (C1), DE (A2 climbing toward B1)
-**Profession + target roles**: Senior frontend developer, 11 years across e-commerce + fintech; targets `Senior frontend developer / Senior React developer / Software engineer (frontend)` in Hamburg.
+**Languages**: UK (native), RU (native), EN (C1), DE (A2-conversational)
+**Profession + target roles**: Senior frontend developer (React, TypeScript), 9 years at a Kyiv startup; targets `Senior frontend developer / Senior React developer / Software engineer (frontend)` in Leipzig + remote-EU.
 
-**Source-of-truth**: `company_discovery.persona_fixtures.PERSONAS[2]`. Date: 2026-05-24. Version: HEAD of `main`.
+**Source-of-truth**: `company_discovery.persona_fixtures.PERSONAS[2]`. Date: 2026-05-30. Version: HEAD of `main`.
 
 ---
 
 ## 1. Sign-up + onboarding
 
-Olga arrives with the §24 residency story handled (her status doesn't gate the work-permit) — the friction is the host-language gate against German tech employers' historical default of German-only working language. The chat journey's discover phase captures this: when she enters `Senior frontend developer` + `Hamburg` + DE-A2, the persona-fit classifier flags English-team-pathway-likely. Detailed transcript: [`docs/grant/journey-walks-2026-05-20/olga.md`](../grant/journey-walks-2026-05-20/olga.md) (560 lines).
+Olga arrives with the §24 residency story handled (her status doesn't gate the work-permit) — the friction is the host-language gate against German tech employers' historical default of German-only working language. The chat journey's discover phase captures this: when she enters `Senior frontend developer` + `Leipzig` + DE-A2, the persona-fit classifier flags English-team-pathway-likely. Detailed transcript: [`docs/grant/journey-walks-2026-05-20/olga.md`](../grant/journey-walks-2026-05-20/olga.md) (560 lines).
 
-The Hamburg English-team watchlist is pre-seeded with the city's English-first tech employers (Holocaust per the bias scenarios: distant-city scenarios penalised harshly — see `bias-comparative-report-2026-05-21` row 1 `olga_mixed_distant_city` spread 30).
+The Leipzig English-team watchlist is pre-seeded with the city's English-first / remote-friendly tech employers. (The bias scenarios flag that distant-city variants are penalised harshly — see `docs/grant/bias-comparative-report-2026-05-21.md` row 1, `olga_mixed_distant_city`, spread 30.)
 
 ## 2. CV preparation
 
@@ -26,7 +26,7 @@ EN-primary CV with explicit DE-A2 → B1 language-progression timeline. The cv_b
 
 ## 3. Job matching
 
-The search fan-out returns Hamburg + remote-EU roles. Two signal layers fire:
+The search fan-out returns Leipzig + remote-EU roles. Two signal layers fire:
 - **JD language-policy parsing**: roles that explicitly name "English-speaking team" / "international working language" / "EN-first engineering org" are flagged with a friction-fit boost.
 - **Remote-EU compatibility**: the §24 protection applies EU-wide; remote-EU employers can hire her under host-country contract terms (with documented payroll-provider routing).
 
@@ -36,7 +36,7 @@ The Anschreiben names the §24 status plainly (so the recruiter doesn't worry ab
 
 ## 5. Application tracked
 
-Mark-applied + a parallel German-course progress tracker (the language-bottleneck is dominant friction, so closing it accelerates the job-search outcome). Optional integration with the VHS / Goethe course catalogue surface (Ceiling 2 Section 2.6).
+Mark-applied + a parallel German-course progress tracker (the language-bottleneck is dominant friction, so closing it accelerates the job-search outcome). Optional integration with the VHS / Goethe course catalogue surface (a Phase-2 item).
 
 ## 6. What felt broken (residual roughness)
 
@@ -53,4 +53,4 @@ Mark-applied + a parallel German-course progress tracker (the language-bottlenec
 - Anschreiben quality walk: [`docs/grant/anschreiben-quality-walks-2026-05-20/olga.md`](../grant/anschreiben-quality-walks-2026-05-20/olga.md)
 - Bias-comparative-report (Olga row): [`docs/grant/bias-comparative-report-2026-05-21.md`](../grant/bias-comparative-report-2026-05-21.md)
 - Persona fixture: [`company_discovery/persona_fixtures.py::PERSONAS[2]`](https://github.com/maksodf/helpmefindthejob/blob/main/company_discovery/persona_fixtures.py)
-- Demo account: `persona-olga@demo.helpmefindthejob.org`
+- Demo account: `olga@demo.helpmefindthejob.org`

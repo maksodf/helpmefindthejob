@@ -4,7 +4,6 @@
 # PWA install-banner verification recipe
 
 **Audience**: maintainer's per-release pre-flight checklist + deployer's first-launch verification.
-**PlanTowardPerfection box**: 2.12.11 — "PWA install banner verified — `beforeinstallprompt` works on Chrome Android + iOS Safari (Add to Home Screen)."
 **Status**: living recipe. Re-run on every major release; append a dated row to §3 on each verification.
 
 ---

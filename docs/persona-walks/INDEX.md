@@ -3,9 +3,9 @@
 
 # Persona walks — INDEX
 
-**Purpose**: per-persona end-to-end walk-throughs proving the system serves each of the seven canonical personas in `docs/grant/07-personas.md` from sign-up through application-tracked. The walks are the load-bearing reviewer evidence that the friction-class architecture (Decision 21) is implemented, not just claimed.
+**Purpose**: per-persona end-to-end walk-throughs proving the system serves each of the seven canonical personas in `docs/grant/07-personas.md` from sign-up through application-tracked. The walks are the load-bearing reviewer evidence that the friction-class architecture is implemented, not just claimed.
 
-**Last updated**: 2026-05-24. PlanTowardPerfection Ceiling 2 boxes 2.5.1–2.5.8 close in this slice; box 2.5.9 (Playwright `tests/e2e/persona_*_smoke.py` suite) is queued for the next batch.
+**Last updated**: 2026-05-24. The Playwright `tests/e2e/persona_*_smoke.py` suite is queued for a later batch.
 
 ---
 
@@ -22,7 +22,7 @@ Each `docs/persona-walks/<persona>.md` file has six sections:
 
 Plus a per-walk **"what felt broken"** notes section so each walk's residual roughness is documented honestly (the NLnet-winner discipline of being explicit about alpha state).
 
-## Cohort split (Decision 21)
+## Cohort split
 
 | Cohort | Personas | Narrative role |
 |---|---|---|
@@ -61,4 +61,4 @@ This is the **reviewer's evidence** that each persona has been thought-through e
 
 ## Append log
 
-- **2026-05-24** (PlanTowardPerfection box 2.5.8): persona-walks directory created with INDEX + 7 per-persona walk docs (Aïcha, Yusuf, Olga, Mahmoud, Maria, Käthe, Tobias). All walks reference the prior dated source artefacts in `docs/grant/journey-walks-2026-05-20/` and `docs/grant/anschreiben-quality-walks-2026-05-20/` rather than duplicating the substantive transcript bodies; the per-persona walk doc is the navigational entry point + the "what felt broken" notes + the friction-class lens.
+- **2026-05-24**: persona-walks directory created with INDEX + 7 per-persona walk docs (Aïcha, Yusuf, Olga, Mahmoud, Maria, Käthe, Tobias). All walks reference the prior dated source artefacts in `docs/grant/journey-walks-2026-05-20/` and `docs/grant/anschreiben-quality-walks-2026-05-20/` rather than duplicating the substantive transcript bodies; the per-persona walk doc is the navigational entry point + the "what felt broken" notes + the friction-class lens.

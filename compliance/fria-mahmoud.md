@@ -3,7 +3,7 @@
 
 # FRIA — Mahmoud (Syria → Hamburg, §4 Subsidiärer Schutz, trade Ausbildung)
 
-**Article**: AI Act Article 27. Instantiates the FRIA template for the **Mahmoud** persona-class. PlanTowardPerfection box 2.10.4.
+**Article**: AI Act Article 27. Instantiates the FRIA template for the **Mahmoud** persona-class.
 **Status**: project-side reference FRIA. Deployer instantiates with own context.
 **Last updated**: 2026-05-24.
 
@@ -18,7 +18,7 @@
 | Origin → destination | Syria → Hamburg |
 | Profession | Pre-flight HVAC + plumbing background; targeting trade-apprenticeship pathway (Ausbildung) |
 | Residency status | §4 AsylG Subsidiärer Schutz (subsidiary protection holder) |
-| Languages | AR native; DE B2 in trades-context, B1 in admin-form-context; EN B1 |
+| Languages | AR native; DE B2 in trades-context, B1 in admin-form-context |
 | Friction context | Ausbildung pathway (NOT direct hire); HVAC/plumbing employers + Berufsschule alignment + IHK-recognised programme constraints |
 | Source-of-truth | `company_discovery/persona_fixtures.py::PERSONAS[3]` + `docs/persona-walks/mahmoud.md` |
 
@@ -64,7 +64,7 @@ Hamburg AWO MBE-coordinator OR Caritas Integration-Hilfe advisor receives escala
 
 | Field | Value |
 |---|---|
-| Attested by | Fouad, project maintainer (`franfreeedo@gmail.com`) |
+| Attested by | Fouad, project maintainer (`support@helpmefindthejob.org`) |
 | Role | Sole maintainer + provider |
 | Attestation date | 2026-05-24 |
 | Scope | Per-persona FRIA + R1–R8 modulation + Top-concern (R6 data-egress) + Article-22 path |

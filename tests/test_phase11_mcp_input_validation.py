@@ -212,7 +212,11 @@ class AdditionalPropertiesPolicyTests(unittest.TestCase):
     behaviour explicitly so a future tightening is a deliberate
     decision rather than an accident."""
 
-    def test_unknown_key_currently_accepted(self) -> None:
+    def test_unknown_key_rejected(self) -> None:
+        # additionalProperties=false on every catalogue schema: unknown keys are
+        # rejected uniformly as invalid_arguments BEFORE dispatch (previously they
+        # were silently accepted by the lone **payload handler, or surfaced as a
+        # tool_error leaking the handler signature on the other 14 tools).
         problem = mcp_server.validate_tool_arguments(
             "add_company_to_watchlist",
             {
@@ -222,10 +226,13 @@ class AdditionalPropertiesPolicyTests(unittest.TestCase):
                 "totallyUnknownKey": "ignored",
             },
         )
-        # If the maintainer later sets additionalProperties=false on the
-        # catalogue schemas, this test should be updated to assert the
-        # problem document is returned. Until then, extra keys pass.
-        self.assertIsNone(problem)
+        self.assertIsNotNone(problem)
+        # a valid call (only declared keys) still passes
+        ok = mcp_server.validate_tool_arguments(
+            "add_company_to_watchlist",
+            {"userId": "u-1", "name": "Charité", "websiteUrl": "https://charite.de"},
+        )
+        self.assertIsNone(ok)
 
 
 if __name__ == "__main__":

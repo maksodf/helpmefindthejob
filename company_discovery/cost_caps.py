@@ -36,8 +36,8 @@ Design notes:
 - The cap only counts BYO modes (``invocation_mode == "api"``).
   Local-mode invocations have no spend, by definition.
 - Rates are denominated in EUR using rough 2026-Q1 published USD
-  prices × 0.92 (the actual currency conversion happens whenever
-  the user's billing provider settles). We refresh quarterly.
+  prices × 0.92 (an approximate fixed conversion). We refresh
+  quarterly.
 """
 
 from __future__ import annotations
@@ -60,8 +60,8 @@ from datetime import datetime, timezone
 # Pessimistic-by-design: we use the upper bound across the
 # provider's model lineup (e.g. "openai" → GPT-4o rate, not 4o-
 # mini) so a user who hasn't told us their model gets billed as
-# if they were running the expensive one. Under-billing would
-# let runaway calls past the cap; over-billing only refuses one
+# if they were running the expensive one. Under-counting would
+# let runaway calls past the cap; over-counting only refuses one
 # extra call when the user is near the cap.
 PROVIDER_RATES_EUR_PER_MTOK: dict[str, dict[str, float]] = {
     # Cloud — paid (per-token). Keys match PROVIDER_OPTIONS ids.

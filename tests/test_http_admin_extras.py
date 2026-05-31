@@ -5,7 +5,7 @@
 # not use this file except in compliance with the License. You may obtain
 # a copy of the License at http://www.apache.org/licenses/LICENSE-2.0.
 
-"""HTTP-level coverage for the readiness / email / account-deletion / Stripe endpoints."""
+"""HTTP-level coverage for the readiness / email / account-deletion endpoints."""
 
 from __future__ import annotations
 
@@ -161,7 +161,6 @@ class HttpAdminExtrasTests(unittest.TestCase):
             "email",
             "backups",
             "monitoring",
-            "billing",
             "legal",
             "scheduler",
             "quotas",
@@ -215,15 +214,6 @@ class HttpAdminExtrasTests(unittest.TestCase):
         )
         self.assertEqual(code, 400)
         self.assertEqual(payload["error"]["code"], "invalid_email")
-
-    def test_billing_checkout_blocked_without_stripe(self) -> None:
-        code, payload, _ = self.admin.request(
-            "/api/admin/billing/checkout",
-            method="POST",
-            body={"planId": "team"},
-        )
-        self.assertEqual(code, 400)
-        self.assertEqual(payload["error"]["code"], "stripe_disabled")
 
     def test_account_deletion_request_creates_ticket(self) -> None:
         # Tester requests deletion

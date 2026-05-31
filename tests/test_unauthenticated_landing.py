@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 """Unauthenticated landing-block contract (pre-deployment polish).
 
-Before this slice, ``static/index.html`` opened with a bare
+Previously, ``static/index.html`` opened with a bare
 "Sign in to continue" auth gate — meaning an NLnet reviewer or
 first-time visitor landing on `helpmefindthejob.org` saw a gate,
 not the project mission. The unauthenticated landing block sits
@@ -137,10 +137,10 @@ class I18nLandingKeysParity(unittest.TestCase):
         preservation rule, 'Blue Card' stays verbatim in DE
         translations. After the AUDIT-32 + 33 landing rewrite
         (2026-05-23) the term moved from landing.lead into
-        landing.personas.maria (the EU Blue Card persona card);
+        landing.personas.yusuf (the EU Blue Card persona card);
         the preservation rule applies wherever the term lives."""
 
-        carrier_keys = ("landing.lead", "landing.personas.maria")
+        carrier_keys = ("landing.lead", "landing.personas.yusuf")
         appears = any("Blue Card" in self.de.get(k, "") for k in carrier_keys)
         self.assertTrue(
             appears,

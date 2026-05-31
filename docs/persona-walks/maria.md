@@ -1,54 +1,54 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 <!-- Copyright (c) 2026 Helpmefindthejob contributors -->
 
-# Persona walk — Maria (Spain → Munich)
+# Persona walk — Maria (Romania → Stuttgart)
 
 **Persona slug**: `maria`
-**Cohort**: most-acute migrant (primary anchor) — note: previously described in some earlier docs as Romanian care worker; the canonical persona is now the EU-Blue-Card-downshifted-architect per Decision 21 in `04-research-and-decisions.md`. The Romanian care-worker scenario remains in the bias corpus as an extension scenario.
-**Residency status**: EU citizen → EU Blue Card downshifted to Drafter role (Tekla / AutoCAD); architect-by-training operating below licence-level.
-**Friction notes**: under-employment friction. Licensed architect in Spain, working as drafter in Germany because (a) Architektenkammer registration takes months and (b) German firms favour Architekt-im-Praktikum entry path. Needs roles that preserve Blue Card eligibility (salary threshold) while building toward eventual licensure.
-**Languages**: ES (native), CA (native), EN (B2), DE (A2)
-**Profession + target roles**: Architect-by-training; drafter / Bauzeichner / Tekla operator / CAD coordinator currently; targets `Architekt-im-Praktikum / Bauzeichner / Architecture coordinator` in Munich + remote.
+**Cohort**: most-acute migrant / EU-mobile (primary anchor)
+**Residency status**: EU citizen (Freizügigkeitsrecht under §2 FreizügG/EU); no permit needed
+**Friction notes**: persistent language barrier despite full work rights. Most home-care employers want B1 minimum formally; Maria's care quality is excellent but cannot be demonstrated through a German-language interview. Needs Pflegedienst employers who integrate non-fluent care workers (audio-prep / buddy systems).
+**Languages**: RO (native), HU (native), IT (B1), DE (A2)
+**Profession + target roles**: Krankenschwester (registered nurse), trained Romania 1991, 28 years hospital + elderly home-care; targets `Altenpflege / Pflegefachkraft / Pflegehelfer:in / Krankenschwester` in Stuttgart.
 
-**Source-of-truth**: `company_discovery.persona_fixtures.PERSONAS[4]`. Date: 2026-05-24. Version: HEAD of `main`.
+**Source-of-truth**: `company_discovery.persona_fixtures.PERSONAS[4]`. Date: 2026-05-30. Version: HEAD of `main`.
 
 ---
 
 ## 1. Sign-up + onboarding
 
-Maria arrives with the underemployment story already painful — she's been drafter for 18 months while her Architektenkammer registration crawls forward. The journey's discover phase needs to capture both the current role (drafter, paying the rent) and the target trajectory (architect-licensure within 36 months). Detailed transcript: [`docs/grant/journey-walks-2026-05-20/maria.md`](../grant/journey-walks-2026-05-20/maria.md) (485 lines).
+Maria arrives with full legal work rights but a hard language gate: home-care employers formally demand B1, and her German is A2 despite 28 years of clinical competence. The journey's discover phase captures both the deep experience and the language friction. Detailed transcript: [`docs/grant/journey-walks-2026-05-20/maria.md`](../grant/journey-walks-2026-05-20/maria.md) (485 lines).
 
-The friction-class lens here is **Blue-Card-preservation while building toward licensure**. The persona-fit classifier surfaces roles that satisfy the Blue Card salary threshold AND have a documented Architekt-im-Praktikum (AiP) path or accept Tekla / AutoCAD specialists on the architect-track.
+The friction-class lens here is **language-integration-friendly Pflegedienst matching**: the persona-fit classifier surfaces care employers who explicitly integrate non-fluent carers (audio-onboarding, buddy systems, German-course pairing) rather than employers that gate on a B1/C1 interview.
 
 ## 2. CV preparation
 
-EN-primary CV with DE-A2 → B1 progression noted. The cv_summary explicitly names the Spanish architectural credentials + the in-flight Architektenkammer registration so a German employer doesn't read her as "just a drafter".
+DE/EN CV foregrounding 28 years of clinical experience in terms an Altenpflegedienst Pflegedienstleiter will understand. The cv_summary names the Romanian RN training (1991) and the long elderly-care record, so the fit-scoring prompt reads her as a deeply experienced nurse held back by language, not as an entry-level applicant.
 
 ## 3. Job matching
 
-Munich + remote-EU architecture employers. The search prioritises:
-- Larger firms with documented AiP programmes (Auer Weber, Henn, Allmann Sattler Wappner, …)
-- Roles that explicitly mention Tekla / BIM coordination (preserves Maria's existing market value)
-- Blue Card salary-threshold-compliant roles (preserves her Blue Card status while she progresses to architect)
+Stuttgart + regional Pflegedienst / Altenpflege employers. The search prioritises:
+- Employers whose JD language signals language integration ("Deutschkurs gestellt", "mehrsprachiges Team", "Quereinstieg / Wiedereinstieg willkommen")
+- Roles that weight clinical experience over formal language certificates
+- Both full-Pflegefachkraft and Altenpflegehelfer:in entry roles, so the choice stays hers
 
-The bias-comparative-report verified Maria's adjacency cases at mid-60s SCORE (deepseek 58.9 / ollama 60.1 mean across 10 scenarios; see row 4).
+The bias-comparative-report measured Maria's per-persona mean at 58.9 (deepseek) / 60.1 (ollama) across her 10 scenarios; the language-friendly scenario `language_friendly_pflegedienst` scored 86 (deepseek) while the gate scenario `maria_mixed_language_barrier` scored 53 (deepseek; "C1 required vs A2 actual") — the spread the deployer monitors. See `docs/grant/bias-comparative-report-2026-05-21.md` (per-persona mean table).
 
 ## 4. Cover-letter drafting
 
-The Anschreiben names the Spanish credentials + the Architektenkammer-registration-in-flight status proactively. The 2026-05-20 anschreiben walk at [`docs/grant/anschreiben-quality-walks-2026-05-20/maria.md`](../grant/anschreiben-quality-walks-2026-05-20/maria.md) documents the cross-credential framing.
+The Anschreiben names the language situation honestly while foregrounding the clinical record and the willingness to continue German study. The 2026-05-20 anschreiben walk at [`docs/grant/anschreiben-quality-walks-2026-05-20/maria.md`](../grant/anschreiben-quality-walks-2026-05-20/maria.md) documents the experience-forward framing.
 
-For pure-drafter roles she applies to as Blue-Card-stability moves, the letter pivots to "deep Tekla + AutoCAD specialist with architect-class spatial reasoning" framing — preserves her dignity while honestly describing the current scope.
+For Altenpflegehelfer:in entry roles she applies to as a foothold, the letter pivots to "28 years of patient-care experience, German improving" framing — preserves her dignity while honestly describing the entry scope.
 
 ## 5. Application tracked
 
-Mark-applied + the Architektenkammer-registration-progress tracker (the licence is the gating dependency for the architect-trajectory roles). Optional integration with the Bayerische Architektenkammer registration-status portal (Section 2.6 deliverable).
+Mark-applied + a parallel German-course progress tracker (the language gate is the dominant friction, so closing it widens the employer set). Optional integration with the VHS / Goethe course catalogue surface (a Phase-2 item).
 
 ## 6. What felt broken (residual roughness)
 
-- **Architektenkammer-registration tracking** is a planned post-grant integration (Section 2.6 — the credentials-equivalence lookup deliverable). Currently Maria tracks her registration progress manually outside the system.
-- **AiP-programme employer dataset** is hand-curated for Munich; scaling to other DACH architecture markets (Berlin, Hamburg, Frankfurt, Zurich) requires sourcing additional per-city employer lists.
-- **Blue-Card salary-threshold filter** absent (same gap as Yusuf's walk). Salary-aware filtering is Section 2.6.
-- **Spanish-architecture-school equivalence** — the system doesn't yet pre-compute which Spanish universities' architecture degrees are most likely to clear Architektenkammer review without supplementary coursework. Section 2.6.
+- **Anerkennung tracking** is a planned post-grant integration (Section 2.6 — the credentials-equivalence lookup). Recognition of Maria's Romanian nursing diploma for full Krankenpflege (vs. the easier Altenpflegehelfer:in track) is currently tracked manually outside the system.
+- **Audio interview-prep** (rehearsable German prompts) is described in the persona narrative but not yet a wired in-app flow; it is a Phase-2 accessibility deliverable.
+- **Language-integration JD detection** is keyword-based ("Deutschkurs gestellt", "mehrsprachiges Team"); an employer who integrates non-fluent carers in practice but doesn't say so in the JD won't trip the boost. Tracked for Section 2.8 search quality.
+- **RO/DE pension coordination** is a real background concern for a 52-year-old EU-mobile worker; the system refers it rather than handling it.
 
 ---
 
@@ -58,4 +58,4 @@ Mark-applied + the Architektenkammer-registration-progress tracker (the licence 
 - Anschreiben quality walk: [`docs/grant/anschreiben-quality-walks-2026-05-20/maria.md`](../grant/anschreiben-quality-walks-2026-05-20/maria.md)
 - Bias-comparative-report (Maria row): [`docs/grant/bias-comparative-report-2026-05-21.md`](../grant/bias-comparative-report-2026-05-21.md)
 - Persona fixture: [`company_discovery/persona_fixtures.py::PERSONAS[4]`](https://github.com/maksodf/helpmefindthejob/blob/main/company_discovery/persona_fixtures.py)
-- Demo account: `persona-maria@demo.helpmefindthejob.org`
+- Demo account: `maria@demo.helpmefindthejob.org`

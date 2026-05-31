@@ -2,8 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 """Regression guard for the README hero screenshot.
 
-`PlanTowardPerfection.MD` Ceiling-1 box 1.3.1 requires the README
-to open with a single screenshot of the product showing the
+The README
+opens with a single screenshot of the product showing the
 language switcher and the headline value prop. The screenshot lives
 at `docs/screenshots/hero-landing.png` and is captured from the
 public marketing landing of a running instance.
@@ -55,7 +55,7 @@ class ReadmeHeroScreenshot(unittest.TestCase):
         self.assertIn(
             canonical,
             src,
-            f"README no longer embeds {canonical} — Ceiling-1 box 1.3.1 "
+            f"README no longer embeds {canonical} — the grant submission "
             "requires the hero screenshot to be visible in the README",
         )
 

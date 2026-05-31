@@ -1,9 +1,8 @@
 # Release workflow — cosign-sign + SLSA Level 2 provenance + SBOM + GitHub Release.
 #
-# PlanTowardPerfection Ceiling-2 boxes 2.14.8 (Cosign signing for
-# every release artifact, automated in CI on tag-push) and 2.14.9
-# (SLSA Level 2 build provenance — GitHub Actions can attach this
-# with minimal work).
+# Cosign signing for every release artifact, automated in CI on
+# tag-push, plus SLSA Level 2 build provenance — GitHub Actions can
+# attach this with minimal work.
 #
 # Trigger model:
 #   * Automatic — on push of a tag matching `v*` (the conventional

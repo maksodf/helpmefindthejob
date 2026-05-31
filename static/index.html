@@ -110,14 +110,14 @@
          styles.css → styles.min.css ~28% smaller. Sources stay
          human-readable for dev; tests grep the source path. -->
     <link rel="stylesheet" href="/styles.min.css" />
-    <!-- PlanTowardPerfection box 1.6.5: tiny script that reveals
+    <!-- Tiny script that reveals
          the demo-banner div below if the hostname matches
          demo.helpmefindthejob.org (or ?demo=1 query param for QA).
          No-op on apex / self-hosted / dev. -->
     <script src="/demo-banner.js" defer></script>
   </head>
   <body>
-    <!-- PlanTowardPerfection box 1.6.5: demo-deployment banner.
+    <!-- Demo-deployment banner.
          Hidden by default; revealed by /demo-banner.js when the
          runtime hostname matches the public demo subdomain. The
          banner is intentionally lightweight (single <p>, two links)
@@ -180,7 +180,7 @@
               <span data-i18n="landing.bullet3.body">Designed around a seven-persona panel — Aïcha · Yusuf · Olga · Mahmoud · Maria · Käthe · Tobias — with documented bias-testing methodology.</span>
             </li>
             <li>
-              <strong data-i18n="landing.bullet4.head">The Commons Conservancy stewardship.</strong>
+              <strong data-i18n="landing.bullet4.head">The Commons Conservancy stewardship (admission pending).</strong>
               <span data-i18n="landing.bullet4.body">Federated deployment, no commercial product, Apache 2.0 + CLA, built for civic institutions.</span>
             </li>
           </ul>
@@ -203,26 +203,26 @@
               <article class="persona-card persona-card--acute">
                 <span class="persona-avatar" aria-hidden="true">Y</span>
                 <h3 class="persona-name">Yusuf</h3>
-                <p class="persona-friction" data-i18n="landing.personas.yusuf">Syrian mechanical engineer, §16d, needs Anerkennungs-friendly employer.</p>
-                <p class="persona-status muted small" data-i18n="landing.personas.yusuf.cohort">Newcomer · Engineering</p>
+                <p class="persona-friction" data-i18n="landing.personas.yusuf">Turkish automotive engineer on an EU Blue Card, navigating the first-months arrival cascade.</p>
+                <p class="persona-status muted small" data-i18n="landing.personas.yusuf.cohort">EU Blue Card · Engineering</p>
               </article>
               <article class="persona-card persona-card--acute">
                 <span class="persona-avatar" aria-hidden="true">O</span>
                 <h3 class="persona-name">Olga</h3>
-                <p class="persona-friction" data-i18n="landing.personas.olga">Ukrainian §24-status, prior office work, working toward German language gate.</p>
-                <p class="persona-status muted small" data-i18n="landing.personas.olga.cohort">Newcomer · Office work</p>
+                <p class="persona-friction" data-i18n="landing.personas.olga">Ukrainian §24-status senior developer, English-speaking teams, working toward the German language gate.</p>
+                <p class="persona-status muted small" data-i18n="landing.personas.olga.cohort">Newcomer · Tech</p>
               </article>
               <article class="persona-card persona-card--acute">
                 <span class="persona-avatar" aria-hidden="true">M</span>
                 <h3 class="persona-name">Mahmoud</h3>
-                <p class="persona-friction" data-i18n="landing.personas.mahmoud">Syrian §4 subsidiary, IT-support pivot, technical English fluent.</p>
-                <p class="persona-status muted small" data-i18n="landing.personas.mahmoud.cohort">Newcomer · IT support</p>
+                <p class="persona-friction" data-i18n="landing.personas.mahmoud">Syrian §4 subsidiary, skilled trades (Handwerk), building an Ausbildung-format CV.</p>
+                <p class="persona-status muted small" data-i18n="landing.personas.mahmoud.cohort">Newcomer · Trades</p>
               </article>
               <article class="persona-card persona-card--acute">
                 <span class="persona-avatar" aria-hidden="true">M</span>
                 <h3 class="persona-name">Maria</h3>
-                <p class="persona-friction" data-i18n="landing.personas.maria">Spanish architect on EU Blue Card, downshifted to drafter to enter the market.</p>
-                <p class="persona-status muted small" data-i18n="landing.personas.maria.cohort">EU Blue Card holder</p>
+                <p class="persona-friction" data-i18n="landing.personas.maria">Romanian nurse, EU citizen (Freizügigkeit), home-elderly-care, navigating a German language barrier.</p>
+                <p class="persona-status muted small" data-i18n="landing.personas.maria.cohort">EU citizen · Care</p>
               </article>
               <article class="persona-card persona-card--wider">
                 <span class="persona-avatar" aria-hidden="true">K</span>
@@ -1258,7 +1258,7 @@
                   <strong data-i18n="settings.ai.mode.managed.title">Managed</strong>
                   <span class="tag" data-i18n="settings.ai.mode.managed.tag">€5/mo · waitlist</span>
                 </div>
-                <p class="muted small" data-i18n="settings.ai.mode.managed.desc">We provide the AI for you — no key, no setup, all included in your Helpmefindthejob subscription. One click to enable when it opens. Best if you don't already have an AI account and don't want to deal with API keys. Tap to join the waitlist; we'll email you the moment it's live.</p>
+                <p class="muted small" data-i18n="settings.ai.mode.managed.desc">We provide the AI for you — no key, no setup, hosted by Helpmefindthejob. One click to enable when it opens. Best if you don't already have an AI account and don't want to deal with API keys. Tap to join the waitlist; we'll email you the moment it's live.</p>
               </button>
             </div>
             <div id="aiByokPane" class="ai-byok-pane" hidden>
@@ -1395,18 +1395,6 @@
               </form>
               <p id="deletionMessage" class="muted small" role="status"></p>
             </details>
-          </section>
-
-          <section class="card" aria-label="Subscription" data-tab="workspace">
-            <div class="card-heading">
-              <h2 data-i18n="settings.subscription.heading">Subscription</h2>
-              <p class="muted small" data-i18n="settings.subscription.lead">Self-serve via the Stripe Customer Portal — see invoices, update card, cancel.</p>
-            </div>
-            <div id="billingSummary" class="muted">Loading…</div>
-            <div class="subscription-actions">
-              <button id="manageSubscriptionBtn" type="button" class="btn btn-primary" data-i18n="settings.subscription.manage" hidden>Manage subscription</button>
-              <p id="subscriptionMessage" class="muted small" role="status" aria-live="polite"></p>
-            </div>
           </section>
 
           <section class="card" aria-label="Support" data-tab="workspace">
@@ -1633,33 +1621,6 @@
             <pre id="metricsResult" class="code-block" hidden></pre>
           </section>
 
-          <section class="card" aria-label="Subscription admin">
-            <div class="card-heading">
-              <h2 data-i18n="admin.subscription.heading">Subscription</h2>
-              <p class="muted" data-i18n="admin.subscription.lead">Set the active plan, seat count, and status. Stripe wiring is BLOCKED until credentials.</p>
-            </div>
-            <form id="adminBillingForm" class="admin-create-grid" novalidate>
-              <label class="field" for="adminBillingPlan">
-                <span data-i18n="admin.subscription.plan">Plan</span>
-                <select id="adminBillingPlan"></select>
-              </label>
-              <label class="field" for="adminBillingStatus">
-                <span data-i18n="admin.subscription.status">Status</span>
-                <select id="adminBillingStatus">
-                  <option value="active" data-i18n="admin.subscription.statusActive">Active</option>
-                  <option value="trialing" data-i18n="admin.subscription.statusTrialing">Trialing</option>
-                  <option value="past_due" data-i18n="admin.subscription.statusPastDue">Past due</option>
-                  <option value="cancelled" data-i18n="admin.subscription.statusCancelled">Cancelled</option>
-                </select>
-              </label>
-              <label class="field" for="adminBillingSeats">
-                <span data-i18n="admin.subscription.seats">Seats</span>
-                <input id="adminBillingSeats" type="number" min="1" max="500" value="5" />
-              </label>
-              <button class="btn btn-primary" type="submit" data-i18n="admin.subscription.save">Save</button>
-            </form>
-            <p id="adminBillingNote" class="muted small"></p>
-          </section>
 
           <section class="card" aria-label="Support tickets admin">
             <div class="card-heading">

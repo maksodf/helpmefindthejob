@@ -106,7 +106,7 @@ here are tradeoffs by use case:
 
 ### Slash-command intent routing (chat router)
 
-- **Recommend deterministic templates**: this surface is best served
+- **Recommend the deterministic intent router**: this surface is best served
   by the project's deterministic parser + keyword router. The AI
   router is the third layer behind slash + keyword. None of the AI
   providers significantly improves on the deterministic layer for
@@ -176,7 +176,7 @@ The shortest honest answer the maintainer would give a journalist:
   per-use-case recommendations + binding-on-code surface defined.
   Cross-references to AI Act + source-class doctrine + cost-saving
   doctrine.
-- **2026-05-24** (PlanTowardPerfection box 2.8.5 — what-we-know-we-don't-know
+- **2026-05-24** (what-we-know-we-don't-know
   appendix): the matrix above carries verified rows for the providers
   the maintainer has exercised live + dispatcher-shape tested for the
   rest. This appendix names the residual unknowns explicitly so a
@@ -188,7 +188,12 @@ The shortest honest answer the maintainer would give a journalist:
     measured per-persona mean fit-score 56.4–74.3; OOB rate 13.0 % at
     the 2026-05-19 polished-cohort run; cost ~€0.00 (cached replay
     against `data/bias_comparative_cache/`); first-token latency
-    sub-second on the maintainer's network.
+    sub-second on the maintainer's network. **Re-verified 2026-05-29**:
+    a direct `/chat/completions` round-trip through the current
+    `_execute_openai_compatible` adapter returned `status=completed`,
+    confirming the live cloud-API path still works after the v0.80.0
+    catalogue + audit-log changes — i.e. the dispatcher itself, not a
+    cached replay.
   - `ollama` (local `llama3.1:8b`) — 70 data points in the same report;
     measured per-persona mean fit-score 50.4–67.4; OOB rate carries
     the same 13.0 % baseline; cost €0.00 by construction (local-only);

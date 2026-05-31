@@ -18,9 +18,35 @@ dist/
 !.env.example
 .deploy-env.local
 
+# Local-only operator/submission docs — these carry personal email addresses and
+# internal process notes; they must never be published. Kept on disk and shared
+# with collaborators out of band, never committed.
+Hallo.md
+
 # Production data — sqlite DBs hold user accounts, hashed passwords, scan history.
 # These live on the droplet and in WAL-aware snapshots, never in git.
 data/
+
+# escolib/data/ is packaged library reference data (a CC-BY-4.0 ESCO subset),
+# NOT user data — it must ship with the package, so re-include it.
+!escolib/data/
+!escolib/data/**
+
+# biasprobe/data/ is the standalone bias package's bundled copy of the caches
+# (same synthetic-persona fixtures). Its parent biasprobe/ is not excluded, so —
+# unlike data/bias_comparative_cache/ below — this negation works directly.
+!biasprobe/data/
+!biasprobe/data/**
+
+# data/bias_comparative_cache/ holds committed model-response caches (synthetic-
+# persona fit scores + model reasons + token/cost counts — NOT user data) that make
+# the bias-methodology report replayable offline. They MUST ship so a stranger can
+# reproduce the published bias numbers without API keys. The any-depth `data/` rule
+# above cannot be selectively un-ignored without weakening PII protection for sibling
+# data dirs (.venv/**/data, future nested data/), so these fixtures are force-tracked:
+#   git add -f data/bias_comparative_cache/*.jsonl
+# Add new provider caches the same way. tests/test_bias_comparative_runner.py asserts
+# they stay git-tracked (CachesAreCommittedNotJustPresent), so a regression goes red.
 *.sqlite3
 *.sqlite3-wal
 *.sqlite3-shm
@@ -82,7 +108,7 @@ cosign.password
 helpmefindthejob-*.tar.gz
 # The immutable v0.1.0 sdist must keep its original filename —
 # the cosign signature was computed over directjob-scout-0.1.0.tar.gz,
-# so renaming would break verification (Decision 22).
+# so renaming would break verification.
 directjob-scout-*.tar.gz
 
 # axe-core CLI accessibility audit JSON output. Each file is 100–400 KB
@@ -105,10 +131,18 @@ docs/compliance/
 .tox/
 .nox/
 
-# Internal / commercial-vision docs relocated during the Week 1 grant-
+# Internal-only working docs relocated during the Week 1 grant-
 # sprint sanitisation pass (docs/grant/02-execution-plan.md task 1.4).
 # These are kept locally for reference but are not part of the public
 # commons project. Add new internal-only docs under private/ rather
 # than under docs/.
 private/
 .hypothesis/
+.gstack/
+
+# Local-only planning / strategy working files — never publish.
+/WinningPlan.MD
+/ProposedNGIFundedWork.MD
+/Finalanswers.MD
+/EXECUTION_PROMPT.md
+/docs/grant/post-submission-state-*.md

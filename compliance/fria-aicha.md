@@ -3,11 +3,11 @@
 
 # FRIA — Aïcha (Tunisia → Berlin, §16d Anerkennung)
 
-**Article**: AI Act Article 27 (FRIA for high-risk AI systems). Instantiates `compliance/fundamental-rights-impact-assessment-template.md` for the **Aïcha** persona-class as a worked example. PlanTowardPerfection box 2.10.4.
+**Article**: AI Act Article 27 (FRIA for high-risk AI systems). Instantiates `compliance/fundamental-rights-impact-assessment-template.md` for the **Aïcha** persona-class as a worked example.
 
 **Status**: project-side reference FRIA. A deployer who serves Aïcha-class users (Migrationsberatungsstellen, IQ-Netzwerk regional offices serving §16d Anerkennung pathways, Klinikum HR teams in DACH) instantiates a deployer-side variant with their specific affected-population numbers, oversight-person identity, and deployment-context modulations.
 
-**Last updated**: 2026-05-24.
+**Last updated**: 2026-05-30.
 
 ---
 
@@ -34,7 +34,7 @@ Aïcha-class users are non-EU healthcare professionals in active §16d Anerkennu
 |---|---|---|---|
 | Art. 1 (Dignity) | Fit-scoring that returns "low fit" on Anerkennung-friendly roles communicates "you don't belong here" to a §16d candidate already navigating a high-friction system | Per-criterion `SCORE_FRICTION_FIT` anchor scale awards 22+ for explicitly-Anerkennungs-friendly JDs; AI-output framing is "suggestion, not decision" | Advisor reviews any low-fit on an Anerkennungs-friendly role before showing it to the candidate |
 | Art. 15 (Free choice of occupation) | Recognition-decision-pace structural drag is the dominant blocker; bad fit-scoring narrows the candidate's option-set further | Friction-fit lens prioritises §16d-pathway employers; lateral-fallback in `journey.py` suggests Pflegehelferin trajectory if Pflegefachkraft is mismatch | Advisor maintains the operator-overridable employer-recognition-friendliness flag |
-| Art. 21 (Non-discrimination) | National-origin + language-proficiency proxies in JD-language could disadvantage non-EU nurses | Bias-comparative-report 2026-05-21 measured aicha + anerkennung_friendly_clinical at SCORE 85 (deepseek) — within target band; the OOB rate of 13% applies cohort-wide, not specifically to aicha | Quarterly bias re-test against the deployer's actual case-load distribution |
+| Art. 21 (Non-discrimination) | National-origin + language-proficiency proxies in JD-language could disadvantage non-EU nurses | Bias-comparative-report 2026-05-21 measured aicha + anerkennung_friendly_clinical at SCORE 75 (deepseek) / 80 (ollama) — at/above the ≥75 verification gate; the OOB rate of 13% applies cohort-wide, not specifically to aicha | Quarterly bias re-test against the deployer's actual case-load distribution |
 | Art. 35 (Healthcare) | Indirect: surfacing Anerkennungs-friendly clinical employers accelerates time-to-clinical-deployment which serves public-health interest (DACH nursing shortage) | The cost-saving doctrine (`docs/grant/08-cost-saving-doctrine.md`) explicitly anchors here | Advisor tracks deployment-outcome for the deployer's case-load |
 | Art. 41 (Good administration) | The §16d process itself is the deployer's adjacent-bureaucracy, not the project's; but the project's recognition-deadline-aware journey supports the candidate through it | Anerkennung-deadline countdown surface (Section 2.6 deliverable); §16d context in the cv_summary fed into AI prompts | Deployer DSGVO surface for the candidate's audit-log export (Art 20 + Art 86) |
 
@@ -66,14 +66,14 @@ When Aïcha (or her MBE advisor) wants to appeal a specific AI output:
 2. The audit-log entry ID is pulled to recover the exact prompt + model + provider + cost-cap context.
 3. The advisor reviews against the §16d context the candidate is in.
 4. The verdict + reasoning is communicated in French OR English (Aïcha's working languages); German DPO involvement is the deployer-side process.
-5. The fact-of-review is logged via `/api/admin/oversight/review` so the Article 26(6) automatic-log obligation is honoured.
+5. The fact-of-review is recorded in the deployer's oversight log (the in-app `/api/admin/oversight/queue` surfaces the underlying audit events read-only; a dedicated review-logging endpoint is a Phase-2 item) so the Article 26(6) obligation is honoured.
 6. Aggregate quarterly review catches systemic patterns affecting Aïcha-class users.
 
 ## 7. Maintainer attestation
 
 | Field | Value |
 |---|---|
-| Attested by | Fouad, project maintainer (`franfreeedo@gmail.com`) |
+| Attested by | Fouad, project maintainer (`support@helpmefindthejob.org`) |
 | Role | Sole maintainer + provider of the Helpmefindthejob AI system |
 | Attestation date | 2026-05-24 |
 | Scope | This per-persona FRIA template + the R1–R8 modulation table above + the Top-concern + the Article-22-pathway sections. Deployment-specific slots (affected-population numbers, oversight-person identity, German-DPO involvement) are deployer-fill-ins. |

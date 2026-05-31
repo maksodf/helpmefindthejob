@@ -6,7 +6,7 @@
 **Audience**: **you, the user of Helpmefindthejob.** This notice explains how the system works, what data flows where, and your rights.
 **Article**: AI Act Article 13 (transparency to deployers — adapted here as the user-facing surface) and Article 50 (transparency to natural persons interacting with AI systems).
 **Surface**: this notice is shown at first run and is always available from the Settings screen.
-**Status**: living document. The user-facing rendered version is at `/settings/transparency`; the source of truth lives here in the repo.
+**Status**: living document. The user-facing rendered version is at `/transparency`; the source of truth lives here in the repo.
 
 ---
 
@@ -25,7 +25,7 @@ You do not need to be a migrant for Helpmefindthejob to be useful, and migrants 
 The tool combines:
 
 - **Job discovery** from career pages, public job aggregators, and bookmarklet captures you make.
-- **A structured conversation** that walks you through a 12-phase journey: discover, profile, scope, score, draft, send, follow-up, accept, onboard.
+- **A structured conversation** that walks you through a 12-phase journey (greet → discover → CV check → inspiration → preferences → search → review → drill-down → tailoring → letter → CV consult → done).
 - **AI-assisted suggestions** for job-to-CV fit, CV tailoring, motivation-letter drafting, and application-outcome analysis.
 
 At every step, the suggestions are **suggestions** — never decisions. You confirm each consequential action before it happens. The system never submits an application, never accepts an offer, never makes any binding decision on your behalf without your explicit click-to-confirm.
@@ -38,7 +38,7 @@ Some actions in Helpmefindthejob invoke an AI model. These are:
 
 | Action | What the AI does | What the AI does not do |
 |---|---|---|
-| Compute a fit score for a job | Generates a re-ranking adjustment within ±15% of the structured score, plus a free-text rationale | Does not produce the score from scratch — the structured rule-based scoring is the source of truth |
+| Compute a fit score for a job | Produces a 0–100 fit score from four per-criterion sub-scores (skills, experience, location/language, friction-fit; each 0–25), with a one-line rationale and gap list | The AI's raw output is clamped to 0–100; malformed or out-of-range output yields "no fit score available" rather than a fabricated number |
 | Tailor your CV for a specific role | Proposes edits to existing CV sections you've selected | Does not invent CV facts or experience you haven't entered |
 | Draft a motivation letter | Composes a first-draft letter grounded in your confirmed CV bullets | Does not send the letter; you read, edit, confirm, and send |
 | Analyse your application history | Surfaces patterns: which CV variant gets replies, which sectors respond, which application timings work | Does not decide what you should do next; offers observations |
@@ -111,9 +111,9 @@ Helpmefindthejob does not force a single AI provider on you. The deployment can 
 - **Ollama** (fully offline, your own machine, no data leaves)
 - **Manual handoff** (the system constructs the prompt, you copy-paste it into your AI of choice)
 - **Claude Code** (if you have a Claude Code subscription)
-- **Deterministic templates** (no AI at all — every AI-assisted action falls back to a clear, deterministic template)
+- **Codex CLI** (if you have a local Codex CLI setup)
 
-If you are not comfortable sending your CV slice to a third-party AI provider, choose Ollama (your own machine, no egress) or manual handoff (you control exactly what is sent and where) or deterministic templates (no AI).
+If you are not comfortable sending your CV slice to a third-party AI provider, choose Ollama (your own machine, no egress) or manual handoff (you control exactly what is sent and where; the app invokes no AI — letter drafts use a deterministic template and other AI-assisted actions give you the prompt to run yourself).
 
 The honest tradeoffs between local AI (Ollama) and cloud AI (OpenAI, Anthropic, Google, DeepSeek, etc.) are documented in the [AI provider honesty matrix](https://github.com/maksodf/helpmefindthejob/blob/main/docs/grant/15-ai-provider-honesty-matrix.md) — quality, latency, privacy, cost, EU AI Act surface, per-use-case recommendations. The project explicitly does not pick a "best" provider for you; the matrix lets you weigh the tradeoffs against your own priorities. Switch provider any time in Settings; the system never silently reroutes to a different provider than the one you picked.
 
@@ -144,19 +144,19 @@ This notice exists to give you that knowledge. Every AI-assisted action in the i
 
 ### Right to an explanation (Article 86 and GDPR Article 22)
 
-If an AI-assisted output affects your situation in a way you want to understand, you can request a structured explanation. For fit-scoring, this is built into the UI: click "Show why" on any score to see the per-criterion breakdown and the AI's rationale. For other outputs, contact your deployer's oversight person (see [Deployer-managed addendum] below).
+If an AI-assisted output affects your situation in a way you want to understand, you can request a structured explanation. For fit-scoring, each score is shown with a one-line AI rationale and a list of gaps; for a fuller explanation, contact your deployer's oversight person. For other outputs, contact your deployer's oversight person (see [Deployer-managed addendum] below).
 
 ### Right to opt out of AI features
 
-You can disable AI-assisted features entirely at any time from the Settings screen. The system continues to function with deterministic templates. You can re-enable later if you change your mind.
+You can disable AI-assisted features entirely at any time from the Settings screen. The app then invokes no AI: letter drafts use a deterministic template, and other AI-assisted actions give you the ready-to-run prompt to run with your own AI. You can re-enable later if you change your mind.
 
 ### GDPR rights
 
 You retain all your GDPR rights:
 
-- **Access** — `/api/profile/export` returns your full profile in structured JSON.
+- **Access** — `/api/data/export` returns your full profile in structured JSON.
 - **Rectification** — edit any profile field from the chat or the Settings screen.
-- **Erasure** — request deletion from `/api/profile/delete`. Your profile, CV facts, and application history are deleted; audit-log entries are unlinked from your identifier.
+- **Erasure** — request deletion from `/api/account/deletion-request`. Your profile, CV facts, and application history are deleted; audit-log entries are unlinked from your identifier.
 - **Portability** — your profile export uses open standard formats (schema.org, ESCO).
 - **Objection / withdrawal of consent** — revoke AI-provider consent at any time.
 
