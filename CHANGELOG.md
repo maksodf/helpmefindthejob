@@ -75,6 +75,12 @@ buildable-vs-human-track split.
   the implemented planner.
 - mypy strict subset expanded to 6 modules (added `audit_anchor`,
   `civic_agents.contracts`, `civic_agents.planner`).
+- **Minimum supported Python raised 3.9 → 3.11** (`requires-python`). The
+  security pin `requests>=2.33.0` (GHSA-gc5v-m9x4-r6x2) needs Python ≥3.10, so
+  3.9 could only resolve the vulnerable `requests` 2.32.x that `pip-audit
+  --strict` rejects; 3.9 is also security-EOL (Oct 2025). The CI `tests` matrix
+  is now Ubuntu × Python 3.11 + 3.12. Source stays 3.9-portable — the
+  `ruff`/`mypy` targets remain py39.
 
 ### Fixed
 
@@ -110,6 +116,15 @@ buildable-vs-human-track split.
   the profile field, analytics, or the consent record.
 - **Data import** — `POST /api/data/import` returns 400 on a malformed payload
   instead of a 500.
+- **CI `tests` + `quality` workflows green again** — beyond the Python-floor
+  change above: the macOS leg of the `tests` matrix (timing out on subprocess
+  HTTP smoke tests, already Phase-2 scoped) is dropped to Ubuntu-only;
+  `ThreatModelDocComplete` and `compliance/dpa-template.md` pointed at
+  `docs/THREAT-MODEL.md` with the wrong case (tracked file is
+  `docs/threat-model.md`) — passing on case-insensitive macOS but failing on
+  case-sensitive Linux; and `ruff` is pinned to one version across
+  `requirements-dev.txt` + `.pre-commit-config.yaml` so local `pre-commit` and
+  CI `ruff format --check` agree.
 
 ### Security
 

@@ -125,7 +125,7 @@ The project has **never been publicly launched**. A single private-instance depl
 - MCP server (`mcp_server.py`) exposing 15 tools with JSON schemas + per-tool versioning
 - Solid self-hosting story: Dockerfile, docker-compose.prod.yml, Caddy HTTPS, backup/restore scripts, restore-drill
 - 220+ test files / 3,144 tests (i18n parity, journey state machine, persona ranking, encryption-at-rest including the AEAD migration, MCP catalogue input-schema enforcement, locale-aware yes/no parsing, 2FA enrollment, cross-workspace isolation, DuckDuckGo search provider, push transport, and the Playwright E2E entry point). Top-level suite verified 2026-05-29.
-- CI runs on Python 3.9 + 3.12
+- CI runs on Python 3.11 + 3.12
 
 ### Missing for grant credibility (these are the Week 1–4 deliverables)
 
