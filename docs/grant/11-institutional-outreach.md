@@ -10,9 +10,9 @@ This document is for: securing **one** letter of support from a credible institu
 
 | # | Partner | Type | Goal | Status | Contact attempted | Reply | Outcome |
 |---|---|---|---|---|---|---|---|
-| 1 | AWO Charlottenburg-Wilmersdorf MBE — Irina Alles (`fim-cw@awoberlin.de`) | Beratungsstelle | Letter of support | **DRAFTED 2026-05-18 — NOT YET SENT — target: Week 4 start** (see `outreach-drafts/01-awo-fim-cw.md`) | — | — | — |
-| 2 | RINWA Berlin (La Red) — Cristina Faraco Blanco (`faraco@la-red.eu`) | Federal-successor (IQ → RINWA 2026) | Letter of support | **DRAFTED 2026-05-18 — NOT YET SENT — target: Week 4 start** (see `outreach-drafts/02-rinwa-berlin.md`) | — | — | — |
-| 3 | TU Berlin Career Service — Bettina Satory (`bettina.satory@tu-berlin.de`) | Higher-education (doubles as Template G academic email) | Letter of support | **DRAFTED 2026-05-18 — NOT YET SENT — target: Week 4 start** (see `outreach-drafts/03-tu-berlin-career-service.md`) | — | — | — |
+| 1 | AWO Charlottenburg-Wilmersdorf MBE — [MBE adviser — contact in maintainer's private notes] (`[email in maintainer's private notes]`) | Beratungsstelle | Letter of support | **DRAFTED 2026-05-18 — NOT YET SENT — target: Week 4 start** (see `outreach-drafts/01-awo-fim-cw.md`) | — | — | — |
+| 2 | RINWA Berlin (La Red) — [RINWA adviser — contact in maintainer's private notes] (`[email in maintainer's private notes]`) | Federal-successor (IQ → RINWA 2026) | Letter of support | **DRAFTED 2026-05-18 — NOT YET SENT — target: Week 4 start** (see `outreach-drafts/02-rinwa-berlin.md`) | — | — | — |
+| 3 | TU Berlin Career Service — [Career Service contact — maintainer's private notes] (`[email in maintainer's private notes]`) | Higher-education (doubles as Template G academic email) | Letter of support | **DRAFTED 2026-05-18 — NOT YET SENT — target: Week 4 start** (see `outreach-drafts/03-tu-berlin-career-service.md`) | — | — | — |
 | 4 | TBD Optionskommune Jobcenter | Public agency | Letter of support OR pilot expression of interest | _not pursued_ — one credible letter is enough; this slot held in reserve | — | — | — |
 | 5 | Housing-agent author (the maintainer's friend) | OSS collaborator | Collaboration agreement + integration | _not yet_ — handled separately as part of Week 2 task 2.5 | — | — | — |
 | 6 | TU Berlin academic contact (optional, low-priority) | Academic | Faculty letter of support | _merged into slot 3_ — TU Berlin Career Service double-serves as the optional academic email per the maintainer's call 2026-05-17 | — | — | — |

@@ -145,9 +145,9 @@ Optional additions if you want to surface more themes: `eu`, `nlnet`, `anerkennu
 ### 1.6 Outreach drafting (research only — send deferred to Week 4 per Decision 19)
 
 - [x] Identify one specific named contact per top-ranked partner — research pass completed 2026-05-18:
-  - **MBE Berlin**: AWO Charlottenburg-Wilmersdorf FIM — Irina Alles (`fim-cw@awoberlin.de`). Selected over Diakonisches Werk Berlin Stadtmitte (institutional-insolvency timing) and Caritas Erzbistum Berlin MBE Mitte (no named individual surfaced).
-  - **IQ-Netzwerk Berlin**: superseded in 2026 by RINWA — La Red, Cristina Faraco Blanco (`faraco@la-red.eu`).
-  - **University career service**: TU Berlin Career Service — Bettina Satory (`bettina.satory@tu-berlin.de`). Doubles as the optional Template G TU Berlin academic email per maintainer instruction 2026-05-17.
+  - **MBE Berlin**: AWO Charlottenburg-Wilmersdorf FIM — [MBE adviser — contact in maintainer's private notes] (`[email in maintainer's private notes]`). Selected over Diakonisches Werk Berlin Stadtmitte (institutional-insolvency timing) and Caritas Erzbistum Berlin MBE Mitte (no named individual surfaced).
+  - **IQ-Netzwerk Berlin**: superseded in 2026 by RINWA — La Red, [RINWA adviser — contact in maintainer's private notes] (`[email in maintainer's private notes]`).
+  - **University career service**: TU Berlin Career Service — [Career Service contact — maintainer's private notes] (`[email in maintainer's private notes]`). Doubles as the optional Template G TU Berlin academic email per maintainer instruction 2026-05-17.
 - [x] Personalise the cold-contact templates — three German draft messages saved under [`outreach-drafts/`](outreach-drafts/) with `STATUS: DRAFTED — NOT YET SENT — TARGET SEND: WEEK 4 START` headers, last-verified dates, and fit-reason annotations.
 - [-] Send the first wave of cold contacts — **deferred to Week 4 task 4.0** per Decision 19 in `04-research-and-decisions.md`. Sending earlier risks a partner forming a half-finished impression from artifacts that aren't yet visibly complete.
 - [ ] Draft the housing-agent collaboration message together with the maintainer — moved to Week 2 task 2.5 alongside the actual reference integration; the message and the integration land together.

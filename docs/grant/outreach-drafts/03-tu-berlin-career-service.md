@@ -10,22 +10,22 @@
 
 | Field | Value |
 |---|---|
-| Name | Bettina Satory |
+| Name | [Career Service contact — maintainer's private notes] |
 | Role | Head of Unit / Referatsleitung Career Service TU Berlin |
 | Organisation | Technische Universität Berlin — Career Service |
 | Address | Studierendenservice, Hardenbergstr. 36 A, Ernst-Ruska-Gebäude, 10623 Berlin |
-| Direct email | `bettina.satory@tu-berlin.de` |
+| Direct email | `[email in maintainer's private notes]` |
 | Phone | +49 30 314-25131 |
-| Mentioned in message (Career Service International) | Katja Glaeske — `katja.glaeske@tu-berlin.de` — referenced as the thematic delegate, not cc'd directly |
+| Mentioned in message (Career Service International) | [Career Service contact — maintainer's private notes] — `[email in maintainer's private notes]` — referenced as the thematic delegate, not cc'd directly |
 
 ## Selection rationale
 
-A single email to the head of unit doubles as both the partner-letter outreach (Template D-equivalent) and the optional Template G TU Berlin academic email. Bettina Satory is the institutional decision-maker for an endorsement; Katja Glaeske (Head Career Service International) is the thematic fit for the international-graduate angle, referenced in the message so Bettina can delegate cleanly if she prefers.
+A single email to the head of unit doubles as both the partner-letter outreach (Template D-equivalent) and the optional Template G TU Berlin academic email. [Career Service contact — maintainer's private notes] is the institutional decision-maker for an endorsement; [Career Service contact — maintainer's private notes] (Head Career Service International) is the thematic fit for the international-graduate angle, referenced in the message so Bettina can delegate cleanly if she prefers.
 
 ## Fit reasons for personalisation
 
 1. **Student-of-the-institution credential** — the maintainer is a current TU Berlin student, which converts the email from "external vendor asks for endorsement" to "your student is doing notable work and asks for backing." This shifts the response calculus meaningfully in the project's favour.
-2. **Direct relevance to Career Service International's portfolio** — Olga (§24 protection, Ukrainian frontend dev) and Yusuf (Turkish engineer, Blue-Card process) are exactly the post-graduation profiles Katja Glaeske's team sees. The project is a credible-quality tool that an international-student-facing TU Berlin office can reference without reputational risk.
+2. **Direct relevance to Career Service International's portfolio** — Olga (§24 protection, Ukrainian frontend dev) and Yusuf (Turkish engineer, Blue-Card process) are exactly the post-graduation profiles [Career Service contact — maintainer's private notes]'s team sees. The project is a credible-quality tool that an international-student-facing TU Berlin office can reference without reputational risk.
 
 ## Draft message (German)
 
