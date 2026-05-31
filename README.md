@@ -44,7 +44,7 @@ after extended absence, the long-term unemployed, and others. Germany
 is the first reference deployment because that is where the maintainer
 is; the architecture is country-neutral.
 
-The project is being prepared as a Programme of **The Commons
+The project has applied to become a Programme of **The Commons
 Conservancy** (the NLnet-co-founded Dutch stichting whose Programmes
 include Redwax, FileSender, eduVPN, and others). License is **Apache 2.0
 with a Contributor License Agreement** so that public-sector and
@@ -54,15 +54,15 @@ strategic context.
 
 **Status**: v0.80.0 — current release (cosign-signed + CycloneDX SBOM,
 [`docs/releases/v0.80.0.md`](docs/releases/v0.80.0.md)); v0.1.0 was the
-first stable pre-publication tag (2026-05-18). Public demo deployment at
-[`demo.helpmefindthejob.org`](https://demo.helpmefindthejob.org/)
-serves the seven canonical personas as pre-seeded sandbox accounts
-(Aïcha, Yusuf, Olga, Mahmoud, Maria, Käthe, Tobias — shared password
-printed on the demo landing); the live apex
-[`helpmefindthejob.org`](https://helpmefindthejob.org/) hosts the
-same code with the public registration flow. DNS for the `demo.`
-subdomain is being configured by the maintainer; if the link does
-not yet resolve, the apex above is the same code with your own
+first stable pre-publication tag (2026-05-18). A public demo is prepared at
+[`demo.helpmefindthejob.org`](https://demo.helpmefindthejob.org/) and is
+intended to serve the seven canonical personas as pre-seeded sandbox
+accounts (Aïcha, Yusuf, Olga, Mahmoud, Maria, Käthe, Tobias; shared
+sandbox password shown on the demo landing). It is not guaranteed live
+at submission time: DNS for the `demo.` subdomain is still being
+configured, so if the link does not resolve, self-host from the
+repository or use the apex
+[`helpmefindthejob.org`](https://helpmefindthejob.org/) with your own
 fresh account. Seed-personas recipe at
 [`scripts/seed-personas.py`](scripts/seed-personas.py) reproduces
 the demo state on any self-hosted instance. The
@@ -77,7 +77,7 @@ We are transparent about where this project came from — the git history
 shows it, and honesty is the stronger signal than concealment. Helpmefindthejob
 was originally developed in private as a self-hosted prototype that explored a
 hosted, paid model. In May 2026 the direction was **deliberately changed to an
-open civic commons**: relicensed **Apache-2.0** (with a CLA), prepared as a
+open civic commons**: relicensed **Apache-2.0** (with a CLA), with an application opened to become a
 Programme of **The Commons Conservancy**, the paid model removed, and the
 project centred on being free to run and self-host — bring-your-own-AI
 (including a fully offline path), encrypted user data, exportable records,
@@ -333,8 +333,7 @@ your own AI.
 
 ## Hosted by
 
-**Hosted by The Commons Conservancy** *(application pending — Week 2 of
-the grant sprint).* Once admission lands, this section is updated with
+**Applied for hosting by The Commons Conservancy** *(application submitted; response pending).* Once admission lands, this section is updated with
 the Programme page link and any required acknowledgment language.
 
 Project **governance, decision-making, and succession** are described in [GOVERNANCE.md](GOVERNANCE.md) — including how the Apache-2.0 + CLA model and the Commons Conservancy track keep the project stewardable beyond any single maintainer.
@@ -398,11 +397,13 @@ sustainability model) at [`docs/grant/03-post-grant.md`](docs/grant/03-post-gran
 - **Documentation site**: published via mkdocs-material to GitHub Pages
   (transitions to [`helpmefindthejob.org`](https://helpmefindthejob.org/)
   when the maintainer wires the CNAME).
-- **Public demo**: live at [`demo.helpmefindthejob.org`](https://demo.helpmefindthejob.org/),
-  pre-seeded with the seven-persona panel. Registration is closed; log in with any
-  persona, e.g. `aicha@demo.helpmefindthejob.org` / `ExploreDemo2026` (also yusuf, olga,
-  mahmoud, maria, kaethe, tobias — same password). Shared sandbox; don't enter real
-  personal data.
+- **Public demo**: *prepared, not guaranteed live at submission time* at
+  [`demo.helpmefindthejob.org`](https://demo.helpmefindthejob.org/),
+  pre-seeded with the seven-persona panel. If it is reachable, registration is
+  closed; log in with a persona address (e.g. `aicha@demo.helpmefindthejob.org`,
+  also yusuf, olga, mahmoud, maria, kaethe, tobias) using the shared sandbox
+  password shown on the demo landing page. Shared sandbox; don't enter real
+  personal data. If it is not reachable, use the repository and self-hosting recipe.
 
 ## Why this exists
 

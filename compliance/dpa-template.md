@@ -17,7 +17,7 @@ review before signing.
 | Party | GDPR role | Typical example |
 |---|---|---|
 | The deployer (you, the institutional buyer) | **Controller** of end-user personal data | Beratungsstelle X running its own deploy |
-| The Helpmefindthejob project | **Software provider** (not a processor) — ships open-source code | The Commons Conservancy / NLnet-funded project |
+| The Helpmefindthejob project | **Software provider** (not a processor) — ships open-source code | An Apache-2.0 open-source project (NLnet application and Commons Conservancy admission both pending) |
 | The end-user (data subject) | **Data subject** | A migrant in Aïcha's situation using the deployer's instance |
 | Third-party AI provider (if BYO-key) | **Sub-processor** (only if the deployer configures one) | OpenAI, DeepSeek, Anthropic, Google, or local Ollama |
 | Self-hosted LLM (Ollama) | **No sub-processor** — runs on the deployer's own machine | The deployer's Ollama instance |

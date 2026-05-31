@@ -66,7 +66,7 @@ We plan to:
   the TU Berlin Career Service. Goal: one credible letter of support
   for the NLnet application.
 - Submit the **NLnet NGI Zero Commons Fund application** by the end
-  of Week 4 (target call 14, ~2026-08-01 deadline; final date verified
+  of Week 4 (target: NGI Zero Commons Fund 13th call, deadline 1 June 2026 12:00 CEST; earlier call-14 / ~August-2026 notes superseded — see docs/grant/04-research-and-decisions.md
   per `docs/grant/04-research-and-decisions.md` Open R1).
 - Sign v0.1.0 release artifacts with `cosign` and publish the SBOM
   (CycloneDX format).

@@ -1,22 +1,16 @@
 # Application to The Commons Conservancy — Helpmefindthejob Programme
 
-**Status**: DRAFTED 2026-05-18 — pending maintainer review before send.
+**Status**: Submitted. Response pending from The Commons Conservancy. This document is a record of the submitted request and must not be read as evidence of acceptance.
 **Target send channel**: `website@commonsconservancy.org` (the public contact published in the Conservancy footer; if Conservancy has since published a more specific application address, route there). The site's `/how/` page describes a six-phase process beginning with **Initiation**, where the Conservancy verifies eligibility and assigns a case officer; this letter is the Initiation notification.
 
 **Reference**: Decision 2 in `04-research-and-decisions.md` — institutional wrapper is The Commons Conservancy, application target Week 2 of the grant sprint.
 
-**Pre-send checklist** (maintainer):
+**Submission record**: the request below was submitted and the maintainer's public-facing identity and reply-to contact were supplied at send time; they are kept in the maintainer's records rather than in this public document. The co-maintainer is referenced via the consent-first authorship phrasing (Decision 18 in `04-research-and-decisions.md`) rather than named. The licence statement matches `LICENSE` and `cla.md`.
 
-- [ ] Resolve `[MAINTAINER_NAME]` and `[MAINTAINER_EMAIL]` placeholders with the public-facing identity you want associated with the Conservancy record.
-- [ ] Decide whether to surface the partner co-maintainer in this letter or defer naming per the consent-first authorship policy (Decision 18 in `04-research-and-decisions.md`). The current draft uses the consent-first phrasing.
-- [ ] Confirm the licence statement matches what landed in `LICENSE` and `cla.md` (it does, at branch HEAD).
-- [ ] Add an attachment list if you want to include the README, project brief, or AI Act compliance pack preview alongside the email.
-- [ ] Send.
+**Post-send tracking**:
 
-**Post-send checklist** (agent + maintainer):
-
-- [ ] Log the send date and recipient in the new Open R11 entry in `04-research-and-decisions.md` Part C.
-- [ ] Watch the inbox for the case-officer assignment; the Conservancy `/how/` page does not publish an explicit timeline, so the expected response window is recorded as "2–6 weeks based on observed cadence of recent Programme admissions" until we have concrete data.
+- The send date and recipient are recorded in `04-research-and-decisions.md` Part C.
+- Awaiting the case-officer assignment; the Conservancy `/how/` page does not publish an explicit timeline, so the expected response window is recorded as "2–6 weeks based on observed cadence of recent Programme admissions" until we have concrete data.
 
 ---
 
@@ -66,7 +60,7 @@ We pledge that:
 
 On admission to the Conservancy as a Programme we anticipate a small founding Board, with at minimum the maintainer and one co-maintainer (already an active contributor; identity to be added publicly per the project's consent-first authorship policy documented in `AUTHORS.md`). We will adopt the standard DRACC pattern for statutes — modelled on FileSender (DRACC 0017) or, where applicable, on Redwax — and we are open to the case officer's guidance on whether the project's small initial scale warrants a leaner variant.
 
-We do not anticipate a budget on entry. The project's first concrete funding ask is an in-flight application to the NLnet NGI Zero Commons Fund (Call 14, deadline approximately 1 August 2026) for €37,000 across six milestones to harden the project for institutional deployment. Conservancy admission would substantively strengthen that application by providing the institutional wrapper NGI0 reviewers look for.
+We do not anticipate a budget on entry. The project's first concrete funding ask is an in-flight application to the NLnet NGI Zero Commons Fund (NGI Zero Commons Fund, 13th call; submission deadline 1 June 2026, 12:00 CEST) for €37,000 across six milestones to harden the project for institutional deployment. Conservancy admission would substantively strengthen that application by providing the institutional wrapper NGI0 reviewers look for.
 
 ### What we are asking for at this stage
 
@@ -77,9 +71,9 @@ If admission is granted in time to be cited in the NGI0 application, that would 
 ### Logistics
 
 - **Project repository**: <https://github.com/maksodf/helpmefindthejob>
-- **Active working branch** (Week 1 grant-readiness hardening visible): `claude/project-analysis-bpHCo`
+- **Reference point** (grant-readiness hardening visible): `main` (and the `v0.80.0` tag)
 - **Strategic planning workspace**: `docs/grant/` in the repository — full project brief, four-week execution plan, decisions log, AI Act compliance plan, MCP composition spec, and a 374-line feature-verification report are all public.
-- **Primary contact**: [MAINTAINER_NAME], [MAINTAINER_EMAIL]
+- **Primary contact**: supplied at send time; held in the maintainer's records rather than in this public document.
 - **Maintainer affiliation**: student at the Technische Universität Berlin
 - **Geographic base**: Berlin, Germany
 
@@ -88,8 +82,8 @@ We would be glad to provide any additional material — a demo video, a longer m
 With thanks for considering our application, and in advance for the time of whichever case officer is assigned,
 
 Sincerely,
-[MAINTAINER_NAME]
-Helpmefindthejob maintainer
+The Helpmefindthejob maintainer
+(name supplied at send time; held in the maintainer's records rather than in this public document)
 
 ---
 

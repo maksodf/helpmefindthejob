@@ -1,5 +1,7 @@
 # Outreach draft 03 — TU Berlin Career Service (doubles as Template G academic email)
 
+> Internal working material — not linked from the final application. Remove private-contact notes, fill sender fields, and keep the cautious compliance/privacy wording below before any external use.
+
 **STATUS**: DRAFTED — NOT YET SENT — TARGET SEND: WEEK 4 START
 
 **Contact details last verified**: 2026-05-18 via TU Berlin Career Service team page (tu.berlin/en/careerservice/about-us/team). Re-checked 2026-05-19 — no public change to the team-listing surface. Re-verify name + role + email on the day of sending; TU Berlin's team page is occasionally republished mid-semester.
@@ -33,7 +35,7 @@ A single email to the head of unit doubles as both the partner-letter outreach (
 
 Sehr geehrte Frau Satory,
 
-mein Name ist [Maintainer]. Ich studiere an der TU Berlin ([Studienprogramm], Matrikelnummer [TBD]) und entwickle ein Open-Source-Projekt mit konkretem Bezug zur Career-Service-Arbeit: **Helpmefindthejob** unterstützt internationale Studierende und Absolvent:innen beim Übergang in den deutschen Arbeitsmarkt nach dem Studium. Das Tool ist mehrsprachig (Englisch und Deutsch live, weitere Sprachen auf der Roadmap), DSGVO-konform (lokal selbst hostbar, ChaCha20-Poly1305-verschlüsselt) und im Vorgriff auf den EU AI Act ab 2. August 2026 vollständig dokumentiert. Eine Adoption durch Institutionen wäre lizenzkostenfrei.
+mein Name ist [Maintainer]. Ich studiere an der TU Berlin ([Studienprogramm], Matrikelnummer optional) und entwickle ein Open-Source-Projekt mit konkretem Bezug zur Career-Service-Arbeit: **Helpmefindthejob** unterstützt internationale Studierende und Absolvent:innen beim Übergang in den deutschen Arbeitsmarkt nach dem Studium. Das Tool ist mehrsprachig (Englisch und Deutsch live, weitere Sprachen auf der Roadmap), datenschutzfreundlich (lokal selbst hostbar, ChaCha20-Poly1305-verschlüsselt; in den lokalen Modi — Ollama, manuell, deterministisch — verlassen keine Daten die Instanz, bei Cloud-KI nur der minimal nötige Prompt-Ausschnitt nach Einwilligung) und bietet Compliance-unterstützende Kontrollen und Dokumentation im Hinblick auf den EU AI Act (Stichtag 2. August 2026; die rechtliche Bewertung bleibt Sache der einsetzenden Stelle). Eine Adoption durch Institutionen wäre lizenzkostenfrei.
 
 Internationale Absolvent:innen der TU Berlin stoßen wiederkehrend auf dieselben strukturellen Hürden: Übersetzung des Lebenslaufs in das deutsche Format, Identifikation anerkennungsbereiter Arbeitgeber, Motivationsschreiben, die deutsche Einstellungskonventionen treffen. Genau diese drei Punkte adressiert das Tool direkt. Die persona-basierte Fallarbeit unseres Projekts umfasst u. a. eine ukrainische Senior-Frontend-Entwicklerin (§ 24 Schutz) und einen türkischen Maschinenbauingenieur im EU-Blue-Card-Verfahren — Profile, die dem Career Service International (Frau Glaeskes Team) gut bekannt sein dürften.
 

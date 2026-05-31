@@ -81,11 +81,11 @@ The migrant subset is the densest concentration of cases per advisor visit and i
 
 **At scale**: Hard to quantify per-deployment, but vendor lock-in is one of the top three procurement risks public-sector IT decision-makers cite.
 
-### 5. AI Act compliance built in
+### 5. AI Act compliance support built in
 
-**How**: The project ships with a DPIA template, transparency notice, human-oversight UI, audit logging, explainability layer, technical documentation aligned with EU AI Act Annex IV. Institutions deploying the agent inherit a compliant configuration; they do not have to do the compliance engineering themselves.
+**How**: The project ships with a DPIA template, transparency notice, human-oversight UI, audit logging, explainability layer, technical documentation aligned with EU AI Act Annex IV. Institutions deploying the agent start from a compliance-supporting configuration; they still complete their own context-specific legal review, but not the technical compliance engineering.
 
-**Per-instance saving**: A typical AI Act high-risk-system compliance project for an institution adopting AI in employment context costs €30–€200k in external consulting plus internal staff time. We make this cost zero (or near-zero — a deployer still needs to do the legal review specific to their context, but not the technical compliance engineering).
+**Per-instance saving**: A typical AI Act high-risk-system compliance project for an institution adopting AI in employment context costs €30–€200k in external consulting plus internal staff time. This removes most of that cost (a deployer still does the legal review specific to their context, but not the technical compliance engineering).
 
 **At scale**: Multiplied across every institution that wants to use AI in employment in the EU after 2 August 2026, this is potentially the single largest cost-avoidance mechanism in the project.
 
@@ -178,7 +178,7 @@ These costs are real, named, and budgeted in every institutional deployment disc
 
 When writing the NLnet application, every milestone deliverable is paired with its cost-saving mechanism. Example milestone phrasing:
 
-> **Milestone 3: AI Act compliance pack.** Ship the DPIA template, transparency notice, human-oversight UI, audit logging integration, explainability layer, and technical-documentation pack aligned with EU AI Act Annex IV. **Cost-saving mechanism**: every institution that deploys the agent inherits a compliant configuration, avoiding €30–€200k of external-consultant work otherwise needed for high-risk-AI compliance under the AI Act effective from 2 August 2026.
+> **Milestone 3: AI Act compliance pack.** Ship the DPIA template, transparency notice, human-oversight UI, audit logging integration, explainability layer, and technical-documentation pack aligned with EU AI Act Annex IV. **Cost-saving mechanism**: every institution that deploys the agent starts from a compliance-supporting configuration (the deployer retains its own legal review), avoiding €30–€200k of external-consultant work otherwise needed for high-risk-AI compliance under the AI Act effective from 2 August 2026.
 
 Every milestone gets this treatment.
 

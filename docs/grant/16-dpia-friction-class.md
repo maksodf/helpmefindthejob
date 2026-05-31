@@ -48,7 +48,7 @@ deployment (Germany, Week 2 grant timeline per the project plan).
 
 - **In-process**: the classifier runs in the same Python process that
   serves the user's request. No network call, no third-party API.
-- **No egress**: the CV text used as input never leaves the
+- **No egress from the classifier**: the CV text used as input never leaves the
   deployment's process. The friction_class output **does** travel
   alongside the CV when the user invokes an AI call (see §7 below)
   — that's the only path where any classifier-derived value leaves

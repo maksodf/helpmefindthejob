@@ -1,7 +1,9 @@
+> Archive note: internal planning/history document, not the final NLnet submission text. The canonical reviewer entry points are the repository README and `docs/grant/application-draft-2026-05-19.md`.
+
 # 4-Week Execution Plan — NGI0 Grant Readiness
 
 **Last updated**: 2026-05-17
-**Target submission**: next NLnet call after planning completes (verify NLnet's published call dates before committing to a deadline)
+**Target submission**: NGI Zero Commons Fund 13th call, deadline 1 June 2026 12:00 CEST (earlier "next call" / August 2026 framing is superseded and retained only as historical record)
 **Estimated total effort**: ~140–180 hours of focused non-feature work (calibrated to maintainer's 18 h/day availability)
 **Owner**: maintainer + agent sessions
 
@@ -19,7 +21,7 @@ For task ordering and dependencies, the weeks are roughly sequential but not str
 - [ ] Confirm the GitHub repo URL stays where it is OR migrate to a `helpmefindthejob` org for institutional-wrapper signal
 - [ ] Switch maintainer workstation from mobile to computer for execution
 - [ ] Read `01-project-brief.md` and `04-research-and-decisions.md` end-to-end so the strategic context is fresh
-- [ ] Create `claude/week-1-foundations` branch off the current working branch
+- [ ] Create a week-1-foundations working branch off `main`
 - [ ] Snapshot the live production deployment state (real users? real revenue? what we can change publicly without breaking trust?)
 - [ ] Decide on the public-domain name for the eventual demo deployment (Week 3 task — needs decision now)
 
@@ -63,7 +65,7 @@ For task ordering and dependencies, the weeks are roughly sequential but not str
 - [ ] Add one screenshot or animated GIF demoing the chat journey end-to-end *(deferred to Week 3 alongside the public demo deployment so the captured screenshot reflects the canonical reference state, not the pre-launch private instance)*
 - [x] Add "Standards we implement" section: MCP, schema.org JobPosting, ESCO, EURES, WCAG 2.2 AA target, RFC 9116, GDPR-aligned, Apache 2.0, EU AI Act
 - [x] Pro/Free billing removed entirely from public README (per maintainer instruction; no transition language needed because the deployment never had paying users)
-- [x] "Hosted by The Commons Conservancy" notice with application-pending placeholder
+- [x] "Application to The Commons Conservancy submitted; response pending" notice (admission not yet granted, so not currently the legal host/provider/fiscal sponsor)
 - [x] Quickstart that genuinely works in 5 minutes from a clean machine (Python or Docker path)
 - [x] Link to documentation site placeholder (Week 3)
 - [x] Link to public demo placeholder (Week 3)
@@ -105,7 +107,7 @@ For task ordering and dependencies, the weeks are roughly sequential but not str
 
 **Repo description (Settings → General → About)**:
 
-> Open-source EU-wide civic-employment commons — an MCP-composable copilot for anyone facing structural labor-market friction in Europe; migrants and EU-mobile workers are the most acute use case. Apache 2.0, EU AI Act compliant by design, pending Programme of The Commons Conservancy.
+> Open-source EU-wide civic-employment commons — an MCP-composable copilot for anyone facing structural labor-market friction in Europe; migrants and EU-mobile workers are the most acute use case. Apache 2.0, providing EU AI Act compliance-supporting controls, with an application to The Commons Conservancy submitted (response pending; admission not yet granted).
 
 **Website field**: leave blank for now; populate with `https://demo.<domain>` once the public demo deploys in Week 3 task 3.4.
 
@@ -177,7 +179,7 @@ Optional additions if you want to surface more themes: `eu`, `nlnet`, `anerkennu
 
 ## Week 2 — MCP composition, Commons Conservancy, AI Act compliance
 
-**Goal**: the central pitch claim — "MCP-composable, AI-Act-compliant civic-agent infrastructure" — is verifiable by any reviewer reading the repo for 5 minutes. The Commons Conservancy application is submitted.
+**Goal**: the central pitch claim — "MCP-composable civic-agent infrastructure shipping AI Act compliance-supporting controls (deployer retains own legal review)" — is verifiable by any reviewer reading the repo for 5 minutes. The Commons Conservancy application is submitted.
 
 **Estimated effort**: ~56–58 hours (~50 h for the original §§2.1–2.8 plus the new §2.0 Feature verification pass at 6–8 h, added as the new highest-priority Week 2 work).
 
@@ -194,7 +196,7 @@ The verification runs in a clean Docker container so the "fresh-clone smoke test
   - **Ollama** (fully offline) — confirm the BYO-AI claim works without external network egress
   - At least one cloud provider (OpenAI / Anthropic / Gemini / DeepSeek / OpenRouter — maintainer picks based on available API key)
 - [ ] Inspect a persisted CV file: read the implementation in `company_discovery/cv_builder.py` and any encryption helper, then look at the actual file in `data/`, and confirm ChaCha20-Poly1305 is actually applied (not just claimed). Document key derivation, nonce handling, authentication-tag verification.
-- [ ] Call all 8 MCP tools listed in `mcp_server.py` and confirm each returns a JSON-Schema-valid response (use a small `jsonschema` test harness; record the exact schemas and responses).
+- [ ] Call all 15 MCP tools listed in `mcp_server.py` and confirm each returns a JSON-Schema-valid response (use a small `jsonschema` test harness; record the exact schemas and responses).
 - [ ] Switch language EN ↔ DE; verify the UI fully reloads and all visible strings translate. Test German yes/no parsing: `ja`, `nein`, `jo`, `jep`, `nö`, `nope`. Confirm each is correctly classified.
 - [ ] Run the existing test suite in the clean container (`python3 -m unittest discover -s tests -v`) and verify the "tests pass" claim. Record the actual pass/fail count.
 - [ ] Capture screenshots / terminal recordings of each verification step into `docs/grant/feature-verification-2026-05-XX/` (auxiliary artefacts directory; not committed by default unless useful)
@@ -211,7 +213,7 @@ The verification runs in a clean Docker container so the "fresh-clone smoke test
 ### 2.2 MCP server documentation (6 h) — BLOCKER FIX
 
 - [x] Create `docs/mcp-server.md` covering the catalogue:
-  - Tool name, purpose, required input fields, output shape, standards alignment per tool (8 tools today; 13 after §2.3)
+  - Tool name, purpose, required input fields, output shape, standards alignment per tool (the current catalogue is 15 tools; the 8 / 13 counts noted during this sprint are historical)
   - Protocol version pinned at `2024-11-05`
   - Catalogue version (SemVer): policy documented; current `0.1.0`
   - Composition patterns explained: sequential handoff, profile-shared, orchestrated (future) — cross-linked to `09-mcp-composition.md`
@@ -272,7 +274,7 @@ If no positive response (Option A fallback):
 - [x] Calls `find_company_career_page` and `propose_referral` with known inputs — covered by `test_06_find_company_career_page_happy_path` and `test_04_propose_referral_happy_path`. Also covers `query_esco_skill` happy path (§2.4 German-label lookup) for completeness across the catalogue's three eras (legacy 8 + §2.3 composition tools + §2.4 ESCO).
 - [x] Validates all responses against the published JSON Schemas — every `tools/list` schema is Draft-7-compiled; every happy-path response is parsed and field-checked against the documented shape; the schema-validation failure path is verified via `test_07_invalid_arguments_returns_rfc7807_problem_document` (deliberately malformed `record_user_outcome` payload returns the RFC 7807 Problem Details document with `violatedRule: "enum"`).
 - [x] Clean shutdown — `_cleanup` asserts subprocess exits 0 within 10 seconds after stdin close.
-- [x] Green badge in README — top of `README.md` carries `[![MCP integration](https://github.com/maksodf/helpmefindthejob/actions/workflows/mcp-integration.yml/badge.svg?branch=claude/project-analysis-bpHCo)](https://github.com/maksodf/helpmefindthejob/actions/workflows/mcp-integration.yml)`; will go green on the first push to GitHub that picks up the workflow.
+- [x] Green badge in README — top of `README.md` carries `[![MCP integration](https://github.com/maksodf/helpmefindthejob/actions/workflows/mcp-integration.yml/badge.svg?branch=main)](https://github.com/maksodf/helpmefindthejob/actions/workflows/mcp-integration.yml)`; will go green on the first push to GitHub that picks up the workflow.
 
 ### 2.7 ARCHITECTURE.md (4 h)
 
@@ -442,11 +444,11 @@ The three draft messages prepared in Week 1 task 1.6 are saved under [`outreach-
 - [x] Cosign-sign `v0.1.0` release *(landed 2026-05-19: v0.1.0 source tarball signed with cosign 3.0.6 + long-lived ECDSA P-256 key (model b). Bundle at `docs/releases/v0.1.0-source.tar.gz.sigstore` + public key at `docs/releases/v0.1.0-cosign.pub`; both attached to the GitHub Release v0.1.0. Private key stored at `~/.config/helpmefindthejob/cosign-v0.1.0.key` (outside repo, chmod 600); generated password sidecar in same directory. `cosign verify-blob ... --insecure-ignore-tlog` returns "Verified OK". v0.2.0+ planned for keyless via GH Actions OIDC — full signing-policy doc at `docs/releases/v0.1.0-signing.md`. Key rotation policy: per-release key generation; the v0.1.0 key is NOT reused for future releases.)*
 - [x] Attach CycloneDX SBOM (via `cyclonedx-py`) *(landed 2026-05-19: `docs/releases/v0.1.0-sbom.json` generated by `cyclonedx-py environment` (cyclonedx-bom 7.3.0) against the project's pinned Python venv. CycloneDX 1.6 format, 96 components including runtime + dev deps + transitives. Committed under `docs/releases/` AND attached to the GitHub Release v0.1.0.)*
 - [x] `static/.well-known/security.txt` per RFC 9116 *(landed 2026-05-19: `static/.well-known/security.txt` with Contact (placeholder mailto + GitHub Security Advisories URL), Expires (2027-05-19, +365 days), Preferred-Languages (en, de), Canonical (live GH Pages URL), Acknowledgments, Policy. Served by app.py's existing `serve_static` route at `/.well-known/security.txt` with `Content-Type: text/plain` — curl probe verified HTTP 200 + 954-byte body. Cross-referenced from `SECURITY.md` top-of-file.)*
-- [x] Verify OpenSSF Scorecard badge is at acceptable score (8.0+) *(landed 2026-05-19: documented in `docs/grant/scorecard-status-2026-05-19.md`. Live score not yet populated because Scorecard workflow only runs on `push` to main + weekly cron, and this sprint has been on `claude/project-analysis-bpHCo`. Expected per-check outcomes documented: Pinned-Dependencies 10/10 (post 546f952 + 5be9f47 SHA-pin sweeps), Token-Permissions 10/10 (every workflow declares minimum `permissions: contents: read` at top level with per-job escalations), Security-Policy 10/10 (SECURITY.md + RFC 9116 security.txt), SBOM 10/10, Signed-Releases 10/10, Dangerous-Workflow 10/10, Maintained 10/10, License 10/10, CI-Tests 10/10. Only Branch-Protection requires maintainer-side GitHub Settings action; surfaced in the scorecard-status doc.)*
+- [x] Verify OpenSSF Scorecard badge is at acceptable score (8.0+) *(landed 2026-05-19: documented in `docs/grant/scorecard-status-2026-05-19.md`. Live score not yet populated because Scorecard workflow only runs on `push` to main + weekly cron, and this sprint has been on a working branch rather than `main`. Expected per-check outcomes documented: Pinned-Dependencies 10/10 (post 546f952 + 5be9f47 SHA-pin sweeps), Token-Permissions 10/10 (every workflow declares minimum `permissions: contents: read` at top level with per-job escalations), Security-Policy 10/10 (SECURITY.md + RFC 9116 security.txt), SBOM 10/10, Signed-Releases 10/10, Dangerous-Workflow 10/10, Maintained 10/10, License 10/10, CI-Tests 10/10. Only Branch-Protection requires maintainer-side GitHub Settings action; surfaced in the scorecard-status doc.)*
 
 ### 4.3 Letter of support consolidation (2 h)
 
-- [ ] Confirm receipt of at least one letter of support OR ensure the cold contact is in active discussion that can be cited
+- [ ] Track outreach status honestly: no partner support letter has been received yet and no pilot partner is confirmed; cite only outreach prepared/sent with responses pending, never an unconfirmed partner
 - [ ] If letter signed: archive PDF in `docs/grant/letters-of-support/`
 - [ ] Update `11-institutional-outreach.md` tracker
 
@@ -479,7 +481,7 @@ The three draft messages prepared in Week 1 task 1.6 are saved under [`outreach-
 - `v0.1.0` signed with cosign + SBOM attached
 - `security.txt` published per RFC 9116
 - OpenSSF Scorecard badge ≥ 8.0
-- At least one letter of support in hand or active partner discussion ongoing
+- Outreach prepared and/or sent; no partner support letter has been received yet and no pilot partner is confirmed — a first pilot remains a planned post-grant activity
 - Application submitted to NLnet
 - `v0.2.0` tagged
 

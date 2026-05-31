@@ -18,15 +18,17 @@ exist for two reasons:
 
 ## What's here
 
-### `housing-stub-client/` — housing reference agent (real composition)
+### `housing-stub-client/` — local reference/stub housing client (composition mechanics)
 
-An independent housing agent that composes with Helpmefindthejob over
-MCP, demonstrating the **sequential handoff** (Mode 1, full referral
-lifecycle) and **consent-bound profile-shared composition** (Mode 2)
-end-to-end against a real MCP server subprocess. The composition is
-real: it carries real consent-scoped profile data, and the run proves
-the EU-AI-Act Article-12 audit chain (`verify_chain`). Only the housing
-listings themselves are illustrative.
+A **local reference/stub** housing client — **not** a live external civic
+agent — that composes with Helpmefindthejob over MCP, demonstrating the
+**sequential handoff** (Mode 1, full referral lifecycle) and
+**consent-bound profile-shared composition** (Mode 2) end-to-end against a
+real MCP server subprocess. The composition *mechanics* are real: the run
+carries real consent-scoped profile data and proves the EU-AI-Act
+Article-12 audit chain (`verify_chain`). The housing agent itself is a stub
+and the housing listings are illustrative; a live external housing-agent
+integration is future work (Option B below).
 
 **Scope note (Decision 20):** the maintainer does not self-build a
 production Phase-1 housing *product*. A production integration with an

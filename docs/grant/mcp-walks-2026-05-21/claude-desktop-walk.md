@@ -91,12 +91,12 @@ salts into this file. Walk-only credentials, tempdir storage.
 `Cmd+Q` and reopen. On startup Claude Desktop spawns the `mcp_server.py`
 subprocess and exchanges `initialize` + `tools/list` automatically.
 
-### 4. Verify the 13 tools are surfaced
+### 4. Verify the 15 tools are surfaced
 
 Open the "Available tools" / "MCP" panel in Claude Desktop. Expected:
 
 ```
-helpmefindthejob (13 tools)
+helpmefindthejob (15 tools)
   - suggest_relevant_companies
   - add_company_to_watchlist
   - find_company_career_page
@@ -151,7 +151,7 @@ by any modern AI agent without our application code in the loop.
 
 For the grant pack, capture:
 
-1. **Screenshot of the Claude Desktop tool panel** showing 13 tools
+1. **Screenshot of the Claude Desktop tool panel** showing 15 tools
    listed under `helpmefindthejob`. File:
    `claude-desktop-tool-panel.png` (operator captures manually)
 2. **Markdown transcript** of the Claude chat — Claude's

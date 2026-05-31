@@ -20,7 +20,7 @@ specifics). This file is the actual ordering.
 ### 0.1 Confirm the build is green
 
 ```bash
-git checkout claude/project-analysis-bpHCo   # the working branch
+git checkout main   # or the v0.80.0 tag
 git log --oneline | head -5                  # confirm latest commit
 python -m unittest discover -s tests 2>&1 | tail -3   # 2925+ tests, 0 failures
 ```
@@ -117,7 +117,7 @@ not proceed if it fails.**
 
 ```bash
 cd /opt/helpmefindthejob
-git pull origin claude/project-analysis-bpHCo  # or main after merge
+git pull origin main  # pull latest changes
 docker compose up -d --build
 docker compose ps   # all services healthy
 docker compose logs --tail=50 helpmefindthejob

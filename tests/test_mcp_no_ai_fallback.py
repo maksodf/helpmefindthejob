@@ -12,7 +12,7 @@ Ollama-only (or no AI at all) MUST be able to use every tool with
 a templated / heuristic / deterministic response — NOT a "no AI
 available" error.
 
-This file runs every one of the 13 MCP tools in the catalogue
+This file runs every one of the 15 MCP tools in the catalogue
 with no AI configured and asserts:
 - The response is well-formed (has 'status' field)
 - The response is meaningful (not an empty 'no AI' error)

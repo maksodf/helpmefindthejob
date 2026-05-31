@@ -24,5 +24,5 @@ skip = *.lock,*.json,*.svg,*.css,*.min.js,*.pdf,private,data,build,site,static/i
 #   * Hyphenated style-preferences that codespell flags as typos
 #     ("re-using", "Pre-empt", "pre-selected") — local style varies
 #     and these are not actual typos.
-ignore-words-list = te,ihr,hte,ot,fo,ist,nin,zustand,wirklich,wahr,falsch,ans,nd,sie,vor,zwei,herr,wir,mit,zur,bei,den,des,dem,bzw,iam,jet,oder,muss,nur,fro,uhr,viel,seid,mage,finde,passt,als,bund,titel,egal,noe,lokal,lokale,alternativ,unter,offen,programm,absolut,deines,relativ,alle,deine,tage,unser,methoden,adresse,prozess,re-using,re-uses,re-used,re-use,pre-empt,pre-selected,explizit,aktive,algorithmus,klicks,klick,foto,plattform,autors,dezember,ende,ue,celle,alph,unparseable,branche,wasn,nore,memember
+ignore-words-list = te,ihr,hte,ot,fo,ist,nin,zustand,wirklich,wahr,falsch,ans,nd,sie,vor,zwei,herr,wir,mit,zur,bei,den,des,dem,bzw,iam,jet,oder,muss,nur,fro,uhr,viel,seid,mage,finde,passt,als,bund,titel,egal,noe,lokal,lokale,alternativ,unter,offen,programm,absolut,deines,relativ,alle,deine,tage,unser,methoden,adresse,prozess,re-using,re-uses,re-used,re-use,pre-empt,pre-selected,explizit,aktive,algorithmus,klicks,klick,foto,plattform,autors,dezember,ende,ue,celle,alph,unparseable,branche,wasn,nore,memember,manuell
 quiet-level = 3

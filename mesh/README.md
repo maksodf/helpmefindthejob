@@ -31,7 +31,7 @@ to read instead of a spec.
                 │  employment-agent (this project)                │
                 │  http://127.0.0.1:8765                          │
                 │                                                  │
-                │  exposes 13 MCP tools at /api/mcp                │
+                │  exposes 15 MCP tools at /api/mcp                │
                 │  emits propose_referral, profile-consume,        │
                 │  query_esco_skill, eligibility-check             │
                 └────────────┬─────────────┬─────────────┬─────────┘

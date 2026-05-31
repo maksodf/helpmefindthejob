@@ -29,7 +29,7 @@ This template is **pre-filled** at the provider level with the architectural mit
 |---|---|
 | AI system name | Helpmefindthejob |
 | Version | `[TBD: deployer to fill — e.g., v0.1.0]` |
-| Provider | The Commons Conservancy, hosting the Helpmefindthejob Programme |
+| Provider | The Helpmefindthejob project / maintainer (Apache-2.0). The Commons Conservancy is not the provider unless its admission is accepted and the role is formally agreed. |
 | Repository | `https://github.com/maksodf/helpmefindthejob` |
 | Annex III classification | §4(a) and §4(b) — recruitment / selection support |
 

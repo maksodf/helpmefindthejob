@@ -1,3 +1,5 @@
+> Archive note: internal planning/history document, not the final NLnet submission text. The canonical reviewer entry points are the repository README and `docs/grant/application-draft-2026-05-19.md`.
+
 # Research Findings and Decisions Log
 
 **Status**: living record. Append when new research lands or a strategic decision is made.
@@ -20,7 +22,8 @@ If a number, claim, or decision in `01-project-brief.md` ever seems off, the sou
 | Total programme budget | €21.6 million | NLnet, EU CORDIS |
 | Deadline cadence | Every 2 months (rolling) | NLnet Commons Fund page |
 | Recent open call | 13th call: 1 April 2026 – 1 June 2026 12:00 CEST | NLnet announcement |
-| Next call deadline (approximate) | 1 August 2026 (call 14, dates inferred from cadence) | inferred from 2-month rolling pattern |
+| Target call | NGI Zero Commons Fund 13th call — deadline 1 June 2026 12:00 CEST | NLnet announcement |
+| Next call deadline (approximate, superseded/historical) | ~1 August 2026 (call 14, dates inferred from cadence) — NOT the submission target; retained only as historical record | inferred from 2-month rolling pattern |
 | Payment model | Milestone-based, results-only — no progress reports | Guide for Applicants |
 | Geographic priority | EU + Horizon-associated; non-EU eligible with European dimension | Guide for Applicants |
 | Open-source requirement | Recognised free/open licence, full source published | Guide for Applicants |
@@ -208,7 +211,7 @@ Each decision is dated. Each can be reopened — but reopening means changing th
 **Reasoning**:
 - Enforcement date is 2 August 2026 — within the project's funding window
 - Most commercial competitors are not compliant; this is a durable moat
-- Every institutional adopter inherits a compliant configuration, lowering their adoption friction
+- Every institutional adopter starts from a compliance-supporting configuration (controls, templates, audit logging, transparency surfaces, deployer guidance), lowering their adoption friction; the project does not self-certify compliance and the deployer retains their own legal review
 - Cost: ~3–4 days of documentation + UI work + audit logging integration; payoff is the single largest cost-saving mechanism the project offers
 
 Documented in `10-ai-act-compliance.md`.
@@ -220,7 +223,7 @@ Documented in `10-ai-act-compliance.md`.
 **Reasoning**:
 - Real Jobcenter / BA / federal-level adoption cycles are 18–36 months — outside any reasonable grant window
 - Reviewers familiar with German public-sector procurement will see through "will be adopted by BA in 2027" as naive
-- The honest claim is: designed for institutional adoption, standards-anchored (ESCO, EURES schema, schema.org, MCP), AI-Act-compliant by design, with realistic Phase 1 pilots at Beratungsstellen / Optionskommunen / university career services
+- The honest claim is: designed for institutional adoption, standards-anchored (ESCO, EURES schema, schema.org, MCP), shipping AI Act compliance-supporting controls (deployer retains own legal review), with realistic Phase 1 pilots at Beratungsstellen / Optionskommunen / university career services
 - One letter of support from one of those is enough to make the readiness claim concrete
 
 #### Decision 10: Grant ask — frugal default, max only if scope justifies
@@ -449,7 +452,7 @@ NGI0 reviewers reward honesty about alpha state — the Tenzu and Redwax reposit
 - **Zero NGO partners signed**. The three institutional-outreach letters (AWO Charlottenburg-Wilmersdorf, RINWA Berlin / La Red, TU Berlin Career Service) are drafted at `docs/grant/11-institutional-outreach.md` and the maintainer has sent all three at submission time; responses are pending. A signed letter of support would lift the application from "credible single-maintainer civic-tech alpha" to "credible single-maintainer civic-tech alpha with at least one institutional collaborator on record". The application narrative does not claim partners that do not exist; the narrative states only that outreach letters are sent with responses pending at submission time.
 - **Demo deployment is at-risk**. The deployment at `helpmefindthejob.org` is up at submission time, but it has not been the subject of a full Lighthouse / load-test sweep against the seven-persona Playwright suite (that suite is a post-grant deliverable). A reviewer who clicks the demo link may hit an unmodified pre-launch state on any given hour. The README hero copy says "deploying — see status" to honour this honestly; the dedicated `demo.helpmefindthejob.org` subdomain with seeded persona accounts (a tracked post-grant deliverable) is queued behind DNS configuration.
 - **10–13 % fit-scoring OOB rate**. The 2026-05-19 polished cohort run measured **10 / 77 = 13.0 %** out-of-bounds AI-output rate (sub-scores don't sum to total, score outside 0–100, or reason/gaps malformed). The parser-layer score-clamp catches these at user-surface time (see `compliance/accuracy-and-bias-testing.md` §8.1 + `tests/test_prompt_injection_vectors.py::V3JdIndirectInjection`) so the user sees "no score" rather than a misleading number — but the underlying AI-output-quality metric is honestly 13.0 %, not the < 3 % a fully-mature deployment would target. Driving this below 3 % is a tracked post-grant deliverable (see `03-post-grant.md`); the methodology source `compliance/accuracy-and-bias-testing.md` documents the methodology completion plan via partner-NGO pilot in 2026 Q4.
-- **7 / 8 BYO-AI providers are integration-tested via mocks only**. The AI Provider Honesty Matrix at `docs/grant/15-ai-provider-honesty-matrix.md` lists eight providers (OpenAI, Anthropic, Gemini, DeepSeek, OpenRouter, Ollama, Codex CLI, Claude Code). The bias-comparative-report-2026-05-21 exercised two of them live (deepseek + ollama). The other six providers have dispatcher-shape unit tests but not live-key integration tests at submission time. Live-key verification is a Phase-2 deliverable; the BYO-AI architecture means the deployer ultimately owns provider integration on their own keys, so the gap is acceptable for v0.1.0-class deployments but explicitly disclosed.
+- **6 of the 8 cloud/CLI AI providers are integration-tested via mocks only**. The AI Provider Honesty Matrix at `docs/grant/15-ai-provider-honesty-matrix.md` lists these eight cloud/CLI AI providers (OpenAI, Anthropic, Gemini, DeepSeek, OpenRouter, Ollama, Codex CLI, Claude Code) among the 11 total BYO-AI provider modes (the other three being manual, custom, and managed). The bias-comparative-report-2026-05-21 exercised two of them live (deepseek + ollama). The other six providers have dispatcher-shape unit tests but not live-key integration tests at submission time. Live-key verification is a Phase-2 deliverable; the BYO-AI architecture means the deployer ultimately owns provider integration on their own keys, so the gap is acceptable for v0.1.0-class deployments but explicitly disclosed.
 - **Multi-OS CI is absent**. CI runs on Linux (`ubuntu-latest`) only. macOS and Windows runners are not yet wired. A contributor on either of those OSes can submit a PR that breaks the cross-platform behaviour without CI catching it. The fresh-clone-install workflow at `.github/workflows/fresh-clone-install.yml` is the only CI lever today; multi-OS expansion is a tracked post-grant deliverable (reliability + operations).
 
 The framing for any reviewer: these are five concrete known-issues with documented remediation paths and dated tracking entries. The project does not pretend to be at v1.0; it is shipping a v0.80.0-class artefact, honestly described, with the cost-saving and friction-class architecture already in place and the operational hardening on the Phase-2 roadmap.
@@ -466,10 +469,10 @@ These are not yet decided. Listed so a future agent or planning session can prio
 
 - **Next NGI0 Commons Fund deadline = 1 June 2026, noon CEST** (verified verbatim from the call page: "Deadline for submission: June 1st 2026 (noon CEST)").
 - Call number not stated on the page itself but corresponds to call 13 per the prior internal records.
-- Next-call (call 14, estimated ~1 August 2026 per typical 8-week cadence) — not yet announced on the news index as of 2026-05-22; the announcement convention is one call deadline at a time.
+- Next-call (call 14, estimated ~1 August 2026 per typical 8-week cadence) — not yet announced on the news index as of 2026-05-22; the announcement convention is one call deadline at a time. **(Superseded — the project targets the 13th call, deadline 1 June 2026 12:00 CEST; the call-14 path was not taken.)**
 - **Schedule impact**: maintainer's original target "4 weeks from 2026-05-17" lands at 2026-06-14, which is **13 days after** the 1 June deadline. Two paths forward:
   1. **Compress to submit by 1 June** (call 13) — 10 days from today (2026-05-22). Pre-submission checklist + maintainer review must complete before noon CEST 2026-06-01.
-  2. **Wait for call 14** (~1 August 2026 estimated; unconfirmed). Adds ~60 days of buffer but risks losing the now-current submission window.
+  2. **Wait for call 14** (~1 August 2026 estimated; unconfirmed). Adds ~60 days of buffer but risks losing the now-current submission window. *(Decision: not taken — the project targets the 13th call, deadline 1 June 2026.)*
 - Both paths are operator decisions; this question is now answered as far as the verification goes.
 
 ### Open R2: Are there NGI0-funded employment/migration/civic-jobs projects already?

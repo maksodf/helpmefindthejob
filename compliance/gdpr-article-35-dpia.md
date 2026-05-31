@@ -160,7 +160,7 @@ The institutional deployer SHOULD also conduct local data-subject consultation (
 
 ### 5.2 Data Protection Officer
 
-For the project-side reference: the maintainer (sole maintainer pre-Conservancy-admission) is the de facto DPO for the project's own self-host. The maintainer is contactable at the email in `SECURITY.md`.
+For the project-side reference: the maintainer (sole maintainer at this stage) performs the data-protection contact role for the project's own reference deployment; no formal DPO is appointed at this stage. The maintainer is contactable at the email in `SECURITY.md`.
 
 For the institutional deployer: their organisational DPO is the named owner of the deployer-side DPIA. The DPO signs off on the deployer-instantiated version of this template before the deployer goes live.
 

@@ -19,7 +19,7 @@ The Redwax pattern of *small, modular, composable tools combined into larger ser
 
 ---
 
-## The current tool catalogue (8 tools)
+## The current tool catalogue (15 tools)
 
 These exist in `mcp_server.py` and `company_discovery/mcp_tools.py` today, in skeleton form. Week 2 work documents, hardens, and versions them.
 
@@ -46,7 +46,7 @@ To make the catalogue useful for *composition* with parallel agents (housing, he
 | `export_eures_compatible` | Export a job listing in EURES schema | Cross-deployment interop |
 | `record_user_outcome` | Persist an outcome event (applied, interviewed, hired) for analytics | Cost-saving evidence; partner-pilot measurement |
 
-**Total Week 2 catalogue**: 13 tools, each with a documented input/output JSON Schema, a versioned identifier, an audit-log entry shape, and a deterministic fallback path.
+**Total current catalogue**: 15 tools, each with a documented input/output JSON Schema, a versioned identifier, an audit-log entry shape, and a deterministic fallback path.
 
 ---
 
@@ -159,7 +159,7 @@ A CI test in `.github/workflows/mcp-integration.yml` does the following on every
 1. Spawn `mcp_server.py` as a subprocess.
 2. Connect a mock MCP client over stdio.
 3. Call `initialize`, expect response with version `2024-11-05`.
-4. Call `tools/list`, expect at least 13 tools.
+4. Call `tools/list`, expect at least 15 tools.
 5. Call `find_company_career_page` with a known input, expect a structured output.
 6. Call `propose_referral` with a structured input, expect a structured referral output.
 7. Validate all responses against the published JSON Schemas.

@@ -119,4 +119,4 @@ translators monitor those weekly.
 
 By contributing translations you agree they are released under
 Apache 2.0 (same as the rest of the project) per the
-[Contributor License Agreement](CLA.md).
+[Contributor License Agreement](cla.md).
