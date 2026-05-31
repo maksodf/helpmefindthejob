@@ -58,9 +58,9 @@ nothing is pushed.
    [`docs/releases/v0.80.0.md`](../releases/v0.80.0.md) describe the tag as "the
    submission-state tag … what NLnet reviewers see," and the test-count claims
    across the repo (README, compliance pack, application draft) now say
-   **3,348 tests** — the count of the *current* tree, not the 2026-05-24 tree
+   **3,359 tests** — the count of the *current* tree, not the 2026-05-24 tree
    (which had 3,301). So the signed `v0.80.0` tag must be (re)placed at the
-   final merge commit, or the `git clone --branch v0.80.0 … # Expected: Ran 3348
+   final merge commit, or the `git clone --branch v0.80.0 … # Expected: Ran 3359
    tests` verification command in the release notes will show 3,301 instead.
    - If you are comfortable moving the lightweight tag: `git tag -f -s v0.80.0`
      at the merge commit, then force-push the tag.
@@ -142,9 +142,9 @@ documented posture; the matrix is the artefact a reviewer needs.
   booted HTTP instance; pinned by `tests/test_chat_journey_path.py`.
 - **M4 — compliance posture resolved.** consent/export audit events built +
   proven over HTTP; planned items consolidated into the status matrix.
-- **M5 — final gate.** `ruff check .` clean; full suite **Ran 3348 tests in
+- **M5 — final gate.** `ruff check .` clean; full suite **Ran 3359 tests in
   90.727s, OK (skipped=26)**; every live test-count reference reconciled to
-  3,348; all compliance-pack file/method/endpoint references verified to
+  3,359; all compliance-pack file/method/endpoint references verified to
   resolve; CHANGELOG updated.
 - **M5 — persona-panel residue cleared.** The panic-round bug-hunt found a
   Spine-B persona residue cluster the earlier doc-pass missed. Most important:
