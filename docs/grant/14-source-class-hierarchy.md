@@ -119,7 +119,7 @@ for them.
 
 - EU AI Act Article 50 (transparency obligations) — [`10-ai-act-compliance.md`](10-ai-act-compliance.md)
 - Cost-saving doctrine mechanisms 1, 2, 8 — [`08-cost-saving-doctrine.md`](08-cost-saving-doctrine.md)
-- Project-level lessons learned — `13-lessons-learned.md`
+- Project-level lessons learned — maintained in the project's internal notes
 - User-facing transparency notice — `compliance/transparency-notice.md`
 - Cost-saving evidence substrate (outcome events) — `mcp_tools.py:record_user_outcome`
 - PART 5 prompt-template review (closure) — `docs/grant/anschreiben-quality-walks-2026-05-20/`

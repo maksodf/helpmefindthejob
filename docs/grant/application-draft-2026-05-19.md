@@ -13,7 +13,7 @@ a clarity pass + the maintainer submits via nlnet.nl/propose.
 - Strategic anchor: [`01-project-brief.md`](01-project-brief.md)
 - Decisions referenced inline: 1, 2, 4, 6, 9, 10, 11, 16, 17, 18, 19, 20, 21
 - Numerical-claim verification table: bottom of this document
-- Honesty discipline: Rule 2 of `13-lessons-learned.md` — every number traces to a primary source or is tagged
+- Honesty discipline: every number traces to a primary source or is tagged
 
 ---
 
@@ -162,8 +162,8 @@ commits across the 4-week grant-readiness sprint, May 2026):
 - **Reproducible build**: Nix flake at repo root pinning
   `nixos-25.05` nixpkgs commit; `nix flake check` green;
   `nix develop --command python3 -m unittest discover -s tests`
-  runs the full 3,359-test suite (26 skipped; live count
-  2026-05-30) under Python 3.12.
+  runs the full 3,359-test suite (35 skipped, environment-conditional;
+  live count re-confirmed 2026-05-31) under Python 3.12.
 - **Signed releases + SBOM**: the v0.1.0 source tarball is
   cosign-signed (long-lived ECDSA P-256; the `.sigstore` bundle and
   public key are committed under `docs/releases/`) with a CycloneDX
@@ -714,8 +714,8 @@ Recommended attachments (each ≤ 50 MB; total ≤ 50 MB):
    (1–2 pages) — for reviewers who download for offline reading.
 2. **Cosign-signed `v0.1.0-source.tar.gz.sigstore` bundle + the
    `v0.1.0-sbom.json` CycloneDX SBOM** — supply-chain evidence
-   citable in Article 11 technical documentation. (v0.1.0 is the
-   fully-signed reference tag; the current v0.80.0 SBOM is also
+   citable in Article 11 technical documentation. (v0.1.0's release
+   tarball is the cosign-signed reference artefact; the current v0.80.0 SBOM is also
    in-repo at `docs/releases/v0.80.0-sbom.json`.)
 3. **`ACCESSIBILITY.md` rendered as PDF** — accessibility audit
    evidence (the live HTML version is canonical, but a PDF
@@ -863,7 +863,7 @@ This draft is honest about the project's actual state:
 
 ---
 
-## Per-numerical-claim verification table (Rule 2 of 13-lessons-learned.md)
+## Per-numerical-claim verification table (project honesty discipline)
 
 Every number in this draft traces to a primary source URL, or
 is tagged as `industry-estimate` / `projected` / `not measured`.
@@ -885,7 +885,7 @@ NLnet reviewers can audit each claim against the source.
 | €30k–€200k AI Act compliance consulting cost avoided per deployer | **INDUSTRY ESTIMATE — not measured**. | The range reflects publicly reported AI-compliance-consulting quotes during 2024–2026 (range source: aggregated quotes from German Datenschutz / KI-compliance consultancies; we don't cite a single primary source because the actual number depends on the deployer's existing compliance posture and the consultant's scope). The application body uses qualified language ("typical" / "industry-estimate") rather than asserting a single figure. **NOT a measured claim.** |
 | **30 axe-core violation instances closed across all 33 audited captures** | [`ACCESSIBILITY.md`](../../ACCESSIBILITY.md) "Current state" table | **VERIFIED** — every violation has a documented pre/post-fix count and a file:line for the closing fix. |
 | **96 components in v0.1.0 CycloneDX SBOM** | [`docs/releases/v0.1.0-sbom.json`](../releases/v0.1.0-sbom.json) | **VERIFIED 2026-05-29** — `jq '.components | length' docs/releases/v0.1.0-sbom.json` returns 96 (the prior "91" was stale). The current v0.80.0 SBOM at `docs/releases/v0.80.0-sbom.json` lists 8 direct dependencies. |
-| **3,359 tests / 26 skipped, all passing** | `python3 -m unittest discover -s tests` output | **VERIFIED 2026-05-30** — live run: `Ran 3359 tests in 90.727s … OK (skipped=26)`. The historical 1020/1029 figure was the v0.1.0 release-tag baseline. Operator: re-run at the submission moment and quote the live number. |
+| **3,359 tests / 35 skipped (py3.12), all passing** | `python3 -m unittest discover -s tests` output | **VERIFIED 2026-05-31** — live run: `Ran 3359 tests … OK (skipped=35)`. Skips are environment-conditional (live-server / browser / Postgres backends). The historical 1020/1029 figure was the v0.1.0 release-tag baseline. Operator: re-run at the submission moment and quote the live number. |
 | **6 workflows fully SHA-pinned; `grep -nE "uses:.*@v[0-9]" .github/workflows/*.yml` returns 0 lines** | commits `546f952` + `5be9f47` | **VERIFIED** — closing grep documented in `02-execution-plan.md` §3.2 entry. |
 | **Seven-persona panel: Aïcha, Yusuf, Olga, Mahmoud, Maria, Käthe, Tobias** | [`docs/grant/07-personas.md`](07-personas.md) + Decision 21 | **VERIFIED** — the panel is the project's canonical source-of-truth; Decision 21 dated 2026-05-18. |
 | **MCP catalogue v0.2.0, 15 tools** | [`docs/mcp-server.md`](../mcp-server.md) | **VERIFIED 2026-05-29** — `TOOL_SCHEMAS` in `company_discovery/mcp_tools.py` defines 15 tools; `tests/test_mcp_tool_schema_versioning.py` pins the catalogue size at 15; CI smoke test exercises the surface (the prior "13" was stale). |
@@ -925,8 +925,7 @@ the body either traces to a primary-source URL (the 163 Engpassberufe
 + the structural verifications + the project's own artefacts) OR is
 qualified with a citation chain (OECD Economic Surveys cite; §6a SGB
 II + Art. 91e GG cap citation) without leading with a precise figure
-the maintainer cannot independently re-verify in <1 hour. Per Rule 2
-of `13-lessons-learned.md`, this satisfies the honesty discipline:
+the maintainer cannot independently re-verify in <1 hour. Per the project's honesty discipline, this satisfies it:
 no claim asserts a number the maintainer cannot trace.
 
 If anything drifts further at submission time, update both this
@@ -994,11 +993,11 @@ stamp (catches silent staleness on rows that were never re-dated).
 | €30k–€200k AI Act consulting (industry estimate) | INDUSTRY ESTIMATE | INDUSTRY ESTIMATE — qualified language in body | No change. |
 | 30 axe-core violations across 33 audited captures | VERIFIED | Re-checked against `ACCESSIBILITY.md` current state table; count unchanged | Carry forward. |
 | 96 components in v0.1.0 SBOM | VERIFIED | Re-checked 2026-05-29 — `jq '.components | length'` returns 96 (prior "91" was stale) | Carry forward. |
-| 1020 / 1029 tests | VERIFIED (date stamp ≈ 2026-05-19) | **UPDATED 2026-05-30** — live count is **3,359 tests / 26 skipped, all passing** (`Ran 3359 tests … OK (skipped=26)`). The 1020/1029 figure was the v0.1.0 release-tag baseline; Field 10 and the deeper reference in `compliance/accuracy-and-bias-testing.md` §8 now quote the live number. | Operator: at submission moment, re-run `python3 -m unittest discover -s tests` and quote the live number in the submitted draft. |
+| 1020 / 1029 tests | VERIFIED (date stamp ≈ 2026-05-19) | **UPDATED 2026-05-30** — live count is **3,359 tests / 35 skipped (py3.12), all passing** (`Ran 3359 tests … OK (skipped=35)`). The 1020/1029 figure was the v0.1.0 release-tag baseline; Field 10 and the deeper reference in `compliance/accuracy-and-bias-testing.md` §8 now quote the live number. | Operator: at submission moment, re-run `python3 -m unittest discover -s tests` and quote the live number in the submitted draft. |
 | 6 workflows SHA-pinned | VERIFIED | Stable — grep against `.github/workflows/*.yml` still returns 0 unpinned references | Carry forward. |
 | Seven-persona panel | VERIFIED | Stable — Decision 21 unchanged; persona fixtures unchanged | Carry forward. |
 | MCP catalogue v0.2.0, 15 tools | VERIFIED | Re-checked 2026-05-29 — 15 tools in `mcp_tools.py`, pinned by `test_mcp_tool_schema_versioning.py` (prior "13" was stale) | Carry forward. |
 
-**Net effect at 2026-05-24** (with a 2026-05-29 refresh): every prior-verified row carries forward; three rows were corrected for staleness on 2026-05-29 — test count (1020/1029 → live **3,359 / 26 skipped**, re-confirmed 2026-05-30), v0.1.0 SBOM component count (91 → **96**, `jq`-derivable), and MCP catalogue tool count (13 → **15**, pinned by test). No new claims introduced since pass 3 require new verification work.
+**Net effect at 2026-05-24** (with a 2026-05-29 refresh): every prior-verified row carries forward; three rows were corrected for staleness on 2026-05-29 — test count (1020/1029 → live **3,359 / 35 skipped (py3.12)**, re-confirmed 2026-05-31), v0.1.0 SBOM component count (91 → **96**, `jq`-derivable), and MCP catalogue tool count (13 → **15**, pinned by test). No new claims introduced since pass 3 require new verification work.
 
-**Operator action at submission moment** (per the "next-day re-verify" discipline at line 16 of this draft): run the 4-line drift-check loop documented at the bottom of `docs/grant/13-lessons-learned.md` Rule 2 against the rows tagged "re-verify within 48h" and the live test count. If any drift, update both this draft and `12-application-package.md` in the same commit before submitting.
+**Operator action at submission moment** (per the "next-day re-verify" discipline at line 16 of this draft): re-run the suite and re-grep the claimed numbers against the rows tagged "re-verify within 48h" and the live test count. If any drift, update both this draft and `12-application-package.md` in the same commit before submitting.
