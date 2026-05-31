@@ -24,7 +24,7 @@ This is the consolidated maintenance cadence the maintainer runs against the pro
 | Article 22 quarterly aggregate review | Quarterly | [`compliance/deployer-operating-manual.md`](https://github.com/maksodf/helpmefindthejob/blob/main/compliance/deployer-operating-manual.md) §8.1 step 8 | 2026-Q3 (no requests received yet — review is "zero requests this quarter") |
 | DPIA review | Annual + on triggers | [`compliance/gdpr-article-35-dpia.md`](https://github.com/maksodf/helpmefindthejob/blob/main/compliance/gdpr-article-35-dpia.md) §6 | 2027-Q2 |
 | Source-class hierarchy re-verification | 30-day freshness window | [`docs/grant/14-source-class-hierarchy.md`](grant/14-source-class-hierarchy.md) append log | 2026-06-23 (30 days after last pass) |
-| Quality dashboard re-run | Pre-release on `v*.X.0` | (the standing 3342-test unit suite + `docs/grant/bias-comparative-report-2026-05-21.md`) | 2026-Q4 |
+| Quality dashboard re-run | Pre-release on `v*.X.0` | (the standing 3348-test unit suite + `docs/grant/bias-comparative-report-2026-05-21.md`) | 2026-Q4 |
 
 If the deployer has a tracked-issue board (GitHub Projects / Linear / Jira), each cadence item lives on the board with the next-due date pinned.
 
