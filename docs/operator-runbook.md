@@ -81,7 +81,7 @@ This file is the **maintainer's own** project-self-host runbook. It does NOT gov
 - Deployer-side operations at a Beratungsstelle / Jobcenter / NGO / university career service — see `compliance/deployer-operating-manual.md` (the AI Act Article 26 deployer manual) for that audience.
 - Production-hardening cadence for the deployment infrastructure itself (Docker / Caddy / SQLite / cron-based backups) — see `docs/observability-runbook.md` for that.
 - The AI-Act-and-GDPR compliance pack itself — see `compliance/INDEX.md` for the full file × Article reverse-lookup.
-- The grant application + post-grant roadmap — see `docs/grant/00-START-HERE.md` for the planning workspace + `docs/grant/03-post-grant.md` for the Phase-2 roadmap.
+- The grant application + post-grant roadmap — see `docs/grant/` for the planning workspace + `docs/grant/03-post-grant.md` for the Phase-2 roadmap.
 
 ---
 

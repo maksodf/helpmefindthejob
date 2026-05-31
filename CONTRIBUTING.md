@@ -329,8 +329,8 @@ Beyond the obvious (code correctness, tests pass, contract preserved):
 
 - **Honesty about scope**. If your PR fixes one bug but you saw three
   more on the way, name them in the PR description. Either fix all
-  three (preferred per the no-gaps-behind doctrine in
-  [`CLAUDE.md`](CLAUDE.md)) or open separate issues for the other two.
+  three (preferred per the no-gaps-behind doctrine the project
+  follows) or open separate issues for the other two.
 - **Test that would have caught the bug**. The regression-guard pattern
   is: every fix lands with a test that fails BEFORE the fix and passes
   AFTER. The PR description names the test file + the failing assertion

@@ -243,7 +243,7 @@ This document is updated when the compliance pack lands so the architecture-side
 
 | If you want … | Read … |
 |---|---|
-| Strategic context, decisions log | [`docs/grant/`](docs/grant/) — start with `00-START-HERE.md` |
+| Strategic context, decisions log | [`docs/grant/`](docs/grant/) — the planning workspace |
 | Composition details + MCP protocol versioning | [`docs/grant/09-mcp-composition.md`](docs/grant/09-mcp-composition.md) |
 | AI Act compliance plan | [`docs/grant/10-ai-act-compliance.md`](docs/grant/10-ai-act-compliance.md) |
 | Persona panel | [`docs/grant/07-personas.md`](docs/grant/07-personas.md) |

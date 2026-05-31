@@ -135,7 +135,7 @@ class StaticPagesSeoContract(unittest.TestCase):
 
     def test_no_khalo_org_residue_anywhere_in_static(self):
         """Week 1 sanitization residue guard. If this ever fails,
-        someone reintroduced the legacy domain. CLAUDE.md hard rule:
+        someone reintroduced the legacy domain. Project hard rule:
         do not reintroduce khalo.org strings."""
 
         for html_file in STATIC_DIR.glob("*.html"):

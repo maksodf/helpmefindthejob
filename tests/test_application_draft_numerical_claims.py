@@ -12,7 +12,7 @@ returned 404 / 403 / navigation-only. Reword retained.
 If a future maintainer (or future agent) accidentally re-introduces
 the precise figures into the application body without primary-source
 verification, the application's honesty discipline (Rule 2 of
-`13-lessons-learned.md`) is violated. This test catches that.
+the project's honesty discipline) is violated. This test catches that.
 
 The test scope is BODY TEXT in the application package files. The
 verification table in `application-draft-2026-05-19.md` is the

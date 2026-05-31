@@ -146,3 +146,13 @@ private/
 /Finalanswers.MD
 /EXECUTION_PROMPT.md
 /docs/grant/post-submission-state-*.md
+
+# AI-collaboration working files — the maintainer's private agent-instruction
+# and session-handoff notes. These capture how the maintainer drove the build
+# with a coding agent (constraints, behavioural rules, orientation, handoff) and
+# are intentionally kept out of the public repo. Kept locally for the
+# maintainer's reference; not part of the commons project itself.
+/CLAUDE.md
+/docs/grant/00-START-HERE.md
+/docs/grant/13-lessons-learned.md
+/docs/grant/OPERATOR-HANDOFF-2026-05-30.md
