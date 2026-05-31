@@ -166,7 +166,7 @@ Optional additions if you want to surface more themes: `eu`, `nlnet`, `anerkennu
 - LICENSE file present, recognised by GitHub
 - All 6+ governance files at root
 - README opens with the new positioning, badges visible, one persona referenced
-- Zero occurrences of `khalo.org` in public-tree code (CLAUDE.md narrative context and `CONTRIBUTORS-NOTE.md` excepted; both deliberately retain the term for agent-onboarding clarity)
+- Zero occurrences of `khalo.org` in public-tree code (`CONTRIBUTORS-NOTE.md` excepted; it deliberately retains the term for the history-preservation note)
 - Commercial docs moved out of `docs/` into `private/` (gitignored)
 - GitHub repo description and topics updated (maintainer's click-through; proposed text in §1.5)
 - A fresh-clone smoke test passes (verified in Week 2 task 2.0)
@@ -327,7 +327,7 @@ Per `10-ai-act-compliance.md`. Create the `/compliance/` directory and ship:
 - [x] Document install order in `CONTRIBUTING.md` — explicit four-step sequence (runtime install → dev install → pre-commit activation → app run).
 - [x] Verify `python -m unittest discover -s tests` passes on a clean machine — verified via Docker on both `python:3.11-slim` and `python:3.12-slim`: fresh `pip install -r requirements.txt` succeeds with no rust / build-essential, the cryptography import works, and the representative smoke-test slice (encryption-at-rest + AEAD fuzzing + audit log + MCP integration end-to-end) runs green. The full local suite also ran green after the changes. (Note: the bare `python -m unittest discover` from repo root collects zero tests because the project's tests live under `tests/`; the explicit `-s tests` is the canonical invocation, mirrored by the CI workflow at `.github/workflows/test.yml`.)
 - [x] Add a fresh-clone Docker smoke-test workflow — `.github/workflows/fresh-clone-install.yml`. Runs on every push and PR against `main` and `claude/**` branches; matrix over `python:3.11-slim` and `python:3.12-slim`; verifies pip install, the cryptography import, and the smoke-test slice. README carries the `Fresh-clone install` badge under the License badge.
-- [x] Soften framing in `CLAUDE.md`, `README.md`, `CONTRIBUTING.md`, `01-project-brief.md` — historical issue is closed; Docker is supported as a fallback but no longer required for testing.
+- [x] Soften framing in `README.md`, `CONTRIBUTING.md`, `01-project-brief.md` — historical issue is closed; Docker is supported as a fallback but no longer required for testing.
 
 ### 3.2 CI expansion (8 h)
 

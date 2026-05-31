@@ -321,7 +321,7 @@ This is positive for project coherence — one committed contributor rather than
 
 **Reasoning**:
 
-- First impressions are durable. A partner who clicks the README link and sees half-finished work is meaningfully harder to recover than a partner contacted later but seeing finished work. The "honest about instability" doctrine (CLAUDE.md hard rule 6) applies to *narrative*, not to a partner's first read of the README.
+- First impressions are durable. A partner who clicks the README link and sees half-finished work is meaningfully harder to recover than a partner contacted later but seeing finished work. The "honest about instability" doctrine applies to *narrative*, not to a partner's first read of the README.
 - The application must stand on its own without partner letters. Outreach is a strengthening signal, not a requirement. R13 (reviewer expects more institutional partners than we can secure) is already mitigated by the Commons Conservancy admission path and one letter being sufficient.
 - Maintainer's 18 h/day commitment makes the Week 2–3 build pace fast enough that the buffer cost is acceptable. The hardening work happens regardless of outreach timing.
 - Partner pre-check returned no warm intros; cold-contact response rate is modest regardless of buffer length. Spending 6 h of Week 1 capacity on sends that may not yield is a worse trade than spending 6 h on Week 2 verification work that strengthens the application.
@@ -388,7 +388,7 @@ This is positive for project coherence — one committed contributor rather than
 - `07-personas.md` adds two non-migrant personas (Käthe, Tobias) and reframes the panel intro
 - `08-cost-saving-doctrine.md` opens with the broader addressable-population framing
 - `12-application-package.md` abstract and problem statement broaden
-- `CLAUDE.md` and `00-START-HERE.md` TL;DR sections reflect the broader frame
+- The project's onboarding/TL;DR sections reflect the broader frame
 - `README.md` opener references both the most-acute persona (Aïcha) and at least one non-migrant friction case to demonstrate breadth
 
 **Reversibility**: hard. The positioning is the public-facing identity; reverting after public deployment would be expensive. This decision is the project's identity going forward.

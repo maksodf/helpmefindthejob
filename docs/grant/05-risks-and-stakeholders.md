@@ -97,7 +97,7 @@ A risk is **Critical** if it can sink the application or the project entirely.
 
 **Risk**: With 18 h/day available and many tempting deliverables on the differentiation list (Nix flake, OpenSSF Scorecard, demo deployment, ESCO mapping, EURES export), the maintainer adds feature work that delays the core deliverables.
 
-**Mitigation**: hard rules in `CLAUDE.md` and `00-START-HERE.md` — no new product features, no framework extraction. Reread the rules at the start of each day. The execution plan is the source of truth; off-plan work is added only by explicit decision logged in `04-research-and-decisions.md`.
+**Mitigation**: hard rules in the project's working guidelines — no new product features, no framework extraction. Reread the rules at the start of each day. The execution plan is the source of truth; off-plan work is added only by explicit decision logged in `04-research-and-decisions.md`.
 
 **Owner**: maintainer (discipline) + planning workspace (rules).
 

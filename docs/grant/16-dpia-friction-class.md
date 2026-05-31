@@ -28,7 +28,7 @@ residency status, health-profession context, and asylum status.
 This document is the operator-reviewable draft. The operator (Fouad)
 adapts it to the institutional wrapper (The Commons Conservancy
 Programme review) and signs off before the project's first reference
-deployment (Germany, Week 2 grant timeline per CLAUDE.md).
+deployment (Germany, Week 2 grant timeline per the project plan).
 
 ---
 
@@ -98,7 +98,7 @@ specific bureaucratic / regulatory frictions get appropriate help:
 **The classification's purpose is BENEFICIARY**: improve outcomes for
 users in legally-fragile situations who'd otherwise get generic
 advice. This aligns with the project's stated civic-commons mission
-(CLAUDE.md: "an open-source EU-wide civic employment commons … puts
+(Project mission: "an open-source EU-wide civic employment commons … puts
 that knowledge directly into the hands of anyone facing structural
 friction in the European labor market").
 
