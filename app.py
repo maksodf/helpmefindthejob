@@ -413,7 +413,7 @@ def _build_site_footer(lang: str) -> bytes:
   <div class="site-footer-grid">
     <section class="site-footer-col">
       <p class="site-footer-tagline"><strong>Helpmefindthejob</strong> &mdash; quelloffener EU-Commons f&uuml;r die Arbeitssuche.</p>
-      <p class="muted small">Programm von <a href="https://commonsconservancy.org" rel="external noopener">The Commons Conservancy</a>. Apache 2.0 + CLA.</p>
+      <p class="muted small">Programm von <a href="https://commonsconservancy.org" rel="external noopener">The Commons Conservancy</a> (Aufnahme beantragt). Apache 2.0 + CLA.</p>
     </section>
     <section class="site-footer-col" aria-labelledby="siteFooterContact">
       <h2 id="siteFooterContact" class="site-footer-heading">Kontakt</h2>
@@ -459,7 +459,7 @@ def _build_site_footer(lang: str) -> bytes:
   <div class="site-footer-grid">
     <section class="site-footer-col">
       <p class="site-footer-tagline"><strong>Helpmefindthejob</strong> &mdash; open-source EU civic employment commons.</p>
-      <p class="muted small">A Programme of <a href="https://commonsconservancy.org" rel="external noopener">The Commons Conservancy</a>. Apache 2.0 + CLA.</p>
+      <p class="muted small">A Programme of <a href="https://commonsconservancy.org" rel="external noopener">The Commons Conservancy</a> (admission pending). Apache 2.0 + CLA.</p>
     </section>
     <section class="site-footer-col" aria-labelledby="siteFooterContact">
       <h2 id="siteFooterContact" class="site-footer-heading">Contact</h2>
