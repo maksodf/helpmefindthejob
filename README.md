@@ -54,15 +54,15 @@ strategic context.
 
 **Status**: v0.80.0 — current release (cosign-signed + CycloneDX SBOM,
 [`docs/releases/v0.80.0.md`](docs/releases/v0.80.0.md)); v0.1.0 was the
-first stable pre-publication tag (2026-05-18). Public demo deployment at
-[`demo.helpmefindthejob.org`](https://demo.helpmefindthejob.org/)
-serves the seven canonical personas as pre-seeded sandbox accounts
-(Aïcha, Yusuf, Olga, Mahmoud, Maria, Käthe, Tobias — shared password
-printed on the demo landing); the live apex
-[`helpmefindthejob.org`](https://helpmefindthejob.org/) hosts the
-same code with the public registration flow. DNS for the `demo.`
-subdomain is being configured by the maintainer; if the link does
-not yet resolve, the apex above is the same code with your own
+first stable pre-publication tag (2026-05-18). A public demo is prepared at
+[`demo.helpmefindthejob.org`](https://demo.helpmefindthejob.org/) and is
+intended to serve the seven canonical personas as pre-seeded sandbox
+accounts (Aïcha, Yusuf, Olga, Mahmoud, Maria, Käthe, Tobias; shared
+sandbox password shown on the demo landing). It is not guaranteed live
+at submission time: DNS for the `demo.` subdomain is still being
+configured, so if the link does not resolve, self-host from the
+repository or use the apex
+[`helpmefindthejob.org`](https://helpmefindthejob.org/) with your own
 fresh account. Seed-personas recipe at
 [`scripts/seed-personas.py`](scripts/seed-personas.py) reproduces
 the demo state on any self-hosted instance. The
@@ -397,11 +397,13 @@ sustainability model) at [`docs/grant/03-post-grant.md`](docs/grant/03-post-gran
 - **Documentation site**: published via mkdocs-material to GitHub Pages
   (transitions to [`helpmefindthejob.org`](https://helpmefindthejob.org/)
   when the maintainer wires the CNAME).
-- **Public demo**: live at [`demo.helpmefindthejob.org`](https://demo.helpmefindthejob.org/),
-  pre-seeded with the seven-persona panel. Registration is closed; log in with any
-  persona, e.g. `aicha@demo.helpmefindthejob.org` / `ExploreDemo2026` (also yusuf, olga,
-  mahmoud, maria, kaethe, tobias — same password). Shared sandbox; don't enter real
-  personal data.
+- **Public demo**: *prepared, not guaranteed live at submission time* at
+  [`demo.helpmefindthejob.org`](https://demo.helpmefindthejob.org/),
+  pre-seeded with the seven-persona panel. If it is reachable, registration is
+  closed; log in with a persona address (e.g. `aicha@demo.helpmefindthejob.org`,
+  also yusuf, olga, mahmoud, maria, kaethe, tobias) using the shared sandbox
+  password shown on the demo landing page. Shared sandbox; don't enter real
+  personal data. If it is not reachable, use the repository and self-hosting recipe.
 
 ## Why this exists
 

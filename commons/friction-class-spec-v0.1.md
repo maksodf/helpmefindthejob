@@ -251,7 +251,7 @@ Implementations rendering a friction-class to the user MUST:
 Implementations claiming compliance with this specification SHOULD:
 
 - Run the [bias methodology test harness](
-  ../docs/grant/methodology.md) (or equivalent) across all 7
+  ../compliance/accuracy-and-bias-testing.md) (or equivalent) across all 7
   friction classes and publish the comparative report.
 - Document any per-class accuracy variance > 10 percentage points
   vs the cross-class mean.

@@ -6,8 +6,8 @@
 ## Stated commitment
 
 Helpmefindthejob is sustainable because it is **open-source under
-Apache 2.0**, **hosted by The Commons Conservancy** (admission
-pending), and **self-hostable by anyone on commodity hardware**.
+Apache 2.0**, with a hosting application submitted to The Commons Conservancy
+(response pending; not yet the legal host), and **self-hostable by anyone on commodity hardware**.
 Sustainability of this project does **not** depend on a single
 funder, a single contributor, a single hosting choice, or a
 commercial-revenue stream. It depends on the durability of the
@@ -28,7 +28,7 @@ sustainability is structured today and how it grows from here.
 | **Institutional wrapper** | Application submitted to [The Commons Conservancy](https://commonsconservancy.org/) (a Dutch stichting co-founded by NLnet) for adoption as a Programme; response pending and admission not yet granted, so it is not currently the project's legal host, provider, or fiscal sponsor ([Decision 2](docs/grant/04-research-and-decisions.md)). Once admitted, the Conservancy would provide governance continuity, legal personality, and a fiscal channel for grants + donations independent of any single human maintainer. |
 | **Self-hostable** | The full application — chat router, MCP server, AI provider abstraction, encrypted-at-rest persistence — runs on commodity hardware (a 2 GiB-RAM VM, a Raspberry Pi, a Docker host). Deployment recipe at [`docs/deployment-recipe.md`](docs/deployment-recipe.md). Reproducible build via Nix flake at [`flake.nix`](flake.nix). |
 | **No commercial gate** | Zero per-seat licensing fees ([cost-saving doctrine §3](docs/grant/08-cost-saving-doctrine.md)). No paid-tier feature gating. No "open-core" double-licensing. |
-| **No vendor lock-in** | BYO-AI architecture: every provider call routes through a small abstraction in `company_discovery/ai_providers.py` (OpenAI / Gemini / DeepSeek / OpenRouter / Ollama / manual / Claude Code). Switching providers is one config change, not a re-engineering effort. |
+| **No vendor lock-in** | BYO-AI architecture: every provider call routes through a small abstraction in `company_discovery/ai_providers.py` (for example OpenAI / Gemini / DeepSeek / OpenRouter / Ollama / manual / Claude Code, among other provider modes; see the technical reference for the full set). Switching providers is one config change, not a re-engineering effort. |
 | **Privacy-preserving by design** | CV text + TOTP secrets encrypted at rest (ChaCha20-Poly1305 AEAD with per-user AAD; see [`company_discovery/crypto_kit.py`](company_discovery/crypto_kit.py)). No data egress beyond user-consented AI provider calls. Audit log per EU AI Act Article 12. |
 | **Cost-saving doctrine** | Every feature decision is evaluated against "does it reduce institutional cost while improving outcomes?" Full evaluation rubric at [`docs/grant/08-cost-saving-doctrine.md`](docs/grant/08-cost-saving-doctrine.md). |
 

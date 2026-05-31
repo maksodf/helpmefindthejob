@@ -33,7 +33,7 @@ Background: this consent-first authorship policy is documented in [`docs/grant/0
 
 ## Contributor License Agreement
 
-All maintainers and contributors listed in this file have signed the Individual Contributor License Agreement in [`cla.md`](cla.md). The CLA is required for non-trivial contributions; see [`CONTRIBUTING.md`](CONTRIBUTING.md) for the current assent mechanism.
+The project uses an Apache-style individual Contributor License Agreement ([`cla.md`](cla.md)), required for non-trivial contributions. At this stage, CLA assent is recorded manually in pull-request discussions or maintainer records; automated CLA tooling is not yet wired. See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the current assent mechanism.
 
 ## Contributors
 

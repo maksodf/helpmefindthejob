@@ -150,9 +150,9 @@ Below the €50,000 first-round cap. Frugal-by-default per the maintainer's expl
 
 - **Licence**: Apache 2.0 + CLA. OSI-recognised. NLnet-acceptable. Compatible with institutional and public-sector adoption.
 - **Standards**: every external interface aligns with an open standard or specification. MCP (open protocol), schema.org JobPosting (open vocabulary), ESCO (EU open taxonomy), EURES schema (EU open spec), JSON Schema (open spec), RFC 9116 (IETF spec).
-- **Hosting**: source on a public repository, mirrored to Codeberg for European-sovereignty resilience; project home at The Commons Conservancy.
+- **Hosting**: source on a public repository, mirrored to Codeberg for European-sovereignty resilience; a hosting application submitted to The Commons Conservancy (response pending; admission not yet granted).
 - **Sustainability**: no commercial gate, no vendor lock-in, no per-user fees. Free for individuals, free for NGOs, free for institutions. Optional support contracts for institutional deployers fund maintenance; future grant arc through NLnet's multi-round model, Sovereign Tech Fund, and EU NGI tracks.
-- **Governance**: institutional wrapper at The Commons Conservancy; multi-maintainer recruitment in progress; transparent decision log in `docs/grant/`; Contributor Covenant 2.1 Code of Conduct.
+- **Governance**: institutional-wrapper application submitted to The Commons Conservancy (admission pending); multi-maintainer recruitment in progress; transparent decision log in `docs/grant/`; Contributor Covenant 2.1 Code of Conduct.
 
 ---
 

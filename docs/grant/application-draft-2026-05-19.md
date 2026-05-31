@@ -141,7 +141,7 @@ commits across the 4-week grant-readiness sprint, May 2026):
 - **EU AI Act compliance pack**: 23 documents under `compliance/`
   covering AI Act Articles 9, 10, 11 + Annex IV, 12, 13, 14, 15 (incl.
   15(5) resilience), 22, 26, 27, 49, 50, 73, 86 plus GDPR Articles
-  5, 20, 22, 28, 30, 32, 33, 35 — see [`compliance/INDEX.md`](compliance/INDEX.md)
+  5, 20, 22, 28, 30, 32, 33, 35 — see [`compliance/INDEX.md`](../../compliance/INDEX.md)
   for the full file × article reverse-lookup table. Articles **12**
   (audit log) and **14** (`/api/admin/oversight/queue`) are wired in
   code; the remaining articles are deployer-doctrine artefacts and
@@ -156,11 +156,11 @@ commits across the 4-week grant-readiness sprint, May 2026):
   out-of-range outputs before the user surface (see
   `tests/test_prompt_injection_vectors.py::V3JdIndirectInjection`).
   Article 15(5) resilience is documented in
-  [`compliance/prompt-injection-testing.md`](compliance/prompt-injection-testing.md)
+  [`compliance/prompt-injection-testing.md`](../../compliance/prompt-injection-testing.md)
   (10 canonical vectors mapped to structural-defence layers) and pinned
   by 8 unit tests in `tests/test_prompt_injection_vectors.py`.
   Article 12 + 26(6) key-rotation procedure is documented in
-  [`compliance/audit-log-key-rotation.md`](compliance/audit-log-key-rotation.md)
+  [`compliance/audit-log-key-rotation.md`](../../compliance/audit-log-key-rotation.md)
   (9 sections; active / sealed / destroyed key lifecycle; dated
   rotation log).
 - **MCP server** with a 15-tool catalogue (catalogue SemVer

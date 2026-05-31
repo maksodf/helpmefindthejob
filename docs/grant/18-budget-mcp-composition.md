@@ -41,7 +41,7 @@ deliverable without relying on unrealistic full-time availability.
 
 Cost = hours × €60/hour.
 
-The budget funds one solo maintainer-developer at a frugal blended
+The budget funds the maintainer's time across software development and project-management/documentation work (a single part-time contributor performing both roles) at a frugal blended
 rate of €60/hour. It does not include employees, overhead/F&A,
 hardware, travel, per-seat software, license fees, or external legal
 counsel.

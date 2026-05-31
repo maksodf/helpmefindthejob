@@ -25,8 +25,8 @@ Pre-filled by the project. Verify at submission time against the current state o
 
 | Field | Value |
 |---|---|
-| Provider name | The Commons Conservancy, on behalf of Helpmefindthejob contributors |
-| Provider organisation type | Foundation (Stichting) under Dutch law, hosting the Helpmefindthejob Programme |
+| Provider name | [Deployer/maintainer to confirm: the project maintainer today; The Commons Conservancy only if and when its admission is accepted — admission is currently pending] |
+| Provider organisation type | [To confirm: sole maintainer today; Foundation (Stichting) under Dutch law only if Commons Conservancy admission is accepted] |
 | Provider country of establishment | Netherlands |
 | Provider primary contact | `[TBD: maintainer to fill once Commons Conservancy admission lands]` |
 | Provider authorised representative in the Union | Not applicable (provider is EU-established) |

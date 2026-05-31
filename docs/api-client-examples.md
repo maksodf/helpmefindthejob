@@ -5,7 +5,7 @@
 
 **Audience**: developers integrating Helpmefindthejob's HTTP API into custom workflows. For MCP-client integrations, see [`mcp-integration-guide.md`](mcp-integration-guide.md). For OpenAPI reference, the live `/api/docs` page on any running instance is the canonical source of truth.
 
-**Base URL** for examples below: `https://helpmefindthejob.org` (or your self-hosted URL). All examples use a session cookie for authentication; obtain it via `POST /api/auth/register` or `POST /api/auth/login`.
+**Base URL** for examples below: use **your own self-hosted URL** (e.g. `http://localhost:8000`). The public host `https://helpmefindthejob.org` is shown only as an illustrative value and is **not guaranteed live at submission time** — substitute your deployment's URL. All examples use a session cookie for authentication; obtain it via `POST /api/auth/register` or `POST /api/auth/login`.
 
 ---
 

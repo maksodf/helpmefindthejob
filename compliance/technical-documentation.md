@@ -56,7 +56,7 @@ No hosted SaaS distribution is operated by the provider. A future hosted-support
 
 ### 1.4 Computing infrastructure
 
-The system runs on commodity hardware: a single VM with 2 vCPU and 4 GiB RAM is sufficient for a Beratungsstelle-scale deployment. AI inference is delegated to a third-party provider chosen by the user (or by the deployer in an institutional configuration), via the BYO-AI abstraction at [`../company_discovery/ai_providers.py`](../company_discovery/ai_providers.py). Supported providers: OpenAI, Anthropic, Gemini, DeepSeek, OpenRouter, Ollama (fully offline), Codex CLI, Claude Code, plus a no-AI manual handoff.
+The system runs on commodity hardware: a single VM with 2 vCPU and 4 GiB RAM is sufficient for a Beratungsstelle-scale deployment. AI inference is delegated to a third-party provider chosen by the user (or by the deployer in an institutional configuration), via the BYO-AI abstraction at [`../company_discovery/ai_providers.py`](../company_discovery/ai_providers.py). Supported providers include OpenAI, Anthropic, Gemini, DeepSeek, OpenRouter, Ollama (fully offline), Codex CLI, and Claude Code, plus custom and managed provider modes and a no-AI manual handoff; the canonical set is defined in [`../company_discovery/ai_providers.py`](../company_discovery/ai_providers.py).
 
 ### 1.5 Description of the user interface
 

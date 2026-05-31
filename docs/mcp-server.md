@@ -113,7 +113,7 @@ See [`docs/grant/09-mcp-composition.md`](grant/09-mcp-composition.md) for the fu
 2. **Profile-shared composition** — multiple agents in the same deployment read the user's portable civic profile via `get_user_profile_for_consent` (with explicit consent). **Medium coupling**: shared profile schema; both agents trust the same persistence layer. **Available** now.
 3. **Orchestrated multi-agent conversation** — a meta-orchestrator routes a single conversation between multiple agents. **Highest coupling**, **Phase 2+ scope**.
 
-A reference integration with an open housing agent demonstrates pattern 1 and ships under [`examples/housing-stub-client/`](https://github.com/maksodf/helpmefindthejob/tree/main/examples/housing-stub-client).
+A reference/stub integration with a mock housing agent (not a live external civic-agent ecosystem) demonstrates pattern 1 and ships under [`examples/housing-stub-client/`](https://github.com/maksodf/helpmefindthejob/tree/main/examples/housing-stub-client).
 
 ## Example client invocations
 

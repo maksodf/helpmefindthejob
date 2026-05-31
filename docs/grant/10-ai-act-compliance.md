@@ -95,7 +95,7 @@ Logs are JSON Lines, structured, and queryable. Default retention is 6 months; c
 **Requirement**: High-risk systems must be designed for effective human oversight, allowing oversight persons to understand the system, monitor its operation, override its output, and decide not to use it.
 
 **Our deliverables**:
-- A **human-oversight UI** for institutional deployers — an advisor can review the agent's outputs (fit scores, CV drafts, letter drafts) before they are presented to the user, with the ability to edit, reject, or annotate.
+- A **human-oversight UI** for institutional deployers — an advisor can review the agent's outputs (fit scores, CV drafts, letter drafts) before they are presented to the user, with the ability to edit, reject, or annotate (planned for Phase 2; the current oversight queue is read-only with audit visibility and an AI kill switch).
 - A **default-off-for-final-decisions mode**: the agent never automatically submits an application, accepts a contract, or makes any binding decision. Every consequential action is gated by user confirmation.
 - A **kill-switch**: institutions can disable AI features entirely via configuration, falling back to a templated, deterministic agent. Confirms with Article 14's requirement that the human oversight person be able to "decide, in any particular situation, not to use the high-risk AI system."
 

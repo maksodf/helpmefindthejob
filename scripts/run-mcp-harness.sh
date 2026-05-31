@@ -4,7 +4,7 @@
 #
 # Drives the PART 7 Loop 20 MCP client harness as a standalone smoke
 # check. Boots a real mcp_server.py subprocess (via the harness) and
-# verifies: initialize handshake, tools/list returns 13 tools, one
+# verifies: initialize handshake, tools/list returns 15 tools, one
 # representative tools/call round-trip.
 #
 # No HTTP server boot here -- the MCP transport is stdio. The harness

@@ -233,8 +233,8 @@ class HttpCatalogueSurface(unittest.TestCase):
         self.assertIsInstance(payload["tools"], list)
         self.assertGreaterEqual(
             len(payload["tools"]),
-            13,
-            "expected at least 13 MCP tools in catalogue",
+            15,
+            "expected at least 15 MCP tools in catalogue",
         )
 
     def test_mcp_schemas_payload_matches_tool_schemas(self):

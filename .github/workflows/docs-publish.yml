@@ -3,7 +3,7 @@
 # Trigger: push to `main` and to the working branch `claude/project-
 # analysis-bpHCo` during the 4-week grant sprint; pull-requests build
 # the site (verifying `mkdocs build --strict` succeeds) but do NOT
-# deploy. The `claude/project-analysis-bpHCo` trigger is removed when
+# deploy. The `an earlier working branch` trigger is removed when
 # work merges to main and the branch is closed.
 #
 # Pages activation: this workflow ships independent of whether
@@ -25,7 +25,7 @@ on:
   push:
     branches:
       - main
-      - claude/project-analysis-bpHCo
+      - an earlier working branch
   pull_request:
     branches:
       - main
