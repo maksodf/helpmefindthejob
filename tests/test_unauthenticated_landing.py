@@ -89,7 +89,7 @@ class LandingBlockPresentInIndex(unittest.TestCase):
 
     def test_alpha_honesty_disclaimer(self):
         """The "alpha — main branch may be unstable" line keeps the
-        landing honest about tier (CLAUDE.md hard rule #6)."""
+        landing honest about tier (project anchor-persona rule)."""
 
         en = json.loads(EN_BUNDLE.read_text(encoding="utf-8"))
         self.assertIn("Alpha", en.get("landing.foot", ""))

@@ -13,7 +13,7 @@ a clarity pass + the maintainer submits via nlnet.nl/propose.
 - Strategic anchor: [`01-project-brief.md`](01-project-brief.md)
 - Decisions referenced inline: 1, 2, 4, 6, 9, 10, 11, 16, 17, 18, 19, 20, 21
 - Numerical-claim verification table: bottom of this document
-- Honesty discipline: Rule 2 of [`13-lessons-learned.md`](13-lessons-learned.md) — every number traces to a primary source or is tagged
+- Honesty discipline: Rule 2 of `13-lessons-learned.md` — every number traces to a primary source or is tagged
 
 ---
 

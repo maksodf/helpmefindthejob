@@ -975,7 +975,7 @@ to The Commons Conservancy pending, EU AI Act compliant by design.
   for deployer review with `event_type` filter and `limit` query
   params. Tail helper `_read_ai_act_audit_tail` reads live + rotated
   siblings sorted most-recent-first.
-- **Lessons-learned workspace** at `docs/grant/13-lessons-learned.md`
+- **Lessons-learned workspace** maintained alongside the grant planning docs
   — 10 behavioural rules captured from prior advisory sessions
   (Friction-driven not demographic-driven framing, verify numerical
   claims, calibrate response length, etc.).
