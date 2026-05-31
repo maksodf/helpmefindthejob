@@ -337,6 +337,8 @@ your own AI.
 the grant sprint).* Once admission lands, this section is updated with
 the Programme page link and any required acknowledgment language.
 
+Project **governance, decision-making, and succession** are described in [GOVERNANCE.md](GOVERNANCE.md) — including how the Apache-2.0 + CLA model and the Commons Conservancy track keep the project stewardable beyond any single maintainer.
+
 ## Roadmap
 
 A quarterly roadmap with milestones for **2026 Q3 → 2028 Q2** lives at
